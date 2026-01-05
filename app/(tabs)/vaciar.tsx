@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { supabase } from '@/lib/supabase';
-import { X } from 'lucide-react-native';
+import { X, Star } from 'lucide-react-native';
 
 const CATEGORIES = [
   { id: 'trabajo', label: '💼 Trabajo', color: '#4A90E2' },
@@ -14,6 +14,7 @@ const CATEGORIES = [
 export default function VaciarScreen() {
   const [taskInput, setTaskInput] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [isPriority, setIsPriority] = useState(false);
   const [recentTasks, setRecentTasks] = useState<string[]>([]);
 
   const handleAddTask = async () => {
@@ -26,7 +27,7 @@ export default function VaciarScreen() {
       user_id: user.id,
       content: taskInput.trim(),
       category: selectedCategory,
-      is_priority: false,
+      is_priority: isPriority,
       is_completed: false,
     });
 
@@ -34,6 +35,7 @@ export default function VaciarScreen() {
       setRecentTasks([taskInput.trim(), ...recentTasks.slice(0, 4)]);
       setTaskInput('');
       setSelectedCategory('');
+      setIsPriority(false);
     }
   };
 
@@ -99,6 +101,27 @@ export default function VaciarScreen() {
             ))}
           </View>
         </View>
+
+        <TouchableOpacity
+          style={[
+            styles.priorityToggle,
+            isPriority && styles.priorityToggleActive,
+          ]}
+          onPress={() => setIsPriority(!isPriority)}
+          activeOpacity={0.7}
+        >
+          <Star
+            size={20}
+            color={isPriority ? THEME.colors.gradient.pink : THEME.colors.text.secondary}
+            fill={isPriority ? THEME.colors.gradient.pink : 'none'}
+          />
+          <Text style={[
+            styles.priorityToggleText,
+            isPriority && styles.priorityToggleTextActive,
+          ]}>
+            Marcar como prioridad
+          </Text>
+        </TouchableOpacity>
 
         <GradientButton
           title="Soltar"
@@ -202,5 +225,28 @@ const styles = StyleSheet.create({
   recentText: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
+  },
+  priorityToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    padding: THEME.spacing.md,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    marginBottom: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  priorityToggleActive: {
+    backgroundColor: THEME.colors.gradient.pink + '15',
+    borderColor: THEME.colors.gradient.pink,
+  },
+  priorityToggleText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+  },
+  priorityToggleTextActive: {
+    color: THEME.colors.gradient.pink,
+    fontFamily: THEME.fonts.heading.bold,
   },
 });

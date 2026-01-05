@@ -20,7 +20,10 @@ export default function SentirScreen() {
 
   const handleContinue = async () => {
     if (!selectedEmotion) return;
-    router.push('/onboarding/energy');
+    router.push({
+      pathname: '/(tabs)/sentir-energy',
+      params: { emotion: selectedEmotion },
+    });
   };
 
   return (

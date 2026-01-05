@@ -20,7 +20,27 @@ export default function TodayScreen() {
 
   useEffect(() => {
     loadTasks();
+    loadTodayCheckIn();
   }, []);
+
+  const loadTodayCheckIn = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const { data: checkIn } = await supabase
+      .from('daily_check_ins')
+      .select('emotion, energy_level, available_time')
+      .eq('user_id', user.id)
+      .eq('date', today)
+      .single();
+
+    if (checkIn) {
+      setTodayMood(checkIn.emotion.toLowerCase());
+      setEnergy(`${checkIn.energy_level}/5`);
+      setTime(checkIn.available_time);
+    }
+  };
 
   const loadTasks = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -32,8 +52,7 @@ export default function TodayScreen() {
       .eq('user_id', user.id)
       .eq('is_completed', false)
       .eq('is_priority', true)
-      .order('created_at', { ascending: false })
-      .limit(4);
+      .order('created_at', { ascending: false });
 
     if (data) {
       setTasks(data);
@@ -44,17 +63,24 @@ export default function TodayScreen() {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
+    const newCompletedState = !task.is_completed;
+
     await supabase
       .from('tasks')
       .update({
-        is_completed: !task.is_completed,
-        completed_at: !task.is_completed ? new Date().toISOString() : null,
+        is_completed: newCompletedState,
+        completed_at: newCompletedState ? new Date().toISOString() : null,
       })
       .eq('id', taskId);
 
-    setTasks(tasks.map(t =>
-      t.id === taskId ? { ...t, is_completed: !t.is_completed } : t
-    ));
+    // Si se marca como completada, removerla de la lista
+    if (newCompletedState) {
+      setTasks(tasks.filter(t => t.id !== taskId));
+    } else {
+      setTasks(tasks.map(t =>
+        t.id === taskId ? { ...t, is_completed: newCompletedState } : t
+      ));
+    }
   };
 
   const getCategoryColor = (category: string) => {
@@ -84,7 +110,13 @@ export default function TodayScreen() {
               <Text style={styles.moodLabel}>Hoy te sientes</Text>
               <Text style={styles.moodTitle}>{todayMood}</Text>
             </View>
-            <TouchableOpacity style={styles.refreshButton}>
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={() => {
+                loadTasks();
+                loadTodayCheckIn();
+              }}
+            >
               <RefreshCw size={20} color={THEME.colors.fill[100]} />
             </TouchableOpacity>
           </View>
