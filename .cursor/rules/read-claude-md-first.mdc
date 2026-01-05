@@ -1,0 +1,184 @@
+---
+alwaysApply: true
+---
+# Rule: Read CLAUDE.md Before Starting Any Work
+
+## ⚠️ MANDATORY RULE
+
+**ALWAYS read `CLAUDE.md` before:**
+- Starting any coding work
+- Making any changes to the codebase
+- Refactoring existing code
+- Adding new features
+- Fixing bugs
+- Making architectural decisions
+
+## Why This Rule Exists
+
+The `CLAUDE.md` file contains:
+- Project architecture and structure
+- Development workflow and patterns
+- Code quality guidelines
+- Critical rules and best practices
+- Database schema and patterns
+- Supabase integration patterns
+- Common tasks and solutions
+- Known issues and solutions
+- Current state assessment
+- Version history
+
+**Reading this file ensures:**
+- You understand the project structure
+- You follow established patterns
+- You don't break existing functionality
+- You use the correct conventions
+- You're aware of known issues
+- You follow the development workflow
+
+## Required Steps
+
+### Step 1: Read CLAUDE.md
+**Before starting any work, read:**
+- `CLAUDE.md` - Complete development guide
+- Pay special attention to:
+  - Architecture Overview
+  - Development Workflow
+  - Code Quality Guidelines
+  - Critical Rules (especially verification before completion)
+  - Common Tasks
+  - Current State Assessment
+
+### Step 2: Understand Context
+**After reading, ensure you understand:**
+- Project structure and file organization
+- Technology stack and dependencies
+- Database schema and patterns
+- Authentication flow
+- Navigation structure
+- State management approach
+- Styling conventions
+
+### Step 3: Check Related Documentation
+**If relevant, also read:**
+- `.cursor/rules/` - Additional rules and guidelines
+- `development_guidelines/` - Detailed implementation guides
+- `development_guidelines/learnings/` - Known bugs and fixes
+- `development_guidelines/planned/` - Planned improvements
+
+### Step 4: Apply Guidelines
+**When making changes:**
+- Follow patterns established in CLAUDE.md
+- Use the same code structure and conventions
+- Follow the development workflow
+- Apply code quality guidelines
+- Use the same naming conventions
+- Follow the same error handling patterns
+
+## What to Look For in CLAUDE.md
+
+### Architecture
+- Framework and libraries used
+- Project structure
+- File organization
+- Component patterns
+
+### Development Workflow
+- Setup instructions
+- Development commands
+- Testing procedures
+- Build processes
+
+### Code Quality Guidelines
+- TypeScript patterns
+- Component patterns
+- Styling conventions
+- Error handling
+
+### Critical Rules
+- Verification before completion
+- Testing requirements
+- Code review process
+
+### Common Patterns
+- Authentication patterns
+- Database query patterns
+- Navigation patterns
+- State management patterns
+
+### Known Issues
+- Known bugs and fixes
+- Workarounds
+- Limitations
+- Best practices
+
+## Enforcement
+
+**This rule applies to:**
+- All code changes
+- All refactoring work
+- All new features
+- All bug fixes
+- All architectural changes
+- All documentation updates (to ensure consistency)
+
+**Exceptions:**
+- None - This rule always applies
+
+## Example Workflow
+
+```bash
+# 1. Read CLAUDE.md first
+# Read: CLAUDE.md (root of project)
+# Understand: Architecture, patterns, guidelines
+
+# 2. Check related rules
+# Read: .cursor/rules/verify-before-completion.mdc
+# Understand: Verification requirements
+
+# 3. Understand the change needed
+# Based on CLAUDE.md patterns and guidelines
+
+# 4. Make changes following guidelines
+# Use established patterns
+# Follow code quality guidelines
+# Apply verification rules
+
+# 5. Verify changes
+# Run typecheck
+# Run lint
+# Run app
+# Test functionality
+```
+
+## Importance
+
+**Reading CLAUDE.md first is critical because:**
+- Prevents breaking existing patterns
+- Ensures consistency across the codebase
+- Prevents reintroducing known bugs
+- Ensures you follow best practices
+- Helps you understand the "why" behind decisions
+- Prevents architectural mistakes
+- Ensures you use the correct tools and patterns
+
+## Quick Reference
+
+**Before starting any work:**
+1. ✅ Read `CLAUDE.md`
+2. ✅ Understand the project structure
+3. ✅ Review relevant sections
+4. ✅ Check related documentation
+5. ✅ Apply established patterns
+6. ✅ Follow guidelines
+7. ✅ Verify before completion
+
+**Location of CLAUDE.md:**
+- `CLAUDE.md` (root of project)
+
+**Key Sections to Review:**
+- Architecture Overview
+- Development Workflow
+- Code Quality Guidelines
+- Common Tasks
+- Current State Assessment
+- Critical Rules

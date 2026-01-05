@@ -1,0 +1,185 @@
+---
+alwaysApply: true
+---
+# Rule: Verify Changes Before Completion
+
+## ⚠️ CRITICAL RULE
+
+**NEVER mark a change as complete or say "done" without first:**
+1. Running `npx expo-doctor` to check project health
+2. Compiling the app
+3. Running the app
+4. Verifying there are no errors or bugs
+5. Testing the specific functionality that was changed
+
+## Required Steps Before Completion
+
+### Step 0: Project Health Check (EXPO DOCTOR)
+```bash
+npx expo-doctor
+```
+**Must pass all critical checks.** This validates:
+- Required peer dependencies are installed
+- Package versions match Expo SDK requirements
+- Native project sync status (if applicable)
+
+**Critical checks that MUST pass:**
+- ✅ All required peer dependencies installed
+- ✅ No critical package version mismatches
+- ✅ Native project configuration is valid
+
+**If expo-doctor reports critical issues:**
+1. **DO NOT** mark task as complete
+2. Fix missing peer dependencies: `npx expo install <package-name>`
+3. Fix version mismatches: `npx expo install --fix`
+4. Re-run expo-doctor until critical issues are resolved
+5. Document acceptable warnings (non-critical)
+
+**Common fixes:**
+- Missing peer dependency: `npx expo install react-native-worklets` (or other missing package)
+- Version mismatches: `npx expo install --fix`
+- Native sync warnings: Consider removing native folders for EAS builds
+
+### Step 1: Type Check
+```bash
+npm run typecheck
+```
+**Must pass with zero errors.** If there are TypeScript errors, fix them before proceeding.
+
+### Step 2: Lint Check
+```bash
+npm run lint
+```
+**Must pass with zero errors.** Fix any linting errors before proceeding.
+
+### Step 3: Compile and Run
+```bash
+# Start the development server
+npm run dev
+
+# Then test on the appropriate platform:
+# - Press 'w' for web browser
+# - Press 'i' for iOS simulator
+# - Press 'a' for Android emulator
+```
+
+### Step 4: Functional Testing
+**Test the specific functionality you changed:**
+- If you changed navigation → Test navigation flows
+- If you changed auth → Test sign in/sign up
+- If you changed a screen → Test that screen
+- If you changed a component → Test the component
+
+### Step 5: Verify No Errors
+- ✅ No TypeScript compilation errors
+- ✅ No runtime errors in console
+- ✅ No infinite loops
+- ✅ No crashes
+- ✅ App loads successfully
+- ✅ Changed functionality works as expected
+
+## What to Check
+
+### Compilation Errors
+- TypeScript errors (type mismatches, missing properties, etc.)
+- Import errors (missing modules, incorrect paths)
+- Syntax errors
+
+### Runtime Errors
+- Console errors in browser/dev tools
+- App crashes on startup
+- Navigation errors
+- API call errors
+- State management errors
+
+### Functional Bugs
+- Infinite loops
+- Navigation issues
+- Data not loading
+- Forms not submitting
+- Buttons not working
+- UI not rendering correctly
+
+## When to Skip Testing
+
+**Only skip testing if:**
+- Changes are purely documentation (markdown files, comments)
+- Changes are configuration only (no code changes)
+- Changes are in non-executable files (README, .gitignore, etc.)
+
+**Even for documentation changes:**
+- Verify markdown renders correctly
+- Verify links work
+- Verify formatting is correct
+
+## Failure Response
+
+**If tests fail:**
+1. **DO NOT** mark the task as complete
+2. **DO NOT** say "done" or "completed"
+3. **DO** fix the errors
+4. **DO** re-run tests until they pass
+5. **DO** inform the user about the errors and fixes
+
+## Success Criteria
+
+**Only say "done" or "completed" when:**
+- ✅ `npx expo-doctor` passes all critical checks
+- ✅ `npm run typecheck` passes with zero errors
+- ✅ `npm run lint` passes with zero errors (or only acceptable warnings)
+- ✅ App runs without crashes
+- ✅ Changed functionality works correctly
+- ✅ No console errors
+- ✅ No infinite loops
+- ✅ Navigation works as expected
+
+## Example Workflow
+
+```bash
+# 1. Make code changes
+# ... edit files ...
+
+# 2. Run project health check
+npx expo-doctor
+# ✅ All critical checks pass
+
+# 3. Run type check
+npm run typecheck
+# ✅ Passes
+
+# 4. Run lint
+npm run lint
+# ✅ Passes
+
+# 5. Start dev server
+npm run dev
+# ✅ Starts successfully
+
+# 6. Test in browser/simulator
+# ✅ App loads
+# ✅ No errors in console
+# ✅ Changed functionality works
+
+# 7. Now you can say "done"
+```
+
+## Importance
+
+This rule is **CRITICAL** because:
+- Prevents broken code from being committed
+- Catches errors early before they reach production
+- Ensures code quality and reliability
+- Prevents infinite loops and runtime errors
+- Maintains app stability
+
+## Enforcement
+
+**This rule applies to ALL code changes, regardless of:**
+- Size of change (small or large)
+- Type of change (feature, bug fix, refactor)
+- File type (TypeScript, JavaScript, configuration)
+
+**Exceptions:**
+- Documentation-only changes (with verification)
+- Configuration-only changes (with verification)
+- Comments and formatting (with verification)

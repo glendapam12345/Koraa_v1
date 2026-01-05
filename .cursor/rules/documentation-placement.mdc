@@ -1,0 +1,270 @@
+---
+alwaysApply: true
+---
+
+# Rule: Documentation Placement
+
+## ⚠️ MANDATORY RULE
+
+**ALL documentation must be placed in the appropriate subdirectory within `development_guidelines/`.** Do not create documentation files in the root of the project or in the root of `development_guidelines/` unless they are essential reference documents.
+
+---
+
+## Required Location for Documentation
+
+### Primary Location: `development_guidelines/`
+
+All documentation must be placed in one of the following subdirectories:
+
+1. **`development_guidelines/learnings/`** - Bug fixes, troubleshooting guides, lessons learned
+2. **`development_guidelines/planned/`** - Future features, planned work, roadmaps
+3. **`development_guidelines/delivered/`** - Completed features, deliverables, summaries
+4. **`development_guidelines/running/`** - Work in progress, active development
+
+### Exception: Root-Level Files
+
+Only the following essential reference documents are allowed in the root of `development_guidelines/`:
+- `README.md` - Documentation guide (this structure)
+- `HOW_TO_RUN.md` - Essential quick-start guide
+- `QUICK_START_TESTING.md` - Essential testing reference
+
+**Any other documentation must go in a subdirectory.**
+
+---
+
+## Documentation Placement Rules
+
+### Rule 1: Categorize Documentation
+
+**Before creating any documentation, determine its category:**
+
+| Type | Folder | When to Use |
+|------|--------|-------------|
+| **Bug Fix** | `/learnings/` | Documenting a bug fix and solution |
+| **Troubleshooting Guide** | `/learnings/` | Guide for solving common problems |
+| **Configuration Guide** | `/learnings/` | How to configure tools/services |
+| **Planned Feature** | `/planned/` | Feature not yet implemented |
+| **Roadmap Item** | `/planned/` | Future work or improvements |
+| **Completed Feature** | `/delivered/` | Feature that is finished |
+| **Delivery Summary** | `/delivered/` | Summary of completed work |
+| **Active Work** | `/running/` | Work currently in progress |
+
+### Rule 2: Never Create Documentation in Project Root
+
+**❌ FORBIDDEN:**
+- Creating `.md` files in the project root (except `README.md` and `CLAUDE.md`)
+- Creating documentation files outside of `development_guidelines/`
+- Scattering documentation across multiple locations
+
+**✅ CORRECT:**
+- All documentation in `development_guidelines/[subfolder]/`
+- Clear organization by purpose and status
+- Easy to find and maintain
+
+### Rule 3: Update CLAUDE.md for Critical Documentation
+
+**When documentation is highly relevant to the project:**
+
+1. **Create the detailed documentation** in the appropriate `development_guidelines/` folder
+2. **Add a reference in `CLAUDE.md`** - Brief summary with link to full documentation
+3. **Keep detailed content in `development_guidelines/`** - Don't duplicate, link instead
+
+**Update `CLAUDE.md` when:**
+- Documenting critical architecture decisions
+- Adding fundamental patterns or conventions
+- Documenting critical bug fixes that affect development
+- Adding important workflows or processes
+- Documenting critical troubleshooting information
+
+**Example:**
+```markdown
+## Critical Production Issues & Fixes
+
+### ✅ TestFlight Crash Fix (November 27, 2025)
+
+**Problem:** App crashed immediately on launch in TestFlight builds.
+
+**Solution Implemented:**
+- Removed module-level throws in `lib/supabase.ts`
+- Added graceful configuration checking
+
+**Documentation:** See [testflight_crash_fix_missing_env_vars.md](development_guidelines/learnings/testflight_crash_fix_missing_env_vars.md) for complete details.
+```
+
+---
+
+## Required Steps Before Creating Documentation
+
+### Step 1: Determine Category
+
+Ask yourself:
+1. Is this documentation about a completed feature? → `/delivered/`
+2. Is this about a bug fix or troubleshooting? → `/learnings/`
+3. Is this about planned/future work? → `/planned/`
+4. Is this about active work in progress? → `/running/`
+5. Is this an essential quick reference? → Root (rare)
+
+### Step 2: Check Existing Documentation
+
+Before creating new documentation:
+1. Check if similar documentation already exists
+2. Check the appropriate folder for existing files
+3. Consider updating existing documentation instead of creating duplicates
+
+### Step 3: Create Documentation in Correct Location
+
+1. Navigate to the appropriate subdirectory
+2. Create the documentation file with a clear, descriptive name
+3. Follow naming conventions:
+   - Bug fixes: `feature-name_bug-description.md` or `YYYY-MM-DD_bug-description.md`
+   - Guides: `TOOL_NAME_GUIDE.md` or `FEATURE_NAME_GUIDE.md`
+   - Features: `feature-name.md` or `01_feature-name.md` (with priority)
+
+### Step 4: Update CLAUDE.md if Critical
+
+If the documentation is critical to project understanding:
+1. Add a brief summary section in `CLAUDE.md`
+2. Include a link to the detailed documentation
+3. Place it in the appropriate section (e.g., "Critical Production Issues & Fixes")
+
+---
+
+## File Organization Examples
+
+### ✅ CORRECT Placement
+
+```
+development_guidelines/
+├── README.md (root - allowed, essential reference)
+├── HOW_TO_RUN.md (root - allowed, essential reference)
+├── learnings/
+│   ├── testflight_crash_fix_missing_env_vars.md ✅
+│   ├── EAS_ENVIRONMENT_VARIABLES_GUIDE.md ✅
+│   └── 2025-11-11_modal-rendering-bug.md ✅
+├── planned/
+│   ├── 01_component_library.md ✅
+│   └── paywall_implementation.md ✅
+├── delivered/
+│   ├── onboarding_implementation.md ✅
+│   └── PRE_FLIGHT_CHECKLIST.md ✅
+└── running/
+    └── feature-name_wip.md ✅
+```
+
+### ❌ INCORRECT Placement
+
+```
+project-root/
+├── TROUBLESHOOTING.md ❌ (should be in development_guidelines/learnings/)
+├── FEATURE_PLAN.md ❌ (should be in development_guidelines/planned/)
+└── development_guidelines/
+    ├── random-doc.md ❌ (should be in a subdirectory)
+    └── learnings/
+        └── ...
+```
+
+---
+
+## Enforcement
+
+**This rule applies to:**
+- All new documentation creation
+- All documentation updates that involve moving or creating files
+- All AI-generated documentation
+- All manual documentation
+
+**Exceptions:**
+- `README.md` in project root (standard practice)
+- `CLAUDE.md` in project root (project guide)
+- Essential reference files in `development_guidelines/` root (as specified)
+
+**When in doubt:**
+1. Check `development_guidelines/README.md` for guidance
+2. Look at existing documentation structure
+3. Choose the most appropriate subdirectory
+4. If truly essential quick reference, ask before placing in root
+
+---
+
+## Quick Reference
+
+### Creating Documentation Checklist
+
+- [ ] Determined appropriate category (learnings/planned/delivered/running)
+- [ ] Checked if similar documentation exists
+- [ ] Created file in correct subdirectory
+- [ ] Used descriptive file name following conventions
+- [ ] Added proper frontmatter (date, purpose, related)
+- [ ] Considered if `CLAUDE.md` needs updating (for critical docs)
+- [ ] If critical, added reference in `CLAUDE.md` with link
+
+### Moving Existing Documentation
+
+If you find documentation in the wrong location:
+- [ ] Determine correct subdirectory
+- [ ] Move file to correct location
+- [ ] Update any references in `CLAUDE.md` or other docs
+- [ ] Consider if file should be in root (only if essential reference)
+
+---
+
+## Integration with Other Rules
+
+This rule works together with:
+- **`read-claude-md-first.mdc`** - When reading existing documentation
+- **`verify-before-completion.mdc`** - When documenting completed work
+- **`generate-tasks.mdc`** - When creating task documentation
+
+---
+
+## Why This Rule Exists
+
+**Benefits of proper documentation placement:**
+- ✅ Easy to find relevant documentation
+- ✅ Clear organization by purpose and status
+- ✅ Maintains project structure
+- ✅ Prevents documentation sprawl
+- ✅ Makes it clear what's active vs completed
+- ✅ Helps new team members navigate the project
+
+**Problems without this rule:**
+- ❌ Documentation scattered across the project
+- ❌ Hard to find relevant information
+- ❌ Duplicate or conflicting documentation
+- ❌ Unclear project organization
+- ❌ Difficult to maintain
+
+---
+
+## Quick Decision Tree
+
+```
+Is this documentation?
+    │
+    ├─ Yes → Is it essential quick reference?
+    │   │
+    │   ├─ Yes → Root of development_guidelines/ (rare)
+    │   │
+    │   └─ No → What is its status?
+    │       │
+    │       ├─ Bug fix / Troubleshooting / Guide → learnings/
+    │       ├─ Planned / Future work → planned/
+    │       ├─ Completed feature / Deliverable → delivered/
+    │       └─ Active work in progress → running/
+    │
+    └─ No → Not documentation, place according to code organization rules
+```
+
+---
+
+**Location of this rule:**
+- `.cursor/rules/documentation-placement.mdc`
+
+**Related documentation:**
+- `development_guidelines/README.md` - Detailed folder explanations
+- `CLAUDE.md` - Main project guide (should reference detailed docs)
+
+---
+
+**Last Updated:** November 28, 2025  
+**Enforcement:** Always applies - must follow for all documentation creation
