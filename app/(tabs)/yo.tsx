@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
-import { LogOut, Settings, HelpCircle } from 'lucide-react-native';
+import { LogOut, Settings, HelpCircle, Flame } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { ProgressChart } from '@/components/ProgressChart';
 
@@ -16,9 +16,11 @@ type DayData = {
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const [progressData, setProgressData] = useState<DayData[]>([]);
+  const [currentStreak, setCurrentStreak] = useState<number>(0);
 
   useEffect(() => {
     loadProgressData();
+    loadStreak();
   }, [user]);
 
   const loadProgressData = async () => {
@@ -71,6 +73,51 @@ export default function ProfileScreen() {
     router.replace('/onboarding/welcome');
   };
 
+  const loadStreak = async () => {
+    if (!user) return;
+
+    const today = new Date();
+    const checkInDates = new Set<string>();
+
+    // Fetch all check-ins from last 365 days to calculate streak
+    const oneYearAgo = new Date(today);
+    oneYearAgo.setDate(today.getDate() - 365);
+
+    const { data: checkIns } = await supabase
+      .from('daily_check_ins')
+      .select('date')
+      .eq('user_id', user.id)
+      .gte('date', oneYearAgo.toISOString().split('T')[0])
+      .lte('date', today.toISOString().split('T')[0])
+      .order('date', { ascending: false });
+
+    if (checkIns) {
+      checkIns.forEach((checkIn) => {
+        checkInDates.add(checkIn.date);
+      });
+    }
+
+    // Calculate streak from today backwards
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const checkDate = new Date(today);
+      checkDate.setDate(today.getDate() - i);
+      const dateString = checkDate.toISOString().split('T')[0];
+
+      if (checkInDates.has(dateString)) {
+        streak++;
+      } else if (i === 0) {
+        // If today doesn't have check-in, start from yesterday
+        continue;
+      } else {
+        // Break on first day without check-in
+        break;
+      }
+    }
+
+    setCurrentStreak(streak);
+  };
+
   const completedDays = progressData.filter(day => day.hasCheckIn).length;
   const totalDays = progressData.length;
   const consistencyPercentage = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
@@ -90,6 +137,28 @@ export default function ProfileScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Tu progreso</Text>
+          
+          {/* Streak Section */}
+          <View style={styles.streakCard}>
+            <View style={styles.streakContent}>
+              <View style={styles.streakIconContainer}>
+                <Flame size={32} color={THEME.colors.gradient.pink} />
+              </View>
+              <View style={styles.streakTextContainer}>
+                <Text style={styles.streakNumber}>{currentStreak}</Text>
+                <Text style={styles.streakLabel}>
+                  {currentStreak === 1 ? 'día consecutivo' : 'días consecutivos'}
+                </Text>
+              </View>
+            </View>
+            {currentStreak > 0 && (
+              <Text style={styles.streakMessage}>
+                ¡Sigue así! Cada día cuenta{' '}
+                <Text style={styles.accentText}>sintiendo</Text>
+              </Text>
+            )}
+          </View>
+
           <Text style={styles.sectionSubtitle}>
             Consistencia de check-ins en las últimas{' '}
             <Text style={styles.accentText}>2 semanas</Text>
@@ -195,6 +264,40 @@ const styles = StyleSheet.create({
   },
   accentText: {
     fontFamily: THEME.fonts.accent.italic,
+  },
+  streakCard: {
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+    ...THEME.shadows.soft,
+  },
+  streakContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: THEME.spacing.xs,
+  },
+  streakIconContainer: {
+    marginRight: THEME.spacing.sm,
+  },
+  streakTextContainer: {
+    alignItems: 'flex-start',
+  },
+  streakNumber: {
+    ...THEME.typography.h1,
+    color: THEME.colors.text.main,
+    lineHeight: 40,
+  },
+  streakLabel: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+  },
+  streakMessage: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+    marginTop: THEME.spacing.xs,
   },
   progressCard: {
     backgroundColor: THEME.colors.fill[100],
