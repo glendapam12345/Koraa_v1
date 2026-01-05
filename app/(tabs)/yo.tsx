@@ -11,6 +11,8 @@ type DayData = {
   date: string;
   hasCheckIn: boolean;
   dayLabel: string;
+  emotion?: string;
+  energyLevel?: number;
 };
 
 export default function ProfileScreen() {
@@ -29,15 +31,15 @@ export default function ProfileScreen() {
     // Get last 14 days
     const today = new Date();
     const days: DayData[] = [];
-    const checkInDates = new Set<string>();
+    const checkInMap = new Map<string, { emotion: string; energy_level: number }>();
 
-    // Fetch check-ins from last 14 days
+    // Fetch check-ins from last 14 days with emotion and energy_level
     const fourteenDaysAgo = new Date(today);
     fourteenDaysAgo.setDate(today.getDate() - 13); // 14 days total (0-13)
 
     const { data: checkIns } = await supabase
       .from('daily_check_ins')
-      .select('date')
+      .select('date, emotion, energy_level')
       .eq('user_id', user.id)
       .gte('date', fourteenDaysAgo.toISOString().split('T')[0])
       .lte('date', today.toISOString().split('T')[0])
@@ -45,7 +47,10 @@ export default function ProfileScreen() {
 
     if (checkIns) {
       checkIns.forEach((checkIn) => {
-        checkInDates.add(checkIn.date);
+        checkInMap.set(checkIn.date, {
+          emotion: checkIn.emotion,
+          energy_level: checkIn.energy_level,
+        });
       });
     }
 
@@ -58,10 +63,14 @@ export default function ProfileScreen() {
       const dayLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
       const dayLabel = dayLabels[date.getDay()];
 
+      const checkInData = checkInMap.get(dateString);
+
       days.push({
         date: dateString,
-        hasCheckIn: checkInDates.has(dateString),
+        hasCheckIn: !!checkInData,
         dayLabel,
+        emotion: checkInData?.emotion,
+        energyLevel: checkInData?.energy_level,
       });
     }
 
