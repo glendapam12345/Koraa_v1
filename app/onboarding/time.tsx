@@ -1,23 +1,27 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useState } from 'react';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { Clock } from 'lucide-react-native';
 
 const TIME_OPTIONS = [
-  { id: 'poco', label: 'Poco (1-2 hrs)' },
-  { id: 'medio', label: 'Medio (2-4 hrs)' },
-  { id: 'bastante', label: 'Bastante (4-6 hrs)' },
-  { id: 'todo', label: 'Todo el día' },
+  { id: 'Poco (1-2hrs)', label: 'Poco (1-2 hrs)' },
+  { id: 'Medio (2-4hrs)', label: 'Medio (2-4 hrs)' },
+  { id: 'Bastante (4-6hrs)', label: 'Bastante (4-6 hrs)' },
+  { id: 'Todo el día', label: 'Todo el día' },
 ];
 
 export default function TimeScreen() {
+  const { emotion, energy, from } = useLocalSearchParams<{ emotion: string; energy: string; from: string }>();
   const [selectedTime, setSelectedTime] = useState<string>('');
 
   const handleContinue = () => {
-    if (selectedTime) {
-      router.push('/onboarding/focus');
+    if (selectedTime && emotion && energy) {
+      router.push({
+        pathname: '/onboarding/focus',
+        params: { emotion, energy, time: selectedTime, from: from || 'onboarding' },
+      });
     }
   };
 

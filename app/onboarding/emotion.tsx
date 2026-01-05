@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useState } from 'react';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { EmotionCard } from '@/components/EmotionCard';
@@ -16,11 +16,16 @@ const EMOTIONS = [
 ];
 
 export default function EmotionScreen() {
+  const params = useLocalSearchParams();
+  const isFromSentir = params.from === 'sentir';
   const [selectedEmotion, setSelectedEmotion] = useState<string>('');
 
   const handleContinue = () => {
     if (selectedEmotion) {
-      router.push('/onboarding/energy');
+      router.push({
+        pathname: '/onboarding/energy',
+        params: { emotion: selectedEmotion, from: isFromSentir ? 'sentir' : 'onboarding' },
+      });
     }
   };
 

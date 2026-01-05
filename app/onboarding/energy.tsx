@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useState } from 'react';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { Battery } from 'lucide-react-native';
@@ -14,11 +14,15 @@ const ENERGY_LEVELS = [
 ];
 
 export default function EnergyScreen() {
+  const { emotion, from } = useLocalSearchParams<{ emotion: string; from: string }>();
   const [selectedEnergy, setSelectedEnergy] = useState<number>(0);
 
   const handleContinue = () => {
-    if (selectedEnergy > 0) {
-      router.push('/onboarding/time');
+    if (selectedEnergy > 0 && emotion) {
+      router.push({
+        pathname: '/onboarding/time',
+        params: { emotion, energy: selectedEnergy.toString(), from: from || 'onboarding' },
+      });
     }
   };
 

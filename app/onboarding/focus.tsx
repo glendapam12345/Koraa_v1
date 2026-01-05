@@ -1,24 +1,115 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useState } from 'react';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { Focus } from 'lucide-react-native';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 const FOCUS_OPTIONS = [
-  { id: 'muy_distraida', label: 'Muy distraída' },
-  { id: 'algo_distraida', label: 'Algo distraída' },
-  { id: 'normal', label: 'Normal' },
-  { id: 'enfocada', label: 'Enfocada' },
-  { id: 'super_enfocada', label: 'Súper enfocada' },
+  { id: 'Muy distraída', label: 'Muy distraída' },
+  { id: 'Algo distraída', label: 'Algo distraída' },
+  { id: 'Normal', label: 'Normal' },
+  { id: 'Enfocada', label: 'Enfocada' },
+  { id: 'Súper enfocada', label: 'Súper enfocada' },
 ];
 
 export default function FocusScreen() {
+  const { emotion, energy, time, from } = useLocalSearchParams<{ emotion: string; energy: string; time: string; from: string }>();
+  const { user } = useAuth();
   const [selectedFocus, setSelectedFocus] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleContinue = () => {
-    if (selectedFocus) {
-      router.replace('/(tabs)');
+  const prioritizeTasksBasedOnCheckIn = async (energyLevel: number, emotionValue: string) => {
+    if (!user) return;
+
+    // Obtener todas las tareas no completadas
+    const { data: tasks } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_completed', false)
+      .order('created_at', { ascending: false });
+
+    if (!tasks || tasks.length === 0) return;
+
+    // Lógica de priorización:
+    // - Si energía es baja (1-2): priorizar menos tareas (máximo 2)
+    // - Si energía es media (3): priorizar algunas tareas (máximo 3)
+    // - Si energía es alta (4-5): priorizar más tareas (máximo 4-5)
+    // - Emociones negativas (Agotada, Ansiosa, Abrumada): priorizar menos
+    // - Emociones positivas (Tranquila, Enfocada, Motivada): priorizar más
+
+    const negativeEmotions = ['agotada', 'ansiosa', 'abrumada'];
+    const isNegativeEmotion = negativeEmotions.includes(emotionValue.toLowerCase());
+
+    let maxPriorityTasks = 4;
+    if (energyLevel <= 2 || isNegativeEmotion) {
+      maxPriorityTasks = 2;
+    } else if (energyLevel === 3) {
+      maxPriorityTasks = 3;
+    } else if (energyLevel >= 4) {
+      maxPriorityTasks = 5;
+    }
+
+    // Primero, quitar prioridad a todas las tareas
+    await supabase
+      .from('tasks')
+      .update({ is_priority: false })
+      .eq('user_id', user.id)
+      .eq('is_completed', false);
+
+    // Luego, priorizar las primeras N tareas según la energía
+    const tasksToPrioritize = tasks.slice(0, maxPriorityTasks);
+    
+    if (tasksToPrioritize.length > 0) {
+      const taskIds = tasksToPrioritize.map(t => t.id);
+      await supabase
+        .from('tasks')
+        .update({ is_priority: true })
+        .in('id', taskIds);
+    }
+  };
+
+  const handleContinue = async () => {
+    if (!selectedFocus || !emotion || !energy || !time || !user) return;
+
+    setIsSaving(true);
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+
+      // Guardar check-in
+      const { error: checkInError } = await supabase
+        .from('daily_check_ins')
+        .upsert({
+          user_id: user.id,
+          date: today,
+          emotion: emotion.charAt(0).toUpperCase() + emotion.slice(1),
+          energy_level: parseInt(energy),
+          available_time: time,
+          focus_level: selectedFocus,
+        }, { onConflict: 'user_id,date' });
+
+      if (checkInError) {
+        console.error('Error guardando check-in:', checkInError);
+        setIsSaving(false);
+        return;
+      }
+
+      // Priorizar tareas automáticamente basado en el check-in
+      await prioritizeTasksBasedOnCheckIn(parseInt(energy), emotion);
+
+      // Redirigir según el origen
+      if (from === 'sentir') {
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/(tabs)');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setIsSaving(false);
     }
   };
 
@@ -59,9 +150,9 @@ export default function FocusScreen() {
 
       <View style={styles.footer}>
         <GradientButton
-          title="Comenzar →"
+          title={isSaving ? "Guardando..." : (from === 'sentir' ? "Guardar →" : "Comenzar →")}
           onPress={handleContinue}
-          disabled={!selectedFocus}
+          disabled={!selectedFocus || isSaving}
         />
       </View>
     </View>
