@@ -178,7 +178,9 @@ Kora es una app de bienestar que ayuda a los usuarios a organizar su día **bas�
 ### Fase 1 (Corto plazo):
 1. ✅ Gráfica de barras básica (ya implementada)
 2. ✅ Sección de streak (ya implementada)
-3. **Siguiente:** Agregar colores según emoción en las barras (#5)
+3. ✅ Colores según emoción en las barras (#5)
+4. ✅ Animaciones suaves al cargar gráfica
+5. ✅ Leyenda de emociones con colores
 
 ### Fase 2 (Mediano plazo):
 4. Gráfica de calor mensual (#2)

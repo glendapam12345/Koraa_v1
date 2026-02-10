@@ -1,4 +1,11 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { useEffect } from 'react';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withDelay,
+} from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 
@@ -44,49 +51,117 @@ const getEmotionColors = (emotion?: string): readonly [string, string] => {
   }
 };
 
+// Componente de barra animada
+function AnimatedBar({
+  day,
+  index,
+  maxBarHeight,
+  minBarHeight
+}: {
+  day: DayData;
+  index: number;
+  maxBarHeight: number;
+  minBarHeight: number;
+}) {
+  const heightValue = useSharedValue(0);
+
+  useEffect(() => {
+    // Calculate target height
+    let targetHeight = 6;
+    if (day.hasCheckIn && day.energyLevel) {
+      const energyPercentage = day.energyLevel / 5;
+      targetHeight = minBarHeight + (maxBarHeight - minBarHeight) * energyPercentage;
+    } else if (day.hasCheckIn) {
+      targetHeight = maxBarHeight;
+    }
+
+    // Animate with staggered delay
+    heightValue.value = withDelay(
+      index * 40,
+      withSpring(targetHeight, {
+        damping: 12,
+        stiffness: 100,
+      })
+    );
+  }, [day.hasCheckIn, day.energyLevel, index, maxBarHeight, minBarHeight]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    height: heightValue.value,
+  }));
+
+  const emotionColors = getEmotionColors(day.emotion);
+
+  return (
+    <View style={styles.barWrapper}>
+      <View style={styles.barContainer}>
+        {day.hasCheckIn ? (
+          <Animated.View style={[{ overflow: 'hidden' }, animatedStyle]}>
+            <LinearGradient
+              colors={emotionColors}
+              start={{ x: 0, y: 1 }}
+              end={{ x: 0, y: 0 }}
+              style={[styles.bar, { height: maxBarHeight }]}
+            />
+          </Animated.View>
+        ) : (
+          <Animated.View style={[styles.barEmpty, animatedStyle]} />
+        )}
+      </View>
+      <Text style={styles.label}>{day.dayLabel}</Text>
+    </View>
+  );
+}
+
 export function ProgressChart({ data }: ProgressChartProps) {
-  const maxBarHeight = CHART_HEIGHT - 32; // Leave space for labels
-  const minBarHeight = 20; // Minimum height for bars with check-in
+  const maxBarHeight = CHART_HEIGHT - 32;
+  const minBarHeight = 20;
+
+  // Extraer emociones únicas de los datos
+  const emotionsInData = Array.from(
+    new Set(data.filter(d => d.emotion).map(d => d.emotion))
+  );
 
   return (
     <View style={styles.container}>
       <View style={styles.chartContainer}>
         <View style={styles.chart}>
-          {data.map((day) => {
-            // Calculate bar height based on energy level (1-5) or default height
-            let barHeight = 6; // Default for no check-in
-            
-            if (day.hasCheckIn && day.energyLevel) {
-              // Map energy level (1-5) to bar height
-              const energyPercentage = day.energyLevel / 5;
-              barHeight = minBarHeight + (maxBarHeight - minBarHeight) * energyPercentage;
-            } else if (day.hasCheckIn) {
-              // Fallback if no energy level but has check-in
-              barHeight = maxBarHeight;
-            }
-
-            const emotionColors = getEmotionColors(day.emotion);
-
-            return (
-              <View key={day.date} style={styles.barWrapper}>
-                <View style={styles.barContainer}>
-                  {day.hasCheckIn ? (
-                    <LinearGradient
-                      colors={emotionColors}
-                      start={{ x: 0, y: 1 }}
-                      end={{ x: 0, y: 0 }}
-                      style={[styles.bar, { height: barHeight }]}
-                    />
-                  ) : (
-                    <View style={[styles.barEmpty, { height: barHeight }]} />
-                  )}
-                </View>
-                <Text style={styles.label}>{day.dayLabel}</Text>
-              </View>
-            );
-          })}
+          {data.map((day, index) => (
+            <AnimatedBar
+              key={day.date}
+              day={day}
+              index={index}
+              maxBarHeight={maxBarHeight}
+              minBarHeight={minBarHeight}
+            />
+          ))}
         </View>
       </View>
+
+      {/* Leyenda de emociones */}
+      {emotionsInData.length > 0 && (
+        <View style={styles.legendContainer}>
+          <Text style={styles.legendTitle}>Colores por emoción:</Text>
+          <View style={styles.legendItems}>
+            {emotionsInData.map((emotion) => {
+              const colors = getEmotionColors(emotion);
+              return (
+                <View key={emotion} style={styles.legendItem}>
+                  <LinearGradient
+                    colors={colors}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.legendColor}
+                  />
+                  <Text style={styles.legendText}>{emotion}</Text>
+                </View>
+              );
+            })}
+          </View>
+          <Text style={styles.legendNote}>
+            La altura indica el nivel de energía (1-5)
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -133,5 +208,45 @@ const styles = StyleSheet.create({
     fontSize: 9,
     textAlign: 'center',
     width: BAR_WIDTH + 4,
+  },
+  legendContainer: {
+    marginTop: THEME.spacing.md,
+    paddingTop: THEME.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.stroke[100],
+  },
+  legendTitle: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.xs,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  legendItems: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.xs,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: THEME.spacing.xs,
+  },
+  legendColor: {
+    width: 16,
+    height: 16,
+    borderRadius: THEME.borderRadius.standard / 2,
+  },
+  legendText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.main,
+    fontSize: 11,
+  },
+  legendNote: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    marginTop: THEME.spacing.xs,
+    fontSize: 10,
+    fontStyle: 'italic',
   },
 });

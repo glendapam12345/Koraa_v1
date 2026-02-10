@@ -40,6 +40,13 @@ Move files from `running/` to here when:
 
 Keep the same name as in `running/` when moving files here.
 
+## Recently Completed
+
+- **haptic-feedback-tareas.md** (Feb 10, 2026) - Added haptic feedback when completing tasks
+- **animaciones-grafica-progreso.md** (Feb 10, 2026) - Added smooth spring animations to progress chart bars
+- **grafica-leyenda-emociones.md** (Feb 10, 2026) - Added emotion color legend to progress chart
+- **mejoras-visuales-progreso.md** - Visual improvements to progress tracking
+
 ## Template Addition
 
 When moving from `running/`, add:
