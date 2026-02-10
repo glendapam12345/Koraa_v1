@@ -173,14 +173,16 @@ export default function TodayScreen() {
             // Si todas las subtareas están completadas y la tarea principal no lo estaba
             if (allSubtasksCompleted && !wasParentCompleted) {
               // Marcar tarea principal como completada en la base de datos
-              supabase
-                .from('tasks')
-                .update({
-                  is_completed: true,
-                  completed_at: new Date().toISOString(),
-                })
-                .eq('id', parentTaskId)
-                .then(() => {
+              (async () => {
+                try {
+                  await supabase
+                    .from('tasks')
+                    .update({
+                      is_completed: true,
+                      completed_at: new Date().toISOString(),
+                    })
+                    .eq('id', parentTaskId);
+
                   // Limpiar timeout anterior si existe
                   if (timeoutRef.current) {
                     clearTimeout(timeoutRef.current);
@@ -190,20 +192,22 @@ export default function TodayScreen() {
                     loadTasks();
                     timeoutRef.current = null;
                   }, 200);
-                })
-                .catch((error) => {
+                } catch (error) {
                   console.error('Error actualizando tarea principal:', error);
-                });
+                }
+              })();
             } else if (!allSubtasksCompleted && wasParentCompleted) {
               // Desmarcar tarea principal si se desmarcó una subtarea
-              supabase
-                .from('tasks')
-                .update({
-                  is_completed: false,
-                  completed_at: null,
-                })
-                .eq('id', parentTaskId)
-                .then(() => {
+              (async () => {
+                try {
+                  await supabase
+                    .from('tasks')
+                    .update({
+                      is_completed: false,
+                      completed_at: null,
+                    })
+                    .eq('id', parentTaskId);
+
                   // Limpiar timeout anterior si existe
                   if (timeoutRef.current) {
                     clearTimeout(timeoutRef.current);
@@ -212,10 +216,10 @@ export default function TodayScreen() {
                     loadTasks();
                     timeoutRef.current = null;
                   }, 200);
-                })
-                .catch((error) => {
+                } catch (error) {
                   console.error('Error actualizando tarea principal:', error);
-                });
+                }
+              })();
             }
             
             return {
