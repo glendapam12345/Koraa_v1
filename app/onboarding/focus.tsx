@@ -127,6 +127,9 @@ export default function FocusScreen() {
       // Priorizar tareas automáticamente basado en el check-in
       await prioritizeTasksBasedOnCheckIn(energyLevel, emotion);
 
+      // Resetear estado de guardado antes de mostrar el alert
+      setIsSaving(false);
+
       // Mostrar mensaje de éxito
       Alert.alert('¡Listo!', 'Tu check-in se guardó correctamente y tus tareas fueron priorizadas.', [
         {
