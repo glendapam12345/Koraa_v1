@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,6 +7,8 @@ import { LogOut, Settings, HelpCircle, Zap } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '@/lib/supabase';
 import { ProgressChart } from '@/components/ProgressChart';
+import { ConfettiCelebration } from '@/components/ConfettiCelebration';
+import * as Haptics from 'expo-haptics';
 
 type DayData = {
   date: string;
@@ -20,6 +22,8 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const [progressData, setProgressData] = useState<DayData[]>([]);
   const [currentStreak, setCurrentStreak] = useState<number>(0);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [previousStreak, setPreviousStreak] = useState<number>(0);
 
   const loadProgressData = useCallback(async () => {
     if (!user) return;
@@ -122,6 +126,25 @@ export default function ProfileScreen() {
     loadProgressData();
     loadStreak();
   }, [loadProgressData, loadStreak]);
+
+  // Detectar cuando se alcanza un milestone de streak y mostrar confetti
+  useEffect(() => {
+    if (currentStreak > 0 && previousStreak !== currentStreak) {
+      // Celebrar cada 7 días (7, 14, 21, 28, etc.)
+      if (currentStreak % 7 === 0 && currentStreak > previousStreak) {
+        setShowConfetti(true);
+        if (Platform.OS !== 'web') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+        // Ocultar confetti después de 3 segundos
+        const timer = setTimeout(() => {
+          setShowConfetti(false);
+        }, 3000);
+        return () => clearTimeout(timer);
+      }
+      setPreviousStreak(currentStreak);
+    }
+  }, [currentStreak, previousStreak]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -241,6 +264,9 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Confetti celebración */}
+      {showConfetti && <ConfettiCelebration />}
+
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.avatar}>

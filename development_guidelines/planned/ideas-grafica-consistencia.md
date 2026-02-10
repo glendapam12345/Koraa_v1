@@ -197,19 +197,24 @@ Kora es una app de bienestar que ayuda a los usuarios a organizar su día **bas�
 ## 💭 Ideas Adicionales
 
 ### Micro-interacciones:
+- ✅ Animación cuando se completan todas las tareas del día (implementado)
+- ✅ Confetti cuando se alcanza un streak de 7 días (implementado)
+- ✅ Vibración sutil al completar tareas (implementado)
 - Animación cuando se completa un check-in
-- Confetti cuando se alcanza un streak de 7 días
-- Vibración sutil al ver progreso positivo
 
 ### Mensajes Motivacionales:
-- "¡Llevas 5 días consecutivos sintiendo!" 
-- "Tu energía promedio esta semana: 4/5 🌟"
-- "Esta semana te sentiste más tranquila que la pasada"
+- ✅ "¡Llevas N días consecutivos sintiendo!" (implementado)
+- ✅ Sistema de niveles de racha (Comenzando, En camino, Consistente, etc.) (implementado)
+- ✅ Mensajes contextuales según nivel ("¡Cada día cuenta!", "¡Buen comienzo!") (implementado)
+- "Tu energía promedio esta semana: 4/5 🌟" (pendiente)
+- "Esta semana te sentiste más tranquila que la pasada" (pendiente)
 
 ### Insights Automáticos:
-- "Notamos que los lunes tienes menos energía"
-- "Tu mejor día de la semana fue el miércoles"
-- "Llevas 3 semanas mejorando tu consistencia"
+- ✅ "Tu mejor día fue el miércoles con energía 5/5" (implementado)
+- ✅ "Tu energía promedio: 3.8/5" (implementado)
+- ✅ "Te has sentido mayormente tranquila" (implementado)
+- "Notamos que los lunes tienes menos energía" (pendiente - requiere análisis por día de semana)
+- "Llevas 3 semanas mejorando tu consistencia" (pendiente - requiere comparación temporal)
 
 ---
 

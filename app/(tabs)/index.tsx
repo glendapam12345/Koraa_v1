@@ -497,6 +497,30 @@ export default function TodayScreen() {
             </TouchableOpacity>
           )}
 
+          {/* Resumen diario */}
+          {todayMood && totalPriorityTasks > 0 && (
+            <View style={styles.summaryCard}>
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Emoción</Text>
+                  <Text style={styles.summaryValue}>{todayMood}</Text>
+                </View>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Energía</Text>
+                  <Text style={styles.summaryValue}>{energyLevel}/5</Text>
+                </View>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Completadas</Text>
+                  <Text style={styles.summaryValue}>
+                    {completedToday}/{totalPriorityTasks}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+
           {/* Indicador de progreso */}
           {totalPriorityTasks > 0 && (
             <View style={styles.progressIndicator}>
@@ -1243,5 +1267,37 @@ const styles = StyleSheet.create({
     color: THEME.colors.fill[100],
     textAlign: 'center',
     opacity: 0.9,
+  },
+  summaryCard: {
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+    ...THEME.shadows.soft,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  summaryItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  summaryLabel: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.xs,
+  },
+  summaryValue: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  summaryDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: THEME.colors.stroke[100],
+    marginHorizontal: THEME.spacing.sm,
   },
 });
