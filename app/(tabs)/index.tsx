@@ -17,6 +17,7 @@ export default function TodayScreen() {
   const [todayMood, setTodayMood] = useState<string>('');
   const [energy, setEnergy] = useState<string>('');
   const [time, setTime] = useState<string>('');
+  const [energyLevel, setEnergyLevel] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [loadingTasks, setLoadingTasks] = useState(false);
 
@@ -46,10 +47,12 @@ export default function TodayScreen() {
       if (checkIn) {
         setTodayMood(checkIn.emotion.toLowerCase());
         setEnergy(`${checkIn.energy_level}/5`);
+        setEnergyLevel(checkIn.energy_level);
         setTime(checkIn.available_time);
       } else {
         setTodayMood('');
         setEnergy('');
+        setEnergyLevel(0);
         setTime('');
       }
     } catch (error) {
@@ -69,8 +72,8 @@ export default function TodayScreen() {
         .from('tasks')
         .select('*')
         .eq('user_id', user.id)
-        .eq('is_completed', false)
         .eq('is_priority', true)
+        .order('is_completed', { ascending: true })
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -111,14 +114,10 @@ export default function TodayScreen() {
         return;
       }
 
-      // Si se marca como completada, removerla de la lista
-      if (newCompletedState) {
-        setTasks(tasks.filter(t => t.id !== taskId));
-      } else {
-        setTasks(tasks.map(t =>
-          t.id === taskId ? { ...t, is_completed: newCompletedState } : t
-        ));
-      }
+      // Actualizar estado local (mantener tareas completadas para mostrar progreso)
+      setTasks(tasks.map(t =>
+        t.id === taskId ? { ...t, is_completed: newCompletedState } : t
+      ));
     } catch (error) {
       console.error('Error inesperado:', error);
       Alert.alert('Error', 'Ocurrió un error al actualizar la tarea');
@@ -137,6 +136,46 @@ export default function TodayScreen() {
         return THEME.colors.text.secondary;
     }
   };
+
+  // Calcular tareas completadas y no completadas
+  const incompleteTasks = tasks.filter(t => !t.is_completed);
+  const completedToday = tasks.filter(t => t.is_completed).length;
+  const totalPriorityTasks = incompleteTasks.length + completedToday;
+  const progressPercentage = totalPriorityTasks > 0 ? (completedToday / totalPriorityTasks) * 100 : 0;
+
+  // Función para obtener mensaje explicativo basado en energía y emoción
+  const getPriorityExplanation = () => {
+    if (!todayMood || energyLevel === 0) {
+      return {
+        title: 'Tu plan de hoy',
+        message: 'Haz tu check-in en "Sentir" para ver tus prioridades basadas en cómo te sientes.',
+        suggestion: '',
+      };
+    }
+
+    const negativeEmotions = ['agotada', 'ansiosa', 'abrumada'];
+    const isNegativeEmotion = negativeEmotions.includes(todayMood.toLowerCase());
+
+    let suggestion = '';
+    if (energyLevel <= 2 || isNegativeEmotion) {
+      suggestion = 'Menos es más cuando tu energía está baja. Enfócate en lo esencial.';
+    } else if (energyLevel === 3) {
+      suggestion = 'Tienes energía moderada. Prioriza lo importante.';
+    } else if (energyLevel >= 4) {
+      suggestion = '¡Tienes energía para más! Aprovecha este momento.';
+    }
+
+    const emotionLabel = todayMood.charAt(0).toUpperCase() + todayMood.slice(1);
+    const priorityCount = incompleteTasks.length;
+
+    return {
+      title: 'Tu plan de hoy',
+      message: `Con tu energía de ${energyLevel}/5 y sintiéndote ${emotionLabel}, te sugerimos enfocarte en ${priorityCount} ${priorityCount === 1 ? 'tarea prioritaria' : 'tareas prioritarias'} hoy.`,
+      suggestion,
+    };
+  };
+
+  const explanation = getPriorityExplanation();
 
   return (
     <View style={styles.container}>
@@ -173,11 +212,54 @@ export default function TodayScreen() {
         </LinearGradient>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tu enfoque de hoy</Text>
-          <Text style={styles.sectionSubtitle}>
-            Basado en cómo te sientes, estas son tus{' '}
-            <Text style={styles.accentText}>prioridades</Text> de hoy.
-          </Text>
+          <Text style={styles.sectionTitle}>{explanation.title}</Text>
+          
+          {/* Mensaje explicativo */}
+          {incompleteTasks.length > 0 && (
+            <View style={styles.explanationCard}>
+              <Text style={styles.explanationText}>
+                {explanation.message}
+              </Text>
+              {explanation.suggestion && (
+                <Text style={styles.explanationSuggestion}>
+                  {explanation.suggestion}
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Mensaje cuando no hay check-in o no hay tareas */}
+          {(!todayMood || incompleteTasks.length === 0) && tasks.length === 0 && (
+            <View style={styles.explanationCard}>
+              <Text style={styles.explanationText}>
+                {explanation.message}
+              </Text>
+            </View>
+          )}
+
+          {/* Indicador de progreso */}
+          {totalPriorityTasks > 0 && (
+            <View style={styles.progressIndicator}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressLabel}>
+                  Progreso de hoy
+                </Text>
+                <Text style={styles.progressCount}>
+                  {completedToday} de {totalPriorityTasks}
+                </Text>
+              </View>
+              <View style={styles.progressBarContainer}>
+                <View style={styles.progressBar}>
+                  <View 
+                    style={[
+                      styles.progressFill, 
+                      { width: `${progressPercentage}%` }
+                    ]} 
+                  />
+                </View>
+              </View>
+            </View>
+          )}
         </View>
 
         <View style={styles.tasksContainer}>
@@ -193,42 +275,85 @@ export default function TodayScreen() {
               </Text>
             </View>
           ) : (
-            tasks.map((task) => (
-              <TouchableOpacity
-                key={task.id}
-                onPress={() => toggleTask(task.id)}
-                style={[
-                  styles.taskCard,
-                  task.is_completed && styles.taskCardCompleted,
-                ]}
-                activeOpacity={0.7}
-              >
-                <View style={styles.taskCheckbox}>
-                  {task.is_completed && <View style={styles.taskCheckboxChecked} />}
-                </View>
-                <View style={styles.taskContent}>
-                  <Text style={[
-                    styles.taskText,
-                    task.is_completed && styles.taskTextCompleted,
-                  ]}>
-                    {task.content}
-                  </Text>
-                  {task.category && (
-                    <View style={[
-                      styles.categoryBadge,
-                      { backgroundColor: getCategoryColor(task.category) + '20' },
-                    ]}>
-                      <Text style={[
-                        styles.categoryText,
-                        { color: getCategoryColor(task.category) },
-                      ]}>
-                        {task.category}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            ))
+            (() => {
+              // Separar tareas completadas y no completadas (ya calculado arriba)
+              const completedTasks = tasks.filter(t => t.is_completed);
+              
+              return (
+                <>
+                  {/* Tareas no completadas con números */}
+                  {incompleteTasks.map((task, index) => (
+                    <TouchableOpacity
+                      key={task.id}
+                      onPress={() => toggleTask(task.id)}
+                      style={styles.taskCard}
+                      activeOpacity={0.7}
+                    >
+                      {/* Número de prioridad */}
+                      <View style={styles.priorityNumberContainer}>
+                        <View style={styles.priorityNumber}>
+                          <Text style={styles.priorityNumberText}>{index + 1}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.taskCheckbox}>
+                        {task.is_completed && <View style={styles.taskCheckboxChecked} />}
+                      </View>
+                      <View style={styles.taskContent}>
+                        <Text style={styles.taskText}>
+                          {task.content}
+                        </Text>
+                        {task.category && (
+                          <View style={[
+                            styles.categoryBadge,
+                            { backgroundColor: getCategoryColor(task.category) + '20' },
+                          ]}>
+                            <Text style={[
+                              styles.categoryText,
+                              { color: getCategoryColor(task.category) },
+                            ]}>
+                              {task.category}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                  
+                  {/* Tareas completadas sin números */}
+                  {completedTasks.map((task) => (
+                    <TouchableOpacity
+                      key={task.id}
+                      onPress={() => toggleTask(task.id)}
+                      style={[styles.taskCard, styles.taskCardCompleted]}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.taskCheckbox}>
+                        {task.is_completed && <View style={styles.taskCheckboxChecked} />}
+                      </View>
+                      <View style={styles.taskContent}>
+                        <Text style={[styles.taskText, styles.taskTextCompleted]}>
+                          {task.content}
+                        </Text>
+                        {task.category && (
+                          <View style={[
+                            styles.categoryBadge,
+                            { backgroundColor: getCategoryColor(task.category) + '20' },
+                          ]}>
+                            <Text style={[
+                              styles.categoryText,
+                              { color: getCategoryColor(task.category) },
+                            ]}>
+                              {task.category}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </>
+              );
+            })()
           )}
         </View>
       </ScrollView>
@@ -298,6 +423,59 @@ const styles = StyleSheet.create({
   accentText: {
     fontFamily: THEME.fonts.accent.italic,
   },
+  explanationCard: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+  },
+  explanationText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    lineHeight: 24,
+    marginBottom: THEME.spacing.xs,
+  },
+  explanationSuggestion: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.pink,
+    fontFamily: THEME.fonts.heading.medium,
+    marginTop: THEME.spacing.xs,
+  },
+  progressIndicator: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: THEME.spacing.xs,
+  },
+  progressLabel: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+  },
+  progressCount: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  progressBarContainer: {
+    width: '100%',
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: THEME.colors.stroke[100],
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: THEME.colors.gradient.blue,
+    borderRadius: 4,
+  },
   tasksContainer: {
     gap: THEME.spacing.sm,
   },
@@ -321,6 +499,24 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: THEME.spacing.sm,
     ...THEME.shadows.soft,
+  },
+  priorityNumberContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  priorityNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: THEME.colors.gradient.blue,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  priorityNumberText: {
+    ...THEME.typography.body,
+    color: THEME.colors.fill[100],
+    fontFamily: THEME.fonts.heading.bold,
+    fontSize: 16,
   },
   taskCardCompleted: {
     opacity: 0.6,
