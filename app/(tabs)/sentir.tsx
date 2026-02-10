@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { THEME } from '@/constants/theme';
 import { EmotionCard } from '@/components/EmotionCard';
 import { GradientButton } from '@/components/GradientButton';
-import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 
 const EMOTIONS = [

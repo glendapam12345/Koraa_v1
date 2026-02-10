@@ -1,9 +1,9 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
-import { LogOut, Settings, HelpCircle, Flame, Zap, Star } from 'lucide-react-native';
+import { LogOut, Settings, HelpCircle, Zap } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '@/lib/supabase';
 import { ProgressChart } from '@/components/ProgressChart';
@@ -21,12 +21,7 @@ export default function ProfileScreen() {
   const [progressData, setProgressData] = useState<DayData[]>([]);
   const [currentStreak, setCurrentStreak] = useState<number>(0);
 
-  useEffect(() => {
-    loadProgressData();
-    loadStreak();
-  }, [user]);
-
-  const loadProgressData = async () => {
+  const loadProgressData = useCallback(async () => {
     if (!user) return;
 
     // Get last 14 days
@@ -60,7 +55,7 @@ export default function ProfileScreen() {
       const date = new Date(today);
       date.setDate(today.getDate() - i);
       const dateString = date.toISOString().split('T')[0];
-      
+
       const dayLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
       const dayLabel = dayLabels[date.getDay()];
 
@@ -76,14 +71,9 @@ export default function ProfileScreen() {
     }
 
     setProgressData(days);
-  };
+  }, [user]);
 
-  const handleSignOut = async () => {
-    await signOut();
-    router.replace('/onboarding/welcome');
-  };
-
-  const loadStreak = async () => {
+  const loadStreak = useCallback(async () => {
     if (!user) return;
 
     const today = new Date();
@@ -126,6 +116,16 @@ export default function ProfileScreen() {
     }
 
     setCurrentStreak(streak);
+  }, [user]);
+
+  useEffect(() => {
+    loadProgressData();
+    loadStreak();
+  }, [loadProgressData, loadStreak]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace('/onboarding/welcome');
   };
 
   const createTestCheckIns = async () => {
@@ -189,49 +189,49 @@ export default function ProfileScreen() {
   // Función para obtener el nivel de racha y sus colores
   const getStreakLevel = (streak: number) => {
     if (streak >= 90) {
-      return { 
-        label: 'Maestra', 
+      return {
+        label: 'Maestra',
         icon: '⭐',
-        colors: [THEME.colors.gradient.pink, '#FFD700'],
+        colors: [THEME.colors.gradient.pink, '#FFD700'] as const,
         message: '¡Eres una maestra de la consistencia!'
       };
     }
     if (streak >= 60) {
-      return { 
-        label: 'Experta', 
+      return {
+        label: 'Experta',
         icon: '🌟',
-        colors: [THEME.colors.gradient.pink, '#FFA500'],
+        colors: [THEME.colors.gradient.pink, '#FFA500'] as const,
         message: '¡Nivel experto alcanzado!'
       };
     }
     if (streak >= 30) {
-      return { 
-        label: 'Avanzada', 
+      return {
+        label: 'Avanzada',
         icon: '✨',
-        colors: [THEME.colors.gradient.blue, THEME.colors.gradient.pink],
+        colors: [THEME.colors.gradient.blue, THEME.colors.gradient.pink] as const,
         message: '¡Racha avanzada! Sigue así'
       };
     }
     if (streak >= 14) {
-      return { 
-        label: 'Consistente', 
+      return {
+        label: 'Consistente',
         icon: '💫',
-        colors: [THEME.colors.gradient.blue, '#9B59B6'],
+        colors: [THEME.colors.gradient.blue, '#9B59B6'] as const,
         message: '¡Excelente consistencia!'
       };
     }
     if (streak >= 7) {
-      return { 
-        label: 'En camino', 
+      return {
+        label: 'En camino',
         icon: '🔥',
-        colors: [THEME.colors.gradient.blue, THEME.colors.gradient.pink],
+        colors: [THEME.colors.gradient.blue, THEME.colors.gradient.pink] as const,
         message: '¡Buen comienzo! Sigue así'
       };
     }
-    return { 
-      label: 'Comenzando', 
+    return {
+      label: 'Comenzando',
       icon: '🔥',
-      colors: [THEME.colors.gradient.blue, THEME.colors.gradient.pink],
+      colors: [THEME.colors.gradient.blue, THEME.colors.gradient.pink] as const,
       message: '¡Cada día cuenta!'
     };
   };

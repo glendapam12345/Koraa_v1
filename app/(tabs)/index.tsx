@@ -453,7 +453,7 @@ export default function TodayScreen() {
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>
                 No tienes tareas priorizadas aún.{'\n'}
-                Ve a "Vaciar" para agregar tus pendientes.
+                Ve a &ldquo;Vaciar&rdquo; para agregar tus pendientes.
               </Text>
             </View>
           ) : (

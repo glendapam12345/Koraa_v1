@@ -19,28 +19,28 @@ const BAR_WIDTH = 16;
 const BAR_SPACING = 4;
 
 // Función para obtener colores según emoción
-const getEmotionColors = (emotion?: string): string[] => {
+const getEmotionColors = (emotion?: string): readonly [string, string] => {
   if (!emotion) {
-    return [THEME.colors.gradient.blue, THEME.colors.gradient.pink];
+    return [THEME.colors.gradient.blue, THEME.colors.gradient.pink] as const;
   }
 
   const emotionLower = emotion.toLowerCase();
-  
+
   switch (emotionLower) {
     case 'tranquila':
-      return ['#6BB6FF', '#4A90E2']; // Azul suave
+      return ['#6BB6FF', '#4A90E2'] as const; // Azul suave
     case 'enfocada':
-      return ['#52C9A2', '#2E9D7A']; // Verde
+      return ['#52C9A2', '#2E9D7A'] as const; // Verde
     case 'motivada':
-      return ['#FFD93D', '#FFB84D']; // Amarillo/Naranja
+      return ['#FFD93D', '#FFB84D'] as const; // Amarillo/Naranja
     case 'ansiosa':
-      return ['#FF9F66', '#FF7F50']; // Naranja suave
+      return ['#FF9F66', '#FF7F50'] as const; // Naranja suave
     case 'agotada':
-      return ['#FF6B6B', '#E55555']; // Rojo suave
+      return ['#FF6B6B', '#E55555'] as const; // Rojo suave
     case 'abrumada':
-      return ['#B794F6', '#9B7EDE']; // Morado suave
+      return ['#B794F6', '#9B7EDE'] as const; // Morado suave
     default:
-      return [THEME.colors.gradient.blue, THEME.colors.gradient.pink];
+      return [THEME.colors.gradient.blue, THEME.colors.gradient.pink] as const;
   }
 };
 
