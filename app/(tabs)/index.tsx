@@ -1,9 +1,10 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { RefreshCw, ChevronDown, ChevronUp, MoreVertical, Edit, Trash2, X } from 'lucide-react-native';
+import { router } from 'expo-router';
 
 type Task = {
   id: string;
@@ -27,10 +28,18 @@ export default function TodayScreen() {
   const [editContent, setEditContent] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadTasks();
     loadTodayCheckIn();
+
+    // Cleanup: limpiar timeout si el componente se desmonta
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
   }, []);
 
   const loadTodayCheckIn = async () => {
@@ -172,8 +181,18 @@ export default function TodayScreen() {
                 })
                 .eq('id', parentTaskId)
                 .then(() => {
+                  // Limpiar timeout anterior si existe
+                  if (timeoutRef.current) {
+                    clearTimeout(timeoutRef.current);
+                  }
                   // Recargar después de actualizar
-                  setTimeout(() => loadTasks(), 200);
+                  timeoutRef.current = setTimeout(() => {
+                    loadTasks();
+                    timeoutRef.current = null;
+                  }, 200);
+                })
+                .catch((error) => {
+                  console.error('Error actualizando tarea principal:', error);
                 });
             } else if (!allSubtasksCompleted && wasParentCompleted) {
               // Desmarcar tarea principal si se desmarcó una subtarea
@@ -185,7 +204,17 @@ export default function TodayScreen() {
                 })
                 .eq('id', parentTaskId)
                 .then(() => {
-                  setTimeout(() => loadTasks(), 200);
+                  // Limpiar timeout anterior si existe
+                  if (timeoutRef.current) {
+                    clearTimeout(timeoutRef.current);
+                  }
+                  timeoutRef.current = setTimeout(() => {
+                    loadTasks();
+                    timeoutRef.current = null;
+                  }, 200);
+                })
+                .catch((error) => {
+                  console.error('Error actualizando tarea principal:', error);
                 });
             }
             
@@ -205,9 +234,13 @@ export default function TodayScreen() {
           t.id === taskId ? { ...t, is_completed: newCompletedState } : t
         ));
       }
+      // Cerrar menú si estaba abierto
+      setMenuOpen(null);
     } catch (error) {
       console.error('Error inesperado:', error);
       Alert.alert('Error', 'Ocurrió un error al actualizar la tarea');
+      // Cerrar menú en caso de error
+      setMenuOpen(null);
     }
   };
 
@@ -256,12 +289,8 @@ export default function TodayScreen() {
         return;
       }
 
-      // Actualizar estado local
-      setTasks(tasks.map(t =>
-        t.id === editingTask.id
-          ? { ...t, content: editContent.trim(), category: editCategory }
-          : t
-      ));
+      // Recargar tareas para asegurar sincronización completa (incluye subtareas si las hay)
+      await loadTasks();
 
       setEditingTask(null);
       setEditContent('');
@@ -278,7 +307,7 @@ export default function TodayScreen() {
       'Eliminar tarea',
       `¿Estás seguro de que quieres eliminar "${task.content}"?${task.subtasks && task.subtasks.length > 0 ? `\n\nSe eliminarán también ${task.subtasks.length} subtareas.` : ''}`,
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Cancelar', style: 'cancel', onPress: () => setMenuOpen(null) },
         {
           text: 'Eliminar',
           style: 'destructive',
@@ -287,10 +316,17 @@ export default function TodayScreen() {
               // Eliminar subtareas primero (si las hay)
               if (task.subtasks && task.subtasks.length > 0) {
                 const subtaskIds = task.subtasks.map(st => st.id);
-                await supabase
+                const { error: subtasksError } = await supabase
                   .from('tasks')
                   .delete()
                   .in('id', subtaskIds);
+
+                if (subtasksError) {
+                  console.error('Error eliminando subtareas:', subtasksError);
+                  Alert.alert('Error', 'No se pudieron eliminar las subtareas. La tarea principal no se eliminó.');
+                  setMenuOpen(null);
+                  return;
+                }
               }
 
               // Eliminar tarea principal
@@ -302,6 +338,7 @@ export default function TodayScreen() {
               if (error) {
                 console.error('Error eliminando tarea:', error);
                 Alert.alert('Error', 'No se pudo eliminar la tarea');
+                setMenuOpen(null);
                 return;
               }
 
@@ -312,6 +349,7 @@ export default function TodayScreen() {
             } catch (error) {
               console.error('Error inesperado:', error);
               Alert.alert('Error', 'Ocurrió un error al eliminar la tarea');
+              setMenuOpen(null);
             }
           },
         },
@@ -396,6 +434,29 @@ export default function TodayScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{explanation.title}</Text>
           
+          {/* Banner de recordatorio de check-in */}
+          {!loading && !todayMood && (
+            <TouchableOpacity
+              style={styles.checkInBanner}
+              onPress={() => router.push('/onboarding/emotion')}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={[THEME.colors.gradient.pink, THEME.colors.gradient.blue]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.checkInBannerGradient}
+              >
+                <Text style={styles.checkInBannerText}>
+                  💭 Haz tu check-in diario para ver tus prioridades
+                </Text>
+                <Text style={styles.checkInBannerSubtext}>
+                  Toca para comenzar →
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+          
           {/* Mensaje explicativo */}
           {incompleteTasks.length > 0 && (
             <View style={styles.explanationCard}>
@@ -411,7 +472,7 @@ export default function TodayScreen() {
           )}
 
           {/* Mensaje cuando no hay check-in o no hay tareas */}
-          {(!todayMood || incompleteTasks.length === 0) && tasks.length === 0 && (
+          {todayMood && incompleteTasks.length === 0 && tasks.length === 0 && (
             <View style={styles.explanationCard}>
               <Text style={styles.explanationText}>
                 {explanation.message}
@@ -1140,5 +1201,28 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.fill[100],
     fontFamily: THEME.fonts.heading.bold,
+  },
+  checkInBanner: {
+    marginBottom: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  checkInBannerGradient: {
+    padding: THEME.spacing.md,
+    alignItems: 'center',
+  },
+  checkInBannerText: {
+    ...THEME.typography.body,
+    color: THEME.colors.fill[100],
+    textAlign: 'center',
+    marginBottom: THEME.spacing.xs,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  checkInBannerSubtext: {
+    ...THEME.typography.caption,
+    color: THEME.colors.fill[100],
+    textAlign: 'center',
+    opacity: 0.9,
   },
 });
