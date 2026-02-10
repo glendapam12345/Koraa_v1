@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
-import { LogOut, Settings, HelpCircle, Flame } from 'lucide-react-native';
+import { LogOut, Settings, HelpCircle, Flame, Zap, Star } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '@/lib/supabase';
 import { ProgressChart } from '@/components/ProgressChart';
 
@@ -185,6 +186,59 @@ export default function ProfileScreen() {
   const totalDays = progressData.length;
   const consistencyPercentage = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
+  // Función para obtener el nivel de racha y sus colores
+  const getStreakLevel = (streak: number) => {
+    if (streak >= 90) {
+      return { 
+        label: 'Maestra', 
+        icon: '⭐',
+        colors: [THEME.colors.gradient.pink, '#FFD700'],
+        message: '¡Eres una maestra de la consistencia!'
+      };
+    }
+    if (streak >= 60) {
+      return { 
+        label: 'Experta', 
+        icon: '🌟',
+        colors: [THEME.colors.gradient.pink, '#FFA500'],
+        message: '¡Nivel experto alcanzado!'
+      };
+    }
+    if (streak >= 30) {
+      return { 
+        label: 'Avanzada', 
+        icon: '✨',
+        colors: [THEME.colors.gradient.blue, THEME.colors.gradient.pink],
+        message: '¡Racha avanzada! Sigue así'
+      };
+    }
+    if (streak >= 14) {
+      return { 
+        label: 'Consistente', 
+        icon: '💫',
+        colors: [THEME.colors.gradient.blue, '#9B59B6'],
+        message: '¡Excelente consistencia!'
+      };
+    }
+    if (streak >= 7) {
+      return { 
+        label: 'En camino', 
+        icon: '🔥',
+        colors: [THEME.colors.gradient.blue, THEME.colors.gradient.pink],
+        message: '¡Buen comienzo! Sigue así'
+      };
+    }
+    return { 
+      label: 'Comenzando', 
+      icon: '🔥',
+      colors: [THEME.colors.gradient.blue, THEME.colors.gradient.pink],
+      message: '¡Cada día cuenta!'
+    };
+  };
+
+  const streakLevel = getStreakLevel(currentStreak);
+  const lightningCount = Math.min(currentStreak, 7); // Máximo 7 rayos visibles
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -202,25 +256,63 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>Tu progreso</Text>
           
           {/* Streak Section */}
-          <View style={styles.streakCard}>
+          <LinearGradient
+            colors={streakLevel.colors}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.streakCard}
+          >
             <View style={styles.streakContent}>
-              <View style={styles.streakIconContainer}>
-                <Flame size={32} color={THEME.colors.gradient.pink} />
-              </View>
-              <View style={styles.streakTextContainer}>
+              {/* Rayos visuales */}
+              {currentStreak > 0 && (
+                <View style={styles.lightningContainer}>
+                  {Array.from({ length: lightningCount }).map((_, i) => (
+                    <Zap
+                      key={i}
+                      size={20}
+                      color={THEME.colors.fill[100]}
+                      fill={THEME.colors.fill[100]}
+                      style={[
+                        styles.lightning,
+                        { transform: [{ rotate: `${i * 15 - 45}deg` }] }
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
+              
+              {/* Número de racha */}
+              <View style={styles.streakNumberContainer}>
                 <Text style={styles.streakNumber}>{currentStreak}</Text>
                 <Text style={styles.streakLabel}>
                   {currentStreak === 1 ? 'día consecutivo' : 'días consecutivos'}
                 </Text>
               </View>
+
+              {/* Nivel de racha */}
+              {currentStreak > 0 && (
+                <View style={styles.streakLevelContainer}>
+                  <Text style={styles.streakLevelIcon}>{streakLevel.icon}</Text>
+                  <Text style={styles.streakLevelLabel}>{streakLevel.label}</Text>
+                </View>
+              )}
             </View>
+
+            {/* Mensaje motivacional */}
             {currentStreak > 0 && (
               <Text style={styles.streakMessage}>
-                ¡Sigue así! Cada día cuenta{' '}
-                <Text style={styles.accentText}>sintiendo</Text>
+                {streakLevel.message}
               </Text>
             )}
-          </View>
+
+            {/* Mensaje cuando no hay racha */}
+            {currentStreak === 0 && (
+              <Text style={styles.streakMessage}>
+                Comienza tu racha haciendo tu primer check-in{' '}
+                <Text style={styles.accentTextWhite}>sintiendo</Text>
+              </Text>
+            )}
+          </LinearGradient>
 
           <Text style={styles.sectionSubtitle}>
             Consistencia de check-ins en las últimas{' '}
@@ -342,38 +434,78 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.accent.italic,
   },
   streakCard: {
-    backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
+    padding: THEME.spacing.lg,
     marginBottom: THEME.spacing.md,
     ...THEME.shadows.soft,
+    minHeight: 140,
+    justifyContent: 'center',
   },
   streakContent: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
+    position: 'relative',
   },
-  streakIconContainer: {
-    marginRight: THEME.spacing.sm,
+  lightningContainer: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+    top: -10,
   },
-  streakTextContainer: {
-    alignItems: 'flex-start',
+  lightning: {
+    position: 'absolute',
+    opacity: 0.8,
+  },
+  streakNumberContainer: {
+    alignItems: 'center',
+    marginTop: THEME.spacing.md,
+    zIndex: 1,
   },
   streakNumber: {
     ...THEME.typography.h1,
-    color: THEME.colors.text.main,
-    lineHeight: 40,
+    color: THEME.colors.fill[100],
+    lineHeight: 48,
+    fontSize: 48,
+    fontFamily: THEME.fonts.heading.bold,
   },
   streakLabel: {
+    ...THEME.typography.body,
+    color: THEME.colors.fill[100],
+    opacity: 0.95,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  streakLevelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    marginTop: THEME.spacing.sm,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.pill,
+    zIndex: 1,
+  },
+  streakLevelIcon: {
+    fontSize: 18,
+  },
+  streakLevelLabel: {
     ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
+    color: THEME.colors.fill[100],
+    fontFamily: THEME.fonts.heading.bold,
   },
   streakMessage: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
+    ...THEME.typography.body,
+    color: THEME.colors.fill[100],
     textAlign: 'center',
     marginTop: THEME.spacing.xs,
+    opacity: 0.95,
+  },
+  accentTextWhite: {
+    fontFamily: THEME.fonts.accent.italic,
+    color: THEME.colors.fill[100],
   },
   progressCard: {
     backgroundColor: THEME.colors.fill[100],
