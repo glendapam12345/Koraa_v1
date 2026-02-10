@@ -1,5 +1,5 @@
 /*
-  # Fix Security Issues
+  # Fix Security Issues - Add Foreign Key Indexes
 
   1. Performance Improvements
     - Add index on `tasks.user_id` foreign key for optimal query performance
