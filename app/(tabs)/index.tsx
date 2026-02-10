@@ -1,9 +1,9 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput } from 'react-native';
 import { useState, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
-import { RefreshCw, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { RefreshCw, ChevronDown, ChevronUp, MoreVertical, Edit, Trash2, X } from 'lucide-react-native';
 
 type Task = {
   id: string;
@@ -23,6 +23,10 @@ export default function TodayScreen() {
   const [energyLevel, setEnergyLevel] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [loadingTasks, setLoadingTasks] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
   useEffect(() => {
     loadTasks();
@@ -220,6 +224,101 @@ export default function TodayScreen() {
     }
   };
 
+  const CATEGORIES = [
+    { id: 'trabajo', label: '💼 Trabajo', color: '#4A90E2' },
+    { id: 'salud', label: '❤️ Salud', color: '#FF6B6B' },
+    { id: 'personal', label: '👤 Personal', color: '#9B59B6' },
+  ];
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setEditContent(task.content);
+    setEditCategory(task.category || '');
+    setMenuOpen(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingTask || !editContent.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          content: editContent.trim(),
+          category: editCategory,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingTask.id);
+
+      if (error) {
+        console.error('Error actualizando tarea:', error);
+        Alert.alert('Error', 'No se pudo actualizar la tarea');
+        return;
+      }
+
+      // Actualizar estado local
+      setTasks(tasks.map(t =>
+        t.id === editingTask.id
+          ? { ...t, content: editContent.trim(), category: editCategory }
+          : t
+      ));
+
+      setEditingTask(null);
+      setEditContent('');
+      setEditCategory('');
+      Alert.alert('¡Listo!', 'Tarea actualizada correctamente');
+    } catch (error) {
+      console.error('Error inesperado:', error);
+      Alert.alert('Error', 'Ocurrió un error al actualizar la tarea');
+    }
+  };
+
+  const handleDeleteTask = (task: Task) => {
+    Alert.alert(
+      'Eliminar tarea',
+      `¿Estás seguro de que quieres eliminar "${task.content}"?${task.subtasks && task.subtasks.length > 0 ? `\n\nSe eliminarán también ${task.subtasks.length} subtareas.` : ''}`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Eliminar subtareas primero (si las hay)
+              if (task.subtasks && task.subtasks.length > 0) {
+                const subtaskIds = task.subtasks.map(st => st.id);
+                await supabase
+                  .from('tasks')
+                  .delete()
+                  .in('id', subtaskIds);
+              }
+
+              // Eliminar tarea principal
+              const { error } = await supabase
+                .from('tasks')
+                .delete()
+                .eq('id', task.id);
+
+              if (error) {
+                console.error('Error eliminando tarea:', error);
+                Alert.alert('Error', 'No se pudo eliminar la tarea');
+                return;
+              }
+
+              // Actualizar estado local
+              setTasks(tasks.filter(t => t.id !== task.id));
+              setMenuOpen(null);
+              Alert.alert('¡Listo!', 'Tarea eliminada correctamente');
+            } catch (error) {
+              console.error('Error inesperado:', error);
+              Alert.alert('Error', 'Ocurrió un error al eliminar la tarea');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // Calcular tareas completadas y no completadas (solo tareas principales, no subtareas)
   const incompleteTasks = tasks.filter(t => !t.is_completed);
   const completedToday = tasks.filter(t => t.is_completed).length;
@@ -374,7 +473,7 @@ export default function TodayScreen() {
                   : 0;
 
                 return (
-                  <View key={task.id}>
+                  <View key={task.id} style={styles.taskWrapper}>
                     <TouchableOpacity
                       onPress={() => {
                         if (hasSubtasks) {
@@ -382,6 +481,7 @@ export default function TodayScreen() {
                         } else {
                           toggleTask(task.id);
                         }
+                        setMenuOpen(null); // Cerrar menú al hacer clic en la tarea
                       }}
                       style={[
                         styles.taskCard,
@@ -461,7 +561,37 @@ export default function TodayScreen() {
                           </View>
                         )}
                       </View>
+
+                      {/* Botón de menú */}
+                      <TouchableOpacity
+                        onPress={() => setMenuOpen(menuOpen === task.id ? null : task.id)}
+                        style={styles.menuButton}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <MoreVertical size={20} color={THEME.colors.text.secondary} />
+                      </TouchableOpacity>
+
                     </TouchableOpacity>
+
+                    {/* Menú desplegable */}
+                    {menuOpen === task.id && (
+                      <View style={styles.menuDropdown}>
+                        <TouchableOpacity
+                          style={styles.menuItem}
+                          onPress={() => handleEditTask(task)}
+                        >
+                          <Edit size={18} color={THEME.colors.text.main} />
+                          <Text style={styles.menuItemText}>Editar</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.menuItem, styles.menuItemDanger]}
+                          onPress={() => handleDeleteTask(task)}
+                        >
+                          <Trash2 size={18} color="#FF6B6B" />
+                          <Text style={[styles.menuItemText, styles.menuItemTextDanger]}>Eliminar</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
 
                     {/* Renderizar subtareas si está expandido */}
                     {hasSubtasks && isExpanded && (
@@ -508,6 +638,103 @@ export default function TodayScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Overlay para cerrar menú al hacer clic fuera */}
+      {menuOpen && (
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={() => setMenuOpen(null)}
+        />
+      )}
+
+      {/* Modal de edición */}
+      <Modal
+        visible={editingTask !== null}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setEditingTask(null);
+          setEditContent('');
+          setEditCategory('');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Editar tarea</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setEditingTask(null);
+                  setEditContent('');
+                  setEditCategory('');
+                }}
+                style={styles.modalCloseButton}
+              >
+                <X size={24} color={THEME.colors.text.main} />
+              </TouchableOpacity>
+            </View>
+
+            <TextInput
+              style={styles.editInput}
+              value={editContent}
+              onChangeText={setEditContent}
+              placeholder="Contenido de la tarea"
+              placeholderTextColor={THEME.colors.text.secondary}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+
+            <Text style={styles.editLabel}>Categoría (opcional)</Text>
+            <View style={styles.editCategoriesGrid}>
+              {CATEGORIES.map((category) => (
+                <TouchableOpacity
+                  key={category.id}
+                  onPress={() => setEditCategory(
+                    editCategory === category.id ? '' : category.id
+                  )}
+                  style={[
+                    styles.editCategoryChip,
+                    editCategory === category.id && {
+                      backgroundColor: category.color + '20',
+                      borderColor: category.color,
+                    },
+                  ]}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.editCategoryChipText,
+                    editCategory === category.id && { color: category.color },
+                  ]}>
+                    {category.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => {
+                  setEditingTask(null);
+                  setEditContent('');
+                  setEditCategory('');
+                }}
+              >
+                <Text style={styles.modalButtonCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSave]}
+                onPress={handleSaveEdit}
+                disabled={!editContent.trim()}
+              >
+                <Text style={styles.modalButtonSaveText}>Guardar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -641,6 +868,10 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  taskWrapper: {
+    position: 'relative',
+    marginBottom: THEME.spacing.sm,
   },
   taskCard: {
     backgroundColor: THEME.colors.fill[100],
@@ -782,5 +1013,132 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     fontSize: 11,
+  },
+  menuButton: {
+    padding: THEME.spacing.xs,
+    marginLeft: THEME.spacing.xs,
+    zIndex: 10,
+  },
+  menuOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
+  },
+  menuDropdown: {
+    position: 'absolute',
+    right: 0,
+    top: 50,
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.standard,
+    padding: THEME.spacing.xs,
+    minWidth: 150,
+    ...THEME.shadows.soft,
+    zIndex: 1000,
+    elevation: 5,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    padding: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.standard,
+  },
+  menuItemDanger: {
+    marginTop: THEME.spacing.xs,
+  },
+  menuItemText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontSize: 14,
+  },
+  menuItemTextDanger: {
+    color: '#FF6B6B',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: THEME.colors.fill[100],
+    borderTopLeftRadius: THEME.borderRadius.rounded,
+    borderTopRightRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.lg,
+    paddingBottom: THEME.spacing.xl * 2,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: THEME.spacing.lg,
+  },
+  modalTitle: {
+    ...THEME.typography.h2,
+    color: THEME.colors.text.main,
+  },
+  modalCloseButton: {
+    padding: THEME.spacing.xs,
+  },
+  editInput: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    minHeight: 100,
+    marginBottom: THEME.spacing.md,
+  },
+  editLabel: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.xs,
+  },
+  editCategoriesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.xs,
+    marginBottom: THEME.spacing.lg,
+  },
+  editCategoryChip: {
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[200],
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  editCategoryChipText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: THEME.spacing.md,
+  },
+  modalButton: {
+    flex: 1,
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    alignItems: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: THEME.colors.fill[200],
+  },
+  modalButtonSave: {
+    backgroundColor: THEME.colors.gradient.blue,
+  },
+  modalButtonCancelText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  modalButtonSaveText: {
+    ...THEME.typography.body,
+    color: THEME.colors.fill[100],
+    fontFamily: THEME.fonts.heading.bold,
   },
 });
