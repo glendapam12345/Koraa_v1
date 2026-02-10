@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { supabase } from '@/lib/supabase';
-import { X, Star } from 'lucide-react-native';
+import { X, Star, Plus, ChevronDown, ChevronUp } from 'lucide-react-native';
 
 const CATEGORIES = [
   { id: 'trabajo', label: '💼 Trabajo', color: '#4A90E2' },
@@ -15,11 +15,38 @@ export default function VaciarScreen() {
   const [taskInput, setTaskInput] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isPriority, setIsPriority] = useState(false);
+  const [hasSubtasks, setHasSubtasks] = useState(false);
+  const [subtasks, setSubtasks] = useState<string[]>(['']);
   const [recentTasks, setRecentTasks] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
+  const addSubtask = () => {
+    setSubtasks([...subtasks, '']);
+  };
+
+  const removeSubtask = (index: number) => {
+    if (subtasks.length > 1) {
+      setSubtasks(subtasks.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateSubtask = (index: number, value: string) => {
+    const newSubtasks = [...subtasks];
+    newSubtasks[index] = value;
+    setSubtasks(newSubtasks);
+  };
+
   const handleAddTask = async () => {
     if (!taskInput.trim()) return;
+    
+    // Validar subtareas si están habilitadas
+    if (hasSubtasks) {
+      const validSubtasks = subtasks.filter(st => st.trim());
+      if (validSubtasks.length === 0) {
+        Alert.alert('Atención', 'Agrega al menos una subtarea o desactiva las subtareas.');
+        return;
+      }
+    }
 
     setIsSaving(true);
 
@@ -31,29 +58,69 @@ export default function VaciarScreen() {
         return;
       }
 
-      const { error } = await supabase.from('tasks').insert({
-        user_id: user.id,
-        content: taskInput.trim(),
-        category: selectedCategory,
-        is_priority: isPriority,
-        is_completed: false,
-      });
+      // Crear tarea principal
+      const { data: mainTask, error: mainTaskError } = await supabase
+        .from('tasks')
+        .insert({
+          user_id: user.id,
+          content: taskInput.trim(),
+          category: selectedCategory,
+          is_priority: isPriority,
+          is_completed: false,
+          parent_task_id: null,
+        })
+        .select()
+        .single();
 
-      if (error) {
-        console.error('Error guardando tarea:', error);
+      if (mainTaskError) {
+        console.error('Error guardando tarea principal:', mainTaskError);
         Alert.alert('Error', 'No se pudo guardar la tarea. Por favor intenta de nuevo.');
         setIsSaving(false);
         return;
+      }
+
+      // Crear subtareas si existen
+      if (hasSubtasks && mainTask) {
+        const validSubtasks = subtasks.filter(st => st.trim());
+        if (validSubtasks.length > 0) {
+          const subtasksToInsert = validSubtasks.map(subtask => ({
+            user_id: user.id,
+            content: subtask.trim(),
+            category: selectedCategory, // Heredan la categoría
+            is_priority: false, // Las subtareas no tienen prioridad independiente
+            is_completed: false,
+            parent_task_id: mainTask.id,
+          }));
+
+          const { error: subtasksError } = await supabase
+            .from('tasks')
+            .insert(subtasksToInsert);
+
+          if (subtasksError) {
+            console.error('Error guardando subtareas:', subtasksError);
+            // Intentar eliminar la tarea principal si fallan las subtareas
+            await supabase.from('tasks').delete().eq('id', mainTask.id);
+            Alert.alert('Error', 'No se pudieron guardar las subtareas. Por favor intenta de nuevo.');
+            setIsSaving(false);
+            return;
+          }
+        }
       }
 
       setRecentTasks([taskInput.trim(), ...recentTasks.slice(0, 4)]);
       setTaskInput('');
       setSelectedCategory('');
       setIsPriority(false);
+      setHasSubtasks(false);
+      setSubtasks(['']);
       
-      if (isPriority) {
-        Alert.alert('¡Tarea agregada!', 'Tu tarea fue marcada como prioridad y aparecerá en "Hoy"');
-      }
+      const message = hasSubtasks 
+        ? `¡Tarea con ${subtasks.filter(st => st.trim()).length} subtareas agregada!${isPriority ? ' Marcada como prioridad.' : ''}`
+        : isPriority 
+          ? '¡Tarea agregada! Tu tarea fue marcada como prioridad y aparecerá en "Hoy"'
+          : '¡Tarea agregada!';
+      
+      Alert.alert('¡Listo!', message);
     } catch (error) {
       console.error('Error inesperado:', error);
       Alert.alert('Error', 'Ocurrió un error inesperado. Por favor intenta de nuevo.');
@@ -145,6 +212,72 @@ export default function VaciarScreen() {
             Marcar como prioridad
           </Text>
         </TouchableOpacity>
+
+        {/* Toggle para subtareas */}
+        <TouchableOpacity
+          style={[
+            styles.subtasksToggle,
+            hasSubtasks && styles.subtasksToggleActive,
+          ]}
+          onPress={() => {
+            setHasSubtasks(!hasSubtasks);
+            if (!hasSubtasks) {
+              setSubtasks(['']);
+            }
+          }}
+          activeOpacity={0.7}
+        >
+          {hasSubtasks ? (
+            <ChevronUp size={20} color={THEME.colors.gradient.blue} />
+          ) : (
+            <ChevronDown size={20} color={THEME.colors.text.secondary} />
+          )}
+          <Text style={[
+            styles.subtasksToggleText,
+            hasSubtasks && styles.subtasksToggleTextActive,
+          ]}>
+            Agregar subtareas
+          </Text>
+        </TouchableOpacity>
+
+        {/* Campos de subtareas */}
+        {hasSubtasks && (
+          <View style={styles.subtasksContainer}>
+            <Text style={styles.subtasksLabel}>
+              Subtareas (divide tu tarea en pasos más pequeños)
+            </Text>
+            {subtasks.map((subtask, index) => (
+              <View key={index} style={styles.subtaskRow}>
+                <View style={styles.subtaskInputContainer}>
+                  <TextInput
+                    style={styles.subtaskInput}
+                    value={subtask}
+                    onChangeText={(value) => updateSubtask(index, value)}
+                    placeholder={`Subtarea ${index + 1}`}
+                    placeholderTextColor={THEME.colors.text.secondary}
+                  />
+                </View>
+                {subtasks.length > 1 && (
+                  <TouchableOpacity
+                    style={styles.removeSubtaskButton}
+                    onPress={() => removeSubtask(index)}
+                    activeOpacity={0.7}
+                  >
+                    <X size={18} color={THEME.colors.text.secondary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+            <TouchableOpacity
+              style={styles.addSubtaskButton}
+              onPress={addSubtask}
+              activeOpacity={0.7}
+            >
+              <Plus size={18} color={THEME.colors.gradient.blue} />
+              <Text style={styles.addSubtaskText}>Agregar otra subtarea</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <GradientButton
           title={isSaving ? "Guardando..." : "Soltar"}
@@ -271,5 +404,75 @@ const styles = StyleSheet.create({
   priorityToggleTextActive: {
     color: THEME.colors.gradient.pink,
     fontFamily: THEME.fonts.heading.bold,
+  },
+  subtasksToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    padding: THEME.spacing.md,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    marginBottom: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  subtasksToggleActive: {
+    backgroundColor: THEME.colors.gradient.blue + '15',
+    borderColor: THEME.colors.gradient.blue,
+  },
+  subtasksToggleText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+  },
+  subtasksToggleTextActive: {
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  subtasksContainer: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+  },
+  subtasksLabel: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.sm,
+  },
+  subtaskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    marginBottom: THEME.spacing.xs,
+  },
+  subtaskInputContainer: {
+    flex: 1,
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.standard,
+    padding: THEME.spacing.sm,
+  },
+  subtaskInput: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+  },
+  removeSubtaskButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.standard,
+  },
+  addSubtaskButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    padding: THEME.spacing.sm,
+    marginTop: THEME.spacing.xs,
+  },
+  addSubtaskText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
   },
 });

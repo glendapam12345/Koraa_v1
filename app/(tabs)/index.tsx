@@ -3,17 +3,20 @@ import { useState, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
-import { RefreshCw } from 'lucide-react-native';
+import { RefreshCw, ChevronDown, ChevronUp } from 'lucide-react-native';
 
 type Task = {
   id: string;
   content: string;
   category: string;
   is_completed: boolean;
+  parent_task_id: string | null;
+  subtasks?: Task[];
 };
 
 export default function TodayScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [todayMood, setTodayMood] = useState<string>('');
   const [energy, setEnergy] = useState<string>('');
   const [time, setTime] = useState<string>('');
@@ -68,6 +71,7 @@ export default function TodayScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Cargar todas las tareas prioritarias (principales y subtareas)
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
@@ -83,7 +87,20 @@ export default function TodayScreen() {
       }
 
       if (data) {
-        setTasks(data);
+        // Separar tareas principales y subtareas
+        const mainTasks = data.filter(task => !task.parent_task_id);
+        const subtasks = data.filter(task => task.parent_task_id);
+
+        // Agrupar subtareas bajo sus tareas principales
+        const tasksWithSubtasks = mainTasks.map(task => {
+          const taskSubtasks = subtasks.filter(st => st.parent_task_id === task.id);
+          return {
+            ...task,
+            subtasks: taskSubtasks.length > 0 ? taskSubtasks : undefined,
+          };
+        });
+
+        setTasks(tasksWithSubtasks);
       }
     } catch (error) {
       console.error('Error inesperado:', error);
@@ -93,8 +110,21 @@ export default function TodayScreen() {
     }
   };
 
-  const toggleTask = async (taskId: string) => {
-    const task = tasks.find(t => t.id === taskId);
+  const toggleTaskExpansion = (taskId: string) => {
+    const newExpanded = new Set(expandedTasks);
+    if (newExpanded.has(taskId)) {
+      newExpanded.delete(taskId);
+    } else {
+      newExpanded.add(taskId);
+    }
+    setExpandedTasks(newExpanded);
+  };
+
+  const toggleTask = async (taskId: string, isSubtask: boolean = false, parentTaskId?: string) => {
+    const task = isSubtask 
+      ? tasks.find(t => t.id === parentTaskId)?.subtasks?.find(st => st.id === taskId)
+      : tasks.find(t => t.id === taskId);
+    
     if (!task) return;
 
     const newCompletedState = !task.is_completed;
@@ -114,10 +144,63 @@ export default function TodayScreen() {
         return;
       }
 
-      // Actualizar estado local (mantener tareas completadas para mostrar progreso)
-      setTasks(tasks.map(t =>
-        t.id === taskId ? { ...t, is_completed: newCompletedState } : t
-      ));
+      // Actualizar estado local y verificar si la tarea principal debe completarse
+      if (isSubtask && parentTaskId) {
+        // Actualizar subtarea y verificar estado de tarea principal
+        const updatedTasks = tasks.map(t => {
+          if (t.id === parentTaskId && t.subtasks) {
+            const updatedSubtasks = t.subtasks.map(st =>
+              st.id === taskId ? { ...st, is_completed: newCompletedState } : st
+            );
+            
+            // Verificar si todas las subtareas están completadas
+            const allSubtasksCompleted = updatedSubtasks.every(st => st.is_completed);
+            const wasParentCompleted = t.is_completed;
+            
+            // Si todas las subtareas están completadas y la tarea principal no lo estaba
+            if (allSubtasksCompleted && !wasParentCompleted) {
+              // Marcar tarea principal como completada en la base de datos
+              supabase
+                .from('tasks')
+                .update({
+                  is_completed: true,
+                  completed_at: new Date().toISOString(),
+                })
+                .eq('id', parentTaskId)
+                .then(() => {
+                  // Recargar después de actualizar
+                  setTimeout(() => loadTasks(), 200);
+                });
+            } else if (!allSubtasksCompleted && wasParentCompleted) {
+              // Desmarcar tarea principal si se desmarcó una subtarea
+              supabase
+                .from('tasks')
+                .update({
+                  is_completed: false,
+                  completed_at: null,
+                })
+                .eq('id', parentTaskId)
+                .then(() => {
+                  setTimeout(() => loadTasks(), 200);
+                });
+            }
+            
+            return {
+              ...t,
+              subtasks: updatedSubtasks,
+              is_completed: allSubtasksCompleted,
+            };
+          }
+          return t;
+        });
+        
+        setTasks(updatedTasks);
+      } else {
+        // Actualizar tarea principal
+        setTasks(tasks.map(t =>
+          t.id === taskId ? { ...t, is_completed: newCompletedState } : t
+        ));
+      }
     } catch (error) {
       console.error('Error inesperado:', error);
       Alert.alert('Error', 'Ocurrió un error al actualizar la tarea');
@@ -137,7 +220,7 @@ export default function TodayScreen() {
     }
   };
 
-  // Calcular tareas completadas y no completadas
+  // Calcular tareas completadas y no completadas (solo tareas principales, no subtareas)
   const incompleteTasks = tasks.filter(t => !t.is_completed);
   const completedToday = tasks.filter(t => t.is_completed).length;
   const totalPriorityTasks = incompleteTasks.length + completedToday;
@@ -279,78 +362,146 @@ export default function TodayScreen() {
               // Separar tareas completadas y no completadas (ya calculado arriba)
               const completedTasks = tasks.filter(t => t.is_completed);
               
+              const renderTask = (task: Task, index: number, isCompleted: boolean) => {
+                const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+                const isExpanded = expandedTasks.has(task.id);
+                const completedSubtasks = hasSubtasks 
+                  ? task.subtasks!.filter(st => st.is_completed).length 
+                  : 0;
+                const totalSubtasks = hasSubtasks ? task.subtasks!.length : 0;
+                const subtasksProgress = totalSubtasks > 0 
+                  ? (completedSubtasks / totalSubtasks) * 100 
+                  : 0;
+
+                return (
+                  <View key={task.id}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (hasSubtasks) {
+                          toggleTaskExpansion(task.id);
+                        } else {
+                          toggleTask(task.id);
+                        }
+                      }}
+                      style={[
+                        styles.taskCard,
+                        isCompleted && styles.taskCardCompleted,
+                        hasSubtasks && styles.taskCardWithSubtasks,
+                      ]}
+                      activeOpacity={0.7}
+                    >
+                      {/* Número de prioridad (solo para tareas no completadas) */}
+                      {!isCompleted && (
+                        <View style={styles.priorityNumberContainer}>
+                          <View style={styles.priorityNumber}>
+                            <Text style={styles.priorityNumberText}>{index + 1}</Text>
+                          </View>
+                        </View>
+                      )}
+
+                      {/* Botón expandir/colapsar si tiene subtareas */}
+                      {hasSubtasks && (
+                        <TouchableOpacity
+                          onPress={() => toggleTaskExpansion(task.id)}
+                          style={styles.expandButton}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          {isExpanded ? (
+                            <ChevronUp size={20} color={THEME.colors.text.secondary} />
+                          ) : (
+                            <ChevronDown size={20} color={THEME.colors.text.secondary} />
+                          )}
+                        </TouchableOpacity>
+                      )}
+
+                      <TouchableOpacity
+                        onPress={() => toggleTask(task.id)}
+                        style={styles.taskCheckbox}
+                        activeOpacity={0.7}
+                      >
+                        {task.is_completed && <View style={styles.taskCheckboxChecked} />}
+                      </TouchableOpacity>
+                      
+                      <View style={styles.taskContent}>
+                        <Text style={[
+                          styles.taskText,
+                          isCompleted && styles.taskTextCompleted,
+                        ]}>
+                          {task.content}
+                        </Text>
+                        
+                        {/* Indicador de progreso de subtareas */}
+                        {hasSubtasks && !isCompleted && (
+                          <View style={styles.subtasksProgressContainer}>
+                            <View style={styles.subtasksProgressBar}>
+                              <View 
+                                style={[
+                                  styles.subtasksProgressFill,
+                                  { width: `${subtasksProgress}%` }
+                                ]} 
+                              />
+                            </View>
+                            <Text style={styles.subtasksProgressText}>
+                              {completedSubtasks} de {totalSubtasks} completadas
+                            </Text>
+                          </View>
+                        )}
+                        
+                        {task.category && (
+                          <View style={[
+                            styles.categoryBadge,
+                            { backgroundColor: getCategoryColor(task.category) + '20' },
+                          ]}>
+                            <Text style={[
+                              styles.categoryText,
+                              { color: getCategoryColor(task.category) },
+                            ]}>
+                              {task.category}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+
+                    {/* Renderizar subtareas si está expandido */}
+                    {hasSubtasks && isExpanded && (
+                      <View style={styles.subtasksContainer}>
+                        {task.subtasks!.map((subtask) => (
+                          <TouchableOpacity
+                            key={subtask.id}
+                            onPress={() => toggleTask(subtask.id, true, task.id)}
+                            style={[
+                              styles.subtaskCard,
+                              subtask.is_completed && styles.subtaskCardCompleted,
+                            ]}
+                            activeOpacity={0.7}
+                          >
+                            <View style={styles.subtaskCheckbox}>
+                              {subtask.is_completed && (
+                                <View style={styles.subtaskCheckboxChecked} />
+                              )}
+                            </View>
+                            <Text style={[
+                              styles.subtaskText,
+                              subtask.is_completed && styles.subtaskTextCompleted,
+                            ]}>
+                              {subtask.content}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                );
+              };
+              
               return (
                 <>
                   {/* Tareas no completadas con números */}
-                  {incompleteTasks.map((task, index) => (
-                    <TouchableOpacity
-                      key={task.id}
-                      onPress={() => toggleTask(task.id)}
-                      style={styles.taskCard}
-                      activeOpacity={0.7}
-                    >
-                      {/* Número de prioridad */}
-                      <View style={styles.priorityNumberContainer}>
-                        <View style={styles.priorityNumber}>
-                          <Text style={styles.priorityNumberText}>{index + 1}</Text>
-                        </View>
-                      </View>
-
-                      <View style={styles.taskCheckbox}>
-                        {task.is_completed && <View style={styles.taskCheckboxChecked} />}
-                      </View>
-                      <View style={styles.taskContent}>
-                        <Text style={styles.taskText}>
-                          {task.content}
-                        </Text>
-                        {task.category && (
-                          <View style={[
-                            styles.categoryBadge,
-                            { backgroundColor: getCategoryColor(task.category) + '20' },
-                          ]}>
-                            <Text style={[
-                              styles.categoryText,
-                              { color: getCategoryColor(task.category) },
-                            ]}>
-                              {task.category}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  ))}
+                  {incompleteTasks.map((task, index) => renderTask(task, index + 1, false))}
                   
                   {/* Tareas completadas sin números */}
-                  {completedTasks.map((task) => (
-                    <TouchableOpacity
-                      key={task.id}
-                      onPress={() => toggleTask(task.id)}
-                      style={[styles.taskCard, styles.taskCardCompleted]}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.taskCheckbox}>
-                        {task.is_completed && <View style={styles.taskCheckboxChecked} />}
-                      </View>
-                      <View style={styles.taskContent}>
-                        <Text style={[styles.taskText, styles.taskTextCompleted]}>
-                          {task.content}
-                        </Text>
-                        {task.category && (
-                          <View style={[
-                            styles.categoryBadge,
-                            { backgroundColor: getCategoryColor(task.category) + '20' },
-                          ]}>
-                            <Text style={[
-                              styles.categoryText,
-                              { color: getCategoryColor(task.category) },
-                            ]}>
-                              {task.category}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  ))}
+                  {completedTasks.map((task, index) => renderTask(task, index + 1, true))}
                 </>
               );
             })()
@@ -557,5 +708,79 @@ const styles = StyleSheet.create({
   categoryText: {
     ...THEME.typography.small,
     fontFamily: THEME.fonts.heading.medium,
+  },
+  taskCardWithSubtasks: {
+    borderLeftWidth: 3,
+    borderLeftColor: THEME.colors.gradient.blue,
+  },
+  expandButton: {
+    padding: THEME.spacing.xs,
+    marginRight: THEME.spacing.xs,
+  },
+  subtasksContainer: {
+    marginLeft: THEME.spacing.lg,
+    marginTop: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
+    paddingLeft: THEME.spacing.md,
+    borderLeftWidth: 2,
+    borderLeftColor: THEME.colors.stroke[100],
+  },
+  subtaskCard: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.standard,
+    padding: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+  },
+  subtaskCardCompleted: {
+    opacity: 0.6,
+  },
+  subtaskCheckbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: THEME.colors.gradient.blue,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subtaskCheckboxChecked: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: THEME.colors.gradient.blue,
+  },
+  subtaskText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    flex: 1,
+    fontSize: 14,
+  },
+  subtaskTextCompleted: {
+    textDecorationLine: 'line-through',
+    color: THEME.colors.text.secondary,
+  },
+  subtasksProgressContainer: {
+    marginTop: THEME.spacing.xs,
+    marginBottom: THEME.spacing.xs,
+  },
+  subtasksProgressBar: {
+    height: 4,
+    backgroundColor: THEME.colors.stroke[100],
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: 4,
+  },
+  subtasksProgressFill: {
+    height: '100%',
+    backgroundColor: THEME.colors.gradient.blue,
+    borderRadius: 2,
+  },
+  subtasksProgressText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    fontSize: 11,
   },
 });
