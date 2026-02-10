@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
@@ -24,15 +24,21 @@ export default function FocusScreen() {
   const prioritizeTasksBasedOnCheckIn = async (energyLevel: number, emotionValue: string) => {
     if (!user) return;
 
-    // Obtener todas las tareas no completadas
-    const { data: tasks } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('is_completed', false)
-      .order('created_at', { ascending: false });
+    try {
+      // Obtener todas las tareas no completadas
+      const { data: tasks, error: tasksError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_completed', false)
+        .order('created_at', { ascending: false });
 
-    if (!tasks || tasks.length === 0) return;
+      if (tasksError) {
+        console.error('Error obteniendo tareas:', tasksError);
+        return;
+      }
+
+      if (!tasks || tasks.length === 0) return;
 
     // Lógica de priorización:
     // - Si energía es baja (1-2): priorizar menos tareas (máximo 2)
@@ -53,27 +59,46 @@ export default function FocusScreen() {
       maxPriorityTasks = 5;
     }
 
-    // Primero, quitar prioridad a todas las tareas
-    await supabase
-      .from('tasks')
-      .update({ is_priority: false })
-      .eq('user_id', user.id)
-      .eq('is_completed', false);
-
-    // Luego, priorizar las primeras N tareas según la energía
-    const tasksToPrioritize = tasks.slice(0, maxPriorityTasks);
-    
-    if (tasksToPrioritize.length > 0) {
-      const taskIds = tasksToPrioritize.map(t => t.id);
-      await supabase
+      // Primero, quitar prioridad a todas las tareas
+      const { error: unprioritizeError } = await supabase
         .from('tasks')
-        .update({ is_priority: true })
-        .in('id', taskIds);
+        .update({ is_priority: false })
+        .eq('user_id', user.id)
+        .eq('is_completed', false);
+
+      if (unprioritizeError) {
+        console.error('Error removiendo prioridad:', unprioritizeError);
+        return;
+      }
+
+      // Luego, priorizar las primeras N tareas según la energía
+      const tasksToPrioritize = tasks.slice(0, maxPriorityTasks);
+      
+      if (tasksToPrioritize.length > 0) {
+        const taskIds = tasksToPrioritize.map(t => t.id);
+        const { error: prioritizeError } = await supabase
+          .from('tasks')
+          .update({ is_priority: true })
+          .in('id', taskIds);
+
+        if (prioritizeError) {
+          console.error('Error priorizando tareas:', prioritizeError);
+        }
+      }
+    } catch (error) {
+      console.error('Error inesperado en priorización:', error);
     }
   };
 
   const handleContinue = async () => {
     if (!selectedFocus || !emotion || !energy || !time || !user) return;
+
+    // Validar que energy sea un número válido
+    const energyLevel = parseInt(energy);
+    if (isNaN(energyLevel) || energyLevel < 1 || energyLevel > 5) {
+      Alert.alert('Error', 'El nivel de energía no es válido');
+      return;
+    }
 
     setIsSaving(true);
 
@@ -87,28 +112,33 @@ export default function FocusScreen() {
           user_id: user.id,
           date: today,
           emotion: emotion.charAt(0).toUpperCase() + emotion.slice(1),
-          energy_level: parseInt(energy),
+          energy_level: energyLevel,
           available_time: time,
           focus_level: selectedFocus,
         }, { onConflict: 'user_id,date' });
 
       if (checkInError) {
         console.error('Error guardando check-in:', checkInError);
+        Alert.alert('Error', 'No se pudo guardar tu check-in. Por favor intenta de nuevo.');
         setIsSaving(false);
         return;
       }
 
       // Priorizar tareas automáticamente basado en el check-in
-      await prioritizeTasksBasedOnCheckIn(parseInt(energy), emotion);
+      await prioritizeTasksBasedOnCheckIn(energyLevel, emotion);
 
-      // Redirigir según el origen
-      if (from === 'sentir') {
-        router.replace('/(tabs)');
-      } else {
-        router.replace('/(tabs)');
-      }
+      // Mostrar mensaje de éxito
+      Alert.alert('¡Listo!', 'Tu check-in se guardó correctamente y tus tareas fueron priorizadas.', [
+        {
+          text: 'OK',
+          onPress: () => {
+            router.replace('/(tabs)');
+          },
+        },
+      ]);
     } catch (error) {
       console.error('Error:', error);
+      Alert.alert('Error', 'Ocurrió un error inesperado. Por favor intenta de nuevo.');
       setIsSaving(false);
     }
   };

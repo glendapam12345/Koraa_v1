@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useState } from 'react';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
@@ -16,26 +16,49 @@ export default function VaciarScreen() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isPriority, setIsPriority] = useState(false);
   const [recentTasks, setRecentTasks] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleAddTask = async () => {
     if (!taskInput.trim()) return;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    setIsSaving(true);
 
-    const { error } = await supabase.from('tasks').insert({
-      user_id: user.id,
-      content: taskInput.trim(),
-      category: selectedCategory,
-      is_priority: isPriority,
-      is_completed: false,
-    });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        Alert.alert('Error', 'No estás autenticado');
+        setIsSaving(false);
+        return;
+      }
 
-    if (!error) {
+      const { error } = await supabase.from('tasks').insert({
+        user_id: user.id,
+        content: taskInput.trim(),
+        category: selectedCategory,
+        is_priority: isPriority,
+        is_completed: false,
+      });
+
+      if (error) {
+        console.error('Error guardando tarea:', error);
+        Alert.alert('Error', 'No se pudo guardar la tarea. Por favor intenta de nuevo.');
+        setIsSaving(false);
+        return;
+      }
+
       setRecentTasks([taskInput.trim(), ...recentTasks.slice(0, 4)]);
       setTaskInput('');
       setSelectedCategory('');
       setIsPriority(false);
+      
+      if (isPriority) {
+        Alert.alert('¡Tarea agregada!', 'Tu tarea fue marcada como prioridad y aparecerá en "Hoy"');
+      }
+    } catch (error) {
+      console.error('Error inesperado:', error);
+      Alert.alert('Error', 'Ocurrió un error inesperado. Por favor intenta de nuevo.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -124,9 +147,9 @@ export default function VaciarScreen() {
         </TouchableOpacity>
 
         <GradientButton
-          title="Soltar"
+          title={isSaving ? "Guardando..." : "Soltar"}
           onPress={handleAddTask}
-          disabled={!taskInput.trim()}
+          disabled={!taskInput.trim() || isSaving}
         />
 
         {recentTasks.length > 0 && (

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useState, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
@@ -14,9 +14,11 @@ type Task = {
 
 export default function TodayScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [todayMood, setTodayMood] = useState<string>('abrumada');
-  const [energy, setEnergy] = useState<string>('4/5');
-  const [time, setTime] = useState<string>('4-6 horas');
+  const [todayMood, setTodayMood] = useState<string>('');
+  const [energy, setEnergy] = useState<string>('');
+  const [time, setTime] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [loadingTasks, setLoadingTasks] = useState(false);
 
   useEffect(() => {
     loadTasks();
@@ -24,38 +26,67 @@ export default function TodayScreen() {
   }, []);
 
   const loadTodayCheckIn = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    const today = new Date().toISOString().split('T')[0];
-    const { data: checkIn } = await supabase
-      .from('daily_check_ins')
-      .select('emotion, energy_level, available_time')
-      .eq('user_id', user.id)
-      .eq('date', today)
-      .single();
+      const today = new Date().toISOString().split('T')[0];
+      const { data: checkIn, error } = await supabase
+        .from('daily_check_ins')
+        .select('emotion, energy_level, available_time')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .maybeSingle();
 
-    if (checkIn) {
-      setTodayMood(checkIn.emotion.toLowerCase());
-      setEnergy(`${checkIn.energy_level}/5`);
-      setTime(checkIn.available_time);
+      if (error) {
+        console.error('Error cargando check-in:', error);
+        return;
+      }
+
+      if (checkIn) {
+        setTodayMood(checkIn.emotion.toLowerCase());
+        setEnergy(`${checkIn.energy_level}/5`);
+        setTime(checkIn.available_time);
+      } else {
+        setTodayMood('');
+        setEnergy('');
+        setTime('');
+      }
+    } catch (error) {
+      console.error('Error inesperado:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const loadTasks = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      setLoadingTasks(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    const { data } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('is_completed', false)
-      .eq('is_priority', true)
-      .order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_completed', false)
+        .eq('is_priority', true)
+        .order('created_at', { ascending: false });
 
-    if (data) {
-      setTasks(data);
+      if (error) {
+        console.error('Error cargando tareas:', error);
+        Alert.alert('Error', 'No se pudieron cargar las tareas');
+        return;
+      }
+
+      if (data) {
+        setTasks(data);
+      }
+    } catch (error) {
+      console.error('Error inesperado:', error);
+      Alert.alert('Error', 'Ocurrió un error al cargar las tareas');
+    } finally {
+      setLoadingTasks(false);
     }
   };
 
@@ -65,21 +96,32 @@ export default function TodayScreen() {
 
     const newCompletedState = !task.is_completed;
 
-    await supabase
-      .from('tasks')
-      .update({
-        is_completed: newCompletedState,
-        completed_at: newCompletedState ? new Date().toISOString() : null,
-      })
-      .eq('id', taskId);
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          is_completed: newCompletedState,
+          completed_at: newCompletedState ? new Date().toISOString() : null,
+        })
+        .eq('id', taskId);
 
-    // Si se marca como completada, removerla de la lista
-    if (newCompletedState) {
-      setTasks(tasks.filter(t => t.id !== taskId));
-    } else {
-      setTasks(tasks.map(t =>
-        t.id === taskId ? { ...t, is_completed: newCompletedState } : t
-      ));
+      if (error) {
+        console.error('Error actualizando tarea:', error);
+        Alert.alert('Error', 'No se pudo actualizar la tarea');
+        return;
+      }
+
+      // Si se marca como completada, removerla de la lista
+      if (newCompletedState) {
+        setTasks(tasks.filter(t => t.id !== taskId));
+      } else {
+        setTasks(tasks.map(t =>
+          t.id === taskId ? { ...t, is_completed: newCompletedState } : t
+        ));
+      }
+    } catch (error) {
+      console.error('Error inesperado:', error);
+      Alert.alert('Error', 'Ocurrió un error al actualizar la tarea');
     }
   };
 
@@ -108,7 +150,9 @@ export default function TodayScreen() {
           <View style={styles.moodHeader}>
             <View>
               <Text style={styles.moodLabel}>Hoy te sientes</Text>
-              <Text style={styles.moodTitle}>{todayMood}</Text>
+              <Text style={styles.moodTitle}>
+                {loading ? 'Cargando...' : todayMood || 'Aún no has hecho tu check-in'}
+              </Text>
             </View>
             <TouchableOpacity
               style={styles.refreshButton}
@@ -120,10 +164,12 @@ export default function TodayScreen() {
               <RefreshCw size={20} color={THEME.colors.fill[100]} />
             </TouchableOpacity>
           </View>
-          <View style={styles.moodStats}>
-            <Text style={styles.moodStat}>Energía: {energy}</Text>
-            <Text style={styles.moodStat}>{time}</Text>
-          </View>
+          {!loading && (energy || time) && (
+            <View style={styles.moodStats}>
+              {energy && <Text style={styles.moodStat}>Energía: {energy}</Text>}
+              {time && <Text style={styles.moodStat}>{time}</Text>}
+            </View>
+          )}
         </LinearGradient>
 
         <View style={styles.section}>
@@ -135,7 +181,11 @@ export default function TodayScreen() {
         </View>
 
         <View style={styles.tasksContainer}>
-          {tasks.length === 0 ? (
+          {loadingTasks ? (
+            <View style={styles.emptyState}>
+              <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
+            </View>
+          ) : tasks.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>
                 No tienes tareas priorizadas aún.{'\n'}

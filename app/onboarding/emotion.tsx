@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
@@ -18,7 +18,14 @@ const EMOTIONS = [
 export default function EmotionScreen() {
   const params = useLocalSearchParams();
   const isFromSentir = params.from === 'sentir';
-  const [selectedEmotion, setSelectedEmotion] = useState<string>('');
+  const preSelectedEmotion = params.emotion as string | undefined;
+  const [selectedEmotion, setSelectedEmotion] = useState<string>(preSelectedEmotion || '');
+
+  useEffect(() => {
+    if (preSelectedEmotion) {
+      setSelectedEmotion(preSelectedEmotion);
+    }
+  }, [preSelectedEmotion]);
 
   const handleContinue = () => {
     if (selectedEmotion) {
