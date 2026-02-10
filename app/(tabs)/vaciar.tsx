@@ -1,9 +1,11 @@
 import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { supabase } from '@/lib/supabase';
-import { X, Star, Plus, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles } from 'lucide-react-native';
+import { router } from 'expo-router';
 
 const CATEGORIES = [
   { id: 'trabajo', label: '💼 Trabajo', color: '#4A90E2' },
@@ -19,6 +21,7 @@ export default function VaciarScreen() {
   const [subtasks, setSubtasks] = useState<string[]>(['']);
   const [recentTasks, setRecentTasks] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasCheckInToday, setHasCheckInToday] = useState<boolean | null>(null);
 
   const addSubtask = () => {
     setSubtasks([...subtasks, '']);
@@ -34,6 +37,34 @@ export default function VaciarScreen() {
     const newSubtasks = [...subtasks];
     newSubtasks[index] = value;
     setSubtasks(newSubtasks);
+  };
+
+  useEffect(() => {
+    checkTodayCheckIn();
+  }, []);
+
+  const checkTodayCheckIn = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const today = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('daily_check_ins')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error verificando check-in:', error);
+        return;
+      }
+
+      setHasCheckInToday(!!data);
+    } catch (error) {
+      console.error('Error inesperado:', error);
+    }
   };
 
   const handleAddTask = async () => {
@@ -146,6 +177,32 @@ export default function VaciarScreen() {
           Sin categorías. Sin etiquetas. Sin estructura.{'\n'}
           Solo escribe lo que necesitas soltar.
         </Text>
+
+        {/* Banner si falta check-in */}
+        {hasCheckInToday === false && (
+          <TouchableOpacity
+            style={styles.checkInBanner}
+            onPress={() => router.push('/(tabs)/sentir')}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.checkInBannerGradient}
+            >
+              <Sparkles size={20} color="#FFFFFF" />
+              <View style={styles.checkInBannerContent}>
+                <Text style={styles.checkInBannerText}>
+                  Haz tu check-in diario primero
+                </Text>
+                <Text style={styles.checkInBannerSubtext}>
+                  Para priorizar estas tareas según cómo te sientes
+                </Text>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.inputContainer}>
           <TextInput
@@ -474,5 +531,30 @@ const styles = StyleSheet.create({
     ...THEME.typography.caption,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
+  },
+  checkInBanner: {
+    borderRadius: THEME.borderRadius.rounded,
+    marginBottom: THEME.spacing.md,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  checkInBannerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: THEME.spacing.md,
+    gap: THEME.spacing.sm,
+  },
+  checkInBannerContent: {
+    flex: 1,
+  },
+  checkInBannerText: {
+    ...THEME.typography.body,
+    color: '#FFFFFF',
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: 4,
+  },
+  checkInBannerSubtext: {
+    ...THEME.typography.caption,
+    color: 'rgba(255, 255, 255, 0.9)',
   },
 });

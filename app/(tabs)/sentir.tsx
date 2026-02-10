@@ -1,9 +1,12 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useState, useEffect } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { EmotionCard } from '@/components/EmotionCard';
 import { GradientButton } from '@/components/GradientButton';
+import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
+import { Plus } from 'lucide-react-native';
 
 const EMOTIONS = [
   { id: 'agotada', emoji: '😔', label: 'Agotada' },
@@ -16,6 +19,34 @@ const EMOTIONS = [
 
 export default function SentirScreen() {
   const [selectedEmotion, setSelectedEmotion] = useState<string>('');
+  const [hasTasks, setHasTasks] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    checkTasks();
+  }, []);
+
+  const checkTasks = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_completed', false)
+        .limit(1);
+
+      if (error) {
+        console.error('Error verificando tareas:', error);
+        return;
+      }
+
+      setHasTasks((data?.length || 0) > 0);
+    } catch (error) {
+      console.error('Error inesperado:', error);
+    }
+  };
 
   const handleContinue = async () => {
     if (!selectedEmotion) return;
@@ -35,6 +66,32 @@ export default function SentirScreen() {
         <Text style={styles.description}>
           Kora prioriza por ti. Solo enfócate en lo que realmente importa hoy.
         </Text>
+
+        {/* Banner si no hay tareas */}
+        {hasTasks === false && (
+          <TouchableOpacity
+            style={styles.noTasksBanner}
+            onPress={() => router.push('/(tabs)/vaciar')}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={[THEME.colors.gradient.pink, THEME.colors.gradient.blue]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.noTasksBannerGradient}
+            >
+              <Plus size={20} color="#FFFFFF" />
+              <View style={styles.noTasksBannerContent}>
+                <Text style={styles.noTasksBannerText}>
+                  Agrega tareas primero
+                </Text>
+                <Text style={styles.noTasksBannerSubtext}>
+                  Ve a "Vaciar" para agregar lo que necesitas hacer hoy
+                </Text>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.emotionsGrid}>
           {EMOTIONS.map((emotion) => (
@@ -103,5 +160,30 @@ const styles = StyleSheet.create({
   footer: {
     padding: THEME.spacing.lg,
     paddingBottom: THEME.spacing.xl,
+  },
+  noTasksBanner: {
+    borderRadius: THEME.borderRadius.rounded,
+    marginBottom: THEME.spacing.lg,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  noTasksBannerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: THEME.spacing.md,
+    gap: THEME.spacing.sm,
+  },
+  noTasksBannerContent: {
+    flex: 1,
+  },
+  noTasksBannerText: {
+    ...THEME.typography.body,
+    color: '#FFFFFF',
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: 4,
+  },
+  noTasksBannerSubtext: {
+    ...THEME.typography.caption,
+    color: 'rgba(255, 255, 255, 0.9)',
   },
 });

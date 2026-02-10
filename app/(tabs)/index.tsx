@@ -368,8 +368,8 @@ export default function TodayScreen() {
     if (!todayMood || energyLevel === 0) {
       return {
         title: 'Tu plan de hoy',
-        message: 'Haz tu check-in en "Sentir" para ver tus prioridades basadas en cómo te sientes.',
-        suggestion: '',
+        message: 'Primero agrega tus tareas en "Vaciar", luego haz tu check-in en "Sentir" para ver tus prioridades basadas en cómo te sientes.',
+        suggestion: 'Flujo sugerido: Vaciar → Sentir → Hoy',
       };
     }
 
@@ -471,13 +471,18 @@ export default function TodayScreen() {
             </View>
           )}
 
-          {/* Mensaje cuando no hay check-in o no hay tareas */}
+          {/* Mensaje cuando hay check-in pero no hay tareas */}
           {todayMood && incompleteTasks.length === 0 && tasks.length === 0 && (
-            <View style={styles.explanationCard}>
+            <TouchableOpacity
+              style={styles.explanationCard}
+              onPress={() => router.push('/(tabs)/vaciar')}
+              activeOpacity={0.7}
+            >
               <Text style={styles.explanationText}>
-                {explanation.message}
+                Ya hiciste tu check-in, pero aún no tienes tareas.{'\n'}
+                Ve a "Vaciar" para agregar lo que necesitas hacer hoy.
               </Text>
-            </View>
+            </TouchableOpacity>
           )}
 
           {/* Indicador de progreso */}
@@ -513,8 +518,10 @@ export default function TodayScreen() {
           ) : tasks.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>
-                No tienes tareas priorizadas aún.{'\n'}
-                Ve a &ldquo;Vaciar&rdquo; para agregar tus pendientes.
+                {todayMood 
+                  ? 'No tienes tareas priorizadas aún.\nVe a "Vaciar" para agregar tus pendientes.'
+                  : 'Primero agrega tus tareas en "Vaciar", luego haz tu check-in en "Sentir" para ver tus prioridades.'
+                }
               </Text>
             </View>
           ) : (

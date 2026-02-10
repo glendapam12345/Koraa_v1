@@ -127,18 +127,19 @@ export default function FocusScreen() {
       // Priorizar tareas automáticamente basado en el check-in
       await prioritizeTasksBasedOnCheckIn(energyLevel, emotion);
 
-      // Resetear estado de guardado antes de mostrar el alert
+      // Resetear estado de guardado
       setIsSaving(false);
 
-      // Mostrar mensaje de éxito
-      Alert.alert('¡Listo!', 'Tu check-in se guardó correctamente y tus tareas fueron priorizadas.', [
-        {
-          text: 'OK',
-          onPress: () => {
-            router.replace('/(tabs)');
-          },
+      // Redirigir a pantalla de resumen
+      router.replace({
+        pathname: '/checkin-summary',
+        params: {
+          emotion,
+          energy: energyLevel.toString(),
+          time,
+          focus: selectedFocus,
         },
-      ]);
+      });
     } catch (error) {
       console.error('Error:', error);
       Alert.alert('Error', 'Ocurrió un error inesperado. Por favor intenta de nuevo.');
