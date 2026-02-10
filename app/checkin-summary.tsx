@@ -97,6 +97,7 @@ export default function CheckInSummaryScreen() {
   };
 
   const emotionData = getEmotionData();
+  const energyLevel = parseInt(energy || '3');
 
   return (
     <View style={styles.container}>
