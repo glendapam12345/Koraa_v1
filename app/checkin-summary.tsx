@@ -36,8 +36,12 @@ export default function CheckInSummaryScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadPrioritizedTasks();
-  }, []);
+    if (user) {
+      loadPrioritizedTasks();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
   const loadPrioritizedTasks = async () => {
     if (!user) return;
@@ -93,7 +97,6 @@ export default function CheckInSummaryScreen() {
   };
 
   const emotionData = getEmotionData();
-  const energyLevel = parseInt(energy || '3');
 
   return (
     <View style={styles.container}>
@@ -129,11 +132,11 @@ export default function CheckInSummaryScreen() {
                 </View>
                 <View style={styles.summaryItem}>
                   <Text style={styles.summaryItemLabel}>Tiempo</Text>
-                  <Text style={styles.summaryItemValue}>{time}</Text>
+                  <Text style={styles.summaryItemValue}>{time || 'No especificado'}</Text>
                 </View>
                 <View style={styles.summaryItem}>
                   <Text style={styles.summaryItemLabel}>Enfoque</Text>
-                  <Text style={styles.summaryItemValue}>{focus}</Text>
+                  <Text style={styles.summaryItemValue}>{focus || 'No especificado'}</Text>
                 </View>
               </View>
             </View>

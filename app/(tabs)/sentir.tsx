@@ -1,11 +1,11 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { EmotionCard } from '@/components/EmotionCard';
 import { GradientButton } from '@/components/GradientButton';
 import { supabase } from '@/lib/supabase';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Plus } from 'lucide-react-native';
 
 const EMOTIONS = [
@@ -24,6 +24,13 @@ export default function SentirScreen() {
   useEffect(() => {
     checkTasks();
   }, []);
+
+  // Recargar banner cuando la pantalla recibe foco
+  useFocusEffect(
+    useCallback(() => {
+      checkTasks();
+    }, [])
+  );
 
   const checkTasks = async () => {
     try {

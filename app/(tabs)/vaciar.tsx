@@ -1,11 +1,11 @@
 import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { supabase } from '@/lib/supabase';
 import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 
 const CATEGORIES = [
   { id: 'trabajo', label: '💼 Trabajo', color: '#4A90E2' },
@@ -42,6 +42,13 @@ export default function VaciarScreen() {
   useEffect(() => {
     checkTodayCheckIn();
   }, []);
+
+  // Recargar banner cuando la pantalla recibe foco
+  useFocusEffect(
+    useCallback(() => {
+      checkTodayCheckIn();
+    }, [])
+  );
 
   const checkTodayCheckIn = async () => {
     try {

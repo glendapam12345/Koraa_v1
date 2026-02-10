@@ -106,12 +106,17 @@ export default function FocusScreen() {
       const today = new Date().toISOString().split('T')[0];
 
       // Guardar check-in
+      // Validar y capitalizar emotion de forma segura
+      const emotionCapitalized = emotion && emotion.length > 0
+        ? emotion.charAt(0).toUpperCase() + emotion.slice(1)
+        : emotion || '';
+
       const { error: checkInError } = await supabase
         .from('daily_check_ins')
         .upsert({
           user_id: user.id,
           date: today,
-          emotion: emotion.charAt(0).toUpperCase() + emotion.slice(1),
+          emotion: emotionCapitalized,
           energy_level: energyLevel,
           available_time: time,
           focus_level: selectedFocus,
