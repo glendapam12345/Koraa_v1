@@ -1,5 +1,6 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, Platform } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
@@ -134,13 +135,20 @@ export default function TodayScreen() {
   };
 
   const toggleTask = async (taskId: string, isSubtask: boolean = false, parentTaskId?: string) => {
-    const task = isSubtask 
+    const task = isSubtask
       ? tasks.find(t => t.id === parentTaskId)?.subtasks?.find(st => st.id === taskId)
       : tasks.find(t => t.id === taskId);
-    
+
     if (!task) return;
 
     const newCompletedState = !task.is_completed;
+
+    // Haptic feedback al completar tarea
+    if (Platform.OS !== 'web' && newCompletedState) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
 
     try {
       const { error } = await supabase
