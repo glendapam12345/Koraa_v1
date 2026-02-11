@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '@/lib/supabase';
 import { ProgressChart } from '@/components/ProgressChart';
 import { ConfettiCelebration } from '@/components/ConfettiCelebration';
+import { SuccessModal } from '@/components/SuccessModal';
 import * as Haptics from 'expo-haptics';
 import { generateEmotionalInsights } from '@/lib/emotionalInsights';
 
@@ -36,6 +37,7 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<UserProfile>({});
   const [newActivity, setNewActivity] = useState('');
   const [newInterest, setNewInterest] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const loadProgressData = useCallback(async () => {
     if (!user) return;
@@ -297,6 +299,10 @@ export default function ProfileScreen() {
   const handleSaveProfile = async () => {
     if (!user) return;
 
+    if (Platform.OS !== 'web') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+
     try {
       const { error } = await supabase
         .from('profiles')
@@ -312,8 +318,8 @@ export default function ProfileScreen() {
         return;
       }
 
-      Alert.alert('Éxito', 'Perfil actualizado correctamente');
       setShowEditProfile(false);
+      setShowSuccess(true);
     } catch (error) {
       console.error('Error inesperado:', error);
       Alert.alert('Error', 'Error inesperado al guardar');
@@ -324,6 +330,13 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       {/* Confetti celebración */}
       {showConfetti && <ConfettiCelebration />}
+
+      {/* Modal de éxito */}
+      <SuccessModal
+        visible={showSuccess}
+        message="Perfil actualizado"
+        onClose={() => setShowSuccess(false)}
+      />
 
       <ScrollView 
         contentContainerStyle={styles.content} 
