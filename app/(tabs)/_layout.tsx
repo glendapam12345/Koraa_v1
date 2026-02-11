@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { THEME } from '@/constants/theme';
-import { Home, Edit3, Heart, User } from 'lucide-react-native';
+import { Home, Edit3, Heart, User, Lightbulb } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -46,6 +46,15 @@ export default function TabLayout() {
           title: 'Sentir',
           tabBarIcon: ({ size, color }) => (
             <Heart size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="tips"
+        options={{
+          title: 'Tips',
+          tabBarIcon: ({ size, color }) => (
+            <Lightbulb size={size} color={color} />
           ),
         }}
       />
