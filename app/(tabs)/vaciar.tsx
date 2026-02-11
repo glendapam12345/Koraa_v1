@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, RefreshControl } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
@@ -28,6 +28,7 @@ export default function VaciarScreen() {
   const [hasTasks, setHasTasks] = useState<boolean | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
+  const [refreshing, setRefreshing] = useState(false);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToastMessage(message);
@@ -231,6 +232,22 @@ export default function VaciarScreen() {
     }
   };
 
+  // Función para manejar pull to refresh
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        checkTodayCheckIn(),
+        checkIfFirstTime(),
+      ]);
+    } catch (error) {
+      console.error('Error al refrescar:', error);
+      showToast('Error al actualizar los datos', 'error');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -249,6 +266,14 @@ export default function VaciarScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={THEME.colors.gradient.blue}
+            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+          />
+        }
       >
         <Text style={styles.title}>Vacía tu mente en</Text>
         <Text style={styles.titleAccent}>un respiro</Text>

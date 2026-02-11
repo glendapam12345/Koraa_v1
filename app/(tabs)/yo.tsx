@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, RefreshControl } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,6 +24,7 @@ export default function ProfileScreen() {
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const [previousStreak, setPreviousStreak] = useState<number>(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadProgressData = useCallback(async () => {
     if (!user) return;
@@ -262,12 +263,38 @@ export default function ProfileScreen() {
   const streakLevel = getStreakLevel(currentStreak);
   const lightningCount = Math.min(currentStreak, 7); // Máximo 7 rayos visibles
 
+  // Función para manejar pull to refresh
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        loadProgressData(),
+        loadStreak(),
+      ]);
+    } catch (error) {
+      console.error('Error al refrescar:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Confetti celebración */}
       {showConfetti && <ConfettiCelebration />}
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={styles.content} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={THEME.colors.gradient.blue}
+            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+          />
+        }
+      >
         <View style={styles.header}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>

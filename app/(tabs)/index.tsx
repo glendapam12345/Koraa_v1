@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, Platform, RefreshControl } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -37,6 +37,7 @@ export default function TodayScreen() {
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
   const [showConfetti, setShowConfetti] = useState(false);
   const [previousCompletedCount, setPreviousCompletedCount] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -464,9 +465,36 @@ export default function TodayScreen() {
 
   const explanation = getPriorityExplanation();
 
+  // Función para manejar pull to refresh
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        loadTasks(),
+        loadTodayCheckIn(),
+      ]);
+    } catch (error) {
+      console.error('Error al refrescar:', error);
+      showToast('Error al actualizar los datos', 'error');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={styles.content} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={THEME.colors.gradient.blue}
+            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+          />
+        }
+      >
         <LinearGradient
           colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
           start={{ x: 0, y: 0 }}

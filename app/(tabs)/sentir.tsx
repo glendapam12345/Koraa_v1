@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
@@ -23,6 +23,7 @@ export default function SentirScreen() {
   const [hasTasks, setHasTasks] = useState<boolean | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [hasCheckInToday, setHasCheckInToday] = useState<boolean | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     checkTasks();
