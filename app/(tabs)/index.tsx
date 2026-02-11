@@ -50,82 +50,6 @@ export default function TodayScreen() {
     setToastType(type);
   };
 
-  useEffect(() => {
-    loadTasks();
-    loadTodayCheckIn();
-    
-    // Intentar sincronizar datos offline al cargar
-    (async () => {
-      try {
-        const { syncAll } = await import('@/lib/offlineStorage');
-        await syncAll();
-      } catch (error) {
-        // Silencioso, no es crítico
-        console.log('Sincronización offline:', error);
-      }
-    })();
-
-    // Cleanup: limpiar timeout si el componente se desmonta
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, [loadTasks, loadTodayCheckIn]);
-
-  // Verificar si mostrar tooltip después de cargar datos
-  useEffect(() => {
-    if (!loading && todayMood && tasks.length === 0) {
-      // Hay check-in pero no hay tareas priorizadas (primera vez)
-      setShowTooltip(true);
-    }
-  }, [loading, todayMood, tasks.length]);
-
-  // Detectar cuando todas las tareas están completadas
-  useEffect(() => {
-    if (tasks.length === 0 || loading) return;
-    
-    const allCompleted = tasks.every(t => t.is_completed);
-    const hasTasks = tasks.length > 0;
-    const completedCount = tasks.filter(t => t.is_completed).length;
-    const wasNotAllCompleted = previousCompletedCount < tasks.length;
-    
-    if (allCompleted && hasTasks && wasNotAllCompleted && !showConfetti) {
-      // ¡Todas las tareas completadas!
-      setShowConfetti(true);
-      showToast('Hoy está completo. Descansa y disfruta del momento presente ✨', 'success');
-      
-      // Ocultar confetti después de 4 segundos
-      setTimeout(() => {
-        setShowConfetti(false);
-      }, 4000);
-    }
-    
-    // Actualizar contador de tareas completadas
-    setPreviousCompletedCount(completedCount);
-  }, [tasks, loading]);
-
-  // Animar barra de progreso cuando cambia el porcentaje
-  useEffect(() => {
-    const incompleteTasks = tasks.filter(t => !t.is_completed);
-    const completedToday = tasks.filter(t => t.is_completed).length;
-    const totalPriorityTasks = incompleteTasks.length + completedToday;
-    const progressPercentage = totalPriorityTasks > 0 ? (completedToday / totalPriorityTasks) * 100 : 0;
-    
-    if (!loading && totalPriorityTasks > 0) {
-      progressWidth.value = withTiming(progressPercentage, {
-        duration: 500,
-      });
-    }
-  }, [tasks, loading]);
-
-  // Estilo animado para la barra de progreso
-  const animatedProgressStyle = useAnimatedStyle(() => {
-    return {
-      width: `${progressWidth.value}%`,
-    };
-  });
-
   const loadTodayCheckIn = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -206,6 +130,82 @@ export default function TodayScreen() {
       setLoadingTasks(false);
     }
   }, []);
+
+  useEffect(() => {
+    loadTasks();
+    loadTodayCheckIn();
+
+    // Intentar sincronizar datos offline al cargar
+    (async () => {
+      try {
+        const { syncAll } = await import('@/lib/offlineStorage');
+        await syncAll();
+      } catch (error) {
+        // Silencioso, no es crítico
+        console.log('Sincronización offline:', error);
+      }
+    })();
+
+    // Cleanup: limpiar timeout si el componente se desmonta
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [loadTasks, loadTodayCheckIn]);
+
+  // Verificar si mostrar tooltip después de cargar datos
+  useEffect(() => {
+    if (!loading && todayMood && tasks.length === 0) {
+      // Hay check-in pero no hay tareas priorizadas (primera vez)
+      setShowTooltip(true);
+    }
+  }, [loading, todayMood, tasks.length]);
+
+  // Detectar cuando todas las tareas están completadas
+  useEffect(() => {
+    if (tasks.length === 0 || loading) return;
+    
+    const allCompleted = tasks.every(t => t.is_completed);
+    const hasTasks = tasks.length > 0;
+    const completedCount = tasks.filter(t => t.is_completed).length;
+    const wasNotAllCompleted = previousCompletedCount < tasks.length;
+    
+    if (allCompleted && hasTasks && wasNotAllCompleted && !showConfetti) {
+      // ¡Todas las tareas completadas!
+      setShowConfetti(true);
+      showToast('Hoy está completo. Descansa y disfruta del momento presente ✨', 'success');
+      
+      // Ocultar confetti después de 4 segundos
+      setTimeout(() => {
+        setShowConfetti(false);
+      }, 4000);
+    }
+    
+    // Actualizar contador de tareas completadas
+    setPreviousCompletedCount(completedCount);
+  }, [tasks, loading]);
+
+  // Animar barra de progreso cuando cambia el porcentaje
+  useEffect(() => {
+    const incompleteTasks = tasks.filter(t => !t.is_completed);
+    const completedToday = tasks.filter(t => t.is_completed).length;
+    const totalPriorityTasks = incompleteTasks.length + completedToday;
+    const progressPercentage = totalPriorityTasks > 0 ? (completedToday / totalPriorityTasks) * 100 : 0;
+    
+    if (!loading && totalPriorityTasks > 0) {
+      progressWidth.value = withTiming(progressPercentage, {
+        duration: 500,
+      });
+    }
+  }, [tasks, loading]);
+
+  // Estilo animado para la barra de progreso
+  const animatedProgressStyle = useAnimatedStyle(() => {
+    return {
+      width: `${progressWidth.value}%`,
+    };
+  });
 
   const toggleTaskExpansion = (taskId: string) => {
     const newExpanded = new Set(expandedTasks);
