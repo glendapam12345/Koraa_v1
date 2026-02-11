@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { LogOut, Settings, HelpCircle, Edit, X, Plus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase, getErrorMessage } from '@/lib/supabase';
@@ -181,6 +181,15 @@ export default function ProfileScreen() {
     loadProfile();
   }, [loadProgressData, loadStreak, loadProfile]);
 
+  // Recargar datos cuando la pantalla recibe foco
+  useFocusEffect(
+    useCallback(() => {
+      loadProgressData();
+      loadStreak();
+      loadProfile();
+    }, [loadProgressData, loadStreak, loadProfile])
+  );
+
   // Detectar cuando se alcanza un milestone de streak y mostrar confetti
   useEffect(() => {
     if (currentStreak > 0 && previousStreak !== currentStreak) {
@@ -260,11 +269,19 @@ export default function ProfileScreen() {
     Alert.alert('Éxito', `✅ Creados ${checkIns.length} check-ins de prueba`);
   };
 
-  const addActivity = () => {
+  const MAX_ITEMS = 25; // Límite máximo de actividades/intereses
+
+  const addActivity = useCallback(() => {
     const trimmedActivity = newActivity.trim();
     
     // Validar que no esté vacío
     if (!trimmedActivity) return;
+    
+    // Validar límite máximo
+    if ((profile.favorite_activities || []).length >= MAX_ITEMS) {
+      Alert.alert('Límite alcanzado', `Puedes agregar hasta ${MAX_ITEMS} actividades. Elimina algunas para agregar más.`);
+      return;
+    }
     
     // Validar longitud máxima (50 caracteres)
     if (trimmedActivity.length > 50) {
@@ -284,19 +301,29 @@ export default function ProfileScreen() {
       favorite_activities: [...(profile.favorite_activities || []), trimmedActivity],
     });
     setNewActivity('');
-  };
+    // Feedback visual
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [newActivity, profile]);
 
-  const removeActivity = (index: number) => {
+  const removeActivity = useCallback((index: number) => {
     const updated = [...(profile.favorite_activities || [])];
     updated.splice(index, 1);
     setProfile({ ...profile, favorite_activities: updated });
-  };
+    // Feedback visual
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [profile]);
 
-  const addInterest = () => {
+  const addInterest = useCallback(() => {
     const trimmedInterest = newInterest.trim();
     
     // Validar que no esté vacío
     if (!trimmedInterest) return;
+    
+    // Validar límite máximo
+    if ((profile.interests || []).length >= MAX_ITEMS) {
+      Alert.alert('Límite alcanzado', `Puedes agregar hasta ${MAX_ITEMS} intereses. Elimina algunos para agregar más.`);
+      return;
+    }
     
     // Validar longitud máxima (50 caracteres)
     if (trimmedInterest.length > 50) {
@@ -316,13 +343,17 @@ export default function ProfileScreen() {
       interests: [...(profile.interests || []), trimmedInterest],
     });
     setNewInterest('');
-  };
+    // Feedback visual
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [newInterest, profile]);
 
-  const removeInterest = (index: number) => {
+  const removeInterest = useCallback((index: number) => {
     const updated = [...(profile.interests || [])];
     updated.splice(index, 1);
     setProfile({ ...profile, interests: updated });
-  };
+    // Feedback visual
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [profile]);
 
   const completedDays = progressData.filter(day => day.hasCheckIn).length;
   const totalDays = progressData.length;
@@ -392,6 +423,7 @@ export default function ProfileScreen() {
       await Promise.all([
         loadProgressData(),
         loadStreak(),
+        loadProfile(),
       ]);
     } catch (error) {
       console.error('Error al refrescar:', error);
@@ -400,55 +432,54 @@ export default function ProfileScreen() {
     }
   };
 
-  const removeActivity = (index: number) => {
-    const updated = [...(profile.favorite_activities || [])];
-    updated.splice(index, 1);
-    setProfile({ ...profile, favorite_activities: updated });
-  };
-
-  const addActivity = () => {
-    if (!newActivity.trim()) return;
-    const updated = [...(profile.favorite_activities || []), newActivity.trim()];
-    setProfile({ ...profile, favorite_activities: updated });
-    setNewActivity('');
-  };
-
-  const removeInterest = (index: number) => {
-    const updated = [...(profile.interests || [])];
-    updated.splice(index, 1);
-    setProfile({ ...profile, interests: updated });
-  };
-
-  const addInterest = () => {
-    if (!newInterest.trim()) return;
-    const updated = [...(profile.interests || []), newInterest.trim()];
-    setProfile({ ...profile, interests: updated });
-    setNewInterest('');
-  };
 
   const handleSaveProfile = async () => {
     if (!user) return;
 
+    setIsSavingProfile(true);
+    setProfileError(null);
+
     try {
+      // Validar y parsear edad
+      let ageValue: number | undefined = undefined;
+      if (ageInput.trim()) {
+        const parsedAge = parseInt(ageInput.trim());
+        if (isNaN(parsedAge) || parsedAge < 13 || parsedAge > 120) {
+          setProfileError('La edad debe ser un número entre 13 y 120 años');
+          setIsSavingProfile(false);
+          return;
+        }
+        ageValue = parsedAge;
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
-          favorite_activities: profile.favorite_activities,
-          interests: profile.interests,
+          age: ageValue,
+          favorite_activities: profile.favorite_activities || [],
+          interests: profile.interests || [],
         })
         .eq('id', user.id);
 
       if (error) {
         console.error('Error guardando perfil:', error);
-        Alert.alert('Error', 'No se pudo guardar el perfil');
+        const errorMessage = getErrorMessage(error);
+        setProfileError(`No se pudo guardar el perfil: ${errorMessage}`);
+        setIsSavingProfile(false);
         return;
       }
 
+      // Recargar perfil después de guardar
+      await loadProfile();
+      
       Alert.alert('Éxito', 'Perfil actualizado correctamente');
       setShowEditProfile(false);
     } catch (error) {
       console.error('Error inesperado:', error);
-      Alert.alert('Error', 'Error inesperado al guardar');
+      const errorMessage = getErrorMessage(error as any);
+      setProfileError(`Error inesperado: ${errorMessage}`);
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
@@ -671,23 +702,36 @@ export default function ProfileScreen() {
                 <TextInput
                   style={styles.formInput}
                   value={ageInput}
-                  onChangeText={setAgeInput}
+                  onChangeText={(text) => {
+                    // Solo permitir números
+                    const numericText = text.replace(/[^0-9]/g, '');
+                    if (numericText === '' || (parseInt(numericText) >= 13 && parseInt(numericText) <= 120)) {
+                      setAgeInput(numericText);
+                    } else if (numericText.length > 0 && parseInt(numericText) > 120) {
+                      Alert.alert('Edad inválida', 'La edad debe ser entre 13 y 120 años');
+                    }
+                  }}
                   placeholder="Ej: 28"
                   placeholderTextColor={THEME.colors.text.secondary}
                   keyboardType="number-pad"
                   editable={!isSavingProfile}
+                  maxLength={3}
                 />
                 <Text style={styles.formHelpText}>
                   Debe ser un número entre 13 y 120 años
                 </Text>
               </View>
 
->>>>>>> da19467 (fix: Arreglos críticos, medios y bajos en sistema de recomendaciones)
               {/* Actividades favoritas */}
               <View style={styles.formSection}>
                 <Text style={styles.formLabel}>Actividades favoritas</Text>
-                <View style={styles.chipContainer}>
-                  {(profile.favorite_activities || []).map((activity, index) => (
+                {(profile.favorite_activities || []).length === 0 ? (
+                  <Text style={styles.emptyListText}>
+                    No has agregado actividades aún. Agrega tus actividades favoritas para recibir recomendaciones personalizadas.
+                  </Text>
+                ) : (
+                  <View style={styles.chipContainer}>
+                    {(profile.favorite_activities || []).map((activity, index) => (
                     <View key={index} style={styles.chip}>
                       <Text style={styles.chipText}>{activity}</Text>
                       <TouchableOpacity
@@ -1295,7 +1339,6 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.fill[100],
     fontFamily: THEME.fonts.heading.medium,
->>>>>>> da19467 (fix: Arreglos críticos, medios y bajos en sistema de recomendaciones)
   },
   modalButtonDisabled: {
     opacity: 0.6,
@@ -1318,5 +1361,12 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     marginTop: THEME.spacing.xs,
     fontStyle: 'italic',
+  },
+  emptyListText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: THEME.spacing.md,
   },
 });

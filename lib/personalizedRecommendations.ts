@@ -158,7 +158,7 @@ function getActivityRecommendations(
         type: 'activity',
         title: `Retoma ${activity}`,
         message,
-        suggestion: `Agregar "${activity}" a mis tareas`,
+        suggestion: activity,
         emoji: getActivityEmoji(activity),
         priority,
       });

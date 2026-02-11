@@ -44,7 +44,14 @@ export default function TipsScreen() {
   const [energyLevel, setEnergyLevel] = useState<number>(0);
   const [availableTime, setAvailableTime] = useState<string>('');
   const [focusLevel, setFocusLevel] = useState<string>('');
-  const [userProfile, setUserProfile] = useState<any>(null);
+  type UserProfile = {
+    age?: number;
+    favorite_activities?: string[];
+    interests?: string[];
+    other_preferences?: Record<string, any>;
+  };
+  
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -252,7 +259,7 @@ export default function TipsScreen() {
                           activeOpacity={0.7}
                         >
                           <Plus size={16} color={THEME.colors.gradient.blue} />
-                          <Text style={styles.suggestionButtonText}>{rec.suggestion}</Text>
+                          <Text style={styles.suggestionButtonText}>Agregar a mis tareas</Text>
                         </TouchableOpacity>
                       )}
                     </View>
