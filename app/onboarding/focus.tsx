@@ -217,6 +217,14 @@ export default function FocusScreen() {
       // Pequeño delay para asegurar que la priorización se complete
       await new Promise(resolve => setTimeout(resolve, 500));
 
+      // Programar notificaciones diarias después del check-in
+      try {
+        const { scheduleDailyReminder } = await import('@/hooks/useNotifications');
+        await scheduleDailyReminder();
+      } catch (err) {
+        console.log('Error programando notificaciones (no crítico):', err);
+      }
+
       // Redirigir directamente a Accionar (pantalla principal) para ver prioridades
       try {
         router.replace('/(tabs)');

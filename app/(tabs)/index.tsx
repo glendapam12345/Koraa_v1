@@ -374,11 +374,26 @@ export default function TodayScreen() {
       // Recargar tareas para obtener el estado actualizado
       await loadTasks();
       
-      // Mostrar toast de éxito
+      // Mostrar toast de éxito con mensajes más engaging
       if (newCompletedState) {
-        showToast('¡Tarea completada!', 'success');
+        const completedCount = tasks.filter(t => t.is_completed).length + 1;
+        const totalCount = tasks.length;
+        const progressPercentage = Math.round((completedCount / totalCount) * 100);
+        
+        // Mensajes motivacionales según progreso
+        let message = '¡Tarea completada!';
+        if (progressPercentage >= 50 && progressPercentage < 100) {
+          message = `¡Vas bien! ${progressPercentage}% completado ✨`;
+        } else if (progressPercentage === 100) {
+          message = '¡Día completo! Descansa y disfruta 🌟';
+        }
+        
+        showToast(message, 'success');
+        // Haptic feedback para aumentar engagement
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
         showToast('Tarea marcada como pendiente', 'info');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       }
     } catch (error) {
       console.error('Error inesperado:', error);
@@ -623,7 +638,10 @@ export default function TodayScreen() {
         {!loading && !todayMood && (
           <TouchableOpacity
             style={styles.mainRegisterButton}
-            onPress={() => router.push('/(tabs)/sentir')}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push('/(tabs)/sentir');
+            }}
             activeOpacity={0.9}
           >
             <LinearGradient
@@ -735,9 +753,13 @@ export default function TodayScreen() {
             <>
               <Text style={styles.sectionTitle}>{explanation.title}</Text>
               
-              {/* Validación de valor: Comparación antes/después */}
-              {totalTasksBefore !== null && totalTasksBefore > tasks.length && (
+              {/* Validación de valor: Comparación antes/después - Mejorado para engagement */}
+              {totalTasksBefore !== null && totalTasksBefore > 0 && (
                 <View style={styles.valueCard}>
+                  <View style={styles.valueHeader}>
+                    <Sparkles size={20} color={THEME.colors.gradient.blue} />
+                    <Text style={styles.valueTitle}>Tu día organizado</Text>
+                  </View>
                   <View style={styles.valueRow}>
                     <Text style={styles.valueLabel}>Tareas totales:</Text>
                     <Text style={styles.valueNumber}>{totalTasksBefore}</Text>
@@ -746,9 +768,15 @@ export default function TodayScreen() {
                     <Text style={styles.valueLabel}>Priorizadas para hoy:</Text>
                     <Text style={styles.valueNumberHighlight}>{tasks.length}</Text>
                   </View>
-                  <Text style={styles.valueMessage}>
-                    Reducimos {totalTasksBefore - tasks.length} tarea{totalTasksBefore - tasks.length !== 1 ? 's' : ''} para enfocarte en lo esencial
-                  </Text>
+                  {totalTasksBefore > tasks.length ? (
+                    <Text style={styles.valueMessage}>
+                      Reducimos {totalTasksBefore - tasks.length} tarea{totalTasksBefore - tasks.length !== 1 ? 's' : ''} para enfocarte en lo esencial según cómo te sientes hoy
+                    </Text>
+                  ) : (
+                    <Text style={styles.valueMessage}>
+                      Todas tus tareas son relevantes para hoy. ¡Perfecto! 🎯
+                    </Text>
+                  )}
                 </View>
               )}
               
@@ -781,9 +809,9 @@ export default function TodayScreen() {
             </View>
           )}
 
-          {/* Resumen diario */}
+          {/* Resumen diario - Mejorado para engagement */}
           {todayMood && totalPriorityTasks > 0 && (
-            <View style={styles.summaryCard}>
+            <View style={[styles.summaryCard, styles.engagementCard]}>
               <View style={styles.summaryRow}>
                 <View style={styles.summaryItem}>
                   <Text style={styles.summaryLabel}>Emoción</Text>
@@ -1226,6 +1254,18 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.md,
     borderWidth: 1,
     borderColor: THEME.colors.border,
+    ...THEME.shadows.soft,
+  },
+  valueHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
+  },
+  valueTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
   },
   valueRow: {
     flexDirection: 'row',
@@ -1252,6 +1292,10 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     marginTop: THEME.spacing.xs,
     fontStyle: 'italic',
+  },
+  engagementCard: {
+    borderLeftWidth: 3,
+    borderLeftColor: THEME.colors.gradient.blue,
   },
   sectionTitle: {
     ...THEME.typography.h3,

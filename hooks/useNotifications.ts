@@ -35,7 +35,15 @@ export function useNotifications() {
     // Listener para cuando el usuario toca la notificación
     const subscription2 = Notifications.addNotificationResponseReceivedListener((response) => {
       console.log('Usuario tocó la notificación:', response);
-      // Aquí podrías navegar a la pantalla de check-in
+      const notificationData = response.notification.request.content.data;
+      
+      // Navegar a la pantalla correspondiente según el tipo de notificación
+      if (notificationData?.type === 'daily_checkin_reminder') {
+        // Importar router dinámicamente para evitar problemas de inicialización
+        import('expo-router').then(({ router }) => {
+          router.push('/(tabs)/sentir');
+        });
+      }
     });
     responseListener.current = subscription2;
 
