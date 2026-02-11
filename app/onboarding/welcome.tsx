@@ -1,8 +1,9 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
-import { Sparkles } from 'lucide-react-native';
+import { Sparkles, ArrowDown } from 'lucide-react-native';
 
 export default function WelcomeScreen() {
   return (
@@ -22,6 +23,37 @@ export default function WelcomeScreen() {
           Deja de perder energía organizándote.{'\n'}
           Solo di cómo te sientes hoy.
         </Text>
+
+        {/* Ejemplo visual de priorización */}
+        <View style={styles.exampleContainer}>
+          <View style={styles.exampleCard}>
+            <View style={styles.exampleHeader}>
+              <Text style={styles.exampleEmoji}>😔</Text>
+              <Text style={styles.exampleTitle}>Te sientes agotada</Text>
+            </View>
+            <Text style={styles.exampleSubtitle}>Energía: 2/5</Text>
+            <View style={styles.exampleDivider} />
+            <Text style={styles.exampleResult}>
+              Kora prioriza solo 2 tareas esenciales
+            </Text>
+          </View>
+
+          <View style={styles.arrowDown}>
+            <ArrowDown size={20} color={THEME.colors.text.secondary} />
+          </View>
+
+          <View style={styles.exampleCard}>
+            <View style={styles.exampleHeader}>
+              <Text style={styles.exampleEmoji}>✨</Text>
+              <Text style={styles.exampleTitle}>Te sientes motivada</Text>
+            </View>
+            <Text style={styles.exampleSubtitle}>Energía: 5/5</Text>
+            <View style={styles.exampleDivider} />
+            <Text style={styles.exampleResult}>
+              Kora prioriza hasta 5 tareas
+            </Text>
+          </View>
+        </View>
 
         <View style={styles.dotContainer}>
           <View style={[styles.dot, styles.dotActive]} />
@@ -115,5 +147,49 @@ const styles = StyleSheet.create({
   skipText: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
+  },
+  exampleContainer: {
+    marginTop: THEME.spacing.xl,
+    marginBottom: THEME.spacing.lg,
+  },
+  exampleCard: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
+    ...THEME.shadows.soft,
+  },
+  exampleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    marginBottom: THEME.spacing.xs,
+  },
+  exampleEmoji: {
+    fontSize: 24,
+  },
+  exampleTitle: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  exampleSubtitle: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.xs,
+  },
+  exampleDivider: {
+    height: 1,
+    backgroundColor: THEME.colors.stroke[100],
+    marginVertical: THEME.spacing.xs,
+  },
+  exampleResult: {
+    ...THEME.typography.body,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  arrowDown: {
+    alignItems: 'center',
+    marginVertical: THEME.spacing.xs,
   },
 });

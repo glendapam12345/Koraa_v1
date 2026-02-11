@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
+import { Tooltip } from '@/components/Tooltip';
 import { supabase } from '@/lib/supabase';
 import { RefreshCw, ChevronDown, ChevronUp, MoreVertical, Edit, Trash2, X } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -29,6 +30,7 @@ export default function TodayScreen() {
   const [editContent, setEditContent] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [showTooltip, setShowTooltip] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -42,6 +44,14 @@ export default function TodayScreen() {
       }
     };
   }, []);
+
+  // Verificar si mostrar tooltip después de cargar datos
+  useEffect(() => {
+    if (!loading && todayMood && tasks.length === 0) {
+      // Hay check-in pero no hay tareas priorizadas (primera vez)
+      setShowTooltip(true);
+    }
+  }, [loading, todayMood, tasks.length]);
 
   const loadTodayCheckIn = async () => {
     try {
@@ -815,6 +825,13 @@ export default function TodayScreen() {
           </View>
         </View>
       </Modal>
+      
+      <Tooltip
+        visible={showTooltip}
+        title="Tus prioridades de hoy"
+        message="Aquí verás tus tareas priorizadas automáticamente según cómo te sientes. Kora adapta el número de tareas según tu energía y emoción. Marca las tareas como completadas cuando las termines."
+        onClose={() => setShowTooltip(false)}
+      />
     </View>
   );
 }

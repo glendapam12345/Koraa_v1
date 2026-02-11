@@ -22,6 +22,40 @@ export default function Intro2Screen() {
           Solo escribe lo que necesitas soltar.
         </Text>
 
+        {/* Preview visual de la pantalla Vaciar */}
+        <View style={styles.previewContainer}>
+          <View style={styles.previewCard}>
+            <View style={styles.previewHeader}>
+              <Text style={styles.previewTitle}>Vacía tu mente</Text>
+            </View>
+            <View style={styles.previewInput}>
+              <Text style={styles.previewInputText}>
+                ¿Qué necesitas hacer hoy?
+              </Text>
+            </View>
+            <View style={styles.previewExamples}>
+              <View style={styles.previewExampleItem}>
+                <Text style={styles.previewExampleText}>
+                  • Preparar presentación del proyecto
+                </Text>
+              </View>
+              <View style={styles.previewExampleItem}>
+                <Text style={styles.previewExampleText}>
+                  • Llamar al dentista
+                </Text>
+              </View>
+              <View style={styles.previewExampleItem}>
+                <Text style={styles.previewExampleText}>
+                  • Hacer ejercicio
+                </Text>
+              </View>
+            </View>
+            <View style={styles.previewFooter}>
+              <Text style={styles.previewFooterText}>Soltar</Text>
+            </View>
+          </View>
+        </View>
+
         <View style={styles.dotContainer}>
           <View style={styles.dot} />
           <View style={[styles.dot, styles.dotActive]} />
@@ -109,5 +143,56 @@ const styles = StyleSheet.create({
   skipText: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
+  },
+  previewContainer: {
+    marginTop: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
+  },
+  previewCard: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    ...THEME.shadows.soft,
+  },
+  previewHeader: {
+    marginBottom: THEME.spacing.md,
+  },
+  previewTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+  },
+  previewInput: {
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.standard,
+    padding: THEME.spacing.sm,
+    marginBottom: THEME.spacing.md,
+    minHeight: 60,
+    justifyContent: 'center',
+  },
+  previewInputText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    fontStyle: 'italic',
+  },
+  previewExamples: {
+    marginBottom: THEME.spacing.md,
+  },
+  previewExampleItem: {
+    marginBottom: THEME.spacing.xs,
+  },
+  previewExampleText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+  },
+  previewFooter: {
+    backgroundColor: THEME.colors.gradient.blue,
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.sm,
+    alignItems: 'center',
+  },
+  previewFooterText: {
+    ...THEME.typography.body,
+    color: '#FFFFFF',
+    fontFamily: THEME.fonts.heading.bold,
   },
 });

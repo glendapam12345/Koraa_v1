@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
+import { Tooltip } from '@/components/Tooltip';
 import { supabase } from '@/lib/supabase';
 import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
@@ -22,6 +23,8 @@ export default function VaciarScreen() {
   const [recentTasks, setRecentTasks] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [hasCheckInToday, setHasCheckInToday] = useState<boolean | null>(null);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [hasTasks, setHasTasks] = useState<boolean | null>(null);
 
   const addSubtask = () => {
     setSubtasks([...subtasks, '']);
@@ -41,14 +44,44 @@ export default function VaciarScreen() {
 
   useEffect(() => {
     checkTodayCheckIn();
+    checkIfFirstTime();
   }, []);
 
   // Recargar banner cuando la pantalla recibe foco
   useFocusEffect(
     useCallback(() => {
       checkTodayCheckIn();
+      checkIfFirstTime();
     }, [])
   );
+
+  const checkIfFirstTime = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (error) {
+        console.error('Error verificando tareas:', error);
+        return;
+      }
+
+      const userHasTasks = (data?.length || 0) > 0;
+      setHasTasks(userHasTasks);
+      
+      // Mostrar tooltip solo si no hay tareas (primera vez)
+      if (!userHasTasks) {
+        setShowTooltip(true);
+      }
+    } catch (error) {
+      console.error('Error inesperado:', error);
+    }
+  };
 
   const checkTodayCheckIn = async () => {
     try {
@@ -151,6 +184,11 @@ export default function VaciarScreen() {
       setIsPriority(false);
       setHasSubtasks(false);
       setSubtasks(['']);
+      
+      // Cerrar tooltip después de agregar primera tarea
+      if (showTooltip) {
+        setShowTooltip(false);
+      }
       
       const message = hasSubtasks 
         ? `¡Tarea con ${subtasks.filter(st => st.trim()).length} subtareas agregada!${isPriority ? ' Marcada como prioridad.' : ''}`
@@ -360,6 +398,13 @@ export default function VaciarScreen() {
           </View>
         )}
       </ScrollView>
+      
+      <Tooltip
+        visible={showTooltip}
+        title="Vacía tu mente"
+        message="Aquí puedes escribir todas tus tareas sin pensar en categorías o prioridades. Solo suelta lo que tienes en mente. Después, haz tu check-in diario para que Kora las priorice automáticamente."
+        onClose={() => setShowTooltip(false)}
+      />
     </KeyboardAvoidingView>
   );
 }

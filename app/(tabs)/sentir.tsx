@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { EmotionCard } from '@/components/EmotionCard';
 import { GradientButton } from '@/components/GradientButton';
+import { Tooltip } from '@/components/Tooltip';
 import { supabase } from '@/lib/supabase';
 import { router, useFocusEffect } from 'expo-router';
 import { Plus } from 'lucide-react-native';
@@ -20,17 +21,51 @@ const EMOTIONS = [
 export default function SentirScreen() {
   const [selectedEmotion, setSelectedEmotion] = useState<string>('');
   const [hasTasks, setHasTasks] = useState<boolean | null>(null);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [hasCheckInToday, setHasCheckInToday] = useState<boolean | null>(null);
 
   useEffect(() => {
     checkTasks();
+    checkTodayCheckIn();
   }, []);
 
   // Recargar banner cuando la pantalla recibe foco
   useFocusEffect(
     useCallback(() => {
       checkTasks();
+      checkTodayCheckIn();
     }, [])
   );
+
+  const checkTodayCheckIn = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const today = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('daily_check_ins')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error verificando check-in:', error);
+        return;
+      }
+
+      const hasCheckIn = !!data;
+      setHasCheckInToday(hasCheckIn);
+      
+      // Mostrar tooltip solo si hay tareas pero no hay check-in hoy (primera vez del día)
+      if (hasTasks && !hasCheckIn) {
+        setShowTooltip(true);
+      }
+    } catch (error) {
+      console.error('Error inesperado:', error);
+    }
+  };
 
   const checkTasks = async () => {
     try {
@@ -121,6 +156,13 @@ export default function SentirScreen() {
           disabled={!selectedEmotion}
         />
       </View>
+      
+      <Tooltip
+        visible={showTooltip}
+        title="Haz tu check-in diario"
+        message="Di cómo te sientes hoy (emoción, energía, tiempo y enfoque) y Kora priorizará automáticamente tus tareas según tu estado. Hazlo cada día para mejores resultados."
+        onClose={() => setShowTooltip(false)}
+      />
     </View>
   );
 }
