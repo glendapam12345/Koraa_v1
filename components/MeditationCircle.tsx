@@ -27,6 +27,7 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
   const [isActive, setIsActive] = useState(false);
   const [breathPhase, setBreathPhase] = useState<'inhale' | 'hold' | 'exhale'>('inhale');
   const [cycleCount, setCycleCount] = useState(0);
+  const [secondsRemaining, setSecondsRemaining] = useState(4);
   const progress = useSharedValue(0);
   const scale = useSharedValue(1);
   const breatheScale = useSharedValue(1);
@@ -48,8 +49,30 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
       setIsActive(false);
       setBreathPhase('inhale');
       setCycleCount(0);
+      setSecondsRemaining(4);
     }
   }, [visible]);
+
+  // Contador de segundos
+  useEffect(() => {
+    if (!isActive) return;
+
+    let seconds = 4;
+    setSecondsRemaining(4);
+
+    const interval = setInterval(() => {
+      seconds -= 1;
+      if (seconds >= 0) {
+        setSecondsRemaining(seconds);
+      } else {
+        // Resetear para la siguiente fase
+        seconds = 4;
+        setSecondsRemaining(4);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isActive, breathPhase]);
 
   const runBreathCycle = (currentCycle: number) => {
     if (currentCycle >= TOTAL_CYCLES) {
@@ -238,14 +261,21 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
 
               {/* Logo en el centro */}
               <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
-                <LinearGradient
-                  colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.logoBackground}
-                >
-                  <Sparkles size={80} color={THEME.colors.fill[100]} strokeWidth={1.5} />
-                </LinearGradient>
+                {isActive ? (
+                  <View style={styles.timerContainer}>
+                    <Text style={styles.timerText}>{secondsRemaining}</Text>
+                    <Text style={styles.timerLabel}>seg</Text>
+                  </View>
+                ) : (
+                  <LinearGradient
+                    colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.logoBackground}
+                  >
+                    <Sparkles size={80} color={THEME.colors.fill[100]} strokeWidth={1.5} />
+                  </LinearGradient>
+                )}
               </Animated.View>
             </View>
 
@@ -365,6 +395,22 @@ const styles = StyleSheet.create({
   logo: {
     width: 120,
     height: 120,
+  },
+  timerContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timerText: {
+    fontSize: 96,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.fill[100],
+    lineHeight: 96,
+  },
+  timerLabel: {
+    ...THEME.typography.body,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontFamily: THEME.fonts.heading.medium,
+    marginTop: -THEME.spacing.xs,
   },
   startButton: {
     backgroundColor: THEME.colors.fill[100],
