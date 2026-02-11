@@ -25,6 +25,8 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export function MeditationCircle({ visible, onComplete, onClose, type }: MeditationCircleProps) {
   const [isActive, setIsActive] = useState(false);
+  const [breathPhase, setBreathPhase] = useState<'inhale' | 'hold' | 'exhale'>('inhale');
+  const [cycleCount, setCycleCount] = useState(0);
   const progress = useSharedValue(0);
   const scale = useSharedValue(1);
   const breatheScale = useSharedValue(1);
@@ -33,7 +35,10 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
   const STROKE_WIDTH = 12;
   const RADIUS = (CIRCLE_SIZE - STROKE_WIDTH) / 2;
   const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-  const DURATION = 5000; // 5 segundos
+  const INHALE_DURATION = 4000; // 4 segundos
+  const HOLD_DURATION = 4000; // 4 segundos
+  const EXHALE_DURATION = 4000; // 4 segundos
+  const TOTAL_CYCLES = 3;
 
   useEffect(() => {
     if (visible) {
@@ -41,41 +46,87 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
       scale.value = 1;
       breatheScale.value = 1;
       setIsActive(false);
+      setBreathPhase('inhale');
+      setCycleCount(0);
     }
   }, [visible]);
 
+  const runBreathCycle = (currentCycle: number) => {
+    if (currentCycle >= TOTAL_CYCLES) {
+      runOnJS(handleComplete)();
+      return;
+    }
+
+    // Fase 1: Inhalar (llenar círculo)
+    runOnJS(setBreathPhase)('inhale');
+    if (Platform.OS !== 'web') {
+      runOnJS(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light))();
+    }
+    progress.value = withTiming(1, {
+      duration: INHALE_DURATION,
+      easing: Easing.inOut(Easing.ease),
+    }, (finished) => {
+      if (!finished) return;
+
+      // Fase 2: Aguantar (mantener círculo lleno)
+      runOnJS(setBreathPhase)('hold');
+      if (Platform.OS !== 'web') {
+        runOnJS(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium))();
+      }
+
+      // Después de aguantar, exhalar
+      setTimeout(() => {
+        // Fase 3: Exhalar (vaciar círculo)
+        runOnJS(setBreathPhase)('exhale');
+        if (Platform.OS !== 'web') {
+          runOnJS(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light))();
+        }
+        progress.value = withTiming(0, {
+          duration: EXHALE_DURATION,
+          easing: Easing.inOut(Easing.ease),
+        }, (finished) => {
+          if (!finished) return;
+
+          // Incrementar ciclo y continuar
+          const nextCycle = currentCycle + 1;
+          runOnJS(setCycleCount)(nextCycle);
+
+          if (nextCycle < TOTAL_CYCLES) {
+            // Pequeña pausa entre ciclos
+            setTimeout(() => {
+              runBreathCycle(nextCycle);
+            }, 500);
+          } else {
+            runOnJS(handleComplete)();
+          }
+        });
+      }, HOLD_DURATION);
+    });
+
+    // Animación de respiración del logo (sincronizada con el ciclo completo)
+    breatheScale.value = withTiming(1.15, {
+      duration: INHALE_DURATION,
+      easing: Easing.inOut(Easing.ease),
+    }, () => {
+      // Mantener el tamaño durante hold
+      setTimeout(() => {
+        // Reducir durante exhale
+        breatheScale.value = withTiming(1, {
+          duration: EXHALE_DURATION,
+          easing: Easing.inOut(Easing.ease),
+        });
+      }, HOLD_DURATION);
+    });
+  };
+
   const startMeditation = () => {
     setIsActive(true);
+    setCycleCount(0);
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
 
-    // Animación de progreso del círculo
-    progress.value = withTiming(1, {
-      duration: DURATION,
-      easing: Easing.linear,
-    }, (finished) => {
-      if (finished) {
-        runOnJS(handleComplete)();
-      }
-    });
-
-    // Animación de respiración sutil
-    const breathe = () => {
-      breatheScale.value = withTiming(1.05, {
-        duration: 2000,
-        easing: Easing.inOut(Easing.ease),
-      }, () => {
-        breatheScale.value = withTiming(1, {
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-        });
-      });
-    };
-    breathe();
-    const breatheInterval = setInterval(breathe, 4000);
-
-    setTimeout(() => clearInterval(breatheInterval), DURATION);
+    runBreathCycle(0);
   };
 
   const handleComplete = () => {
@@ -208,10 +259,33 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
               </TouchableOpacity>
             ) : (
               <View style={styles.instructionContainer}>
-                <Text style={styles.instructionText}>Respira profundo</Text>
-                <Text style={styles.instructionSubtext}>
-                  Inhala... Exhala... Relájate
+                <Text style={styles.cycleCounter}>
+                  Ciclo {cycleCount + 1} de {TOTAL_CYCLES}
                 </Text>
+                {breathPhase === 'inhale' && (
+                  <>
+                    <Text style={styles.instructionText}>Inhala</Text>
+                    <Text style={styles.instructionSubtext}>
+                      Respira profundo por la nariz
+                    </Text>
+                  </>
+                )}
+                {breathPhase === 'hold' && (
+                  <>
+                    <Text style={styles.instructionText}>Aguanta</Text>
+                    <Text style={styles.instructionSubtext}>
+                      Mantén el aire en tus pulmones
+                    </Text>
+                  </>
+                )}
+                {breathPhase === 'exhale' && (
+                  <>
+                    <Text style={styles.instructionText}>Exhala</Text>
+                    <Text style={styles.instructionSubtext}>
+                      Suelta el aire lentamente
+                    </Text>
+                  </>
+                )}
               </View>
             )}
           </View>
@@ -307,10 +381,17 @@ const styles = StyleSheet.create({
   instructionContainer: {
     alignItems: 'center',
   },
+  cycleCounter: {
+    ...THEME.typography.caption,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: THEME.spacing.sm,
+    fontFamily: THEME.fonts.heading.medium,
+  },
   instructionText: {
-    ...THEME.typography.h3,
+    ...THEME.typography.h2,
     color: THEME.colors.fill[100],
     marginBottom: THEME.spacing.xs,
+    fontFamily: THEME.fonts.heading.bold,
   },
   instructionSubtext: {
     ...THEME.typography.body,
