@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, Modal } from 'react-native';
-import { useEffect } from 'react';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
+import { useEffect, useCallback } from 'react';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, runOnJS } from 'react-native-reanimated';
 import { CheckCircle2 } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 
@@ -14,23 +14,25 @@ export function SuccessModal({ visible, message = 'Guardado', onClose }: Success
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(-20);
 
+  const handleClose = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
   useEffect(() => {
     if (visible) {
       opacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.ease) });
       translateY.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.ease) });
 
       const timer = setTimeout(() => {
-        opacity.value = withTiming(0, { duration: 200 });
+        opacity.value = withTiming(0, { duration: 200 }, () => {
+          runOnJS(handleClose)();
+        });
         translateY.value = withTiming(-20, { duration: 200 });
-        setTimeout(onClose, 200);
       }, 2000);
 
       return () => clearTimeout(timer);
-    } else {
-      opacity.value = 0;
-      translateY.value = -20;
     }
-  }, [visible]);
+  }, [visible, handleClose, opacity, translateY]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,

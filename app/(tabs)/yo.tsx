@@ -296,12 +296,20 @@ export default function ProfileScreen() {
     setNewInterest('');
   };
 
-  const handleSaveProfile = async () => {
-    if (!user) return;
+  const handleCloseSuccessModal = useCallback(() => {
+    setShowSuccess(false);
+  }, []);
 
-    if (Platform.OS !== 'web') {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  const handleSaveProfile = async () => {
+    if (!user) {
+      console.log('No user found');
+      return;
     }
+
+    console.log('Guardando perfil:', {
+      favorite_activities: profile.favorite_activities,
+      interests: profile.interests
+    });
 
     try {
       const { error } = await supabase
@@ -316,6 +324,12 @@ export default function ProfileScreen() {
         console.error('Error guardando perfil:', error);
         Alert.alert('Error', 'No se pudo guardar el perfil');
         return;
+      }
+
+      console.log('Perfil guardado exitosamente');
+
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
 
       setShowEditProfile(false);
@@ -335,7 +349,7 @@ export default function ProfileScreen() {
       <SuccessModal
         visible={showSuccess}
         message="Perfil actualizado"
-        onClose={() => setShowSuccess(false)}
+        onClose={handleCloseSuccessModal}
       />
 
       <ScrollView 
