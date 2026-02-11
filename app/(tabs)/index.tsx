@@ -2,12 +2,13 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIn
 import { useState, useEffect, useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
 import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
 import { Toast } from '@/components/Toast';
 import { ConfettiCelebration } from '@/components/ConfettiCelebration';
 import { supabase } from '@/lib/supabase';
-import { RefreshCw, ChevronDown, ChevronUp, MoreVertical, Edit, Trash2, X } from 'lucide-react-native';
+import { RefreshCw, ChevronDown, ChevronUp, MoreVertical, Edit, Trash2, X, Sparkles, CheckCircle2 } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 type Task = {
@@ -38,6 +39,7 @@ export default function TodayScreen() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [previousCompletedCount, setPreviousCompletedCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const progressWidth = useSharedValue(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -88,6 +90,27 @@ export default function TodayScreen() {
     // Actualizar contador de tareas completadas
     setPreviousCompletedCount(completedCount);
   }, [tasks, loading]);
+
+  // Animar barra de progreso cuando cambia el porcentaje
+  useEffect(() => {
+    const incompleteTasks = tasks.filter(t => !t.is_completed);
+    const completedToday = tasks.filter(t => t.is_completed).length;
+    const totalPriorityTasks = incompleteTasks.length + completedToday;
+    const progressPercentage = totalPriorityTasks > 0 ? (completedToday / totalPriorityTasks) * 100 : 0;
+    
+    if (!loading && totalPriorityTasks > 0) {
+      progressWidth.value = withTiming(progressPercentage, {
+        duration: 500,
+      });
+    }
+  }, [tasks, loading]);
+
+  // Estilo animado para la barra de progreso
+  const animatedProgressStyle = useAnimatedStyle(() => {
+    return {
+      width: `${progressWidth.value}%`,
+    };
+  });
 
   const loadTodayCheckIn = async () => {
     try {
@@ -617,10 +640,10 @@ export default function TodayScreen() {
               </View>
               <View style={styles.progressBarContainer}>
                 <View style={styles.progressBar}>
-                  <View 
+                  <Animated.View 
                     style={[
-                      styles.progressFill, 
-                      { width: `${progressPercentage}%` }
+                      styles.progressFill,
+                      animatedProgressStyle
                     ]} 
                   />
                 </View>
@@ -636,12 +659,30 @@ export default function TodayScreen() {
             </View>
           ) : tasks.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>
+              <View style={styles.emptyIconContainer}>
+                <Sparkles size={48} color={THEME.colors.gradient.blue} />
+              </View>
+              <Text style={styles.emptyTitle}>
                 {todayMood 
-                  ? 'No tienes tareas priorizadas aún.\nVe a "Vaciar" para agregar tus pendientes.'
-                  : 'Primero agrega tus tareas en "Vaciar", luego haz tu check-in en "Sentir" para ver tus prioridades.'
+                  ? 'No hay tareas priorizadas'
+                  : 'Comienza tu día'
                 }
               </Text>
+              <Text style={styles.emptyText}>
+                {todayMood 
+                  ? 'Ve a "Vaciar" para agregar tus pendientes y Kora los priorizará automáticamente.'
+                  : 'Agrega tus tareas en "Vaciar", luego haz tu check-in en "Sentir" para ver tus prioridades basadas en cómo te sientes.'
+                }
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyButton}
+                onPress={() => router.push('/(tabs)/vaciar')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.emptyButtonText}>
+                  {todayMood ? 'Agregar tareas →' : 'Comenzar →'}
+                </Text>
+              </TouchableOpacity>
             </View>
           ) : (
             (() => {
@@ -1068,12 +1109,42 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.xl,
     alignItems: 'center',
+    marginTop: THEME.spacing.lg,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: THEME.colors.fill[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: THEME.spacing.md,
+    ...THEME.shadows.soft,
+  },
+  emptyTitle: {
+    ...THEME.typography.h2,
+    color: THEME.colors.text.main,
+    textAlign: 'center',
+    marginBottom: THEME.spacing.sm,
   },
   emptyText: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 24,
+    marginBottom: THEME.spacing.lg,
+  },
+  emptyButton: {
+    backgroundColor: THEME.colors.gradient.blue,
+    paddingHorizontal: THEME.spacing.lg,
+    paddingVertical: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.pill,
+    ...THEME.shadows.soft,
+  },
+  emptyButtonText: {
+    ...THEME.typography.body,
+    color: THEME.colors.fill[100],
+    fontFamily: THEME.fonts.heading.bold,
   },
   taskWrapper: {
     position: 'relative',
