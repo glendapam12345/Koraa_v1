@@ -1,6 +1,72 @@
 # 🚀 Despliegue Rápido de Kora
 
-## Método 1: Vercel (5 minutos) ⚡
+## 📱 MÓVIL: Publicar en Expo Go (Más Rápido)
+
+### Paso 1: Configura EAS (Solo Primera Vez)
+
+```bash
+# Instala EAS CLI globalmente
+npm install -g eas-cli
+
+# Login a Expo
+eas login
+
+# Configura EAS Update en tu proyecto
+eas update:configure
+```
+
+### Paso 2: Publica tus Cambios
+
+Cada vez que hagas cambios y quieras que se reflejen en el link de Expo Go:
+
+```bash
+# Opción 1: Comando rápido
+npm run publish
+
+# Opción 2: Con mensaje descriptivo
+eas update --branch production --message "Descripción de cambios"
+```
+
+### Paso 3: Ver los Cambios
+
+1. **Cierra completamente** la app en Expo Go (no solo minimizar)
+2. **Vuelve a abrir** el link o escanea el QR
+3. La app descargará automáticamente la nueva versión
+4. ¡Listo!
+
+### Comandos Útiles
+
+```bash
+# Ver lista de publicaciones
+eas update:list --branch production
+
+# Ver detalles de una publicación
+eas update:view [update-id]
+
+# Publicar en branch de prueba
+eas update --branch preview --message "Testing"
+```
+
+### ⚠️ Solución de Problemas Móvil
+
+**Los cambios no se reflejan:**
+- Cierra COMPLETAMENTE la app (no solo minimizar)
+- Vuelve a escanear el QR desde cero
+- Verifica que la publicación fue exitosa (sin errores en terminal)
+
+**"Not logged in":**
+```bash
+eas login
+```
+
+**"No distribution found":**
+```bash
+eas build --platform android --profile preview
+```
+
+---
+
+## 🌐 WEB: Vercel (5 minutos) ⚡
 
 ### Opción A: Desde la terminal
 
