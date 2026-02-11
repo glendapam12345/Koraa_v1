@@ -92,8 +92,13 @@ export default function TipsScreen() {
 
       if (profileError) {
         console.error('Error cargando perfil:', profileError);
+        // No mostrar error al usuario aquí, solo continuar sin recomendaciones personalizadas
+        // El usuario puede seguir usando la app sin problemas
+        setUserProfile(null);
       } else if (profile) {
         setUserProfile(profile);
+      } else {
+        setUserProfile(null);
       }
     } catch (error) {
       console.error('Error inesperado:', error);
@@ -136,22 +141,30 @@ export default function TipsScreen() {
 
   // Generar recomendaciones personalizadas
   const personalizedRecommendations = useMemo(() => {
-    if (!todayMood || !userProfile) return [];
+    if (!todayMood) return [];
     
-    return generatePersonalizedRecommendations(
-      {
-        age: userProfile.age,
-        favorite_activities: userProfile.favorite_activities || [],
-        interests: userProfile.interests || [],
-        other_preferences: userProfile.other_preferences || {},
-      },
-      {
-        emotion: todayMood,
-        energyLevel,
-        availableTime,
-        focusLevel,
-      }
-    );
+    // Si no hay perfil, retornar array vacío (se mostrarán solo tips genéricos)
+    if (!userProfile) return [];
+    
+    try {
+      return generatePersonalizedRecommendations(
+        {
+          age: userProfile.age,
+          favorite_activities: userProfile.favorite_activities || [],
+          interests: userProfile.interests || [],
+          other_preferences: userProfile.other_preferences || {},
+        },
+        {
+          emotion: todayMood,
+          energyLevel,
+          availableTime,
+          focusLevel,
+        }
+      );
+    } catch (error) {
+      console.error('Error generando recomendaciones:', error);
+      return []; // Retornar array vacío en caso de error
+    }
   }, [todayMood, userProfile, energyLevel, availableTime, focusLevel]);
 
   if (loading) {

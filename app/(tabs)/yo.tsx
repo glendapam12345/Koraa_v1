@@ -5,10 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
 import { LogOut, Settings, HelpCircle, Edit, X, Plus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { supabase } from '@/lib/supabase';
+import { supabase, getErrorMessage } from '@/lib/supabase';
 import { ProgressChart } from '@/components/ProgressChart';
 import { ConfettiCelebration } from '@/components/ConfettiCelebration';
-import { SuccessModal } from '@/components/SuccessModal';
 import * as Haptics from 'expo-haptics';
 import { generateEmotionalInsights } from '@/lib/emotionalInsights';
 
@@ -21,6 +20,7 @@ type DayData = {
 };
 
 type UserProfile = {
+  age?: number;
   favorite_activities?: string[];
   interests?: string[];
   other_preferences?: Record<string, any>;
@@ -35,9 +35,11 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({});
+  const [ageInput, setAgeInput] = useState('');
   const [newActivity, setNewActivity] = useState('');
   const [newInterest, setNewInterest] = useState('');
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   const loadProgressData = useCallback(async () => {
     if (!user) return;
@@ -148,18 +150,28 @@ export default function ProfileScreen() {
 
       if (error) {
         console.error('Error cargando perfil:', error);
+        const errorMessage = getErrorMessage(error);
+        const friendlyMessage = errorMessage.includes('conexión')
+          ? 'No hay conexión a internet. Los datos se cargarán cuando tengas conexión.'
+          : `No se pudo cargar tu perfil: ${errorMessage}`;
+        setProfileError(friendlyMessage);
         return;
       }
 
       if (data) {
         setProfile({
+          age: data.age || undefined,
           favorite_activities: data.favorite_activities || [],
           interests: data.interests || [],
           other_preferences: data.other_preferences || {},
         });
+        setAgeInput(data.age ? data.age.toString() : '');
+        setProfileError(null); // Limpiar error si se cargó correctamente
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error inesperado:', error);
+      const errorMessage = getErrorMessage(error);
+      setProfileError(`Error al cargar perfil: ${errorMessage}. Intenta recargar la página.`);
     }
   }, [user]);
 
@@ -193,6 +205,124 @@ export default function ProfileScreen() {
     router.replace('/onboarding/welcome');
   };
 
+  const createTestCheckIns = async () => {
+    if (!user) return;
+
+    const EMOTIONS = ['Tranquila', 'Enfocada', 'Motivada', 'Ansiosa', 'Agotada', 'Abrumada'];
+    const TIME_OPTIONS = ['Poco (1-2hrs)', 'Medio (2-4hrs)', 'Bastante (4-6hrs)', 'Todo el día'];
+    const FOCUS_OPTIONS = ['Muy distraída', 'Algo distraída', 'Normal', 'Enfocada', 'Súper enfocada'];
+
+    const today = new Date();
+    const checkIns = [];
+
+    // Crear check-ins para los últimos 14 días
+    for (let i = 0; i < 14; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      const dateString = date.toISOString().split('T')[0];
+
+      // Variar emociones y energía para mostrar diferentes colores
+      const emotionIndex = i % EMOTIONS.length;
+      const emotion = EMOTIONS[emotionIndex];
+      
+      // Variar energía (1-5) para mostrar diferentes alturas
+      const energyLevel = (i % 5) + 1;
+      
+      // Valores aleatorios pero consistentes para tiempo y enfoque
+      const timeIndex = i % TIME_OPTIONS.length;
+      const focusIndex = i % FOCUS_OPTIONS.length;
+
+      checkIns.push({
+        user_id: user.id,
+        date: dateString,
+        emotion: emotion,
+        energy_level: energyLevel,
+        available_time: TIME_OPTIONS[timeIndex],
+        focus_level: FOCUS_OPTIONS[focusIndex],
+      });
+    }
+
+    // Insertar check-ins en la base de datos
+    const { error } = await supabase
+      .from('daily_check_ins')
+      .upsert(checkIns, { onConflict: 'user_id,date' });
+
+    if (error) {
+      console.error('Error creando check-ins de prueba:', error);
+      const errorMessage = getErrorMessage(error);
+      Alert.alert('Error al crear check-ins', `No se pudieron crear los check-ins de prueba: ${errorMessage}`);
+      return;
+    }
+
+    // Recargar datos
+    await loadProgressData();
+    await loadStreak();
+    Alert.alert('Éxito', `✅ Creados ${checkIns.length} check-ins de prueba`);
+  };
+
+  const addActivity = () => {
+    const trimmedActivity = newActivity.trim();
+    
+    // Validar que no esté vacío
+    if (!trimmedActivity) return;
+    
+    // Validar longitud máxima (50 caracteres)
+    if (trimmedActivity.length > 50) {
+      Alert.alert('Muy largo', 'La actividad no puede tener más de 50 caracteres');
+      return;
+    }
+    
+    // Validar que no sea duplicado (case-insensitive)
+    const existingActivities = (profile.favorite_activities || []).map(a => a.toLowerCase());
+    if (existingActivities.includes(trimmedActivity.toLowerCase())) {
+      Alert.alert('Duplicado', 'Esta actividad ya está en tu lista');
+      return;
+    }
+    
+    setProfile({
+      ...profile,
+      favorite_activities: [...(profile.favorite_activities || []), trimmedActivity],
+    });
+    setNewActivity('');
+  };
+
+  const removeActivity = (index: number) => {
+    const updated = [...(profile.favorite_activities || [])];
+    updated.splice(index, 1);
+    setProfile({ ...profile, favorite_activities: updated });
+  };
+
+  const addInterest = () => {
+    const trimmedInterest = newInterest.trim();
+    
+    // Validar que no esté vacío
+    if (!trimmedInterest) return;
+    
+    // Validar longitud máxima (50 caracteres)
+    if (trimmedInterest.length > 50) {
+      Alert.alert('Muy largo', 'El interés no puede tener más de 50 caracteres');
+      return;
+    }
+    
+    // Validar que no sea duplicado (case-insensitive)
+    const existingInterests = (profile.interests || []).map(i => i.toLowerCase());
+    if (existingInterests.includes(trimmedInterest.toLowerCase())) {
+      Alert.alert('Duplicado', 'Este interés ya está en tu lista');
+      return;
+    }
+    
+    setProfile({
+      ...profile,
+      interests: [...(profile.interests || []), trimmedInterest],
+    });
+    setNewInterest('');
+  };
+
+  const removeInterest = (index: number) => {
+    const updated = [...(profile.interests || [])];
+    updated.splice(index, 1);
+    setProfile({ ...profile, interests: updated });
+  };
 
   const completedDays = progressData.filter(day => day.hasCheckIn).length;
   const totalDays = progressData.length;
@@ -296,20 +426,8 @@ export default function ProfileScreen() {
     setNewInterest('');
   };
 
-  const handleCloseSuccessModal = useCallback(() => {
-    setShowSuccess(false);
-  }, []);
-
   const handleSaveProfile = async () => {
-    if (!user) {
-      console.log('No user found');
-      return;
-    }
-
-    console.log('Guardando perfil:', {
-      favorite_activities: profile.favorite_activities,
-      interests: profile.interests
-    });
+    if (!user) return;
 
     try {
       const { error } = await supabase
@@ -326,14 +444,8 @@ export default function ProfileScreen() {
         return;
       }
 
-      console.log('Perfil guardado exitosamente');
-
-      if (Platform.OS !== 'web') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-
+      Alert.alert('Éxito', 'Perfil actualizado correctamente');
       setShowEditProfile(false);
-      setShowSuccess(true);
     } catch (error) {
       console.error('Error inesperado:', error);
       Alert.alert('Error', 'Error inesperado al guardar');
@@ -344,13 +456,6 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       {/* Confetti celebración */}
       {showConfetti && <ConfettiCelebration />}
-
-      {/* Modal de éxito */}
-      <SuccessModal
-        visible={showSuccess}
-        message="Perfil actualizado"
-        onClose={handleCloseSuccessModal}
-      />
 
       <ScrollView 
         contentContainerStyle={styles.content} 
@@ -445,6 +550,20 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {/* Botón temporal para crear check-ins de prueba - Solo visible en desarrollo */}
+        {__DEV__ && (
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={styles.testButton}
+              onPress={createTestCheckIns}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.testButtonText}>
+                🧪 Crear check-ins de prueba (14 días)
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Mi perfil</Text>
@@ -504,24 +623,66 @@ export default function ProfileScreen() {
         visible={showEditProfile}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowEditProfile(false)}
+        onRequestClose={() => {
+          if (!isSavingProfile) {
+            setShowEditProfile(false);
+            setProfileError(null);
+          }
+        }}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Mi perfil personal</Text>
-              <TouchableOpacity
-                onPress={() => setShowEditProfile(false)}
-                style={styles.modalCloseButton}
-              >
-                <X size={24} color={THEME.colors.text.main} />
-              </TouchableOpacity>
-            </View>
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalKeyboardView}
+          >
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Mi perfil personal</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (!isSavingProfile) {
+                      setShowEditProfile(false);
+                      setProfileError(null);
+                    }
+                  }}
+                  style={styles.modalCloseButton}
+                  disabled={isSavingProfile}
+                >
+                  <X size={24} color={THEME.colors.text.main} />
+                </TouchableOpacity>
+              </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+              <ScrollView 
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                style={styles.modalScrollView}
+                contentContainerStyle={styles.modalScrollContent}
+              >
+              {/* Mensaje de error si existe */}
+              {profileError && (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{profileError}</Text>
+                </View>
+              )}
+
+              {/* Edad */}
+              <View style={styles.formSection}>
+                <Text style={styles.formLabel}>Edad (opcional)</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={ageInput}
+                  onChangeText={setAgeInput}
+                  placeholder="Ej: 28"
+                  placeholderTextColor={THEME.colors.text.secondary}
+                  keyboardType="number-pad"
+                  editable={!isSavingProfile}
+                />
+                <Text style={styles.formHelpText}>
+                  Debe ser un número entre 13 y 120 años
+                </Text>
+              </View>
+
+>>>>>>> da19467 (fix: Arreglos críticos, medios y bajos en sistema de recomendaciones)
               {/* Actividades favoritas */}
               <View style={styles.formSection}>
                 <Text style={styles.formLabel}>Actividades favoritas</Text>
@@ -546,15 +707,22 @@ export default function ProfileScreen() {
                     placeholder="Ej: yoga, leer, cocinar..."
                     placeholderTextColor={THEME.colors.text.secondary}
                     onSubmitEditing={addActivity}
+                    editable={!isSavingProfile}
+                    maxLength={50}
                   />
                   <TouchableOpacity
-                    style={[styles.addButton, !newActivity.trim() && styles.addButtonDisabled]}
+                    style={[styles.addButton, (!newActivity.trim() || isSavingProfile) && styles.addButtonDisabled]}
                     onPress={addActivity}
-                    disabled={!newActivity.trim()}
+                    disabled={!newActivity.trim() || isSavingProfile}
                   >
                     <Plus size={20} color={THEME.colors.fill[100]} />
                   </TouchableOpacity>
                 </View>
+                {newActivity.length > 40 && (
+                  <Text style={styles.lengthWarning}>
+                    {50 - newActivity.length} caracteres restantes
+                  </Text>
+                )}
               </View>
 
               {/* Intereses */}
@@ -581,15 +749,22 @@ export default function ProfileScreen() {
                     placeholder="Ej: música, viajes, fotografía..."
                     placeholderTextColor={THEME.colors.text.secondary}
                     onSubmitEditing={addInterest}
+                    editable={!isSavingProfile}
+                    maxLength={50}
                   />
                   <TouchableOpacity
-                    style={[styles.addButton, !newInterest.trim() && styles.addButtonDisabled]}
+                    style={[styles.addButton, (!newInterest.trim() || isSavingProfile) && styles.addButtonDisabled]}
                     onPress={addInterest}
-                    disabled={!newInterest.trim()}
+                    disabled={!newInterest.trim() || isSavingProfile}
                   >
                     <Plus size={20} color={THEME.colors.fill[100]} />
                   </TouchableOpacity>
                 </View>
+                {newInterest.length > 40 && (
+                  <Text style={styles.lengthWarning}>
+                    {50 - newInterest.length} caracteres restantes
+                  </Text>
+                )}
               </View>
 
               <Text style={styles.formHelpText}>
@@ -600,15 +775,30 @@ export default function ProfileScreen() {
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={() => setShowEditProfile(false)}
+                onPress={() => {
+                  if (!isSavingProfile) {
+                    setShowEditProfile(false);
+                    setProfileError(null);
+                  }
+                }}
+                disabled={isSavingProfile}
               >
                 <Text style={styles.modalButtonCancelText}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonSave]}
+                style={[
+                  styles.modalButton,
+                  styles.modalButtonSave,
+                  isSavingProfile && styles.modalButtonDisabled,
+                ]}
                 onPress={handleSaveProfile}
+                disabled={isSavingProfile}
               >
-                <Text style={styles.modalButtonSaveText}>Guardar</Text>
+                {isSavingProfile ? (
+                  <Text style={styles.modalButtonSaveText}>Guardando...</Text>
+                ) : (
+                  <Text style={styles.modalButtonSaveText}>Guardar</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -781,19 +971,30 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
+  modalKeyboardView: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
   modalContent: {
     backgroundColor: THEME.colors.fill[100],
     borderTopLeftRadius: THEME.borderRadius.rounded,
     borderTopRightRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.lg,
-    paddingBottom: THEME.spacing.xl * 2,
     maxHeight: '90%',
+    paddingBottom: THEME.spacing.xl * 2,
+  },
+  modalScrollView: {
+    flex: 1,
+  },
+  modalScrollContent: {
+    padding: THEME.spacing.lg,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: THEME.spacing.lg,
+    paddingHorizontal: THEME.spacing.lg,
+    paddingTop: THEME.spacing.lg,
   },
   modalTitle: {
     ...THEME.typography.h2,
@@ -920,6 +1121,18 @@ const styles = StyleSheet.create({
   footerAccent: {
     fontFamily: THEME.fonts.accent.italic,
   },
+  testButton: {
+    backgroundColor: THEME.colors.gradient.blue,
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    alignItems: 'center',
+    marginBottom: THEME.spacing.md,
+  },
+  testButtonText: {
+    ...THEME.typography.body,
+    color: THEME.colors.fill[100],
+    fontFamily: THEME.fonts.heading.bold,
+  },
   insightsCard: {
     backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.rounded,
@@ -944,10 +1157,166 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   insightText: {
-    ...THEME.typography.caption,
+    ...THEME.typography.body,
     color: THEME.colors.text.main,
     flex: 1,
-    lineHeight: 18,
-    fontSize: 12,
+    lineHeight: 22,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalKeyboardView: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: THEME.colors.fill[100],
+    borderTopLeftRadius: THEME.borderRadius.rounded,
+    borderTopRightRadius: THEME.borderRadius.rounded,
+    maxHeight: '90%',
+    paddingBottom: THEME.spacing.xl * 2,
+  },
+  modalScrollView: {
+    flex: 1,
+  },
+  modalScrollContent: {
+    padding: THEME.spacing.lg,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: THEME.spacing.lg,
+    paddingHorizontal: THEME.spacing.lg,
+    paddingTop: THEME.spacing.lg,
+  },
+  modalTitle: {
+    ...THEME.typography.h2,
+    color: THEME.colors.text.main,
+  },
+  modalCloseButton: {
+    padding: THEME.spacing.xs,
+  },
+  formSection: {
+    marginBottom: THEME.spacing.lg,
+  },
+  formLabel: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+    marginBottom: THEME.spacing.sm,
+  },
+  formInput: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.colors.gradient.blue + '20',
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.pill,
+    gap: THEME.spacing.xs,
+  },
+  chipText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.blue,
+  },
+  chipRemove: {
+    padding: 2,
+  },
+  addInputContainer: {
+    flexDirection: 'row',
+    gap: THEME.spacing.sm,
+    alignItems: 'center',
+  },
+  addInput: {
+    flex: 1,
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  addButton: {
+    width: 48,
+    height: 48,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.gradient.blue,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  formHelpText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+    marginTop: THEME.spacing.md,
+    fontStyle: 'italic',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: THEME.spacing.md,
+    marginTop: THEME.spacing.lg,
+  },
+  modalButton: {
+    flex: 1,
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    alignItems: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: THEME.colors.fill[200],
+  },
+  modalButtonSave: {
+    backgroundColor: THEME.colors.gradient.blue,
+  },
+  modalButtonCancelText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  modalButtonSaveText: {
+    ...THEME.typography.body,
+    color: THEME.colors.fill[100],
+    fontFamily: THEME.fonts.heading.medium,
+>>>>>>> da19467 (fix: Arreglos críticos, medios y bajos en sistema de recomendaciones)
+  },
+  modalButtonDisabled: {
+    opacity: 0.6,
+  },
+  errorContainer: {
+    backgroundColor: '#FFE5E5',
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF6B6B',
+  },
+  errorText: {
+    ...THEME.typography.body,
+    color: '#FF6B6B',
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  lengthWarning: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginTop: THEME.spacing.xs,
+    fontStyle: 'italic',
   },
 });
