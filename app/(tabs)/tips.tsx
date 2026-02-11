@@ -1,11 +1,12 @@
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
-import { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
 import { supabase } from '@/lib/supabase';
 import { getEmotionTips } from '@/lib/emotionTips';
-import { Lightbulb, Moon, Zap, Brain, Sparkles, Heart } from 'lucide-react-native';
+import { generatePersonalizedRecommendations } from '@/lib/personalizedRecommendations';
+import { Lightbulb, Moon, Zap, Brain, Sparkles, Heart, Plus } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 
 const EMOTIONS = [
@@ -40,6 +41,10 @@ const CATEGORY_COLORS = {
 
 export default function TipsScreen() {
   const [todayMood, setTodayMood] = useState<string>('');
+  const [energyLevel, setEnergyLevel] = useState<number>(0);
+  const [availableTime, setAvailableTime] = useState<string>('');
+  const [focusLevel, setFocusLevel] = useState<string>('');
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -55,7 +60,7 @@ export default function TipsScreen() {
       const today = new Date().toISOString().split('T')[0];
       const { data: checkIn, error } = await supabase
         .from('daily_check_ins')
-        .select('emotion')
+        .select('emotion, energy_level, available_time, focus_level')
         .eq('user_id', user.id)
         .eq('date', today)
         .maybeSingle();
@@ -68,8 +73,27 @@ export default function TipsScreen() {
 
       if (checkIn) {
         setTodayMood(checkIn.emotion.toLowerCase());
+        setEnergyLevel(checkIn.energy_level);
+        setAvailableTime(checkIn.available_time);
+        setFocusLevel(checkIn.focus_level || '');
       } else {
         setTodayMood('');
+        setEnergyLevel(0);
+        setAvailableTime('');
+        setFocusLevel('');
+      }
+
+      // Cargar perfil del usuario
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('age, favorite_activities, interests, other_preferences')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Error cargando perfil:', profileError);
+      } else if (profile) {
+        setUserProfile(profile);
       }
     } catch (error) {
       console.error('Error inesperado:', error);
@@ -109,6 +133,26 @@ export default function TipsScreen() {
     acc[tip.category].push(tip);
     return acc;
   }, {} as Record<string, typeof tips>);
+
+  // Generar recomendaciones personalizadas
+  const personalizedRecommendations = useMemo(() => {
+    if (!todayMood || !userProfile) return [];
+    
+    return generatePersonalizedRecommendations(
+      {
+        age: userProfile.age,
+        favorite_activities: userProfile.favorite_activities || [],
+        interests: userProfile.interests || [],
+        other_preferences: userProfile.other_preferences || {},
+      },
+      {
+        emotion: todayMood,
+        energyLevel,
+        availableTime,
+        focusLevel,
+      }
+    );
+  }, [todayMood, userProfile, energyLevel, availableTime, focusLevel]);
 
   if (loading) {
     return (
@@ -168,6 +212,41 @@ export default function TipsScreen() {
                 </View>
               </LinearGradient>
             </View>
+
+            {/* Recomendaciones personalizadas */}
+            {personalizedRecommendations.length > 0 && (
+              <View style={styles.recommendationsSection}>
+                <View style={styles.recommendationsHeader}>
+                  <Sparkles size={20} color={THEME.colors.gradient.pink} />
+                  <Text style={styles.recommendationsTitle}>Recomendaciones para ti</Text>
+                </View>
+                {personalizedRecommendations.map((rec) => (
+                  <View key={rec.id} style={styles.recommendationCard}>
+                    <Text style={styles.recommendationEmoji}>{rec.emoji}</Text>
+                    <View style={styles.recommendationContent}>
+                      <Text style={styles.recommendationTitle}>{rec.title}</Text>
+                      <Text style={styles.recommendationMessage}>{rec.message}</Text>
+                      {rec.suggestion && (
+                        <TouchableOpacity
+                          style={styles.suggestionButton}
+                          onPress={() => {
+                            // Navegar a Vaciar con la sugerencia pre-rellenada
+                            router.push({
+                              pathname: '/(tabs)/vaciar',
+                              params: { suggestion: rec.suggestion },
+                            });
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Plus size={16} color={THEME.colors.gradient.blue} />
+                          <Text style={styles.suggestionButtonText}>{rec.suggestion}</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
 
             {/* Tips organizados por categoría */}
             {Object.entries(tipsByCategory).map(([category, categoryTips]) => {

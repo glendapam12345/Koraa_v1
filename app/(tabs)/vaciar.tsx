@@ -9,11 +9,12 @@ import { FlowIndicator } from '@/components/FlowIndicator';
 import { supabase } from '@/lib/supabase';
 import { detectCategory } from '@/lib/categoryDetection';
 import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic } from 'lucide-react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 
 // Categorías ahora son invisibles - se detectan automáticamente en lib/categoryDetection.ts
 
 export default function VaciarScreen() {
+  const { suggestion } = useLocalSearchParams<{ suggestion?: string }>();
   const [taskInput, setTaskInput] = useState('');
   const [isPriority, setIsPriority] = useState(false);
   const [hasSubtasks, setHasSubtasks] = useState(false);
@@ -28,6 +29,13 @@ export default function VaciarScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [recentTaskSuggestions, setRecentTaskSuggestions] = useState<string[]>([]);
+
+  // Pre-llenar input si hay sugerencia desde Tips
+  useEffect(() => {
+    if (suggestion) {
+      setTaskInput(suggestion);
+    }
+  }, [suggestion]);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToastMessage(message);

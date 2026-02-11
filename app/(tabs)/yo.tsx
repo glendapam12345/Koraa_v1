@@ -1,9 +1,9 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, RefreshControl, Modal, TextInput } from 'react-native';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
-import { LogOut, Settings, HelpCircle } from 'lucide-react-native';
+import { LogOut, Settings, HelpCircle, Edit, X, Plus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '@/lib/supabase';
 import { ProgressChart } from '@/components/ProgressChart';
@@ -19,6 +19,13 @@ type DayData = {
   energyLevel?: number;
 };
 
+type UserProfile = {
+  age?: number;
+  favorite_activities?: string[];
+  interests?: string[];
+  other_preferences?: Record<string, any>;
+};
+
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const [progressData, setProgressData] = useState<DayData[]>([]);
@@ -26,6 +33,11 @@ export default function ProfileScreen() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [previousStreak, setPreviousStreak] = useState<number>(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [profile, setProfile] = useState<UserProfile>({});
+  const [ageInput, setAgeInput] = useState('');
+  const [newActivity, setNewActivity] = useState('');
+  const [newInterest, setNewInterest] = useState('');
 
   const loadProgressData = useCallback(async () => {
     if (!user) return;
@@ -124,10 +136,40 @@ export default function ProfileScreen() {
     setCurrentStreak(streak);
   }, [user]);
 
+  const loadProfile = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('age, favorite_activities, interests, other_preferences')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error cargando perfil:', error);
+        return;
+      }
+
+      if (data) {
+        setProfile({
+          age: data.age || undefined,
+          favorite_activities: data.favorite_activities || [],
+          interests: data.interests || [],
+          other_preferences: data.other_preferences || {},
+        });
+        setAgeInput(data.age ? data.age.toString() : '');
+      }
+    } catch (error) {
+      console.error('Error inesperado:', error);
+    }
+  }, [user]);
+
   useEffect(() => {
     loadProgressData();
     loadStreak();
-  }, [loadProgressData, loadStreak]);
+    loadProfile();
+  }, [loadProgressData, loadStreak, loadProfile]);
 
   // Detectar cuando se alcanza un milestone de streak y mostrar confetti
   useEffect(() => {
@@ -401,6 +443,24 @@ export default function ProfileScreen() {
         )}
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Mi perfil</Text>
+
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            activeOpacity={0.7}
+            onPress={() => setShowEditProfile(true)}
+          >
+            <Edit size={24} color={THEME.colors.gradient.blue} />
+            <View style={styles.menuItemContent}>
+              <Text style={styles.menuItemText}>Editar perfil personal</Text>
+              <Text style={styles.menuItemSubtext}>
+                {profile.favorite_activities?.length || 0} actividades • {profile.interests?.length || 0} intereses
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.sectionDivider} />
+
           <Text style={styles.sectionTitle}>Configuración</Text>
 
           <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
@@ -434,6 +494,135 @@ export default function ProfileScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Modal de edición de perfil */}
+      <Modal
+        visible={showEditProfile}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowEditProfile(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Mi perfil personal</Text>
+              <TouchableOpacity
+                onPress={() => setShowEditProfile(false)}
+                style={styles.modalCloseButton}
+              >
+                <X size={24} color={THEME.colors.text.main} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Edad */}
+              <View style={styles.formSection}>
+                <Text style={styles.formLabel}>Edad (opcional)</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={ageInput}
+                  onChangeText={setAgeInput}
+                  placeholder="Ej: 28"
+                  placeholderTextColor={THEME.colors.text.secondary}
+                  keyboardType="number-pad"
+                />
+              </View>
+
+              {/* Actividades favoritas */}
+              <View style={styles.formSection}>
+                <Text style={styles.formLabel}>Actividades favoritas</Text>
+                <View style={styles.chipContainer}>
+                  {(profile.favorite_activities || []).map((activity, index) => (
+                    <View key={index} style={styles.chip}>
+                      <Text style={styles.chipText}>{activity}</Text>
+                      <TouchableOpacity
+                        onPress={() => removeActivity(index)}
+                        style={styles.chipRemove}
+                      >
+                        <X size={14} color={THEME.colors.text.secondary} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+                <View style={styles.addInputContainer}>
+                  <TextInput
+                    style={styles.addInput}
+                    value={newActivity}
+                    onChangeText={setNewActivity}
+                    placeholder="Ej: yoga, leer, cocinar..."
+                    placeholderTextColor={THEME.colors.text.secondary}
+                    onSubmitEditing={addActivity}
+                  />
+                  <TouchableOpacity
+                    style={[styles.addButton, !newActivity.trim() && styles.addButtonDisabled]}
+                    onPress={addActivity}
+                    disabled={!newActivity.trim()}
+                  >
+                    <Plus size={20} color={THEME.colors.fill[100]} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Intereses */}
+              <View style={styles.formSection}>
+                <Text style={styles.formLabel}>Intereses</Text>
+                <View style={styles.chipContainer}>
+                  {(profile.interests || []).map((interest, index) => (
+                    <View key={index} style={styles.chip}>
+                      <Text style={styles.chipText}>{interest}</Text>
+                      <TouchableOpacity
+                        onPress={() => removeInterest(index)}
+                        style={styles.chipRemove}
+                      >
+                        <X size={14} color={THEME.colors.text.secondary} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+                <View style={styles.addInputContainer}>
+                  <TextInput
+                    style={styles.addInput}
+                    value={newInterest}
+                    onChangeText={setNewInterest}
+                    placeholder="Ej: música, viajes, fotografía..."
+                    placeholderTextColor={THEME.colors.text.secondary}
+                    onSubmitEditing={addInterest}
+                  />
+                  <TouchableOpacity
+                    style={[styles.addButton, !newInterest.trim() && styles.addButtonDisabled]}
+                    onPress={addInterest}
+                    disabled={!newInterest.trim()}
+                  >
+                    <Plus size={20} color={THEME.colors.fill[100]} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <Text style={styles.formHelpText}>
+                Estos datos nos ayudan a darte recomendaciones más personalizadas en Tips
+              </Text>
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={() => setShowEditProfile(false)}
+              >
+                <Text style={styles.modalButtonCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSave]}
+                onPress={handleSaveProfile}
+              >
+                <Text style={styles.modalButtonSaveText}>Guardar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -578,9 +767,148 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: THEME.colors.stroke[100],
   },
+  menuItemContent: {
+    flex: 1,
+  },
+  menuItemSubtext: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginTop: 2,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: THEME.colors.stroke[100],
+    marginVertical: THEME.spacing.md,
+  },
   menuItemText: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: THEME.colors.fill[100],
+    borderTopLeftRadius: THEME.borderRadius.rounded,
+    borderTopRightRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.lg,
+    paddingBottom: THEME.spacing.xl * 2,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: THEME.spacing.lg,
+  },
+  modalTitle: {
+    ...THEME.typography.h2,
+    color: THEME.colors.text.main,
+  },
+  modalCloseButton: {
+    padding: THEME.spacing.xs,
+  },
+  formSection: {
+    marginBottom: THEME.spacing.lg,
+  },
+  formLabel: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+    marginBottom: THEME.spacing.sm,
+  },
+  formInput: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.colors.gradient.blue + '20',
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.pill,
+    gap: THEME.spacing.xs,
+  },
+  chipText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.blue,
+  },
+  chipRemove: {
+    padding: 2,
+  },
+  addInputContainer: {
+    flexDirection: 'row',
+    gap: THEME.spacing.sm,
+    alignItems: 'center',
+  },
+  addInput: {
+    flex: 1,
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  addButton: {
+    width: 48,
+    height: 48,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.gradient.blue,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButtonDisabled: {
+    opacity: 0.5,
+  },
+  formHelpText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+    marginTop: THEME.spacing.md,
+    fontStyle: 'italic',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: THEME.spacing.md,
+    marginTop: THEME.spacing.lg,
+  },
+  modalButton: {
+    flex: 1,
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    alignItems: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: THEME.colors.fill[200],
+  },
+  modalButtonSave: {
+    backgroundColor: THEME.colors.gradient.blue,
+  },
+  modalButtonCancelText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  modalButtonSaveText: {
+    ...THEME.typography.body,
+    color: THEME.colors.fill[100],
+    fontFamily: THEME.fonts.heading.medium,
   },
   footer: {
     alignItems: 'center',
@@ -640,5 +968,141 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     flex: 1,
     lineHeight: 22,
+  },
+  menuItemContent: {
+    flex: 1,
+  },
+  menuItemSubtext: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginTop: 2,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: THEME.colors.stroke[100],
+    marginVertical: THEME.spacing.md,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: THEME.colors.fill[100],
+    borderTopLeftRadius: THEME.borderRadius.rounded,
+    borderTopRightRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.lg,
+    paddingBottom: THEME.spacing.xl * 2,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: THEME.spacing.lg,
+  },
+  modalTitle: {
+    ...THEME.typography.h2,
+    color: THEME.colors.text.main,
+  },
+  modalCloseButton: {
+    padding: THEME.spacing.xs,
+  },
+  formSection: {
+    marginBottom: THEME.spacing.lg,
+  },
+  formLabel: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+    marginBottom: THEME.spacing.sm,
+  },
+  formInput: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.colors.gradient.blue + '20',
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.pill,
+    gap: THEME.spacing.xs,
+  },
+  chipText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.blue,
+  },
+  chipRemove: {
+    padding: 2,
+  },
+  addInputContainer: {
+    flexDirection: 'row',
+    gap: THEME.spacing.sm,
+    alignItems: 'center',
+  },
+  addInput: {
+    flex: 1,
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  addButton: {
+    width: 48,
+    height: 48,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.gradient.blue,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  formHelpText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+    marginTop: THEME.spacing.md,
+    fontStyle: 'italic',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: THEME.spacing.md,
+    marginTop: THEME.spacing.lg,
+  },
+  modalButton: {
+    flex: 1,
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    alignItems: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: THEME.colors.fill[200],
+  },
+  modalButtonSave: {
+    backgroundColor: THEME.colors.gradient.blue,
+  },
+  modalButtonCancelText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  modalButtonSaveText: {
+    ...THEME.typography.body,
+    color: THEME.colors.fill[100],
+    fontFamily: THEME.fonts.heading.medium,
   },
 });
