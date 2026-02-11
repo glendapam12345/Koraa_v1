@@ -125,6 +125,7 @@ export default function FocusScreen() {
         ? emotion.charAt(0).toUpperCase() + emotion.slice(1)
         : emotion || '';
 
+      // Intentar guardar en Supabase primero
       const { error: checkInError } = await supabase
         .from('daily_check_ins')
         .upsert({
@@ -136,12 +137,30 @@ export default function FocusScreen() {
           focus_level: selectedFocus,
         }, { onConflict: 'user_id,date' });
 
+      // Si hay error de red, guardar offline
       if (checkInError) {
-        console.error('Error guardando check-in:', checkInError);
-        clearTimeout(safetyTimeout);
-        setIsSaving(false);
-        showToast('No se pudo guardar tu check-in. Por favor intenta de nuevo.', 'error');
-        return;
+        const isNetworkError = checkInError.message?.toLowerCase().includes('network') || 
+                              checkInError.message?.toLowerCase().includes('fetch') ||
+                              checkInError.message?.toLowerCase().includes('connection');
+        
+        if (isNetworkError) {
+          // Guardar offline
+          const { saveCheckInOffline } = await import('@/lib/offlineStorage');
+          await saveCheckInOffline({
+            date: today,
+            emotion: emotionCapitalized,
+            energy_level: energyLevel,
+            available_time: time,
+            focus_level: selectedFocus,
+          });
+          showToast('Check-in guardado offline. Se sincronizará cuando haya conexión.', 'info');
+        } else {
+          console.error('Error guardando check-in:', checkInError);
+          clearTimeout(safetyTimeout);
+          setIsSaving(false);
+          showToast('No se pudo guardar tu check-in. Por favor intenta de nuevo.', 'error');
+          return;
+        }
       }
 
       // Priorizar tareas automáticamente basado en el check-in (no bloquear si falla)

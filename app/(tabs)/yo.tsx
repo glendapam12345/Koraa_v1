@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, RefreshControl } from 'react-native';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { ProgressChart } from '@/components/ProgressChart';
 import { ConfettiCelebration } from '@/components/ConfettiCelebration';
 import * as Haptics from 'expo-haptics';
+import { generateEmotionalInsights } from '@/lib/emotionalInsights';
 
 type DayData = {
   date: string;
@@ -210,6 +211,11 @@ export default function ProfileScreen() {
   const totalDays = progressData.length;
   const consistencyPercentage = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
+  // Generar insights emocionales
+  const emotionalInsights = useMemo(() => {
+    return generateEmotionalInsights(progressData, currentStreak);
+  }, [progressData, currentStreak]);
+
   // Función para obtener el nivel de racha y sus colores
   const getStreakLevel = (streak: number) => {
     if (streak >= 90) {
@@ -381,6 +387,21 @@ export default function ProfileScreen() {
             </View>
             <ProgressChart data={progressData} />
           </View>
+
+          {/* Insights emocionales */}
+          {emotionalInsights.length > 0 && (
+            <View style={styles.insightsCard}>
+              <Text style={styles.insightsTitle}>Tus patrones emocionales</Text>
+              {emotionalInsights.map((insight, index) => (
+                <View key={index} style={styles.insightItem}>
+                  {insight.emoji && (
+                    <Text style={styles.insightEmoji}>{insight.emoji}</Text>
+                  )}
+                  <Text style={styles.insightText}>{insight.message}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Botón temporal para crear check-ins de prueba - Solo visible en desarrollo */}
@@ -622,5 +643,34 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.fill[100],
     fontFamily: THEME.fonts.heading.bold,
+  },
+  insightsCard: {
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginTop: THEME.spacing.md,
+    ...THEME.shadows.soft,
+  },
+  insightsTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    marginBottom: THEME.spacing.sm,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  insightItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: THEME.spacing.sm,
+    gap: THEME.spacing.xs,
+  },
+  insightEmoji: {
+    fontSize: 20,
+    marginRight: THEME.spacing.xs,
+  },
+  insightText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    flex: 1,
+    lineHeight: 22,
   },
 });

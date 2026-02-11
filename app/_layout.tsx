@@ -12,11 +12,14 @@ import {
 } from '@expo-google-fonts/libre-baskerville';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { useNotifications } from '@/hooks/useNotifications';
+import { scheduleDailyReminder } from '@/hooks/useNotifications';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   useFrameworkReady();
+  useNotifications();
 
   const [fontsLoaded, fontError] = useFonts({
     'DMSans-Medium': DMSans_500Medium,
@@ -27,6 +30,8 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
+      // Programar recordatorio diario después de que la app esté lista
+      scheduleDailyReminder();
     }
   }, [fontsLoaded, fontError]);
 

@@ -5,6 +5,7 @@ import { THEME } from '@/constants/theme';
 import { EmotionCard } from '@/components/EmotionCard';
 import { GradientButton } from '@/components/GradientButton';
 import { Tooltip } from '@/components/Tooltip';
+import { FlowIndicator } from '@/components/FlowIndicator';
 import { supabase } from '@/lib/supabase';
 import { router, useFocusEffect } from 'expo-router';
 import { Plus } from 'lucide-react-native';
@@ -102,6 +103,9 @@ export default function SentirScreen() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Indicador de flujo */}
+        <FlowIndicator currentStep="sentir" />
+
         <Text style={styles.title}>¿Cómo te</Text>
         <Text style={styles.titleAccent}>sientes</Text>
         <Text style={styles.subtitle}>hoy?</Text>
@@ -109,6 +113,15 @@ export default function SentirScreen() {
         <Text style={styles.description}>
           Kora prioriza por ti. Solo enfócate en lo que realmente importa hoy.
         </Text>
+
+        {/* Guía contextual */}
+        {hasTasks && (
+          <View style={styles.flowGuide}>
+            <Text style={styles.flowGuideText}>
+              💡 Después de sentir, ve a <Text style={styles.flowGuideAccent}>Accionar</Text> para ver tus tareas priorizadas
+            </Text>
+          </View>
+        )}
 
         {/* Banner si no hay tareas */}
         {hasTasks === false && (
@@ -235,5 +248,20 @@ const styles = StyleSheet.create({
   noTasksBannerSubtext: {
     ...THEME.typography.caption,
     color: 'rgba(255, 255, 255, 0.9)',
+  },
+  flowGuide: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+  },
+  flowGuideText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    lineHeight: 22,
+  },
+  flowGuideAccent: {
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.gradient.blue,
   },
 });

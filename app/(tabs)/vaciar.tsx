@@ -5,9 +5,11 @@ import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { Tooltip } from '@/components/Tooltip';
 import { Toast } from '@/components/Toast';
+import { FlowIndicator } from '@/components/FlowIndicator';
 import { supabase } from '@/lib/supabase';
-import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles } from 'lucide-react-native';
+import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
+import * as Speech from 'expo-speech';
 
 const CATEGORIES = [
   { id: 'trabajo', label: '💼 Trabajo', color: '#4A90E2' },
@@ -29,6 +31,8 @@ export default function VaciarScreen() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
   const [refreshing, setRefreshing] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [recentTaskSuggestions, setRecentTaskSuggestions] = useState<string[]>([]);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToastMessage(message);
@@ -54,6 +58,7 @@ export default function VaciarScreen() {
   useEffect(() => {
     checkTodayCheckIn();
     checkIfFirstTime();
+    loadRecentTaskSuggestions();
   }, []);
 
   // Recargar banner cuando la pantalla recibe foco
@@ -86,6 +91,34 @@ export default function VaciarScreen() {
       // Mostrar tooltip solo si no hay tareas (primera vez)
       if (!userHasTasks) {
         setShowTooltip(true);
+      }
+    } catch (error) {
+      console.error('Error inesperado:', error);
+    }
+  };
+
+  // Cargar sugerencias de tareas recientes para autocompletar
+  const loadRecentTaskSuggestions = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('content')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error('Error cargando sugerencias:', error);
+        return;
+      }
+
+      if (data) {
+        // Extraer tareas únicas (sin duplicados exactos)
+        const uniqueTasks = Array.from(new Set(data.map(t => t.content.trim())));
+        setRecentTaskSuggestions(uniqueTasks.slice(0, 3)); // Máximo 3 sugerencias
       }
     } catch (error) {
       console.error('Error inesperado:', error);
@@ -170,11 +203,53 @@ export default function VaciarScreen() {
         .select()
         .single();
 
+      // Si hay error de red, guardar offline
       if (mainTaskError) {
-        console.error('Error guardando tarea principal:', mainTaskError);
-        showToast('No se pudo guardar la tarea. Por favor intenta de nuevo', 'error');
-        setIsSaving(false);
-        return;
+        const isNetworkError = mainTaskError.message?.toLowerCase().includes('network') || 
+                              mainTaskError.message?.toLowerCase().includes('fetch') ||
+                              mainTaskError.message?.toLowerCase().includes('connection');
+        
+        if (isNetworkError) {
+          // Guardar offline
+          const { saveTaskOffline } = await import('@/lib/offlineStorage');
+          await saveTaskOffline({
+            content: taskInput.trim(),
+            category: selectedCategory,
+            is_priority: isPriority,
+            is_completed: false,
+            parent_task_id: null,
+          });
+          
+          // Guardar subtareas offline también si existen
+          if (hasSubtasks) {
+            const validSubtasks = subtasks.filter(st => st.trim());
+            for (const subtask of validSubtasks) {
+              await saveTaskOffline({
+                content: subtask.trim(),
+                category: selectedCategory,
+                is_priority: false,
+                is_completed: false,
+                parent_task_id: null, // Se asociará cuando se sincronice
+              });
+            }
+          }
+          
+          setRecentTasks([taskInput.trim(), ...recentTasks.slice(0, 4)]);
+          setTaskInput('');
+          setSelectedCategory('');
+          setIsPriority(false);
+          setHasSubtasks(false);
+          setSubtasks(['']);
+          
+          showToast('Tarea guardada offline. Se sincronizará cuando haya conexión.', 'info');
+          setIsSaving(false);
+          return;
+        } else {
+          console.error('Error guardando tarea principal:', mainTaskError);
+          showToast('No se pudo guardar la tarea. Por favor intenta de nuevo', 'error');
+          setIsSaving(false);
+          return;
+        }
       }
 
       // Crear subtareas si existen
@@ -212,6 +287,9 @@ export default function VaciarScreen() {
       setHasSubtasks(false);
       setSubtasks(['']);
       
+      // Recargar sugerencias después de agregar tarea
+      await loadRecentTaskSuggestions();
+      
       // Cerrar tooltip después de agregar primera tarea
       if (showTooltip) {
         setShowTooltip(false);
@@ -240,12 +318,45 @@ export default function VaciarScreen() {
         checkTodayCheckIn(),
         checkIfFirstTime(),
       ]);
+      // Intentar sincronizar datos offline
+      const { syncAll } = await import('@/lib/offlineStorage');
+      await syncAll();
     } catch (error) {
       console.error('Error al refrescar:', error);
       showToast('Error al actualizar los datos', 'error');
     } finally {
       setRefreshing(false);
     }
+  };
+
+  // Función para entrada por voz
+  const handleVoiceInput = () => {
+    if (Platform.OS === 'web') {
+      showToast('La entrada por voz no está disponible en web', 'info');
+      return;
+    }
+
+    // Por ahora, mostrar un alert simple
+    // TODO: Implementar reconocimiento de voz real con expo-speech o librería nativa
+    Alert.prompt(
+      'Entrada por voz',
+      'Por ahora, escribe lo que quieres agregar. El reconocimiento de voz completo estará disponible pronto.',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Usar teclado de voz',
+          onPress: () => {
+            // En iOS/Android, esto activará el teclado de voz del sistema
+            // El usuario puede usar el dictado del sistema
+            showToast('Usa el botón de micrófono del teclado para dictar', 'info');
+          },
+        },
+      ],
+      'plain-text'
+    );
   };
 
   return (
@@ -275,6 +386,9 @@ export default function VaciarScreen() {
           />
         }
       >
+        {/* Indicador de flujo */}
+        <FlowIndicator currentStep="vaciar" />
+
         <Text style={styles.title}>Vacía tu mente en</Text>
         <Text style={styles.titleAccent}>un respiro</Text>
 
@@ -282,6 +396,15 @@ export default function VaciarScreen() {
           Sin categorías. Sin etiquetas. Sin estructura.{'\n'}
           Solo escribe lo que necesitas soltar.
         </Text>
+
+        {/* Guía contextual */}
+        {!hasCheckInToday && (
+          <View style={styles.flowGuide}>
+            <Text style={styles.flowGuideText}>
+              💡 Después de vaciar tu mente, ve a <Text style={styles.flowGuideAccent}>Sentir</Text> para que Kora priorice tus tareas
+            </Text>
+          </View>
+        )}
 
         {/* Banner si falta check-in */}
         {hasCheckInToday === false && (
@@ -320,7 +443,39 @@ export default function VaciarScreen() {
             numberOfLines={4}
             textAlignVertical="top"
           />
+          {/* Botón de entrada por voz */}
+          {Platform.OS !== 'web' && (
+            <TouchableOpacity
+              style={styles.voiceButton}
+              onPress={handleVoiceInput}
+              activeOpacity={0.7}
+            >
+              <Mic 
+                size={20} 
+                color={isListening ? THEME.colors.gradient.pink : THEME.colors.text.secondary} 
+              />
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/* Sugerencias de tareas recientes */}
+        {recentTaskSuggestions.length > 0 && !taskInput.trim() && (
+          <View style={styles.suggestionsContainer}>
+            <Text style={styles.suggestionsTitle}>Sugerencias rápidas:</Text>
+            <View style={styles.suggestionsGrid}>
+              {recentTaskSuggestions.map((suggestion, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.suggestionChip}
+                  onPress={() => setTaskInput(suggestion)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.suggestionText}>{suggestion}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         <View style={styles.categoriesContainer}>
           <Text style={styles.categoryLabel}>Opcional: Categoría</Text>
@@ -668,5 +823,58 @@ const styles = StyleSheet.create({
   checkInBannerSubtext: {
     ...THEME.typography.caption,
     color: 'rgba(255, 255, 255, 0.9)',
+  },
+  voiceButton: {
+    position: 'absolute',
+    right: THEME.spacing.md,
+    bottom: THEME.spacing.md,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: THEME.colors.fill[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...THEME.shadows.soft,
+  },
+  suggestionsContainer: {
+    marginTop: THEME.spacing.sm,
+    marginBottom: THEME.spacing.md,
+  },
+  suggestionsTitle: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.xs,
+  },
+  suggestionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.xs,
+  },
+  suggestionChip: {
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[200],
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  suggestionText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+  },
+  flowGuide: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+  },
+  flowGuideText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    lineHeight: 22,
+  },
+  flowGuideAccent: {
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.gradient.blue,
   },
 });

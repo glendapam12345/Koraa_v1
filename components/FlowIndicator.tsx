@@ -1,0 +1,148 @@
+import { View, Text, StyleSheet } from 'react-native';
+import { THEME } from '@/constants/theme';
+import { CheckCircle2, Circle } from 'lucide-react-native';
+
+type FlowStep = 'vaciar' | 'sentir' | 'accionar';
+
+interface FlowIndicatorProps {
+  currentStep: FlowStep;
+}
+
+export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
+  const steps: { id: FlowStep; label: string; number: number }[] = [
+    { id: 'vaciar', label: 'Vaciar', number: 1 },
+    { id: 'sentir', label: 'Sentir', number: 2 },
+    { id: 'accionar', label: 'Accionar', number: 3 },
+  ];
+
+  const getStepStatus = (step: FlowStep) => {
+    const currentIndex = steps.findIndex(s => s.id === currentStep);
+    const stepIndex = steps.findIndex(s => s.id === step.id);
+    
+    if (stepIndex < currentIndex) return 'completed';
+    if (stepIndex === currentIndex) return 'current';
+    return 'pending';
+  };
+
+  return (
+    <View style={styles.container}>
+      {steps.map((step, index) => {
+        const status = getStepStatus(step.id);
+        const isLast = index === steps.length - 1;
+
+        return (
+          <View key={step.id} style={styles.stepContainer}>
+            <View style={styles.stepContent}>
+              {status === 'completed' ? (
+                <View style={styles.stepIconCompleted}>
+                  <CheckCircle2 size={20} color={THEME.colors.fill[100]} />
+                </View>
+              ) : (
+                <View style={[
+                  styles.stepIcon,
+                  status === 'current' && styles.stepIconCurrent
+                ]}>
+                  <Text style={[
+                    styles.stepNumber,
+                    status === 'current' && styles.stepNumberCurrent
+                  ]}>
+                    {step.number}
+                  </Text>
+                </View>
+              )}
+              <Text style={[
+                styles.stepLabel,
+                status === 'current' && styles.stepLabelCurrent,
+                status === 'completed' && styles.stepLabelCompleted
+              ]}>
+                {step.label}
+              </Text>
+            </View>
+            {!isLast && (
+              <View style={[
+                styles.connector,
+                status === 'completed' && styles.connectorCompleted
+              ]} />
+            )}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.lg,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    marginBottom: THEME.spacing.md,
+  },
+  stepContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  stepContent: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  stepIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 2,
+    borderColor: THEME.colors.stroke[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: THEME.spacing.xs,
+  },
+  stepIconCurrent: {
+    backgroundColor: THEME.colors.gradient.blue,
+    borderColor: THEME.colors.gradient.blue,
+  },
+  stepIconCompleted: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: THEME.colors.gradient.blue,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: THEME.spacing.xs,
+  },
+  stepNumber: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.bold,
+    fontSize: 14,
+  },
+  stepNumberCurrent: {
+    color: THEME.colors.fill[100],
+  },
+  stepLabel: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontSize: 11,
+  },
+  stepLabelCurrent: {
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  stepLabelCompleted: {
+    color: THEME.colors.text.main,
+  },
+  connector: {
+    width: 20,
+    height: 2,
+    backgroundColor: THEME.colors.stroke[100],
+    marginHorizontal: THEME.spacing.xs,
+  },
+  connectorCompleted: {
+    backgroundColor: THEME.colors.gradient.blue,
+  },
+});

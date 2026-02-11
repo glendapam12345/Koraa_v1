@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, Platform, RefreshControl } from 'react-native';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
@@ -7,6 +7,8 @@ import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
 import { Toast } from '@/components/Toast';
 import { ConfettiCelebration } from '@/components/ConfettiCelebration';
+import { QuickCheckInModal } from '@/components/QuickCheckInModal';
+import { FlowIndicator } from '@/components/FlowIndicator';
 import { supabase } from '@/lib/supabase';
 import { RefreshCw, ChevronDown, ChevronUp, MoreVertical, Edit, Trash2, X, Sparkles, CheckCircle2 } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -39,6 +41,7 @@ export default function TodayScreen() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [previousCompletedCount, setPreviousCompletedCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [showQuickCheckIn, setShowQuickCheckIn] = useState(false);
   const progressWidth = useSharedValue(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -50,6 +53,17 @@ export default function TodayScreen() {
   useEffect(() => {
     loadTasks();
     loadTodayCheckIn();
+    
+    // Intentar sincronizar datos offline al cargar
+    (async () => {
+      try {
+        const { syncAll } = await import('@/lib/offlineStorage');
+        await syncAll();
+      } catch (error) {
+        // Silencioso, no es crítico
+        console.log('Sincronización offline:', error);
+      }
+    })();
 
     // Cleanup: limpiar timeout si el componente se desmonta
     return () => {
@@ -57,7 +71,7 @@ export default function TodayScreen() {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, []);
+  }, [loadTasks, loadTodayCheckIn]);
 
   // Verificar si mostrar tooltip después de cargar datos
   useEffect(() => {
@@ -79,7 +93,7 @@ export default function TodayScreen() {
     if (allCompleted && hasTasks && wasNotAllCompleted && !showConfetti) {
       // ¡Todas las tareas completadas!
       setShowConfetti(true);
-      showToast('¡Increíble! Has completado todas tus tareas del día 🎉', 'success');
+      showToast('Hoy está completo. Descansa y disfruta del momento presente ✨', 'success');
       
       // Ocultar confetti después de 4 segundos
       setTimeout(() => {
@@ -112,7 +126,7 @@ export default function TodayScreen() {
     };
   });
 
-  const loadTodayCheckIn = async () => {
+  const loadTodayCheckIn = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -146,9 +160,9 @@ export default function TodayScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     try {
       setLoadingTasks(true);
       const { data: { user } } = await supabase.auth.getUser();
@@ -191,7 +205,7 @@ export default function TodayScreen() {
     } finally {
       setLoadingTasks(false);
     }
-  };
+  }, []);
 
   const toggleTaskExpansion = (taskId: string) => {
     const newExpanded = new Set(expandedTasks);
@@ -232,6 +246,13 @@ export default function TodayScreen() {
         console.error('Error actualizando tarea:', error);
         showToast('No se pudo actualizar la tarea', 'error');
         return;
+      }
+
+      // Si se completa una tarea principal, animar fade out después de un delay
+      if (newCompletedState && !isSubtask) {
+        setTimeout(() => {
+          setTasks(prev => prev.filter(t => t.id !== taskId));
+        }, 800); // Delay para que el usuario vea la confirmación antes de desaparecer
       }
 
       // Actualizar estado local y verificar si la tarea principal debe completarse
@@ -335,7 +356,7 @@ export default function TodayScreen() {
     }
   };
 
-  const getCategoryColor = (category: string) => {
+  const getCategoryColor = useCallback((category: string) => {
     switch (category.toLowerCase()) {
       case 'trabajo':
         return '#4A90E2';
@@ -346,7 +367,7 @@ export default function TodayScreen() {
       default:
         return THEME.colors.text.secondary;
     }
-  };
+  }, []);
 
   const CATEGORIES = [
     { id: 'trabajo', label: '💼 Trabajo', color: '#4A90E2' },
@@ -448,45 +469,56 @@ export default function TodayScreen() {
     );
   };
 
-  // Calcular tareas completadas y no completadas (solo tareas principales, no subtareas)
-  const incompleteTasks = tasks.filter(t => !t.is_completed);
-  const completedToday = tasks.filter(t => t.is_completed).length;
-  const totalPriorityTasks = incompleteTasks.length + completedToday;
-  const progressPercentage = totalPriorityTasks > 0 ? (completedToday / totalPriorityTasks) * 100 : 0;
+  // Calcular tareas completadas y no completadas (solo tareas principales, no subtareas) - Memoizado
+  const incompleteTasks = useMemo(() => tasks.filter(t => !t.is_completed), [tasks]);
+  const completedToday = useMemo(() => tasks.filter(t => t.is_completed).length, [tasks]);
+  const totalPriorityTasks = useMemo(() => incompleteTasks.length + completedToday, [incompleteTasks.length, completedToday]);
+  const progressPercentage = useMemo(() => 
+    totalPriorityTasks > 0 ? (completedToday / totalPriorityTasks) * 100 : 0,
+    [completedToday, totalPriorityTasks]
+  );
 
-  // Función para obtener mensaje explicativo basado en energía y emoción
-  const getPriorityExplanation = () => {
+  // Función para obtener mensaje explicativo basado en energía y emoción - Memoizada
+  const getPriorityExplanation = useCallback(() => {
     if (!todayMood || energyLevel === 0) {
       return {
         title: 'Tu plan de hoy',
         message: 'Primero agrega tus tareas en "Vaciar", luego haz tu check-in en "Sentir" para ver tus prioridades basadas en cómo te sientes.',
         suggestion: 'Flujo sugerido: Vaciar → Sentir → Hoy',
+        reasoning: null,
       };
     }
 
     const negativeEmotions = ['agotada', 'ansiosa', 'abrumada'];
     const isNegativeEmotion = negativeEmotions.includes(todayMood.toLowerCase());
 
-    let suggestion = '';
-    if (energyLevel <= 2 || isNegativeEmotion) {
-      suggestion = 'Menos es más cuando tu energía está baja. Enfócate en lo esencial.';
-    } else if (energyLevel === 3) {
-      suggestion = 'Tienes energía moderada. Prioriza lo importante.';
-    } else if (energyLevel >= 4) {
-      suggestion = '¡Tienes energía para más! Aprovecha este momento.';
-    }
-
     const emotionLabel = todayMood.charAt(0).toUpperCase() + todayMood.slice(1);
     const priorityCount = incompleteTasks.length;
+
+    // Razonamiento emocional claro del "por qué"
+    let reasoning = '';
+    let suggestion = '';
+    
+    if (energyLevel <= 2 || isNegativeEmotion) {
+      reasoning = `Con energía ${energyLevel}/5 y sintiéndote ${emotionLabel}, tu cuerpo y mente necesitan menos presión. Por eso priorizamos solo ${priorityCount} ${priorityCount === 1 ? 'tarea esencial' : 'tareas esenciales'} para hoy.`;
+      suggestion = 'Menos es más cuando tu energía está baja. Enfócate en lo esencial.';
+    } else if (energyLevel === 3) {
+      reasoning = `Con energía moderada (${energyLevel}/5) y sintiéndote ${emotionLabel}, puedes manejar ${priorityCount} ${priorityCount === 1 ? 'tarea prioritaria' : 'tareas prioritarias'} sin sobrecargarte.`;
+      suggestion = 'Tienes energía moderada. Prioriza lo importante.';
+    } else if (energyLevel >= 4) {
+      reasoning = `¡Tienes energía alta (${energyLevel}/5) y te sientes ${emotionLabel}! Por eso priorizamos ${priorityCount} ${priorityCount === 1 ? 'tarea' : 'tareas'} para que aproveches este momento de energía.`;
+      suggestion = '¡Tienes energía para más! Aprovecha este momento.';
+    }
 
     return {
       title: 'Tu plan de hoy',
       message: `Con tu energía de ${energyLevel}/5 y sintiéndote ${emotionLabel}, te sugerimos enfocarte en ${priorityCount} ${priorityCount === 1 ? 'tarea prioritaria' : 'tareas prioritarias'} hoy.`,
       suggestion,
+      reasoning,
     };
-  };
+  }, [todayMood, energyLevel, incompleteTasks.length]);
 
-  const explanation = getPriorityExplanation();
+  const explanation = useMemo(() => getPriorityExplanation(), [getPriorityExplanation]);
 
   // Función para manejar pull to refresh
   const handleRefresh = async () => {
@@ -525,7 +557,7 @@ export default function TodayScreen() {
           style={styles.moodCard}
         >
           <View style={styles.moodHeader}>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.moodLabel}>Hoy te sientes</Text>
               <Text style={styles.moodTitle}>
                 {loading ? 'Cargando...' : todayMood || 'Aún no has hecho tu check-in'}
@@ -547,9 +579,34 @@ export default function TodayScreen() {
               {time && <Text style={styles.moodStat}>{time}</Text>}
             </View>
           )}
+          
+          {/* Botón de check-in rápido */}
+          {!loading && (
+            <TouchableOpacity
+              style={styles.quickCheckInButton}
+              onPress={() => {
+                if (todayMood) {
+                  // Si ya hay check-in, ir a la pantalla completa para actualizar
+                  router.push('/(tabs)/sentir');
+                } else {
+                  // Si no hay check-in, abrir modal rápido
+                  setShowQuickCheckIn(true);
+                }
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.quickCheckInButtonText}>
+                {todayMood ? 'Actualizar cómo me siento' : '¿Cómo te sientes hoy?'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </LinearGradient>
 
         <View style={styles.section}>
+          {/* Indicador de flujo */}
+          {!loading && (
+            <FlowIndicator currentStep="accionar" />
+          )}
           <Text style={styles.sectionTitle}>{explanation.title}</Text>
           
           {/* Banner de recordatorio de check-in */}
@@ -575,8 +632,25 @@ export default function TodayScreen() {
             </TouchableOpacity>
           )}
           
-          {/* Mensaje explicativo */}
-          {incompleteTasks.length > 0 && (
+          {/* Mensaje explicativo con razonamiento emocional */}
+          {incompleteTasks.length > 0 && explanation.reasoning && (
+            <View style={styles.explanationCard}>
+              <Text style={styles.explanationText}>
+                {explanation.message}
+              </Text>
+              <Text style={styles.explanationReasoning}>
+                {explanation.reasoning}
+              </Text>
+              {explanation.suggestion && (
+                <Text style={styles.explanationSuggestion}>
+                  {explanation.suggestion}
+                </Text>
+              )}
+            </View>
+          )}
+          
+          {/* Mensaje explicativo sin razonamiento (cuando no hay check-in) */}
+          {incompleteTasks.length > 0 && !explanation.reasoning && (
             <View style={styles.explanationCard}>
               <Text style={styles.explanationText}>
                 {explanation.message}
@@ -598,9 +672,18 @@ export default function TodayScreen() {
             >
               <Text style={styles.explanationText}>
                 Ya hiciste tu check-in, pero aún no tienes tareas.{'\n'}
-                Ve a "Vaciar" para agregar lo que necesitas hacer hoy.
+                Ve a <Text style={styles.flowGuideAccent}>Vaciar</Text> para agregar lo que necesitas hacer hoy.
               </Text>
             </TouchableOpacity>
+          )}
+
+          {/* Guía contextual cuando hay tareas pero no hay check-in */}
+          {!todayMood && incompleteTasks.length > 0 && (
+            <View style={styles.flowGuide}>
+              <Text style={styles.flowGuideText}>
+                💡 Ve a <Text style={styles.flowGuideAccent}>Sentir</Text> para que Kora priorice estas tareas según cómo te sientes hoy
+              </Text>
+            </View>
           )}
 
           {/* Resumen diario */}
@@ -688,6 +771,28 @@ export default function TodayScreen() {
             (() => {
               // Separar tareas completadas y no completadas (ya calculado arriba)
               const completedTasks = tasks.filter(t => t.is_completed);
+              const allTasksCompleted = tasks.length > 0 && tasks.every(t => t.is_completed);
+              
+              // Mostrar mensaje de paz cuando todas las tareas están completadas
+              if (allTasksCompleted) {
+                return (
+                  <View style={styles.completionState}>
+                    <View style={styles.completionIconContainer}>
+                      <Text style={styles.completionEmoji}>✨</Text>
+                    </View>
+                    <Text style={styles.completionTitle}>
+                      Hoy está completo
+                    </Text>
+                    <Text style={styles.completionMessage}>
+                      Has completado todas tus tareas prioritarias.{'\n'}
+                      Es momento de descansar y disfrutar del momento presente.
+                    </Text>
+                    <Text style={styles.completionAccent}>
+                      Descansa
+                    </Text>
+                  </View>
+                );
+              }
               
               const renderTask = (task: Task, index: number, isCompleted: boolean) => {
                 const hasSubtasks = task.subtasks && task.subtasks.length > 0;
@@ -715,6 +820,7 @@ export default function TodayScreen() {
                         styles.taskCard,
                         isCompleted && styles.taskCardCompleted,
                         hasSubtasks && styles.taskCardWithSubtasks,
+                        isCompleted && { opacity: 0.5 },
                       ]}
                       activeOpacity={0.7}
                     >
@@ -982,6 +1088,12 @@ export default function TodayScreen() {
         message="Aquí verás tus tareas priorizadas automáticamente según cómo te sientes. Kora adapta el número de tareas según tu energía y emoción. Marca las tareas como completadas cuando las termines."
         onClose={() => setShowTooltip(false)}
       />
+      
+      {/* Modal de check-in rápido */}
+      <QuickCheckInModal
+        visible={showQuickCheckIn}
+        onClose={() => setShowQuickCheckIn(false)}
+      />
     </View>
   );
 }
@@ -1065,6 +1177,28 @@ const styles = StyleSheet.create({
     color: THEME.colors.gradient.pink,
     fontFamily: THEME.fonts.heading.medium,
     marginTop: THEME.spacing.xs,
+  },
+  explanationReasoning: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    lineHeight: 22,
+    marginTop: THEME.spacing.xs,
+    fontStyle: 'italic',
+  },
+  quickCheckInButton: {
+    marginTop: THEME.spacing.md,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: THEME.borderRadius.pill,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  quickCheckInButtonText: {
+    ...THEME.typography.body,
+    color: THEME.colors.fill[100],
+    fontFamily: THEME.fonts.heading.medium,
   },
   progressIndicator: {
     backgroundColor: THEME.colors.fill[200],
@@ -1472,5 +1606,59 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: THEME.colors.stroke[100],
     marginHorizontal: THEME.spacing.sm,
+  },
+  completionState: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.xl,
+    alignItems: 'center',
+    marginTop: THEME.spacing.lg,
+  },
+  completionIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: THEME.colors.fill[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: THEME.spacing.md,
+    ...THEME.shadows.soft,
+  },
+  completionEmoji: {
+    fontSize: 40,
+  },
+  completionTitle: {
+    ...THEME.typography.h2,
+    color: THEME.colors.text.main,
+    textAlign: 'center',
+    marginBottom: THEME.spacing.sm,
+  },
+  completionMessage: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: THEME.spacing.md,
+  },
+  completionAccent: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.accent.italic,
+    color: THEME.colors.gradient.pink,
+    fontSize: 18,
+  },
+  flowGuide: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+  },
+  flowGuideText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    lineHeight: 22,
+  },
+  flowGuideAccent: {
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.gradient.blue,
   },
 });
