@@ -110,6 +110,12 @@ export default function FocusScreen() {
 
     setIsSaving(true);
 
+    // Timeout de seguridad: resetear estado después de 10 segundos si algo falla
+    const safetyTimeout = setTimeout(() => {
+      console.warn('Timeout de seguridad: reseteando isSaving');
+      setIsSaving(false);
+    }, 10000);
+
     try {
       const today = new Date().toISOString().split('T')[0];
 
@@ -132,31 +138,48 @@ export default function FocusScreen() {
 
       if (checkInError) {
         console.error('Error guardando check-in:', checkInError);
-        showToast('No se pudo guardar tu check-in. Por favor intenta de nuevo.', 'error');
+        clearTimeout(safetyTimeout);
         setIsSaving(false);
+        showToast('No se pudo guardar tu check-in. Por favor intenta de nuevo.', 'error');
         return;
       }
 
-      // Priorizar tareas automáticamente basado en el check-in
-      await prioritizeTasksBasedOnCheckIn(energyLevel, emotion);
+      // Priorizar tareas automáticamente basado en el check-in (no bloquear si falla)
+      prioritizeTasksBasedOnCheckIn(energyLevel, emotion).catch((error) => {
+        console.error('Error en priorización (no crítico):', error);
+        // No bloquear el flujo si la priorización falla
+      });
 
-      // Resetear estado de guardado
+      // Limpiar timeout de seguridad
+      clearTimeout(safetyTimeout);
+
+      // Resetear estado de guardado ANTES de navegar
       setIsSaving(false);
+
+      // Pequeño delay para asegurar que el estado se actualice antes de navegar
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Redirigir a pantalla de resumen
-      router.replace({
-        pathname: '/checkin-summary',
-        params: {
-          emotion,
-          energy: energyLevel.toString(),
-          time,
-          focus: selectedFocus,
-        },
-      });
+      try {
+        router.replace({
+          pathname: '/checkin-summary',
+          params: {
+            emotion,
+            energy: energyLevel.toString(),
+            time,
+            focus: selectedFocus,
+          },
+        });
+      } catch (navError) {
+        console.error('Error en navegación:', navError);
+        // Si la navegación falla, intentar redirigir a tabs
+        router.replace('/(tabs)');
+      }
     } catch (error) {
       console.error('Error:', error);
-      showToast('Ocurrió un error inesperado. Por favor intenta de nuevo.', 'error');
+      clearTimeout(safetyTimeout);
       setIsSaving(false);
+      showToast('Ocurrió un error inesperado. Por favor intenta de nuevo.', 'error');
     }
   };
 
