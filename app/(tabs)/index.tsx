@@ -11,8 +11,9 @@ import { QuickCheckInModal } from '@/components/QuickCheckInModal';
 import { FlowIndicator } from '@/components/FlowIndicator';
 import { supabase } from '@/lib/supabase';
 import { detectCategory } from '@/lib/categoryDetection';
-import { RefreshCw, ChevronDown, ChevronUp, MoreVertical, Edit, Trash2, X, Sparkles, CheckCircle2, Plus } from 'lucide-react-native';
+import { RefreshCw, ChevronDown, ChevronUp, MoreVertical, Edit, Trash2, X, Sparkles, CheckCircle2, Plus, Flame, Sunrise, Moon } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { MeditationCircle } from '@/components/MeditationCircle';
 
 type Task = {
   id: string;
@@ -45,6 +46,11 @@ export default function TodayScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showQuickCheckIn, setShowQuickCheckIn] = useState(false);
   const [totalTasksBefore, setTotalTasksBefore] = useState<number | null>(null);
+  const [currentStreak, setCurrentStreak] = useState<number>(0);
+  const [showMeditation, setShowMeditation] = useState(false);
+  const [meditationType, setMeditationType] = useState<'morning' | 'evening'>('morning');
+  const [morningMeditationDone, setMorningMeditationDone] = useState(false);
+  const [eveningMeditationDone, setEveningMeditationDone] = useState(false);
   const progressWidth = useSharedValue(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -90,6 +96,124 @@ export default function TodayScreen() {
       setLoading(false);
     }
   }, []);
+
+  const loadStreak = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const today = new Date();
+      const checkInDates = new Set<string>();
+
+      // Fetch check-ins from last 365 days
+      const oneYearAgo = new Date(today);
+      oneYearAgo.setDate(today.getDate() - 365);
+
+      const { data: checkIns } = await supabase
+        .from('daily_check_ins')
+        .select('date')
+        .eq('user_id', user.id)
+        .gte('date', oneYearAgo.toISOString().split('T')[0])
+        .lte('date', today.toISOString().split('T')[0])
+        .order('date', { ascending: false });
+
+      if (checkIns) {
+        checkIns.forEach((checkIn) => {
+          checkInDates.add(checkIn.date);
+        });
+      }
+
+      // Calculate streak from today backwards
+      let streak = 0;
+      for (let i = 0; i < 365; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(today.getDate() - i);
+        const dateString = checkDate.toISOString().split('T')[0];
+
+        if (checkInDates.has(dateString)) {
+          streak++;
+        } else if (i === 0) {
+          continue;
+        } else {
+          break;
+        }
+      }
+
+      setCurrentStreak(streak);
+    } catch (error) {
+      console.error('Error cargando racha:', error);
+    }
+  }, []);
+
+  const loadMeditations = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const today = new Date().toISOString().split('T')[0];
+      const { data: meditations } = await supabase
+        .from('meditations')
+        .select('type')
+        .eq('user_id', user.id)
+        .eq('date', today);
+
+      if (meditations) {
+        setMorningMeditationDone(meditations.some(m => m.type === 'morning'));
+        setEveningMeditationDone(meditations.some(m => m.type === 'evening'));
+      }
+    } catch (error) {
+      console.error('Error cargando meditaciones:', error);
+    }
+  }, []);
+
+  const handleMeditationComplete = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const today = new Date().toISOString().split('T')[0];
+      const { error } = await supabase
+        .from('meditations')
+        .insert({
+          user_id: user.id,
+          date: today,
+          type: meditationType,
+        });
+
+      if (error) {
+        console.error('Error guardando meditación:', error);
+        showToast('No se pudo guardar la meditación', 'error');
+        return;
+      }
+
+      // Update state
+      if (meditationType === 'morning') {
+        setMorningMeditationDone(true);
+      } else {
+        setEveningMeditationDone(true);
+      }
+
+      setShowMeditation(false);
+      setShowConfetti(true);
+      showToast('¡Meditación completada! 🧘', 'success');
+
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+
+      setTimeout(() => {
+        setShowConfetti(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Error inesperado:', error);
+      showToast('Ocurrió un error', 'error');
+    }
+  };
+
+  const handleStartMeditation = (type: 'morning' | 'evening') => {
+    setMeditationType(type);
+    setShowMeditation(true);
+  };
 
   const loadTasks = useCallback(async () => {
     try {
@@ -165,6 +289,8 @@ export default function TodayScreen() {
   useEffect(() => {
     loadTasks();
     loadTodayCheckIn();
+    loadStreak();
+    loadMeditations();
     loadPrioritizationMetadata();
 
     // Intentar sincronizar datos offline al cargar
@@ -184,7 +310,7 @@ export default function TodayScreen() {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [loadTasks, loadTodayCheckIn, loadPrioritizationMetadata]);
+  }, [loadTasks, loadTodayCheckIn, loadStreak, loadMeditations, loadPrioritizationMetadata]);
 
   // Verificar si mostrar tooltip después de cargar datos
   useEffect(() => {
@@ -611,6 +737,8 @@ export default function TodayScreen() {
       await Promise.all([
         loadTasks(),
         loadTodayCheckIn(),
+        loadStreak(),
+        loadMeditations(),
       ]);
     } catch (error) {
       console.error('Error al refrescar:', error);
@@ -634,6 +762,95 @@ export default function TodayScreen() {
           />
         }
       >
+        {/* Racha sutil en la parte superior */}
+        {!loading && currentStreak > 0 && (
+          <View style={styles.streakBadge}>
+            <Flame size={18} color="#FF6B6B" />
+            <Text style={styles.streakText}>{currentStreak}</Text>
+          </View>
+        )}
+
+        {/* Sección de Meditación */}
+        {!loading && (
+          <View style={styles.meditationSection}>
+            <Text style={styles.meditationSectionTitle}>
+              Tu momento de <Text style={styles.accentText}>calma</Text>
+            </Text>
+
+            <View style={styles.meditationButtons}>
+              {/* Meditación matutina */}
+              <TouchableOpacity
+                style={[
+                  styles.meditationButton,
+                  morningMeditationDone && styles.meditationButtonDone
+                ]}
+                onPress={() => !morningMeditationDone && handleStartMeditation('morning')}
+                activeOpacity={0.8}
+                disabled={morningMeditationDone}
+              >
+                <LinearGradient
+                  colors={
+                    morningMeditationDone
+                      ? ['#E8E8E8', '#F5F5F5']
+                      : ['#FFA07A', '#FF6B6B']
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.meditationButtonGradient}
+                >
+                  <Sunrise size={28} color={morningMeditationDone ? '#999' : THEME.colors.fill[100]} />
+                  <Text style={[
+                    styles.meditationButtonText,
+                    morningMeditationDone && styles.meditationButtonTextDone
+                  ]}>
+                    {morningMeditationDone ? 'Mañana completada' : 'Iniciar el día'}
+                  </Text>
+                  {morningMeditationDone && (
+                    <View style={styles.checkmark}>
+                      <Text style={styles.checkmarkText}>✓</Text>
+                    </View>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+
+              {/* Meditación nocturna */}
+              <TouchableOpacity
+                style={[
+                  styles.meditationButton,
+                  eveningMeditationDone && styles.meditationButtonDone
+                ]}
+                onPress={() => !eveningMeditationDone && handleStartMeditation('evening')}
+                activeOpacity={0.8}
+                disabled={eveningMeditationDone}
+              >
+                <LinearGradient
+                  colors={
+                    eveningMeditationDone
+                      ? ['#E8E8E8', '#F5F5F5']
+                      : ['#9B59B6', '#6C5CE7']
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.meditationButtonGradient}
+                >
+                  <Moon size={28} color={eveningMeditationDone ? '#999' : THEME.colors.fill[100]} />
+                  <Text style={[
+                    styles.meditationButtonText,
+                    eveningMeditationDone && styles.meditationButtonTextDone
+                  ]}>
+                    {eveningMeditationDone ? 'Noche completada' : 'Terminar el día'}
+                  </Text>
+                  {eveningMeditationDone && (
+                    <View style={styles.checkmark}>
+                      <Text style={styles.checkmarkText}>✓</Text>
+                    </View>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* Botón principal: ¿Cómo te sientes hoy? */}
         {!loading && !todayMood && (
           <TouchableOpacity
@@ -1193,6 +1410,14 @@ export default function TodayScreen() {
       <QuickCheckInModal
         visible={showQuickCheckIn}
         onClose={() => setShowQuickCheckIn(false)}
+      />
+
+      {/* Modal de meditación */}
+      <MeditationCircle
+        visible={showMeditation}
+        onComplete={handleMeditationComplete}
+        onClose={() => setShowMeditation(false)}
+        type={meditationType}
       />
     </View>
   );
@@ -1884,5 +2109,75 @@ const styles = StyleSheet.create({
     ...THEME.typography.caption,
     color: THEME.colors.fill[100],
     fontFamily: THEME.fonts.heading.medium,
+  },
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.pill,
+    gap: 4,
+    marginBottom: THEME.spacing.md,
+  },
+  streakText: {
+    ...THEME.typography.caption,
+    color: '#FF6B6B',
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  meditationSection: {
+    marginBottom: THEME.spacing.lg,
+  },
+  meditationSectionTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    marginBottom: THEME.spacing.md,
+    textAlign: 'center',
+  },
+  meditationButtons: {
+    flexDirection: 'row',
+    gap: THEME.spacing.md,
+  },
+  meditationButton: {
+    flex: 1,
+    borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  meditationButtonDone: {
+    opacity: 0.6,
+  },
+  meditationButtonGradient: {
+    padding: THEME.spacing.md,
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    minHeight: 120,
+    justifyContent: 'center',
+  },
+  meditationButtonText: {
+    ...THEME.typography.body,
+    color: THEME.colors.fill[100],
+    fontFamily: THEME.fonts.heading.bold,
+    textAlign: 'center',
+  },
+  meditationButtonTextDone: {
+    color: '#999',
+  },
+  checkmark: {
+    position: 'absolute',
+    top: THEME.spacing.xs,
+    right: THEME.spacing.xs,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkmarkText: {
+    color: THEME.colors.fill[100],
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
