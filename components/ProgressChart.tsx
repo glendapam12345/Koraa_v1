@@ -21,7 +21,7 @@ type ProgressChartProps = {
   data: DayData[];
 };
 
-const CHART_HEIGHT = 120;
+const CHART_HEIGHT = 100;
 const BAR_WIDTH = 16;
 const BAR_SPACING = 4;
 
@@ -137,30 +137,29 @@ export function ProgressChart({ data }: ProgressChartProps) {
         </View>
       </View>
 
-      {/* Leyenda de emociones */}
+      {/* Leyenda simplificada */}
       {emotionsInData.length > 0 && (
         <View style={styles.legendContainer}>
-          <Text style={styles.legendTitle}>Colores por emoción:</Text>
-          <View style={styles.legendItems}>
-            {emotionsInData.map((emotion) => {
-              const colors = getEmotionColors(emotion);
-              return (
-                <View key={emotion} style={styles.legendItem}>
-                  <View style={styles.legendItemIcon}>
+          <View style={styles.legendRow}>
+            <View style={styles.legendItems}>
+              {emotionsInData.slice(0, 6).map((emotion) => {
+                const colors = getEmotionColors(emotion);
+                return (
+                  <View key={emotion} style={styles.legendItem}>
                     <LinearGradient
                       colors={colors}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                       style={styles.legendColor}
                     />
+                    <Text style={styles.legendText}>{emotion}</Text>
                   </View>
-                  <Text style={styles.legendText}>{emotion}</Text>
-                </View>
-              );
-            })}
+                );
+              })}
+            </View>
           </View>
           <Text style={styles.legendNote}>
-            La altura indica el nivel de energía (1-5)
+            Altura = energía (1-5) • Color = emoción
           </Text>
         </View>
       )}
@@ -212,35 +211,26 @@ const styles = StyleSheet.create({
     width: BAR_WIDTH + 4,
   },
   legendContainer: {
-    marginTop: THEME.spacing.md,
-    paddingTop: THEME.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: THEME.colors.stroke[100],
+    marginTop: THEME.spacing.sm,
   },
-  legendTitle: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
+  legendRow: {
     marginBottom: THEME.spacing.xs,
-    fontFamily: THEME.fonts.heading.medium,
   },
   legendItems: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: -3,
+    gap: THEME.spacing.xs,
+    justifyContent: 'center',
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: THEME.spacing.xs,
-    marginBottom: THEME.spacing.xs,
-  },
-  legendItemIcon: {
-    marginRight: 6,
+    gap: 4,
   },
   legendColor: {
-    width: 16,
-    height: 16,
-    borderRadius: THEME.borderRadius.standard / 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
   legendText: {
     ...THEME.typography.small,
@@ -250,8 +240,7 @@ const styles = StyleSheet.create({
   legendNote: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
-    marginTop: THEME.spacing.xs,
     fontSize: 10,
-    fontStyle: 'italic',
+    textAlign: 'center',
   },
 });

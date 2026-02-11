@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, RefreshControl, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, RefreshControl, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,7 +20,6 @@ type DayData = {
 };
 
 type UserProfile = {
-  age?: number;
   favorite_activities?: string[];
   interests?: string[];
   other_preferences?: Record<string, any>;
@@ -35,7 +34,6 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({});
-  const [ageInput, setAgeInput] = useState('');
   const [newActivity, setNewActivity] = useState('');
   const [newInterest, setNewInterest] = useState('');
 
@@ -142,7 +140,7 @@ export default function ProfileScreen() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('age, favorite_activities, interests, other_preferences')
+        .select('favorite_activities, interests, other_preferences')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -153,12 +151,10 @@ export default function ProfileScreen() {
 
       if (data) {
         setProfile({
-          age: data.age || undefined,
           favorite_activities: data.favorite_activities || [],
           interests: data.interests || [],
           other_preferences: data.other_preferences || {},
         });
-        setAgeInput(data.age ? data.age.toString() : '');
       }
     } catch (error) {
       console.error('Error inesperado:', error);
@@ -325,6 +321,58 @@ export default function ProfileScreen() {
     }
   };
 
+  const removeActivity = (index: number) => {
+    const updated = [...(profile.favorite_activities || [])];
+    updated.splice(index, 1);
+    setProfile({ ...profile, favorite_activities: updated });
+  };
+
+  const addActivity = () => {
+    if (!newActivity.trim()) return;
+    const updated = [...(profile.favorite_activities || []), newActivity.trim()];
+    setProfile({ ...profile, favorite_activities: updated });
+    setNewActivity('');
+  };
+
+  const removeInterest = (index: number) => {
+    const updated = [...(profile.interests || [])];
+    updated.splice(index, 1);
+    setProfile({ ...profile, interests: updated });
+  };
+
+  const addInterest = () => {
+    if (!newInterest.trim()) return;
+    const updated = [...(profile.interests || []), newInterest.trim()];
+    setProfile({ ...profile, interests: updated });
+    setNewInterest('');
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          favorite_activities: profile.favorite_activities,
+          interests: profile.interests,
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Error guardando perfil:', error);
+        Alert.alert('Error', 'No se pudo guardar el perfil');
+        return;
+      }
+
+      Alert.alert('Éxito', 'Perfil actualizado correctamente');
+      setShowEditProfile(false);
+    } catch (error) {
+      console.error('Error inesperado:', error);
+      Alert.alert('Error', 'Error inesperado al guardar');
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Confetti celebración */}
@@ -367,7 +415,7 @@ export default function ProfileScreen() {
               <View style={styles.streakNumberContainer}>
                 <Text style={styles.streakNumber}>{currentStreak}</Text>
                 <Text style={styles.streakLabel}>
-                  {currentStreak === 1 ? 'día consecutivo' : 'días consecutivos'}
+                  {currentStreak === 1 ? 'día' : 'días'}
                 </Text>
               </View>
 
@@ -381,17 +429,13 @@ export default function ProfileScreen() {
             </View>
 
             {/* Mensaje motivacional */}
-            {currentStreak > 0 && (
+            {currentStreak > 0 ? (
               <Text style={styles.streakMessage}>
                 {streakLevel.message}
               </Text>
-            )}
-
-            {/* Mensaje cuando no hay racha */}
-            {currentStreak === 0 && (
+            ) : (
               <Text style={styles.streakMessage}>
-                Comienza tu racha haciendo tu primer check-in{' '}
-                <Text style={styles.accentTextWhite}>sintiendo</Text>
+                ¡Comienza hoy!
               </Text>
             )}
           </LinearGradient>
@@ -405,7 +449,7 @@ export default function ProfileScreen() {
             <View style={styles.progressHeader}>
               <Text style={styles.progressTitle}>{consistencyPercentage}%</Text>
               <Text style={styles.progressSubtitle}>
-                {completedDays} de {totalDays} días
+                {completedDays}/{totalDays} días
               </Text>
             </View>
             <ProgressChart data={progressData} />
@@ -518,19 +562,6 @@ export default function ProfileScreen() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Edad */}
-              <View style={styles.formSection}>
-                <Text style={styles.formLabel}>Edad (opcional)</Text>
-                <TextInput
-                  style={styles.formInput}
-                  value={ageInput}
-                  onChangeText={setAgeInput}
-                  placeholder="Ej: 28"
-                  placeholderTextColor={THEME.colors.text.secondary}
-                  keyboardType="number-pad"
-                />
-              </View>
-
               {/* Actividades favoritas */}
               <View style={styles.formSection}>
                 <Text style={styles.formLabel}>Actividades favoritas</Text>
@@ -681,60 +712,57 @@ const styles = StyleSheet.create({
   },
   streakCard: {
     borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.lg,
+    padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
     ...THEME.shadows.soft,
-    minHeight: 140,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   streakContent: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: THEME.spacing.sm,
+    gap: THEME.spacing.md,
   },
   streakNumberContainer: {
     alignItems: 'center',
-    marginTop: THEME.spacing.md,
-    zIndex: 1,
   },
   streakNumber: {
-    ...THEME.typography.h1,
+    fontSize: 36,
     color: THEME.colors.fill[100],
-    lineHeight: 48,
-    fontSize: 48,
+    lineHeight: 36,
     fontFamily: THEME.fonts.heading.bold,
   },
   streakLabel: {
-    ...THEME.typography.body,
+    ...THEME.typography.caption,
     color: THEME.colors.fill[100],
-    opacity: 0.95,
+    opacity: 0.9,
     fontFamily: THEME.fonts.heading.medium,
+    fontSize: 11,
   },
   streakLevelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: THEME.spacing.xs,
-    marginTop: THEME.spacing.sm,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.xs,
+    paddingVertical: 4,
     borderRadius: THEME.borderRadius.pill,
-    zIndex: 1,
   },
   streakLevelIcon: {
-    fontSize: 18,
+    fontSize: 14,
   },
   streakLevelLabel: {
-    ...THEME.typography.caption,
+    ...THEME.typography.small,
     color: THEME.colors.fill[100],
     fontFamily: THEME.fonts.heading.bold,
+    fontSize: 11,
   },
   streakMessage: {
-    ...THEME.typography.body,
+    ...THEME.typography.caption,
     color: THEME.colors.fill[100],
-    textAlign: 'center',
-    marginTop: THEME.spacing.xs,
-    opacity: 0.95,
+    opacity: 0.9,
+    fontSize: 11,
   },
   accentTextWhite: {
     fontFamily: THEME.fonts.accent.italic,
@@ -743,21 +771,25 @@ const styles = StyleSheet.create({
   progressCard: {
     backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
+    padding: THEME.spacing.sm,
     ...THEME.shadows.soft,
   },
   progressHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: THEME.spacing.md,
+    justifyContent: 'space-between',
+    marginBottom: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.xs,
   },
   progressTitle: {
-    ...THEME.typography.h2,
+    fontSize: 28,
     color: THEME.colors.text.main,
-    marginBottom: THEME.spacing.xs,
+    fontFamily: THEME.fonts.heading.bold,
   },
   progressSubtitle: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
+    fontSize: 11,
   },
   menuItem: {
     flexDirection: 'row',
@@ -943,166 +975,31 @@ const styles = StyleSheet.create({
   insightsCard: {
     backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
+    padding: THEME.spacing.sm,
     marginTop: THEME.spacing.md,
     ...THEME.shadows.soft,
   },
   insightsTitle: {
-    ...THEME.typography.h3,
+    fontSize: 16,
     color: THEME.colors.text.main,
-    marginBottom: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
     fontFamily: THEME.fonts.heading.bold,
   },
   insightItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
     gap: THEME.spacing.xs,
   },
   insightEmoji: {
-    fontSize: 20,
-    marginRight: THEME.spacing.xs,
+    fontSize: 16,
+    marginRight: 4,
   },
   insightText: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    flex: 1,
-    lineHeight: 22,
-  },
-  menuItemContent: {
-    flex: 1,
-  },
-  menuItemSubtext: {
     ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    marginTop: 2,
-  },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: THEME.colors.stroke[100],
-    marginVertical: THEME.spacing.md,
-  },
-  modalOverlay: {
+    color: THEME.colors.text.main,
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: THEME.colors.fill[100],
-    borderTopLeftRadius: THEME.borderRadius.rounded,
-    borderTopRightRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.lg,
-    paddingBottom: THEME.spacing.xl * 2,
-    maxHeight: '90%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: THEME.spacing.lg,
-  },
-  modalTitle: {
-    ...THEME.typography.h2,
-    color: THEME.colors.text.main,
-  },
-  modalCloseButton: {
-    padding: THEME.spacing.xs,
-  },
-  formSection: {
-    marginBottom: THEME.spacing.lg,
-  },
-  formLabel: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
-    marginBottom: THEME.spacing.sm,
-  },
-  formInput: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-  },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: THEME.spacing.xs,
-    marginBottom: THEME.spacing.sm,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: THEME.colors.gradient.blue + '20',
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.xs,
-    borderRadius: THEME.borderRadius.pill,
-    gap: THEME.spacing.xs,
-  },
-  chipText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.gradient.blue,
-  },
-  chipRemove: {
-    padding: 2,
-  },
-  addInputContainer: {
-    flexDirection: 'row',
-    gap: THEME.spacing.sm,
-    alignItems: 'center',
-  },
-  addInput: {
-    flex: 1,
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-  },
-  addButton: {
-    width: 48,
-    height: 48,
-    borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.gradient.blue,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  formHelpText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    textAlign: 'center',
-    marginTop: THEME.spacing.md,
-    fontStyle: 'italic',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: THEME.spacing.md,
-    marginTop: THEME.spacing.lg,
-  },
-  modalButton: {
-    flex: 1,
-    padding: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.rounded,
-    alignItems: 'center',
-  },
-  modalButtonCancel: {
-    backgroundColor: THEME.colors.fill[200],
-  },
-  modalButtonSave: {
-    backgroundColor: THEME.colors.gradient.blue,
-  },
-  modalButtonCancelText: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  modalButtonSaveText: {
-    ...THEME.typography.body,
-    color: THEME.colors.fill[100],
-    fontFamily: THEME.fonts.heading.medium,
+    lineHeight: 18,
+    fontSize: 12,
   },
 });
