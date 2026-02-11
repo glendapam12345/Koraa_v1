@@ -43,6 +43,7 @@ export default function TodayScreen() {
   const [previousCompletedCount, setPreviousCompletedCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [showQuickCheckIn, setShowQuickCheckIn] = useState(false);
+  const [totalTasksBefore, setTotalTasksBefore] = useState<number | null>(null);
   const progressWidth = useSharedValue(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -133,6 +134,31 @@ export default function TodayScreen() {
       setLoadingTasks(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadPrioritizationMetadata = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const today = new Date().toISOString().split('T')[0];
+      const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+      const stored = await AsyncStorage.getItem(`prioritization_${user.id}_${today}`);
+      
+      if (stored) {
+        const data = JSON.parse(stored);
+        if (data.date === today) {
+          setTotalTasksBefore(data.totalTasksBefore);
+        } else {
+          setTotalTasksBefore(null);
+        }
+      } else {
+        setTotalTasksBefore(null);
+      }
+    } catch (error) {
+      console.error('Error cargando metadata:', error);
+      setTotalTasksBefore(null);
+    }
   }, []);
 
   useEffect(() => {
@@ -706,6 +732,23 @@ export default function TodayScreen() {
             <>
               <Text style={styles.sectionTitle}>{explanation.title}</Text>
               
+              {/* Validación de valor: Comparación antes/después */}
+              {totalTasksBefore !== null && totalTasksBefore > tasks.length && (
+                <View style={styles.valueCard}>
+                  <View style={styles.valueRow}>
+                    <Text style={styles.valueLabel}>Tareas totales:</Text>
+                    <Text style={styles.valueNumber}>{totalTasksBefore}</Text>
+                  </View>
+                  <View style={styles.valueRow}>
+                    <Text style={styles.valueLabel}>Priorizadas para hoy:</Text>
+                    <Text style={styles.valueNumberHighlight}>{tasks.length}</Text>
+                  </View>
+                  <Text style={styles.valueMessage}>
+                    Reducimos {totalTasksBefore - tasks.length} tarea{totalTasksBefore - tasks.length !== 1 ? 's' : ''} para enfocarte en lo esencial
+                  </Text>
+                </View>
+              )}
+              
               {/* Mensaje explicativo con razonamiento emocional */}
               {incompleteTasks.length > 0 && explanation.reasoning && (
                 <View style={styles.explanationCard}>
@@ -1197,6 +1240,40 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: THEME.spacing.md,
+  },
+  valueCard: {
+    backgroundColor: THEME.colors.background.secondary,
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+  },
+  valueRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: THEME.spacing.xs,
+  },
+  valueLabel: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+  },
+  valueNumber: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  valueNumberHighlight: {
+    ...THEME.typography.h3,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  valueMessage: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginTop: THEME.spacing.xs,
+    fontStyle: 'italic',
   },
   sectionTitle: {
     ...THEME.typography.h3,

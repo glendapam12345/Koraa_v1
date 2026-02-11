@@ -83,6 +83,23 @@ export default function FocusScreen() {
         }
       });
 
+      // Guardar total de tareas antes de priorizar (para validación de valor)
+      // Usar AsyncStorage ya que no tenemos tabla user_metadata en Supabase
+      const totalTasksBefore = mainTasks.length;
+      try {
+        const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+        const today = new Date().toISOString().split('T')[0];
+        await AsyncStorage.setItem(
+          `prioritization_${user.id}_${today}`,
+          JSON.stringify({
+            totalTasksBefore,
+            date: today,
+          })
+        );
+      } catch (err) {
+        console.log('Error guardando metadata (no crítico):', err);
+      }
+
       // Usar algoritmo de priorización inteligente
       const prioritizedTasks = prioritizeTasksIntelligently(mainTasks, {
         energyLevel,
@@ -197,23 +214,14 @@ export default function FocusScreen() {
       // Resetear estado de guardado ANTES de navegar
       setIsSaving(false);
 
-      // Pequeño delay para asegurar que el estado se actualice antes de navegar
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Pequeño delay para asegurar que la priorización se complete
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Redirigir a pantalla de resumen
+      // Redirigir directamente a Accionar (pantalla principal) para ver prioridades
       try {
-        router.replace({
-          pathname: '/checkin-summary',
-          params: {
-            emotion,
-            energy: energyLevel.toString(),
-            time,
-            focus: selectedFocus,
-          },
-        });
+        router.replace('/(tabs)');
       } catch (navError) {
         console.error('Error en navegación:', navError);
-        // Si la navegación falla, intentar redirigir a tabs
         router.replace('/(tabs)');
       }
     } catch (error) {

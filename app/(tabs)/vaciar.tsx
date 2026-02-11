@@ -7,18 +7,14 @@ import { Tooltip } from '@/components/Tooltip';
 import { Toast } from '@/components/Toast';
 import { FlowIndicator } from '@/components/FlowIndicator';
 import { supabase } from '@/lib/supabase';
+import { detectCategory } from '@/lib/categoryDetection';
 import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 
-const CATEGORIES = [
-  { id: 'trabajo', label: '💼 Trabajo', color: '#4A90E2' },
-  { id: 'salud', label: '❤️ Salud', color: '#FF6B6B' },
-  { id: 'personal', label: '👤 Personal', color: '#9B59B6' },
-];
+// Categorías ahora son invisibles - se detectan automáticamente en lib/categoryDetection.ts
 
 export default function VaciarScreen() {
   const [taskInput, setTaskInput] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
   const [isPriority, setIsPriority] = useState(false);
   const [hasSubtasks, setHasSubtasks] = useState(false);
   const [subtasks, setSubtasks] = useState<string[]>(['']);
@@ -188,13 +184,16 @@ export default function VaciarScreen() {
         return;
       }
 
+      // Detectar categoría automáticamente (invisible para el usuario)
+      const detectedCategory = detectCategory(taskInput.trim());
+      
       // Crear tarea principal
       const { data: mainTask, error: mainTaskError } = await supabase
         .from('tasks')
         .insert({
           user_id: user.id,
           content: taskInput.trim(),
-          category: selectedCategory,
+          category: detectedCategory,
           is_priority: isPriority,
           is_completed: false,
           parent_task_id: null,
@@ -223,9 +222,10 @@ export default function VaciarScreen() {
           if (hasSubtasks) {
             const validSubtasks = subtasks.filter(st => st.trim());
             for (const subtask of validSubtasks) {
+              const subtaskCategory = detectCategory(subtask.trim());
               await saveTaskOffline({
                 content: subtask.trim(),
-                category: selectedCategory,
+                category: subtaskCategory,
                 is_priority: false,
                 is_completed: false,
                 parent_task_id: null, // Se asociará cuando se sincronice
@@ -235,7 +235,6 @@ export default function VaciarScreen() {
           
           setRecentTasks([taskInput.trim(), ...recentTasks.slice(0, 4)]);
           setTaskInput('');
-          setSelectedCategory('');
           setIsPriority(false);
           setHasSubtasks(false);
           setSubtasks(['']);
@@ -258,7 +257,7 @@ export default function VaciarScreen() {
           const subtasksToInsert = validSubtasks.map(subtask => ({
             user_id: user.id,
             content: subtask.trim(),
-            category: selectedCategory, // Heredan la categoría
+            category: detectCategory(subtask.trim()), // Detectar categoría automáticamente
             is_priority: false, // Las subtareas no tienen prioridad independiente
             is_completed: false,
             parent_task_id: mainTask.id,
@@ -281,7 +280,6 @@ export default function VaciarScreen() {
 
       setRecentTasks([taskInput.trim(), ...recentTasks.slice(0, 4)]);
       setTaskInput('');
-      setSelectedCategory('');
       setIsPriority(false);
       setHasSubtasks(false);
       setSubtasks(['']);
@@ -392,7 +390,7 @@ export default function VaciarScreen() {
         <Text style={styles.titleAccent}>un respiro</Text>
 
         <Text style={styles.subtitle}>
-          Sin categorías. Sin etiquetas. Sin estructura.{'\n'}
+          Sin estructura. Sin etiquetas.{'\n'}
           Solo escribe lo que necesitas soltar.
         </Text>
 
@@ -467,37 +465,7 @@ export default function VaciarScreen() {
           </View>
         )}
 
-        <View style={styles.categoriesContainer}>
-          <Text style={styles.categoryLabel}>Opcional: Categoría</Text>
-          <View style={styles.categoriesGrid}>
-            {CATEGORIES.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                onPress={() => setSelectedCategory(
-                  selectedCategory === category.id ? '' : category.id
-                )}
-                style={[
-                  styles.categoryChip,
-                  selectedCategory === category.id && {
-                    backgroundColor: category.color + '20',
-                    borderColor: category.color,
-                  },
-                ]}
-                activeOpacity={0.7}
-              >
-                <Text style={[
-                  styles.categoryChipText,
-                  selectedCategory === category.id && { color: category.color },
-                ]}>
-                  {category.label}
-                </Text>
-                {selectedCategory === category.id && (
-                  <X size={16} color={category.color} />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+        {/* Categorías ahora son invisibles - se detectan automáticamente */}
 
         <TouchableOpacity
           style={[
