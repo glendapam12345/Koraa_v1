@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
-import { LogOut, Settings, HelpCircle, Zap } from 'lucide-react-native';
+import { LogOut, Settings, HelpCircle } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '@/lib/supabase';
 import { ProgressChart } from '@/components/ProgressChart';
@@ -267,7 +267,6 @@ export default function ProfileScreen() {
   };
 
   const streakLevel = getStreakLevel(currentStreak);
-  const lightningCount = Math.min(currentStreak, 7); // Máximo 7 rayos visibles
 
   // Función para manejar pull to refresh
   const handleRefresh = async () => {
@@ -322,24 +321,6 @@ export default function ProfileScreen() {
             style={styles.streakCard}
           >
             <View style={styles.streakContent}>
-              {/* Rayos visuales */}
-              {currentStreak > 0 && (
-                <View style={styles.lightningContainer}>
-                  {Array.from({ length: lightningCount }).map((_, i) => (
-                    <Zap
-                      key={i}
-                      size={20}
-                      color={THEME.colors.fill[100]}
-                      fill={THEME.colors.fill[100]}
-                      style={[
-                        styles.lightning,
-                        { transform: [{ rotate: `${i * 15 - 45}deg` }] }
-                      ]}
-                    />
-                  ))}
-                </View>
-              )}
-              
               {/* Número de racha */}
               <View style={styles.streakNumberContainer}>
                 <Text style={styles.streakNumber}>{currentStreak}</Text>
@@ -521,19 +502,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: THEME.spacing.sm,
-    position: 'relative',
-  },
-  lightningContainer: {
-    position: 'absolute',
-    width: 80,
-    height: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
-    top: -10,
-  },
-  lightning: {
-    position: 'absolute',
-    opacity: 0.8,
   },
   streakNumberContainer: {
     alignItems: 'center',
