@@ -10,6 +10,7 @@ import { ConfettiCelebration } from '@/components/ConfettiCelebration';
 import { QuickCheckInModal } from '@/components/QuickCheckInModal';
 import { FlowIndicator } from '@/components/FlowIndicator';
 import { supabase } from '@/lib/supabase';
+import { detectCategory } from '@/lib/categoryDetection';
 import { RefreshCw, ChevronDown, ChevronUp, MoreVertical, Edit, Trash2, X, Sparkles, CheckCircle2, Plus } from 'lucide-react-native';
 import { router } from 'expo-router';
 
@@ -399,16 +400,14 @@ export default function TodayScreen() {
     }
   }, []);
 
-  const CATEGORIES = [
-    { id: 'trabajo', label: '💼 Trabajo', color: '#4A90E2' },
-    { id: 'salud', label: '❤️ Salud', color: '#FF6B6B' },
-    { id: 'personal', label: '👤 Personal', color: '#9B59B6' },
-  ];
+  // Categorías ahora son invisibles - se detectan automáticamente
 
   const handleEditTask = (task: Task) => {
     setEditingTask(task);
     setEditContent(task.content);
-    setEditCategory(task.category || '');
+    // Detectar categoría automáticamente al editar
+    const detectedCategory = detectCategory(task.content);
+    setEditCategory(detectedCategory || task.category || '');
     setMenuOpen(null);
   };
 
@@ -416,11 +415,14 @@ export default function TodayScreen() {
     if (!editingTask || !editContent.trim()) return;
 
     try {
+      // Detectar categoría automáticamente basada en el contenido editado
+      const detectedCategory = detectCategory(editContent.trim());
+      
       const { error } = await supabase
         .from('tasks')
         .update({
           content: editContent.trim(),
-          category: editCategory,
+          category: detectedCategory || editCategory || '',
           updated_at: new Date().toISOString(),
         })
         .eq('id', editingTask.id);
@@ -1114,32 +1116,7 @@ export default function TodayScreen() {
               textAlignVertical="top"
             />
 
-            <Text style={styles.editLabel}>Categoría (opcional)</Text>
-            <View style={styles.editCategoriesGrid}>
-              {CATEGORIES.map((category) => (
-                <TouchableOpacity
-                  key={category.id}
-                  onPress={() => setEditCategory(
-                    editCategory === category.id ? '' : category.id
-                  )}
-                  style={[
-                    styles.editCategoryChip,
-                    editCategory === category.id && {
-                      backgroundColor: category.color + '20',
-                      borderColor: category.color,
-                    },
-                  ]}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.editCategoryChipText,
-                    editCategory === category.id && { color: category.color },
-                  ]}>
-                    {category.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {/* Categoría se detecta automáticamente - invisible para el usuario */}
 
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -1630,29 +1607,6 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
     minHeight: 100,
     marginBottom: THEME.spacing.md,
-  },
-  editLabel: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.xs,
-  },
-  editCategoriesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: THEME.spacing.xs,
-    marginBottom: THEME.spacing.lg,
-  },
-  editCategoryChip: {
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.xs,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[200],
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-  },
-  editCategoryChipText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.main,
   },
   modalActions: {
     flexDirection: 'row',

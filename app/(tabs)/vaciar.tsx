@@ -618,34 +618,6 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     minHeight: 120,
   },
-  categoriesContainer: {
-    marginBottom: THEME.spacing.md,
-  },
-  categoryLabel: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.xs,
-  },
-  categoriesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: THEME.spacing.xs,
-  },
-  categoryChip: {
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.xs,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[200],
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  categoryChipText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.main,
-  },
   recentContainer: {
     marginTop: THEME.spacing.lg,
   },
