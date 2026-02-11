@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { Tooltip } from '@/components/Tooltip';
+import { Toast } from '@/components/Toast';
 import { supabase } from '@/lib/supabase';
 import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
@@ -25,6 +26,13 @@ export default function VaciarScreen() {
   const [hasCheckInToday, setHasCheckInToday] = useState<boolean | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [hasTasks, setHasTasks] = useState<boolean | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+  };
 
   const addSubtask = () => {
     setSubtasks([...subtasks, '']);
@@ -109,12 +117,12 @@ export default function VaciarScreen() {
 
   const handleAddTask = async () => {
     if (!taskInput.trim()) return;
-    
+
     // Validar subtareas si están habilitadas
     if (hasSubtasks) {
       const validSubtasks = subtasks.filter(st => st.trim());
       if (validSubtasks.length === 0) {
-        Alert.alert('Atención', 'Agrega al menos una subtarea o desactiva las subtareas.');
+        showToast('Agrega al menos una subtarea o desactiva las subtareas', 'info');
         return;
       }
     }
@@ -124,7 +132,7 @@ export default function VaciarScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        Alert.alert('Error', 'No estás autenticado');
+        showToast('No estás autenticado', 'error');
         setIsSaving(false);
         return;
       }
@@ -145,7 +153,7 @@ export default function VaciarScreen() {
 
       if (mainTaskError) {
         console.error('Error guardando tarea principal:', mainTaskError);
-        Alert.alert('Error', 'No se pudo guardar la tarea. Por favor intenta de nuevo.');
+        showToast('No se pudo guardar la tarea. Por favor intenta de nuevo', 'error');
         setIsSaving(false);
         return;
       }
@@ -171,7 +179,7 @@ export default function VaciarScreen() {
             console.error('Error guardando subtareas:', subtasksError);
             // Intentar eliminar la tarea principal si fallan las subtareas
             await supabase.from('tasks').delete().eq('id', mainTask.id);
-            Alert.alert('Error', 'No se pudieron guardar las subtareas. Por favor intenta de nuevo.');
+            showToast('No se pudieron guardar las subtareas. Por favor intenta de nuevo', 'error');
             setIsSaving(false);
             return;
           }
@@ -189,17 +197,17 @@ export default function VaciarScreen() {
       if (showTooltip) {
         setShowTooltip(false);
       }
-      
-      const message = hasSubtasks 
-        ? `¡Tarea con ${subtasks.filter(st => st.trim()).length} subtareas agregada!${isPriority ? ' Marcada como prioridad.' : ''}`
-        : isPriority 
-          ? '¡Tarea agregada! Tu tarea fue marcada como prioridad y aparecerá en "Hoy"'
-          : '¡Tarea agregada!';
-      
-      Alert.alert('¡Listo!', message);
+
+      const message = hasSubtasks
+        ? `Tarea con ${subtasks.filter(st => st.trim()).length} subtareas agregada ${isPriority ? 'como prioridad' : 'exitosamente'}`
+        : isPriority
+          ? 'Tarea agregada como prioridad y aparecerá en "Hoy"'
+          : 'Tarea agregada exitosamente';
+
+      showToast(message, 'success');
     } catch (error) {
       console.error('Error inesperado:', error);
-      Alert.alert('Error', 'Ocurrió un error inesperado. Por favor intenta de nuevo.');
+      showToast('Ocurrió un error inesperado. Por favor intenta de nuevo', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -210,6 +218,15 @@ export default function VaciarScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      {/* Toast notification */}
+      {toastMessage && (
+        <Toast
+          message={toastMessage}
+          type={toastType}
+          onHide={() => setToastMessage(null)}
+        />
+      )}
+
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}

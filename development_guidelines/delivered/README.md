@@ -42,6 +42,8 @@ Keep the same name as in `running/` when moving files here.
 
 ## Recently Completed
 
+- **confetti-toast-resumen.md** (Feb 10, 2026) - Added confetti animation, toast notifications, and daily summary card
+- **insights-automaticos-celebracion.md** (Feb 10, 2026) - Added automatic insights and celebration banner
 - **haptic-feedback-tareas.md** (Feb 10, 2026) - Added haptic feedback when completing tasks
 - **animaciones-grafica-progreso.md** (Feb 10, 2026) - Added smooth spring animations to progress chart bars
 - **grafica-leyenda-emociones.md** (Feb 10, 2026) - Added emotion color legend to progress chart
