@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Platform } from 'react-native';
 import { useState, useEffect } from 'react';
 import Animated, {
   useSharedValue,
@@ -11,9 +11,8 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
 import { THEME } from '@/constants/theme';
-import { X } from 'lucide-react-native';
+import { X, Sparkles } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { Platform } from 'react-native';
 
 type MeditationCircleProps = {
   visible: boolean;
@@ -188,13 +187,14 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
 
               {/* Logo en el centro */}
               <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
-                <View style={styles.logoBackground}>
-                  <Image
-                    source={require('@/assets/images/Ícono_Koraa.png')}
-                    style={styles.logo}
-                    resizeMode="contain"
-                  />
-                </View>
+                <LinearGradient
+                  colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.logoBackground}
+                >
+                  <Sparkles size={80} color={THEME.colors.fill[100]} strokeWidth={1.5} />
+                </LinearGradient>
               </Animated.View>
             </View>
 
@@ -283,10 +283,10 @@ const styles = StyleSheet.create({
     width: 160,
     height: 160,
     borderRadius: 80,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
     ...THEME.shadows.soft,
+    overflow: 'hidden',
   },
   logo: {
     width: 120,
