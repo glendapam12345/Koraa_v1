@@ -9,7 +9,6 @@ import { FlowIndicator } from '@/components/FlowIndicator';
 import { supabase } from '@/lib/supabase';
 import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
-import * as Speech from 'expo-speech';
 
 const CATEGORIES = [
   { id: 'trabajo', label: '💼 Trabajo', color: '#4A90E2' },
