@@ -13,8 +13,10 @@ Notifications.setNotificationHandler({
 });
 
 export function useNotifications() {
-  const notificationListener = useRef<Notifications.Subscription>();
-  const responseListener = useRef<Notifications.Subscription>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const notificationListener = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const responseListener = useRef<any>(null);
 
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -25,15 +27,17 @@ export function useNotifications() {
     registerForPushNotificationsAsync();
 
     // Listener para notificaciones recibidas cuando la app está en primer plano
-    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+    const subscription1 = Notifications.addNotificationReceivedListener((notification) => {
       console.log('Notificación recibida:', notification);
     });
+    notificationListener.current = subscription1;
 
     // Listener para cuando el usuario toca la notificación
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+    const subscription2 = Notifications.addNotificationResponseReceivedListener((response) => {
       console.log('Usuario tocó la notificación:', response);
       // Aquí podrías navegar a la pantalla de check-in
     });
+    responseListener.current = subscription2;
 
     return () => {
       if (notificationListener.current) {
@@ -132,10 +136,10 @@ export async function scheduleDailyReminder() {
         data: { type: 'daily_checkin_reminder' },
       },
       trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
         hour: reminderHour,
         minute: reminderMinute,
-        repeats: true,
-      },
+      } as Notifications.DailyTriggerInput,
     });
 
     console.log('Recordatorio diario programado para las', reminderHour + ':' + reminderMinute);

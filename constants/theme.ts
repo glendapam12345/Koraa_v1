@@ -17,6 +17,10 @@ export const THEME = {
       blue: '#4A90E2',
       pink: '#FF6B6B',
     },
+    background: {
+      secondary: '#F4F4F7',
+    },
+    border: '#E0E0E0',
   },
 
   fonts: {
