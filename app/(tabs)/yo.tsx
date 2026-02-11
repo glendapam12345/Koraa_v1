@@ -356,18 +356,20 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Botón temporal para crear check-ins de prueba */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.testButton}
-            onPress={createTestCheckIns}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.testButtonText}>
-              🧪 Crear check-ins de prueba (14 días)
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* Botón temporal para crear check-ins de prueba - Solo visible en desarrollo */}
+        {__DEV__ && (
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={styles.testButton}
+              onPress={createTestCheckIns}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.testButtonText}>
+                🧪 Crear check-ins de prueba (14 días)
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Configuración</Text>

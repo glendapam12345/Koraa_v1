@@ -15,8 +15,56 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
 
+  // Validación de email
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Validación de contraseña
+  const validatePassword = (password: string): boolean => {
+    return password.length >= 6;
+  };
+
+  // Validación de nombre
+  const validateName = (name: string): boolean => {
+    return name.trim().length >= 2;
+  };
+
   const handleAuth = async () => {
     setError('');
+
+    // Validaciones antes de enviar
+    if (!email.trim()) {
+      setError('Por favor ingresa tu email');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError('Por favor ingresa un email válido');
+      return;
+    }
+
+    if (!password.trim()) {
+      setError('Por favor ingresa tu contraseña');
+      return;
+    }
+
+    if (!validatePassword(password)) {
+      setError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    if (isSignUp && !fullName.trim()) {
+      setError('Por favor ingresa tu nombre');
+      return;
+    }
+
+    if (isSignUp && !validateName(fullName)) {
+      setError('El nombre debe tener al menos 2 caracteres');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -36,7 +84,7 @@ export default function AuthScreen() {
         }
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Ocurrió un error inesperado');
     } finally {
       setLoading(false);
     }

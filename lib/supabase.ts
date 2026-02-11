@@ -12,3 +12,32 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
 });
+
+// Helper para detectar errores de conexión
+export const isNetworkError = (error: any): boolean => {
+  if (!error) return false;
+  
+  const errorMessage = error.message?.toLowerCase() || '';
+  const errorCode = error.code?.toLowerCase() || '';
+  
+  return (
+    errorMessage.includes('network') ||
+    errorMessage.includes('fetch') ||
+    errorMessage.includes('connection') ||
+    errorMessage.includes('timeout') ||
+    errorMessage.includes('offline') ||
+    errorCode === 'network_error' ||
+    errorCode === 'fetch_error'
+  );
+};
+
+// Helper para obtener mensaje de error amigable
+export const getErrorMessage = (error: any): string => {
+  if (!error) return 'Ocurrió un error inesperado';
+  
+  if (isNetworkError(error)) {
+    return 'Sin conexión a internet. Verifica tu conexión e intenta de nuevo.';
+  }
+  
+  return error.message || 'Ocurrió un error inesperado. Por favor intenta de nuevo.';
+};

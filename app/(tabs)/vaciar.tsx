@@ -116,7 +116,17 @@ export default function VaciarScreen() {
   };
 
   const handleAddTask = async () => {
-    if (!taskInput.trim()) return;
+    // Validar que la tarea principal no esté vacía
+    if (!taskInput.trim()) {
+      showToast('Por favor ingresa una tarea', 'info');
+      return;
+    }
+
+    // Validar longitud máxima de la tarea principal
+    if (taskInput.trim().length > 300) {
+      showToast('La tarea no puede tener más de 300 caracteres', 'error');
+      return;
+    }
 
     // Validar subtareas si están habilitadas
     if (hasSubtasks) {
@@ -124,6 +134,14 @@ export default function VaciarScreen() {
       if (validSubtasks.length === 0) {
         showToast('Agrega al menos una subtarea o desactiva las subtareas', 'info');
         return;
+      }
+      
+      // Validar longitud de cada subtarea
+      for (const subtask of validSubtasks) {
+        if (subtask.trim().length > 300) {
+          showToast('Las subtareas no pueden tener más de 300 caracteres', 'error');
+          return;
+        }
       }
     }
 

@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
 import { Toast } from '@/components/Toast';
+import { ConfettiCelebration } from '@/components/ConfettiCelebration';
 import { supabase } from '@/lib/supabase';
 import { RefreshCw, ChevronDown, ChevronUp, MoreVertical, Edit, Trash2, X } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -34,6 +35,8 @@ export default function TodayScreen() {
   const [showTooltip, setShowTooltip] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [previousCompletedCount, setPreviousCompletedCount] = useState(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -60,6 +63,30 @@ export default function TodayScreen() {
       setShowTooltip(true);
     }
   }, [loading, todayMood, tasks.length]);
+
+  // Detectar cuando todas las tareas están completadas
+  useEffect(() => {
+    if (tasks.length === 0 || loading) return;
+    
+    const allCompleted = tasks.every(t => t.is_completed);
+    const hasTasks = tasks.length > 0;
+    const completedCount = tasks.filter(t => t.is_completed).length;
+    const wasNotAllCompleted = previousCompletedCount < tasks.length;
+    
+    if (allCompleted && hasTasks && wasNotAllCompleted && !showConfetti) {
+      // ¡Todas las tareas completadas!
+      setShowConfetti(true);
+      showToast('¡Increíble! Has completado todas tus tareas del día 🎉', 'success');
+      
+      // Ocultar confetti después de 4 segundos
+      setTimeout(() => {
+        setShowConfetti(false);
+      }, 4000);
+    }
+    
+    // Actualizar contador de tareas completadas
+    setPreviousCompletedCount(completedCount);
+  }, [tasks, loading]);
 
   const loadTodayCheckIn = async () => {
     try {
@@ -266,6 +293,9 @@ export default function TodayScreen() {
       }
       // Cerrar menú si estaba abierto
       setMenuOpen(null);
+      
+      // Recargar tareas para obtener el estado actualizado
+      await loadTasks();
       
       // Mostrar toast de éxito
       if (newCompletedState) {
@@ -864,6 +894,9 @@ export default function TodayScreen() {
           </View>
         </View>
       </Modal>
+      
+      {/* Confetti celebración */}
+      {showConfetti && <ConfettiCelebration />}
       
       {/* Toast notification */}
       {toastMessage && (
