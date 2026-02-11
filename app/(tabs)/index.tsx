@@ -497,23 +497,27 @@ export default function TodayScreen() {
     const priorityCount = incompleteTasks.length;
 
     // Razonamiento emocional claro del "por qué"
+    let message = '';
     let reasoning = '';
     let suggestion = '';
     
     if (energyLevel <= 2 || isNegativeEmotion) {
-      reasoning = `Con energía ${energyLevel}/5 y sintiéndote ${emotionLabel}, tu cuerpo y mente necesitan menos presión. Por eso priorizamos solo ${priorityCount} ${priorityCount === 1 ? 'tarea esencial' : 'tareas esenciales'} para hoy.`;
+      message = `Te sugerimos enfocarte en ${priorityCount} ${priorityCount === 1 ? 'tarea esencial' : 'tareas esenciales'} hoy.`;
+      reasoning = `Con energía ${energyLevel}/5 y sintiéndote ${emotionLabel}, tu cuerpo y mente necesitan menos presión.`;
       suggestion = 'Menos es más cuando tu energía está baja. Enfócate en lo esencial.';
     } else if (energyLevel === 3) {
-      reasoning = `Con energía moderada (${energyLevel}/5) y sintiéndote ${emotionLabel}, puedes manejar ${priorityCount} ${priorityCount === 1 ? 'tarea prioritaria' : 'tareas prioritarias'} sin sobrecargarte.`;
+      message = `Te sugerimos enfocarte en ${priorityCount} ${priorityCount === 1 ? 'tarea prioritaria' : 'tareas prioritarias'} hoy.`;
+      reasoning = `Con energía moderada y sintiéndote ${emotionLabel}, puedes manejar estas tareas sin sobrecargarte.`;
       suggestion = 'Tienes energía moderada. Prioriza lo importante.';
     } else if (energyLevel >= 4) {
-      reasoning = `¡Tienes energía alta (${energyLevel}/5) y te sientes ${emotionLabel}! Por eso priorizamos ${priorityCount} ${priorityCount === 1 ? 'tarea' : 'tareas'} para que aproveches este momento de energía.`;
+      message = `Te sugerimos enfocarte en ${priorityCount} ${priorityCount === 1 ? 'tarea' : 'tareas'} hoy.`;
+      reasoning = `¡Tienes energía alta y te sientes ${emotionLabel}! Aprovecha este momento.`;
       suggestion = '¡Tienes energía para más! Aprovecha este momento.';
     }
 
     return {
       title: 'Tu plan de hoy',
-      message: `Con tu energía de ${energyLevel}/5 y sintiéndote ${emotionLabel}, te sugerimos enfocarte en ${priorityCount} ${priorityCount === 1 ? 'tarea prioritaria' : 'tareas prioritarias'} hoy.`,
+      message,
       suggestion,
       reasoning,
     };
