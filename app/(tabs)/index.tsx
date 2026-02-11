@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
+import { Toast } from '@/components/Toast';
 import { supabase } from '@/lib/supabase';
 import { RefreshCw, ChevronDown, ChevronUp, MoreVertical, Edit, Trash2, X } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -31,7 +32,14 @@ export default function TodayScreen() {
   const [editCategory, setEditCategory] = useState('');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+  };
 
   useEffect(() => {
     loadTasks();
@@ -106,7 +114,7 @@ export default function TodayScreen() {
 
       if (error) {
         console.error('Error cargando tareas:', error);
-        Alert.alert('Error', 'No se pudieron cargar las tareas');
+        showToast('No se pudieron cargar las tareas', 'error');
         return;
       }
 
@@ -128,7 +136,7 @@ export default function TodayScreen() {
       }
     } catch (error) {
       console.error('Error inesperado:', error);
-      Alert.alert('Error', 'Ocurrió un error al cargar las tareas');
+      showToast('Ocurrió un error al cargar las tareas', 'error');
     } finally {
       setLoadingTasks(false);
     }
@@ -171,7 +179,7 @@ export default function TodayScreen() {
 
       if (error) {
         console.error('Error actualizando tarea:', error);
-        Alert.alert('Error', 'No se pudo actualizar la tarea');
+        showToast('No se pudo actualizar la tarea', 'error');
         return;
       }
 
@@ -258,9 +266,16 @@ export default function TodayScreen() {
       }
       // Cerrar menú si estaba abierto
       setMenuOpen(null);
+      
+      // Mostrar toast de éxito
+      if (newCompletedState) {
+        showToast('¡Tarea completada!', 'success');
+      } else {
+        showToast('Tarea marcada como pendiente', 'info');
+      }
     } catch (error) {
       console.error('Error inesperado:', error);
-      Alert.alert('Error', 'Ocurrió un error al actualizar la tarea');
+      showToast('Ocurrió un error al actualizar la tarea', 'error');
       // Cerrar menú en caso de error
       setMenuOpen(null);
     }
@@ -307,7 +322,7 @@ export default function TodayScreen() {
 
       if (error) {
         console.error('Error actualizando tarea:', error);
-        Alert.alert('Error', 'No se pudo actualizar la tarea');
+        showToast('No se pudo actualizar la tarea', 'error');
         return;
       }
 
@@ -317,10 +332,10 @@ export default function TodayScreen() {
       setEditingTask(null);
       setEditContent('');
       setEditCategory('');
-      Alert.alert('¡Listo!', 'Tarea actualizada correctamente');
+      showToast('Tarea actualizada correctamente', 'success');
     } catch (error) {
       console.error('Error inesperado:', error);
-      Alert.alert('Error', 'Ocurrió un error al actualizar la tarea');
+      showToast('Ocurrió un error al actualizar la tarea', 'error');
     }
   };
 
@@ -345,7 +360,7 @@ export default function TodayScreen() {
 
                 if (subtasksError) {
                   console.error('Error eliminando subtareas:', subtasksError);
-                  Alert.alert('Error', 'No se pudieron eliminar las subtareas. La tarea principal no se eliminó.');
+                  showToast('No se pudieron eliminar las subtareas. La tarea principal no se eliminó.', 'error');
                   setMenuOpen(null);
                   return;
                 }
@@ -359,7 +374,7 @@ export default function TodayScreen() {
 
               if (error) {
                 console.error('Error eliminando tarea:', error);
-                Alert.alert('Error', 'No se pudo eliminar la tarea');
+                showToast('No se pudo eliminar la tarea', 'error');
                 setMenuOpen(null);
                 return;
               }
@@ -367,10 +382,10 @@ export default function TodayScreen() {
               // Actualizar estado local
               setTasks(tasks.filter(t => t.id !== task.id));
               setMenuOpen(null);
-              Alert.alert('¡Listo!', 'Tarea eliminada correctamente');
+              showToast('Tarea eliminada correctamente', 'success');
             } catch (error) {
               console.error('Error inesperado:', error);
-              Alert.alert('Error', 'Ocurrió un error al eliminar la tarea');
+              showToast('Ocurrió un error al eliminar la tarea', 'error');
               setMenuOpen(null);
             }
           },
@@ -849,6 +864,15 @@ export default function TodayScreen() {
           </View>
         </View>
       </Modal>
+      
+      {/* Toast notification */}
+      {toastMessage && (
+        <Toast
+          message={toastMessage}
+          type={toastType}
+          onHide={() => setToastMessage(null)}
+        />
+      )}
       
       <Tooltip
         visible={showTooltip}

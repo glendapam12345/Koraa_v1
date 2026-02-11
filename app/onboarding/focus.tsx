@@ -1,8 +1,9 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
+import { Toast } from '@/components/Toast';
 import { Focus } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,6 +21,13 @@ export default function FocusScreen() {
   const { user } = useAuth();
   const [selectedFocus, setSelectedFocus] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('error');
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'error') => {
+    setToastMessage(message);
+    setToastType(type);
+  };
 
   const prioritizeTasksBasedOnCheckIn = async (energyLevel: number, emotionValue: string) => {
     if (!user) return;
@@ -96,7 +104,7 @@ export default function FocusScreen() {
     // Validar que energy sea un número válido
     const energyLevel = parseInt(energy);
     if (isNaN(energyLevel) || energyLevel < 1 || energyLevel > 5) {
-      Alert.alert('Error', 'El nivel de energía no es válido');
+      showToast('El nivel de energía no es válido', 'error');
       return;
     }
 
@@ -124,7 +132,7 @@ export default function FocusScreen() {
 
       if (checkInError) {
         console.error('Error guardando check-in:', checkInError);
-        Alert.alert('Error', 'No se pudo guardar tu check-in. Por favor intenta de nuevo.');
+        showToast('No se pudo guardar tu check-in. Por favor intenta de nuevo.', 'error');
         setIsSaving(false);
         return;
       }
@@ -147,7 +155,7 @@ export default function FocusScreen() {
       });
     } catch (error) {
       console.error('Error:', error);
-      Alert.alert('Error', 'Ocurrió un error inesperado. Por favor intenta de nuevo.');
+      showToast('Ocurrió un error inesperado. Por favor intenta de nuevo.', 'error');
       setIsSaving(false);
     }
   };
@@ -194,6 +202,15 @@ export default function FocusScreen() {
           disabled={!selectedFocus || isSaving}
         />
       </View>
+      
+      {/* Toast notification */}
+      {toastMessage && (
+        <Toast
+          message={toastMessage}
+          type={toastType}
+          onHide={() => setToastMessage(null)}
+        />
+      )}
     </View>
   );
 }
