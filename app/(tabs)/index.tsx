@@ -29,6 +29,7 @@ export default function TodayScreen() {
   const [energy, setEnergy] = useState<string>('');
   const [time, setTime] = useState<string>('');
   const [energyLevel, setEnergyLevel] = useState<number>(0);
+  const [focusLevel, setFocusLevel] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -58,7 +59,7 @@ export default function TodayScreen() {
       const today = new Date().toISOString().split('T')[0];
       const { data: checkIn, error } = await supabase
         .from('daily_check_ins')
-        .select('emotion, energy_level, available_time')
+        .select('emotion, energy_level, available_time, focus_level')
         .eq('user_id', user.id)
         .eq('date', today)
         .maybeSingle();
@@ -73,11 +74,13 @@ export default function TodayScreen() {
         setEnergy(`${checkIn.energy_level}/5`);
         setEnergyLevel(checkIn.energy_level);
         setTime(checkIn.available_time);
+        setFocusLevel(checkIn.focus_level || '');
       } else {
         setTodayMood('');
         setEnergy('');
         setEnergyLevel(0);
         setTime('');
+        setFocusLevel('');
       }
     } catch (error) {
       console.error('Error inesperado:', error);
@@ -490,13 +493,45 @@ export default function TodayScreen() {
       };
     }
 
-    const negativeEmotions = ['agotada', 'ansiosa', 'abrumada'];
-    const isNegativeEmotion = negativeEmotions.includes(todayMood.toLowerCase());
-
     const emotionLabel = todayMood.charAt(0).toUpperCase() + todayMood.slice(1);
     const priorityCount = incompleteTasks.length;
 
-    // Razonamiento emocional claro del "por qué"
+    // Generar explicación usando el algoritmo inteligente si tenemos todos los datos
+    if (time && energyLevel > 0) {
+      // Usar explicación inteligente de forma síncrona (sin await en useCallback)
+      // Si falla, usar fallback
+      try {
+        // Importar de forma síncrona (ya está disponible)
+        const smartPrioritization = require('@/lib/smartPrioritization');
+        if (smartPrioritization && smartPrioritization.generatePrioritizationExplanation) {
+          const explanation = smartPrioritization.generatePrioritizationExplanation(
+            incompleteTasks,
+            {
+              energyLevel,
+              emotion: todayMood,
+              availableTime: time,
+              focusLevel: focusLevel || 'Normal',
+            },
+            tasks
+          );
+          
+          return {
+            title: 'Tu plan de hoy',
+            message: explanation.message,
+            suggestion: explanation.suggestion,
+            reasoning: explanation.reasoning,
+          };
+        }
+      } catch (error) {
+        console.log('Error generando explicación inteligente, usando fallback:', error);
+        // Continuar con lógica de fallback
+      }
+    }
+
+    // Fallback: lógica simple si no tenemos todos los datos
+    const negativeEmotions = ['agotada', 'ansiosa', 'abrumada'];
+    const isNegativeEmotion = negativeEmotions.includes(todayMood.toLowerCase());
+
     let message = '';
     let reasoning = '';
     let suggestion = '';
@@ -521,7 +556,7 @@ export default function TodayScreen() {
       suggestion,
       reasoning,
     };
-  }, [todayMood, energyLevel, incompleteTasks.length]);
+  }, [todayMood, energyLevel, incompleteTasks.length, time, focusLevel, tasks]);
 
   const explanation = useMemo(() => getPriorityExplanation(), [getPriorityExplanation]);
 
@@ -590,6 +625,9 @@ export default function TodayScreen() {
             <Text style={styles.emptyStateEmotion}>
               {todayMood.charAt(0).toUpperCase() + todayMood.slice(1)}
             </Text>
+            <Text style={styles.emptyStateMessage}>
+              Agrega tus tareas para que Kora las priorice según cómo te sientes
+            </Text>
             <TouchableOpacity
               style={styles.secondaryButton}
               onPress={() => router.push('/(tabs)/vaciar')}
@@ -605,9 +643,6 @@ export default function TodayScreen() {
                 <View style={styles.secondaryButtonContent}>
                   <Text style={styles.secondaryButtonText}>
                     Vacía tus pendientes
-                  </Text>
-                  <Text style={styles.secondaryButtonSubtext}>
-                    Para que Kora los priorice según cómo te sientes
                   </Text>
                 </View>
               </LinearGradient>
@@ -690,19 +725,6 @@ export default function TodayScreen() {
             </>
           )}
 
-          {/* Mensaje cuando hay check-in pero no hay tareas */}
-          {todayMood && incompleteTasks.length === 0 && tasks.length === 0 && (
-            <TouchableOpacity
-              style={styles.explanationCard}
-              onPress={() => router.push('/(tabs)/vaciar')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.explanationText}>
-                Ya hiciste tu check-in, pero aún no tienes tareas.{'\n'}
-                Ve a <Text style={styles.flowGuideAccent}>Vaciar</Text> para agregar lo que necesitas hacer hoy.
-              </Text>
-            </TouchableOpacity>
-          )}
 
           {/* Guía contextual cuando hay tareas pero no hay check-in */}
           {!todayMood && incompleteTasks.length > 0 && (
@@ -719,7 +741,9 @@ export default function TodayScreen() {
               <View style={styles.summaryRow}>
                 <View style={styles.summaryItem}>
                   <Text style={styles.summaryLabel}>Emoción</Text>
-                  <Text style={styles.summaryValue}>{todayMood}</Text>
+                  <Text style={styles.summaryValue}>
+                    {todayMood ? todayMood.charAt(0).toUpperCase() + todayMood.slice(1) : '-'}
+                  </Text>
                 </View>
                 <View style={styles.summaryDivider} />
                 <View style={styles.summaryItem}>
@@ -1738,7 +1762,14 @@ const styles = StyleSheet.create({
     ...THEME.typography.h1,
     fontFamily: THEME.fonts.accent.italic,
     color: THEME.colors.gradient.blue,
+    marginBottom: THEME.spacing.sm,
+  },
+  emptyStateMessage: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
     marginBottom: THEME.spacing.lg,
+    lineHeight: 22,
   },
   secondaryButton: {
     borderRadius: THEME.borderRadius.rounded,

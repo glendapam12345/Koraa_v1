@@ -115,15 +115,6 @@ export default function SentirScreen() {
           Kora prioriza por ti. Solo enfócate en lo que realmente importa hoy.
         </Text>
 
-        {/* Guía contextual */}
-        {hasTasks && (
-          <View style={styles.flowGuide}>
-            <Text style={styles.flowGuideText}>
-              💡 Después de sentir, ve a <Text style={styles.flowGuideAccent}>Accionar</Text> para ver tus tareas priorizadas
-            </Text>
-          </View>
-        )}
-
         {/* Banner si no hay tareas */}
         {hasTasks === false && (
           <TouchableOpacity

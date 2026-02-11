@@ -29,11 +29,19 @@ export default function FocusScreen() {
     setToastType(type);
   };
 
-  const prioritizeTasksBasedOnCheckIn = async (energyLevel: number, emotionValue: string) => {
+  const prioritizeTasksBasedOnCheckIn = async (
+    energyLevel: number,
+    emotionValue: string,
+    availableTime: string,
+    focusLevel: string
+  ) => {
     if (!user) return;
 
     try {
-      // Obtener todas las tareas no completadas
+      // Importar algoritmo de priorización inteligente
+      const { prioritizeTasksIntelligently } = await import('@/lib/smartPrioritization');
+      
+      // Obtener todas las tareas no completadas con sus subtareas
       const { data: tasks, error: tasksError } = await supabase
         .from('tasks')
         .select('*')
@@ -48,24 +56,40 @@ export default function FocusScreen() {
 
       if (!tasks || tasks.length === 0) return;
 
-    // Lógica de priorización:
-    // - Si energía es baja (1-2): priorizar menos tareas (máximo 2)
-    // - Si energía es media (3): priorizar algunas tareas (máximo 3)
-    // - Si energía es alta (4-5): priorizar más tareas (máximo 4-5)
-    // - Emociones negativas (Agotada, Ansiosa, Abrumada): priorizar menos
-    // - Emociones positivas (Tranquila, Enfocada, Motivada): priorizar más
+      // Organizar tareas con subtareas
+      const tasksMap = new Map<string, any>();
+      const mainTasks: any[] = [];
 
-    const negativeEmotions = ['agotada', 'ansiosa', 'abrumada'];
-    const isNegativeEmotion = negativeEmotions.includes(emotionValue.toLowerCase());
+      tasks.forEach((task: any) => {
+        const taskWithSubtasks = {
+          ...task,
+          subtasks: [],
+        };
+        tasksMap.set(task.id, taskWithSubtasks);
 
-    let maxPriorityTasks = 4;
-    if (energyLevel <= 2 || isNegativeEmotion) {
-      maxPriorityTasks = 2;
-    } else if (energyLevel === 3) {
-      maxPriorityTasks = 3;
-    } else if (energyLevel >= 4) {
-      maxPriorityTasks = 5;
-    }
+        if (!task.parent_task_id) {
+          mainTasks.push(taskWithSubtasks);
+        }
+      });
+
+      // Asignar subtareas a sus padres
+      tasks.forEach((task: any) => {
+        if (task.parent_task_id) {
+          const parent = tasksMap.get(task.parent_task_id);
+          const child = tasksMap.get(task.id);
+          if (parent && child) {
+            parent.subtasks.push(child);
+          }
+        }
+      });
+
+      // Usar algoritmo de priorización inteligente
+      const prioritizedTasks = prioritizeTasksIntelligently(mainTasks, {
+        energyLevel,
+        emotion: emotionValue,
+        availableTime,
+        focusLevel,
+      });
 
       // Primero, quitar prioridad a todas las tareas
       const { error: unprioritizeError } = await supabase
@@ -79,11 +103,9 @@ export default function FocusScreen() {
         return;
       }
 
-      // Luego, priorizar las primeras N tareas según la energía
-      const tasksToPrioritize = tasks.slice(0, maxPriorityTasks);
-      
-      if (tasksToPrioritize.length > 0) {
-        const taskIds = tasksToPrioritize.map(t => t.id);
+      // Luego, priorizar las tareas seleccionadas por el algoritmo
+      if (prioritizedTasks.length > 0) {
+        const taskIds = prioritizedTasks.map(t => t.id);
         const { error: prioritizeError } = await supabase
           .from('tasks')
           .update({ is_priority: true })
@@ -164,7 +186,7 @@ export default function FocusScreen() {
       }
 
       // Priorizar tareas automáticamente basado en el check-in (no bloquear si falla)
-      prioritizeTasksBasedOnCheckIn(energyLevel, emotion).catch((error) => {
+      prioritizeTasksBasedOnCheckIn(energyLevel, emotion, time, selectedFocus).catch((error) => {
         console.error('Error en priorización (no crítico):', error);
         // No bloquear el flujo si la priorización falla
       });

@@ -396,16 +396,7 @@ export default function VaciarScreen() {
           Solo escribe lo que necesitas soltar.
         </Text>
 
-        {/* Guía contextual */}
-        {!hasCheckInToday && (
-          <View style={styles.flowGuide}>
-            <Text style={styles.flowGuideText}>
-              💡 Después de vaciar tu mente, ve a <Text style={styles.flowGuideAccent}>Sentir</Text> para que Kora priorice tus tareas
-            </Text>
-          </View>
-        )}
-
-        {/* Banner si falta check-in */}
+        {/* Banner si falta check-in - solo mostrar este, no ambos */}
         {hasCheckInToday === false && (
           <TouchableOpacity
             style={styles.checkInBanner}
