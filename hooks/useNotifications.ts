@@ -17,6 +17,10 @@ export function useNotifications() {
   const responseListener = useRef<Notifications.Subscription>();
 
   useEffect(() => {
+    if (Platform.OS === 'web') {
+      return;
+    }
+
     // Solicitar permisos al montar
     registerForPushNotificationsAsync();
 
@@ -78,6 +82,11 @@ async function registerForPushNotificationsAsync() {
 
 // Programar recordatorio diario inteligente
 export async function scheduleDailyReminder() {
+  if (Platform.OS === 'web') {
+    console.log('Las notificaciones no están disponibles en web');
+    return;
+  }
+
   try {
     // Cancelar notificaciones anteriores
     await Notifications.cancelAllScheduledNotificationsAsync();
@@ -137,11 +146,18 @@ export async function scheduleDailyReminder() {
 
 // Cancelar todas las notificaciones
 export async function cancelAllNotifications() {
+  if (Platform.OS === 'web') {
+    console.log('Las notificaciones no están disponibles en web');
+    return;
+  }
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
 // Verificar permisos de notificación
 export async function checkNotificationPermissions(): Promise<boolean> {
+  if (Platform.OS === 'web') {
+    return false;
+  }
   const { status } = await Notifications.getPermissionsAsync();
   return status === 'granted';
 }
