@@ -70,13 +70,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: THEME.spacing.xs,
     marginBottom: THEME.spacing.md,
   },
   title: {
     ...THEME.typography.h3,
     color: '#FFFFFF',
     flex: 1,
+    marginLeft: THEME.spacing.xs,
+    marginRight: THEME.spacing.xs,
   },
   closeButton: {
     padding: 4,

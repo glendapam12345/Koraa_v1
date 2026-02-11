@@ -146,12 +146,14 @@ export function ProgressChart({ data }: ProgressChartProps) {
               const colors = getEmotionColors(emotion);
               return (
                 <View key={emotion} style={styles.legendItem}>
-                  <LinearGradient
-                    colors={colors}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.legendColor}
-                  />
+                  <View style={styles.legendItemIcon}>
+                    <LinearGradient
+                      colors={colors}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.legendColor}
+                    />
+                  </View>
                   <Text style={styles.legendText}>{emotion}</Text>
                 </View>
               );
@@ -224,13 +226,16 @@ const styles = StyleSheet.create({
   legendItems: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: THEME.spacing.xs,
+    marginHorizontal: -3,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    marginRight: THEME.spacing.xs,
     marginBottom: THEME.spacing.xs,
+  },
+  legendItemIcon: {
+    marginRight: 6,
   },
   legendColor: {
     width: 16,

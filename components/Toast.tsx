@@ -94,7 +94,6 @@ const styles = StyleSheet.create({
     right: THEME.spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: THEME.spacing.sm,
     padding: THEME.spacing.md,
     borderRadius: THEME.borderRadius.rounded,
     ...THEME.shadows.soft,
@@ -104,6 +103,7 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: '#FFFFFF',
     flex: 1,
+    marginLeft: THEME.spacing.sm,
     fontFamily: THEME.fonts.heading.medium,
   },
 });
