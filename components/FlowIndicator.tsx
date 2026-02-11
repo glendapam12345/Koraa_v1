@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
-import { CheckCircle2, Circle } from 'lucide-react-native';
+import { CheckCircle2 } from 'lucide-react-native';
 
 type FlowStep = 'vaciar' | 'sentir' | 'accionar';
 
