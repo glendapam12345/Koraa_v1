@@ -17,7 +17,7 @@ export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
 
   const getStepStatus = (step: FlowStep) => {
     const currentIndex = steps.findIndex(s => s.id === currentStep);
-    const stepIndex = steps.findIndex(s => s.id === step.id);
+    const stepIndex = steps.findIndex(s => s.id === step);
     
     if (stepIndex < currentIndex) return 'completed';
     if (stepIndex === currentIndex) return 'current';

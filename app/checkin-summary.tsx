@@ -117,7 +117,7 @@ export default function CheckInSummaryScreen() {
         {/* Resumen del estado */}
         <View style={styles.summaryCard}>
           <LinearGradient
-            colors={emotionData.color}
+            colors={emotionData.color as [string, string]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.summaryGradient}

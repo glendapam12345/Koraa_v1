@@ -9,7 +9,7 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 
-type DayData = {
+export type DayData = {
   date: string;
   hasCheckIn: boolean;
   dayLabel: string;

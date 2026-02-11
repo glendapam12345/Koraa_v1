@@ -212,7 +212,7 @@ export default function VaciarScreen() {
           const { saveTaskOffline } = await import('@/lib/offlineStorage');
           await saveTaskOffline({
             content: taskInput.trim(),
-            category: selectedCategory,
+            category: detectedCategory,
             is_priority: isPriority,
             is_completed: false,
             parent_task_id: null,

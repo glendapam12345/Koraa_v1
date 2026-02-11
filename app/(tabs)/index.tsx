@@ -165,7 +165,8 @@ export default function TodayScreen() {
   useEffect(() => {
     loadTasks();
     loadTodayCheckIn();
-    
+    loadPrioritizationMetadata();
+
     // Intentar sincronizar datos offline al cargar
     (async () => {
       try {
@@ -183,7 +184,7 @@ export default function TodayScreen() {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [loadTasks, loadTodayCheckIn]);
+  }, [loadTasks, loadTodayCheckIn, loadPrioritizationMetadata]);
 
   // Verificar si mostrar tooltip después de cargar datos
   useEffect(() => {
