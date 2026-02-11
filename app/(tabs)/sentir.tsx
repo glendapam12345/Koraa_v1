@@ -6,9 +6,10 @@ import { EmotionCard } from '@/components/EmotionCard';
 import { GradientButton } from '@/components/GradientButton';
 import { Tooltip } from '@/components/Tooltip';
 import { FlowIndicator } from '@/components/FlowIndicator';
+import { getEmotionTips } from '@/lib/emotionTips';
 import { supabase } from '@/lib/supabase';
 import { router, useFocusEffect } from 'expo-router';
-import { Plus } from 'lucide-react-native';
+import { Plus, Lightbulb } from 'lucide-react-native';
 
 const EMOTIONS = [
   { id: 'agotada', emoji: '😔', label: 'Agotada' },
@@ -161,6 +162,23 @@ export default function SentirScreen() {
             </View>
           ))}
         </View>
+
+        {/* Tips contextuales después de seleccionar emoción */}
+        {selectedEmotion && (
+          <View style={styles.tipsSection}>
+            <View style={styles.tipsHeader}>
+              <Lightbulb size={20} color={THEME.colors.gradient.blue} />
+              <Text style={styles.tipsTitle}>
+                Tips para {EMOTIONS.find(e => e.id === selectedEmotion)?.label}
+              </Text>
+            </View>
+            {getEmotionTips(selectedEmotion).slice(0, 3).map((tip, index) => (
+              <View key={tip.id} style={styles.tipCard}>
+                <Text style={styles.tipText}>{tip.tip}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
 
       <View style={styles.footer}>
@@ -263,5 +281,32 @@ const styles = StyleSheet.create({
   flowGuideAccent: {
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.gradient.blue,
+  },
+  tipsSection: {
+    marginTop: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
+  },
+  tipsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    marginBottom: THEME.spacing.md,
+  },
+  tipsTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  tipCard: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
+    ...THEME.shadows.soft,
+  },
+  tipText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    lineHeight: 22,
   },
 });

@@ -10,7 +10,7 @@ import { ConfettiCelebration } from '@/components/ConfettiCelebration';
 import { QuickCheckInModal } from '@/components/QuickCheckInModal';
 import { FlowIndicator } from '@/components/FlowIndicator';
 import { supabase } from '@/lib/supabase';
-import { RefreshCw, ChevronDown, ChevronUp, MoreVertical, Edit, Trash2, X, Sparkles, CheckCircle2 } from 'lucide-react-native';
+import { RefreshCw, ChevronDown, ChevronUp, MoreVertical, Edit, Trash2, X, Sparkles, CheckCircle2, Plus } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 type Task = {
@@ -49,82 +49,6 @@ export default function TodayScreen() {
     setToastMessage(message);
     setToastType(type);
   };
-
-  useEffect(() => {
-    loadTasks();
-    loadTodayCheckIn();
-    
-    // Intentar sincronizar datos offline al cargar
-    (async () => {
-      try {
-        const { syncAll } = await import('@/lib/offlineStorage');
-        await syncAll();
-      } catch (error) {
-        // Silencioso, no es crítico
-        console.log('Sincronización offline:', error);
-      }
-    })();
-
-    // Cleanup: limpiar timeout si el componente se desmonta
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, [loadTasks, loadTodayCheckIn]);
-
-  // Verificar si mostrar tooltip después de cargar datos
-  useEffect(() => {
-    if (!loading && todayMood && tasks.length === 0) {
-      // Hay check-in pero no hay tareas priorizadas (primera vez)
-      setShowTooltip(true);
-    }
-  }, [loading, todayMood, tasks.length]);
-
-  // Detectar cuando todas las tareas están completadas
-  useEffect(() => {
-    if (tasks.length === 0 || loading) return;
-    
-    const allCompleted = tasks.every(t => t.is_completed);
-    const hasTasks = tasks.length > 0;
-    const completedCount = tasks.filter(t => t.is_completed).length;
-    const wasNotAllCompleted = previousCompletedCount < tasks.length;
-    
-    if (allCompleted && hasTasks && wasNotAllCompleted && !showConfetti) {
-      // ¡Todas las tareas completadas!
-      setShowConfetti(true);
-      showToast('Hoy está completo. Descansa y disfruta del momento presente ✨', 'success');
-      
-      // Ocultar confetti después de 4 segundos
-      setTimeout(() => {
-        setShowConfetti(false);
-      }, 4000);
-    }
-    
-    // Actualizar contador de tareas completadas
-    setPreviousCompletedCount(completedCount);
-  }, [tasks, loading]);
-
-  // Animar barra de progreso cuando cambia el porcentaje
-  useEffect(() => {
-    const incompleteTasks = tasks.filter(t => !t.is_completed);
-    const completedToday = tasks.filter(t => t.is_completed).length;
-    const totalPriorityTasks = incompleteTasks.length + completedToday;
-    const progressPercentage = totalPriorityTasks > 0 ? (completedToday / totalPriorityTasks) * 100 : 0;
-    
-    if (!loading && totalPriorityTasks > 0) {
-      progressWidth.value = withTiming(progressPercentage, {
-        duration: 500,
-      });
-    }
-  }, [tasks, loading]);
-
-  // Estilo animado para la barra de progreso
-  const animatedProgressStyle = useAnimatedStyle(() => {
-    return {
-      width: `${progressWidth.value}%`,
-    };
-  });
 
   const loadTodayCheckIn = useCallback(async () => {
     try {
@@ -205,7 +129,84 @@ export default function TodayScreen() {
     } finally {
       setLoadingTasks(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    loadTasks();
+    loadTodayCheckIn();
+    
+    // Intentar sincronizar datos offline al cargar
+    (async () => {
+      try {
+        const { syncAll } = await import('@/lib/offlineStorage');
+        await syncAll();
+      } catch (error) {
+        // Silencioso, no es crítico
+        console.log('Sincronización offline:', error);
+      }
+    })();
+
+    // Cleanup: limpiar timeout si el componente se desmonta
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [loadTasks, loadTodayCheckIn]);
+
+  // Verificar si mostrar tooltip después de cargar datos
+  useEffect(() => {
+    if (!loading && todayMood && tasks.length === 0) {
+      // Hay check-in pero no hay tareas priorizadas (primera vez)
+      setShowTooltip(true);
+    }
+  }, [loading, todayMood, tasks.length]);
+
+  // Detectar cuando todas las tareas están completadas
+  useEffect(() => {
+    if (tasks.length === 0 || loading) return;
+    
+    const allCompleted = tasks.every(t => t.is_completed);
+    const hasTasks = tasks.length > 0;
+    const completedCount = tasks.filter(t => t.is_completed).length;
+    const wasNotAllCompleted = previousCompletedCount < tasks.length;
+    
+    if (allCompleted && hasTasks && wasNotAllCompleted && !showConfetti) {
+      // ¡Todas las tareas completadas!
+      setShowConfetti(true);
+      showToast('Hoy está completo. Descansa y disfruta del momento presente ✨', 'success');
+      
+      // Ocultar confetti después de 4 segundos
+      setTimeout(() => {
+        setShowConfetti(false);
+      }, 4000);
+    }
+    
+    // Actualizar contador de tareas completadas
+    setPreviousCompletedCount(completedCount);
+  }, [tasks, loading]);
+
+  // Animar barra de progreso cuando cambia el porcentaje
+  useEffect(() => {
+    const incompleteTasks = tasks.filter(t => !t.is_completed);
+    const completedToday = tasks.filter(t => t.is_completed).length;
+    const totalPriorityTasks = incompleteTasks.length + completedToday;
+    const progressPercentage = totalPriorityTasks > 0 ? (completedToday / totalPriorityTasks) * 100 : 0;
+    
+    if (!loading && totalPriorityTasks > 0) {
+      progressWidth.value = withTiming(progressPercentage, {
+        duration: 500,
+      });
+    }
+  }, [tasks, loading]);
+
+  // Estilo animado para la barra de progreso
+  const animatedProgressStyle = useAnimatedStyle(() => {
+    return {
+      width: `${progressWidth.value}%`,
+    };
+  });
 
   const toggleTaskExpansion = (taskId: string) => {
     const newExpanded = new Set(expandedTasks);
@@ -550,117 +551,139 @@ export default function TodayScreen() {
           />
         }
       >
-        <LinearGradient
-          colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.moodCard}
-        >
-          <View style={styles.moodHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.moodLabel}>Hoy te sientes</Text>
-              <Text style={styles.moodTitle}>
-                {loading ? 'Cargando...' : todayMood || 'Aún no has hecho tu check-in'}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.refreshButton}
-              onPress={() => {
-                loadTasks();
-                loadTodayCheckIn();
-              }}
+        {/* Botón principal: ¿Cómo te sientes hoy? */}
+        {!loading && !todayMood && (
+          <TouchableOpacity
+            style={styles.mainRegisterButton}
+            onPress={() => router.push('/(tabs)/sentir')}
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.mainRegisterButtonGradient}
             >
-              <RefreshCw size={20} color={THEME.colors.fill[100]} />
-            </TouchableOpacity>
-          </View>
-          {!loading && (energy || time) && (
-            <View style={styles.moodStats}>
-              {energy && <Text style={styles.moodStat}>Energía: {energy}</Text>}
-              {time && <Text style={styles.moodStat}>{time}</Text>}
-            </View>
-          )}
-          
-          {/* Botón de check-in rápido */}
-          {!loading && (
-            <TouchableOpacity
-              style={styles.quickCheckInButton}
-              onPress={() => {
-                if (todayMood) {
-                  // Si ya hay check-in, ir a la pantalla completa para actualizar
-                  router.push('/(tabs)/sentir');
-                } else {
-                  // Si no hay check-in, abrir modal rápido
-                  setShowQuickCheckIn(true);
-                }
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.quickCheckInButtonText}>
-                {todayMood ? 'Actualizar cómo me siento' : '¿Cómo te sientes hoy?'}
+              <View style={styles.mainRegisterIcon}>
+                <Sparkles size={64} color={THEME.colors.fill[100]} />
+              </View>
+              <Text style={styles.mainRegisterText}>
+                ¿Cómo te sientes hoy?
               </Text>
-            </TouchableOpacity>
-          )}
-        </LinearGradient>
+              <Text style={styles.mainRegisterSubtext}>
+                Toca para registrar y organizar tu día
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
 
-        <View style={styles.section}>
-          {/* Indicador de flujo */}
-          {!loading && (
-            <FlowIndicator currentStep="accionar" />
-          )}
-          <Text style={styles.sectionTitle}>{explanation.title}</Text>
-          
-          {/* Banner de recordatorio de check-in */}
-          {!loading && !todayMood && (
+        {/* Si hay check-in pero no hay tareas */}
+        {!loading && todayMood && tasks.length === 0 && (
+          <View style={styles.emptyStateCard}>
+            <Text style={styles.emptyStateTitle}>
+              Ya registraste cómo te sientes hoy
+            </Text>
+            <Text style={styles.emptyStateEmotion}>
+              {todayMood.charAt(0).toUpperCase() + todayMood.slice(1)}
+            </Text>
             <TouchableOpacity
-              style={styles.checkInBanner}
-              onPress={() => router.push('/onboarding/emotion')}
+              style={styles.secondaryButton}
+              onPress={() => router.push('/(tabs)/vaciar')}
               activeOpacity={0.8}
             >
               <LinearGradient
                 colors={[THEME.colors.gradient.pink, THEME.colors.gradient.blue]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={styles.checkInBannerGradient}
+                style={styles.secondaryButtonGradient}
               >
-                <Text style={styles.checkInBannerText}>
-                  💭 Haz tu check-in diario para ver tus prioridades
-                </Text>
-                <Text style={styles.checkInBannerSubtext}>
-                  Toca para comenzar →
-                </Text>
+                <Plus size={24} color="#FFFFFF" />
+                <View style={styles.secondaryButtonContent}>
+                  <Text style={styles.secondaryButtonText}>
+                    Vacía tus pendientes
+                  </Text>
+                  <Text style={styles.secondaryButtonSubtext}>
+                    Para que Kora los priorice según cómo te sientes
+                  </Text>
+                </View>
               </LinearGradient>
             </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Si hay check-in y tareas: mostrar tarjeta de mood normal */}
+        {!loading && todayMood && tasks.length > 0 && (
+          <LinearGradient
+            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.moodCard}
+          >
+            <View style={styles.moodHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.moodLabel}>Hoy te sientes</Text>
+                <Text style={styles.moodTitle}>
+                  {todayMood.charAt(0).toUpperCase() + todayMood.slice(1)}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.refreshButton}
+                onPress={() => {
+                  loadTasks();
+                  loadTodayCheckIn();
+                }}
+              >
+                <RefreshCw size={20} color={THEME.colors.fill[100]} />
+              </TouchableOpacity>
+            </View>
+            {energy || time ? (
+              <View style={styles.moodStats}>
+                {energy && <Text style={styles.moodStat}>Energía: {energy}</Text>}
+                {time && <Text style={styles.moodStat}>{time}</Text>}
+              </View>
+            ) : null}
+            
+            {/* Botón para actualizar check-in */}
+            <TouchableOpacity
+              style={styles.updateCheckInButton}
+              onPress={() => router.push('/(tabs)/sentir')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.updateCheckInButtonText}>
+                Actualizar cómo me siento
+              </Text>
+            </TouchableOpacity>
+          </LinearGradient>
+        )}
+
+        <View style={styles.section}>
+          {/* Indicador de flujo - solo si hay check-in */}
+          {!loading && todayMood && (
+            <FlowIndicator currentStep="accionar" />
           )}
           
-          {/* Mensaje explicativo con razonamiento emocional */}
-          {incompleteTasks.length > 0 && explanation.reasoning && (
-            <View style={styles.explanationCard}>
-              <Text style={styles.explanationText}>
-                {explanation.message}
-              </Text>
-              <Text style={styles.explanationReasoning}>
-                {explanation.reasoning}
-              </Text>
-              {explanation.suggestion && (
-                <Text style={styles.explanationSuggestion}>
-                  {explanation.suggestion}
-                </Text>
+          {/* Mensaje explicativo con razonamiento emocional - solo si hay check-in y tareas */}
+          {todayMood && tasks.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>{explanation.title}</Text>
+              
+              {/* Mensaje explicativo con razonamiento emocional */}
+              {incompleteTasks.length > 0 && explanation.reasoning && (
+                <View style={styles.explanationCard}>
+                  <Text style={styles.explanationText}>
+                    {explanation.message}
+                  </Text>
+                  <Text style={styles.explanationReasoning}>
+                    {explanation.reasoning}
+                  </Text>
+                  {explanation.suggestion && (
+                    <Text style={styles.explanationSuggestion}>
+                      {explanation.suggestion}
+                    </Text>
+                  )}
+                </View>
               )}
-            </View>
-          )}
-          
-          {/* Mensaje explicativo sin razonamiento (cuando no hay check-in) */}
-          {incompleteTasks.length > 0 && !explanation.reasoning && (
-            <View style={styles.explanationCard}>
-              <Text style={styles.explanationText}>
-                {explanation.message}
-              </Text>
-              {explanation.suggestion && (
-                <Text style={styles.explanationSuggestion}>
-                  {explanation.suggestion}
-                </Text>
-              )}
-            </View>
+            </>
           )}
 
           {/* Mensaje cuando hay check-in pero no hay tareas */}
@@ -1660,5 +1683,95 @@ const styles = StyleSheet.create({
   flowGuideAccent: {
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.gradient.blue,
+  },
+  mainRegisterButton: {
+    borderRadius: THEME.borderRadius.rounded,
+    marginBottom: THEME.spacing.lg,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  mainRegisterButtonGradient: {
+    padding: THEME.spacing.xl * 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mainRegisterIcon: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: THEME.spacing.md,
+  },
+  mainRegisterText: {
+    ...THEME.typography.h1,
+    color: THEME.colors.fill[100],
+    textAlign: 'center',
+    marginBottom: THEME.spacing.xs,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  mainRegisterSubtext: {
+    ...THEME.typography.body,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+  },
+  emptyStateCard: {
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.xl,
+    alignItems: 'center',
+    marginBottom: THEME.spacing.lg,
+    ...THEME.shadows.soft,
+  },
+  emptyStateTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    textAlign: 'center',
+    marginBottom: THEME.spacing.sm,
+  },
+  emptyStateEmotion: {
+    ...THEME.typography.h1,
+    fontFamily: THEME.fonts.accent.italic,
+    color: THEME.colors.gradient.blue,
+    marginBottom: THEME.spacing.lg,
+  },
+  secondaryButton: {
+    borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+    width: '100%',
+    ...THEME.shadows.soft,
+  },
+  secondaryButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: THEME.spacing.md,
+    gap: THEME.spacing.sm,
+  },
+  secondaryButtonContent: {
+    flex: 1,
+  },
+  secondaryButtonText: {
+    ...THEME.typography.body,
+    color: '#FFFFFF',
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: 4,
+  },
+  secondaryButtonSubtext: {
+    ...THEME.typography.caption,
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  updateCheckInButton: {
+    marginTop: THEME.spacing.md,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignSelf: 'center',
+  },
+  updateCheckInButtonText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.fill[100],
+    fontFamily: THEME.fonts.heading.medium,
   },
 });
