@@ -198,6 +198,7 @@ export default function SemanaScreen() {
           .eq('user_id', user.id);
 
         if (error) {
+          setIsSaving(false);
           if (isNetworkError(error)) {
             Alert.alert('Sin conexión', 'No se pudo actualizar la tarea. Intenta más tarde.');
           } else {
@@ -222,6 +223,7 @@ export default function SemanaScreen() {
           });
 
         if (error) {
+          setIsSaving(false);
           if (isNetworkError(error)) {
             Alert.alert('Sin conexión', 'No se pudo crear la tarea. Intenta más tarde.');
           } else {
@@ -232,18 +234,20 @@ export default function SemanaScreen() {
         }
       }
 
-      // Recargar datos
-      await loadData();
+      // Cerrar modal primero para mejor UX
       setShowTaskModal(false);
       setEditingTask(null);
       setTaskContent('');
       setSelectedProjectId(null);
       setSelectedDay(null);
+      setIsSaving(false);
+
+      // Recargar datos después de cerrar el modal
+      await loadData();
     } catch (error) {
+      setIsSaving(false);
       logger.error('Unexpected error saving task:', error);
       Alert.alert('Error', 'Ocurrió un error inesperado');
-    } finally {
-      setIsSaving(false);
     }
   };
 
