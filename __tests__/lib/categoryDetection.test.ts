@@ -1,5 +1,6 @@
 import { detectCategory } from '@/lib/categoryDetection';
 
+// Tests simples sin dependencias de React Native
 describe('categoryDetection', () => {
   describe('detectCategory', () => {
     it('should detect "trabajo" category for work-related keywords', () => {

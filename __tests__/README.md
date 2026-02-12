@@ -2,32 +2,54 @@
 
 Este directorio contiene los tests unitarios de la aplicación Kora.
 
+## ⚠️ Problema Conocido
+
+Actualmente hay un problema con `jest-expo` que causa el error:
+```
+TypeError: Object.defineProperty called on non-object
+```
+
+Este es un problema conocido con la configuración de `jest-expo` y la versión de Expo. Los tests están correctamente escritos, pero necesitan una configuración alternativa para ejecutarse.
+
 ## Configuración
 
 El entorno de testing está configurado con:
 - **Jest**: Framework de testing
 - **React Native Testing Library**: Para testing de componentes React Native
-- **jest-expo**: Preset de Jest para Expo
+- **jest-expo**: Preset de Jest para Expo (actualmente con problemas)
 
 ## Instalación
 
-Para instalar las dependencias de testing, ejecuta:
+Las dependencias ya están instaladas:
+- `@testing-library/jest-native`
+- `@testing-library/react-native`
+- `@types/jest`
+- `jest`
+- `jest-expo`
+- `react-test-renderer`
+
+## Ejecutar Tests (Solución Temporal)
+
+### Opción 1: Usar ts-jest para tests unitarios
+
+Para tests unitarios simples (sin componentes React Native):
 
 ```bash
-npm install --save-dev @testing-library/jest-native @testing-library/react-native @types/jest jest jest-expo react-test-renderer
+# Instalar ts-jest
+npm install --save-dev ts-jest
+
+# Ejecutar solo tests unitarios
+npx jest --config jest.config.simple.js __tests__/lib/
 ```
 
-## Ejecutar Tests
+### Opción 2: Ejecutar tests individuales
 
 ```bash
-# Ejecutar todos los tests
-npm test
+# Test de detección de categorías
+npx jest __tests__/lib/categoryDetection.test.ts --no-coverage
 
-# Ejecutar tests en modo watch
-npm run test:watch
-
-# Ejecutar tests con cobertura
-npm run test:coverage
+# Test de logger
+npx jest __tests__/lib/logger.test.ts --no-coverage
 ```
 
 ## Estructura
@@ -72,3 +94,7 @@ Los tests cubren:
 - [ ] Tests para componentes de mood (`MoodCard`)
 - [ ] Tests para `offlineStorage` utilities
 - [ ] Tests para `personalizedRecommendations`
+
+## Solución del Problema
+
+Ver `TROUBLESHOOTING.md` para más detalles sobre el problema y soluciones alternativas.

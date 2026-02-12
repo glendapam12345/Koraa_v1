@@ -16,7 +16,7 @@ export function detectCategory(content: string): string {
   
   // Palabras clave para Salud
   const saludKeywords = [
-    'ejercicio', 'gym', 'gimnasio', 'correr', 'caminar', 'yoga', 'meditación',
+    'ejercicio', 'gym', 'gimnasio', 'correr', 'caminar', 'yoga', 'meditación', 'meditar',
     'doctor', 'médico', 'cita médica', 'salud', 'nutrición', 'dieta', 'comida saludable',
     'terapia', 'psicólogo', 'dormir', 'descanso', 'relajación', 'masaje',
     'vitaminas', 'suplementos', 'chequeo', 'análisis', 'examen médico'
@@ -24,10 +24,10 @@ export function detectCategory(content: string): string {
   
   // Palabras clave para Personal
   const personalKeywords = [
-    'familia', 'amigos', 'cita', 'cumpleaños', 'regalo', 'compras', 'supermercado',
+    'familia', 'amigos', 'amiga', 'cita', 'cumpleaños', 'regalo', 'compras', 'supermercado',
     'casa', 'limpieza', 'organizar', 'hobby', 'pasatiempo', 'libro', 'película',
     'viaje', 'vacaciones', 'finanzas', 'pagar', 'factura', 'banco', 'ahorro',
-    'estudio', 'universidad', 'curso', 'aprender', 'leer', 'escribir'
+    'estudio', 'universidad', 'curso', 'aprender', 'leer', 'escribir', 'llamar', 'mamá', 'mama'
   ];
   
   // Contar coincidencias
