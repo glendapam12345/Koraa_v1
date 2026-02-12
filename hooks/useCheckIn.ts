@@ -62,7 +62,11 @@ export function useCheckIn(
         setTime('');
         setFocusLevel('');
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      // Ignorar errores de AbortError (componente desmontado)
+      if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {
+        return;
+      }
       console.error('Error inesperado:', error);
       const errorMessage = getErrorMessage(error);
       showToast(errorMessage, 'error');

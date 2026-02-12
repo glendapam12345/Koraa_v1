@@ -855,20 +855,7 @@ export default function TodayScreen() {
         </View>
 
         <View style={styles.tasksContainer}>
-          {loadingTasks ? (
-            <View style={styles.loadingContainer}>
-              {/* Skeleton loaders para tareas */}
-              {[1, 2, 3].map((i) => (
-                <View key={i} style={styles.skeletonTask}>
-                  <View style={styles.skeletonCheckbox} />
-                  <View style={styles.skeletonContent}>
-                    <View style={styles.skeletonLine} />
-                    <View style={[styles.skeletonLine, { width: '60%', marginTop: 8 }]} />
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : tasks.length === 0 ? (
+          {tasks.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconContainer}>
                 <Sparkles size={48} color={THEME.colors.gradient.blue} />
@@ -1198,33 +1185,6 @@ const styles = StyleSheet.create({
   },
   tasksContainer: {
     gap: THEME.spacing.sm,
-  },
-  loadingContainer: {
-    gap: THEME.spacing.sm,
-  },
-  skeletonTask: {
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.sm,
-    ...THEME.shadows.soft,
-  },
-  skeletonCheckbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: THEME.colors.stroke[100],
-  },
-  skeletonContent: {
-    flex: 1,
-  },
-  skeletonLine: {
-    height: 16,
-    backgroundColor: THEME.colors.stroke[100],
-    borderRadius: 4,
-    width: '100%',
   },
   emptyState: {
     backgroundColor: THEME.colors.fill[200],

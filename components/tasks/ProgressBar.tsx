@@ -1,12 +1,12 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { memo } from 'react';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, SharedValue } from 'react-native-reanimated';
 import { THEME } from '@/constants/theme';
 
 interface ProgressBarProps {
   completed: number;
   total: number;
-  progressWidth: Animated.SharedValue<number>;
+  progressWidth: SharedValue<number>;
 }
 
 export const ProgressBar = memo(function ProgressBar({ completed, total, progressWidth }: ProgressBarProps) {
