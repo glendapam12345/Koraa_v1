@@ -73,7 +73,7 @@ export default function SemanaScreen() {
 
       // Load tasks scheduled for this week
       const weekDates = getWeekDatesHelper();
-      const { data: tasksData } = await supabase
+      const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select('*')
         .eq('user_id', user.id)
@@ -81,7 +81,11 @@ export default function SemanaScreen() {
         .is('parent_task_id', null)
         .in('scheduled_date', weekDates)
         .order('scheduled_date', { ascending: true })
-        .order('project_priority', { ascending: false });
+        .order('created_at', { ascending: true });
+
+      if (tasksError) {
+        logger.error('Error loading tasks:', tasksError);
+      }
 
       // Build distribution from scheduled tasks
       const weeklyData: WeeklyDistribution = {};
