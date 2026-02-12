@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated } from 'react
 import { useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-import { Sparkles, X } from 'lucide-react-native';
+import { Sparkles } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 interface QuickOnboardingModalProps {
@@ -61,7 +61,7 @@ export function QuickOnboardingModal({ visible, onClose }: QuickOnboardingModalP
       transparent
       visible={visible}
       animationType="none"
-      onRequestClose={handleClose}
+      onRequestClose={() => {}} // No permitir cerrar con botón de Android/iOS
     >
       <Animated.View
         style={[
@@ -80,22 +80,14 @@ export function QuickOnboardingModal({ visible, onClose }: QuickOnboardingModalP
               },
             ]}
           >
-            <View
-              style={styles.modalContent}
-            >
+            <View style={styles.modalContent}>
               <LinearGradient
                 colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.modal}
               >
-                <TouchableOpacity
-                  onPress={handleClose}
-                  style={styles.closeButton}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <X size={20} color="#FFFFFF" />
-                </TouchableOpacity>
+                {/* Botón X removido - solo se cierra con Continuar */}
 
                 <View style={styles.iconContainer}>
                   <View style={styles.iconCircle}>
@@ -144,6 +136,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: THEME.spacing.lg,
+    // No permitir cerrar tocando fuera del modal
+  },
+  modalContent: {
+    width: '100%',
   },
   container: {
     width: '100%',
@@ -153,15 +149,6 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.xl,
     ...THEME.shadows.soft,
-  },
-  closeButton: {
-    position: 'absolute',
-    top: THEME.spacing.md,
-    right: THEME.spacing.md,
-    zIndex: 10,
-    padding: THEME.spacing.xs,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   iconContainer: {
     alignItems: 'center',
