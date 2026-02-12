@@ -120,12 +120,12 @@ export function QuickOnboardingModal({ visible, onClose }: QuickOnboardingModalP
                   style={styles.button}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.buttonText}>Empezar</Text>
+                  <Text style={styles.buttonText}>Continuar →</Text>
                 </TouchableOpacity>
               </LinearGradient>
-            </TouchableOpacity>
+            </View>
           </Animated.View>
-        </TouchableOpacity>
+        </View>
       </Animated.View>
     </Modal>
   );
