@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
@@ -6,10 +6,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { getWeeklyDistribution, type WeeklyDistribution } from '@/lib/weeklyReorganization';
 import { logger } from '@/lib/logger';
-import { Calendar, ChevronLeft, ChevronRight, RefreshCw, Sparkles } from 'lucide-react-native';
+import { Calendar, ChevronLeft, ChevronRight, RefreshCw, Sparkles, Plus, Edit, Trash2, X } from 'lucide-react-native';
 import { ProjectCard, type Project } from '@/components/projects/ProjectCard';
+import { ProjectSelector } from '@/components/projects/ProjectSelector';
 import { router } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
+import { detectCategory } from '@/lib/categoryDetection';
+import { isNetworkError, getErrorMessage } from '@/lib/supabase';
 
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const DAY_NAMES_FULL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -311,6 +314,22 @@ export default function SemanaScreen() {
                 {dayData.tasks.length === 0 ? (
                   <View style={styles.emptyDay}>
                     <Text style={styles.emptyDayText}>Sin tareas programadas</Text>
+                    <TouchableOpacity
+                      style={styles.addTaskButton}
+                      onPress={() => {
+                        setSelectedDay(date);
+                        setEditingTask(null);
+                        setTaskContent('');
+                        setSelectedProjectId(null);
+                        setShowTaskModal(true);
+                      }}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel="Agregar tarea para este día"
+                    >
+                      <Plus size={18} color={THEME.colors.gradient.blue} />
+                      <Text style={styles.addTaskButtonText}>Agregar tarea</Text>
+                    </TouchableOpacity>
                   </View>
                 ) : (
                   <View style={styles.tasksContainer}>
@@ -332,36 +351,66 @@ export default function SemanaScreen() {
                           )}
 
                           {tasks.map((task) => (
-                            <TouchableOpacity
-                              key={task.id}
-                              style={styles.taskItem}
-                              onPress={() => {
-                                // Navigate to task detail or edit
-                                router.push('/(tabs)');
-                              }}
-                              accessibilityRole="button"
-                              accessibilityLabel={`Tarea: ${task.content}`}
-                            >
-                              <View
-                                style={[
-                                  styles.taskCheckbox,
-                                  task.is_completed && styles.taskCheckboxCompleted,
-                                ]}
-                              />
-                              <Text
-                                style={[
-                                  styles.taskText,
-                                  task.is_completed && styles.taskTextCompleted,
-                                ]}
-                                numberOfLines={2}
+                            <View key={task.id} style={styles.taskItemContainer}>
+                              <TouchableOpacity
+                                style={styles.taskItem}
+                                onPress={() => {
+                                  setEditingTask(task);
+                                  setTaskContent(task.content);
+                                  setSelectedProjectId(task.project_id);
+                                  setSelectedDay(date);
+                                  setShowTaskModal(true);
+                                }}
+                                activeOpacity={0.7}
+                                accessibilityRole="button"
+                                accessibilityLabel={`Tarea: ${task.content}`}
                               >
-                                {task.content}
-                              </Text>
-                            </TouchableOpacity>
+                                <View
+                                  style={[
+                                    styles.taskCheckbox,
+                                    task.is_completed && styles.taskCheckboxCompleted,
+                                  ]}
+                                />
+                                <Text
+                                  style={[
+                                    styles.taskText,
+                                    task.is_completed && styles.taskTextCompleted,
+                                  ]}
+                                  numberOfLines={2}
+                                >
+                                  {task.content}
+                                </Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.taskDeleteButton}
+                                onPress={() => handleDeleteTask(task.id)}
+                                activeOpacity={0.7}
+                                accessibilityRole="button"
+                                accessibilityLabel="Eliminar tarea"
+                              >
+                                <Trash2 size={16} color={THEME.colors.gradient.pink} />
+                              </TouchableOpacity>
+                            </View>
                           ))}
                         </View>
                       );
                     })}
+                    <TouchableOpacity
+                      style={styles.addTaskButtonSmall}
+                      onPress={() => {
+                        setSelectedDay(date);
+                        setEditingTask(null);
+                        setTaskContent('');
+                        setSelectedProjectId(null);
+                        setShowTaskModal(true);
+                      }}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel="Agregar otra tarea"
+                    >
+                      <Plus size={16} color={THEME.colors.gradient.blue} />
+                      <Text style={styles.addTaskButtonSmallText}>Agregar tarea</Text>
+                    </TouchableOpacity>
                   </View>
                 )}
               </View>
@@ -399,6 +448,115 @@ export default function SemanaScreen() {
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Modal para agregar/editar tarea */}
+      <Modal
+        visible={showTaskModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          if (!isSaving) {
+            setShowTaskModal(false);
+            setEditingTask(null);
+            setTaskContent('');
+            setSelectedProjectId(null);
+            setSelectedDay(null);
+          }
+        }}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {editingTask ? 'Editar tarea' : 'Nueva tarea'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  if (!isSaving) {
+                    setShowTaskModal(false);
+                    setEditingTask(null);
+                    setTaskContent('');
+                    setSelectedProjectId(null);
+                    setSelectedDay(null);
+                  }
+                }}
+                style={styles.closeButton}
+                disabled={isSaving}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar"
+              >
+                <X size={24} color={THEME.colors.text.main} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              {selectedDay && (
+                <View style={styles.selectedDayInfo}>
+                  <Calendar size={16} color={THEME.colors.gradient.blue} />
+                  <Text style={styles.selectedDayText}>
+                    {new Date(selectedDay).toLocaleDateString('es-ES', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                    })}
+                  </Text>
+                </View>
+              )}
+
+              <Text style={styles.modalLabel}>Contenido de la tarea</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={taskContent}
+                onChangeText={setTaskContent}
+                placeholder="Escribe la tarea..."
+                placeholderTextColor={THEME.colors.text.secondary}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+                maxLength={300}
+                editable={!isSaving}
+              />
+
+              {user && (
+                <>
+                  <Text style={styles.modalLabel}>Proyecto (opcional)</Text>
+                  <ProjectSelector
+                    selectedProjectId={selectedProjectId}
+                    onSelect={setSelectedProjectId}
+                    userId={user.id}
+                  />
+                </>
+              )}
+
+              <TouchableOpacity
+                style={[styles.saveButton, (!taskContent.trim() || isSaving) && styles.saveButtonDisabled]}
+                onPress={handleSaveTask}
+                disabled={!taskContent.trim() || isSaving}
+                accessibilityRole="button"
+                accessibilityLabel={editingTask ? "Guardar cambios" : "Crear tarea"}
+              >
+                <LinearGradient
+                  colors={
+                    !taskContent.trim() || isSaving
+                      ? [THEME.colors.fill[200], THEME.colors.fill[200]]
+                      : [THEME.colors.gradient.blue, THEME.colors.gradient.pink]
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.saveButtonGradient}
+                >
+                  <Text style={styles.saveButtonText}>
+                    {isSaving ? 'Guardando...' : editingTask ? 'Guardar cambios' : 'Crear tarea'}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
