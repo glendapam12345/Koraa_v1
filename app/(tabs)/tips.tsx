@@ -39,18 +39,18 @@ const CATEGORY_COLORS = {
   productivity: '#30CFD0',
 };
 
+type UserProfile = {
+  age?: number;
+  favorite_activities?: string[];
+  interests?: string[];
+  other_preferences?: Record<string, any>;
+};
+
 export default function TipsScreen() {
   const [todayMood, setTodayMood] = useState<string>('');
   const [energyLevel, setEnergyLevel] = useState<number>(0);
   const [availableTime, setAvailableTime] = useState<string>('');
   const [focusLevel, setFocusLevel] = useState<string>('');
-  type UserProfile = {
-    age?: number;
-    favorite_activities?: string[];
-    interests?: string[];
-    other_preferences?: Record<string, any>;
-  };
-  
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
