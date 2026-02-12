@@ -22,9 +22,10 @@ interface ProjectSelectorProps {
   selectedProjectId: string | null;
   onSelect: (projectId: string | null) => void;
   userId: string;
+  onProjectCreated?: () => void;
 }
 
-export function ProjectSelector({ selectedProjectId, onSelect, userId }: ProjectSelectorProps) {
+export function ProjectSelector({ selectedProjectId, onSelect, userId, onProjectCreated }: ProjectSelectorProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -102,6 +103,8 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
         setPriority(5);
         setShowCreateModal(false);
         setIsCreating(false);
+        // Notificar que se creó el proyecto
+        onProjectCreated?.();
       }
     } catch (error) {
       logger.error('Error creating project:', error);

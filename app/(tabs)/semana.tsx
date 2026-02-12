@@ -745,6 +745,9 @@ export default function SemanaScreen() {
                       });
                     }}
                     userId={user.id}
+                    onProjectCreated={() => {
+                      showToast('Proyecto creado correctamente', 'success');
+                    }}
                   />
                 </>
               )}
