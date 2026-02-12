@@ -29,10 +29,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QuickOnboardingModal } from '@/components/onboarding/QuickOnboardingModal';
 
 // Lazy loading para componentes pesados que no se usan inmediatamente
-const TaskEditModal = lazy(() => import('@/components/tasks/TaskEditModal').then(module => ({ default: module.TaskEditModal })));
-const ConfettiCelebration = lazy(() => import('@/components/ConfettiCelebration').then(module => ({ default: module.ConfettiCelebration })));
-const MeditationCircle = lazy(() => import('@/components/MeditationCircle').then(module => ({ default: module.MeditationCircle })));
-const QuickCheckInModal = lazy(() => import('@/components/QuickCheckInModal').then(module => ({ default: module.QuickCheckInModal })));
+const TaskEditModal = lazy(() => 
+  import('@/components/tasks/TaskEditModal').then(module => ({ default: module.TaskEditModal }))
+    .catch(() => ({ default: () => null }))
+);
+const ConfettiCelebration = lazy(() => 
+  import('@/components/ConfettiCelebration').then(module => ({ default: module.ConfettiCelebration }))
+    .catch(() => ({ default: () => null }))
+);
+const MeditationCircle = lazy(() => 
+  import('@/components/MeditationCircle').then(module => ({ default: module.MeditationCircle }))
+    .catch(() => ({ default: () => null }))
+);
+const QuickCheckInModal = lazy(() => 
+  import('@/components/QuickCheckInModal').then(module => ({ default: module.QuickCheckInModal }))
+    .catch(() => ({ default: () => null }))
+);
 
 export default function TodayScreen() {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
