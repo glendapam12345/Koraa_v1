@@ -1,11 +1,7 @@
-import { useEffect } from 'react';
-import { View, Text, StyleSheet, Animated as RNAnimated } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { CheckCircle, AlertCircle, Info } from 'lucide-react-native';
-import Constants from 'expo-constants';
-
-// Detectar si estamos en Expo Go
-const isExpoGo = Constants.executionEnvironment === 'storeClient';
 
 interface ToastProps {
   message: string;
@@ -15,18 +11,18 @@ interface ToastProps {
 }
 
 export function Toast({ message, type = 'success', duration = 3000, onHide }: ToastProps) {
-  const opacity = RNAnimated.useRef(new RNAnimated.Value(0)).current;
-  const translateY = RNAnimated.useRef(new RNAnimated.Value(-50)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(-50)).current;
 
   useEffect(() => {
     // Animación de entrada
-    RNAnimated.parallel([
-      RNAnimated.timing(opacity, {
+    Animated.parallel([
+      Animated.timing(opacity, {
         toValue: 1,
         duration: 300,
         useNativeDriver: true,
       }),
-      RNAnimated.spring(translateY, {
+      Animated.spring(translateY, {
         toValue: 0,
         tension: 50,
         friction: 7,
@@ -36,13 +32,13 @@ export function Toast({ message, type = 'success', duration = 3000, onHide }: To
 
     // Auto-ocultar después de la duración
     const timer = setTimeout(() => {
-      RNAnimated.parallel([
-        RNAnimated.timing(opacity, {
+      Animated.parallel([
+        Animated.timing(opacity, {
           toValue: 0,
           duration: 200,
           useNativeDriver: true,
         }),
-        RNAnimated.timing(translateY, {
+        Animated.timing(translateY, {
           toValue: -50,
           duration: 200,
           useNativeDriver: true,
@@ -53,7 +49,7 @@ export function Toast({ message, type = 'success', duration = 3000, onHide }: To
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [duration, onHide]);
+  }, [duration, onHide, opacity, translateY]);
 
   const getIcon = () => {
     switch (type) {
@@ -82,7 +78,7 @@ export function Toast({ message, type = 'success', duration = 3000, onHide }: To
   };
 
   return (
-    <RNAnimated.View
+    <Animated.View
       style={[
         styles.container,
         {
@@ -96,7 +92,7 @@ export function Toast({ message, type = 'success', duration = 3000, onHide }: To
         {getIcon()}
         <Text style={styles.message}>{message}</Text>
       </View>
-    </RNAnimated.View>
+    </Animated.View>
   );
 }
 
