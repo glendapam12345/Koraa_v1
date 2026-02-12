@@ -251,14 +251,18 @@ export default function TodayScreen() {
       if (!user) return;
 
       const today = new Date().toISOString().split('T')[0];
-      const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
       const stored = await AsyncStorage.getItem(`prioritization_${user.id}_${today}`);
       
       if (stored) {
-        const data = JSON.parse(stored);
-        if (data.date === today) {
-          setTotalTasksBefore(data.totalTasksBefore);
-        } else {
+        try {
+          const data = JSON.parse(stored);
+          if (data && data.date === today) {
+            setTotalTasksBefore(data.totalTasksBefore);
+          } else {
+            setTotalTasksBefore(null);
+          }
+        } catch (parseError) {
+          logger.debug('Error parseando metadata:', parseError);
           setTotalTasksBefore(null);
         }
       } else {

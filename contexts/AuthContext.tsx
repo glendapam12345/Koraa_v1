@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 
 type AuthContextType = {
   session: Session | null;
@@ -19,11 +20,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          logger.error('Error obteniendo sesión:', error);
+        }
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      })
+      .catch((error) => {
+        logger.error('Error inesperado obteniendo sesión:', error);
+        setLoading(false);
+      });
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       (async () => {
@@ -68,7 +77,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        logger.error('Error cerrando sesión:', error);
+      }
+    } catch (error) {
+      logger.error('Error inesperado cerrando sesión:', error);
+    }
   };
 
   return (

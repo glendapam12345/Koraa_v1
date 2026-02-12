@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
+import { logger } from './logger';
 
 const STORAGE_KEYS = {
   PENDING_CHECKINS: '@kora:pending_checkins',
@@ -42,7 +43,7 @@ export async function saveCheckInOffline(checkIn: Omit<PendingCheckIn, 'id' | 't
     pendingCheckIns.push(newCheckIn);
     await AsyncStorage.setItem(STORAGE_KEYS.PENDING_CHECKINS, JSON.stringify(pendingCheckIns));
   } catch (error) {
-    console.error('Error guardando check-in offline:', error);
+    logger.error('Error guardando check-in offline:', error);
   }
 }
 
@@ -61,7 +62,7 @@ export async function saveTaskOffline(task: Omit<PendingTask, 'id' | 'timestamp'
     await AsyncStorage.setItem(STORAGE_KEYS.PENDING_TASKS, JSON.stringify(pendingTasks));
     return taskId;
   } catch (error) {
-    console.error('Error guardando tarea offline:', error);
+    logger.error('Error guardando tarea offline:', error);
     throw error;
   }
 }
@@ -72,7 +73,7 @@ export async function getPendingCheckIns(): Promise<PendingCheckIn[]> {
     const data = await AsyncStorage.getItem(STORAGE_KEYS.PENDING_CHECKINS);
     return data ? JSON.parse(data) : [];
   } catch (error) {
-    console.error('Error obteniendo check-ins pendientes:', error);
+    logger.error('Error obteniendo check-ins pendientes:', error);
     return [];
   }
 }
@@ -83,7 +84,7 @@ export async function getPendingTasks(): Promise<PendingTask[]> {
     const data = await AsyncStorage.getItem(STORAGE_KEYS.PENDING_TASKS);
     return data ? JSON.parse(data) : [];
   } catch (error) {
-    console.error('Error obteniendo tareas pendientes:', error);
+    logger.error('Error obteniendo tareas pendientes:', error);
     return [];
   }
 }
@@ -99,7 +100,7 @@ export async function syncPendingCheckIns(): Promise<void> {
 
     const isConnected = await checkNetworkConnection();
     if (!isConnected) {
-      console.log('Sin conexión, no se puede sincronizar');
+      logger.debug('Sin conexión, no se puede sincronizar');
       return;
     }
 
@@ -122,7 +123,7 @@ export async function syncPendingCheckIns(): Promise<void> {
           syncedIds.push(checkIn.id);
         }
       } catch (error) {
-        console.error('Error sincronizando check-in:', error);
+        logger.error('Error sincronizando check-in:', error);
       }
     }
 
@@ -132,7 +133,7 @@ export async function syncPendingCheckIns(): Promise<void> {
       await AsyncStorage.setItem(STORAGE_KEYS.PENDING_CHECKINS, JSON.stringify(remaining));
     }
   } catch (error) {
-    console.error('Error en sincronización de check-ins:', error);
+    logger.error('Error en sincronización de check-ins:', error);
   }
 }
 
@@ -147,7 +148,7 @@ export async function syncPendingTasks(): Promise<void> {
 
     const isConnected = await checkNetworkConnection();
     if (!isConnected) {
-      console.log('Sin conexión, no se puede sincronizar');
+      logger.debug('Sin conexión, no se puede sincronizar');
       return;
     }
 
@@ -193,7 +194,7 @@ export async function syncPendingTasks(): Promise<void> {
           }
         }
       } catch (error) {
-        console.error('Error sincronizando tarea:', error);
+        logger.error('Error sincronizando tarea:', error);
       }
     }
 
@@ -202,13 +203,13 @@ export async function syncPendingTasks(): Promise<void> {
       try {
         // Validar que la tarea tenga parent_task_id válido
         if (!task.parent_task_id) {
-          console.error('Subtarea sin parent_task_id:', task.id);
+          logger.error('Subtarea sin parent_task_id:', task.id);
           continue;
         }
         
         const realParentId = tempIdToRealId.get(task.parent_task_id);
         if (!realParentId) {
-          console.error('No se encontró ID real para tarea padre:', task.parent_task_id);
+          logger.error('No se encontró ID real para tarea padre:', task.parent_task_id);
           // No continuar, dejar la subtarea pendiente para próxima sincronización
           continue;
         }
@@ -228,7 +229,7 @@ export async function syncPendingTasks(): Promise<void> {
           syncedIds.push(task.id);
         }
       } catch (error) {
-        console.error('Error sincronizando subtarea:', error);
+        logger.error('Error sincronizando subtarea:', error);
       }
     }
 
@@ -238,7 +239,7 @@ export async function syncPendingTasks(): Promise<void> {
       await AsyncStorage.setItem(STORAGE_KEYS.PENDING_TASKS, JSON.stringify(remaining));
     }
   } catch (error) {
-    console.error('Error en sincronización de tareas:', error);
+    logger.error('Error en sincronización de tareas:', error);
   }
 }
 
@@ -255,7 +256,7 @@ export async function syncAll(): Promise<void> {
     if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {
       return;
     }
-    console.error('Error en sincronización:', error);
+    logger.error('Error en sincronización:', error);
   }
 }
 
@@ -279,7 +280,7 @@ export async function checkNetworkConnection(): Promise<boolean> {
                       !error.message?.toLowerCase().includes('fetch') &&
                       !error.message?.toLowerCase().includes('connection'));
   } catch (error) {
-    console.error('Error verificando conexión:', error);
+    logger.error('Error verificando conexión:', error);
     return false;
   }
 }

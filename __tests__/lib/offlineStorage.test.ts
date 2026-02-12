@@ -126,6 +126,7 @@ describe('offlineStorage', () => {
         is_priority: true,
         is_completed: false,
         parent_task_id: null,
+        project_id: null,
       };
 
       const customId = 'custom-task-id';
@@ -193,6 +194,7 @@ describe('offlineStorage', () => {
         is_priority: true,
         is_completed: false,
         parent_task_id: null,
+        project_id: null,
       };
 
       await saveTaskOffline(task);
@@ -226,6 +228,7 @@ describe('offlineStorage', () => {
         is_priority: true,
         is_completed: false,
         parent_task_id: null,
+        project_id: null,
       });
 
       // Verificar que hay datos
@@ -419,6 +422,7 @@ describe('offlineStorage', () => {
         is_priority: true,
         is_completed: false,
         parent_task_id: null,
+        project_id: null,
       });
 
       const { syncPendingTasks } = require('@/lib/offlineStorage');
@@ -450,6 +454,7 @@ describe('offlineStorage', () => {
         is_priority: true,
         is_completed: false,
         parent_task_id: null,
+        project_id: null,
       });
 
       // Guardar subtarea
@@ -459,6 +464,7 @@ describe('offlineStorage', () => {
         is_priority: true,
         is_completed: false,
         parent_task_id: mainTaskId,
+        project_id: null,
       });
 
       let callCount = 0;
@@ -512,6 +518,7 @@ describe('offlineStorage', () => {
         is_priority: true,
         is_completed: false,
         parent_task_id: 'offline_invalid_parent',
+        project_id: null,
       });
 
       let callCount = 0;
@@ -565,6 +572,7 @@ describe('offlineStorage', () => {
         is_priority: true,
         is_completed: false,
         parent_task_id: null,
+        project_id: null,
       });
 
       // Mock checkNetworkConnection to return false
@@ -599,6 +607,7 @@ describe('offlineStorage', () => {
         is_priority: true,
         is_completed: false,
         parent_task_id: null,
+        project_id: null,
       });
 
       let callCount = 0;
@@ -653,6 +662,7 @@ describe('offlineStorage', () => {
         is_priority: true,
         is_completed: false,
         parent_task_id: null,
+        project_id: null,
       });
 
       // Guardar subtarea
@@ -662,6 +672,7 @@ describe('offlineStorage', () => {
         is_priority: true,
         is_completed: false,
         parent_task_id: mainTaskId,
+        project_id: null,
       });
 
       let callCount = 0;
