@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 import { useAuth } from '@/contexts/AuthContext';
 import { CheckCircle2, Sparkles } from 'lucide-react-native';
 
@@ -57,7 +58,7 @@ export default function CheckInSummaryScreen() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error cargando tareas:', error);
+        logger.error('Error cargando tareas:', error);
         return;
       }
 
@@ -65,7 +66,7 @@ export default function CheckInSummaryScreen() {
         setPrioritizedTasks(data);
       }
     } catch (error) {
-      console.error('Error inesperado:', error);
+      logger.error('Error inesperado:', error);
     } finally {
       setLoading(false);
     }

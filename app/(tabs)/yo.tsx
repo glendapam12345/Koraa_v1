@@ -6,6 +6,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { LogOut, Settings, HelpCircle, Edit, X, Plus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase, getErrorMessage } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 import { ProgressChart } from '@/components/ProgressChart';
 import { ConfettiCelebration } from '@/components/ConfettiCelebration';
 import * as Haptics from 'expo-haptics';
@@ -149,7 +150,7 @@ export default function ProfileScreen() {
         .maybeSingle();
 
       if (error) {
-        console.error('Error cargando perfil:', error);
+        logger.error('Error cargando perfil:', error);
         const errorMessage = getErrorMessage(error);
         const friendlyMessage = errorMessage.includes('conexión')
           ? 'No hay conexión a internet. Los datos se cargarán cuando tengas conexión.'
@@ -169,7 +170,7 @@ export default function ProfileScreen() {
         setProfileError(null); // Limpiar error si se cargó correctamente
       }
     } catch (error) {
-      console.error('Error inesperado:', error);
+      logger.error('Error inesperado:', error);
       const errorMessage = getErrorMessage(error);
       setProfileError(`Error al cargar perfil: ${errorMessage}. Intenta recargar la página.`);
     }
@@ -371,7 +372,7 @@ export default function ProfileScreen() {
         loadProfile(),
       ]);
     } catch (error) {
-      console.error('Error al refrescar:', error);
+      logger.error('Error al refrescar:', error);
     } finally {
       setRefreshing(false);
     }
@@ -407,7 +408,7 @@ export default function ProfileScreen() {
         .eq('id', user.id);
 
       if (error) {
-        console.error('Error guardando perfil:', error);
+        logger.error('Error guardando perfil:', error);
         const errorMessage = getErrorMessage(error);
         setProfileError(`No se pudo guardar el perfil: ${errorMessage}`);
         setIsSavingProfile(false);
@@ -420,7 +421,7 @@ export default function ProfileScreen() {
       Alert.alert('Éxito', 'Perfil actualizado correctamente');
       setShowEditProfile(false);
     } catch (error) {
-      console.error('Error inesperado:', error);
+      logger.error('Error inesperado:', error);
       const errorMessage = getErrorMessage(error);
       setProfileError(`Error inesperado: ${errorMessage}`);
     } finally {

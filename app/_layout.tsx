@@ -12,6 +12,7 @@ import {
 } from '@expo-google-fonts/libre-baskerville';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { logger } from '@/lib/logger';
 import { useNotifications, scheduleDailyReminder } from '@/hooks/useNotifications';
 
 SplashScreen.preventAutoHideAsync();
@@ -37,7 +38,7 @@ export default function RootLayout() {
     // Pequeño delay para asegurar que el usuario esté autenticado
     const timer = setTimeout(() => {
       scheduleDailyReminder().catch(err => {
-        console.log('Error programando notificaciones (no crítico):', err);
+        logger.debug('Error programando notificaciones (no crítico):', err);
       });
     }, 2000);
 

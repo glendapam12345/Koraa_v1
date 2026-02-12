@@ -5,7 +5,8 @@ import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { Toast } from '@/components/Toast';
 import { Focus } from 'lucide-react-native';
-import { supabase } from '@/lib/supabase';
+import { supabase, isNetworkError } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 import { useAuth } from '@/contexts/AuthContext';
 
 const FOCUS_OPTIONS = [
@@ -50,7 +51,7 @@ export default function FocusScreen() {
         .order('created_at', { ascending: false });
 
       if (tasksError) {
-        console.error('Error obteniendo tareas:', tasksError);
+        logger.error('Error obteniendo tareas:', tasksError);
         return;
       }
 
@@ -97,7 +98,7 @@ export default function FocusScreen() {
           })
         );
       } catch (err) {
-        console.log('Error guardando metadata (no crítico):', err);
+        logger.debug('Error guardando metadata (no crítico):', err);
       }
 
       // Usar algoritmo de priorización inteligente
@@ -116,7 +117,7 @@ export default function FocusScreen() {
         .eq('is_completed', false);
 
       if (unprioritizeError) {
-        console.error('Error removiendo prioridad:', unprioritizeError);
+        logger.error('Error removiendo prioridad:', unprioritizeError);
         return;
       }
 
@@ -129,11 +130,11 @@ export default function FocusScreen() {
           .in('id', taskIds);
 
         if (prioritizeError) {
-          console.error('Error priorizando tareas:', prioritizeError);
+          logger.error('Error priorizando tareas:', prioritizeError);
         }
       }
     } catch (error) {
-      console.error('Error inesperado en priorización:', error);
+      logger.error('Error inesperado en priorización:', error);
     }
   };
 
@@ -178,11 +179,7 @@ export default function FocusScreen() {
 
       // Si hay error de red, guardar offline
       if (checkInError) {
-        const isNetworkError = checkInError.message?.toLowerCase().includes('network') || 
-                              checkInError.message?.toLowerCase().includes('fetch') ||
-                              checkInError.message?.toLowerCase().includes('connection');
-        
-        if (isNetworkError) {
+        if (isNetworkError(checkInError)) {
           // Guardar offline
           const { saveCheckInOffline } = await import('@/lib/offlineStorage');
           await saveCheckInOffline({
@@ -194,7 +191,7 @@ export default function FocusScreen() {
           });
           showToast('Check-in guardado offline. Se sincronizará cuando haya conexión.', 'info');
         } else {
-          console.error('Error guardando check-in:', checkInError);
+          logger.error('Error guardando check-in:', checkInError);
           clearTimeout(safetyTimeout);
           setIsSaving(false);
           showToast('No se pudo guardar tu check-in. Por favor intenta de nuevo.', 'error');
@@ -204,7 +201,7 @@ export default function FocusScreen() {
 
       // Priorizar tareas automáticamente basado en el check-in (no bloquear si falla)
       prioritizeTasksBasedOnCheckIn(energyLevel, emotion, time, selectedFocus).catch((error) => {
-        console.error('Error en priorización (no crítico):', error);
+        logger.debug('Error en priorización (no crítico):', error);
         // No bloquear el flujo si la priorización falla
       });
 
@@ -222,18 +219,18 @@ export default function FocusScreen() {
         const { scheduleDailyReminder } = await import('@/hooks/useNotifications');
         await scheduleDailyReminder();
       } catch (err) {
-        console.log('Error programando notificaciones (no crítico):', err);
+        logger.debug('Error programando notificaciones (no crítico):', err);
       }
 
       // Redirigir directamente a Accionar (pantalla principal) para ver prioridades
       try {
         router.replace('/(tabs)');
       } catch (navError) {
-        console.error('Error en navegación:', navError);
+        logger.error('Error en navegación:', navError);
         router.replace('/(tabs)');
       }
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
       clearTimeout(safetyTimeout);
       setIsSaving(false);
       showToast('Ocurrió un error inesperado. Por favor intenta de nuevo.', 'error');

@@ -6,7 +6,8 @@ import { GradientButton } from '@/components/GradientButton';
 import { Tooltip } from '@/components/Tooltip';
 import { Toast } from '@/components/Toast';
 import { FlowIndicator } from '@/components/FlowIndicator';
-import { supabase, getErrorMessage } from '@/lib/supabase';
+import { supabase, getErrorMessage, isNetworkError } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 import { detectCategory } from '@/lib/categoryDetection';
 import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic } from 'lucide-react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -89,7 +90,7 @@ export default function VaciarScreen() {
         .limit(1);
 
       if (error) {
-        console.error('Error verificando tareas:', error);
+        logger.error('Error verificando tareas:', error);
         // No mostrar toast para errores no críticos de verificación
         return;
       }
@@ -102,7 +103,7 @@ export default function VaciarScreen() {
         setShowTooltip(true);
       }
     } catch (error) {
-      console.error('Error inesperado:', error);
+      logger.error('Error inesperado:', error);
     }
   };
 
@@ -120,7 +121,7 @@ export default function VaciarScreen() {
         .limit(5);
 
       if (error) {
-        console.error('Error cargando sugerencias:', error);
+        logger.error('Error cargando sugerencias:', error);
         // No mostrar toast para errores no críticos de sugerencias
         return;
       }
@@ -131,7 +132,7 @@ export default function VaciarScreen() {
         setRecentTaskSuggestions(uniqueTasks.slice(0, 3)); // Máximo 3 sugerencias
       }
     } catch (error) {
-      console.error('Error inesperado:', error);
+      logger.error('Error inesperado:', error);
     }
   };
 
@@ -149,14 +150,14 @@ export default function VaciarScreen() {
         .maybeSingle();
 
       if (error) {
-        console.error('Error verificando check-in:', error);
+        logger.error('Error verificando check-in:', error);
         // No mostrar toast para errores no críticos de verificación
         return;
       }
 
       setHasCheckInToday(!!data);
     } catch (error) {
-      console.error('Error inesperado:', error);
+      logger.error('Error inesperado:', error);
     }
   };
 
@@ -219,11 +220,7 @@ export default function VaciarScreen() {
 
       // Si hay error de red, guardar offline
       if (mainTaskError) {
-        const isNetworkError = mainTaskError.message?.toLowerCase().includes('network') || 
-                              mainTaskError.message?.toLowerCase().includes('fetch') ||
-                              mainTaskError.message?.toLowerCase().includes('connection');
-        
-        if (isNetworkError) {
+        if (isNetworkError(mainTaskError)) {
           // Guardar offline
           const { saveTaskOffline } = await import('@/lib/offlineStorage');
           // Guardar tarea principal y obtener su ID generado
@@ -260,7 +257,7 @@ export default function VaciarScreen() {
           setIsSaving(false);
           return;
         } else {
-          console.error('Error guardando tarea principal:', mainTaskError);
+          logger.error('Error guardando tarea principal:', mainTaskError);
           const errorMessage = getErrorMessage(mainTaskError);
           showToast(`No se pudo guardar la tarea: ${errorMessage}`, 'error');
           setIsSaving(false);
@@ -286,7 +283,7 @@ export default function VaciarScreen() {
             .insert(subtasksToInsert);
 
           if (subtasksError) {
-            console.error('Error guardando subtareas:', subtasksError);
+            logger.error('Error guardando subtareas:', subtasksError);
             // Intentar eliminar la tarea principal si fallan las subtareas
             await supabase.from('tasks').delete().eq('id', mainTask.id);
             const errorMessage = getErrorMessage(subtasksError);
@@ -319,7 +316,7 @@ export default function VaciarScreen() {
 
       showToast(message, 'success');
     } catch (error) {
-      console.error('Error inesperado:', error);
+      logger.error('Error inesperado:', error);
       const errorMessage = getErrorMessage(error);
       showToast(errorMessage, 'error');
     } finally {
@@ -339,7 +336,7 @@ export default function VaciarScreen() {
       const { syncAll } = await import('@/lib/offlineStorage');
       await syncAll();
     } catch (error) {
-      console.error('Error al refrescar:', error);
+      logger.error('Error al refrescar:', error);
       const errorMessage = getErrorMessage(error);
       showToast(errorMessage, 'error');
     } finally {
@@ -437,7 +434,7 @@ export default function VaciarScreen() {
                   Siguiente paso: Registra cómo te sientes
                 </Text>
                 <Text style={styles.checkInBannerSubtext}>
-                  Después de agregar tus tareas, ve a "Sentir" para que Kora las priorice según tu estado
+                  Después de agregar tus tareas, ve a &quot;Sentir&quot; para que Kora las priorice según tu estado
                 </Text>
               </View>
             </LinearGradient>
@@ -455,8 +452,6 @@ export default function VaciarScreen() {
             numberOfLines={4}
             textAlignVertical="top"
             maxLength={300}
-            accessibilityLabel="Campo de texto para agregar tarea"
-            accessibilityHint="Escribe o dicta la tarea que necesitas hacer hoy"
             accessibilityLabel="Campo de texto para agregar tarea"
             accessibilityHint="Escribe o dicta la tarea que necesitas hacer hoy"
           />
@@ -512,7 +507,6 @@ export default function VaciarScreen() {
           accessibilityLabel={isPriority ? "Tarea prioritaria activada" : "Tarea prioritaria desactivada"}
           accessibilityHint="Activa o desactiva la prioridad de esta tarea"
           accessibilityState={{ checked: isPriority }}
-        >
           activeOpacity={0.7}
         >
           <Star
@@ -817,8 +811,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 20,
     backgroundColor: THEME.colors.fill[100],
-    alignItems: 'center',
-    justifyContent: 'center',
     ...THEME.shadows.soft,
   },
   suggestionsContainer: {

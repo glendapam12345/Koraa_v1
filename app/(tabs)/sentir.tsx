@@ -8,6 +8,7 @@ import { Tooltip } from '@/components/Tooltip';
 import { FlowIndicator } from '@/components/FlowIndicator';
 import { getEmotionTips } from '@/lib/emotionTips';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 import { router, useFocusEffect } from 'expo-router';
 import { Plus, Lightbulb } from 'lucide-react-native';
 
@@ -54,7 +55,7 @@ export default function SentirScreen() {
         .maybeSingle();
 
       if (error) {
-        console.error('Error verificando check-in:', error);
+        logger.error('Error verificando check-in:', error);
         // No mostrar toast para errores no críticos de verificación
         return;
       }
@@ -84,7 +85,7 @@ export default function SentirScreen() {
         .limit(1);
 
       if (error) {
-        console.error('Error verificando tareas:', error);
+        logger.error('Error verificando tareas:', error);
         // No mostrar toast para errores no críticos de verificación
         return;
       }
@@ -139,7 +140,7 @@ export default function SentirScreen() {
                   Paso 1: Agrega tus tareas primero
                 </Text>
                 <Text style={styles.noTasksBannerSubtext}>
-                  Ve a "Vaciar" para agregar lo que necesitas hacer hoy, luego regresa aquí
+                  Ve a &quot;Vaciar&quot; para agregar lo que necesitas hacer hoy, luego regresa aquí
                 </Text>
               </View>
             </LinearGradient>

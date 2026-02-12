@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 import { getEmotionTips } from '@/lib/emotionTips';
 import { generatePersonalizedRecommendations } from '@/lib/personalizedRecommendations';
 import { Lightbulb, Moon, Zap, Brain, Sparkles, Heart, Plus } from 'lucide-react-native';
@@ -73,7 +74,7 @@ export default function TipsScreen() {
         .maybeSingle();
 
       if (error) {
-        console.error('Error cargando check-in:', error);
+        logger.error('Error cargando check-in:', error);
         setLoading(false);
         return;
       }
@@ -98,7 +99,7 @@ export default function TipsScreen() {
         .maybeSingle();
 
       if (profileError) {
-        console.error('Error cargando perfil:', profileError);
+        logger.error('Error cargando perfil:', profileError);
         // No mostrar error crítico al usuario aquí, solo continuar sin recomendaciones personalizadas
         // El usuario puede seguir usando la app sin problemas (solo verá tips genéricos)
         setUserProfile(null);
@@ -108,7 +109,7 @@ export default function TipsScreen() {
         setUserProfile(null);
       }
     } catch (error) {
-      console.error('Error inesperado cargando perfil:', error);
+      logger.error('Error inesperado cargando perfil:', error);
       // Continuar sin perfil - la app funciona sin recomendaciones personalizadas
       setUserProfile(null);
     } finally {
@@ -176,7 +177,7 @@ export default function TipsScreen() {
         }
       );
     } catch (error) {
-      console.error('Error generando recomendaciones:', error);
+      logger.error('Error generando recomendaciones:', error);
       return []; // Retornar array vacío en caso de error
     }
   }, [todayMood, userProfile, energyLevel, availableTime, focusLevel]);
@@ -518,9 +519,8 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.md,
     minHeight: 44,
-    borderRadius: THEME.borderRadius.standard,
-    backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[200],
     alignSelf: 'flex-start',
   },
   suggestionButtonText: {
