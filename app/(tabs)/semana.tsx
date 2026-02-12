@@ -109,17 +109,6 @@ export default function SemanaScreen() {
         });
       }
 
-      // Also get tasks without scheduled_date to show in "Sin fecha específica" section
-      const { data: unscheduledTasks } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_completed', false)
-        .is('parent_task_id', null)
-        .is('scheduled_date', null)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
       setDistribution(weeklyData);
     } catch (error) {
       logger.error('Error loading weekly data:', error);
