@@ -71,11 +71,7 @@ export function QuickOnboardingModal({ visible, onClose }: QuickOnboardingModalP
           },
         ]}
       >
-        <TouchableOpacity
-          style={styles.overlayTouchable}
-          activeOpacity={1}
-          onPress={handleClose}
-        >
+        <View style={styles.overlayTouchable}>
           <Animated.View
             style={[
               styles.container,
@@ -84,9 +80,8 @@ export function QuickOnboardingModal({ visible, onClose }: QuickOnboardingModalP
               },
             ]}
           >
-            <TouchableOpacity
-              activeOpacity={1}
-              onPress={(e) => e.stopPropagation()}
+            <View
+              style={styles.modalContent}
             >
               <LinearGradient
                 colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
