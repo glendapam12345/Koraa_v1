@@ -1129,6 +1129,5 @@ const styles = StyleSheet.create({
   reloadingText: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    fontFamily: THEME.fonts.body.regular,
   },
 });

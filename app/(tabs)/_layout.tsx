@@ -17,8 +17,8 @@ export default function TabLayout() {
           paddingTop: 8,
         },
         tabBarLabelStyle: {
-          ...THEME.typography.caption,
           fontSize: 12,
+          fontWeight: '500',
         },
       }}
     >

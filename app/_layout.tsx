@@ -18,9 +18,6 @@ import { useNotifications, scheduleDailyReminder } from '@/hooks/useNotification
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  useFrameworkReady();
-  useNotifications();
-
   const [fontsLoaded, fontError] = useFonts({
     'DMSans-Medium': DMSans_500Medium,
     'DMSans-Bold': DMSans_700Bold,
@@ -29,12 +26,16 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(() => {
+        // Ignore errors
+      });
     }
   }, [fontsLoaded, fontError]);
 
   // Programar notificaciones diarias cuando la app carga
   useEffect(() => {
+    if (!fontsLoaded) return;
+
     // Pequeño delay para asegurar que el usuario esté autenticado
     const timer = setTimeout(() => {
       scheduleDailyReminder().catch(err => {
@@ -43,7 +44,10 @@ export default function RootLayout() {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [fontsLoaded]);
+
+  useFrameworkReady();
+  useNotifications();
 
   if (!fontsLoaded && !fontError) {
     return null;
