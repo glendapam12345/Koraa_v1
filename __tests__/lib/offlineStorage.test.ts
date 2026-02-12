@@ -101,6 +101,7 @@ describe('offlineStorage', () => {
         is_priority: true,
         is_completed: false,
         parent_task_id: null,
+        project_id: null,
       };
 
       const taskId = await saveTaskOffline(task);
@@ -144,6 +145,7 @@ describe('offlineStorage', () => {
         is_priority: true,
         is_completed: false,
         parent_task_id: null,
+        project_id: null,
       };
 
       await expect(saveTaskOffline(task)).rejects.toThrow('Storage error');

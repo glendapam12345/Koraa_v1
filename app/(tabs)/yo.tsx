@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { router, useFocusEffect } from 'expo-router';
-import { LogOut, Settings, HelpCircle, Edit, X, Plus, Folder } from 'lucide-react-native';
+import { LogOut, Settings, HelpCircle, Edit, X, Plus, Folder, RotateCcw } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase, getErrorMessage } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
@@ -12,6 +12,8 @@ import { ConfettiCelebration } from '@/components/ConfettiCelebration';
 import { ProjectManager } from '@/components/projects/ProjectManager';
 import * as Haptics from 'expo-haptics';
 import { generateEmotionalInsights } from '@/lib/emotionalInsights';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type DayData = {
   date: string;
@@ -591,6 +593,43 @@ export default function ProfileScreen() {
             <HelpCircle size={24} color={THEME.colors.text.main} />
             <Text style={styles.menuItemText}>Ayuda</Text>
           </TouchableOpacity>
+
+          {/* Botón de desarrollo para resetear onboarding */}
+          {__DEV__ && (
+            <TouchableOpacity 
+              style={styles.menuItem} 
+              activeOpacity={0.7}
+              onPress={async () => {
+                try {
+                  await AsyncStorage.removeItem('hasSeenQuickOnboarding');
+                  Alert.alert(
+                    'Onboarding reseteado',
+                    'El onboarding se mostrará la próxima vez que abras la app. Cierra y vuelve a abrir la app para verlo.',
+                    [{ text: 'OK' }]
+                  );
+                  if (Platform.OS !== 'web') {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  }
+                } catch (error) {
+                  logger.error('Error reseteando onboarding:', error);
+                  Alert.alert('Error', 'No se pudo resetear el onboarding');
+                }
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Resetear onboarding (solo desarrollo)"
+              accessibilityHint="Limpia el estado del onboarding para probarlo nuevamente"
+            >
+              <RotateCcw size={24} color={THEME.colors.text.secondary} />
+              <View style={styles.menuItemContent}>
+                <Text style={[styles.menuItemText, { color: THEME.colors.text.secondary }]}>
+                  Resetear onboarding
+                </Text>
+                <Text style={styles.menuItemSubtext}>
+                  Solo desarrollo
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={styles.menuItem}
