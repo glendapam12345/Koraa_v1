@@ -50,6 +50,9 @@ export default function SemanaScreen() {
     try {
       if (showLoading) {
         setLoading(true);
+      } else {
+        // Mostrar indicador sutil si no es carga inicial
+        setIsReloading(true);
       }
 
       // Load projects
@@ -137,6 +140,7 @@ export default function SemanaScreen() {
       if (showLoading) {
         setLoading(false);
       }
+      setIsReloading(false);
       setRefreshing(false);
     }
   }, [user, currentWeekStart]);
@@ -429,10 +433,24 @@ export default function SemanaScreen() {
       </View>
 
       <ScrollView
-        style={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            tintColor={THEME.colors.gradient.blue}
+            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+          />
+        }
         showsVerticalScrollIndicator={false}
       >
+        {/* Indicador sutil de recarga */}
+        {isReloading && !loading && (
+          <View style={styles.reloadingIndicator}>
+            <ActivityIndicator size="small" color={THEME.colors.gradient.blue} />
+            <Text style={styles.reloadingText}>Actualizando...</Text>
+          </View>
+        )}
           {loading ? (
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Cargando semana...</Text>
@@ -740,7 +758,7 @@ export default function SemanaScreen() {
               >
                 <LinearGradient
                   colors={
-                    !taskContent.trim() || isSaving
+                    !taskContent.trim() || !selectedDay || isSaving
                       ? [THEME.colors.fill[200], THEME.colors.fill[200]]
                       : [THEME.colors.gradient.blue, THEME.colors.gradient.pink]
                   }
