@@ -34,7 +34,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="vaciar"
         options={{
-          title: 'Vaciar',
+          title: 'Tareas',
           tabBarIcon: ({ size, color }) => (
             <Edit3 size={size} color={color} />
           ),
@@ -61,10 +61,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="semana"
         options={{
-          title: 'Semana',
-          tabBarIcon: ({ size, color }) => (
-            <Calendar size={size} color={color} />
-          ),
+          href: null, // Ocultar esta pestaña del tab bar
         }}
       />
       <Tabs.Screen
