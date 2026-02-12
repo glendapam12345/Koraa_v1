@@ -277,6 +277,22 @@ export default function TodayScreen() {
       }
     })();
 
+    // Mostrar onboarding rápido solo la primera vez
+    (async () => {
+      try {
+        const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenQuickOnboarding');
+        if (!hasSeenOnboarding) {
+          // Pequeño delay para que la app cargue primero
+          setTimeout(() => {
+            setShowQuickOnboarding(true);
+          }, 800);
+          await AsyncStorage.setItem('hasSeenQuickOnboarding', 'true');
+        }
+      } catch (error) {
+        logger.debug('Error checking onboarding:', error);
+      }
+    })();
+
     // Cleanup: limpiar todos los timeouts si el componente se desmonta
     return () => {
       if (timeoutRef.current) {
