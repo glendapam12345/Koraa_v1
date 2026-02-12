@@ -246,15 +246,17 @@ export default function TipsScreen() {
                     <View style={styles.recommendationContent}>
                       <Text style={styles.recommendationTitle}>{rec.title}</Text>
                       <Text style={styles.recommendationMessage}>{rec.message}</Text>
-                      {rec.suggestion && (
+                      {rec.suggestion && rec.suggestion.trim() && (
                         <TouchableOpacity
                           style={styles.suggestionButton}
                           onPress={() => {
-                            // Navegar a Vaciar con la sugerencia pre-rellenada
-                            router.push({
-                              pathname: '/(tabs)/vaciar',
-                              params: { suggestion: rec.suggestion },
-                            });
+                            // Validar que suggestion no esté vacío antes de navegar
+                            if (rec.suggestion && rec.suggestion.trim()) {
+                              router.push({
+                                pathname: '/(tabs)/vaciar',
+                                params: { suggestion: rec.suggestion.trim() },
+                              });
+                            }
                           }}
                           activeOpacity={0.7}
                         >
@@ -503,8 +505,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: THEME.spacing.xs,
-    paddingVertical: THEME.spacing.xs,
-    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    minHeight: 44,
+    borderRadius: THEME.borderRadius.standard,
     backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.pill,
     alignSelf: 'flex-start',

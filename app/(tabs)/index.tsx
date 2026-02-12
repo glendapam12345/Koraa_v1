@@ -36,7 +36,6 @@ export default function TodayScreen() {
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editContent, setEditContent] = useState('');
-  const [editCategory, setEditCategory] = useState('');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -74,6 +73,7 @@ export default function TodayScreen() {
 
       if (error) {
         console.error('Error cargando check-in:', error);
+        showToast('No se pudo cargar tu check-in. Intenta de nuevo.', 'error');
         return;
       }
 
@@ -92,6 +92,7 @@ export default function TodayScreen() {
       }
     } catch (error) {
       console.error('Error inesperado:', error);
+      showToast('Error al cargar tu información. Intenta de nuevo.', 'error');
     } finally {
       setLoading(false);
     }
@@ -142,6 +143,7 @@ export default function TodayScreen() {
       setCurrentStreak(streak);
     } catch (error) {
       console.error('Error cargando racha:', error);
+      // No mostrar toast para errores de racha (no crítico)
     }
   }, []);
 
@@ -163,6 +165,7 @@ export default function TodayScreen() {
       }
     } catch (error) {
       console.error('Error cargando meditaciones:', error);
+      // No mostrar toast para errores de meditaciones (no crítico)
     }
   }, []);
 
@@ -220,6 +223,22 @@ export default function TodayScreen() {
       setLoadingTasks(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      // Verificar si hay check-in hoy antes de cargar tareas priorizadas
+      const today = new Date().toISOString().split('T')[0];
+      const { data: checkInData } = await supabase
+        .from('daily_check_ins')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .maybeSingle();
+
+      // Si no hay check-in, no cargar tareas priorizadas (mostrar vacío)
+      if (!checkInData) {
+        setTasks([]);
+        setLoadingTasks(false);
+        return;
+      }
 
       // Cargar todas las tareas prioritarias (principales y subtareas)
       const { data, error } = await supabase
@@ -283,6 +302,7 @@ export default function TodayScreen() {
     } catch (error) {
       console.error('Error cargando metadata:', error);
       setTotalTasksBefore(null);
+      // No mostrar toast para errores de metadata (no crítico)
     }
   }, []);
 
@@ -547,9 +567,6 @@ export default function TodayScreen() {
   const handleEditTask = (task: Task) => {
     setEditingTask(task);
     setEditContent(task.content);
-    // Detectar categoría automáticamente al editar
-    const detectedCategory = detectCategory(task.content);
-    setEditCategory(detectedCategory || task.category || '');
     setMenuOpen(null);
   };
 
@@ -564,7 +581,7 @@ export default function TodayScreen() {
         .from('tasks')
         .update({
           content: editContent.trim(),
-          category: detectedCategory || editCategory || '',
+          category: detectedCategory || editingTask.category || '',
           updated_at: new Date().toISOString(),
         })
         .eq('id', editingTask.id);
@@ -580,7 +597,6 @@ export default function TodayScreen() {
 
       setEditingTask(null);
       setEditContent('');
-      setEditCategory('');
       showToast('Tarea actualizada correctamente', 'success');
     } catch (error) {
       console.error('Error inesperado:', error);
@@ -654,26 +670,21 @@ export default function TodayScreen() {
 
   // Función para obtener mensaje explicativo basado en energía y emoción - Memoizada
   const getPriorityExplanation = useCallback(() => {
+    // Si no hay check-in, mostrar mensaje de flujo
     if (!todayMood || energyLevel === 0) {
       return {
         title: 'Tu plan de hoy',
-        message: 'Primero agrega tus tareas en "Vaciar", luego haz tu check-in en "Sentir" para ver tus prioridades basadas en cómo te sientes.',
-        suggestion: 'Flujo sugerido: Vaciar → Sentir → Hoy',
-        reasoning: null,
+        message: 'Sigue estos pasos para organizar tu día:',
+        suggestion: '1. Vaciar → 2. Sentir → 3. Accionar',
+        reasoning: 'Primero agrega tus tareas en "Vaciar", luego registra cómo te sientes en "Sentir" para que Kora priorice automáticamente tus tareas aquí.',
       };
     }
 
-    const emotionLabel = todayMood.charAt(0).toUpperCase() + todayMood.slice(1);
-    const priorityCount = incompleteTasks.length;
-
-    // Generar explicación usando el algoritmo inteligente si tenemos todos los datos
-    if (time && energyLevel > 0) {
-      // Usar explicación inteligente de forma síncrona (sin await en useCallback)
-      // Si falla, usar fallback
+    // Si tenemos todos los datos del check-in, usar algoritmo inteligente
+    if (time && energyLevel > 0 && focusLevel) {
       try {
-        // Importar de forma síncrona (ya está disponible)
         const smartPrioritization = require('@/lib/smartPrioritization');
-        if (smartPrioritization && smartPrioritization.generatePrioritizationExplanation) {
+        if (smartPrioritization?.generatePrioritizationExplanation) {
           const explanation = smartPrioritization.generatePrioritizationExplanation(
             incompleteTasks,
             {
@@ -693,12 +704,13 @@ export default function TodayScreen() {
           };
         }
       } catch (error) {
-        console.log('Error generando explicación inteligente, usando fallback:', error);
-        // Continuar con lógica de fallback
+        console.log('Error generando explicación inteligente:', error);
       }
     }
 
-    // Fallback: lógica simple si no tenemos todos los datos
+    // Fallback simplificado: solo si falta algún dato del check-in
+    const emotionLabel = todayMood.charAt(0).toUpperCase() + todayMood.slice(1);
+    const priorityCount = incompleteTasks.length;
     const negativeEmotions = ['agotada', 'ansiosa', 'abrumada'];
     const isNegativeEmotion = negativeEmotions.includes(todayMood.toLowerCase());
 
@@ -726,7 +738,7 @@ export default function TodayScreen() {
       suggestion,
       reasoning,
     };
-  }, [todayMood, energyLevel, incompleteTasks.length, time, focusLevel, tasks]);
+  }, [todayMood, energyLevel, incompleteTasks.length, time, focusLevel, tasks.length]);
 
   const explanation = useMemo(() => getPriorityExplanation(), [getPriorityExplanation]);
 
@@ -851,33 +863,69 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {/* Botón principal: ¿Cómo te sientes hoy? */}
+        {/* Guía visual del flujo completo cuando no hay check-in */}
         {!loading && !todayMood && (
-          <TouchableOpacity
-            style={styles.mainRegisterButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push('/(tabs)/sentir');
-            }}
-            activeOpacity={0.9}
-          >
-            <LinearGradient
-              colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.mainRegisterButtonGradient}
-            >
-              <View style={styles.mainRegisterIcon}>
-                <Sparkles size={64} color={THEME.colors.fill[100]} />
+          <>
+            <View style={styles.flowGuideCard}>
+              <Text style={styles.flowGuideCardTitle}>Tu flujo de trabajo</Text>
+              <View style={styles.flowStepsContainer}>
+                <View style={styles.flowStep}>
+                  <View style={[styles.flowStepNumber, styles.flowStepNumberActive]}>
+                    <Text style={[styles.flowStepNumberText, styles.flowStepNumberTextActive]}>1</Text>
+                  </View>
+                  <Text style={styles.flowStepLabel}>Vaciar</Text>
+                  <Text style={styles.flowStepDescription}>Agrega tus tareas</Text>
+                </View>
+                <View style={styles.flowArrow}>
+                  <Text style={styles.flowArrowText}>→</Text>
+                </View>
+                <View style={styles.flowStep}>
+                  <View style={styles.flowStepNumber}>
+                    <Text style={styles.flowStepNumberText}>2</Text>
+                  </View>
+                  <Text style={styles.flowStepLabel}>Sentir</Text>
+                  <Text style={styles.flowStepDescription}>Registra cómo te sientes</Text>
+                </View>
+                <View style={styles.flowArrow}>
+                  <Text style={styles.flowArrowText}>→</Text>
+                </View>
+                <View style={styles.flowStep}>
+                  <View style={styles.flowStepNumber}>
+                    <Text style={styles.flowStepNumberText}>3</Text>
+                  </View>
+                  <Text style={styles.flowStepLabel}>Accionar</Text>
+                  <Text style={styles.flowStepDescription}>Tus tareas priorizadas</Text>
+                </View>
               </View>
-              <Text style={styles.mainRegisterText}>
-                ¿Cómo te sientes hoy?
-              </Text>
-              <Text style={styles.mainRegisterSubtext}>
-                Toca para registrar y organizar tu día
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
+            </View>
+
+            {/* Botón principal: ¿Cómo te sientes hoy? */}
+            <TouchableOpacity
+              style={styles.mainRegisterButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push('/(tabs)/sentir');
+              }}
+              activeOpacity={0.9}
+            >
+              <LinearGradient
+                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.mainRegisterButtonGradient}
+              >
+                <View style={styles.mainRegisterIcon}>
+                  <Sparkles size={64} color={THEME.colors.fill[100]} />
+                </View>
+                <Text style={styles.mainRegisterText}>
+                  ¿Cómo te sientes hoy?
+                </Text>
+                <Text style={styles.mainRegisterSubtext}>
+                  Toca para registrar y organizar tu día
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </>
         )}
 
         {/* Si hay check-in pero no hay tareas */}
@@ -1332,7 +1380,6 @@ export default function TodayScreen() {
         onRequestClose={() => {
           setEditingTask(null);
           setEditContent('');
-          setEditCategory('');
         }}
       >
         <View style={styles.modalOverlay}>
@@ -1343,7 +1390,6 @@ export default function TodayScreen() {
                 onPress={() => {
                   setEditingTask(null);
                   setEditContent('');
-                  setEditCategory('');
                 }}
                 style={styles.modalCloseButton}
               >
@@ -1370,7 +1416,6 @@ export default function TodayScreen() {
                 onPress={() => {
                   setEditingTask(null);
                   setEditContent('');
-                  setEditCategory('');
                 }}
               >
                 <Text style={styles.modalButtonCancelText}>Cancelar</Text>
@@ -1473,12 +1518,12 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.md,
   },
   valueCard: {
-    backgroundColor: THEME.colors.background.secondary,
+    backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: THEME.colors.stroke[100],
     ...THEME.shadows.soft,
   },
   valueHeader: {
@@ -1621,20 +1666,21 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.lg,
   },
   emptyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: THEME.colors.fill[100],
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: THEME.colors.fill[200],
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.lg,
     ...THEME.shadows.soft,
   },
   emptyTitle: {
     ...THEME.typography.h2,
     color: THEME.colors.text.main,
     textAlign: 'center',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: THEME.spacing.md,
+    fontFamily: THEME.fonts.heading.bold,
   },
   emptyText: {
     ...THEME.typography.body,
@@ -1642,6 +1688,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: THEME.spacing.lg,
+    paddingHorizontal: THEME.spacing.md,
   },
   emptyButton: {
     backgroundColor: THEME.colors.gradient.blue,
@@ -1697,6 +1744,9 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.gradient.blue,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 44,
+    minHeight: 44,
+    padding: THEME.spacing.xs,
   },
   taskCheckboxChecked: {
     width: 14,
@@ -1731,8 +1781,12 @@ const styles = StyleSheet.create({
     borderLeftColor: THEME.colors.gradient.blue,
   },
   expandButton: {
-    padding: THEME.spacing.xs,
+    padding: THEME.spacing.sm,
     marginRight: THEME.spacing.xs,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   subtasksContainer: {
     marginLeft: THEME.spacing.lg,
@@ -1801,8 +1855,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   menuButton: {
-    padding: THEME.spacing.xs,
+    padding: THEME.spacing.sm,
     marginLeft: THEME.spacing.xs,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
     zIndex: 10,
   },
   menuOverlay: {
@@ -2012,6 +2070,81 @@ const styles = StyleSheet.create({
   flowGuideAccent: {
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.gradient.blue,
+  },
+  flowGuideCard: {
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.lg,
+    marginBottom: THEME.spacing.lg,
+    marginTop: THEME.spacing.sm,
+    ...THEME.shadows.soft,
+  },
+  flowGuideCardTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    textAlign: 'center',
+    marginBottom: THEME.spacing.md,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  flowStepsContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    paddingHorizontal: THEME.spacing.sm,
+    marginTop: THEME.spacing.sm,
+  },
+  flowStep: {
+    flex: 1,
+    alignItems: 'center',
+    minWidth: 80,
+  },
+  flowStepNumber: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: THEME.colors.fill[200],
+    borderWidth: 2,
+    borderColor: THEME.colors.stroke[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: THEME.spacing.xs,
+  },
+  flowStepNumberActive: {
+    backgroundColor: THEME.colors.gradient.blue,
+    borderColor: THEME.colors.gradient.blue,
+  },
+  flowStepNumberText: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    fontSize: 16,
+    color: THEME.colors.text.secondary,
+  },
+  flowStepNumberTextActive: {
+    color: THEME.colors.fill[100],
+  },
+  flowStepLabel: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
+    fontSize: 13,
+    marginBottom: THEME.spacing.xs / 2,
+    textAlign: 'center',
+  },
+  flowStepDescription: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 14,
+  },
+  flowArrow: {
+    paddingHorizontal: THEME.spacing.xs,
+    paddingTop: THEME.spacing.xs * 2,
+  },
+  flowArrowText: {
+    ...THEME.typography.h2,
+    color: THEME.colors.text.secondary,
+    fontSize: 20,
   },
   mainRegisterButton: {
     borderRadius: THEME.borderRadius.rounded,

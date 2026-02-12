@@ -115,7 +115,7 @@ export default function SentirScreen() {
           Kora prioriza por ti. Solo enfócate en lo que realmente importa hoy.
         </Text>
 
-        {/* Banner si no hay tareas */}
+        {/* Banner si no hay tareas - Paso 1 del flujo */}
         {hasTasks === false && (
           <TouchableOpacity
             style={styles.noTasksBanner}
@@ -131,10 +131,10 @@ export default function SentirScreen() {
               <Plus size={20} color="#FFFFFF" />
               <View style={styles.noTasksBannerContent}>
                 <Text style={styles.noTasksBannerText}>
-                  Agrega tareas primero
+                  Paso 1: Agrega tus tareas primero
                 </Text>
                 <Text style={styles.noTasksBannerSubtext}>
-                  Ve a &quot;Vaciar&quot; para agregar lo que necesitas hacer hoy
+                  Ve a "Vaciar" para agregar lo que necesitas hacer hoy, luego regresa aquí
                 </Text>
               </View>
             </LinearGradient>

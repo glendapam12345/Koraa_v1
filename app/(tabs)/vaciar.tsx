@@ -402,8 +402,8 @@ export default function VaciarScreen() {
           Solo escribe lo que necesitas soltar.
         </Text>
 
-        {/* Banner si falta check-in - solo mostrar este, no ambos */}
-        {hasCheckInToday === false && (
+        {/* Banner informativo: después de agregar tareas, ve a Sentir */}
+        {hasCheckInToday === false && hasCheckInToday !== null && (
           <TouchableOpacity
             style={styles.checkInBanner}
             onPress={() => router.push('/(tabs)/sentir')}
@@ -418,10 +418,10 @@ export default function VaciarScreen() {
               <Sparkles size={20} color="#FFFFFF" />
               <View style={styles.checkInBannerContent}>
                 <Text style={styles.checkInBannerText}>
-                  Haz tu check-in diario primero
+                  Siguiente paso: Registra cómo te sientes
                 </Text>
                 <Text style={styles.checkInBannerSubtext}>
-                  Para priorizar estas tareas según cómo te sientes
+                  Después de agregar tus tareas, ve a "Sentir" para que Kora las priorice según tu estado
                 </Text>
               </View>
             </LinearGradient>
@@ -766,8 +766,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: THEME.spacing.md,
     bottom: THEME.spacing.md,
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 20,
     backgroundColor: THEME.colors.fill[100],
     alignItems: 'center',
