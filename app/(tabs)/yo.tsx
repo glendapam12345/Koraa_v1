@@ -533,6 +533,9 @@ export default function ProfileScreen() {
             style={styles.menuItem} 
             activeOpacity={0.7}
             onPress={() => setShowEditProfile(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Editar perfil personal"
+            accessibilityHint={`Abre el modal para editar tu perfil. Tienes ${profile.favorite_activities?.length || 0} actividades y ${profile.interests?.length || 0} intereses`}
           >
             <Edit size={24} color={THEME.colors.gradient.blue} />
             <View style={styles.menuItemContent}>
@@ -547,12 +550,24 @@ export default function ProfileScreen() {
 
           <Text style={styles.sectionTitle}>Configuración</Text>
 
-          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Ajustes"
+            accessibilityHint="Abre la configuración de la aplicación"
+          >
             <Settings size={24} color={THEME.colors.text.main} />
             <Text style={styles.menuItemText}>Ajustes</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Ayuda"
+            accessibilityHint="Abre la sección de ayuda y soporte"
+          >
             <HelpCircle size={24} color={THEME.colors.text.main} />
             <Text style={styles.menuItemText}>Ayuda</Text>
           </TouchableOpacity>
@@ -561,6 +576,9 @@ export default function ProfileScreen() {
             style={styles.menuItem}
             onPress={handleSignOut}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar sesión"
+            accessibilityHint="Cierra tu sesión y regresa a la pantalla de bienvenida"
           >
             <LogOut size={24} color={THEME.colors.gradient.pink} />
             <Text style={[styles.menuItemText, { color: THEME.colors.gradient.pink }]}>
@@ -608,6 +626,10 @@ export default function ProfileScreen() {
                   }}
                   style={styles.modalCloseButton}
                   disabled={isSavingProfile}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cerrar modal"
+                  accessibilityHint="Cierra el modal de edición de perfil"
+                  accessibilityState={{ disabled: isSavingProfile }}
                 >
                   <X size={24} color={THEME.colors.text.main} />
                 </TouchableOpacity>
@@ -690,6 +712,9 @@ export default function ProfileScreen() {
                         <TouchableOpacity
                           onPress={() => removeActivity(index)}
                           style={styles.chipRemove}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Eliminar actividad: ${activity}`}
+                          accessibilityHint="Elimina esta actividad de tu lista"
                         >
                           <X size={14} color={THEME.colors.text.secondary} />
                         </TouchableOpacity>
@@ -707,11 +732,18 @@ export default function ProfileScreen() {
                     onSubmitEditing={addActivity}
                     editable={!isSavingProfile}
                     maxLength={50}
+                    accessibilityLabel="Campo para agregar actividad favorita"
+                    accessibilityHint="Escribe una actividad que te gusta hacer. Máximo 50 caracteres"
+                    accessibilityRole="none"
                   />
                   <TouchableOpacity
                     style={[styles.addButton, (!newActivity.trim() || isSavingProfile) && styles.addButtonDisabled]}
                     onPress={addActivity}
                     disabled={!newActivity.trim() || isSavingProfile}
+                    accessibilityRole="button"
+                    accessibilityLabel="Agregar actividad"
+                    accessibilityHint="Agrega la actividad escrita a tu lista de actividades favoritas"
+                    accessibilityState={{ disabled: !newActivity.trim() || isSavingProfile }}
                   >
                     <Plus size={20} color={THEME.colors.fill[100]} />
                   </TouchableOpacity>
@@ -738,6 +770,9 @@ export default function ProfileScreen() {
                         <TouchableOpacity
                           onPress={() => removeInterest(index)}
                           style={styles.chipRemove}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Eliminar interés: ${interest}`}
+                          accessibilityHint="Elimina este interés de tu lista"
                         >
                           <X size={14} color={THEME.colors.text.secondary} />
                         </TouchableOpacity>
@@ -755,11 +790,18 @@ export default function ProfileScreen() {
                     onSubmitEditing={addInterest}
                     editable={!isSavingProfile}
                     maxLength={50}
+                    accessibilityLabel="Campo para agregar interés"
+                    accessibilityHint="Escribe un interés o hobby. Máximo 50 caracteres"
+                    accessibilityRole="none"
                   />
                   <TouchableOpacity
                     style={[styles.addButton, (!newInterest.trim() || isSavingProfile) && styles.addButtonDisabled]}
                     onPress={addInterest}
                     disabled={!newInterest.trim() || isSavingProfile}
+                    accessibilityRole="button"
+                    accessibilityLabel="Agregar interés"
+                    accessibilityHint="Agrega el interés escrito a tu lista de intereses"
+                    accessibilityState={{ disabled: !newInterest.trim() || isSavingProfile }}
                   >
                     <Plus size={20} color={THEME.colors.fill[100]} />
                   </TouchableOpacity>

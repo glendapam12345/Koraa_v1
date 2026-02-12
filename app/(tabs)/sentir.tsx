@@ -123,6 +123,9 @@ export default function SentirScreen() {
             style={styles.noTasksBanner}
             onPress={() => router.push('/(tabs)/vaciar')}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Paso 1: Agrega tus tareas primero"
+            accessibilityHint="Abre la pantalla Vaciar para agregar tus tareas antes de hacer el check-in"
           >
             <LinearGradient
               colors={[THEME.colors.gradient.pink, THEME.colors.gradient.blue]}

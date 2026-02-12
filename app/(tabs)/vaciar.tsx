@@ -421,6 +421,9 @@ export default function VaciarScreen() {
             style={styles.checkInBanner}
             onPress={() => router.push('/(tabs)/sentir')}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Siguiente paso: Registra cómo te sientes"
+            accessibilityHint="Abre la pantalla para registrar tu estado emocional del día"
           >
             <LinearGradient
               colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -486,6 +489,9 @@ export default function VaciarScreen() {
                   style={styles.suggestionChip}
                   onPress={() => setTaskInput(suggestion)}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Usar sugerencia: ${suggestion}`}
+                  accessibilityHint="Toca para usar esta tarea reciente como sugerencia"
                 >
                   <Text style={styles.suggestionText}>{suggestion}</Text>
                 </TouchableOpacity>
@@ -502,6 +508,11 @@ export default function VaciarScreen() {
             isPriority && styles.priorityToggleActive,
           ]}
           onPress={() => setIsPriority(!isPriority)}
+          accessibilityRole="switch"
+          accessibilityLabel={isPriority ? "Tarea prioritaria activada" : "Tarea prioritaria desactivada"}
+          accessibilityHint="Activa o desactiva la prioridad de esta tarea"
+          accessibilityState={{ checked: isPriority }}
+        >
           activeOpacity={0.7}
         >
           <Star
@@ -530,6 +541,10 @@ export default function VaciarScreen() {
             }
           }}
           activeOpacity={0.7}
+          accessibilityRole="switch"
+          accessibilityLabel={hasSubtasks ? "Agregar subtareas activado" : "Agregar subtareas desactivado"}
+          accessibilityHint="Activa para agregar subtareas a esta tarea"
+          accessibilityState={{ checked: hasSubtasks }}
         >
           {hasSubtasks ? (
             <ChevronUp size={20} color={THEME.colors.gradient.blue} />
@@ -569,6 +584,9 @@ export default function VaciarScreen() {
                     style={styles.removeSubtaskButton}
                     onPress={() => removeSubtask(index)}
                     activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Eliminar subtarea ${index + 1}`}
+                    accessibilityHint="Elimina esta subtarea de la lista"
                   >
                     <X size={18} color={THEME.colors.text.secondary} />
                   </TouchableOpacity>
@@ -579,6 +597,9 @@ export default function VaciarScreen() {
               style={styles.addSubtaskButton}
               onPress={addSubtask}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Agregar otra subtarea"
+              accessibilityHint="Agrega un nuevo campo para otra subtarea"
             >
               <Plus size={18} color={THEME.colors.gradient.blue} />
               <Text style={styles.addSubtaskText}>Agregar otra subtarea</Text>

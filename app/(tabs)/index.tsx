@@ -1,40 +1,34 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, Platform, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, RefreshControl } from 'react-native';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
 import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
 import { Toast } from '@/components/Toast';
 import { ConfettiCelebration } from '@/components/ConfettiCelebration';
 import { QuickCheckInModal } from '@/components/QuickCheckInModal';
 import { FlowIndicator } from '@/components/FlowIndicator';
+import { MeditationCircle } from '@/components/MeditationCircle';
+import { MoodCard } from '@/components/mood/MoodCard';
+import { ValueCard } from '@/components/tasks/ValueCard';
+import { ProgressBar } from '@/components/tasks/ProgressBar';
+import { FlowGuideCard } from '@/components/flow/FlowGuideCard';
+import { TaskList } from '@/components/tasks/TaskList';
+import { TaskEditModal } from '@/components/tasks/TaskEditModal';
+import { useCheckIn } from '@/hooks/useCheckIn';
+import { useTasks } from '@/hooks/useTasks';
+import { useTaskActions } from '@/hooks/useTaskActions';
+import { useProgress } from '@/hooks/useProgress';
 import { supabase, getErrorMessage } from '@/lib/supabase';
 import { detectCategory } from '@/lib/categoryDetection';
 import { generatePrioritizationExplanation } from '@/lib/smartPrioritization';
-import { RefreshCw, ChevronDown, ChevronUp, MoreVertical, Edit, Trash2, X, Sparkles, CheckCircle2, Plus, Flame, Sunrise, Moon } from 'lucide-react-native';
+import { logger } from '@/lib/logger';
+import { Sparkles, Plus, Flame, Sunrise, Moon } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { MeditationCircle } from '@/components/MeditationCircle';
-
-type Task = {
-  id: string;
-  content: string;
-  category: string;
-  is_completed: boolean;
-  parent_task_id: string | null;
-  subtasks?: Task[];
-};
+import type { Task } from '@/components/tasks/TaskCard';
 
 export default function TodayScreen() {
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
-  const [todayMood, setTodayMood] = useState<string>('');
-  const [energy, setEnergy] = useState<string>('');
-  const [time, setTime] = useState<string>('');
-  const [energyLevel, setEnergyLevel] = useState<number>(0);
-  const [focusLevel, setFocusLevel] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-  const [loadingTasks, setLoadingTasks] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editContent, setEditContent] = useState('');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
@@ -51,7 +45,6 @@ export default function TodayScreen() {
   const [meditationType, setMeditationType] = useState<'morning' | 'evening'>('morning');
   const [morningMeditationDone, setMorningMeditationDone] = useState(false);
   const [eveningMeditationDone, setEveningMeditationDone] = useState(false);
-  const progressWidth = useSharedValue(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backgroundLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -62,47 +55,45 @@ export default function TodayScreen() {
     setToastType(type);
   };
 
-  const loadTodayCheckIn = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  // Hooks personalizados
+  const {
+    todayMood,
+    energy,
+    energyLevel,
+    time,
+    focusLevel,
+    loading,
+    loadTodayCheckIn,
+  } = useCheckIn(showToast);
 
-      const today = new Date().toISOString().split('T')[0];
-      const { data: checkIn, error } = await supabase
-        .from('daily_check_ins')
-        .select('emotion, energy_level, available_time, focus_level')
-        .eq('user_id', user.id)
-        .eq('date', today)
-        .maybeSingle();
+  const {
+    tasks,
+    loadingTasks,
+    loadTasks,
+    setTasks,
+  } = useTasks(todayMood, showToast);
 
-      if (error) {
-        console.error('Error cargando check-in:', error);
-        const errorMessage = getErrorMessage(error);
-        showToast(errorMessage, 'error');
-        return;
-      }
+  const {
+    incompleteTasks,
+    completedToday,
+    totalPriorityTasks,
+    progressPercentage,
+    progressWidth,
+  } = useProgress(tasks, loading);
 
-      if (checkIn) {
-        setTodayMood(checkIn.emotion.toLowerCase());
-        setEnergy(`${checkIn.energy_level}/5`);
-        setEnergyLevel(checkIn.energy_level);
-        setTime(checkIn.available_time);
-        setFocusLevel(checkIn.focus_level || '');
-      } else {
-        setTodayMood('');
-        setEnergy('');
-        setEnergyLevel(0);
-        setTime('');
-        setFocusLevel('');
-      }
-    } catch (error) {
-      console.error('Error inesperado:', error);
-      const errorMessage = getErrorMessage(error);
-      showToast(errorMessage, 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [showToast]);
+  const {
+    toggleTask,
+    handleSaveEdit: handleSaveEditAction,
+  } = useTaskActions({
+    tasks,
+    setTasks,
+    loadTasks,
+    showToast,
+    setMenuOpen,
+    timeoutRef,
+    backgroundLoadTimeoutRef,
+    isLoadingTasksRef,
+  });
 
   const loadStreak = useCallback(async () => {
     try {
@@ -148,7 +139,7 @@ export default function TodayScreen() {
 
       setCurrentStreak(streak);
     } catch (error) {
-      console.error('Error cargando racha:', error);
+      logger.debug('Error cargando racha:', error);
       // No mostrar toast para errores de racha (no crítico)
     }
   }, []);
@@ -170,7 +161,7 @@ export default function TodayScreen() {
         setEveningMeditationDone(meditations.some((m: { type: string }) => m.type === 'evening'));
       }
     } catch (error) {
-      console.error('Error cargando meditaciones:', error);
+      logger.debug('Error cargando meditaciones:', error);
       // No mostrar toast para errores de meditaciones (no crítico)
     }
   }, []);
@@ -190,7 +181,7 @@ export default function TodayScreen() {
         });
 
       if (error) {
-        console.error('Error guardando meditación:', error);
+        logger.error('Error guardando meditación:', error);
         const errorMessage = getErrorMessage(error);
         showToast(errorMessage, 'error');
         return;
@@ -220,7 +211,7 @@ export default function TodayScreen() {
         confettiTimeoutRef.current = null;
       }, 3000);
     } catch (error) {
-      console.error('Error inesperado:', error);
+      logger.error('Error inesperado en meditación:', error);
       showToast('Ocurrió un error', 'error');
     }
   };
@@ -230,79 +221,7 @@ export default function TodayScreen() {
     setShowMeditation(true);
   };
 
-  const loadTasks = useCallback(async () => {
-    // Prevenir múltiples llamadas simultáneas
-    if (isLoadingTasksRef.current) {
-      return;
-    }
-    
-    try {
-      isLoadingTasksRef.current = true;
-      setLoadingTasks(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        isLoadingTasksRef.current = false;
-        setLoadingTasks(false);
-        return;
-      }
-
-      // Verificar si hay check-in hoy antes de cargar tareas priorizadas
-      const today = new Date().toISOString().split('T')[0];
-      const { data: checkInData } = await supabase
-        .from('daily_check_ins')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('date', today)
-        .maybeSingle();
-
-      // Si no hay check-in, no cargar tareas priorizadas (mostrar vacío)
-      if (!checkInData) {
-        setTasks([]);
-        setLoadingTasks(false);
-        return;
-      }
-
-      // Cargar todas las tareas prioritarias (principales y subtareas)
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_priority', true)
-        .order('is_completed', { ascending: true })
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error cargando tareas:', error);
-        const errorMessage = getErrorMessage(error);
-        showToast(errorMessage, 'error');
-        return;
-      }
-
-      if (data) {
-        // Separar tareas principales y subtareas
-        const mainTasks = data.filter((task: Task) => !task.parent_task_id);
-        const subtasks = data.filter((task: Task) => task.parent_task_id);
-
-        // Agrupar subtareas bajo sus tareas principales
-        const tasksWithSubtasks = mainTasks.map((task: Task) => {
-          const taskSubtasks = subtasks.filter((st: Task) => st.parent_task_id === task.id);
-          return {
-            ...task,
-            subtasks: taskSubtasks.length > 0 ? taskSubtasks : undefined,
-          };
-        });
-
-        setTasks(tasksWithSubtasks);
-      }
-    } catch (error) {
-      console.error('Error inesperado:', error);
-      const errorMessage = getErrorMessage(error);
-      showToast(errorMessage, 'error');
-    } finally {
-      isLoadingTasksRef.current = false;
-      setLoadingTasks(false);
-    }
-  }, [showToast]);
+  // loadTasks ahora viene del hook useTasks
 
   const loadPrioritizationMetadata = useCallback(async () => {
     try {
@@ -324,7 +243,7 @@ export default function TodayScreen() {
         setTotalTasksBefore(null);
       }
     } catch (error) {
-      console.error('Error cargando metadata:', error);
+      logger.debug('Error cargando metadata:', error);
       setTotalTasksBefore(null);
       // No mostrar toast para errores de metadata (no crítico)
     }
@@ -344,7 +263,7 @@ export default function TodayScreen() {
         await syncAll();
       } catch (error) {
         // Silencioso, no es crítico
-        console.log('Sincronización offline:', error);
+        logger.debug('Sincronización offline:', error);
       }
     })();
 
@@ -402,26 +321,7 @@ export default function TodayScreen() {
     setPreviousCompletedCount(completedCount);
   }, [tasks, loading]);
 
-  // Animar barra de progreso cuando cambia el porcentaje
-  useEffect(() => {
-    const incompleteTasks = tasks.filter((t: Task) => !t.is_completed);
-    const completedToday = tasks.filter((t: Task) => t.is_completed).length;
-    const totalPriorityTasks = incompleteTasks.length + completedToday;
-    const progressPercentage = totalPriorityTasks > 0 ? (completedToday / totalPriorityTasks) * 100 : 0;
-    
-    if (!loading && totalPriorityTasks > 0) {
-      progressWidth.value = withTiming(progressPercentage, {
-        duration: 500,
-      });
-    }
-  }, [tasks, loading]);
-
-  // Estilo animado para la barra de progreso
-  const animatedProgressStyle = useAnimatedStyle(() => {
-    return {
-      width: `${progressWidth.value}%`,
-    };
-  });
+  // La animación de la barra de progreso ahora se maneja en el hook useProgress
 
   const toggleTaskExpansion = (taskId: string) => {
     const newExpanded = new Set(expandedTasks);
@@ -433,219 +333,9 @@ export default function TodayScreen() {
     setExpandedTasks(newExpanded);
   };
 
-  const toggleTask = async (taskId: string, isSubtask: boolean = false, parentTaskId?: string) => {
-    const task = isSubtask
-      ? tasks.find((t: Task) => t.id === parentTaskId)?.subtasks?.find((st: Task) => st.id === taskId)
-      : tasks.find((t: Task) => t.id === taskId);
-
-    if (!task) return;
-
-    const newCompletedState = !task.is_completed;
-
-    // Haptic feedback al completar tarea
-    if (Platform.OS !== 'web' && newCompletedState) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } else if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-
-    try {
-      const { error } = await supabase
-        .from('tasks')
-        .update({
-          is_completed: newCompletedState,
-          completed_at: newCompletedState ? new Date().toISOString() : null,
-        })
-        .eq('id', taskId);
-
-      if (error) {
-        console.error('Error actualizando tarea:', error);
-        const errorMessage = getErrorMessage(error);
-        showToast(errorMessage, 'error');
-        // Revertir cambio optimista
-        setTasks(tasks.map((t: Task) =>
-          t.id === taskId ? { ...t, is_completed: !newCompletedState } : t
-        ));
-        return;
-      }
-
-      // Si se completa una tarea principal, animar fade out después de un delay
-      if (newCompletedState && !isSubtask) {
-        // Usar animación más suave con Animated
-        const fadeTimeout = setTimeout(() => {
-          setTasks((prev: Task[]) => prev.filter((t: Task) => t.id !== taskId));
-        }, 600); // Delay reducido para mejor UX
-        
-        // Limpiar timeout si el componente se desmonta (aunque es poco probable)
-        // Nota: Este timeout es corto y no crítico, pero es buena práctica limpiarlo
-      }
-
-      // Actualizar estado local y verificar si la tarea principal debe completarse
-      if (isSubtask && parentTaskId) {
-        // Actualizar subtarea y verificar estado de tarea principal
-        const updatedTasks = tasks.map((t: Task) => {
-          if (t.id === parentTaskId && t.subtasks) {
-            const updatedSubtasks = t.subtasks.map((st: Task) =>
-              st.id === taskId ? { ...st, is_completed: newCompletedState } : st
-            );
-            
-            // Verificar si todas las subtareas están completadas
-            const allSubtasksCompleted = updatedSubtasks.every((st: Task) => st.is_completed);
-            const wasParentCompleted = t.is_completed;
-            
-            // Si todas las subtareas están completadas y la tarea principal no lo estaba
-            if (allSubtasksCompleted && !wasParentCompleted) {
-              // Marcar tarea principal como completada en la base de datos
-              (async () => {
-                try {
-                  const { error: updateError } = await supabase
-                    .from('tasks')
-                    .update({
-                      is_completed: true,
-                      completed_at: new Date().toISOString(),
-                    })
-                    .eq('id', parentTaskId);
-
-                  if (updateError) {
-                    throw updateError;
-                  }
-
-                  // Limpiar timeout anterior si existe
-                  if (timeoutRef.current) {
-                    clearTimeout(timeoutRef.current);
-                  }
-                  // Recargar después de actualizar
-                  timeoutRef.current = setTimeout(() => {
-                    loadTasks().catch(() => {
-                      // Silenciar errores de recarga en background
-                    });
-                    timeoutRef.current = null;
-                  }, 200);
-                } catch (error) {
-                  console.error('Error actualizando tarea principal:', error);
-                  // Revertir cambio optimista si falla
-                  setTasks((prevTasks: Task[]) => prevTasks.map((t: Task) => {
-                    if (t.id === parentTaskId && t.subtasks) {
-                      const revertedSubtasks = t.subtasks.map((st: Task) =>
-                        st.id === taskId ? { ...st, is_completed: !newCompletedState } : st
-                      );
-                      return {
-                        ...t,
-                        subtasks: revertedSubtasks,
-                        is_completed: !allSubtasksCompleted,
-                      };
-                    }
-                    return t;
-                  }));
-                  const errorMessage = getErrorMessage(error);
-                  showToast(`Error: ${errorMessage}`, 'error');
-                }
-              })();
-            } else if (!allSubtasksCompleted && wasParentCompleted) {
-              // Desmarcar tarea principal si se desmarcó una subtarea
-              (async () => {
-                try {
-                  const { error: updateError } = await supabase
-                    .from('tasks')
-                    .update({
-                      is_completed: false,
-                      completed_at: null,
-                    })
-                    .eq('id', parentTaskId);
-
-                  if (updateError) {
-                    throw updateError;
-                  }
-
-                  // Limpiar timeout anterior si existe
-                  if (timeoutRef.current) {
-                    clearTimeout(timeoutRef.current);
-                  }
-                  timeoutRef.current = setTimeout(() => {
-                    loadTasks().catch(() => {
-                      // Silenciar errores de recarga en background
-                    });
-                    timeoutRef.current = null;
-                  }, 200);
-                } catch (error) {
-                  console.error('Error actualizando tarea principal:', error);
-                  // Revertir cambio optimista si falla
-                  setTasks((prevTasks: Task[]) => prevTasks.map((t: Task) => {
-                    if (t.id === parentTaskId && t.subtasks) {
-                      const revertedSubtasks = t.subtasks.map((st: Task) =>
-                        st.id === taskId ? { ...st, is_completed: !newCompletedState } : st
-                      );
-                      return {
-                        ...t,
-                        subtasks: revertedSubtasks,
-                        is_completed: allSubtasksCompleted,
-                      };
-                    }
-                    return t;
-                  }));
-                  const errorMessage = getErrorMessage(error);
-                  showToast(`Error: ${errorMessage}`, 'error');
-                }
-              })();
-            }
-            
-            return {
-              ...t,
-              subtasks: updatedSubtasks,
-              is_completed: allSubtasksCompleted,
-            };
-          }
-          return t;
-        });
-        
-        setTasks(updatedTasks);
-      } else {
-        // Actualizar tarea principal
-        setTasks(tasks.map((t: Task) =>
-          t.id === taskId ? { ...t, is_completed: newCompletedState } : t
-        ));
-      }
-      // Cerrar menú si estaba abierto
-      setMenuOpen(null);
-      
-      // No recargar inmediatamente - la actualización optimista ya se hizo
-      // Solo recargar si hay subtareas para sincronizar estado de tarea principal
-      if (!isSubtask || !parentTaskId) {
-        // Recargar en background para sincronizar (sin bloquear UI)
-        setTimeout(() => {
-          loadTasks().catch(() => {
-            // Silenciar errores de recarga en background
-          });
-        }, 500);
-      }
-      
-      // Mostrar toast de éxito con mensajes más engaging
-      if (newCompletedState) {
-        const completedCount = tasks.filter((t: Task) => t.is_completed).length + 1;
-        const totalCount = tasks.length;
-        const progressPercentage = Math.round((completedCount / totalCount) * 100);
-        
-        // Mensajes motivacionales según progreso
-        let message = '¡Tarea completada!';
-        if (progressPercentage >= 50 && progressPercentage < 100) {
-          message = `¡Vas bien! ${progressPercentage}% completado ✨`;
-        } else if (progressPercentage === 100) {
-          message = '¡Día completo! Descansa y disfruta 🌟';
-        }
-        
-        showToast(message, 'success');
-        // Haptic feedback para aumentar engagement
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } else {
-        showToast('Tarea marcada como pendiente', 'info');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      }
-    } catch (error) {
-      console.error('Error inesperado:', error);
-      showToast('Ocurrió un error al actualizar la tarea', 'error');
-      // Cerrar menú en caso de error
-      setMenuOpen(null);
-    }
+  // toggleTask ahora viene del hook useTaskActions
+  const handleToggleTask = async (taskId: string, isSubtask: boolean = false, parentTaskId?: string) => {
+    await toggleTask(taskId, isSubtask, parentTaskId);
   };
 
   const getCategoryColor = useCallback((category: string) => {
@@ -670,78 +360,7 @@ export default function TodayScreen() {
   };
 
   const handleSaveEdit = async () => {
-    if (!editingTask || !editContent.trim()) return;
-
-    try {
-      // Detectar categoría automáticamente basada en el contenido editado
-      const detectedCategory = detectCategory(editContent.trim());
-      
-      const { error } = await supabase
-        .from('tasks')
-        .update({
-          content: editContent.trim(),
-          category: detectedCategory || editingTask.category || '',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', editingTask.id);
-
-      if (error) {
-        console.error('Error actualizando tarea:', error);
-        const errorMessage = getErrorMessage(error);
-        showToast(errorMessage, 'error');
-        return;
-      }
-
-      // Actualización optimista - actualizar estado local inmediatamente
-      setTasks((prevTasks: Task[]) => prevTasks.map((t: Task) => {
-        if (t.id === editingTask.id) {
-          return {
-            ...t,
-            content: editContent.trim(),
-            category: detectedCategory || editingTask.category || '',
-          };
-        }
-        // Actualizar también en subtareas si existe
-        if (t.subtasks) {
-          const updatedSubtasks = t.subtasks.map((st: Task) =>
-            st.id === editingTask.id ? {
-              ...st,
-              content: editContent.trim(),
-              category: detectedCategory || editingTask.category || '',
-            } : st
-          );
-          return { ...t, subtasks: updatedSubtasks };
-        }
-        return t;
-      }));
-
-        // Recargar en background para sincronizar (sin bloquear UI)
-        // Limpiar timeout anterior si existe
-        if (backgroundLoadTimeoutRef.current) {
-          clearTimeout(backgroundLoadTimeoutRef.current);
-        }
-        backgroundLoadTimeoutRef.current = setTimeout(() => {
-          if (!isLoadingTasksRef.current) {
-            isLoadingTasksRef.current = true;
-            loadTasks()
-              .catch(() => {
-                // Silenciar errores de recarga en background
-              })
-              .finally(() => {
-                isLoadingTasksRef.current = false;
-                backgroundLoadTimeoutRef.current = null;
-              });
-          }
-        }, 300);
-
-      setEditingTask(null);
-      setEditContent('');
-      showToast('Tarea actualizada correctamente', 'success');
-    } catch (error) {
-      console.error('Error inesperado:', error);
-      const errorMessage = getErrorMessage(error);
-      showToast(errorMessage, 'error');
-    }
+    await handleSaveEditAction(editingTask, editContent, setEditingTask, setEditContent);
   };
 
   const handleDeleteTask = (task: Task) => {
@@ -757,14 +376,14 @@ export default function TodayScreen() {
             try {
               // Eliminar subtareas primero (si las hay)
               if (task.subtasks && task.subtasks.length > 0) {
-                const subtaskIds = task.subtasks.map(st => st.id);
+                const subtaskIds = task.subtasks.map((st: Task) => st.id);
                 const { error: subtasksError } = await supabase
                   .from('tasks')
                   .delete()
                   .in('id', subtaskIds);
 
                 if (subtasksError) {
-                  console.error('Error eliminando subtareas:', subtasksError);
+                  logger.error('Error eliminando subtareas:', subtasksError);
                   const errorMessage = getErrorMessage(subtasksError);
                   showToast(`No se pudieron eliminar las subtareas: ${errorMessage}`, 'error');
                   setMenuOpen(null);
@@ -779,7 +398,7 @@ export default function TodayScreen() {
                 .eq('id', task.id);
 
               if (error) {
-                console.error('Error eliminando tarea:', error);
+                logger.error('Error eliminando tarea:', error);
                 const errorMessage = getErrorMessage(error);
                 showToast(errorMessage, 'error');
                 setMenuOpen(null);
@@ -791,7 +410,7 @@ export default function TodayScreen() {
               setMenuOpen(null);
               showToast('Tarea eliminada correctamente', 'success');
             } catch (error) {
-              console.error('Error inesperado:', error);
+              logger.error('Error inesperado al eliminar:', error);
               const errorMessage = getErrorMessage(error);
               showToast(errorMessage, 'error');
               setMenuOpen(null);
@@ -802,14 +421,7 @@ export default function TodayScreen() {
     );
   };
 
-  // Calcular tareas completadas y no completadas (solo tareas principales, no subtareas) - Memoizado
-  const incompleteTasks = useMemo(() => tasks.filter((t: Task) => !t.is_completed), [tasks]);
-  const completedToday = useMemo(() => tasks.filter((t: Task) => t.is_completed).length, [tasks]);
-  const totalPriorityTasks = useMemo(() => incompleteTasks.length + completedToday, [incompleteTasks.length, completedToday]);
-  const progressPercentage = useMemo(() => 
-    totalPriorityTasks > 0 ? (completedToday / totalPriorityTasks) * 100 : 0,
-    [completedToday, totalPriorityTasks]
-  );
+  // Los cálculos de progreso vienen del hook useProgress (líneas 76-82)
 
   // Función para obtener mensaje explicativo basado en energía y emoción - Memoizada
   const getPriorityExplanation = useCallback(() => {
@@ -844,7 +456,7 @@ export default function TodayScreen() {
           reasoning: explanation.reasoning,
         };
       } catch (error) {
-        console.log('Error generando explicación inteligente:', error);
+        logger.debug('Error generando explicación inteligente:', error);
       }
     }
 
@@ -893,7 +505,7 @@ export default function TodayScreen() {
         loadMeditations(),
       ]);
     } catch (error) {
-      console.error('Error al refrescar:', error);
+      logger.error('Error al refrescar:', error);
       showToast('Error al actualizar los datos', 'error');
     } finally {
       setRefreshing(false);
@@ -939,6 +551,10 @@ export default function TodayScreen() {
                 onPress={() => !morningMeditationDone && handleStartMeditation('morning')}
                 activeOpacity={0.8}
                 disabled={morningMeditationDone}
+                accessibilityRole="button"
+                accessibilityLabel={morningMeditationDone ? "Meditación matutina completada" : "Iniciar meditación matutina"}
+                accessibilityHint={morningMeditationDone ? "Ya completaste tu meditación matutina de hoy" : "Abre la meditación guiada para comenzar el día con calma"}
+                accessibilityState={{ disabled: morningMeditationDone }}
               >
                 <LinearGradient
                   colors={
@@ -974,6 +590,10 @@ export default function TodayScreen() {
                 onPress={() => !eveningMeditationDone && handleStartMeditation('evening')}
                 activeOpacity={0.8}
                 disabled={eveningMeditationDone}
+                accessibilityRole="button"
+                accessibilityLabel={eveningMeditationDone ? "Meditación nocturna completada" : "Iniciar meditación nocturna"}
+                accessibilityHint={eveningMeditationDone ? "Ya completaste tu meditación nocturna de hoy" : "Abre la meditación guiada para terminar el día con calma"}
+                accessibilityState={{ disabled: eveningMeditationDone }}
               >
                 <LinearGradient
                   colors={
@@ -1004,69 +624,7 @@ export default function TodayScreen() {
         )}
 
         {/* Guía visual del flujo completo cuando no hay check-in */}
-        {!loading && !todayMood && (
-          <>
-            <View style={styles.flowGuideCard}>
-              <Text style={styles.flowGuideCardTitle}>Tu flujo de trabajo</Text>
-              <View style={styles.flowStepsContainer}>
-                <View style={styles.flowStep}>
-                  <View style={[styles.flowStepNumber, styles.flowStepNumberActive]}>
-                    <Text style={[styles.flowStepNumberText, styles.flowStepNumberTextActive]}>1</Text>
-                  </View>
-                  <Text style={styles.flowStepLabel}>Vaciar</Text>
-                  <Text style={styles.flowStepDescription}>Agrega tus tareas</Text>
-                </View>
-                <View style={styles.flowArrow}>
-                  <Text style={styles.flowArrowText}>→</Text>
-                </View>
-                <View style={styles.flowStep}>
-                  <View style={styles.flowStepNumber}>
-                    <Text style={styles.flowStepNumberText}>2</Text>
-                  </View>
-                  <Text style={styles.flowStepLabel}>Sentir</Text>
-                  <Text style={styles.flowStepDescription}>Registra cómo te sientes</Text>
-                </View>
-                <View style={styles.flowArrow}>
-                  <Text style={styles.flowArrowText}>→</Text>
-                </View>
-                <View style={styles.flowStep}>
-                  <View style={styles.flowStepNumber}>
-                    <Text style={styles.flowStepNumberText}>3</Text>
-                  </View>
-                  <Text style={styles.flowStepLabel}>Accionar</Text>
-                  <Text style={styles.flowStepDescription}>Tus tareas priorizadas</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Botón principal: ¿Cómo te sientes hoy? */}
-            <TouchableOpacity
-              style={styles.mainRegisterButton}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push('/(tabs)/sentir');
-              }}
-              activeOpacity={0.9}
-            >
-              <LinearGradient
-                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.mainRegisterButtonGradient}
-              >
-                <View style={styles.mainRegisterIcon}>
-                  <Sparkles size={64} color={THEME.colors.fill[100]} />
-                </View>
-                <Text style={styles.mainRegisterText}>
-                  ¿Cómo te sientes hoy?
-                </Text>
-                <Text style={styles.mainRegisterSubtext}>
-                  Toca para registrar y organizar tu día
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </>
-        )}
+        {!loading && !todayMood && <FlowGuideCard />}
 
         {/* Si hay check-in pero no hay tareas */}
         {!loading && todayMood && tasks.length === 0 && (
@@ -1084,6 +642,9 @@ export default function TodayScreen() {
               style={styles.secondaryButton}
               onPress={() => router.push('/(tabs)/vaciar')}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Vaciar tus pendientes"
+              accessibilityHint="Abre la pantalla para agregar tus tareas y pendientes"
             >
               <LinearGradient
                 colors={[THEME.colors.gradient.pink, THEME.colors.gradient.blue]}
@@ -1104,69 +665,16 @@ export default function TodayScreen() {
 
         {/* Si hay check-in y tareas: mostrar tarjeta de mood normal */}
         {!loading && todayMood && tasks.length > 0 && (
-          <LinearGradient
-            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.moodCard}
-          >
-            <View style={styles.moodHeader}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.moodLabel}>Hoy te sientes</Text>
-                <Text style={styles.moodTitle}>
-                  {todayMood.charAt(0).toUpperCase() + todayMood.slice(1)}
-                </Text>
-              </View>
-            <TouchableOpacity
-              style={styles.refreshButton}
-              onPress={() => {
-                loadTasks();
-                loadTodayCheckIn();
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Actualizar información"
-              accessibilityHint="Recarga el check-in y las tareas del día"
-            >
-              <RefreshCw size={20} color={THEME.colors.fill[100]} />
-            </TouchableOpacity>
-            </View>
-            {energy || time || focusLevel ? (
-              <View style={styles.moodStats}>
-                {energy && (
-                  <View style={styles.moodStatItem}>
-                    <Text style={styles.moodStatLabel}>Energía</Text>
-                    <Text style={styles.moodStatValue}>{energy}</Text>
-                  </View>
-                )}
-                {time && (
-                  <View style={styles.moodStatItem}>
-                    <Text style={styles.moodStatLabel}>Tiempo disponible</Text>
-                    <Text style={styles.moodStatValue}>{time}</Text>
-                  </View>
-                )}
-                {focusLevel && (
-                  <View style={styles.moodStatItem}>
-                    <Text style={styles.moodStatLabel}>Enfoque</Text>
-                    <Text style={styles.moodStatValue}>{focusLevel}</Text>
-                  </View>
-                )}
-              </View>
-            ) : null}
-            
-            {/* Botón para actualizar check-in */}
-            <TouchableOpacity
-              style={styles.updateCheckInButton}
-              onPress={() => router.push('/(tabs)/sentir')}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Actualizar cómo me siento"
-              accessibilityHint="Abre la pantalla para actualizar tu estado emocional del día"
-            >
-              <Text style={styles.updateCheckInButtonText}>
-                Actualizar cómo me siento
-              </Text>
-            </TouchableOpacity>
-          </LinearGradient>
+          <MoodCard
+            todayMood={todayMood}
+            energy={energy}
+            time={time}
+            focusLevel={focusLevel}
+            onRefresh={() => {
+              loadTasks();
+              loadTodayCheckIn();
+            }}
+          />
         )}
 
         <View style={styles.section}>
@@ -1182,29 +690,10 @@ export default function TodayScreen() {
               
               {/* Validación de valor: Comparación antes/después - Mejorado para engagement */}
               {totalTasksBefore !== null && totalTasksBefore > 0 && (
-                <View style={styles.valueCard}>
-                  <View style={styles.valueHeader}>
-                    <Sparkles size={20} color={THEME.colors.gradient.blue} />
-                    <Text style={styles.valueTitle}>Tu día organizado</Text>
-                  </View>
-                  <View style={styles.valueRow}>
-                    <Text style={styles.valueLabel}>Tareas totales:</Text>
-                    <Text style={styles.valueNumber}>{totalTasksBefore}</Text>
-                  </View>
-                  <View style={styles.valueRow}>
-                    <Text style={styles.valueLabel}>Priorizadas para hoy:</Text>
-                    <Text style={styles.valueNumberHighlight}>{tasks.length}</Text>
-                  </View>
-                  {totalTasksBefore > tasks.length ? (
-                    <Text style={styles.valueMessage}>
-                      Reducimos {totalTasksBefore - tasks.length} tarea{totalTasksBefore - tasks.length !== 1 ? 's' : ''} para enfocarte en lo esencial según cómo te sientes hoy
-                    </Text>
-                  ) : (
-                    <Text style={styles.valueMessage}>
-                      Todas tus tareas son relevantes para hoy. ¡Perfecto! 🎯
-                    </Text>
-                  )}
-                </View>
+                <ValueCard
+                  totalTasksBefore={totalTasksBefore}
+                  prioritizedTasks={tasks.length}
+                />
               )}
               
               {/* Mensaje explicativo con razonamiento emocional */}
@@ -1264,26 +753,11 @@ export default function TodayScreen() {
 
           {/* Indicador de progreso */}
           {totalPriorityTasks > 0 && (
-            <View style={styles.progressIndicator}>
-              <View style={styles.progressHeader}>
-                <Text style={styles.progressLabel}>
-                  Progreso de hoy
-                </Text>
-                <Text style={styles.progressCount}>
-                  {completedToday} de {totalPriorityTasks}
-                </Text>
-              </View>
-              <View style={styles.progressBarContainer}>
-                <View style={styles.progressBar}>
-                  <Animated.View 
-                    style={[
-                      styles.progressFill,
-                      animatedProgressStyle
-                    ]} 
-                  />
-                </View>
-              </View>
-            </View>
+            <ProgressBar
+              completed={completedToday}
+              total={totalPriorityTasks}
+              progressWidth={progressWidth}
+            />
           )}
         </View>
 
@@ -1322,6 +796,9 @@ export default function TodayScreen() {
                 style={styles.emptyButton}
                 onPress={() => router.push('/(tabs)/vaciar')}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={todayMood ? "Agregar tareas" : "Comenzar"}
+                accessibilityHint={todayMood ? "Abre la pantalla para agregar tus tareas" : "Abre la pantalla para agregar tus tareas y comenzar tu día"}
               >
                 <Text style={styles.emptyButtonText}>
                   {todayMood ? 'Agregar tareas →' : 'Comenzar →'}
@@ -1329,256 +806,19 @@ export default function TodayScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            (() => {
-              // Usar valores memoizados en lugar de recalcular
-              const allTasksCompleted = tasks.length > 0 && completedToday === tasks.length;
-              
-              // Mostrar mensaje de paz cuando todas las tareas están completadas
-              if (allTasksCompleted) {
-                return (
-                  <View style={styles.completionState}>
-                    <View style={styles.completionIconContainer}>
-                      <Text style={styles.completionEmoji}>✨</Text>
-                    </View>
-                    <Text style={styles.completionTitle}>
-                      Hoy está completo
-                    </Text>
-                    <Text style={styles.completionMessage}>
-                      Has completado todas tus tareas prioritarias.{'\n'}
-                      Es momento de descansar y disfrutar del momento presente.
-                    </Text>
-                    <Text style={styles.completionAccent}>
-                      Descansa
-                    </Text>
-                  </View>
-                );
-              }
-              
-              const renderTask = (task: Task, index: number, isCompleted: boolean) => {
-                const hasSubtasks = task.subtasks && task.subtasks.length > 0;
-                const isExpanded = expandedTasks.has(task.id);
-                const completedSubtasks = hasSubtasks 
-                  ? task.subtasks!.filter(st => st.is_completed).length 
-                  : 0;
-                const totalSubtasks = hasSubtasks ? task.subtasks!.length : 0;
-                const subtasksProgress = totalSubtasks > 0 
-                  ? (completedSubtasks / totalSubtasks) * 100 
-                  : 0;
-
-                return (
-                  <View key={task.id} style={styles.taskWrapper}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        if (hasSubtasks) {
-                          toggleTaskExpansion(task.id);
-                        } else {
-                          toggleTask(task.id);
-                        }
-                        setMenuOpen(null); // Cerrar menú al hacer clic en la tarea
-                      }}
-                      style={[
-                        styles.taskCard,
-                        isCompleted && styles.taskCardCompleted,
-                        hasSubtasks && styles.taskCardWithSubtasks,
-                        isCompleted && { opacity: 0.5 },
-                      ]}
-                      activeOpacity={0.7}
-                      accessibilityRole="button"
-                      accessibilityLabel={isCompleted ? `Tarea completada: ${task.content}` : `Tarea ${index + 1}: ${task.content}`}
-                      accessibilityHint={hasSubtasks ? "Doble toque para expandir o colapsar subtareas" : "Doble toque para marcar como completada"}
-                    >
-                      {/* Número de prioridad (solo para tareas no completadas) */}
-                      {!isCompleted && (
-                        <View style={styles.priorityNumberContainer}>
-                          <View style={styles.priorityNumber}>
-                            <Text style={styles.priorityNumberText}>{index + 1}</Text>
-                          </View>
-                        </View>
-                      )}
-
-                      {/* Botón expandir/colapsar si tiene subtareas */}
-                      {hasSubtasks && (
-                        <TouchableOpacity
-                          onPress={() => toggleTaskExpansion(task.id)}
-                          style={styles.expandButton}
-                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                          accessibilityRole="button"
-                          accessibilityLabel={isExpanded ? "Colapsar subtareas" : "Expandir subtareas"}
-                          accessibilityHint={`Tiene ${totalSubtasks} subtareas, ${completedSubtasks} completadas`}
-                        >
-                          {isExpanded ? (
-                            <ChevronUp size={20} color={THEME.colors.text.secondary} />
-                          ) : (
-                            <ChevronDown size={20} color={THEME.colors.text.secondary} />
-                          )}
-                        </TouchableOpacity>
-                      )}
-
-                      <TouchableOpacity
-                        onPress={() => toggleTask(task.id)}
-                        style={styles.taskCheckbox}
-                        activeOpacity={0.7}
-                        accessibilityRole="checkbox"
-                        accessibilityState={{ checked: task.is_completed }}
-                        accessibilityLabel={task.is_completed ? "Marcar como no completada" : "Marcar como completada"}
-                        accessibilityHint={`Tarea: ${task.content}`}
-                      >
-                        {task.is_completed && <View style={styles.taskCheckboxChecked} />}
-                      </TouchableOpacity>
-                      
-                      <View style={styles.taskContent}>
-                        {/* Badge de tipo de tarea */}
-                        <View style={styles.taskTypeContainer}>
-                          {hasSubtasks ? (
-                            <View style={[styles.taskTypeBadge, styles.projectBadge]}>
-                              <Text style={styles.taskTypeIcon}>📁</Text>
-                              <Text style={styles.taskTypeText}>Proyecto</Text>
-                            </View>
-                          ) : task.parent_task_id ? (
-                            <View style={[styles.taskTypeBadge, styles.subtaskBadge]}>
-                              <Text style={styles.taskTypeIcon}>└</Text>
-                              <Text style={styles.taskTypeText}>Subtarea</Text>
-                            </View>
-                          ) : (
-                            <View style={[styles.taskTypeBadge, styles.taskBadge]}>
-                              <Text style={styles.taskTypeIcon}>✓</Text>
-                              <Text style={styles.taskTypeText}>Tarea</Text>
-                            </View>
-                          )}
-                        </View>
-
-                        <Text style={[
-                          styles.taskText,
-                          isCompleted && styles.taskTextCompleted,
-                        ]}>
-                          {task.content}
-                        </Text>
-                        
-                        {/* Indicador de progreso de subtareas */}
-                        {hasSubtasks && !isCompleted && (
-                          <View style={styles.subtasksProgressContainer}>
-                            <View style={styles.subtasksProgressBar}>
-                              <View 
-                                style={[
-                                  styles.subtasksProgressFill,
-                                  { width: `${subtasksProgress}%` }
-                                ]} 
-                              />
-                            </View>
-                            <Text style={styles.subtasksProgressText}>
-                              {completedSubtasks} de {totalSubtasks} completadas
-                            </Text>
-                          </View>
-                        )}
-                        
-                        {task.category && (
-                          <View style={[
-                            styles.categoryBadge,
-                            { backgroundColor: getCategoryColor(task.category) + '20' },
-                          ]}>
-                            <Text style={[
-                              styles.categoryText,
-                              { color: getCategoryColor(task.category) },
-                            ]}>
-                              {task.category}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-
-                      {/* Botón de menú */}
-                      <TouchableOpacity
-                        onPress={() => setMenuOpen(menuOpen === task.id ? null : task.id)}
-                        style={styles.menuButton}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        accessibilityRole="button"
-                        accessibilityLabel="Opciones de tarea"
-                        accessibilityHint="Abre menú para editar o eliminar esta tarea"
-                      >
-                        <MoreVertical size={20} color={THEME.colors.text.secondary} />
-                      </TouchableOpacity>
-
-                    </TouchableOpacity>
-
-                    {/* Menú desplegable */}
-                    {menuOpen === task.id && (
-                      <View style={styles.menuDropdown}>
-                        <TouchableOpacity
-                          style={styles.menuItem}
-                          onPress={() => handleEditTask(task)}
-                          accessibilityRole="button"
-                          accessibilityLabel="Editar tarea"
-                        >
-                          <Edit size={18} color={THEME.colors.text.main} />
-                          <Text style={styles.menuItemText}>Editar</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.menuItem, styles.menuItemDanger]}
-                          onPress={() => handleDeleteTask(task)}
-                          accessibilityRole="button"
-                          accessibilityLabel="Eliminar tarea"
-                        >
-                          <Trash2 size={18} color="#FF6B6B" />
-                          <Text style={[styles.menuItemText, styles.menuItemTextDanger]}>Eliminar</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
-
-                    {/* Renderizar subtareas si está expandido */}
-                    {hasSubtasks && isExpanded && (
-                      <View style={styles.subtasksContainer}>
-                        {task.subtasks!.map((subtask) => (
-                          <TouchableOpacity
-                            key={subtask.id}
-                            onPress={() => toggleTask(subtask.id, true, task.id)}
-                            style={[
-                              styles.subtaskCard,
-                              subtask.is_completed && styles.subtaskCardCompleted,
-                            ]}
-                            activeOpacity={0.7}
-                            accessibilityRole="checkbox"
-                            accessibilityState={{ checked: subtask.is_completed }}
-                            accessibilityLabel={subtask.is_completed ? `Subtarea completada: ${subtask.content}` : `Subtarea: ${subtask.content}`}
-                            accessibilityHint="Doble toque para marcar como completada"
-                          >
-                            <View style={styles.subtaskCheckbox}>
-                              {subtask.is_completed && (
-                                <View style={styles.subtaskCheckboxChecked} />
-                              )}
-                            </View>
-                            <View style={styles.subtaskContent}>
-                              {/* Badge de subtarea */}
-                              <View style={styles.subtaskTypeContainer}>
-                                <View style={[styles.taskTypeBadge, styles.subtaskBadge]}>
-                                  <Text style={styles.taskTypeIcon}>└</Text>
-                                  <Text style={styles.taskTypeText}>Subtarea</Text>
-                                </View>
-                              </View>
-                              <Text style={[
-                                styles.subtaskText,
-                                subtask.is_completed && styles.subtaskTextCompleted,
-                              ]}>
-                                {subtask.content}
-                              </Text>
-                            </View>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                );
-              };
-              
-              return (
-                <>
-                  {/* Tareas no completadas con números */}
-                  {incompleteTasks.map((task: Task, index: number) => renderTask(task, index + 1, false))}
-                  
-                  {/* Tareas completadas sin números */}
-                  {tasks.filter((t: Task) => t.is_completed).map((task: Task, index: number) => renderTask(task, index + 1, true))}
-                </>
-              );
-            })()
+            <TaskList
+              tasks={tasks}
+              incompleteTasks={incompleteTasks}
+              expandedTasks={expandedTasks}
+              menuOpen={menuOpen}
+              onToggleTask={handleToggleTask}
+              onToggleExpansion={toggleTaskExpansion}
+              onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+              onEditTask={handleEditTask}
+              onDeleteTask={handleDeleteTask}
+              getCategoryColor={getCategoryColor}
+              onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
+            />
           )}
         </View>
       </ScrollView>
@@ -1589,68 +829,23 @@ export default function TodayScreen() {
           style={styles.menuOverlay}
           activeOpacity={1}
           onPress={() => setMenuOpen(null)}
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar menú"
+          accessibilityHint="Toca fuera del menú para cerrarlo"
         />
       )}
 
       {/* Modal de edición */}
-      <Modal
+      <TaskEditModal
         visible={editingTask !== null}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => {
+        content={editContent}
+        onContentChange={setEditContent}
+        onSave={handleSaveEdit}
+        onClose={() => {
           setEditingTask(null);
           setEditContent('');
         }}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Editar tarea</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setEditingTask(null);
-                  setEditContent('');
-                }}
-                style={styles.modalCloseButton}
-              >
-                <X size={24} color={THEME.colors.text.main} />
-              </TouchableOpacity>
-            </View>
-
-            <TextInput
-              style={styles.editInput}
-              value={editContent}
-              onChangeText={setEditContent}
-              placeholder="Contenido de la tarea"
-              placeholderTextColor={THEME.colors.text.secondary}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
-
-            {/* Categoría se detecta automáticamente - invisible para el usuario */}
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={() => {
-                  setEditingTask(null);
-                  setEditContent('');
-                }}
-              >
-                <Text style={styles.modalButtonCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonSave]}
-                onPress={handleSaveEdit}
-                disabled={!editContent.trim()}
-              >
-                <Text style={styles.modalButtonSaveText}>Guardar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      />
       
       {/* Confetti celebración */}
       {showConfetti && <ConfettiCelebration />}

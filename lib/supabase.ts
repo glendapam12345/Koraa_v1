@@ -13,12 +13,19 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
+// Tipo para errores de Supabase
+interface SupabaseError {
+  message?: string;
+  code?: string;
+}
+
 // Helper para detectar errores de conexión
-export const isNetworkError = (error: any): boolean => {
-  if (!error) return false;
+export const isNetworkError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') return false;
   
-  const errorMessage = error.message?.toLowerCase() || '';
-  const errorCode = error.code?.toLowerCase() || '';
+  const err = error as SupabaseError;
+  const errorMessage = err.message?.toLowerCase() || '';
+  const errorCode = err.code?.toLowerCase() || '';
   
   return (
     errorMessage.includes('network') ||
@@ -32,12 +39,17 @@ export const isNetworkError = (error: any): boolean => {
 };
 
 // Helper para obtener mensaje de error amigable
-export const getErrorMessage = (error: any): string => {
+export const getErrorMessage = (error: unknown): string => {
   if (!error) return 'Ocurrió un error inesperado';
   
   if (isNetworkError(error)) {
     return 'Sin conexión a internet. Verifica tu conexión e intenta de nuevo.';
   }
   
-  return error.message || 'Ocurrió un error inesperado. Por favor intenta de nuevo.';
+  if (typeof error === 'object' && 'message' in error) {
+    const err = error as SupabaseError;
+    return err.message || 'Ocurrió un error inesperado. Por favor intenta de nuevo.';
+  }
+  
+  return 'Ocurrió un error inesperado. Por favor intenta de nuevo.';
 };

@@ -13,7 +13,7 @@ export interface Task {
   category: string;
   is_completed: boolean;
   parent_task_id: string | null;
-  created_at: string;
+  created_at?: string;
   subtasks?: Task[];
 }
 

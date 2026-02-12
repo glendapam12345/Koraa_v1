@@ -1,0 +1,148 @@
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { THEME } from '@/constants/theme';
+import { RefreshCw } from 'lucide-react-native';
+import { router } from 'expo-router';
+
+interface MoodCardProps {
+  todayMood: string;
+  energy: string;
+  time: string;
+  focusLevel: string;
+  onRefresh: () => void;
+}
+
+export function MoodCard({ todayMood, energy, time, focusLevel, onRefresh }: MoodCardProps) {
+  return (
+    <LinearGradient
+      colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={styles.moodCard}
+    >
+      <View style={styles.moodHeader}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.moodLabel}>Hoy te sientes</Text>
+          <Text style={styles.moodTitle}>
+            {todayMood.charAt(0).toUpperCase() + todayMood.slice(1)}
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={styles.refreshButton}
+          onPress={onRefresh}
+          accessibilityRole="button"
+          accessibilityLabel="Actualizar información"
+          accessibilityHint="Recarga el check-in y las tareas del día"
+        >
+          <RefreshCw size={20} color={THEME.colors.fill[100]} />
+        </TouchableOpacity>
+      </View>
+      {energy || time || focusLevel ? (
+        <View style={styles.moodStats}>
+          {energy && (
+            <View style={styles.moodStatItem}>
+              <Text style={styles.moodStatLabel}>Energía</Text>
+              <Text style={styles.moodStatValue}>{energy}</Text>
+            </View>
+          )}
+          {time && (
+            <View style={styles.moodStatItem}>
+              <Text style={styles.moodStatLabel}>Tiempo disponible</Text>
+              <Text style={styles.moodStatValue}>{time}</Text>
+            </View>
+          )}
+          {focusLevel && (
+            <View style={styles.moodStatItem}>
+              <Text style={styles.moodStatLabel}>Enfoque</Text>
+              <Text style={styles.moodStatValue}>{focusLevel}</Text>
+            </View>
+          )}
+        </View>
+      ) : null}
+      
+      {/* Botón para actualizar check-in */}
+      <TouchableOpacity
+        style={styles.updateCheckInButton}
+        onPress={() => router.push('/(tabs)/sentir')}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel="Actualizar cómo me siento"
+        accessibilityHint="Abre la pantalla para actualizar tu estado emocional del día"
+      >
+        <Text style={styles.updateCheckInButtonText}>
+          Actualizar cómo me siento
+        </Text>
+      </TouchableOpacity>
+    </LinearGradient>
+  );
+}
+
+const styles = StyleSheet.create({
+  moodCard: {
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.lg,
+  },
+  moodHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: THEME.spacing.sm,
+  },
+  moodLabel: {
+    ...THEME.typography.caption,
+    color: THEME.colors.fill[100],
+    opacity: 0.9,
+  },
+  moodTitle: {
+    ...THEME.typography.h2,
+    color: THEME.colors.fill[100],
+  },
+  refreshButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moodStats: {
+    flexDirection: 'row',
+    gap: THEME.spacing.md,
+    marginTop: THEME.spacing.sm,
+    flexWrap: 'wrap',
+  },
+  moodStatItem: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: THEME.borderRadius.rounded,
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    minWidth: 100,
+  },
+  moodStatLabel: {
+    ...THEME.typography.caption,
+    color: THEME.colors.fill[100],
+    opacity: 0.8,
+    fontSize: 10,
+    marginBottom: 2,
+  },
+  moodStatValue: {
+    ...THEME.typography.body,
+    color: THEME.colors.fill[100],
+    fontFamily: THEME.fonts.heading.medium,
+    fontSize: 13,
+  },
+  updateCheckInButton: {
+    marginTop: THEME.spacing.md,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignSelf: 'center',
+  },
+  updateCheckInButtonText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.fill[100],
+    fontFamily: THEME.fonts.heading.medium,
+  },
+});

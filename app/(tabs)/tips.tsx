@@ -266,6 +266,9 @@ export default function TipsScreen() {
                             }
                           }}
                           activeOpacity={0.7}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Agregar "${rec.suggestion}" a mis tareas`}
+                          accessibilityHint="Abre la pantalla Vaciar con esta sugerencia pre-llenada"
                         >
                           <Plus size={16} color={THEME.colors.gradient.blue} />
                           <Text style={styles.suggestionButtonText}>Agregar a mis tareas</Text>
