@@ -115,20 +115,22 @@ export default function SemanaScreen() {
     } catch (error) {
       logger.error('Error loading weekly data:', error);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
       setRefreshing(false);
     }
   }, [user, currentWeekStart]);
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
+      loadData(true); // Mostrar loading solo en carga inicial
     }, [loadData])
   );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    loadData();
+    loadData(false); // No mostrar loading en refresh
   }, [loadData]);
 
   const navigateWeek = (direction: 'prev' | 'next') => {
@@ -237,8 +239,8 @@ export default function SemanaScreen() {
       setSelectedDay(null);
       setIsSaving(false);
 
-      // Recargar datos después de cerrar el modal (sin await para no bloquear UI)
-      loadData().catch((error) => {
+      // Recargar datos después de cerrar el modal (sin mostrar loading)
+      loadData(false).catch((error) => {
         logger.error('Error reloading data after save:', error);
       });
     } catch (error) {
@@ -273,7 +275,7 @@ export default function SemanaScreen() {
                 return;
               }
 
-              await loadData();
+              await loadData(false);
             } catch (error) {
               logger.error('Unexpected error deleting task:', error);
               Alert.alert('Error', 'Ocurrió un error inesperado');
@@ -551,7 +553,7 @@ export default function SemanaScreen() {
             try {
               const { reorganizeWeeklyTasks } = await import('@/lib/weeklyReorganization');
               await reorganizeWeeklyTasks(user.id);
-              await loadData();
+              await loadData(false);
             } catch (error) {
               logger.error('Error reorganizing:', error);
             } finally {
@@ -653,7 +655,7 @@ export default function SemanaScreen() {
                     onSelect={(projectId) => {
                       setSelectedProjectId(projectId);
                       // Recargar proyectos cuando se selecciona uno nuevo (puede haber sido creado)
-                      loadData().catch((error) => {
+                      loadData(false).catch((error) => {
                         logger.error('Error reloading projects after selection:', error);
                       });
                     }}
