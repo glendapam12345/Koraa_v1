@@ -8,7 +8,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { supabase, getErrorMessage } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { ProgressChart } from '@/components/ProgressChart';
-import { ConfettiCelebration } from '@/components/ConfettiCelebration';
+// ConfettiCelebration removido temporalmente - usa react-native-reanimated incompatible con Expo Go
+// const ConfettiCelebration = lazy(() => import('@/components/ConfettiCelebration').then(m => ({ default: m.ConfettiCelebration })).catch(() => ({ default: () => null })));
 import { ProjectManager } from '@/components/projects/ProjectManager';
 import * as Haptics from 'expo-haptics';
 import { generateEmotionalInsights } from '@/lib/emotionalInsights';
