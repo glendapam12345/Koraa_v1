@@ -1,46 +1,41 @@
-import { useMemo, useEffect } from 'react';
-import { useSharedValue, withTiming } from 'react-native-reanimated';
+import { useMemo, useRef, useEffect } from 'react';
+import { Animated } from 'react-native';
 import type { Task } from '@/components/tasks/TaskCard';
 
-interface UseProgressReturn {
-  incompleteTasks: Task[];
-  completedToday: number;
-  totalPriorityTasks: number;
-  progressPercentage: number;
-  progressWidth: ReturnType<typeof useSharedValue<number>>;
-}
+export function useProgress(tasks: Task[], loading: boolean) {
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
-export function useProgress(tasks: Task[], loading: boolean): UseProgressReturn {
-  const progressWidth = useSharedValue(0);
+  const incompleteTasks = useMemo(() => {
+    return tasks.filter((task) => !task.is_completed);
+  }, [tasks]);
 
-  const incompleteTasks = useMemo(
-    () => tasks.filter((t: Task) => !t.is_completed),
-    [tasks]
-  );
+  const completedToday = useMemo(() => {
+    return tasks.filter((task) => task.is_completed).length;
+  }, [tasks]);
 
-  const completedToday = useMemo(
-    () => tasks.filter((t: Task) => t.is_completed).length,
-    [tasks]
-  );
+  const totalPriorityTasks = useMemo(() => {
+    return tasks.filter((task) => task.is_priority && !task.is_completed).length;
+  }, [tasks]);
 
-  const totalPriorityTasks = useMemo(
-    () => incompleteTasks.length + completedToday,
-    [incompleteTasks.length, completedToday]
-  );
+  const progressPercentage = useMemo(() => {
+    if (tasks.length === 0) return 0;
+    return Math.round((completedToday / tasks.length) * 100);
+  }, [completedToday, tasks.length]);
 
-  const progressPercentage = useMemo(
-    () => totalPriorityTasks > 0 ? (completedToday / totalPriorityTasks) * 100 : 0,
-    [completedToday, totalPriorityTasks]
-  );
+  const progressWidth = useMemo(() => {
+    if (tasks.length === 0) return 0;
+    return (completedToday / tasks.length) * 100;
+  }, [completedToday, tasks.length]);
 
-  // Animar barra de progreso cuando cambia el porcentaje
   useEffect(() => {
-    if (!loading && totalPriorityTasks > 0) {
-      progressWidth.value = withTiming(progressPercentage, {
+    if (!loading && tasks.length > 0) {
+      Animated.timing(progressAnim, {
+        toValue: progressWidth,
         duration: 500,
-      });
+        useNativeDriver: false,
+      }).start();
     }
-  }, [tasks, loading, totalPriorityTasks, progressPercentage, progressWidth]);
+  }, [progressWidth, loading, tasks.length]);
 
   return {
     incompleteTasks,
