@@ -2,7 +2,7 @@
 // Usa ts-jest en lugar de jest-expo para evitar problemas de configuración
 module.exports = {
   preset: 'ts-jest',
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom', // Cambiado a jsdom para soportar AsyncStorage
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
