@@ -9,6 +9,8 @@ import { FlowIndicator } from '@/components/FlowIndicator';
 import { supabase, getErrorMessage, isNetworkError } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { detectCategory } from '@/lib/categoryDetection';
+import { ProjectSelector } from '@/components/projects/ProjectSelector';
+import { useAuth } from '@/contexts/AuthContext';
 import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic } from 'lucide-react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 
@@ -30,6 +32,8 @@ export default function VaciarScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [recentTaskSuggestions, setRecentTaskSuggestions] = useState<string[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const { user } = useAuth();
 
   // Pre-llenar input si hay sugerencia desde Tips
   useEffect(() => {
@@ -214,6 +218,7 @@ export default function VaciarScreen() {
           is_priority: isPriority,
           is_completed: false,
           parent_task_id: null,
+          project_id: selectedProjectId,
         })
         .select()
         .single();
@@ -230,6 +235,7 @@ export default function VaciarScreen() {
             is_priority: isPriority,
             is_completed: false,
             parent_task_id: null,
+            project_id: selectedProjectId,
           });
           
           // Guardar subtareas offline también si existen
@@ -243,6 +249,7 @@ export default function VaciarScreen() {
                 is_priority: false,
                 is_completed: false,
                 parent_task_id: mainTaskId, // Usar ID de la tarea principal
+                project_id: selectedProjectId, // Las subtareas heredan el proyecto de la tarea principal
               });
             }
           }
@@ -252,6 +259,7 @@ export default function VaciarScreen() {
           setIsPriority(false);
           setHasSubtasks(false);
           setSubtasks(['']);
+          setSelectedProjectId(null);
           
           showToast('Tarea guardada offline. Se sincronizará cuando haya conexión.', 'info');
           setIsSaving(false);
@@ -299,6 +307,7 @@ export default function VaciarScreen() {
       setIsPriority(false);
       setHasSubtasks(false);
       setSubtasks(['']);
+      setSelectedProjectId(null);
       
       // Recargar sugerencias después de agregar tarea
       await loadRecentTaskSuggestions();
@@ -496,6 +505,15 @@ export default function VaciarScreen() {
         )}
 
         {/* Categorías ahora son invisibles - se detectan automáticamente */}
+
+        {/* Selector de Proyecto */}
+        {user && (
+          <ProjectSelector
+            selectedProjectId={selectedProjectId}
+            onSelect={setSelectedProjectId}
+            userId={user.id}
+          />
+        )}
 
         <TouchableOpacity
           style={[

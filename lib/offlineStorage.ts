@@ -24,6 +24,7 @@ export interface PendingTask {
   is_priority: boolean;
   is_completed: boolean;
   parent_task_id: string | null;
+  project_id: string | null;
   timestamp: number;
 }
 
@@ -178,6 +179,7 @@ export async function syncPendingTasks(): Promise<void> {
             is_priority: task.is_priority,
             is_completed: task.is_completed,
             parent_task_id: null,
+            project_id: task.project_id || null,
           })
           .select('id')
           .single();

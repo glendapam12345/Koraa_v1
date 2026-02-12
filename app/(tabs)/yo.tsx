@@ -3,12 +3,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { router, useFocusEffect } from 'expo-router';
-import { LogOut, Settings, HelpCircle, Edit, X, Plus } from 'lucide-react-native';
+import { LogOut, Settings, HelpCircle, Edit, X, Plus, Folder } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase, getErrorMessage } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { ProgressChart } from '@/components/ProgressChart';
 import { ConfettiCelebration } from '@/components/ConfettiCelebration';
+import { ProjectManager } from '@/components/projects/ProjectManager';
 import * as Haptics from 'expo-haptics';
 import { generateEmotionalInsights } from '@/lib/emotionalInsights';
 
@@ -41,6 +42,7 @@ export default function ProfileScreen() {
   const [newInterest, setNewInterest] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [showProjects, setShowProjects] = useState(false);
 
   const loadProgressData = useCallback(async () => {
     if (!user) return;
@@ -547,6 +549,23 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
 
+          <TouchableOpacity 
+            style={styles.menuItem} 
+            activeOpacity={0.7}
+            onPress={() => setShowProjects(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Gestionar proyectos"
+            accessibilityHint="Abre el gestor de proyectos para crear y organizar tus proyectos"
+          >
+            <Folder size={24} color={THEME.colors.gradient.blue} />
+            <View style={styles.menuItemContent}>
+              <Text style={styles.menuItemText}>Gestionar proyectos</Text>
+              <Text style={styles.menuItemSubtext}>
+                Organiza tus tareas por proyectos
+              </Text>
+            </View>
+          </TouchableOpacity>
+
           <View style={styles.sectionDivider} />
 
           <Text style={styles.sectionTitle}>Configuración</Text>
@@ -850,6 +869,38 @@ export default function ProfileScreen() {
             </View>
           </View>
         </KeyboardAvoidingView>
+        </View>
+      </Modal>
+
+      {/* Modal de gestión de proyectos */}
+      <Modal
+        visible={showProjects}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowProjects(false)}
+      >
+        <View style={styles.projectsModalOverlay}>
+          <View style={styles.projectsModalContent}>
+            <View style={styles.projectsModalHeader}>
+              <Text style={styles.projectsModalTitle}>Mis Proyectos</Text>
+              <TouchableOpacity
+                onPress={() => setShowProjects(false)}
+                style={styles.projectsModalCloseButton}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar"
+              >
+                <X size={24} color={THEME.colors.text.main} />
+              </TouchableOpacity>
+            </View>
+            {user && (
+              <ProjectManager
+                userId={user.id}
+                onProjectSelect={() => {
+                  // Opcional: hacer algo cuando se selecciona un proyecto
+                }}
+              />
+            )}
+          </View>
         </View>
       </Modal>
     </View>
@@ -1226,5 +1277,33 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: THEME.spacing.md,
+  },
+  projectsModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  projectsModalContent: {
+    backgroundColor: THEME.colors.fill[100],
+    borderTopLeftRadius: THEME.borderRadius.rounded,
+    borderTopRightRadius: THEME.borderRadius.rounded,
+    maxHeight: '90%',
+    flex: 1,
+  },
+  projectsModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: THEME.spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.colors.fill[200],
+  },
+  projectsModalTitle: {
+    ...THEME.typography.h2,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  projectsModalCloseButton: {
+    padding: THEME.spacing.xs,
   },
 });

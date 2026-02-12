@@ -205,6 +205,22 @@ export default function FocusScreen() {
         // No bloquear el flujo si la priorización falla
       });
 
+      // Reorganizar tareas semanalmente automáticamente (no bloquear si falla)
+      (async () => {
+        try {
+          const { reorganizeWeeklyTasks } = await import('@/lib/weeklyReorganization');
+          const checkInData = {
+            energyLevel,
+            emotion: emotionCapitalized,
+            availableTime: time,
+            focusLevel: selectedFocus,
+          };
+          await reorganizeWeeklyTasks(user.id, checkInData);
+        } catch (error) {
+          logger.debug('Error en reorganización semanal (no crítico):', error);
+        }
+      })();
+
       // Limpiar timeout de seguridad
       clearTimeout(safetyTimeout);
 

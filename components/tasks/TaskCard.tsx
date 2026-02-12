@@ -9,6 +9,7 @@ export interface Task {
   category: string;
   is_completed: boolean;
   parent_task_id: string | null;
+  project_id?: string | null;
   subtasks?: Task[];
 }
 
