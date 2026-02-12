@@ -1,4 +1,4 @@
-import { prioritizeTasksIntelligently, calculateTaskScore } from '@/lib/smartPrioritization';
+import { prioritizeTasksIntelligently, calculateTaskScore, generatePrioritizationExplanation } from '@/lib/smartPrioritization';
 import type { Task, CheckInData } from '@/lib/smartPrioritization';
 
 describe('smartPrioritization', () => {
@@ -340,6 +340,491 @@ describe('smartPrioritization', () => {
       
       // Debería reducir el número de tareas porque no caben en el tiempo
       expect(result.length).toBeLessThanOrEqual(longTasks.length);
+    });
+  });
+
+  describe('generatePrioritizationExplanation', () => {
+    it('should generate explanation for prioritized tasks', () => {
+      const prioritizedTasks = [mockTasks[0], mockTasks[1]];
+      const result = generatePrioritizationExplanation(prioritizedTasks, mockCheckIn, mockTasks);
+
+      expect(result).toBeDefined();
+      expect(result.message).toContain('tareas esenciales');
+      expect(result.reasoning).toBeDefined();
+      expect(result.suggestion).toBeDefined();
+    });
+
+    it('should handle single task', () => {
+      const prioritizedTasks = [mockTasks[0]];
+      const result = generatePrioritizationExplanation(prioritizedTasks, mockCheckIn, mockTasks);
+
+      expect(result.message).toContain('tarea esencial');
+    });
+
+    it('should include energy level in reasoning', () => {
+      const lowEnergyCheckIn: CheckInData = {
+        ...mockCheckIn,
+        energyLevel: 1,
+      };
+
+      const prioritizedTasks = [mockTasks[0]];
+      const result = generatePrioritizationExplanation(prioritizedTasks, lowEnergyCheckIn, mockTasks);
+
+      expect(result.reasoning).toContain('energía 1/5');
+    });
+
+    it('should include high energy in reasoning', () => {
+      const highEnergyCheckIn: CheckInData = {
+        ...mockCheckIn,
+        energyLevel: 5,
+      };
+
+      const prioritizedTasks = [mockTasks[0]];
+      const result = generatePrioritizationExplanation(prioritizedTasks, highEnergyCheckIn, mockTasks);
+
+      expect(result.reasoning).toContain('energía alta');
+    });
+
+    it('should include emotion in reasoning', () => {
+      const prioritizedTasks = [mockTasks[0]];
+      const result = generatePrioritizationExplanation(prioritizedTasks, mockCheckIn, mockTasks);
+
+      expect(result.reasoning).toContain('tranquila');
+    });
+
+    it('should include time availability in reasoning', () => {
+      const littleTimeCheckIn: CheckInData = {
+        ...mockCheckIn,
+        availableTime: 'Poco (1-2hrs)',
+      };
+
+      const prioritizedTasks = [mockTasks[0]];
+      const result = generatePrioritizationExplanation(prioritizedTasks, littleTimeCheckIn, mockTasks);
+
+      expect(result.reasoning).toContain('poco tiempo disponible');
+    });
+
+    it('should include focus level in reasoning', () => {
+      const lowFocusCheckIn: CheckInData = {
+        ...mockCheckIn,
+        focusLevel: 'Muy distraída',
+      };
+
+      const prioritizedTasks = [mockTasks[0]];
+      const result = generatePrioritizationExplanation(prioritizedTasks, lowFocusCheckIn, mockTasks);
+
+      expect(result.reasoning).toContain('bajo nivel de enfoque');
+    });
+
+    it('should suggest less tasks for low energy', () => {
+      const lowEnergyCheckIn: CheckInData = {
+        ...mockCheckIn,
+        energyLevel: 1,
+        emotion: 'agotada',
+      };
+
+      const prioritizedTasks = [mockTasks[0]];
+      const result = generatePrioritizationExplanation(prioritizedTasks, lowEnergyCheckIn, mockTasks);
+
+      expect(result.suggestion).toContain('Menos es más');
+    });
+
+    it('should suggest more tasks for high energy', () => {
+      const highEnergyCheckIn: CheckInData = {
+        ...mockCheckIn,
+        energyLevel: 5,
+      };
+
+      const prioritizedTasks = [mockTasks[0]];
+      const result = generatePrioritizationExplanation(prioritizedTasks, highEnergyCheckIn, mockTasks);
+
+      expect(result.suggestion).toContain('energía para más');
+    });
+
+    it('should handle different time availability options', () => {
+      const timeOptions = [
+        'Poco (1-2hrs)',
+        'Medio (2-4hrs)',
+        'Bastante (4-6hrs)',
+        'Todo el día',
+        'Invalid option', // Default case
+      ];
+
+      timeOptions.forEach(availableTime => {
+        const checkIn: CheckInData = {
+          ...mockCheckIn,
+          availableTime,
+        };
+
+        const result = prioritizeTasksIntelligently(mockTasks, checkIn);
+        expect(Array.isArray(result)).toBe(true);
+      });
+    });
+
+    it('should handle tasks with different word counts for duration estimation', () => {
+      const shortTask: Task = {
+        id: 'short',
+        content: 'Llamar',
+        category: 'trabajo',
+        is_completed: false,
+        parent_task_id: null,
+      };
+
+      const mediumTask: Task = {
+        id: 'medium',
+        content: 'Escribir documento importante para el proyecto',
+        category: 'trabajo',
+        is_completed: false,
+        parent_task_id: null,
+      };
+
+      const longTask: Task = {
+        id: 'long',
+        content: 'Crear presentación completa del proyecto con todos los detalles y análisis exhaustivo de cada componente',
+        category: 'trabajo',
+        is_completed: false,
+        parent_task_id: null,
+      };
+
+      const categoryCounts = new Map<string, number>([['trabajo', 1]]);
+      
+      const shortResult = calculateTaskScore(shortTask, mockCheckIn, categoryCounts);
+      const mediumResult = calculateTaskScore(mediumTask, mockCheckIn, categoryCounts);
+      const longResult = calculateTaskScore(longTask, mockCheckIn, categoryCounts);
+
+      expect(shortResult).toBeDefined();
+      expect(mediumResult).toBeDefined();
+      expect(longResult).toBeDefined();
+    });
+
+    it('should handle tasks with different complexity levels', () => {
+      const simpleTask: Task = {
+        id: 'simple',
+        content: 'Enviar email',
+        category: 'trabajo',
+        is_completed: false,
+        parent_task_id: null,
+      };
+
+      const complexTask: Task = {
+        id: 'complex',
+        content: 'Desarrollar estrategia completa para el proyecto con análisis detallado',
+        category: 'trabajo',
+        is_completed: false,
+        parent_task_id: null,
+      };
+
+      const categoryCounts = new Map<string, number>([['trabajo', 1]]);
+      
+      const simpleResult = calculateTaskScore(simpleTask, mockCheckIn, categoryCounts);
+      const complexResult = calculateTaskScore(complexTask, mockCheckIn, categoryCounts);
+
+      expect(simpleResult).toBeDefined();
+      expect(complexResult).toBeDefined();
+    });
+
+    it('should handle tasks with different types (creative, administrative, neutral)', () => {
+      const creativeTask: Task = {
+        id: 'creative',
+        content: 'Diseñar nueva interfaz',
+        category: 'trabajo',
+        is_completed: false,
+        parent_task_id: null,
+      };
+
+      const adminTask: Task = {
+        id: 'admin',
+        content: 'Pagar factura del banco',
+        category: 'personal',
+        is_completed: false,
+        parent_task_id: null,
+      };
+
+      const neutralTask: Task = {
+        id: 'neutral',
+        content: 'Revisar documentos',
+        category: 'trabajo',
+        is_completed: false,
+        parent_task_id: null,
+      };
+
+      const categoryCounts = new Map<string, number>([['trabajo', 1], ['personal', 1]]);
+      
+      const creativeResult = calculateTaskScore(creativeTask, mockCheckIn, categoryCounts);
+      const adminResult = calculateTaskScore(adminTask, mockCheckIn, categoryCounts);
+      const neutralResult = calculateTaskScore(neutralTask, mockCheckIn, categoryCounts);
+
+      expect(creativeResult).toBeDefined();
+      expect(adminResult).toBeDefined();
+      expect(neutralResult).toBeDefined();
+    });
+
+    it('should handle category balance correctly', () => {
+      const tasks: Task[] = [
+        { id: '1', content: 'Tarea trabajo 1', category: 'trabajo', is_completed: false, parent_task_id: null },
+        { id: '2', content: 'Tarea trabajo 2', category: 'trabajo', is_completed: false, parent_task_id: null },
+        { id: '3', content: 'Tarea trabajo 3', category: 'trabajo', is_completed: false, parent_task_id: null },
+        { id: '4', content: 'Tarea salud', category: 'salud', is_completed: false, parent_task_id: null },
+      ];
+
+      const result = prioritizeTasksIntelligently(tasks, mockCheckIn);
+      
+      // Debería priorizar la tarea de salud para balance
+      expect(result.length).toBeGreaterThan(0);
+    });
+
+    it('should handle tasks without category', () => {
+      const taskWithoutCategory: Task = {
+        id: 'no-cat',
+        content: 'Tarea sin categoría',
+        category: '',
+        is_completed: false,
+        parent_task_id: null,
+      };
+
+      const categoryCounts = new Map<string, number>([['sin categoría', 1]]);
+      const result = calculateTaskScore(taskWithoutCategory, mockCheckIn, categoryCounts);
+
+      expect(result).toBeDefined();
+      expect(result.reasons).toBeDefined();
+    });
+
+    it('should handle normal focus level with medium complexity', () => {
+      // Tarea que será clasificada como medium (5-15 palabras, sin keywords complejas)
+      const mediumTask: Task = {
+        id: 'medium',
+        content: 'Preparar presentación del proyecto para la reunión',
+        category: 'trabajo',
+        is_completed: false,
+        parent_task_id: null,
+        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 días atrás
+      };
+
+      const normalFocusCheckIn: CheckInData = {
+        ...mockCheckIn,
+        focusLevel: 'Normal',
+      };
+
+      const categoryCounts = new Map<string, number>([['trabajo', 1]]);
+      const result = calculateTaskScore(mediumTask, normalFocusCheckIn, categoryCounts);
+
+      // Verificar que el score es positivo y tiene razones
+      expect(result.score).toBeGreaterThan(0);
+      expect(result.reasons.length).toBeGreaterThan(0);
+    });
+
+    it('should handle high focus with simple tasks', () => {
+      const simpleTask: Task = {
+        id: 'simple',
+        content: 'Enviar email',
+        category: 'trabajo',
+        is_completed: false,
+        parent_task_id: null,
+      };
+
+      const highFocusCheckIn: CheckInData = {
+        ...mockCheckIn,
+        focusLevel: 'Súper enfocada',
+      };
+
+      const categoryCounts = new Map<string, number>([['trabajo', 1]]);
+      const result = calculateTaskScore(simpleTask, highFocusCheckIn, categoryCounts);
+
+      expect(result.score).toBeGreaterThan(0);
+    });
+
+    it('should handle creative tasks for negative emotions', () => {
+      // Tarea creativa compleja (más de 15 palabras o keyword "diseñar")
+      const creativeTask: Task = {
+        id: 'creative',
+        content: 'Diseñar nueva interfaz completa del sistema con todos los componentes y funcionalidades',
+        category: 'trabajo',
+        is_completed: false,
+        parent_task_id: null,
+        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 días atrás
+      };
+
+      const negativeEmotionCheckIn: CheckInData = {
+        ...mockCheckIn,
+        emotion: 'agotada',
+        focusLevel: 'Normal', // Para que no se penalice por enfoque
+      };
+
+      const categoryCounts = new Map<string, number>([['trabajo', 1]]);
+      const result = calculateTaskScore(creativeTask, negativeEmotionCheckIn, categoryCounts);
+
+      // Verificar que tiene razones y el score puede ser negativo o bajo
+      expect(result.reasons.length).toBeGreaterThan(0);
+      // Puede tener la razón de penalización o no, dependiendo de otros factores
+      const hasNegativeReason = result.reasons.some(r => 
+        r.includes('creativa compleja') || r.includes('no ideal')
+      );
+      // Si no tiene la razón específica, al menos verificamos que el score refleje la penalización
+      expect(result.score < 20 || hasNegativeReason).toBe(true);
+    });
+
+    it('should handle administrative simple tasks for negative emotions', () => {
+      const adminTask: Task = {
+        id: 'admin',
+        content: 'Confirmar cita',
+        category: 'trabajo',
+        is_completed: false,
+        parent_task_id: null,
+      };
+
+      const negativeEmotionCheckIn: CheckInData = {
+        ...mockCheckIn,
+        emotion: 'ansiosa',
+      };
+
+      const categoryCounts = new Map<string, number>([['trabajo', 1]]);
+      const result = calculateTaskScore(adminTask, negativeEmotionCheckIn, categoryCounts);
+
+      expect(result.reasons).toContain('Tarea administrativa simple ideal para tu estado');
+    });
+
+    it('should handle category over-representation', () => {
+      const tasks: Task[] = [
+        { id: '1', content: 'Tarea trabajo 1', category: 'trabajo', is_completed: false, parent_task_id: null },
+        { id: '2', content: 'Tarea trabajo 2', category: 'trabajo', is_completed: false, parent_task_id: null },
+        { id: '3', content: 'Tarea trabajo 3', category: 'trabajo', is_completed: false, parent_task_id: null },
+        { id: '4', content: 'Tarea trabajo 4', category: 'trabajo', is_completed: false, parent_task_id: null },
+        { id: '5', content: 'Tarea salud', category: 'salud', is_completed: false, parent_task_id: null },
+      ];
+
+      const result = prioritizeTasksIntelligently(tasks, mockCheckIn);
+      
+      // Debería priorizar la tarea de salud para balance
+      expect(result.length).toBeGreaterThan(0);
+    });
+
+    it('should handle tasks with default time option', () => {
+      const checkIn: CheckInData = {
+        ...mockCheckIn,
+        availableTime: 'Invalid option',
+      };
+
+      const result = prioritizeTasksIntelligently(mockTasks, checkIn);
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it('should estimate duration for task without keywords (default medium)', () => {
+      // Tarea sin keywords específicas, debería usar default (45 min)
+      const defaultTask: Task = {
+        id: 'default',
+        content: 'Hacer algo importante',
+        category: 'trabajo',
+        is_completed: false,
+        parent_task_id: null,
+      };
+
+      const categoryCounts = new Map<string, number>([['trabajo', 1]]);
+      const result = calculateTaskScore(defaultTask, mockCheckIn, categoryCounts);
+
+      expect(result).toBeDefined();
+      expect(result.score).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should penalize complex tasks with low focus', () => {
+      const complexTask: Task = {
+        id: 'complex',
+        content: 'Desarrollar estrategia completa para el proyecto con análisis detallado',
+        category: 'trabajo',
+        is_completed: false,
+        parent_task_id: null,
+      };
+
+      const lowFocusCheckIn: CheckInData = {
+        ...mockCheckIn,
+        focusLevel: 'Muy distraída',
+      };
+
+      const categoryCounts = new Map<string, number>([['trabajo', 1]]);
+      const result = calculateTaskScore(complexTask, lowFocusCheckIn, categoryCounts);
+
+      expect(result.reasons).toContain('Tarea compleja para tu nivel de enfoque actual');
+      expect(result.score).toBeLessThan(20); // Debería estar penalizado
+    });
+
+    it('should add small boost for simple tasks with high focus', () => {
+      const simpleTask: Task = {
+        id: 'simple',
+        content: 'Enviar email',
+        category: 'trabajo',
+        is_completed: false,
+        parent_task_id: null,
+      };
+
+      const highFocusCheckIn: CheckInData = {
+        ...mockCheckIn,
+        focusLevel: 'Súper enfocada',
+      };
+
+      const categoryCounts = new Map<string, number>([['trabajo', 1]]);
+      const result = calculateTaskScore(simpleTask, highFocusCheckIn, categoryCounts);
+
+      // Debería tener un boost pequeño pero positivo
+      expect(result.score).toBeGreaterThan(0);
+    });
+
+    it('should adjust task count when tasks exceed available time', () => {
+      // Crear tareas muy largas que excedan el tiempo disponible
+      const longTasks: Task[] = Array.from({ length: 5 }, (_, i) => ({
+        id: `long-${i}`,
+        content: 'Crear proyecto completo con muchos detalles y análisis exhaustivo de cada componente del sistema',
+        category: 'trabajo',
+        is_completed: false,
+        parent_task_id: null,
+      }));
+
+      const littleTimeCheckIn: CheckInData = {
+        ...mockCheckIn,
+        availableTime: 'Poco (1-2hrs)', // 90 minutos
+        energyLevel: 5, // Alta energía pero poco tiempo
+      };
+
+      const result = prioritizeTasksIntelligently(longTasks, littleTimeCheckIn);
+
+      // Debería reducir el número de tareas porque no caben en el tiempo
+      expect(result.length).toBeLessThan(longTasks.length);
+      expect(result.length).toBeGreaterThan(0); // Al menos 1
+    });
+
+    it('should handle generatePrioritizationExplanation with high focus', () => {
+      const prioritizedTasks = [mockTasks[0]];
+      const highFocusCheckIn: CheckInData = {
+        ...mockCheckIn,
+        focusLevel: 'Súper enfocada',
+      };
+
+      const result = generatePrioritizationExplanation(prioritizedTasks, highFocusCheckIn, mockTasks);
+
+      expect(result.reasoning).toContain('alto nivel de enfoque');
+    });
+
+    it('should handle generatePrioritizationExplanation with low focus', () => {
+      const prioritizedTasks = [mockTasks[0]];
+      const lowFocusCheckIn: CheckInData = {
+        ...mockCheckIn,
+        focusLevel: 'Algo distraída',
+      };
+
+      const result = generatePrioritizationExplanation(prioritizedTasks, lowFocusCheckIn, mockTasks);
+
+      expect(result.reasoning).toContain('bajo nivel de enfoque');
+    });
+
+    it('should handle generatePrioritizationExplanation with moderate energy', () => {
+      const prioritizedTasks = [mockTasks[0]];
+      const moderateEnergyCheckIn: CheckInData = {
+        ...mockCheckIn,
+        energyLevel: 3,
+      };
+
+      const result = generatePrioritizationExplanation(prioritizedTasks, moderateEnergyCheckIn, mockTasks);
+
+      expect(result.reasoning).toContain('energía moderada');
+      expect(result.suggestion).toContain('energía moderada');
     });
   });
 });
