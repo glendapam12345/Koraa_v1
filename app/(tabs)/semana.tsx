@@ -648,7 +648,13 @@ export default function SemanaScreen() {
                   <Text style={styles.modalLabel}>Proyecto (opcional)</Text>
                   <ProjectSelector
                     selectedProjectId={selectedProjectId}
-                    onSelect={setSelectedProjectId}
+                    onSelect={(projectId) => {
+                      setSelectedProjectId(projectId);
+                      // Recargar proyectos cuando se selecciona uno nuevo (puede haber sido creado)
+                      loadData().catch((error) => {
+                        logger.error('Error reloading projects after selection:', error);
+                      });
+                    }}
                     userId={user.id}
                   />
                 </>
