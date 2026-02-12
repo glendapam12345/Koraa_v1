@@ -18,8 +18,10 @@ import { useProgress } from '@/hooks/useProgress';
 import { supabase, getErrorMessage } from '@/lib/supabase';
 import { detectCategory } from '@/lib/categoryDetection';
 import { generatePrioritizationExplanation } from '@/lib/smartPrioritization';
+import { generatePersonalizedRecommendations } from '@/lib/personalizedRecommendations';
 import { logger } from '@/lib/logger';
 import { Sparkles, Plus, Flame, Sunrise, Moon } from 'lucide-react-native';
+import { NoPendingTasksCelebration } from '@/components/NoPendingTasksCelebration';
 import { router } from 'expo-router';
 import { lazy, Suspense } from 'react';
 import { ActivityIndicator, View as ViewRN } from 'react-native';
@@ -49,6 +51,15 @@ export default function TodayScreen() {
   const [meditationType, setMeditationType] = useState<'morning' | 'evening'>('morning');
   const [morningMeditationDone, setMorningMeditationDone] = useState(false);
   const [eveningMeditationDone, setEveningMeditationDone] = useState(false);
+  const [userProfile, setUserProfile] = useState<{
+    interests?: string[];
+    favorite_activities?: string[];
+    age?: number;
+  } | null>(null);
+  const [restRecommendation, setRestRecommendation] = useState<{
+    message: string;
+    emoji: string;
+  } | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backgroundLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -227,6 +238,69 @@ export default function TodayScreen() {
 
   // loadTasks ahora viene del hook useTasks
 
+  // Cargar perfil del usuario para recomendaciones
+  const loadUserProfile = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('interests, favorite_activities, age')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        logger.debug('Error cargando perfil para recomendaciones:', error);
+        return;
+      }
+
+      if (data) {
+        setUserProfile({
+          interests: data.interests || [],
+          favorite_activities: data.favorite_activities || [],
+          age: data.age || undefined,
+        });
+      }
+    } catch (error) {
+      logger.debug('Error cargando perfil:', error);
+    }
+  }, []);
+
+  // Generar recomendación cuando no hay pendientes
+  useEffect(() => {
+    const hasCompletedAllTasks = incompleteTasks.length === 0 && tasks.length > 0 && completedToday > 0;
+    
+    if (hasCompletedAllTasks && todayMood && userProfile) {
+      // Generar recomendación basada en intereses y estado actual
+      const checkInContext = {
+        emotion: todayMood,
+        energyLevel: energyLevel || 3,
+        availableTime: time || 'Medio (2-4hrs)',
+        focusLevel: focusLevel || 'Normal',
+      };
+
+      const recommendations = generatePersonalizedRecommendations(userProfile, checkInContext);
+      
+      if (recommendations.length > 0) {
+        // Tomar la primera recomendación (la más relevante)
+        const topRecommendation = recommendations[0];
+        setRestRecommendation({
+          message: topRecommendation.message,
+          emoji: topRecommendation.emoji,
+        });
+      } else {
+        // Recomendación genérica si no hay recomendaciones personalizadas
+        setRestRecommendation({
+          message: 'Es un buen momento para descansar y recargar energías.',
+          emoji: '😌',
+        });
+      }
+    } else if (!hasCompletedAllTasks) {
+      setRestRecommendation(null);
+    }
+  }, [incompleteTasks.length, tasks.length, completedToday, todayMood, userProfile, energyLevel, time, focusLevel]);
+
   const loadPrioritizationMetadata = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -259,6 +333,7 @@ export default function TodayScreen() {
     loadStreak();
     loadMeditations();
     loadPrioritizationMetadata();
+    loadUserProfile();
 
     // Intentar sincronizar datos offline al cargar
     (async () => {
@@ -286,7 +361,7 @@ export default function TodayScreen() {
         backgroundLoadTimeoutRef.current = null;
       }
     };
-  }, [loadTasks, loadTodayCheckIn, loadStreak, loadMeditations, loadPrioritizationMetadata]);
+  }, [loadTasks, loadTodayCheckIn, loadStreak, loadMeditations, loadPrioritizationMetadata, loadUserProfile]);
 
   // Verificar si mostrar tooltip después de cargar datos
   useEffect(() => {
@@ -768,6 +843,15 @@ export default function TodayScreen() {
               progressWidth={progressWidth}
             />
           )}
+
+          {/* Celebración cuando no hay pendientes */}
+          {!loading &&
+            todayMood &&
+            incompleteTasks.length === 0 &&
+            tasks.length > 0 &&
+            completedToday > 0 && (
+              <NoPendingTasksCelebration recommendation={restRecommendation || undefined} />
+            )}
         </View>
 
         <View style={styles.tasksContainer}>
