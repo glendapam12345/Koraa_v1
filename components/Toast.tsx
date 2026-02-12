@@ -1,14 +1,11 @@
 import { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withDelay,
-  runOnJS,
-} from 'react-native-reanimated';
+import { View, Text, StyleSheet, Animated as RNAnimated } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { CheckCircle, AlertCircle, Info } from 'lucide-react-native';
+import Constants from 'expo-constants';
+
+// Detectar si estamos en Expo Go
+const isExpoGo = Constants.executionEnvironment === 'storeClient';
 
 interface ToastProps {
   message: string;
@@ -18,37 +15,45 @@ interface ToastProps {
 }
 
 export function Toast({ message, type = 'success', duration = 3000, onHide }: ToastProps) {
-  const translateY = useSharedValue(-100);
-  const opacity = useSharedValue(0);
+  const opacity = RNAnimated.useRef(new RNAnimated.Value(0)).current;
+  const translateY = RNAnimated.useRef(new RNAnimated.Value(-50)).current;
 
   useEffect(() => {
     // Animación de entrada
-    translateY.value = withSpring(0, {
-      damping: 15,
-      stiffness: 150,
-    });
-    opacity.value = withSpring(1);
+    RNAnimated.parallel([
+      RNAnimated.timing(opacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      RNAnimated.spring(translateY, {
+        toValue: 0,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-    // Animación de salida después del duration
-    const hideTimer = setTimeout(() => {
-      translateY.value = withSpring(-100, {
-        damping: 15,
-        stiffness: 150,
-      });
-      opacity.value = withSpring(0, {}, (finished) => {
-        if (finished && onHide) {
-          runOnJS(onHide)();
-        }
+    // Auto-ocultar después de la duración
+    const timer = setTimeout(() => {
+      RNAnimated.parallel([
+        RNAnimated.timing(opacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        RNAnimated.timing(translateY, {
+          toValue: -50,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        onHide?.();
       });
     }, duration);
 
-    return () => clearTimeout(hideTimer);
-  }, []);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-    opacity: opacity.value,
-  }));
+    return () => clearTimeout(timer);
+  }, [duration, onHide]);
 
   const getIcon = () => {
     switch (type) {
@@ -58,52 +63,63 @@ export function Toast({ message, type = 'success', duration = 3000, onHide }: To
         return <AlertCircle size={20} color="#FFFFFF" />;
       case 'info':
         return <Info size={20} color="#FFFFFF" />;
+      default:
+        return <CheckCircle size={20} color="#FFFFFF" />;
     }
   };
 
   const getBackgroundColor = () => {
     switch (type) {
       case 'success':
-        return '#10B981';
+        return THEME.colors.gradient.blue;
       case 'error':
-        return '#EF4444';
+        return '#FF6B6B';
       case 'info':
+        return THEME.colors.gradient.pink;
+      default:
         return THEME.colors.gradient.blue;
     }
   };
 
   return (
-    <Animated.View
+    <RNAnimated.View
       style={[
         styles.container,
-        { backgroundColor: getBackgroundColor() },
-        animatedStyle,
+        {
+          opacity,
+          transform: [{ translateY }],
+          backgroundColor: getBackgroundColor(),
+        },
       ]}
     >
-      {getIcon()}
-      <Text style={styles.message}>{message}</Text>
-    </Animated.View>
+      <View style={styles.content}>
+        {getIcon()}
+        <Text style={styles.message}>{message}</Text>
+      </View>
+    </RNAnimated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: THEME.spacing.xl * 2,
-    left: THEME.spacing.md,
-    right: THEME.spacing.md,
+    top: 60,
+    left: THEME.spacing.lg,
+    right: THEME.spacing.lg,
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    ...THEME.shadows.soft,
+    zIndex: 9999,
+  },
+  content: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.rounded,
-    ...THEME.shadows.soft,
-    zIndex: 1000,
+    gap: THEME.spacing.sm,
   },
   message: {
     ...THEME.typography.body,
     color: '#FFFFFF',
     flex: 1,
-    marginLeft: THEME.spacing.sm,
     fontFamily: THEME.fonts.heading.medium,
   },
 });
