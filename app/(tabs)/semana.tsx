@@ -33,11 +33,13 @@ export default function SemanaScreen() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (showLoading = false) => {
     if (!user) return;
 
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
 
       // Load projects
       const { data: projectsData } = await supabase
