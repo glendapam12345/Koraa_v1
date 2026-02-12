@@ -2141,6 +2141,7 @@ const styles = StyleSheet.create({
   },
   meditationButton: {
     flex: 1,
+    minHeight: 120,
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
     ...THEME.shadows.soft,
@@ -2149,7 +2150,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   meditationButtonGradient: {
-    flex: 1,
+    width: '100%',
+    height: '100%',
     padding: THEME.spacing.md,
     alignItems: 'center',
     gap: THEME.spacing.xs,
