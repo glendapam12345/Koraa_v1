@@ -101,6 +101,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
         setSelectedColor(PROJECT_COLORS[0]);
         setPriority(5);
         setShowCreateModal(false);
+        setIsCreating(false);
       }
     } catch (error) {
       logger.error('Error creating project:', error);
