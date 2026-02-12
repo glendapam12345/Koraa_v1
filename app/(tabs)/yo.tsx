@@ -435,8 +435,8 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Confetti celebración */}
-      {showConfetti && <ConfettiCelebration />}
+      {/* Confetti celebración - Deshabilitado temporalmente por incompatibilidad con Expo Go */}
+      {/* {showConfetti && <ConfettiCelebration />} */}
 
       <ScrollView 
         contentContainerStyle={styles.content} 
