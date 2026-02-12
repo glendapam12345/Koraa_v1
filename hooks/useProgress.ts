@@ -14,7 +14,7 @@ export function useProgress(tasks: Task[], loading: boolean) {
   }, [tasks]);
 
   const totalPriorityTasks = useMemo(() => {
-    return tasks.filter((task) => task.is_priority && !task.is_completed).length;
+    return tasks.filter((task) => task.is_priority === true && !task.is_completed).length;
   }, [tasks]);
 
   const progressPercentage = useMemo(() => {

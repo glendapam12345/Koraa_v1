@@ -8,6 +8,7 @@ export interface Task {
   content: string;
   category: string;
   is_completed: boolean;
+  is_priority?: boolean;
   parent_task_id: string | null;
   project_id?: string | null;
   subtasks?: Task[];

@@ -31,19 +31,19 @@ import { QuickOnboardingModal } from '@/components/onboarding/QuickOnboardingMod
 // Lazy loading para componentes pesados que no se usan inmediatamente
 const TaskEditModal = lazy(() => 
   import('@/components/tasks/TaskEditModal').then(module => ({ default: module.TaskEditModal }))
-    .catch(() => ({ default: () => null }))
+    .catch(() => ({ default: () => null as any }))
 );
 const ConfettiCelebration = lazy(() => 
   import('@/components/ConfettiCelebration').then(module => ({ default: module.ConfettiCelebration }))
-    .catch(() => ({ default: () => null }))
+    .catch(() => ({ default: () => null as any }))
 );
 const MeditationCircle = lazy(() => 
   import('@/components/MeditationCircle').then(module => ({ default: module.MeditationCircle }))
-    .catch(() => ({ default: () => null }))
+    .catch(() => ({ default: () => null as any }))
 );
 const QuickCheckInModal = lazy(() => 
   import('@/components/QuickCheckInModal').then(module => ({ default: module.QuickCheckInModal }))
-    .catch(() => ({ default: () => null }))
+    .catch(() => ({ default: () => null as any }))
 );
 
 export default function TodayScreen() {

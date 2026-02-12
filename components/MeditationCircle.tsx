@@ -23,6 +23,8 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
   
   const scale = useRef(new Animated.Value(1)).current;
   const breatheScale = useRef(new Animated.Value(1)).current;
+  const combinedScale = useRef(new Animated.Value(1)).current;
+  const combinedScale = useRef(new Animated.Value(1)).current;
 
   const CIRCLE_SIZE = 280;
   const STROKE_WIDTH = 12;
@@ -38,12 +40,23 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
       setProgress(0);
       scale.setValue(1);
       breatheScale.setValue(1);
+      combinedScale.setValue(1);
       setIsActive(false);
       setBreathPhase('inhale');
       setCycleCount(0);
       setSecondsRemaining(4);
     }
   }, [visible]);
+
+  // Sincronizar combinedScale con breatheScale
+  useEffect(() => {
+    const listener = breatheScale.addListener(({ value }) => {
+      combinedScale.setValue(value);
+    });
+    return () => {
+      breatheScale.removeListener(listener);
+    };
+  }, []);
 
   // Contador de segundos
   useEffect(() => {
@@ -78,17 +91,14 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
-    // Animar progreso de 0 a 1
-    const progressAnim = Animated.timing(
-      new Animated.Value(0),
-      {
-        toValue: 1,
-        duration: INHALE_DURATION,
-        useNativeDriver: false, // progress no soporta useNativeDriver
-      }
-    );
-
-    progressAnim.start(({ finished }) => {
+    // Animar progreso usando estado
+    const progressAnim = new Animated.Value(0);
+    
+    Animated.timing(progressAnim, {
+      toValue: 1,
+      duration: INHALE_DURATION,
+      useNativeDriver: false,
+    }).start(({ finished }) => {
       if (!finished) return;
 
       // Actualizar estado de progreso
@@ -108,16 +118,12 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
 
-        const exhaleAnim = Animated.timing(
-          new Animated.Value(1),
-          {
-            toValue: 0,
-            duration: EXHALE_DURATION,
-            useNativeDriver: false,
-          }
-        );
-
-        exhaleAnim.start(({ finished }) => {
+        const exhaleAnim = new Animated.Value(1);
+        Animated.timing(exhaleAnim, {
+          toValue: 0,
+          duration: EXHALE_DURATION,
+          useNativeDriver: false,
+        }).start(({ finished }) => {
           if (!finished) return;
 
           setProgress(0);
@@ -267,7 +273,7 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
                 style={[
                   styles.logoContainer,
                   {
-                    transform: [{ scale: Animated.multiply(scale, breatheScale) }],
+                    transform: [{ scale: combinedScale }],
                   },
                 ]}
               >

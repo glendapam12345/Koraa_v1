@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   },
   legendNote: {
     ...THEME.typography.small,
-    color: THEME.colors.text.tertiary,
+    color: THEME.colors.text.secondary,
     fontStyle: 'italic',
     fontSize: 10,
     marginTop: THEME.spacing.xs,
