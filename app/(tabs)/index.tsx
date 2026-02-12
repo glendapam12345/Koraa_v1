@@ -62,6 +62,8 @@ export default function TodayScreen() {
   };
 
   // Hooks personalizados
+  const { user } = useAuth();
+
   const {
     todayMood,
     energy,

@@ -366,8 +366,7 @@ export default function SemanaScreen() {
                 )}
               </View>
             );
-          })}
-          </>
+          })
         )}
 
         {/* Reorganize Button */}

@@ -25,6 +25,7 @@ export interface PendingTask {
   is_completed: boolean;
   parent_task_id: string | null;
   project_id: string | null;
+  scheduled_date?: string | null;
   timestamp: number;
 }
 

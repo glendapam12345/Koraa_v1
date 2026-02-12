@@ -188,29 +188,6 @@ export function ProjectManager({ userId, onProjectSelect }: ProjectManagerProps)
                   [
                     { text: 'Cancelar', style: 'cancel' },
                     {
-                      text: 'Cambiar prioridad',
-                      onPress: () => {
-                        Alert.prompt(
-                          'Prioridad',
-                          'Ingresa un número del 1 al 10 (mayor = más prioridad)',
-                          [
-                            { text: 'Cancelar', style: 'cancel' },
-                            {
-                              text: 'Guardar',
-                              onPress: (value) => {
-                                const priority = parseInt(value || '5', 10);
-                                if (priority >= 1 && priority <= 10) {
-                                  handleUpdatePriority(project.id, priority);
-                                }
-                              },
-                            },
-                          ],
-                          'numeric',
-                          project.priority.toString()
-                        );
-                      },
-                    },
-                    {
                       text: 'Eliminar',
                       style: 'destructive',
                       onPress: () => handleDelete(project.id),

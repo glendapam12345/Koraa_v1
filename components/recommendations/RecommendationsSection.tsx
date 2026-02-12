@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger';
 import { X, Sparkles } from 'lucide-react-native';
 
 // Mapeo de categorías a emojis/ilustraciones
-const CATEGORY_ILLUSTRATIONS: Record<string, { emoji: string; gradient: string[]; title: string }> = {
+const CATEGORY_ILLUSTRATIONS: Record<string, { emoji: string; gradient: [string, string, ...string[]]; title: string }> = {
   'salud mental': {
     emoji: '🧘',
     gradient: [THEME.colors.gradient.blue, THEME.colors.gradient.pink],
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
-    ...THEME.shadows.medium,
+    ...THEME.shadows.soft,
   },
   cardGradient: {
     flex: 1,
