@@ -28,11 +28,11 @@ interface SupabaseError {
 // Helper para detectar errores de conexión
 export const isNetworkError = (error: unknown): boolean => {
   if (!error || typeof error !== 'object') return false;
-  
+
   const err = error as SupabaseError;
   const errorMessage = err.message?.toLowerCase() || '';
-  const errorCode = err.code?.toLowerCase() || '';
-  
+  const errorCode = typeof err.code === 'string' ? err.code.toLowerCase() : String(err.code || '').toLowerCase();
+
   return (
     errorMessage.includes('network') ||
     errorMessage.includes('fetch') ||

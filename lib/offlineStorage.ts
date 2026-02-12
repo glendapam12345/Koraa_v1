@@ -241,11 +241,19 @@ export async function syncPendingTasks(): Promise<void> {
 
 // Sincronizar todo
 export async function syncAll(): Promise<void> {
-  await Promise.all([
-    syncPendingCheckIns(),
-    syncPendingTasks(),
-  ]);
-  await AsyncStorage.setItem(STORAGE_KEYS.LAST_SYNC, Date.now().toString());
+  try {
+    await Promise.all([
+      syncPendingCheckIns(),
+      syncPendingTasks(),
+    ]);
+    await AsyncStorage.setItem(STORAGE_KEYS.LAST_SYNC, Date.now().toString());
+  } catch (error: unknown) {
+    // Ignorar errores de AbortError (componente desmontado)
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {
+      return;
+    }
+    console.error('Error en sincronización:', error);
+  }
 }
 
 // Verificar conexión de red (versión simple sin NetInfo)
