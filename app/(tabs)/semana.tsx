@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { detectCategory } from '@/lib/categoryDetection';
 import { isNetworkError, getErrorMessage } from '@/lib/supabase';
+import { Toast } from '@/components/Toast';
 
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const DAY_NAMES_FULL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -32,6 +33,15 @@ export default function SemanaScreen() {
   const [taskContent, setTaskContent] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Estados para Toast
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
+  
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+  };
 
   const loadData = useCallback(async (showLoading = false) => {
     if (!user) return;
@@ -114,6 +124,14 @@ export default function SemanaScreen() {
       setDistribution(weeklyData);
     } catch (error) {
       logger.error('Error loading weekly data:', error);
+      // Mostrar error al usuario solo si no es la carga inicial
+      if (!showLoading) {
+        if (isNetworkError(error)) {
+          showToast('Error de conexión al cargar datos', 'error');
+        } else {
+          showToast('Error al cargar los datos de la semana', 'error');
+        }
+      }
     } finally {
       if (showLoading) {
         setLoading(false);
@@ -176,17 +194,17 @@ export default function SemanaScreen() {
 
   const handleSaveTask = async () => {
     if (!user) {
-      Alert.alert('Error', 'No hay usuario autenticado');
+      showToast('No hay usuario autenticado', 'error');
       return;
     }
 
     if (!selectedDay) {
-      Alert.alert('Error', 'Por favor selecciona un día para la tarea');
+      showToast('Por favor selecciona un día para la tarea', 'info');
       return;
     }
 
     if (!taskContent.trim()) {
-      Alert.alert('Error', 'Por favor ingresa el contenido de la tarea');
+      showToast('Por favor ingresa el contenido de la tarea', 'info');
       return;
     }
 
@@ -217,13 +235,15 @@ export default function SemanaScreen() {
         if (error) {
           setIsSaving(false);
           if (isNetworkError(error)) {
-            Alert.alert('Sin conexión', 'No se pudo actualizar la tarea. Intenta más tarde.');
+            showToast('Sin conexión. No se pudo actualizar la tarea', 'error');
           } else {
             logger.error('Error updating task:', error);
-            Alert.alert('Error', getErrorMessage(error));
+            showToast(`Error: ${getErrorMessage(error)}`, 'error');
           }
           return;
         }
+        
+        showToast('Tarea actualizada correctamente', 'success');
       } else {
         // Crear nueva tarea
         const { data: newTask, error } = await supabase
@@ -245,9 +265,9 @@ export default function SemanaScreen() {
           setIsSaving(false);
           logger.error('Error creating task:', error);
           if (isNetworkError(error)) {
-            Alert.alert('Sin conexión', 'No se pudo crear la tarea. Intenta más tarde.');
+            showToast('Sin conexión. No se pudo crear la tarea', 'error');
           } else {
-            Alert.alert('Error', getErrorMessage(error));
+            showToast(`Error: ${getErrorMessage(error)}`, 'error');
           }
           return;
         }
@@ -255,11 +275,12 @@ export default function SemanaScreen() {
         if (!newTask) {
           setIsSaving(false);
           logger.error('Task created but no data returned');
-          Alert.alert('Error', 'La tarea se creó pero no se pudo obtener la información');
+          showToast('La tarea se creó pero no se pudo obtener la información', 'error');
           return;
         }
 
         logger.debug('Task created successfully:', newTask.id);
+        showToast('Tarea creada correctamente', 'success');
       }
 
       // Cerrar modal primero para mejor UX
@@ -277,11 +298,16 @@ export default function SemanaScreen() {
       // Recargar datos después de cerrar el modal (sin mostrar loading)
       loadData(false).catch((error) => {
         logger.error('Error reloading data after save:', error);
+        if (isNetworkError(error)) {
+          showToast('Error de conexión al actualizar', 'error');
+        } else {
+          showToast('Error al actualizar los datos', 'error');
+        }
       });
     } catch (error) {
       setIsSaving(false);
       logger.error('Unexpected error saving task:', error);
-      Alert.alert('Error', 'Ocurrió un error inesperado. Por favor intenta de nuevo.');
+      showToast('Ocurrió un error inesperado. Por favor intenta de nuevo', 'error');
     }
   };
 
@@ -306,14 +332,19 @@ export default function SemanaScreen() {
 
               if (error) {
                 logger.error('Error deleting task:', error);
-                Alert.alert('Error', 'No se pudo eliminar la tarea');
+                if (isNetworkError(error)) {
+                  showToast('Sin conexión. No se pudo eliminar la tarea', 'error');
+                } else {
+                  showToast('No se pudo eliminar la tarea', 'error');
+                }
                 return;
               }
 
+              showToast('Tarea eliminada correctamente', 'success');
               await loadData(false);
             } catch (error) {
               logger.error('Unexpected error deleting task:', error);
-              Alert.alert('Error', 'Ocurrió un error inesperado');
+              showToast('Ocurrió un error inesperado', 'error');
             }
           },
         },
@@ -700,9 +731,9 @@ export default function SemanaScreen() {
               )}
 
               <TouchableOpacity
-                style={[styles.saveButton, (!taskContent.trim() || isSaving) && styles.saveButtonDisabled]}
+                style={[styles.saveButton, (!taskContent.trim() || !selectedDay || isSaving) && styles.saveButtonDisabled]}
                 onPress={handleSaveTask}
-                disabled={!taskContent.trim() || isSaving}
+                disabled={!taskContent.trim() || !selectedDay || isSaving}
                 accessibilityRole="button"
                 accessibilityLabel={editingTask ? "Guardar cambios" : "Crear tarea"}
               >
@@ -725,6 +756,15 @@ export default function SemanaScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+      
+      {/* Toast para feedback al usuario */}
+      {toastMessage && (
+        <Toast
+          message={toastMessage}
+          type={toastType}
+          onHide={() => setToastMessage(null)}
+        />
+      )}
     </View>
   );
 }
