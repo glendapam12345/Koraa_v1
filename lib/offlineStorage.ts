@@ -154,8 +154,17 @@ export async function syncPendingTasks(): Promise<void> {
     const tempIdToRealId = new Map<string, string>();
 
     // Separar tareas principales y subtareas
-    const mainTasks = pendingTasks.filter(t => !t.parent_task_id || !t.parent_task_id.startsWith('offline_'));
-    const subtasks = pendingTasks.filter(t => t.parent_task_id && t.parent_task_id.startsWith('offline_'));
+    // Tareas principales: sin parent_task_id o con parent_task_id que no es temporal offline
+    const mainTasks = pendingTasks.filter(t => 
+      !t.parent_task_id || 
+      (typeof t.parent_task_id === 'string' && !t.parent_task_id.startsWith('offline_'))
+    );
+    // Subtareas: con parent_task_id que es temporal offline
+    const subtasks = pendingTasks.filter(t => 
+      t.parent_task_id && 
+      typeof t.parent_task_id === 'string' && 
+      t.parent_task_id.startsWith('offline_')
+    );
 
     // Primero sincronizar tareas principales
     for (const task of mainTasks) {
@@ -173,10 +182,10 @@ export async function syncPendingTasks(): Promise<void> {
           .select('id')
           .single();
 
-        if (!error && data) {
+        if (!error && data && data.id) {
           syncedIds.push(task.id);
           // Si la tarea tenía un ID temporal, guardar el mapeo
-          if (task.id.startsWith('offline_')) {
+          if (typeof task.id === 'string' && task.id.startsWith('offline_')) {
             tempIdToRealId.set(task.id, data.id);
           }
         }
@@ -188,9 +197,16 @@ export async function syncPendingTasks(): Promise<void> {
     // Luego sincronizar subtareas usando los IDs reales
     for (const task of subtasks) {
       try {
-        const realParentId = task.parent_task_id && tempIdToRealId.get(task.parent_task_id);
+        // Validar que la tarea tenga parent_task_id válido
+        if (!task.parent_task_id) {
+          console.error('Subtarea sin parent_task_id:', task.id);
+          continue;
+        }
+        
+        const realParentId = tempIdToRealId.get(task.parent_task_id);
         if (!realParentId) {
           console.error('No se encontró ID real para tarea padre:', task.parent_task_id);
+          // No continuar, dejar la subtarea pendiente para próxima sincronización
           continue;
         }
 

@@ -23,7 +23,7 @@ type UserProfile = {
   age?: number;
   favorite_activities?: string[];
   interests?: string[];
-  other_preferences?: Record<string, any>;
+  other_preferences?: Record<string, unknown>;
 };
 
 export default function ProfileScreen() {
@@ -168,7 +168,7 @@ export default function ProfileScreen() {
         setAgeInput(data.age ? data.age.toString() : '');
         setProfileError(null); // Limpiar error si se cargó correctamente
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error inesperado:', error);
       const errorMessage = getErrorMessage(error);
       setProfileError(`Error al cargar perfil: ${errorMessage}. Intenta recargar la página.`);
@@ -421,7 +421,7 @@ export default function ProfileScreen() {
       setShowEditProfile(false);
     } catch (error) {
       console.error('Error inesperado:', error);
-      const errorMessage = getErrorMessage(error as any);
+      const errorMessage = getErrorMessage(error);
       setProfileError(`Error inesperado: ${errorMessage}`);
     } finally {
       setIsSavingProfile(false);

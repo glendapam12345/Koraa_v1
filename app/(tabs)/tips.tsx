@@ -43,7 +43,7 @@ type UserProfile = {
   age?: number;
   favorite_activities?: string[];
   interests?: string[];
-  other_preferences?: Record<string, any>;
+  other_preferences?: Record<string, unknown>;
 };
 
 export default function TipsScreen() {
@@ -99,8 +99,8 @@ export default function TipsScreen() {
 
       if (profileError) {
         console.error('Error cargando perfil:', profileError);
-        // No mostrar error al usuario aquí, solo continuar sin recomendaciones personalizadas
-        // El usuario puede seguir usando la app sin problemas
+        // No mostrar error crítico al usuario aquí, solo continuar sin recomendaciones personalizadas
+        // El usuario puede seguir usando la app sin problemas (solo verá tips genéricos)
         setUserProfile(null);
       } else if (profile) {
         setUserProfile(profile);
@@ -108,7 +108,9 @@ export default function TipsScreen() {
         setUserProfile(null);
       }
     } catch (error) {
-      console.error('Error inesperado:', error);
+      console.error('Error inesperado cargando perfil:', error);
+      // Continuar sin perfil - la app funciona sin recomendaciones personalizadas
+      setUserProfile(null);
     } finally {
       setLoading(false);
     }
@@ -130,21 +132,26 @@ export default function TipsScreen() {
     setRefreshing(false);
   };
 
-  const getEmotionData = () => {
+  // Memoizar datos de emoción para evitar recálculos innecesarios
+  const emotionData = useMemo(() => {
     return EMOTIONS.find(e => e.id === todayMood) || null;
-  };
+  }, [todayMood]);
 
-  const emotionData = getEmotionData();
-  const tips = todayMood ? getEmotionTips(todayMood) : [];
+  // Memoizar tips para evitar recálculos innecesarios
+  const tips = useMemo(() => {
+    return todayMood ? getEmotionTips(todayMood) : [];
+  }, [todayMood]);
   
-  // Agrupar tips por categoría
-  const tipsByCategory = tips.reduce((acc, tip) => {
-    if (!acc[tip.category]) {
-      acc[tip.category] = [];
-    }
-    acc[tip.category].push(tip);
-    return acc;
-  }, {} as Record<string, typeof tips>);
+  // Agrupar tips por categoría - Memoizado
+  const tipsByCategory = useMemo(() => {
+    return tips.reduce((acc, tip) => {
+      if (!acc[tip.category]) {
+        acc[tip.category] = [];
+      }
+      acc[tip.category].push(tip);
+      return acc;
+    }, {} as Record<string, typeof tips>);
+  }, [tips]);
 
   // Generar recomendaciones personalizadas
   const personalizedRecommendations = useMemo(() => {

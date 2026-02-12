@@ -261,7 +261,8 @@ export default function VaciarScreen() {
           return;
         } else {
           console.error('Error guardando tarea principal:', mainTaskError);
-          showToast('No se pudo guardar la tarea. Por favor intenta de nuevo', 'error');
+          const errorMessage = getErrorMessage(mainTaskError);
+          showToast(`No se pudo guardar la tarea: ${errorMessage}`, 'error');
           setIsSaving(false);
           return;
         }
@@ -288,7 +289,8 @@ export default function VaciarScreen() {
             console.error('Error guardando subtareas:', subtasksError);
             // Intentar eliminar la tarea principal si fallan las subtareas
             await supabase.from('tasks').delete().eq('id', mainTask.id);
-            showToast('No se pudieron guardar las subtareas. Por favor intenta de nuevo', 'error');
+            const errorMessage = getErrorMessage(subtasksError);
+            showToast(`No se pudieron guardar las subtareas: ${errorMessage}`, 'error');
             setIsSaving(false);
             return;
           }

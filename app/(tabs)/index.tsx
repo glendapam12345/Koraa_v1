@@ -11,6 +11,7 @@ import { QuickCheckInModal } from '@/components/QuickCheckInModal';
 import { FlowIndicator } from '@/components/FlowIndicator';
 import { supabase, getErrorMessage } from '@/lib/supabase';
 import { detectCategory } from '@/lib/categoryDetection';
+import { generatePrioritizationExplanation } from '@/lib/smartPrioritization';
 import { RefreshCw, ChevronDown, ChevronUp, MoreVertical, Edit, Trash2, X, Sparkles, CheckCircle2, Plus, Flame, Sunrise, Moon } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { MeditationCircle } from '@/components/MeditationCircle';
@@ -51,9 +52,9 @@ export default function TodayScreen() {
   const [morningMeditationDone, setMorningMeditationDone] = useState(false);
   const [eveningMeditationDone, setEveningMeditationDone] = useState(false);
   const progressWidth = useSharedValue(0);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const confettiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const backgroundLoadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const backgroundLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoadingTasksRef = useRef<boolean>(false);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -124,7 +125,7 @@ export default function TodayScreen() {
         .order('date', { ascending: false });
 
       if (checkIns) {
-        checkIns.forEach((checkIn) => {
+        checkIns.forEach((checkIn: { date: string }) => {
           checkInDates.add(checkIn.date);
         });
       }
@@ -165,8 +166,8 @@ export default function TodayScreen() {
         .eq('date', today);
 
       if (meditations) {
-        setMorningMeditationDone(meditations.some(m => m.type === 'morning'));
-        setEveningMeditationDone(meditations.some(m => m.type === 'evening'));
+        setMorningMeditationDone(meditations.some((m: { type: string }) => m.type === 'morning'));
+        setEveningMeditationDone(meditations.some((m: { type: string }) => m.type === 'evening'));
       }
     } catch (error) {
       console.error('Error cargando meditaciones:', error);
@@ -279,12 +280,12 @@ export default function TodayScreen() {
 
       if (data) {
         // Separar tareas principales y subtareas
-        const mainTasks = data.filter(task => !task.parent_task_id);
-        const subtasks = data.filter(task => task.parent_task_id);
+        const mainTasks = data.filter((task: Task) => !task.parent_task_id);
+        const subtasks = data.filter((task: Task) => task.parent_task_id);
 
         // Agrupar subtareas bajo sus tareas principales
-        const tasksWithSubtasks = mainTasks.map(task => {
-          const taskSubtasks = subtasks.filter(st => st.parent_task_id === task.id);
+        const tasksWithSubtasks = mainTasks.map((task: Task) => {
+          const taskSubtasks = subtasks.filter((st: Task) => st.parent_task_id === task.id);
           return {
             ...task,
             subtasks: taskSubtasks.length > 0 ? taskSubtasks : undefined,
@@ -376,9 +377,9 @@ export default function TodayScreen() {
   useEffect(() => {
     if (tasks.length === 0 || loading) return;
     
-    const allCompleted = tasks.every(t => t.is_completed);
+    const allCompleted = tasks.every((t: Task) => t.is_completed);
     const hasTasks = tasks.length > 0;
-    const completedCount = tasks.filter(t => t.is_completed).length;
+    const completedCount = tasks.filter((t: Task) => t.is_completed).length;
     const wasNotAllCompleted = previousCompletedCount < tasks.length;
     
     if (allCompleted && hasTasks && wasNotAllCompleted && !showConfetti) {
@@ -403,8 +404,8 @@ export default function TodayScreen() {
 
   // Animar barra de progreso cuando cambia el porcentaje
   useEffect(() => {
-    const incompleteTasks = tasks.filter(t => !t.is_completed);
-    const completedToday = tasks.filter(t => t.is_completed).length;
+    const incompleteTasks = tasks.filter((t: Task) => !t.is_completed);
+    const completedToday = tasks.filter((t: Task) => t.is_completed).length;
     const totalPriorityTasks = incompleteTasks.length + completedToday;
     const progressPercentage = totalPriorityTasks > 0 ? (completedToday / totalPriorityTasks) * 100 : 0;
     
@@ -434,8 +435,8 @@ export default function TodayScreen() {
 
   const toggleTask = async (taskId: string, isSubtask: boolean = false, parentTaskId?: string) => {
     const task = isSubtask
-      ? tasks.find(t => t.id === parentTaskId)?.subtasks?.find(st => st.id === taskId)
-      : tasks.find(t => t.id === taskId);
+      ? tasks.find((t: Task) => t.id === parentTaskId)?.subtasks?.find((st: Task) => st.id === taskId)
+      : tasks.find((t: Task) => t.id === taskId);
 
     if (!task) return;
 
@@ -462,7 +463,7 @@ export default function TodayScreen() {
         const errorMessage = getErrorMessage(error);
         showToast(errorMessage, 'error');
         // Revertir cambio optimista
-        setTasks(tasks.map(t =>
+        setTasks(tasks.map((t: Task) =>
           t.id === taskId ? { ...t, is_completed: !newCompletedState } : t
         ));
         return;
@@ -472,7 +473,7 @@ export default function TodayScreen() {
       if (newCompletedState && !isSubtask) {
         // Usar animación más suave con Animated
         const fadeTimeout = setTimeout(() => {
-          setTasks(prev => prev.filter(t => t.id !== taskId));
+          setTasks((prev: Task[]) => prev.filter((t: Task) => t.id !== taskId));
         }, 600); // Delay reducido para mejor UX
         
         // Limpiar timeout si el componente se desmonta (aunque es poco probable)
@@ -482,14 +483,14 @@ export default function TodayScreen() {
       // Actualizar estado local y verificar si la tarea principal debe completarse
       if (isSubtask && parentTaskId) {
         // Actualizar subtarea y verificar estado de tarea principal
-        const updatedTasks = tasks.map(t => {
+        const updatedTasks = tasks.map((t: Task) => {
           if (t.id === parentTaskId && t.subtasks) {
-            const updatedSubtasks = t.subtasks.map(st =>
+            const updatedSubtasks = t.subtasks.map((st: Task) =>
               st.id === taskId ? { ...st, is_completed: newCompletedState } : st
             );
             
             // Verificar si todas las subtareas están completadas
-            const allSubtasksCompleted = updatedSubtasks.every(st => st.is_completed);
+            const allSubtasksCompleted = updatedSubtasks.every((st: Task) => st.is_completed);
             const wasParentCompleted = t.is_completed;
             
             // Si todas las subtareas están completadas y la tarea principal no lo estaba
@@ -497,13 +498,17 @@ export default function TodayScreen() {
               // Marcar tarea principal como completada en la base de datos
               (async () => {
                 try {
-                  await supabase
+                  const { error: updateError } = await supabase
                     .from('tasks')
                     .update({
                       is_completed: true,
                       completed_at: new Date().toISOString(),
                     })
                     .eq('id', parentTaskId);
+
+                  if (updateError) {
+                    throw updateError;
+                  }
 
                   // Limpiar timeout anterior si existe
                   if (timeoutRef.current) {
@@ -519,9 +524,9 @@ export default function TodayScreen() {
                 } catch (error) {
                   console.error('Error actualizando tarea principal:', error);
                   // Revertir cambio optimista si falla
-                  setTasks(prevTasks => prevTasks.map(t => {
+                  setTasks((prevTasks: Task[]) => prevTasks.map((t: Task) => {
                     if (t.id === parentTaskId && t.subtasks) {
-                      const revertedSubtasks = t.subtasks.map(st =>
+                      const revertedSubtasks = t.subtasks.map((st: Task) =>
                         st.id === taskId ? { ...st, is_completed: !newCompletedState } : st
                       );
                       return {
@@ -565,9 +570,9 @@ export default function TodayScreen() {
                 } catch (error) {
                   console.error('Error actualizando tarea principal:', error);
                   // Revertir cambio optimista si falla
-                  setTasks(prevTasks => prevTasks.map(t => {
+                  setTasks((prevTasks: Task[]) => prevTasks.map((t: Task) => {
                     if (t.id === parentTaskId && t.subtasks) {
-                      const revertedSubtasks = t.subtasks.map(st =>
+                      const revertedSubtasks = t.subtasks.map((st: Task) =>
                         st.id === taskId ? { ...st, is_completed: !newCompletedState } : st
                       );
                       return {
@@ -596,7 +601,7 @@ export default function TodayScreen() {
         setTasks(updatedTasks);
       } else {
         // Actualizar tarea principal
-        setTasks(tasks.map(t =>
+        setTasks(tasks.map((t: Task) =>
           t.id === taskId ? { ...t, is_completed: newCompletedState } : t
         ));
       }
@@ -616,7 +621,7 @@ export default function TodayScreen() {
       
       // Mostrar toast de éxito con mensajes más engaging
       if (newCompletedState) {
-        const completedCount = tasks.filter(t => t.is_completed).length + 1;
+        const completedCount = tasks.filter((t: Task) => t.is_completed).length + 1;
         const totalCount = tasks.length;
         const progressPercentage = Math.round((completedCount / totalCount) * 100);
         
@@ -688,7 +693,7 @@ export default function TodayScreen() {
       }
 
       // Actualización optimista - actualizar estado local inmediatamente
-      setTasks(prevTasks => prevTasks.map(t => {
+      setTasks((prevTasks: Task[]) => prevTasks.map((t: Task) => {
         if (t.id === editingTask.id) {
           return {
             ...t,
@@ -698,7 +703,7 @@ export default function TodayScreen() {
         }
         // Actualizar también en subtareas si existe
         if (t.subtasks) {
-          const updatedSubtasks = t.subtasks.map(st =>
+          const updatedSubtasks = t.subtasks.map((st: Task) =>
             st.id === editingTask.id ? {
               ...st,
               content: editContent.trim(),
@@ -782,7 +787,7 @@ export default function TodayScreen() {
               }
 
               // Actualización optimista - remover de la lista inmediatamente
-              setTasks(prevTasks => prevTasks.filter(t => t.id !== task.id));
+              setTasks((prevTasks: Task[]) => prevTasks.filter((t: Task) => t.id !== task.id));
               setMenuOpen(null);
               showToast('Tarea eliminada correctamente', 'success');
             } catch (error) {
@@ -798,8 +803,8 @@ export default function TodayScreen() {
   };
 
   // Calcular tareas completadas y no completadas (solo tareas principales, no subtareas) - Memoizado
-  const incompleteTasks = useMemo(() => tasks.filter(t => !t.is_completed), [tasks]);
-  const completedToday = useMemo(() => tasks.filter(t => t.is_completed).length, [tasks]);
+  const incompleteTasks = useMemo(() => tasks.filter((t: Task) => !t.is_completed), [tasks]);
+  const completedToday = useMemo(() => tasks.filter((t: Task) => t.is_completed).length, [tasks]);
   const totalPriorityTasks = useMemo(() => incompleteTasks.length + completedToday, [incompleteTasks.length, completedToday]);
   const progressPercentage = useMemo(() => 
     totalPriorityTasks > 0 ? (completedToday / totalPriorityTasks) * 100 : 0,
@@ -821,26 +826,23 @@ export default function TodayScreen() {
     // Si tenemos todos los datos del check-in, usar algoritmo inteligente
     if (time && energyLevel > 0 && focusLevel) {
       try {
-        const smartPrioritization = require('@/lib/smartPrioritization');
-        if (smartPrioritization?.generatePrioritizationExplanation) {
-          const explanation = smartPrioritization.generatePrioritizationExplanation(
-            incompleteTasks,
-            {
-              energyLevel,
-              emotion: todayMood,
-              availableTime: time,
-              focusLevel: focusLevel || 'Normal',
-            },
-            tasks
-          );
-          
-          return {
-            title: 'Tu plan de hoy',
-            message: explanation.message,
-            suggestion: explanation.suggestion,
-            reasoning: explanation.reasoning,
-          };
-        }
+        const explanation = generatePrioritizationExplanation(
+          incompleteTasks,
+          {
+            energyLevel,
+            emotion: todayMood,
+            availableTime: time,
+            focusLevel: focusLevel || 'Normal',
+          },
+          tasks
+        );
+        
+        return {
+          title: 'Tu plan de hoy',
+          message: explanation.message,
+          suggestion: explanation.suggestion,
+          reasoning: explanation.reasoning,
+        };
       } catch (error) {
         console.log('Error generando explicación inteligente:', error);
       }
@@ -1328,9 +1330,8 @@ export default function TodayScreen() {
             </View>
           ) : (
             (() => {
-              // Separar tareas completadas y no completadas (ya calculado arriba)
-              const completedTasks = tasks.filter(t => t.is_completed);
-              const allTasksCompleted = tasks.length > 0 && tasks.every(t => t.is_completed);
+              // Usar valores memoizados en lugar de recalcular
+              const allTasksCompleted = tasks.length > 0 && completedToday === tasks.length;
               
               // Mostrar mensaje de paz cuando todas las tareas están completadas
               if (allTasksCompleted) {
@@ -1571,10 +1572,10 @@ export default function TodayScreen() {
               return (
                 <>
                   {/* Tareas no completadas con números */}
-                  {incompleteTasks.map((task, index) => renderTask(task, index + 1, false))}
+                  {incompleteTasks.map((task: Task, index: number) => renderTask(task, index + 1, false))}
                   
                   {/* Tareas completadas sin números */}
-                  {completedTasks.map((task, index) => renderTask(task, index + 1, true))}
+                  {tasks.filter((t: Task) => t.is_completed).map((task: Task, index: number) => renderTask(task, index + 1, true))}
                 </>
               );
             })()
