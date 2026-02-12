@@ -264,11 +264,15 @@ export default function SemanaScreen() {
 
       // Cerrar modal primero para mejor UX
       setShowTaskModal(false);
-      setEditingTask(null);
-      setTaskContent('');
-      setSelectedProjectId(null);
-      setSelectedDay(null);
       setIsSaving(false);
+      
+      // Limpiar estados después de cerrar el modal
+      setTimeout(() => {
+        setEditingTask(null);
+        setTaskContent('');
+        setSelectedProjectId(null);
+        setSelectedDay(null);
+      }, 100);
 
       // Recargar datos después de cerrar el modal (sin mostrar loading)
       loadData(false).catch((error) => {
@@ -277,7 +281,7 @@ export default function SemanaScreen() {
     } catch (error) {
       setIsSaving(false);
       logger.error('Unexpected error saving task:', error);
-      Alert.alert('Error', 'Ocurrió un error inesperado');
+      Alert.alert('Error', 'Ocurrió un error inesperado. Por favor intenta de nuevo.');
     }
   };
 
