@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
@@ -25,6 +25,7 @@ export default function SemanaScreen() {
   const [currentWeekStart, setCurrentWeekStart] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isReloading, setIsReloading] = useState(false);
   
   // Estados para agregar/editar tareas
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -1086,7 +1087,7 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.md,
   },
   saveButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   saveButtonGradient: {
     padding: THEME.spacing.md,
@@ -1096,5 +1097,17 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: '#FFFFFF',
     fontFamily: THEME.fonts.heading.bold,
+  },
+  reloadingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: THEME.spacing.sm,
+    gap: THEME.spacing.xs,
+  },
+  reloadingText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.body.regular,
   },
 });
