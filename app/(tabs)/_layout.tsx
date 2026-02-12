@@ -50,15 +50,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="tips"
-        options={{
-          title: 'Tips',
-          tabBarIcon: ({ size, color }) => (
-            <Lightbulb size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="semana"
         options={{
           title: 'Semana',

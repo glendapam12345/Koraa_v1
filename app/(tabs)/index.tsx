@@ -24,6 +24,8 @@ import { router } from 'expo-router';
 import { lazy, Suspense } from 'react';
 import { ActivityIndicator, View as ViewRN } from 'react-native';
 import type { Task } from '@/components/tasks/TaskCard';
+import { RecommendationsSection } from '@/components/recommendations/RecommendationsSection';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Lazy loading para componentes pesados que no se usan inmediatamente
 const TaskEditModal = lazy(() => import('@/components/tasks/TaskEditModal').then(module => ({ default: module.TaskEditModal })));
@@ -818,6 +820,11 @@ export default function TodayScreen() {
             />
           )}
         </View>
+
+        {/* Sección de Recomendaciones */}
+        {user && (
+          <RecommendationsSection userId={user.id} />
+        )}
       </ScrollView>
 
       {/* Overlay para cerrar menú al hacer clic fuera */}
