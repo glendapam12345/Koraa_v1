@@ -637,8 +637,8 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {/* Guía visual del flujo completo cuando no hay check-in */}
-        {!loading && !todayMood && <FlowGuideCard />}
+        {/* Guía visual del flujo completo cuando no hay check-in - REMOVIDO por solicitud del usuario */}
+        {/* {!loading && !todayMood && <FlowGuideCard />} */}
 
         {/* Si hay check-in pero no hay tareas */}
         {!loading && todayMood && tasks.length === 0 && (
