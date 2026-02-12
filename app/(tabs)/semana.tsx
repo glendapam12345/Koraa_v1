@@ -175,11 +175,31 @@ export default function SemanaScreen() {
   };
 
   const handleSaveTask = async () => {
-    if (!user || !selectedDay || !taskContent.trim()) return;
+    if (!user) {
+      Alert.alert('Error', 'No hay usuario autenticado');
+      return;
+    }
+
+    if (!selectedDay) {
+      Alert.alert('Error', 'Por favor selecciona un día para la tarea');
+      return;
+    }
+
+    if (!taskContent.trim()) {
+      Alert.alert('Error', 'Por favor ingresa el contenido de la tarea');
+      return;
+    }
 
     setIsSaving(true);
     try {
       const detectedCategory = detectCategory(taskContent.trim());
+      
+      logger.debug('Creating task:', {
+        content: taskContent.trim(),
+        category: detectedCategory,
+        project_id: selectedProjectId,
+        scheduled_date: selectedDay,
+      });
 
       if (editingTask) {
         // Actualizar tarea existente
@@ -206,7 +226,7 @@ export default function SemanaScreen() {
         }
       } else {
         // Crear nueva tarea
-        const { error } = await supabase
+        const { data: newTask, error } = await supabase
           .from('tasks')
           .insert({
             user_id: user.id,
@@ -217,18 +237,29 @@ export default function SemanaScreen() {
             parent_task_id: null,
             project_id: selectedProjectId,
             scheduled_date: selectedDay,
-          });
+          })
+          .select()
+          .single();
 
         if (error) {
           setIsSaving(false);
+          logger.error('Error creating task:', error);
           if (isNetworkError(error)) {
             Alert.alert('Sin conexión', 'No se pudo crear la tarea. Intenta más tarde.');
           } else {
-            logger.error('Error creating task:', error);
             Alert.alert('Error', getErrorMessage(error));
           }
           return;
         }
+
+        if (!newTask) {
+          setIsSaving(false);
+          logger.error('Task created but no data returned');
+          Alert.alert('Error', 'La tarea se creó pero no se pudo obtener la información');
+          return;
+        }
+
+        logger.debug('Task created successfully:', newTask.id);
       }
 
       // Cerrar modal primero para mejor UX
