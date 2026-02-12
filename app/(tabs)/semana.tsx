@@ -24,6 +24,14 @@ export default function SemanaScreen() {
   const [currentWeekStart, setCurrentWeekStart] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Estados para agregar/editar tareas
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [editingTask, setEditingTask] = useState<any | null>(null);
+  const [taskContent, setTaskContent] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -169,8 +177,124 @@ export default function SemanaScreen() {
     return null;
   };
 
+  const handleSaveTask = async () => {
+    if (!user || !selectedDay || !taskContent.trim()) return;
+
+    setIsSaving(true);
+    try {
+      const detectedCategory = detectCategory(taskContent.trim());
+
+      if (editingTask) {
+        // Actualizar tarea existente
+        const { error } = await supabase
+          .from('tasks')
+          .update({
+            content: taskContent.trim(),
+            category: detectedCategory,
+            project_id: selectedProjectId,
+            scheduled_date: selectedDay,
+          })
+          .eq('id', editingTask.id)
+          .eq('user_id', user.id);
+
+        if (error) {
+          if (isNetworkError(error)) {
+            Alert.alert('Sin conexión', 'No se pudo actualizar la tarea. Intenta más tarde.');
+          } else {
+            logger.error('Error updating task:', error);
+            Alert.alert('Error', getErrorMessage(error));
+          }
+          return;
+        }
+      } else {
+        // Crear nueva tarea
+        const { error } = await supabase
+          .from('tasks')
+          .insert({
+            user_id: user.id,
+            content: taskContent.trim(),
+            category: detectedCategory,
+            is_completed: false,
+            is_priority: false,
+            parent_task_id: null,
+            project_id: selectedProjectId,
+            scheduled_date: selectedDay,
+          });
+
+        if (error) {
+          if (isNetworkError(error)) {
+            Alert.alert('Sin conexión', 'No se pudo crear la tarea. Intenta más tarde.');
+          } else {
+            logger.error('Error creating task:', error);
+            Alert.alert('Error', getErrorMessage(error));
+          }
+          return;
+        }
+      }
+
+      // Recargar datos
+      await loadData();
+      setShowTaskModal(false);
+      setEditingTask(null);
+      setTaskContent('');
+      setSelectedProjectId(null);
+      setSelectedDay(null);
+    } catch (error) {
+      logger.error('Unexpected error saving task:', error);
+      Alert.alert('Error', 'Ocurrió un error inesperado');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (!user) return;
+
+    Alert.alert(
+      'Eliminar tarea',
+      '¿Estás seguro de que quieres eliminar esta tarea?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from('tasks')
+                .delete()
+                .eq('id', taskId)
+                .eq('user_id', user.id);
+
+              if (error) {
+                logger.error('Error deleting task:', error);
+                Alert.alert('Error', 'No se pudo eliminar la tarea');
+                return;
+              }
+
+              await loadData();
+            } catch (error) {
+              logger.error('Unexpected error deleting task:', error);
+              Alert.alert('Error', 'Ocurrió un error inesperado');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const weekDates = getWeekDates();
   const today = new Date().toISOString().split('T')[0];
+
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Cargando...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -773,5 +897,120 @@ const styles = StyleSheet.create({
   unscheduledSubtitle: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
+  },
+  taskItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+  },
+  taskDeleteButton: {
+    padding: THEME.spacing.xs,
+  },
+  addTaskButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: THEME.spacing.md,
+    padding: THEME.spacing.md,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.standard,
+    gap: THEME.spacing.xs,
+  },
+  addTaskButtonText: {
+    ...THEME.typography.body,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  addTaskButtonSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: THEME.spacing.sm,
+    padding: THEME.spacing.sm,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.standard,
+    gap: THEME.spacing.xs,
+  },
+  addTaskButtonSmallText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: THEME.colors.fill[100],
+    borderTopLeftRadius: THEME.borderRadius.rounded,
+    borderTopRightRadius: THEME.borderRadius.rounded,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: THEME.spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.colors.fill[200],
+  },
+  modalTitle: {
+    ...THEME.typography.h2,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  closeButton: {
+    padding: THEME.spacing.xs,
+  },
+  modalScroll: {
+    padding: THEME.spacing.lg,
+  },
+  selectedDayInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    marginBottom: THEME.spacing.md,
+    padding: THEME.spacing.sm,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.standard,
+  },
+  selectedDayText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+    textTransform: 'capitalize',
+  },
+  modalLabel: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+    marginBottom: THEME.spacing.xs,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  modalInput: {
+    ...THEME.typography.body,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.standard,
+    padding: THEME.spacing.md,
+    color: THEME.colors.text.main,
+    minHeight: 100,
+    marginBottom: THEME.spacing.md,
+  },
+  saveButton: {
+    borderRadius: THEME.borderRadius.standard,
+    overflow: 'hidden',
+    marginTop: THEME.spacing.md,
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
+  saveButtonGradient: {
+    padding: THEME.spacing.md,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    ...THEME.typography.body,
+    color: '#FFFFFF',
+    fontFamily: THEME.fonts.heading.bold,
   },
 });
