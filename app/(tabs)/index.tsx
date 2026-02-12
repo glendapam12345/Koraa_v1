@@ -781,7 +781,6 @@ export default function TodayScreen() {
             <ProgressBar
               completed={completedToday}
               total={totalPriorityTasks}
-              progressWidth={progressWidth}
             />
           )}
         </View>
