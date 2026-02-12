@@ -776,37 +776,8 @@ export default function TodayScreen() {
         </View>
 
         <View style={styles.tasksContainer}>
-          {tasks.length === 0 ? (
-            <View style={styles.emptyState}>
-              <View style={styles.emptyIconContainer}>
-                <Sparkles size={48} color={THEME.colors.gradient.blue} />
-              </View>
-              <Text style={styles.emptyTitle}>
-                {todayMood 
-                  ? 'No hay tareas priorizadas'
-                  : 'Comienza tu día'
-                }
-              </Text>
-              <Text style={styles.emptyText}>
-                {todayMood 
-                  ? 'Ve a "Vaciar" para agregar tus pendientes y Kora los priorizará automáticamente.'
-                  : 'Agrega tus tareas en "Vaciar", luego haz tu check-in en "Sentir" para ver tus prioridades basadas en cómo te sientes.'
-                }
-              </Text>
-              <TouchableOpacity
-                style={styles.emptyButton}
-                onPress={() => router.push('/(tabs)/vaciar')}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel={todayMood ? "Agregar tareas" : "Comenzar"}
-                accessibilityHint={todayMood ? "Abre la pantalla para agregar tus tareas" : "Abre la pantalla para agregar tus tareas y comenzar tu día"}
-              >
-                <Text style={styles.emptyButtonText}>
-                  {todayMood ? 'Agregar tareas →' : 'Comenzar →'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
+          {/* Estado vacío removido por solicitud del usuario */}
+          {tasks.length === 0 ? null : (
             <TaskList
               tasks={tasks}
               incompleteTasks={incompleteTasks}
