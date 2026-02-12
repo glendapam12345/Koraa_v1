@@ -1,13 +1,5 @@
-import { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-  withDelay,
-  withSequence,
-  Easing,
-} from 'react-native-reanimated';
+import { useEffect, useRef } from 'react';
+import { View, StyleSheet, Animated } from 'react-native';
 
 const CONFETTI_COLORS = ['#FF6B6B', '#4A90E2', '#9B59B6', '#FFD700', '#FF1493', '#00CED1'];
 
@@ -16,6 +8,75 @@ interface ConfettiPiece {
   color: string;
   startX: number;
   delay: number;
+}
+
+function ConfettiPieceComponent({ color, startX, delay }: Omit<ConfettiPiece, 'id'>) {
+  const translateY = useRef(new Animated.Value(-100)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0)).current;
+  const rotate = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animation = Animated.parallel([
+      Animated.timing(translateY, {
+        toValue: 1000,
+        duration: 3000,
+        delay,
+        useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 200,
+          delay,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 500,
+          delay: delay + 2500,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 200,
+        delay,
+        useNativeDriver: true,
+      }),
+      Animated.timing(rotate, {
+        toValue: 1,
+        duration: 3000,
+        delay,
+        useNativeDriver: true,
+      }),
+    ]);
+
+    animation.start();
+  }, [delay]);
+
+  const rotation = rotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.confettiPiece,
+        {
+          backgroundColor: color,
+          left: `${startX}%`,
+          transform: [
+            { translateY },
+            { scale },
+            { rotate: rotation },
+          ],
+          opacity,
+        },
+      ]}
+    />
+  );
 }
 
 export function ConfettiCelebration() {
@@ -28,91 +89,16 @@ export function ConfettiCelebration() {
   }));
 
   return (
-    <View style={styles.container} pointerEvents="none">
+    <View style={styles.container}>
       {confettiPieces.map((piece) => (
-        <ConfettiPiece key={piece.id} {...piece} />
+        <ConfettiPieceComponent
+          key={piece.id}
+          color={piece.color}
+          startX={piece.startX}
+          delay={piece.delay}
+        />
       ))}
     </View>
-  );
-}
-
-function ConfettiPiece({ color, startX, delay }: Omit<ConfettiPiece, 'id'>) {
-  const translateY = useSharedValue(-20);
-  const translateX = useSharedValue(0);
-  const rotate = useSharedValue(0);
-  const opacity = useSharedValue(1);
-  const scale = useSharedValue(1);
-
-  useEffect(() => {
-    const fallDistance = 400 + Math.random() * 200;
-    const horizontalDrift = (Math.random() - 0.5) * 100;
-    const rotations = Math.random() * 4 + 2;
-
-    translateY.value = withDelay(
-      delay,
-      withTiming(fallDistance, {
-        duration: 2000 + Math.random() * 1000,
-        easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-      })
-    );
-
-    translateX.value = withDelay(
-      delay,
-      withTiming(horizontalDrift, {
-        duration: 2000 + Math.random() * 1000,
-        easing: Easing.inOut(Easing.ease),
-      })
-    );
-
-    rotate.value = withDelay(
-      delay,
-      withTiming(rotations * 360, {
-        duration: 2000 + Math.random() * 1000,
-        easing: Easing.linear,
-      })
-    );
-
-    opacity.value = withDelay(
-      delay,
-      withSequence(
-        withTiming(1, { duration: 100 }),
-        withDelay(
-          1500,
-          withTiming(0, { duration: 500 })
-        )
-      )
-    );
-
-    scale.value = withDelay(
-      delay,
-      withSequence(
-        withTiming(1.2, { duration: 100 }),
-        withTiming(1, { duration: 200 })
-      )
-    );
-  }, []);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: translateY.value },
-      { translateX: translateX.value },
-      { rotate: `${rotate.value}deg` },
-      { scale: scale.value },
-    ],
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.View
-      style={[
-        styles.confettiPiece,
-        {
-          backgroundColor: color,
-          left: `${startX}%`,
-        },
-        animatedStyle,
-      ]}
-    />
   );
 }
 
@@ -124,6 +110,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 1000,
+    pointerEvents: 'none',
   },
   confettiPiece: {
     position: 'absolute',

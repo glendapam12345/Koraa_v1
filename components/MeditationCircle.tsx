@@ -1,13 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Platform } from 'react-native';
-import { useState, useEffect } from 'react';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-  interpolate,
-  runOnJS,
-} from 'react-native-reanimated';
+import { useState, useEffect, useRef } from 'react';
+import { Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
 import { THEME } from '@/constants/theme';
@@ -21,16 +14,15 @@ type MeditationCircleProps = {
   type: 'morning' | 'evening';
 };
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-
 export function MeditationCircle({ visible, onComplete, onClose, type }: MeditationCircleProps) {
   const [isActive, setIsActive] = useState(false);
   const [breathPhase, setBreathPhase] = useState<'inhale' | 'hold' | 'exhale'>('inhale');
   const [cycleCount, setCycleCount] = useState(0);
   const [secondsRemaining, setSecondsRemaining] = useState(4);
-  const progress = useSharedValue(0);
-  const scale = useSharedValue(1);
-  const breatheScale = useSharedValue(1);
+  const [progress, setProgress] = useState(0);
+  
+  const scale = useRef(new Animated.Value(1)).current;
+  const breatheScale = useRef(new Animated.Value(1)).current;
 
   const CIRCLE_SIZE = 280;
   const STROKE_WIDTH = 12;
@@ -43,9 +35,9 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
 
   useEffect(() => {
     if (visible) {
-      progress.value = 0;
-      scale.value = 1;
-      breatheScale.value = 1;
+      setProgress(0);
+      scale.setValue(1);
+      breatheScale.setValue(1);
       setIsActive(false);
       setBreathPhase('inhale');
       setCycleCount(0);
@@ -76,43 +68,63 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
 
   const runBreathCycle = (currentCycle: number) => {
     if (currentCycle >= TOTAL_CYCLES) {
-      runOnJS(handleComplete)();
+      handleComplete();
       return;
     }
 
     // Fase 1: Inhalar (llenar círculo)
-    runOnJS(setBreathPhase)('inhale');
+    setBreathPhase('inhale');
     if (Platform.OS !== 'web') {
-      runOnJS(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light))();
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    progress.value = withTiming(1, {
-      duration: INHALE_DURATION,
-      easing: Easing.inOut(Easing.ease),
-    }, (finished) => {
+
+    // Animar progreso de 0 a 1
+    const progressAnim = Animated.timing(
+      new Animated.Value(0),
+      {
+        toValue: 1,
+        duration: INHALE_DURATION,
+        useNativeDriver: false, // progress no soporta useNativeDriver
+      }
+    );
+
+    progressAnim.start(({ finished }) => {
       if (!finished) return;
 
+      // Actualizar estado de progreso
+      setProgress(1);
+
       // Fase 2: Aguantar (mantener círculo lleno)
-      runOnJS(setBreathPhase)('hold');
+      setBreathPhase('hold');
       if (Platform.OS !== 'web') {
-        runOnJS(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium))();
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
 
       // Después de aguantar, exhalar
       setTimeout(() => {
         // Fase 3: Exhalar (vaciar círculo)
-        runOnJS(setBreathPhase)('exhale');
+        setBreathPhase('exhale');
         if (Platform.OS !== 'web') {
-          runOnJS(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light))();
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
-        progress.value = withTiming(0, {
-          duration: EXHALE_DURATION,
-          easing: Easing.inOut(Easing.ease),
-        }, (finished) => {
+
+        const exhaleAnim = Animated.timing(
+          new Animated.Value(1),
+          {
+            toValue: 0,
+            duration: EXHALE_DURATION,
+            useNativeDriver: false,
+          }
+        );
+
+        exhaleAnim.start(({ finished }) => {
           if (!finished) return;
+
+          setProgress(0);
 
           // Incrementar ciclo y continuar
           const nextCycle = currentCycle + 1;
-          runOnJS(setCycleCount)(nextCycle);
+          setCycleCount(nextCycle);
 
           if (nextCycle < TOTAL_CYCLES) {
             // Pequeña pausa entre ciclos
@@ -120,26 +132,26 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
               runBreathCycle(nextCycle);
             }, 500);
           } else {
-            runOnJS(handleComplete)();
+            handleComplete();
           }
         });
       }, HOLD_DURATION);
     });
 
     // Animación de respiración del logo (sincronizada con el ciclo completo)
-    breatheScale.value = withTiming(1.15, {
-      duration: INHALE_DURATION,
-      easing: Easing.inOut(Easing.ease),
-    }, () => {
-      // Mantener el tamaño durante hold
-      setTimeout(() => {
-        // Reducir durante exhale
-        breatheScale.value = withTiming(1, {
-          duration: EXHALE_DURATION,
-          easing: Easing.inOut(Easing.ease),
-        });
-      }, HOLD_DURATION);
-    });
+    Animated.sequence([
+      Animated.timing(breatheScale, {
+        toValue: 1.15,
+        duration: INHALE_DURATION,
+        useNativeDriver: true,
+      }),
+      Animated.delay(HOLD_DURATION),
+      Animated.timing(breatheScale, {
+        toValue: 1,
+        duration: EXHALE_DURATION,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const startMeditation = () => {
@@ -156,32 +168,24 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
     if (Platform.OS !== 'web') {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
-    scale.value = withTiming(1.2, { duration: 300 }, () => {
-      scale.value = withTiming(1, { duration: 300 });
-    });
+    Animated.sequence([
+      Animated.timing(scale, {
+        toValue: 1.2,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
     setTimeout(() => {
       onComplete();
     }, 600);
   };
 
-  const circleAnimatedProps = useAnimatedStyle(() => {
-    const strokeDashoffset = interpolate(
-      progress.value,
-      [0, 1],
-      [CIRCUMFERENCE, 0]
-    );
-    return {
-      strokeDashoffset,
-    } as any;
-  });
-
-  const logoAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [
-        { scale: scale.value * breatheScale.value },
-      ],
-    };
-  });
+  const strokeDashoffset = CIRCUMFERENCE - (progress * CIRCUMFERENCE);
 
   const getMessage = () => {
     if (type === 'morning') {
@@ -244,7 +248,7 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
                   fill="none"
                 />
                 {/* Progress circle */}
-                <AnimatedCircle
+                <Circle
                   cx={CIRCLE_SIZE / 2}
                   cy={CIRCLE_SIZE / 2}
                   r={RADIUS}
@@ -252,15 +256,21 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
                   strokeWidth={STROKE_WIDTH}
                   fill="none"
                   strokeDasharray={CIRCUMFERENCE}
+                  strokeDashoffset={strokeDashoffset}
                   strokeLinecap="round"
-                  animatedProps={circleAnimatedProps}
-                  rotation="-90"
-                  origin={`${CIRCLE_SIZE / 2}, ${CIRCLE_SIZE / 2}`}
+                  transform={`rotate(-90 ${CIRCLE_SIZE / 2} ${CIRCLE_SIZE / 2})`}
                 />
               </Svg>
 
               {/* Logo en el centro */}
-              <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
+              <Animated.View
+                style={[
+                  styles.logoContainer,
+                  {
+                    transform: [{ scale: Animated.multiply(scale, breatheScale) }],
+                  },
+                ]}
+              >
                 {isActive ? (
                   <View style={styles.timerContainer}>
                     <Text style={styles.timerText}>{secondsRemaining}</Text>
@@ -391,10 +401,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...THEME.shadows.soft,
     overflow: 'hidden',
-  },
-  logo: {
-    width: 120,
-    height: 120,
   },
   timerContainer: {
     justifyContent: 'center',

@@ -1,6 +1,5 @@
-import { View, Text, StyleSheet, Modal } from 'react-native';
-import { useEffect, useCallback } from 'react';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, runOnJS } from 'react-native-reanimated';
+import { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Modal, Animated } from 'react-native';
 import { CheckCircle2 } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 
@@ -11,33 +10,50 @@ type SuccessModalProps = {
 };
 
 export function SuccessModal({ visible, message = 'Guardado', onClose }: SuccessModalProps) {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(-20);
-
-  const handleClose = useCallback(() => {
-    onClose();
-  }, [onClose]);
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(-20)).current;
 
   useEffect(() => {
     if (visible) {
-      opacity.value = withTiming(1, { duration: 300, easing: Easing.out(Easing.ease) });
-      translateY.value = withTiming(0, { duration: 300, easing: Easing.out(Easing.ease) });
+      // Animación de entrada
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
 
+      // Auto-cerrar después de 2 segundos
       const timer = setTimeout(() => {
-        opacity.value = withTiming(0, { duration: 200 }, () => {
-          runOnJS(handleClose)();
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: -20,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          onClose();
         });
-        translateY.value = withTiming(-20, { duration: 200 });
       }, 2000);
 
       return () => clearTimeout(timer);
+    } else {
+      // Resetear valores cuando se oculta
+      opacity.setValue(0);
+      translateY.setValue(-20);
     }
-  }, [visible, handleClose, opacity, translateY]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
+  }, [visible, onClose]);
 
   if (!visible) return null;
 
@@ -49,7 +65,15 @@ export function SuccessModal({ visible, message = 'Guardado', onClose }: Success
       statusBarTranslucent
     >
       <View style={styles.overlay}>
-        <Animated.View style={[styles.content, animatedStyle]}>
+        <Animated.View
+          style={[
+            styles.content,
+            {
+              opacity,
+              transform: [{ translateY }],
+            },
+          ]}
+        >
           <CheckCircle2
             size={24}
             color="#10B981"
