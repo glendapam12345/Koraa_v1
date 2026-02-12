@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { memo } from 'react';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { THEME } from '@/constants/theme';
 
@@ -8,7 +9,7 @@ interface ProgressBarProps {
   progressWidth: Animated.SharedValue<number>;
 }
 
-export function ProgressBar({ completed, total, progressWidth }: ProgressBarProps) {
+export const ProgressBar = memo(function ProgressBar({ completed, total, progressWidth }: ProgressBarProps) {
   const animatedProgressStyle = useAnimatedStyle(() => {
     return {
       width: `${progressWidth.value}%`,
@@ -37,7 +38,12 @@ export function ProgressBar({ completed, total, progressWidth }: ProgressBarProp
       </View>
     </View>
   );
-}
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.completed === nextProps.completed &&
+    prevProps.total === nextProps.total
+  );
+});
 
 const styles = StyleSheet.create({
   progressIndicator: {

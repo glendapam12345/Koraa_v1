@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { memo, useMemo } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { RefreshCw } from 'lucide-react-native';
@@ -12,7 +13,17 @@ interface MoodCardProps {
   onRefresh: () => void;
 }
 
-export function MoodCard({ todayMood, energy, time, focusLevel, onRefresh }: MoodCardProps) {
+export const MoodCard = memo(function MoodCard({ todayMood, energy, time, focusLevel, onRefresh }: MoodCardProps) {
+  const moodTitle = useMemo(
+    () => todayMood.charAt(0).toUpperCase() + todayMood.slice(1),
+    [todayMood]
+  );
+
+  const hasStats = useMemo(
+    () => !!(energy || time || focusLevel),
+    [energy, time, focusLevel]
+  );
+
   return (
     <LinearGradient
       colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -24,7 +35,7 @@ export function MoodCard({ todayMood, energy, time, focusLevel, onRefresh }: Moo
         <View style={{ flex: 1 }}>
           <Text style={styles.moodLabel}>Hoy te sientes</Text>
           <Text style={styles.moodTitle}>
-            {todayMood.charAt(0).toUpperCase() + todayMood.slice(1)}
+            {moodTitle}
           </Text>
         </View>
         <TouchableOpacity
@@ -37,7 +48,7 @@ export function MoodCard({ todayMood, energy, time, focusLevel, onRefresh }: Moo
           <RefreshCw size={20} color={THEME.colors.fill[100]} />
         </TouchableOpacity>
       </View>
-      {energy || time || focusLevel ? (
+      {hasStats ? (
         <View style={styles.moodStats}>
           {energy && (
             <View style={styles.moodStatItem}>
@@ -75,7 +86,14 @@ export function MoodCard({ todayMood, energy, time, focusLevel, onRefresh }: Moo
       </TouchableOpacity>
     </LinearGradient>
   );
-}
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.todayMood === nextProps.todayMood &&
+    prevProps.energy === nextProps.energy &&
+    prevProps.time === nextProps.time &&
+    prevProps.focusLevel === nextProps.focusLevel
+  );
+});
 
 const styles = StyleSheet.create({
   moodCard: {

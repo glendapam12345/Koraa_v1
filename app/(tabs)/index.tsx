@@ -5,16 +5,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
 import { Toast } from '@/components/Toast';
-import { ConfettiCelebration } from '@/components/ConfettiCelebration';
-import { QuickCheckInModal } from '@/components/QuickCheckInModal';
 import { FlowIndicator } from '@/components/FlowIndicator';
-import { MeditationCircle } from '@/components/MeditationCircle';
 import { MoodCard } from '@/components/mood/MoodCard';
 import { ValueCard } from '@/components/tasks/ValueCard';
 import { ProgressBar } from '@/components/tasks/ProgressBar';
 import { FlowGuideCard } from '@/components/flow/FlowGuideCard';
 import { TaskList } from '@/components/tasks/TaskList';
-import { TaskEditModal } from '@/components/tasks/TaskEditModal';
 import { useCheckIn } from '@/hooks/useCheckIn';
 import { useTasks } from '@/hooks/useTasks';
 import { useTaskActions } from '@/hooks/useTaskActions';
@@ -25,7 +21,15 @@ import { generatePrioritizationExplanation } from '@/lib/smartPrioritization';
 import { logger } from '@/lib/logger';
 import { Sparkles, Plus, Flame, Sunrise, Moon } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { lazy, Suspense } from 'react';
+import { ActivityIndicator, View as ViewRN } from 'react-native';
 import type { Task } from '@/components/tasks/TaskCard';
+
+// Lazy loading para componentes pesados que no se usan inmediatamente
+const TaskEditModal = lazy(() => import('@/components/tasks/TaskEditModal').then(module => ({ default: module.TaskEditModal })));
+const ConfettiCelebration = lazy(() => import('@/components/ConfettiCelebration').then(module => ({ default: module.ConfettiCelebration })));
+const MeditationCircle = lazy(() => import('@/components/MeditationCircle').then(module => ({ default: module.MeditationCircle })));
+const QuickCheckInModal = lazy(() => import('@/components/QuickCheckInModal').then(module => ({ default: module.QuickCheckInModal })));
 
 export default function TodayScreen() {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
@@ -323,15 +327,17 @@ export default function TodayScreen() {
 
   // La animación de la barra de progreso ahora se maneja en el hook useProgress
 
-  const toggleTaskExpansion = (taskId: string) => {
-    const newExpanded = new Set(expandedTasks);
-    if (newExpanded.has(taskId)) {
-      newExpanded.delete(taskId);
-    } else {
-      newExpanded.add(taskId);
-    }
-    setExpandedTasks(newExpanded);
-  };
+  const toggleTaskExpansion = useCallback((taskId: string) => {
+    setExpandedTasks((prev) => {
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(taskId)) {
+        newExpanded.delete(taskId);
+      } else {
+        newExpanded.add(taskId);
+      }
+      return newExpanded;
+    });
+  }, []);
 
   // toggleTask ahora viene del hook useTaskActions
   const handleToggleTask = async (taskId: string, isSubtask: boolean = false, parentTaskId?: string) => {
@@ -353,11 +359,11 @@ export default function TodayScreen() {
 
   // Categorías ahora son invisibles - se detectan automáticamente
 
-  const handleEditTask = (task: Task) => {
+  const handleEditTask = useCallback((task: Task) => {
     setEditingTask(task);
     setEditContent(task.content);
     setMenuOpen(null);
-  };
+  }, []);
 
   const handleSaveEdit = async () => {
     await handleSaveEditAction(editingTask, editContent, setEditingTask, setEditContent);
@@ -492,7 +498,10 @@ export default function TodayScreen() {
     };
   }, [todayMood, energyLevel, incompleteTasks.length, time, focusLevel, tasks.length]);
 
-  const explanation = useMemo(() => getPriorityExplanation(), [getPriorityExplanation]);
+  const explanation = useMemo(
+    () => getPriorityExplanation(),
+    [todayMood, energyLevel, incompleteTasks.length, time, focusLevel, tasks.length]
+  );
 
   // Función para manejar pull to refresh
   const handleRefresh = async () => {
@@ -835,20 +844,28 @@ export default function TodayScreen() {
         />
       )}
 
-      {/* Modal de edición */}
-      <TaskEditModal
-        visible={editingTask !== null}
-        content={editContent}
-        onContentChange={setEditContent}
-        onSave={handleSaveEdit}
-        onClose={() => {
-          setEditingTask(null);
-          setEditContent('');
-        }}
-      />
+      {/* Modal de edición - Lazy loaded */}
+      {editingTask !== null && (
+        <Suspense fallback={<ViewRN style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={THEME.colors.gradient.blue} /></ViewRN>}>
+          <TaskEditModal
+            visible={editingTask !== null}
+            content={editContent}
+            onContentChange={setEditContent}
+            onSave={handleSaveEdit}
+            onClose={() => {
+              setEditingTask(null);
+              setEditContent('');
+            }}
+          />
+        </Suspense>
+      )}
       
-      {/* Confetti celebración */}
-      {showConfetti && <ConfettiCelebration />}
+      {/* Confetti celebración - Lazy loaded */}
+      {showConfetti && (
+        <Suspense fallback={null}>
+          <ConfettiCelebration />
+        </Suspense>
+      )}
       
       {/* Toast notification */}
       {toastMessage && (
@@ -866,19 +883,27 @@ export default function TodayScreen() {
         onClose={() => setShowTooltip(false)}
       />
       
-      {/* Modal de check-in rápido */}
-      <QuickCheckInModal
-        visible={showQuickCheckIn}
-        onClose={() => setShowQuickCheckIn(false)}
-      />
+      {/* Modal de check-in rápido - Lazy loaded */}
+      {showQuickCheckIn && (
+        <Suspense fallback={null}>
+          <QuickCheckInModal
+            visible={showQuickCheckIn}
+            onClose={() => setShowQuickCheckIn(false)}
+          />
+        </Suspense>
+      )}
 
-      {/* Modal de meditación */}
-      <MeditationCircle
-        visible={showMeditation}
-        onComplete={handleMeditationComplete}
-        onClose={() => setShowMeditation(false)}
-        type={meditationType}
-      />
+      {/* Modal de meditación - Lazy loaded */}
+      {showMeditation && (
+        <Suspense fallback={<ViewRN style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={THEME.colors.gradient.blue} /></ViewRN>}>
+          <MeditationCircle
+            visible={showMeditation}
+            onComplete={handleMeditationComplete}
+            onClose={() => setShowMeditation(false)}
+            type={meditationType}
+          />
+        </Suspense>
+      )}
     </View>
   );
 }

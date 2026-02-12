@@ -1,11 +1,17 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { memo, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { THEME } from '@/constants/theme';
 import { Sparkles } from 'lucide-react-native';
 import { router } from 'expo-router';
 
-export function FlowGuideCard() {
+export const FlowGuideCard = memo(function FlowGuideCard() {
+  const handlePress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/(tabs)/sentir');
+  }, []);
+
   return (
     <>
       <View style={styles.flowGuideCard}>
@@ -44,10 +50,7 @@ export function FlowGuideCard() {
       {/* Botón principal: ¿Cómo te sientes hoy? */}
       <TouchableOpacity
         style={styles.mainRegisterButton}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push('/(tabs)/sentir');
-        }}
+        onPress={handlePress}
         activeOpacity={0.9}
         accessibilityRole="button"
         accessibilityLabel="¿Cómo te sientes hoy?"
@@ -72,7 +75,7 @@ export function FlowGuideCard() {
       </TouchableOpacity>
     </>
   );
-}
+});
 
 const styles = StyleSheet.create({
   flowGuideCard: {

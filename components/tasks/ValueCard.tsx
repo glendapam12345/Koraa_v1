@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { memo, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { Sparkles } from 'lucide-react-native';
 
@@ -7,8 +8,11 @@ interface ValueCardProps {
   prioritizedTasks: number;
 }
 
-export function ValueCard({ totalTasksBefore, prioritizedTasks }: ValueCardProps) {
-  const tasksReduced = totalTasksBefore - prioritizedTasks;
+export const ValueCard = memo(function ValueCard({ totalTasksBefore, prioritizedTasks }: ValueCardProps) {
+  const tasksReduced = useMemo(
+    () => totalTasksBefore - prioritizedTasks,
+    [totalTasksBefore, prioritizedTasks]
+  );
 
   return (
     <View style={styles.valueCard}>
@@ -35,7 +39,12 @@ export function ValueCard({ totalTasksBefore, prioritizedTasks }: ValueCardProps
       )}
     </View>
   );
-}
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.totalTasksBefore === nextProps.totalTasksBefore &&
+    prevProps.prioritizedTasks === nextProps.prioritizedTasks
+  );
+});
 
 const styles = StyleSheet.create({
   valueCard: {

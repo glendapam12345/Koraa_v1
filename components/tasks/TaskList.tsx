@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { memo, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { TaskCard } from './TaskCard';
 import { TaskMenuModal } from './TaskMenuModal';
@@ -18,7 +19,7 @@ interface TaskListProps {
   onSubtaskToggle: (subtaskId: string, parentTaskId: string) => void;
 }
 
-export function TaskList({
+export const TaskList = memo(function TaskList({
   tasks,
   incompleteTasks,
   expandedTasks,
@@ -31,8 +32,14 @@ export function TaskList({
   getCategoryColor,
   onSubtaskToggle,
 }: TaskListProps) {
-  const completedTasks = tasks.filter(t => t.is_completed);
-  const allTasksCompleted = tasks.length > 0 && completedTasks.length === tasks.length;
+  const completedTasks = useMemo(
+    () => tasks.filter(t => t.is_completed),
+    [tasks]
+  );
+  const allTasksCompleted = useMemo(
+    () => tasks.length > 0 && completedTasks.length === tasks.length,
+    [tasks.length, completedTasks.length]
+  );
 
   // Mostrar mensaje de paz cuando todas las tareas están completadas
   if (allTasksCompleted) {
@@ -135,7 +142,25 @@ export function TaskList({
       {completedTasks.map((task, index) => renderTask(task, index + 1, true))}
     </>
   );
-}
+}, (prevProps, nextProps) => {
+  // Comparación optimizada para evitar re-renders innecesarios
+  if (prevProps.tasks.length !== nextProps.tasks.length) return false;
+  if (prevProps.incompleteTasks.length !== nextProps.incompleteTasks.length) return false;
+  if (prevProps.menuOpen !== nextProps.menuOpen) return false;
+  if (prevProps.expandedTasks.size !== nextProps.expandedTasks.size) return false;
+  
+  // Comparar IDs de tareas para detectar cambios
+  const prevTaskIds = prevProps.tasks.map(t => t.id).join(',');
+  const nextTaskIds = nextProps.tasks.map(t => t.id).join(',');
+  if (prevTaskIds !== nextTaskIds) return false;
+  
+  // Comparar estados de completado
+  const prevCompleted = prevProps.tasks.map(t => t.is_completed).join(',');
+  const nextCompleted = nextProps.tasks.map(t => t.is_completed).join(',');
+  if (prevCompleted !== nextCompleted) return false;
+  
+  return true;
+});
 
 const styles = StyleSheet.create({
   completionState: {

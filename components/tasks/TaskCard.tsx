@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { memo, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { ChevronDown, ChevronUp, MoreVertical } from 'lucide-react-native';
 
@@ -22,7 +23,7 @@ interface TaskCardProps {
   getCategoryColor: (category: string) => string;
 }
 
-export function TaskCard({
+export const TaskCard = memo(function TaskCard({
   task,
   index,
   isCompleted,
@@ -32,14 +33,19 @@ export function TaskCard({
   onMenuPress,
   getCategoryColor,
 }: TaskCardProps) {
-  const hasSubtasks = task.subtasks && task.subtasks.length > 0;
-  const completedSubtasks = hasSubtasks 
-    ? task.subtasks!.filter(st => st.is_completed).length 
-    : 0;
-  const totalSubtasks = hasSubtasks ? task.subtasks!.length : 0;
-  const subtasksProgress = totalSubtasks > 0 
-    ? (completedSubtasks / totalSubtasks) * 100 
-    : 0;
+  const hasSubtasks = useMemo(() => task.subtasks && task.subtasks.length > 0, [task.subtasks]);
+  const { completedSubtasks, totalSubtasks, subtasksProgress } = useMemo(() => {
+    if (!hasSubtasks) {
+      return { completedSubtasks: 0, totalSubtasks: 0, subtasksProgress: 0 };
+    }
+    const completed = task.subtasks!.filter(st => st.is_completed).length;
+    const total = task.subtasks!.length;
+    return {
+      completedSubtasks: completed,
+      totalSubtasks: total,
+      subtasksProgress: total > 0 ? (completed / total) * 100 : 0,
+    };
+  }, [hasSubtasks, task.subtasks]);
 
   return (
     <View style={styles.taskWrapper}>
@@ -169,7 +175,23 @@ export function TaskCard({
       </TouchableOpacity>
     </View>
   );
-}
+}, (prevProps, nextProps) => {
+  // Comparación personalizada para evitar re-renders innecesarios
+  return (
+    prevProps.task.id === nextProps.task.id &&
+    prevProps.task.is_completed === nextProps.task.is_completed &&
+    prevProps.task.content === nextProps.task.content &&
+    prevProps.task.category === nextProps.task.category &&
+    prevProps.index === nextProps.index &&
+    prevProps.isCompleted === nextProps.isCompleted &&
+    prevProps.isExpanded === nextProps.isExpanded &&
+    prevProps.task.subtasks?.length === nextProps.task.subtasks?.length &&
+    prevProps.task.subtasks?.every((st, i) => 
+      nextProps.task.subtasks?.[i]?.id === st.id &&
+      nextProps.task.subtasks?.[i]?.is_completed === st.is_completed
+    ) !== false
+  );
+});
 
 const styles = StyleSheet.create({
   taskWrapper: {
