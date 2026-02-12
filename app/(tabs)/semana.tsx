@@ -40,8 +40,71 @@ export default function SemanaScreen() {
         setProjects(projectsMap);
       }
 
-      // Load weekly distribution
-      const weeklyData = await getWeeklyDistribution(user.id, currentWeekStart);
+      // Helper function to get week dates
+      const getWeekDatesHelper = () => {
+        const dates: string[] = [];
+        const start = new Date(currentWeekStart);
+        
+        // Get Monday of the week
+        const day = start.getDay();
+        const diff = start.getDate() - day + (day === 0 ? -6 : 1); // Adjust so Monday is 1
+        const monday = new Date(start);
+        monday.setDate(diff);
+        monday.setHours(0, 0, 0, 0);
+        
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(monday);
+          date.setDate(monday.getDate() + i);
+          dates.push(date.toISOString().split('T')[0]);
+        }
+        return dates;
+      };
+
+      // Load tasks scheduled for this week
+      const weekDates = getWeekDatesHelper();
+      const { data: tasksData } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_completed', false)
+        .is('parent_task_id', null)
+        .in('scheduled_date', weekDates)
+        .order('scheduled_date', { ascending: true })
+        .order('project_priority', { ascending: false });
+
+      // Build distribution from scheduled tasks
+      const weeklyData: WeeklyDistribution = {};
+      weekDates.forEach((date) => {
+        weeklyData[date] = {
+          tasks: [],
+          totalEstimatedTime: 0,
+          projects: new Set(),
+          energyLevel: 3,
+        };
+      });
+
+      if (tasksData) {
+        tasksData.forEach((task: any) => {
+          if (task.scheduled_date && weeklyData[task.scheduled_date]) {
+            weeklyData[task.scheduled_date].tasks.push(task);
+            if (task.project_id) {
+              weeklyData[task.scheduled_date].projects.add(task.project_id);
+            }
+          }
+        });
+      }
+
+      // Also get tasks without scheduled_date to show in "Sin fecha específica" section
+      const { data: unscheduledTasks } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_completed', false)
+        .is('parent_task_id', null)
+        .is('scheduled_date', null)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
       setDistribution(weeklyData);
     } catch (error) {
       logger.error('Error loading weekly data:', error);
@@ -75,9 +138,17 @@ export default function SemanaScreen() {
   const getWeekDates = () => {
     const dates: string[] = [];
     const start = new Date(currentWeekStart);
+    
+    // Get Monday of the week
+    const day = start.getDay();
+    const diff = start.getDate() - day + (day === 0 ? -6 : 1); // Adjust so Monday is 1
+    const monday = new Date(start);
+    monday.setDate(diff);
+    monday.setHours(0, 0, 0, 0);
+    
     for (let i = 0; i < 7; i++) {
-      const date = new Date(start);
-      date.setDate(start.getDate() + i);
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
       dates.push(date.toISOString().split('T')[0]);
     }
     return dates;
@@ -165,12 +236,12 @@ export default function SemanaScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
-        {loading ? (
+          {loading ? (
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Cargando semana...</Text>
           </View>
         ) : (
-          weekDates.map((date, index) => {
+          weekDates.map((date) => {
             const dayData = distribution[date] || {
               tasks: [],
               totalEstimatedTime: 0,
@@ -295,7 +366,8 @@ export default function SemanaScreen() {
                 )}
               </View>
             );
-          })
+          })}
+          </>
         )}
 
         {/* Reorganize Button */}
@@ -528,5 +600,21 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: '#FFFFFF',
     fontFamily: THEME.fonts.heading.bold,
+  },
+  unscheduledSection: {
+    margin: THEME.spacing.lg,
+    padding: THEME.spacing.md,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+  },
+  unscheduledTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: THEME.spacing.xs,
+  },
+  unscheduledSubtitle: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
   },
 });

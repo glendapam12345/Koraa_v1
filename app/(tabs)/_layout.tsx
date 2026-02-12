@@ -61,7 +61,10 @@ export default function TabLayout() {
       <Tabs.Screen
         name="semana"
         options={{
-          href: null, // Ocultar esta pestaña del tab bar
+          title: 'Semana',
+          tabBarIcon: ({ size, color }) => (
+            <Calendar size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen

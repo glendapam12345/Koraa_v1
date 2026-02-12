@@ -10,11 +10,10 @@ import { supabase, getErrorMessage, isNetworkError } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { detectCategory } from '@/lib/categoryDetection';
 import { ProjectSelector } from '@/components/projects/ProjectSelector';
+import { DateSelector } from '@/components/tasks/DateSelector';
 import { useAuth } from '@/contexts/AuthContext';
-import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic, Calendar, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react-native';
+import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic, Calendar } from 'lucide-react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { getWeeklyDistribution, reorganizeWeeklyTasks, type WeeklyDistribution } from '@/lib/weeklyReorganization';
-import { ProjectCard, type Project } from '@/components/projects/ProjectCard';
 
 // Categorías ahora son invisibles - se detectan automáticamente en lib/categoryDetection.ts
 
@@ -35,14 +34,9 @@ export default function VaciarScreen() {
   const [isListening, setIsListening] = useState(false);
   const [recentTaskSuggestions, setRecentTaskSuggestions] = useState<string[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null); // Fecha programada para la tarea
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const { user } = useAuth();
-  
-  // Estados para vista semanal
-  const [activeTab, setActiveTab] = useState<'crear' | 'semana'>('crear');
-  const [distribution, setDistribution] = useState<WeeklyDistribution>({});
-  const [projects, setProjects] = useState<Map<string, Project>>(new Map());
-  const [currentWeekStart, setCurrentWeekStart] = useState(new Date());
-  const [loadingWeek, setLoadingWeek] = useState(true);
 
   // Pre-llenar input si hay sugerencia desde Tips
   useEffect(() => {
@@ -82,69 +76,6 @@ export default function VaciarScreen() {
     checkIfFirstTime();
     loadRecentTaskSuggestions();
   }, []);
-
-  // Cargar datos de la semana cuando se activa el tab
-  useEffect(() => {
-    if (activeTab === 'semana' && user) {
-      loadWeeklyData();
-    }
-  }, [activeTab, currentWeekStart, user]);
-
-  const loadWeeklyData = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      setLoadingWeek(true);
-
-      // Load projects
-      const { data: projectsData } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (projectsData) {
-        const projectsMap = new Map<string, Project>();
-        projectsData.forEach((p) => projectsMap.set(p.id, p));
-        setProjects(projectsMap);
-      }
-
-      // Load weekly distribution
-      const weeklyData = await getWeeklyDistribution(user.id, currentWeekStart);
-      setDistribution(weeklyData);
-    } catch (error) {
-      logger.error('Error loading weekly data:', error);
-    } finally {
-      setLoadingWeek(false);
-    }
-  }, [user, currentWeekStart]);
-
-  const navigateWeek = (direction: 'prev' | 'next') => {
-    const newDate = new Date(currentWeekStart);
-    newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
-    setCurrentWeekStart(newDate);
-  };
-
-  const goToToday = () => {
-    setCurrentWeekStart(new Date());
-  };
-
-  const getWeekDates = () => {
-    const dates: string[] = [];
-    const start = new Date(currentWeekStart);
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(start);
-      date.setDate(start.getDate() + i);
-      dates.push(date.toISOString().split('T')[0]);
-    }
-    return dates;
-  };
-
-  const isTodayDate = (date: string) => {
-    const today = new Date().toISOString().split('T')[0];
-    return date === today;
-  };
-
-  const DAY_NAMES_FULL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
   // Recargar banner cuando la pantalla recibe foco
   useFocusEffect(
@@ -291,6 +222,7 @@ export default function VaciarScreen() {
           is_completed: false,
           parent_task_id: null,
           project_id: selectedProjectId,
+          scheduled_date: selectedDate,
         })
         .select()
         .single();
@@ -308,6 +240,7 @@ export default function VaciarScreen() {
             is_completed: false,
             parent_task_id: null,
             project_id: selectedProjectId,
+            scheduled_date: selectedDate, // Las subtareas heredan la fecha programada
           });
           
           // Guardar subtareas offline también si existen
@@ -332,6 +265,7 @@ export default function VaciarScreen() {
           setHasSubtasks(false);
           setSubtasks(['']);
           setSelectedProjectId(null);
+          setSelectedDate(null);
           
           showToast('Tarea guardada offline. Se sincronizará cuando haya conexión.', 'info');
           setIsSaving(false);
@@ -356,6 +290,7 @@ export default function VaciarScreen() {
             is_priority: false, // Las subtareas no tienen prioridad independiente
             is_completed: false,
             parent_task_id: mainTask.id,
+            scheduled_date: selectedDate, // Las subtareas heredan la fecha programada
           }));
 
           const { error: subtasksError } = await supabase
@@ -380,6 +315,7 @@ export default function VaciarScreen() {
       setHasSubtasks(false);
       setSubtasks(['']);
       setSelectedProjectId(null);
+      setSelectedDate(null);
       
       // Recargar sugerencias después de agregar tarea
       await loadRecentTaskSuggestions();
@@ -469,8 +405,7 @@ export default function VaciarScreen() {
         />
       )}
 
-      {activeTab === 'crear' ? (
-        <ScrollView
+      <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -587,6 +522,12 @@ export default function VaciarScreen() {
             userId={user.id}
           />
         )}
+
+        {/* Selector de Fecha */}
+        <DateSelector
+          selectedDate={selectedDate}
+          onSelect={setSelectedDate}
+        />
 
         <TouchableOpacity
           style={[
@@ -708,228 +649,7 @@ export default function VaciarScreen() {
             ))}
           </View>
         )}
-        </ScrollView>
-      ) : (
-        <ScrollView
-          style={styles.weekContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={async () => {
-                setRefreshing(true);
-                await loadWeeklyData();
-                setRefreshing(false);
-              }}
-            />
-          }
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Week Navigation */}
-          <View style={styles.weekNavigation}>
-            <TouchableOpacity
-              onPress={() => navigateWeek('prev')}
-              style={styles.navButton}
-              accessibilityRole="button"
-              accessibilityLabel="Semana anterior"
-            >
-              <ChevronLeft size={20} color={THEME.colors.text.main} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={goToToday}
-              style={styles.weekInfo}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.weekText}>
-                {new Date(currentWeekStart).toLocaleDateString('es-ES', {
-                  day: 'numeric',
-                  month: 'short',
-                })}{' '}
-                -{' '}
-                {new Date(getWeekDates()[6]).toLocaleDateString('es-ES', {
-                  day: 'numeric',
-                  month: 'short',
-                })}
-              </Text>
-              {!isTodayDate(getWeekDates()[0]) && (
-                <Text style={styles.todayHint}>Toca para ir a hoy</Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => navigateWeek('next')}
-              style={styles.navButton}
-              accessibilityRole="button"
-              accessibilityLabel="Semana siguiente"
-            >
-              <ChevronRight size={20} color={THEME.colors.text.main} />
-            </TouchableOpacity>
-          </View>
-
-          {loadingWeek ? (
-            <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Cargando semana...</Text>
-            </View>
-          ) : (
-            <>
-              {getWeekDates().map((date) => {
-                const dayData = distribution[date] || {
-                  tasks: [],
-                  totalEstimatedTime: 0,
-                  projects: new Set(),
-                  energyLevel: 3,
-                };
-                const dayOfWeek = new Date(date).getDay();
-                const isToday = isTodayDate(date);
-
-                // Group tasks by project
-                const tasksByProject = new Map<string | null, any[]>();
-                dayData.tasks.forEach((task) => {
-                  const projectId = task.project_id || null;
-                  if (!tasksByProject.has(projectId)) {
-                    tasksByProject.set(projectId, []);
-                  }
-                  tasksByProject.get(projectId)!.push(task);
-                });
-
-                return (
-                  <View key={date} style={styles.dayCard}>
-                    <LinearGradient
-                      colors={
-                        isToday
-                          ? [THEME.colors.gradient.blue, THEME.colors.gradient.pink]
-                          : [THEME.colors.fill[200], THEME.colors.fill[200]]
-                      }
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.dayHeader}
-                    >
-                      <View style={styles.dayHeaderContent}>
-                        <View>
-                          <Text
-                            style={[
-                              styles.dayName,
-                              isToday && styles.todayDayName,
-                            ]}
-                          >
-                            {DAY_NAMES_FULL[dayOfWeek]}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.dayDate,
-                              isToday && styles.todayDayDate,
-                            ]}
-                          >
-                            {new Date(date).toLocaleDateString('es-ES', {
-                              day: 'numeric',
-                              month: 'short',
-                            })}
-                          </Text>
-                        </View>
-                        <View style={styles.dayStats}>
-                          <View style={styles.energyBadge}>
-                            <Text style={styles.energyText}>
-                              ⚡ {dayData.energyLevel}/5
-                            </Text>
-                          </View>
-                          <Text style={styles.taskCount}>
-                            {dayData.tasks.length} {dayData.tasks.length === 1 ? 'tarea' : 'tareas'}
-                          </Text>
-                        </View>
-                      </View>
-                    </LinearGradient>
-
-                    {dayData.tasks.length === 0 ? (
-                      <View style={styles.emptyDay}>
-                        <Text style={styles.emptyDayText}>Sin tareas programadas</Text>
-                      </View>
-                    ) : (
-                      <View style={styles.tasksContainer}>
-                        {Array.from(tasksByProject.entries()).map(([projectId, tasks]) => {
-                          const project = projectId ? projects.get(projectId) : null;
-
-                          return (
-                            <View key={projectId || 'no-project'} style={styles.projectSection}>
-                              {project && (
-                                <View style={styles.projectHeader}>
-                                  <View
-                                    style={[
-                                      styles.projectColorDot,
-                                      { backgroundColor: project.color },
-                                    ]}
-                                  />
-                                  <Text style={styles.projectName}>{project.name}</Text>
-                                </View>
-                              )}
-
-                              {tasks.map((task) => (
-                                <TouchableOpacity
-                                  key={task.id}
-                                  style={styles.taskItem}
-                                  onPress={() => {
-                                    router.push('/(tabs)');
-                                  }}
-                                  accessibilityRole="button"
-                                  accessibilityLabel={`Tarea: ${task.content}`}
-                                >
-                                  <View
-                                    style={[
-                                      styles.taskCheckbox,
-                                      task.is_completed && styles.taskCheckboxCompleted,
-                                    ]}
-                                  />
-                                  <Text
-                                    style={[
-                                      styles.taskText,
-                                      task.is_completed && styles.taskTextCompleted,
-                                    ]}
-                                    numberOfLines={2}
-                                  >
-                                    {task.content}
-                                  </Text>
-                                </TouchableOpacity>
-                              ))}
-                            </View>
-                          );
-                        })}
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
-
-              {/* Reorganize Button */}
-              <TouchableOpacity
-                onPress={async () => {
-                  if (!user) return;
-                  setRefreshing(true);
-                  try {
-                    await reorganizeWeeklyTasks(user.id);
-                    await loadWeeklyData();
-                  } catch (error) {
-                    logger.error('Error reorganizing:', error);
-                  } finally {
-                    setRefreshing(false);
-                  }
-                }}
-                style={styles.reorganizeButton}
-                accessibilityRole="button"
-                accessibilityLabel="Reorganizar semana automáticamente"
-              >
-                <LinearGradient
-                  colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.reorganizeButtonGradient}
-                >
-                  <RefreshCw size={20} color="#FFFFFF" />
-                  <Text style={styles.reorganizeButtonText}>Reorganizar Semana</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </>
-          )}
-        </ScrollView>
-      )}
+      </ScrollView>
       
       <Tooltip
         visible={showTooltip}
@@ -1165,205 +885,5 @@ const styles = StyleSheet.create({
   flowGuideAccent: {
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.gradient.blue,
-  },
-  // Tabs internos
-  tabsContainer: {
-    flexDirection: 'row',
-    backgroundColor: THEME.colors.fill[200],
-    marginHorizontal: THEME.spacing.lg,
-    marginTop: THEME.spacing.lg,
-    borderRadius: THEME.borderRadius.rounded,
-    padding: 4,
-    gap: 4,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.standard,
-    gap: THEME.spacing.xs,
-  },
-  tabActive: {
-    backgroundColor: THEME.colors.fill[100],
-    ...THEME.shadows.soft,
-  },
-  tabText: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-  },
-  tabTextActive: {
-    color: THEME.colors.gradient.blue,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  // Estilos para vista semanal
-  weekContent: {
-    flex: 1,
-  },
-  weekNavigation: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: THEME.spacing.lg,
-    paddingVertical: THEME.spacing.md,
-    backgroundColor: THEME.colors.fill[100],
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.fill[200],
-  },
-  navButton: {
-    padding: THEME.spacing.sm,
-  },
-  weekInfo: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  weekText: {
-    ...THEME.typography.h3,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  todayHint: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    marginTop: 2,
-  },
-  loadingContainer: {
-    padding: THEME.spacing.xl * 2,
-    alignItems: 'center',
-  },
-  loadingText: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-  },
-  dayCard: {
-    margin: THEME.spacing.md,
-    marginBottom: THEME.spacing.lg,
-    borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.fill[100],
-    overflow: 'hidden',
-    ...THEME.shadows.soft,
-  },
-  dayHeader: {
-    padding: THEME.spacing.md,
-  },
-  dayHeaderContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  dayName: {
-    ...THEME.typography.h3,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  todayDayName: {
-    color: '#FFFFFF',
-  },
-  dayDate: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    marginTop: 2,
-  },
-  todayDayDate: {
-    color: '#FFFFFF',
-    opacity: 0.9,
-  },
-  dayStats: {
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  energyBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  energyText: {
-    ...THEME.typography.caption,
-    color: '#FFFFFF',
-    fontFamily: THEME.fonts.heading.bold,
-    fontSize: 11,
-  },
-  taskCount: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    fontSize: 11,
-  },
-  emptyDay: {
-    padding: THEME.spacing.xl,
-    alignItems: 'center',
-  },
-  emptyDayText: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-    fontStyle: 'italic',
-  },
-  projectSection: {
-    marginBottom: THEME.spacing.md,
-  },
-  projectHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: THEME.spacing.sm,
-    gap: THEME.spacing.xs,
-  },
-  projectColorDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  projectName: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  taskItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: THEME.spacing.sm,
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.standard,
-    marginBottom: THEME.spacing.xs,
-    gap: THEME.spacing.sm,
-  },
-  taskCheckbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: THEME.colors.text.secondary,
-  },
-  taskCheckboxCompleted: {
-    backgroundColor: THEME.colors.gradient.blue,
-    borderColor: THEME.colors.gradient.blue,
-  },
-  taskText: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    flex: 1,
-  },
-  taskTextCompleted: {
-    textDecorationLine: 'line-through',
-    color: THEME.colors.text.secondary,
-  },
-  reorganizeButton: {
-    margin: THEME.spacing.lg,
-    marginTop: THEME.spacing.xl,
-    borderRadius: THEME.borderRadius.rounded,
-    overflow: 'hidden',
-  },
-  reorganizeButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: THEME.spacing.md,
-    gap: THEME.spacing.sm,
-  },
-  reorganizeButtonText: {
-    ...THEME.typography.body,
-    color: '#FFFFFF',
-    fontFamily: THEME.fonts.heading.bold,
   },
 });
