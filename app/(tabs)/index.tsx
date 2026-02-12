@@ -3,7 +3,6 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-import { Tooltip } from '@/components/Tooltip';
 import { Toast } from '@/components/Toast';
 import { FlowIndicator } from '@/components/FlowIndicator';
 import { MoodCard } from '@/components/mood/MoodCard';
@@ -26,6 +25,8 @@ import { ActivityIndicator, View as ViewRN } from 'react-native';
 import type { Task } from '@/components/tasks/TaskCard';
 import { RecommendationsSection } from '@/components/recommendations/RecommendationsSection';
 import { useAuth } from '@/contexts/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { QuickOnboardingModal } from '@/components/onboarding/QuickOnboardingModal';
 
 // Lazy loading para componentes pesados que no se usan inmediatamente
 const TaskEditModal = lazy(() => import('@/components/tasks/TaskEditModal').then(module => ({ default: module.TaskEditModal })));
@@ -38,7 +39,7 @@ export default function TodayScreen() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editContent, setEditContent] = useState('');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
-  const [showTooltip, setShowTooltip] = useState(false);
+  const [showQuickOnboarding, setShowQuickOnboarding] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
   const [showConfetti, setShowConfetti] = useState(false);
@@ -293,13 +294,7 @@ export default function TodayScreen() {
     };
   }, [loadTasks, loadTodayCheckIn, loadStreak, loadMeditations, loadPrioritizationMetadata]);
 
-  // Verificar si mostrar tooltip después de cargar datos
-  useEffect(() => {
-    if (!loading && todayMood && tasks.length === 0) {
-      // Hay check-in pero no hay tareas priorizadas (primera vez)
-      setShowTooltip(true);
-    }
-  }, [loading, todayMood, tasks.length]);
+  // Onboarding rápido se muestra solo la primera vez (ya está en el useEffect principal)
 
   // Detectar cuando todas las tareas están completadas
   useEffect(() => {
@@ -844,11 +839,10 @@ export default function TodayScreen() {
         />
       )}
       
-      <Tooltip
-        visible={showTooltip}
-        title="Tus prioridades de hoy"
-        message="Aquí verás tus tareas priorizadas automáticamente según cómo te sientes. Kora adapta el número de tareas según tu energía y emoción. Marca las tareas como completadas cuando las termines."
-        onClose={() => setShowTooltip(false)}
+      {/* Onboarding rápido y visualmente atractivo */}
+      <QuickOnboardingModal
+        visible={showQuickOnboarding}
+        onClose={() => setShowQuickOnboarding(false)}
       />
       
       {/* Modal de check-in rápido - Lazy loaded */}
