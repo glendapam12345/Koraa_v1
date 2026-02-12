@@ -235,8 +235,10 @@ export default function SemanaScreen() {
       setSelectedDay(null);
       setIsSaving(false);
 
-      // Recargar datos después de cerrar el modal
-      await loadData();
+      // Recargar datos después de cerrar el modal (sin await para no bloquear UI)
+      loadData().catch((error) => {
+        logger.error('Error reloading data after save:', error);
+      });
     } catch (error) {
       setIsSaving(false);
       logger.error('Unexpected error saving task:', error);
