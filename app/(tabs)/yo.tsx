@@ -144,7 +144,7 @@ export default function ProfileScreen() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('favorite_activities, interests, other_preferences')
+        .select('age, favorite_activities, interests, other_preferences')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -732,17 +732,18 @@ export default function ProfileScreen() {
                 ) : (
                   <View style={styles.chipContainer}>
                     {(profile.favorite_activities || []).map((activity, index) => (
-                    <View key={index} style={styles.chip}>
-                      <Text style={styles.chipText}>{activity}</Text>
-                      <TouchableOpacity
-                        onPress={() => removeActivity(index)}
-                        style={styles.chipRemove}
-                      >
-                        <X size={14} color={THEME.colors.text.secondary} />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
+                      <View key={index} style={styles.chip}>
+                        <Text style={styles.chipText}>{activity}</Text>
+                        <TouchableOpacity
+                          onPress={() => removeActivity(index)}
+                          style={styles.chipRemove}
+                        >
+                          <X size={14} color={THEME.colors.text.secondary} />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
                 <View style={styles.addInputContainer}>
                   <TextInput
                     style={styles.addInput}
@@ -847,6 +848,7 @@ export default function ProfileScreen() {
             </View>
           </View>
         </KeyboardAvoidingView>
+        </View>
       </Modal>
     </View>
   );
@@ -1205,140 +1207,6 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     flex: 1,
     lineHeight: 22,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalKeyboardView: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: THEME.colors.fill[100],
-    borderTopLeftRadius: THEME.borderRadius.rounded,
-    borderTopRightRadius: THEME.borderRadius.rounded,
-    maxHeight: '90%',
-    paddingBottom: THEME.spacing.xl * 2,
-  },
-  modalScrollView: {
-    flex: 1,
-  },
-  modalScrollContent: {
-    padding: THEME.spacing.lg,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: THEME.spacing.lg,
-    paddingHorizontal: THEME.spacing.lg,
-    paddingTop: THEME.spacing.lg,
-  },
-  modalTitle: {
-    ...THEME.typography.h2,
-    color: THEME.colors.text.main,
-  },
-  modalCloseButton: {
-    padding: THEME.spacing.xs,
-  },
-  formSection: {
-    marginBottom: THEME.spacing.lg,
-  },
-  formLabel: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
-    marginBottom: THEME.spacing.sm,
-  },
-  formInput: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-  },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: THEME.spacing.xs,
-    marginBottom: THEME.spacing.sm,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: THEME.colors.gradient.blue + '20',
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.xs,
-    borderRadius: THEME.borderRadius.pill,
-    gap: THEME.spacing.xs,
-  },
-  chipText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.gradient.blue,
-  },
-  chipRemove: {
-    padding: 2,
-  },
-  addInputContainer: {
-    flexDirection: 'row',
-    gap: THEME.spacing.sm,
-    alignItems: 'center',
-  },
-  addInput: {
-    flex: 1,
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-  },
-  addButton: {
-    width: 48,
-    height: 48,
-    borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.gradient.blue,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  formHelpText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    textAlign: 'center',
-    marginTop: THEME.spacing.md,
-    fontStyle: 'italic',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: THEME.spacing.md,
-    marginTop: THEME.spacing.lg,
-  },
-  modalButton: {
-    flex: 1,
-    padding: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.rounded,
-    alignItems: 'center',
-  },
-  modalButtonCancel: {
-    backgroundColor: THEME.colors.fill[200],
-  },
-  modalButtonSave: {
-    backgroundColor: THEME.colors.gradient.blue,
-  },
-  modalButtonCancelText: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  modalButtonSaveText: {
-    ...THEME.typography.body,
-    color: THEME.colors.fill[100],
-    fontFamily: THEME.fonts.heading.medium,
   },
   modalButtonDisabled: {
     opacity: 0.6,

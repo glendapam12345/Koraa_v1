@@ -220,7 +220,7 @@ export default function TipsScreen() {
             {/* Header con estado actual */}
             <View style={styles.header}>
               <LinearGradient
-                colors={emotionData.color}
+                colors={emotionData.color as [string, string]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.emotionHeader}
@@ -456,5 +456,62 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     flex: 1,
     lineHeight: 20,
+  },
+  recommendationsSection: {
+    marginBottom: THEME.spacing.lg,
+  },
+  recommendationsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    marginBottom: THEME.spacing.md,
+  },
+  recommendationsTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  recommendationCard: {
+    flexDirection: 'row',
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
+    ...THEME.shadows.soft,
+    gap: THEME.spacing.sm,
+  },
+  recommendationEmoji: {
+    fontSize: 32,
+    marginRight: THEME.spacing.xs,
+  },
+  recommendationContent: {
+    flex: 1,
+  },
+  recommendationTitle: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: THEME.spacing.xs,
+  },
+  recommendationMessage: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    lineHeight: 22,
+    marginBottom: THEME.spacing.sm,
+  },
+  suggestionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.sm,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.pill,
+    alignSelf: 'flex-start',
+  },
+  suggestionButtonText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
   },
 });
