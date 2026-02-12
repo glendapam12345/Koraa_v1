@@ -25,6 +25,7 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
   const breatheScale = useRef(new Animated.Value(1)).current;
   const combinedScale = useRef(new Animated.Value(1)).current;
   const combinedScale = useRef(new Animated.Value(1)).current;
+  const combinedScale = useRef(new Animated.Value(1)).current;
 
   const CIRCLE_SIZE = 280;
   const STROKE_WIDTH = 12;
