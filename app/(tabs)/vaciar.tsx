@@ -6,7 +6,7 @@ import { GradientButton } from '@/components/GradientButton';
 import { Tooltip } from '@/components/Tooltip';
 import { Toast } from '@/components/Toast';
 import { FlowIndicator } from '@/components/FlowIndicator';
-import { supabase } from '@/lib/supabase';
+import { supabase, getErrorMessage } from '@/lib/supabase';
 import { detectCategory } from '@/lib/categoryDetection';
 import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic } from 'lucide-react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -43,6 +43,11 @@ export default function VaciarScreen() {
   };
 
   const addSubtask = () => {
+    // Validar límite máximo de subtareas
+    if (subtasks.length >= 20) {
+      showToast('No puedes agregar más de 20 subtareas por tarea', 'error');
+      return;
+    }
     setSubtasks([...subtasks, '']);
   };
 
@@ -85,6 +90,7 @@ export default function VaciarScreen() {
 
       if (error) {
         console.error('Error verificando tareas:', error);
+        // No mostrar toast para errores no críticos de verificación
         return;
       }
 
@@ -115,6 +121,7 @@ export default function VaciarScreen() {
 
       if (error) {
         console.error('Error cargando sugerencias:', error);
+        // No mostrar toast para errores no críticos de sugerencias
         return;
       }
 
@@ -143,6 +150,7 @@ export default function VaciarScreen() {
 
       if (error) {
         console.error('Error verificando check-in:', error);
+        // No mostrar toast para errores no críticos de verificación
         return;
       }
 
@@ -218,7 +226,8 @@ export default function VaciarScreen() {
         if (isNetworkError) {
           // Guardar offline
           const { saveTaskOffline } = await import('@/lib/offlineStorage');
-          await saveTaskOffline({
+          // Guardar tarea principal y obtener su ID generado
+          const mainTaskId = await saveTaskOffline({
             content: taskInput.trim(),
             category: detectedCategory,
             is_priority: isPriority,
@@ -236,7 +245,7 @@ export default function VaciarScreen() {
                 category: subtaskCategory,
                 is_priority: false,
                 is_completed: false,
-                parent_task_id: null, // Se asociará cuando se sincronice
+                parent_task_id: mainTaskId, // Usar ID de la tarea principal
               });
             }
           }
@@ -309,7 +318,8 @@ export default function VaciarScreen() {
       showToast(message, 'success');
     } catch (error) {
       console.error('Error inesperado:', error);
-      showToast('Ocurrió un error inesperado. Por favor intenta de nuevo', 'error');
+      const errorMessage = getErrorMessage(error);
+      showToast(errorMessage, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -328,7 +338,8 @@ export default function VaciarScreen() {
       await syncAll();
     } catch (error) {
       console.error('Error al refrescar:', error);
-      showToast('Error al actualizar los datos', 'error');
+      const errorMessage = getErrorMessage(error);
+      showToast(errorMessage, 'error');
     } finally {
       setRefreshing(false);
     }
@@ -438,6 +449,11 @@ export default function VaciarScreen() {
             multiline
             numberOfLines={4}
             textAlignVertical="top"
+            maxLength={300}
+            accessibilityLabel="Campo de texto para agregar tarea"
+            accessibilityHint="Escribe o dicta la tarea que necesitas hacer hoy"
+            accessibilityLabel="Campo de texto para agregar tarea"
+            accessibilityHint="Escribe o dicta la tarea que necesitas hacer hoy"
           />
           {/* Botón de entrada por voz */}
           {Platform.OS !== 'web' && (
@@ -445,6 +461,9 @@ export default function VaciarScreen() {
               style={styles.voiceButton}
               onPress={handleVoiceInput}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Entrada por voz"
+              accessibilityHint="Abre información sobre cómo usar el teclado de voz del sistema"
             >
               <Mic 
                 size={20} 
@@ -538,6 +557,9 @@ export default function VaciarScreen() {
                     onChangeText={(value) => updateSubtask(index, value)}
                     placeholder={`Subtarea ${index + 1}`}
                     placeholderTextColor={THEME.colors.text.secondary}
+                    maxLength={300}
+                    accessibilityLabel={`Campo de texto para subtarea ${index + 1}`}
+                    accessibilityHint="Escribe el contenido de la subtarea"
                   />
                 </View>
                 {subtasks.length > 1 && (

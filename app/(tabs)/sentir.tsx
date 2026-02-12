@@ -55,6 +55,7 @@ export default function SentirScreen() {
 
       if (error) {
         console.error('Error verificando check-in:', error);
+        // No mostrar toast para errores no críticos de verificación
         return;
       }
 
@@ -84,6 +85,7 @@ export default function SentirScreen() {
 
       if (error) {
         console.error('Error verificando tareas:', error);
+        // No mostrar toast para errores no críticos de verificación
         return;
       }
 

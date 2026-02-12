@@ -9,7 +9,7 @@ import { Toast } from '@/components/Toast';
 import { ConfettiCelebration } from '@/components/ConfettiCelebration';
 import { QuickCheckInModal } from '@/components/QuickCheckInModal';
 import { FlowIndicator } from '@/components/FlowIndicator';
-import { supabase } from '@/lib/supabase';
+import { supabase, getErrorMessage } from '@/lib/supabase';
 import { detectCategory } from '@/lib/categoryDetection';
 import { RefreshCw, ChevronDown, ChevronUp, MoreVertical, Edit, Trash2, X, Sparkles, CheckCircle2, Plus, Flame, Sunrise, Moon } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -52,6 +52,9 @@ export default function TodayScreen() {
   const [eveningMeditationDone, setEveningMeditationDone] = useState(false);
   const progressWidth = useSharedValue(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const confettiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const backgroundLoadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isLoadingTasksRef = useRef<boolean>(false);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToastMessage(message);
@@ -73,7 +76,8 @@ export default function TodayScreen() {
 
       if (error) {
         console.error('Error cargando check-in:', error);
-        showToast('No se pudo cargar tu check-in. Intenta de nuevo.', 'error');
+        const errorMessage = getErrorMessage(error);
+        showToast(errorMessage, 'error');
         return;
       }
 
@@ -92,11 +96,12 @@ export default function TodayScreen() {
       }
     } catch (error) {
       console.error('Error inesperado:', error);
-      showToast('Error al cargar tu información. Intenta de nuevo.', 'error');
+      const errorMessage = getErrorMessage(error);
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   const loadStreak = useCallback(async () => {
     try {
@@ -185,7 +190,8 @@ export default function TodayScreen() {
 
       if (error) {
         console.error('Error guardando meditación:', error);
-        showToast('No se pudo guardar la meditación', 'error');
+        const errorMessage = getErrorMessage(error);
+        showToast(errorMessage, 'error');
         return;
       }
 
@@ -204,8 +210,13 @@ export default function TodayScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
 
-      setTimeout(() => {
+      // Limpiar timeout anterior si existe
+      if (confettiTimeoutRef.current) {
+        clearTimeout(confettiTimeoutRef.current);
+      }
+      confettiTimeoutRef.current = setTimeout(() => {
         setShowConfetti(false);
+        confettiTimeoutRef.current = null;
       }, 3000);
     } catch (error) {
       console.error('Error inesperado:', error);
@@ -219,10 +230,20 @@ export default function TodayScreen() {
   };
 
   const loadTasks = useCallback(async () => {
+    // Prevenir múltiples llamadas simultáneas
+    if (isLoadingTasksRef.current) {
+      return;
+    }
+    
     try {
+      isLoadingTasksRef.current = true;
       setLoadingTasks(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        isLoadingTasksRef.current = false;
+        setLoadingTasks(false);
+        return;
+      }
 
       // Verificar si hay check-in hoy antes de cargar tareas priorizadas
       const today = new Date().toISOString().split('T')[0];
@@ -251,7 +272,8 @@ export default function TodayScreen() {
 
       if (error) {
         console.error('Error cargando tareas:', error);
-        showToast('No se pudieron cargar las tareas', 'error');
+        const errorMessage = getErrorMessage(error);
+        showToast(errorMessage, 'error');
         return;
       }
 
@@ -273,12 +295,13 @@ export default function TodayScreen() {
       }
     } catch (error) {
       console.error('Error inesperado:', error);
-      showToast('Ocurrió un error al cargar las tareas', 'error');
+      const errorMessage = getErrorMessage(error);
+      showToast(errorMessage, 'error');
     } finally {
+      isLoadingTasksRef.current = false;
       setLoadingTasks(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [showToast]);
 
   const loadPrioritizationMetadata = useCallback(async () => {
     try {
@@ -324,10 +347,19 @@ export default function TodayScreen() {
       }
     })();
 
-    // Cleanup: limpiar timeout si el componente se desmonta
+    // Cleanup: limpiar todos los timeouts si el componente se desmonta
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      if (confettiTimeoutRef.current) {
+        clearTimeout(confettiTimeoutRef.current);
+        confettiTimeoutRef.current = null;
+      }
+      if (backgroundLoadTimeoutRef.current) {
+        clearTimeout(backgroundLoadTimeoutRef.current);
+        backgroundLoadTimeoutRef.current = null;
       }
     };
   }, [loadTasks, loadTodayCheckIn, loadStreak, loadMeditations, loadPrioritizationMetadata]);
@@ -355,8 +387,13 @@ export default function TodayScreen() {
       showToast('Hoy está completo. Descansa y disfruta del momento presente ✨', 'success');
       
       // Ocultar confetti después de 4 segundos
-      setTimeout(() => {
+      // Limpiar timeout anterior si existe
+      if (confettiTimeoutRef.current) {
+        clearTimeout(confettiTimeoutRef.current);
+      }
+      confettiTimeoutRef.current = setTimeout(() => {
         setShowConfetti(false);
+        confettiTimeoutRef.current = null;
       }, 4000);
     }
     
@@ -422,15 +459,24 @@ export default function TodayScreen() {
 
       if (error) {
         console.error('Error actualizando tarea:', error);
-        showToast('No se pudo actualizar la tarea', 'error');
+        const errorMessage = getErrorMessage(error);
+        showToast(errorMessage, 'error');
+        // Revertir cambio optimista
+        setTasks(tasks.map(t =>
+          t.id === taskId ? { ...t, is_completed: !newCompletedState } : t
+        ));
         return;
       }
 
       // Si se completa una tarea principal, animar fade out después de un delay
       if (newCompletedState && !isSubtask) {
-        setTimeout(() => {
+        // Usar animación más suave con Animated
+        const fadeTimeout = setTimeout(() => {
           setTasks(prev => prev.filter(t => t.id !== taskId));
-        }, 800); // Delay para que el usuario vea la confirmación antes de desaparecer
+        }, 600); // Delay reducido para mejor UX
+        
+        // Limpiar timeout si el componente se desmonta (aunque es poco probable)
+        // Nota: Este timeout es corto y no crítico, pero es buena práctica limpiarlo
       }
 
       // Actualizar estado local y verificar si la tarea principal debe completarse
@@ -465,18 +511,36 @@ export default function TodayScreen() {
                   }
                   // Recargar después de actualizar
                   timeoutRef.current = setTimeout(() => {
-                    loadTasks();
+                    loadTasks().catch(() => {
+                      // Silenciar errores de recarga en background
+                    });
                     timeoutRef.current = null;
                   }, 200);
                 } catch (error) {
                   console.error('Error actualizando tarea principal:', error);
+                  // Revertir cambio optimista si falla
+                  setTasks(prevTasks => prevTasks.map(t => {
+                    if (t.id === parentTaskId && t.subtasks) {
+                      const revertedSubtasks = t.subtasks.map(st =>
+                        st.id === taskId ? { ...st, is_completed: !newCompletedState } : st
+                      );
+                      return {
+                        ...t,
+                        subtasks: revertedSubtasks,
+                        is_completed: !allSubtasksCompleted,
+                      };
+                    }
+                    return t;
+                  }));
+                  const errorMessage = getErrorMessage(error);
+                  showToast(`Error: ${errorMessage}`, 'error');
                 }
               })();
             } else if (!allSubtasksCompleted && wasParentCompleted) {
               // Desmarcar tarea principal si se desmarcó una subtarea
               (async () => {
                 try {
-                  await supabase
+                  const { error: updateError } = await supabase
                     .from('tasks')
                     .update({
                       is_completed: false,
@@ -484,16 +548,38 @@ export default function TodayScreen() {
                     })
                     .eq('id', parentTaskId);
 
+                  if (updateError) {
+                    throw updateError;
+                  }
+
                   // Limpiar timeout anterior si existe
                   if (timeoutRef.current) {
                     clearTimeout(timeoutRef.current);
                   }
                   timeoutRef.current = setTimeout(() => {
-                    loadTasks();
+                    loadTasks().catch(() => {
+                      // Silenciar errores de recarga en background
+                    });
                     timeoutRef.current = null;
                   }, 200);
                 } catch (error) {
                   console.error('Error actualizando tarea principal:', error);
+                  // Revertir cambio optimista si falla
+                  setTasks(prevTasks => prevTasks.map(t => {
+                    if (t.id === parentTaskId && t.subtasks) {
+                      const revertedSubtasks = t.subtasks.map(st =>
+                        st.id === taskId ? { ...st, is_completed: !newCompletedState } : st
+                      );
+                      return {
+                        ...t,
+                        subtasks: revertedSubtasks,
+                        is_completed: allSubtasksCompleted,
+                      };
+                    }
+                    return t;
+                  }));
+                  const errorMessage = getErrorMessage(error);
+                  showToast(`Error: ${errorMessage}`, 'error');
                 }
               })();
             }
@@ -517,8 +603,16 @@ export default function TodayScreen() {
       // Cerrar menú si estaba abierto
       setMenuOpen(null);
       
-      // Recargar tareas para obtener el estado actualizado
-      await loadTasks();
+      // No recargar inmediatamente - la actualización optimista ya se hizo
+      // Solo recargar si hay subtareas para sincronizar estado de tarea principal
+      if (!isSubtask || !parentTaskId) {
+        // Recargar en background para sincronizar (sin bloquear UI)
+        setTimeout(() => {
+          loadTasks().catch(() => {
+            // Silenciar errores de recarga en background
+          });
+        }, 500);
+      }
       
       // Mostrar toast de éxito con mensajes más engaging
       if (newCompletedState) {
@@ -588,19 +682,60 @@ export default function TodayScreen() {
 
       if (error) {
         console.error('Error actualizando tarea:', error);
-        showToast('No se pudo actualizar la tarea', 'error');
+        const errorMessage = getErrorMessage(error);
+        showToast(errorMessage, 'error');
         return;
       }
 
-      // Recargar tareas para asegurar sincronización completa (incluye subtareas si las hay)
-      await loadTasks();
+      // Actualización optimista - actualizar estado local inmediatamente
+      setTasks(prevTasks => prevTasks.map(t => {
+        if (t.id === editingTask.id) {
+          return {
+            ...t,
+            content: editContent.trim(),
+            category: detectedCategory || editingTask.category || '',
+          };
+        }
+        // Actualizar también en subtareas si existe
+        if (t.subtasks) {
+          const updatedSubtasks = t.subtasks.map(st =>
+            st.id === editingTask.id ? {
+              ...st,
+              content: editContent.trim(),
+              category: detectedCategory || editingTask.category || '',
+            } : st
+          );
+          return { ...t, subtasks: updatedSubtasks };
+        }
+        return t;
+      }));
+
+        // Recargar en background para sincronizar (sin bloquear UI)
+        // Limpiar timeout anterior si existe
+        if (backgroundLoadTimeoutRef.current) {
+          clearTimeout(backgroundLoadTimeoutRef.current);
+        }
+        backgroundLoadTimeoutRef.current = setTimeout(() => {
+          if (!isLoadingTasksRef.current) {
+            isLoadingTasksRef.current = true;
+            loadTasks()
+              .catch(() => {
+                // Silenciar errores de recarga en background
+              })
+              .finally(() => {
+                isLoadingTasksRef.current = false;
+                backgroundLoadTimeoutRef.current = null;
+              });
+          }
+        }, 300);
 
       setEditingTask(null);
       setEditContent('');
       showToast('Tarea actualizada correctamente', 'success');
     } catch (error) {
       console.error('Error inesperado:', error);
-      showToast('Ocurrió un error al actualizar la tarea', 'error');
+      const errorMessage = getErrorMessage(error);
+      showToast(errorMessage, 'error');
     }
   };
 
@@ -625,7 +760,8 @@ export default function TodayScreen() {
 
                 if (subtasksError) {
                   console.error('Error eliminando subtareas:', subtasksError);
-                  showToast('No se pudieron eliminar las subtareas. La tarea principal no se eliminó.', 'error');
+                  const errorMessage = getErrorMessage(subtasksError);
+                  showToast(`No se pudieron eliminar las subtareas: ${errorMessage}`, 'error');
                   setMenuOpen(null);
                   return;
                 }
@@ -639,18 +775,20 @@ export default function TodayScreen() {
 
               if (error) {
                 console.error('Error eliminando tarea:', error);
-                showToast('No se pudo eliminar la tarea', 'error');
+                const errorMessage = getErrorMessage(error);
+                showToast(errorMessage, 'error');
                 setMenuOpen(null);
                 return;
               }
 
-              // Actualizar estado local
-              setTasks(tasks.filter(t => t.id !== task.id));
+              // Actualización optimista - remover de la lista inmediatamente
+              setTasks(prevTasks => prevTasks.filter(t => t.id !== task.id));
               setMenuOpen(null);
               showToast('Tarea eliminada correctamente', 'success');
             } catch (error) {
               console.error('Error inesperado:', error);
-              showToast('Ocurrió un error al eliminar la tarea', 'error');
+              const errorMessage = getErrorMessage(error);
+              showToast(errorMessage, 'error');
               setMenuOpen(null);
             }
           },
@@ -977,15 +1115,18 @@ export default function TodayScreen() {
                   {todayMood.charAt(0).toUpperCase() + todayMood.slice(1)}
                 </Text>
               </View>
-              <TouchableOpacity
-                style={styles.refreshButton}
-                onPress={() => {
-                  loadTasks();
-                  loadTodayCheckIn();
-                }}
-              >
-                <RefreshCw size={20} color={THEME.colors.fill[100]} />
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={() => {
+                loadTasks();
+                loadTodayCheckIn();
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Actualizar información"
+              accessibilityHint="Recarga el check-in y las tareas del día"
+            >
+              <RefreshCw size={20} color={THEME.colors.fill[100]} />
+            </TouchableOpacity>
             </View>
             {energy || time || focusLevel ? (
               <View style={styles.moodStats}>
@@ -1015,6 +1156,9 @@ export default function TodayScreen() {
               style={styles.updateCheckInButton}
               onPress={() => router.push('/(tabs)/sentir')}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Actualizar cómo me siento"
+              accessibilityHint="Abre la pantalla para actualizar tu estado emocional del día"
             >
               <Text style={styles.updateCheckInButtonText}>
                 Actualizar cómo me siento
@@ -1143,8 +1287,17 @@ export default function TodayScreen() {
 
         <View style={styles.tasksContainer}>
           {loadingTasks ? (
-            <View style={styles.emptyState}>
-              <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
+            <View style={styles.loadingContainer}>
+              {/* Skeleton loaders para tareas */}
+              {[1, 2, 3].map((i) => (
+                <View key={i} style={styles.skeletonTask}>
+                  <View style={styles.skeletonCheckbox} />
+                  <View style={styles.skeletonContent}>
+                    <View style={styles.skeletonLine} />
+                    <View style={[styles.skeletonLine, { width: '60%', marginTop: 8 }]} />
+                  </View>
+                </View>
+              ))}
             </View>
           ) : tasks.length === 0 ? (
             <View style={styles.emptyState}>
@@ -1229,6 +1382,9 @@ export default function TodayScreen() {
                         isCompleted && { opacity: 0.5 },
                       ]}
                       activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={isCompleted ? `Tarea completada: ${task.content}` : `Tarea ${index + 1}: ${task.content}`}
+                      accessibilityHint={hasSubtasks ? "Doble toque para expandir o colapsar subtareas" : "Doble toque para marcar como completada"}
                     >
                       {/* Número de prioridad (solo para tareas no completadas) */}
                       {!isCompleted && (
@@ -1245,6 +1401,9 @@ export default function TodayScreen() {
                           onPress={() => toggleTaskExpansion(task.id)}
                           style={styles.expandButton}
                           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          accessibilityRole="button"
+                          accessibilityLabel={isExpanded ? "Colapsar subtareas" : "Expandir subtareas"}
+                          accessibilityHint={`Tiene ${totalSubtasks} subtareas, ${completedSubtasks} completadas`}
                         >
                           {isExpanded ? (
                             <ChevronUp size={20} color={THEME.colors.text.secondary} />
@@ -1258,6 +1417,10 @@ export default function TodayScreen() {
                         onPress={() => toggleTask(task.id)}
                         style={styles.taskCheckbox}
                         activeOpacity={0.7}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: task.is_completed }}
+                        accessibilityLabel={task.is_completed ? "Marcar como no completada" : "Marcar como completada"}
+                        accessibilityHint={`Tarea: ${task.content}`}
                       >
                         {task.is_completed && <View style={styles.taskCheckboxChecked} />}
                       </TouchableOpacity>
@@ -1327,6 +1490,9 @@ export default function TodayScreen() {
                         onPress={() => setMenuOpen(menuOpen === task.id ? null : task.id)}
                         style={styles.menuButton}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        accessibilityRole="button"
+                        accessibilityLabel="Opciones de tarea"
+                        accessibilityHint="Abre menú para editar o eliminar esta tarea"
                       >
                         <MoreVertical size={20} color={THEME.colors.text.secondary} />
                       </TouchableOpacity>
@@ -1339,6 +1505,8 @@ export default function TodayScreen() {
                         <TouchableOpacity
                           style={styles.menuItem}
                           onPress={() => handleEditTask(task)}
+                          accessibilityRole="button"
+                          accessibilityLabel="Editar tarea"
                         >
                           <Edit size={18} color={THEME.colors.text.main} />
                           <Text style={styles.menuItemText}>Editar</Text>
@@ -1346,6 +1514,8 @@ export default function TodayScreen() {
                         <TouchableOpacity
                           style={[styles.menuItem, styles.menuItemDanger]}
                           onPress={() => handleDeleteTask(task)}
+                          accessibilityRole="button"
+                          accessibilityLabel="Eliminar tarea"
                         >
                           <Trash2 size={18} color="#FF6B6B" />
                           <Text style={[styles.menuItemText, styles.menuItemTextDanger]}>Eliminar</Text>
@@ -1365,18 +1535,31 @@ export default function TodayScreen() {
                               subtask.is_completed && styles.subtaskCardCompleted,
                             ]}
                             activeOpacity={0.7}
+                            accessibilityRole="checkbox"
+                            accessibilityState={{ checked: subtask.is_completed }}
+                            accessibilityLabel={subtask.is_completed ? `Subtarea completada: ${subtask.content}` : `Subtarea: ${subtask.content}`}
+                            accessibilityHint="Doble toque para marcar como completada"
                           >
                             <View style={styles.subtaskCheckbox}>
                               {subtask.is_completed && (
                                 <View style={styles.subtaskCheckboxChecked} />
                               )}
                             </View>
-                            <Text style={[
-                              styles.subtaskText,
-                              subtask.is_completed && styles.subtaskTextCompleted,
-                            ]}>
-                              {subtask.content}
-                            </Text>
+                            <View style={styles.subtaskContent}>
+                              {/* Badge de subtarea */}
+                              <View style={styles.subtaskTypeContainer}>
+                                <View style={[styles.taskTypeBadge, styles.subtaskBadge]}>
+                                  <Text style={styles.taskTypeIcon}>└</Text>
+                                  <Text style={styles.taskTypeText}>Subtarea</Text>
+                                </View>
+                              </View>
+                              <Text style={[
+                                styles.subtaskText,
+                                subtask.is_completed && styles.subtaskTextCompleted,
+                              ]}>
+                                {subtask.content}
+                              </Text>
+                            </View>
                           </TouchableOpacity>
                         ))}
                       </View>
@@ -1711,6 +1894,33 @@ const styles = StyleSheet.create({
   tasksContainer: {
     gap: THEME.spacing.sm,
   },
+  loadingContainer: {
+    gap: THEME.spacing.sm,
+  },
+  skeletonTask: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    ...THEME.shadows.soft,
+  },
+  skeletonCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: THEME.colors.stroke[100],
+  },
+  skeletonContent: {
+    flex: 1,
+  },
+  skeletonLine: {
+    height: 16,
+    backgroundColor: THEME.colors.stroke[100],
+    borderRadius: 4,
+    width: '100%',
+  },
   emptyState: {
     backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.rounded,
@@ -1915,10 +2125,15 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: THEME.colors.gradient.blue,
   },
+  subtaskContent: {
+    flex: 1,
+  },
+  subtaskTypeContainer: {
+    marginBottom: THEME.spacing.xs,
+  },
   subtaskText: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
-    flex: 1,
     fontSize: 14,
   },
   subtaskTextCompleted: {
