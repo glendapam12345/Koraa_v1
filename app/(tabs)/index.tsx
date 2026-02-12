@@ -987,10 +987,26 @@ export default function TodayScreen() {
                 <RefreshCw size={20} color={THEME.colors.fill[100]} />
               </TouchableOpacity>
             </View>
-            {energy || time ? (
+            {energy || time || focusLevel ? (
               <View style={styles.moodStats}>
-                {energy && <Text style={styles.moodStat}>Energía: {energy}</Text>}
-                {time && <Text style={styles.moodStat}>{time}</Text>}
+                {energy && (
+                  <View style={styles.moodStatItem}>
+                    <Text style={styles.moodStatLabel}>Energía</Text>
+                    <Text style={styles.moodStatValue}>{energy}</Text>
+                  </View>
+                )}
+                {time && (
+                  <View style={styles.moodStatItem}>
+                    <Text style={styles.moodStatLabel}>Tiempo disponible</Text>
+                    <Text style={styles.moodStatValue}>{time}</Text>
+                  </View>
+                )}
+                {focusLevel && (
+                  <View style={styles.moodStatItem}>
+                    <Text style={styles.moodStatLabel}>Enfoque</Text>
+                    <Text style={styles.moodStatValue}>{focusLevel}</Text>
+                  </View>
+                )}
               </View>
             ) : null}
             
@@ -1247,6 +1263,26 @@ export default function TodayScreen() {
                       </TouchableOpacity>
                       
                       <View style={styles.taskContent}>
+                        {/* Badge de tipo de tarea */}
+                        <View style={styles.taskTypeContainer}>
+                          {hasSubtasks ? (
+                            <View style={[styles.taskTypeBadge, styles.projectBadge]}>
+                              <Text style={styles.taskTypeIcon}>📁</Text>
+                              <Text style={styles.taskTypeText}>Proyecto</Text>
+                            </View>
+                          ) : task.parent_task_id ? (
+                            <View style={[styles.taskTypeBadge, styles.subtaskBadge]}>
+                              <Text style={styles.taskTypeIcon}>└</Text>
+                              <Text style={styles.taskTypeText}>Subtarea</Text>
+                            </View>
+                          ) : (
+                            <View style={[styles.taskTypeBadge, styles.taskBadge]}>
+                              <Text style={styles.taskTypeIcon}>✓</Text>
+                              <Text style={styles.taskTypeText}>Tarea</Text>
+                            </View>
+                          )}
+                        </View>
+
                         <Text style={[
                           styles.taskText,
                           isCompleted && styles.taskTextCompleted,
@@ -1508,11 +1544,28 @@ const styles = StyleSheet.create({
   moodStats: {
     flexDirection: 'row',
     gap: THEME.spacing.md,
+    marginTop: THEME.spacing.sm,
+    flexWrap: 'wrap',
   },
-  moodStat: {
+  moodStatItem: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: THEME.borderRadius.rounded,
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    minWidth: 100,
+  },
+  moodStatLabel: {
     ...THEME.typography.caption,
     color: THEME.colors.fill[100],
-    opacity: 0.9,
+    opacity: 0.8,
+    fontSize: 10,
+    marginBottom: 2,
+  },
+  moodStatValue: {
+    ...THEME.typography.body,
+    color: THEME.colors.fill[100],
+    fontFamily: THEME.fonts.heading.medium,
+    fontSize: 13,
   },
   section: {
     marginBottom: THEME.spacing.md,
@@ -1757,6 +1810,41 @@ const styles = StyleSheet.create({
   taskContent: {
     flex: 1,
   },
+  taskTypeContainer: {
+    marginBottom: THEME.spacing.xs,
+  },
+  taskTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: THEME.spacing.xs,
+    paddingVertical: 2,
+    borderRadius: THEME.borderRadius.pill,
+    gap: 4,
+  },
+  projectBadge: {
+    backgroundColor: 'rgba(74, 144, 226, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(74, 144, 226, 0.25)',
+  },
+  taskBadge: {
+    backgroundColor: THEME.colors.fill[200],
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  subtaskBadge: {
+    backgroundColor: 'rgba(255, 107, 107, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 107, 107, 0.19)',
+  },
+  taskTypeIcon: {
+    fontSize: 12,
+  },
+  taskTypeText: {
+    ...THEME.typography.caption,
+    fontSize: 10,
+    fontFamily: THEME.fonts.heading.medium,
+  },
   taskText: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
@@ -1777,8 +1865,9 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.medium,
   },
   taskCardWithSubtasks: {
-    borderLeftWidth: 3,
+    borderLeftWidth: 4,
     borderLeftColor: THEME.colors.gradient.blue,
+    backgroundColor: 'rgba(74, 144, 226, 0.02)',
   },
   expandButton: {
     padding: THEME.spacing.sm,
@@ -1801,6 +1890,9 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.standard,
     padding: THEME.spacing.sm,
     marginBottom: THEME.spacing.xs,
+    marginLeft: THEME.spacing.lg,
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(255, 107, 107, 0.25)',
     flexDirection: 'row',
     alignItems: 'center',
     gap: THEME.spacing.sm,

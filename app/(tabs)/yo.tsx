@@ -214,61 +214,6 @@ export default function ProfileScreen() {
     router.replace('/onboarding/welcome');
   };
 
-  const createTestCheckIns = async () => {
-    if (!user) return;
-
-    const EMOTIONS = ['Tranquila', 'Enfocada', 'Motivada', 'Ansiosa', 'Agotada', 'Abrumada'];
-    const TIME_OPTIONS = ['Poco (1-2hrs)', 'Medio (2-4hrs)', 'Bastante (4-6hrs)', 'Todo el día'];
-    const FOCUS_OPTIONS = ['Muy distraída', 'Algo distraída', 'Normal', 'Enfocada', 'Súper enfocada'];
-
-    const today = new Date();
-    const checkIns = [];
-
-    // Crear check-ins para los últimos 14 días
-    for (let i = 0; i < 14; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-      const dateString = date.toISOString().split('T')[0];
-
-      // Variar emociones y energía para mostrar diferentes colores
-      const emotionIndex = i % EMOTIONS.length;
-      const emotion = EMOTIONS[emotionIndex];
-      
-      // Variar energía (1-5) para mostrar diferentes alturas
-      const energyLevel = (i % 5) + 1;
-      
-      // Valores aleatorios pero consistentes para tiempo y enfoque
-      const timeIndex = i % TIME_OPTIONS.length;
-      const focusIndex = i % FOCUS_OPTIONS.length;
-
-      checkIns.push({
-        user_id: user.id,
-        date: dateString,
-        emotion: emotion,
-        energy_level: energyLevel,
-        available_time: TIME_OPTIONS[timeIndex],
-        focus_level: FOCUS_OPTIONS[focusIndex],
-      });
-    }
-
-    // Insertar check-ins en la base de datos
-    const { error } = await supabase
-      .from('daily_check_ins')
-      .upsert(checkIns, { onConflict: 'user_id,date' });
-
-    if (error) {
-      console.error('Error creando check-ins de prueba:', error);
-      const errorMessage = getErrorMessage(error);
-      Alert.alert('Error al crear check-ins', `No se pudieron crear los check-ins de prueba: ${errorMessage}`);
-      return;
-    }
-
-    // Recargar datos
-    await loadProgressData();
-    await loadStreak();
-    Alert.alert('Éxito', `✅ Creados ${checkIns.length} check-ins de prueba`);
-  };
-
   const MAX_ITEMS = 25; // Límite máximo de actividades/intereses
 
   const addActivity = useCallback(() => {
@@ -580,21 +525,6 @@ export default function ProfileScreen() {
             </View>
           )}
         </View>
-
-        {/* Botón temporal para crear check-ins de prueba - Solo visible en desarrollo */}
-        {__DEV__ && (
-          <View style={styles.section}>
-            <TouchableOpacity
-              style={styles.testButton}
-              onPress={createTestCheckIns}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.testButtonText}>
-                🧪 Crear check-ins de prueba (14 días)
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Mi perfil</Text>
@@ -1195,18 +1125,6 @@ const styles = StyleSheet.create({
   },
   footerAccent: {
     fontFamily: THEME.fonts.accent.italic,
-  },
-  testButton: {
-    backgroundColor: THEME.colors.gradient.blue,
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    alignItems: 'center',
-    marginBottom: THEME.spacing.md,
-  },
-  testButtonText: {
-    ...THEME.typography.body,
-    color: THEME.colors.fill[100],
-    fontFamily: THEME.fonts.heading.bold,
   },
   insightsCard: {
     backgroundColor: THEME.colors.fill[100],
