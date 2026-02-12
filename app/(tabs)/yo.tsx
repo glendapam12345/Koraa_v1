@@ -705,10 +705,33 @@ export default function ProfileScreen() {
                   onChangeText={(text) => {
                     // Solo permitir números
                     const numericText = text.replace(/[^0-9]/g, '');
-                    if (numericText === '' || (parseInt(numericText) >= 13 && parseInt(numericText) <= 120)) {
+                    if (numericText === '') {
+                      setAgeInput('');
+                      return;
+                    }
+                    
+                    const age = parseInt(numericText);
+                    
+                    // Validar rango 13-120
+                    if (age >= 13 && age <= 120) {
                       setAgeInput(numericText);
-                    } else if (numericText.length > 0 && parseInt(numericText) > 120) {
+                    } else if (age > 120) {
                       Alert.alert('Edad inválida', 'La edad debe ser entre 13 y 120 años');
+                      setAgeInput('120'); // Limitar a máximo
+                    } else if (age < 13 && numericText.length > 0) {
+                      // No permitir valores menores a 13
+                      if (numericText.length === 1) {
+                        // Si solo tiene 1 dígito y es menor a 1, permitir (puede estar escribiendo)
+                        if (age >= 1) {
+                          setAgeInput(numericText);
+                        } else {
+                          setAgeInput('');
+                        }
+                      } else {
+                        // Si tiene 2 dígitos y es menor a 13, bloquear
+                        Alert.alert('Edad inválida', 'La edad debe ser entre 13 y 120 años');
+                        setAgeInput('13'); // Establecer mínimo
+                      }
                     }
                   }}
                   placeholder="Ej: 28"
@@ -773,19 +796,25 @@ export default function ProfileScreen() {
               {/* Intereses */}
               <View style={styles.formSection}>
                 <Text style={styles.formLabel}>Intereses</Text>
-                <View style={styles.chipContainer}>
-                  {(profile.interests || []).map((interest, index) => (
-                    <View key={index} style={styles.chip}>
-                      <Text style={styles.chipText}>{interest}</Text>
-                      <TouchableOpacity
-                        onPress={() => removeInterest(index)}
-                        style={styles.chipRemove}
-                      >
-                        <X size={14} color={THEME.colors.text.secondary} />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
+                {(profile.interests || []).length === 0 ? (
+                  <Text style={styles.emptyListText}>
+                    No has agregado intereses aún. Agrega tus intereses para recibir recomendaciones más relevantes.
+                  </Text>
+                ) : (
+                  <View style={styles.chipContainer}>
+                    {(profile.interests || []).map((interest, index) => (
+                      <View key={index} style={styles.chip}>
+                        <Text style={styles.chipText}>{interest}</Text>
+                        <TouchableOpacity
+                          onPress={() => removeInterest(index)}
+                          style={styles.chipRemove}
+                        >
+                          <X size={14} color={THEME.colors.text.secondary} />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
                 <View style={styles.addInputContainer}>
                   <TextInput
                     style={styles.addInput}
