@@ -2149,6 +2149,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   meditationButtonGradient: {
+    flex: 1,
     padding: THEME.spacing.md,
     alignItems: 'center',
     gap: THEME.spacing.xs,
