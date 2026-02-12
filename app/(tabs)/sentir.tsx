@@ -134,7 +134,7 @@ export default function SentirScreen() {
                   Agrega tareas primero
                 </Text>
                 <Text style={styles.noTasksBannerSubtext}>
-                  Ve a "Vaciar" para agregar lo que necesitas hacer hoy
+                  Ve a &quot;Vaciar&quot; para agregar lo que necesitas hacer hoy
                 </Text>
               </View>
             </LinearGradient>

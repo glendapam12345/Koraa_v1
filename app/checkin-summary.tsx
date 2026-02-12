@@ -9,12 +9,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { CheckCircle2, Sparkles } from 'lucide-react-native';
 
 const EMOTIONS = [
-  { id: 'agotada', emoji: '😔', label: 'Agotada', color: ['#667eea', '#764ba2'] },
-  { id: 'tranquila', emoji: '😌', label: 'Tranquila', color: ['#f093fb', '#f5576c'] },
-  { id: 'ansiosa', emoji: '😰', label: 'Ansiosa', color: ['#fa709a', '#fee140'] },
-  { id: 'motivada', emoji: '✨', label: 'Motivada', color: ['#30cfd0', '#330867'] },
-  { id: 'abrumada', emoji: '🥺', label: 'Abrumada', color: ['#a8edea', '#fed6e3'] },
-  { id: 'enfocada', emoji: '🎯', label: 'Enfocada', color: ['#667eea', '#764ba2'] },
+  { id: 'agotada', emoji: '😔', label: 'Agotada', color: ['#667eea', '#764ba2'] as const },
+  { id: 'tranquila', emoji: '😌', label: 'Tranquila', color: ['#f093fb', '#f5576c'] as const },
+  { id: 'ansiosa', emoji: '😰', label: 'Ansiosa', color: ['#fa709a', '#fee140'] as const },
+  { id: 'motivada', emoji: '✨', label: 'Motivada', color: ['#30cfd0', '#330867'] as const },
+  { id: 'abrumada', emoji: '🥺', label: 'Abrumada', color: ['#a8edea', '#fed6e3'] as const },
+  { id: 'enfocada', emoji: '🎯', label: 'Enfocada', color: ['#667eea', '#764ba2'] as const },
 ];
 
 type Task = {
@@ -183,7 +183,7 @@ export default function CheckInSummaryScreen() {
           <View style={styles.noTasksCard}>
             <Text style={styles.noTasksText}>
               No hay tareas para priorizar aún.{'\n'}
-              Agrega tareas en "Vaciar" para verlas aquí.
+              Agrega tareas en &quot;Vaciar&quot; para verlas aquí.
             </Text>
           </View>
         )}

@@ -34,13 +34,13 @@ export default function HowItWorksScreen() {
             </Text>
             <View style={styles.exampleCard}>
               <Text style={styles.exampleText}>
-                "Preparar presentación del proyecto"
+                &quot;Preparar presentación del proyecto&quot;
               </Text>
               <Text style={styles.exampleText}>
-                "Llamar al dentista"
+                &quot;Llamar al dentista&quot;
               </Text>
               <Text style={styles.exampleText}>
-                "Hacer ejercicio"
+                &quot;Hacer ejercicio&quot;
               </Text>
             </View>
           </View>
