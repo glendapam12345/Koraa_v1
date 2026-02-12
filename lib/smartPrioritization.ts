@@ -134,7 +134,7 @@ function getTaskType(task: Task): 'creative' | 'administrative' | 'neutral' {
 /**
  * Calcula el score de priorización para una tarea
  */
-function calculateTaskScore(
+export function calculateTaskScore(
   task: Task,
   checkIn: CheckInData,
   categoryCounts: Map<string, number>
@@ -144,9 +144,11 @@ function calculateTaskScore(
   
   // Factor 1: Energía → Número de tareas (ya se maneja en el límite)
   // Las tareas más recientes tienen un pequeño boost
-  const daysSinceCreation = Math.floor(
-    (Date.now() - new Date(task.created_at).getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const daysSinceCreation = task.created_at
+    ? Math.floor(
+        (Date.now() - new Date(task.created_at).getTime()) / (1000 * 60 * 60 * 24)
+      )
+    : 0;
   if (daysSinceCreation <= 1) {
     score += 10;
     reasons.push('Tarea reciente');
