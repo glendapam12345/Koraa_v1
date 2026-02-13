@@ -1,18 +1,19 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-import { Moon, Sparkles, PenTool, Heart, Target, ArrowRight } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { Moon, CheckCircle2 } from 'lucide-react-native';
 
 interface NoPendingTasksCelebrationProps {
   recommendation?: {
     message: string;
     emoji: string;
   };
+  onDismiss?: () => void;
 }
 
-export function NoPendingTasksCelebration({ recommendation }: NoPendingTasksCelebrationProps) {
+export function NoPendingTasksCelebration({ recommendation, onDismiss }: NoPendingTasksCelebrationProps) {
+  const [isVisible, setIsVisible] = useState(true);
   const scale = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const iconRotation = useRef(new Animated.Value(0)).current;
@@ -77,6 +78,26 @@ export function NoPendingTasksCelebration({ recommendation }: NoPendingTasksCele
     outputRange: ['0deg', '360deg'],
   });
 
+  const handleDismiss = () => {
+    Animated.parallel([
+      Animated.timing(scale, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsVisible(false);
+      onDismiss?.();
+    });
+  };
+
+  if (!isVisible) return null;
+
   return (
     <Animated.View
       style={[
@@ -88,93 +109,30 @@ export function NoPendingTasksCelebration({ recommendation }: NoPendingTasksCele
       ]}
     >
       <LinearGradient
-        colors={['#FF6B9D', '#FF8E9B', '#FFB3B8']}
+        colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        end={{ x: 1, y: 0 }}
         style={styles.card}
       >
-        <Animated.View
-          style={[
-            styles.iconContainer,
-            {
-              transform: [{ rotate: iconRotate }],
-            },
-          ]}
+        <View style={styles.cardHeader}>
+          <View style={styles.iconCheckContainer}>
+            <CheckCircle2 size={24} color="#FFFFFF" />
+          </View>
+          <View style={styles.textContainer}>
+            <Text style={styles.title}>Hoy está completo.</Text>
+            <Text style={styles.subtitle}>Descansa y disfruta del momento presente</Text>
+          </View>
+        </View>
+        
+        <TouchableOpacity
+          style={styles.dismissButton}
+          onPress={handleDismiss}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="De acuerdo"
         >
-          <Moon size={48} color="#FFFFFF" />
-        </Animated.View>
-
-        <Animated.View style={{ opacity: textOpacity }}>
-          <Text style={styles.title}>¡No tienes pendientes para hoy!</Text>
-          <Text style={styles.subtitle}>Descansa</Text>
-        </Animated.View>
-
-        {/* Flujo de uso de la app */}
-        <Animated.View style={[styles.flowContainer, { opacity: flowOpacity }]}>
-          <Text style={styles.flowTitle}>¿Cómo usar Kora?</Text>
-          
-          <View style={styles.flowSteps}>
-            {/* Paso 1: Vaciar */}
-            <TouchableOpacity
-              style={styles.flowStep}
-              onPress={() => router.push('/(tabs)/vaciar')}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Paso 1: Vaciar - Agrega tus tareas"
-            >
-              <View style={styles.flowStepNumber}>
-                <PenTool size={20} color="#FFFFFF" />
-              </View>
-              <View style={styles.flowStepContent}>
-                <Text style={styles.flowStepTitle}>Vaciar</Text>
-                <Text style={styles.flowStepDesc}>Agrega tus tareas</Text>
-              </View>
-            </TouchableOpacity>
-
-            <View style={styles.flowArrow}>
-              <ArrowRight size={18} color="rgba(255, 255, 255, 0.7)" />
-            </View>
-
-            {/* Paso 2: Sentir */}
-            <TouchableOpacity
-              style={styles.flowStep}
-              onPress={() => router.push('/(tabs)/sentir')}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Paso 2: Sentir - Di cómo te sientes"
-            >
-              <View style={styles.flowStepNumber}>
-                <Heart size={20} color="#FFFFFF" />
-              </View>
-              <View style={styles.flowStepContent}>
-                <Text style={styles.flowStepTitle}>Sentir</Text>
-                <Text style={styles.flowStepDesc}>Di cómo te sientes</Text>
-              </View>
-            </TouchableOpacity>
-
-            <View style={styles.flowArrow}>
-              <ArrowRight size={18} color="rgba(255, 255, 255, 0.7)" />
-            </View>
-
-            {/* Paso 3: Inicio */}
-            <View style={styles.flowStep}>
-              <View style={[styles.flowStepNumber, styles.flowStepNumberActive]}>
-                <Target size={20} color="#FFFFFF" />
-              </View>
-              <View style={styles.flowStepContent}>
-                <Text style={styles.flowStepTitle}>Inicio</Text>
-                <Text style={styles.flowStepDesc}>Ve tus prioridades</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.flowTip}>
-            <Sparkles size={16} color="#FFFFFF" />
-            <Text style={styles.flowTipText}>
-              Kora prioriza automáticamente según cómo te sientes
-            </Text>
-          </View>
-        </Animated.View>
+          <Text style={styles.dismissButtonText}>De acuerdo</Text>
+        </TouchableOpacity>
       </LinearGradient>
     </Animated.View>
   );
@@ -183,109 +141,51 @@ export function NoPendingTasksCelebration({ recommendation }: NoPendingTasksCele
 const styles = StyleSheet.create({
   container: {
     marginBottom: THEME.spacing.lg,
+    marginHorizontal: THEME.spacing.lg,
   },
   card: {
     borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.xl,
-    alignItems: 'center',
+    padding: THEME.spacing.md,
     ...THEME.shadows.soft,
   },
-  iconContainer: {
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: THEME.spacing.sm,
     marginBottom: THEME.spacing.md,
+  },
+  iconCheckContainer: {
+    marginTop: 2,
+  },
+  textContainer: {
+    flex: 1,
   },
   title: {
-    ...THEME.typography.h2,
+    ...THEME.typography.h3,
     color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: THEME.spacing.xs,
     fontFamily: THEME.fonts.heading.bold,
+    marginBottom: THEME.spacing.xs,
   },
   subtitle: {
-    ...THEME.typography.h3,
+    ...THEME.typography.body,
     color: '#FFFFFF',
-    textAlign: 'center',
-    opacity: 0.9,
-    fontFamily: THEME.fonts.accent.italic,
-    marginBottom: THEME.spacing.lg,
+    opacity: 0.95,
+    fontSize: 14,
+    lineHeight: 20,
   },
-  flowContainer: {
-    width: '100%',
-    marginTop: THEME.spacing.md,
-    paddingTop: THEME.spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  flowTitle: {
-    ...THEME.typography.h3,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: THEME.spacing.md,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  flowSteps: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: THEME.spacing.xs,
-    marginBottom: THEME.spacing.md,
-  },
-  flowStep: {
-    alignItems: 'center',
-    minWidth: 80,
-  },
-  flowStepNumber: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  dismissButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: THEME.spacing.xs,
-    borderWidth: 2,
+    borderRadius: THEME.borderRadius.pill,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.lg,
+    alignSelf: 'center',
+    borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
-  flowStepNumberActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-    borderColor: 'rgba(255, 255, 255, 0.6)',
-  },
-  flowStepContent: {
-    alignItems: 'center',
-  },
-  flowStepTitle: {
+  dismissButtonText: {
     ...THEME.typography.body,
     color: '#FFFFFF',
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 13,
-    marginBottom: 2,
-  },
-  flowStepDesc: {
-    ...THEME.typography.caption,
-    color: '#FFFFFF',
-    opacity: 0.85,
-    fontSize: 11,
-    textAlign: 'center',
-  },
-  flowArrow: {
-    marginHorizontal: THEME.spacing.xs,
-    marginBottom: THEME.spacing.sm,
-  },
-  flowTip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: THEME.spacing.xs,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.sm,
-    marginTop: THEME.spacing.sm,
-  },
-  flowTipText: {
-    ...THEME.typography.caption,
-    color: '#FFFFFF',
-    opacity: 0.95,
-    fontSize: 12,
-    flex: 1,
-    textAlign: 'center',
+    fontSize: 14,
   },
 });
