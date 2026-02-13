@@ -463,7 +463,7 @@ export default function VaciarScreen() {
             style={styles.input}
             value={taskInput}
             onChangeText={setTaskInput}
-            placeholder="¿Qué necesitas hacer hoy?"
+            placeholder="Escribe la tarea o idea que quieres soltar..."
             placeholderTextColor={THEME.colors.text.secondary}
             multiline
             numberOfLines={4}
@@ -512,9 +512,8 @@ export default function VaciarScreen() {
           </View>
         )}
 
-        {/* Categorías ahora son invisibles - se detectan automáticamente */}
-
-        {/* Selector de Proyecto */}
+        {/* Proyecto y fecha: opcionales pero ayudan a organizar la semana */}
+        <Text style={styles.sectionLabel}>Proyecto y fecha (opcionales)</Text>
         {user && (
           <ProjectSelector
             selectedProjectId={selectedProjectId}
@@ -685,6 +684,11 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     lineHeight: 24,
     marginBottom: THEME.spacing.lg,
+  },
+  sectionLabel: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.sm,
   },
   inputContainer: {
     backgroundColor: THEME.colors.fill[200],

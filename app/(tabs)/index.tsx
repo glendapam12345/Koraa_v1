@@ -70,7 +70,6 @@ export default function TodayScreen() {
   const [morningMeditationDone, setMorningMeditationDone] = useState(false);
   const [eveningMeditationDone, setEveningMeditationDone] = useState(false);
   const [dismissedCelebration, setDismissedCelebration] = useState(false);
-  const [showVaciarModal, setShowVaciarModal] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backgroundLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -461,7 +460,6 @@ export default function TodayScreen() {
                 }
 
                 showToast('Tareas vaciadas correctamente', 'success');
-                setShowVaciarModal(false);
                 await loadTasks();
               } catch (error) {
                 logger.error('Error inesperado:', error);
@@ -848,7 +846,7 @@ export default function TodayScreen() {
               </View>
               <TouchableOpacity
                 style={styles.vaciarButton}
-                onPress={() => setShowVaciarModal(true)}
+                onPress={() => handleVaciarTareas()}
                 activeOpacity={0.8}
                 accessibilityRole="button"
                 accessibilityLabel="Vaciar tareas"
@@ -895,17 +893,6 @@ export default function TodayScreen() {
                 </Text>
               </View>
             )}
-
-            <TouchableOpacity
-              style={styles.agregarTareasButton}
-              onPress={() => router.push('/(tabs)/vaciar')}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Agregar tareas o proyectos"
-            >
-              <Plus size={18} color={THEME.colors.gradient.blue} />
-              <Text style={styles.agregarTareasButtonText}>Agregar tareas o proyectos</Text>
-            </TouchableOpacity>
           </View>
         )}
 
@@ -997,16 +984,19 @@ export default function TodayScreen() {
               )}
 
               {/* Botón para agregar más tareas (siempre visible cuando hay lista) */}
-              <TouchableOpacity
-                style={styles.agregarMasButton}
-                onPress={() => router.push('/(tabs)/vaciar')}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel="Agregar más tareas o proyectos"
-              >
-                <Plus size={18} color={THEME.colors.gradient.blue} />
-                <Text style={styles.agregarMasButtonText}>Agregar más tareas o proyectos</Text>
-              </TouchableOpacity>
+              <View style={styles.agregarMasWrap}>
+                <TouchableOpacity
+                  style={styles.agregarMasButton}
+                  onPress={() => router.push('/(tabs)/vaciar')}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Agregar más tareas o proyectos"
+                >
+                  <Plus size={18} color={THEME.colors.gradient.blue} />
+                  <Text style={styles.agregarMasButtonText}>Agregar más tareas o proyectos</Text>
+                </TouchableOpacity>
+                <Text style={styles.agregarMasHint}>Lleva a la pestaña Vaciar</Text>
+              </View>
             </View>
           );
         })()}
@@ -1668,18 +1658,27 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontFamily: THEME.fonts.heading.bold,
   },
+  agregarMasWrap: {
+    marginTop: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
+    alignItems: 'center',
+  },
   agregarMasButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: THEME.spacing.xs,
     paddingVertical: THEME.spacing.md,
-    marginTop: THEME.spacing.sm,
-    marginBottom: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.lg,
     borderRadius: THEME.borderRadius.standard,
     borderWidth: 1,
     borderColor: THEME.colors.stroke[100],
     backgroundColor: THEME.colors.fill[100],
+  },
+  agregarMasHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    marginTop: THEME.spacing.xs,
   },
   agregarMasButtonText: {
     ...THEME.typography.caption,

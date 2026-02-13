@@ -1,21 +1,29 @@
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-import { useWeekTasks } from '@/hooks/useWeekTasks';
+import { useWeekTasks, getWeekOptions } from '@/hooks/useWeekTasks';
 import type { Task } from '@/hooks/useTasks';
 import { Calendar, Plus, FolderKanban, FileText, ChevronRight } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 export default function SemanaScreen() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [selectedWeekStart, setSelectedWeekStart] = useState<string | null>(null);
   const showToast = useCallback((msg: string) => setToastMessage(msg), []);
 
-  const { weekTasks, projects, loading, loadWeekTasks } = useWeekTasks(showToast);
+  const { weekTasks, projects, loading, loadWeekTasks, getWeekBounds } = useWeekTasks(showToast);
+
+  const currentWeekStart = getWeekBounds().start;
+  const weekOptions = useMemo(() => getWeekOptions(6), []);
 
   useEffect(() => {
-    loadWeekTasks();
-  }, [loadWeekTasks]);
+    loadWeekTasks(selectedWeekStart || undefined);
+  }, [loadWeekTasks, selectedWeekStart]);
+
+  const handleSelectWeek = useCallback((start: string) => {
+    setSelectedWeekStart(start);
+  }, []);
 
   const projectsMap = Object.fromEntries(projects.map((p) => [p.id, p]));
   const monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -50,12 +58,47 @@ export default function SemanaScreen() {
           </View>
           <Text style={styles.title}>Tu semana</Text>
           <Text style={styles.subtitle}>
-            Tareas y subtareas programadas para esta semana
+            Elige una semana y ve tus tareas por día
           </Text>
-          {weekLabel ? (
-            <Text style={styles.weekRange}>{weekLabel}</Text>
-          ) : null}
         </View>
+
+        <Text style={styles.weekSelectorHint}>Desliza para elegir otra semana</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.weekSelectorScroll}
+          contentContainerStyle={styles.weekSelectorContent}
+        >
+          {weekOptions.map((opt) => {
+            const isSelected =
+              (opt.start === currentWeekStart && !selectedWeekStart) ||
+              selectedWeekStart === opt.start;
+            return (
+              <TouchableOpacity
+                key={opt.start}
+                style={[styles.weekChip, isSelected && styles.weekChipSelected]}
+                onPress={() => handleSelectWeek(opt.start)}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={`Semana ${opt.label}`}
+              >
+                <Text
+                  style={[
+                    styles.weekChipText,
+                    isSelected && styles.weekChipTextSelected,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {weekLabel ? (
+          <Text style={styles.weekRange}>{weekLabel}</Text>
+        ) : null}
 
         {weekTasks.map(({ day, tasks }) => (
           <View key={day.dateStr} style={styles.daySection}>
@@ -221,9 +264,48 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: THEME.spacing.xs,
   },
+  weekSelectorHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    paddingHorizontal: THEME.spacing.lg,
+    marginBottom: THEME.spacing.xs,
+  },
   weekRange: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.lg,
+  },
+  weekSelectorScroll: {
+    marginBottom: THEME.spacing.sm,
+    maxHeight: 44,
+  },
+  weekSelectorContent: {
+    paddingHorizontal: THEME.spacing.lg,
+    gap: THEME.spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: THEME.spacing.xs,
+  },
+  weekChip: {
+    paddingHorizontal: THEME.spacing.md,
+    paddingVertical: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[200],
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  weekChipSelected: {
+    backgroundColor: THEME.colors.gradient.blue,
+    borderColor: THEME.colors.gradient.blue,
+  },
+  weekChipText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+  },
+  weekChipTextSelected: {
+    color: '#FFFFFF',
+    fontFamily: THEME.fonts.heading.bold,
   },
   daySection: {
     marginHorizontal: THEME.spacing.lg,

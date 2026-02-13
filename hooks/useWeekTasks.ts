@@ -35,6 +35,37 @@ function getWeekBounds(): { start: string; end: string } {
   };
 }
 
+/** Get week bounds for a Monday date string (YYYY-MM-DD) or offset in weeks from current. */
+export function getWeekBoundsForStart(startDate: string): { start: string; end: string } {
+  const monday = new Date(startDate + 'T12:00:00');
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  return {
+    start: monday.toISOString().split('T')[0],
+    end: sunday.toISOString().split('T')[0],
+  };
+}
+
+/** List of week start dates (Mondays) for previous 1 week + current + next N weeks. */
+export function getWeekOptions(count: number): { start: string; label: string }[] {
+  const monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  const { start: thisStart } = getWeekBounds();
+  const options: { start: string; label: string }[] = [];
+  const d = new Date(thisStart + 'T12:00:00');
+  d.setDate(d.getDate() - 7);
+  options.push({ start: d.toISOString().split('T')[0], label: 'Semana ant.' });
+  options.push({ start: thisStart, label: 'Esta semana' });
+  d.setTime(new Date(thisStart + 'T12:00:00').getTime());
+  for (let i = 1; i < count; i++) {
+    d.setDate(d.getDate() + 7);
+    const start = d.toISOString().split('T')[0];
+    const dayNum = start.slice(8);
+    const month = monthNames[parseInt(start.slice(5, 7), 10) - 1];
+    options.push({ start, label: `${dayNum} ${month}` });
+  }
+  return options;
+}
+
 function buildWeekDays(start: string): WeekDay[] {
   const today = new Date().toISOString().split('T')[0];
   const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -62,7 +93,7 @@ export function useWeekTasks(
   const [loading, setLoading] = useState(true);
   const isLoadingRef = useRef(false);
 
-  const loadWeekTasks = useCallback(async () => {
+  const loadWeekTasks = useCallback(async (weekStart?: string) => {
     if (isLoadingRef.current) return;
     isLoadingRef.current = true;
     setLoading(true);
@@ -75,7 +106,9 @@ export function useWeekTasks(
         return;
       }
 
-      const { start, end } = getWeekBounds();
+      const { start, end } = weekStart
+        ? getWeekBoundsForStart(weekStart)
+        : getWeekBounds();
       const weekDays = buildWeekDays(start);
 
       const { data: projectsData, error: projectsError } = await supabase
@@ -146,5 +179,7 @@ export function useWeekTasks(
     projects,
     loading,
     loadWeekTasks,
+    getWeekBounds,
+    getWeekOptions,
   };
 }
