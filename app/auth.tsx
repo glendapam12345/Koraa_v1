@@ -96,13 +96,19 @@ export default function AuthScreen() {
           router.replace('/onboarding/welcome');
         }
       } else {
+        console.log('[Auth Screen] Intentando iniciar sesión...');
+        console.log('[Auth Screen] Email:', email);
+        console.log('[Auth Screen] Password length:', password.length);
+        
         const { error } = await signIn(email, password);
         if (error) {
-          console.error('[Auth] Error al iniciar sesión:', error);
+          console.error('[Auth Screen] Error al iniciar sesión:', error);
+          console.error('[Auth Screen] Error code:', (error as any)?.status);
+          console.error('[Auth Screen] Error message:', error.message);
           const errorMessage = error.message || 'Error desconocido';
           setError(getAuthErrorMessage(errorMessage));
         } else {
-          console.log('[Auth] Inicio de sesión exitoso');
+          console.log('[Auth Screen] Inicio de sesión exitoso');
           router.replace('/(tabs)');
         }
       }

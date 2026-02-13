@@ -80,19 +80,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      logger.info('Intentando iniciar sesión con email:', email);
+      // Verificar si hay una sesión activa primero
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      if (existingSession) {
+        logger.warn('Ya hay una sesión activa. Cerrando sesión antes de iniciar nueva...');
+        await supabase.auth.signOut();
+        // Pequeña pausa para asegurar que la sesión se cerró
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      const trimmedEmail = email.trim();
+      const trimmedPassword = password.trim();
+      
+      logger.info('Intentando iniciar sesión con email:', trimmedEmail);
+      logger.info('Longitud de contraseña:', trimmedPassword.length);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password.trim(),
+        email: trimmedEmail,
+        password: trimmedPassword,
       });
       
       if (error) {
-        logger.error('Error en signIn:', error.message);
+        logger.error('Error en signIn - Código:', error.status);
+        logger.error('Error en signIn - Mensaje:', error.message);
+        logger.error('Error completo:', JSON.stringify(error, null, 2));
         return { error };
       }
       
       if (data.session) {
         logger.info('Sesión iniciada exitosamente para usuario:', data.user?.id);
+        logger.info('Email del usuario:', data.user?.email);
+      } else {
+        logger.warn('No se obtuvo sesión después de signIn');
       }
       
       return { error: null };
