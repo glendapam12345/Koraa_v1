@@ -1,7 +1,7 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { useState, useEffect } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-<<<<<<< HEAD
 import { generatePersonalizedRecommendations, type Recommendation, type UserPreferences, type CheckInContext } from '@/lib/personalizedRecommendations';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
@@ -87,34 +87,22 @@ const getRecommendationCategory = (recommendation: Recommendation): string => {
   if (recommendation.type === 'social') return 'social';
   return 'bienestar';
 };
-=======
-import { Lightbulb } from 'lucide-react-native';
->>>>>>> 6ef79bacec3f57e8cac55fb1e4deb269bf4a5d5f
 
 interface RecommendationsSectionProps {
   userId: string;
 }
 
 export function RecommendationsSection({ userId }: RecommendationsSectionProps) {
-<<<<<<< HEAD
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRecommendation, setSelectedRecommendation] = useState<Recommendation | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-=======
-  const [recommendations, setRecommendations] = useState<string[]>([]);
->>>>>>> 6ef79bacec3f57e8cac55fb1e4deb269bf4a5d5f
 
   useEffect(() => {
-    setRecommendations([
-      'Completa las tareas prioritarias primero',
-      'Toma descansos regulares cada hora',
-      'Mantén tu espacio de trabajo organizado',
-    ]);
+    loadRecommendations();
   }, [userId]);
 
-<<<<<<< HEAD
   const loadRecommendations = async () => {
     try {
       setLoading(true);
@@ -195,25 +183,35 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
   if (loading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.sectionTitle}>Recomendaciones para ti</Text>
+        <View style={styles.header}>
+          <Text style={styles.sectionTitle}>Recomendaciones para ti</Text>
+          <Sparkles size={20} color={THEME.colors.gradient.blue} />
+        </View>
         <Text style={styles.loadingText}>Cargando recomendaciones...</Text>
       </View>
     );
   }
 
-=======
->>>>>>> 6ef79bacec3f57e8cac55fb1e4deb269bf4a5d5f
   if (recommendations.length === 0) {
     return null;
   }
 
+  // Agrupar recomendaciones por categoría
+  const recommendationsByCategory = new Map<string, Recommendation[]>();
+  recommendations.forEach((rec) => {
+    const category = getRecommendationCategory(rec);
+    if (!recommendationsByCategory.has(category)) {
+      recommendationsByCategory.set(category, []);
+    }
+    recommendationsByCategory.get(category)!.push(rec);
+  });
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Lightbulb size={20} color={THEME.colors.gradient.blue} />
-        <Text style={styles.title}>Recomendaciones</Text>
+        <Text style={styles.sectionTitle}>Recomendaciones para ti</Text>
+        <Sparkles size={20} color={THEME.colors.gradient.blue} />
       </View>
-<<<<<<< HEAD
 
       <View style={styles.recommendationsContainer}>
         {Array.from(recommendationsByCategory.entries())
@@ -328,30 +326,20 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
               </>
             )}
           </View>
-=======
-      {recommendations.map((rec, index) => (
-        <View key={index} style={styles.recommendation}>
-          <Text style={styles.recommendationText}>• {rec}</Text>
->>>>>>> 6ef79bacec3f57e8cac55fb1e4deb269bf4a5d5f
         </View>
-      ))}
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    marginTop: THEME.spacing.lg,
-    marginHorizontal: THEME.spacing.lg,
-    marginBottom: THEME.spacing.xl,
+    marginTop: THEME.spacing.xl,
+    marginBottom: THEME.spacing.lg,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-<<<<<<< HEAD
     justifyContent: 'space-between',
     paddingHorizontal: THEME.spacing.lg,
     marginBottom: THEME.spacing.md,
@@ -418,22 +406,9 @@ const styles = StyleSheet.create({
     paddingTop: THEME.spacing.md,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.2)',
-=======
-    gap: THEME.spacing.xs,
-    marginBottom: THEME.spacing.sm,
   },
-  title: {
-    ...THEME.typography.h3,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  recommendation: {
-    marginBottom: THEME.spacing.xs,
->>>>>>> 6ef79bacec3f57e8cac55fb1e4deb269bf4a5d5f
-  },
-  recommendationText: {
+  recommendationMessage: {
     ...THEME.typography.body,
-<<<<<<< HEAD
     color: '#FFFFFF',
     opacity: 0.95,
     fontSize: 13,
@@ -512,9 +487,12 @@ const styles = StyleSheet.create({
   },
   suggestionLabel: {
     ...THEME.typography.caption,
-=======
->>>>>>> 6ef79bacec3f57e8cac55fb1e4deb269bf4a5d5f
     color: THEME.colors.text.secondary,
-    lineHeight: 22,
+    fontFamily: THEME.fonts.heading.medium,
+    marginBottom: THEME.spacing.xs,
+  },
+  suggestionText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
   },
 });
