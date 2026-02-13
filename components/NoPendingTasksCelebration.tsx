@@ -17,13 +17,12 @@ export function NoPendingTasksCelebration({ onDismiss }: NoPendingTasksCelebrati
         style={styles.card}
       >
         <TouchableOpacity
-          style={styles.closeButton}
+          style={styles.dismissButton}
           onPress={onDismiss}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
           accessibilityRole="button"
-          accessibilityLabel="Cerrar"
+          accessibilityLabel="De acuerdo"
         >
-<<<<<<< HEAD
           <LinearGradient
             colors={['rgba(255, 255, 255, 0.35)', 'rgba(255, 255, 255, 0.25)']}
             start={{ x: 0, y: 0 }}
@@ -32,9 +31,6 @@ export function NoPendingTasksCelebration({ onDismiss }: NoPendingTasksCelebrati
           >
             <Text style={styles.dismissButtonText}>De acuerdo</Text>
           </LinearGradient>
-=======
-          <X size={20} color={THEME.colors.fill[100]} />
->>>>>>> 6ef79bacec3f57e8cac55fb1e4deb269bf4a5d5f
         </TouchableOpacity>
 
         <View style={styles.iconContainer}>
@@ -61,12 +57,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...THEME.shadows.soft,
   },
-  closeButton: {
-    position: 'absolute',
-    top: THEME.spacing.md,
-    right: THEME.spacing.md,
-    padding: THEME.spacing.xs,
-  },
   iconContainer: {
     marginBottom: THEME.spacing.md,
   },
@@ -83,13 +73,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     opacity: 0.95,
-<<<<<<< HEAD
     fontSize: 14,
-    lineHeight: 20,
   },
   dismissButton: {
     alignSelf: 'center',
-    marginTop: THEME.spacing.xs,
+    marginTop: THEME.spacing.md,
     ...THEME.shadows.soft,
   },
   dismissButtonGradient: {
@@ -108,7 +96,5 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
     fontSize: 15,
     letterSpacing: 0.5,
-=======
->>>>>>> 6ef79bacec3f57e8cac55fb1e4deb269bf4a5d5f
   },
 });
