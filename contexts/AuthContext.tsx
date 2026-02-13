@@ -79,16 +79,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      logger.info('Intentando iniciar sesión con email:', email);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password.trim(),
+      });
+      
+      if (error) {
+        logger.error('Error en signIn:', error.message);
+        return { error };
+      }
+      
+      if (data.session) {
+        logger.info('Sesión iniciada exitosamente para usuario:', data.user?.id);
+      }
+      
+      return { error: null };
+    } catch (err) {
+      logger.error('Error inesperado en signIn:', err);
+      return { error: err as Error };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      logger.info('Cerrando sesión...');
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        logger.error('Error al cerrar sesión:', error);
+      } else {
+        logger.info('Sesión cerrada exitosamente');
+        // Limpiar estado local
+        setSession(null);
+        setUser(null);
+      }
+    } catch (err) {
+      logger.error('Error inesperado al cerrar sesión:', err);
+      // Limpiar estado local incluso si hay error
+      setSession(null);
+      setUser(null);
+    }
   };
+
 
   const resetPasswordForEmail = async (email: string) => {
     // En mobile usa deep link, en web usa URL HTTP
