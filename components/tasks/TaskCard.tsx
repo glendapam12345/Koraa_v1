@@ -19,6 +19,9 @@ interface TaskCardProps {
   task: Task;
   index: number;
   expanded: boolean;
+  /** Panel de especificaciones (categoría, prioridad, proyecto) expandido */
+  expandedDetails?: boolean;
+  onToggleDetailsExpand?: () => void;
   menuOpen: boolean;
   onToggle: () => void;
   onToggleExpansion: () => void;
@@ -27,12 +30,10 @@ interface TaskCardProps {
   onDeleteTask: () => void;
   getCategoryColor: (category: string) => string;
   onSubtaskToggle: (subtaskId: string) => void;
-  /** Si se pasa, se muestra una etiqueta "Pertenece a [proyecto]" en el color del proyecto, o "Suelta" en gris */
+  /** Etiqueta: "Independiente", "Parte de [proyecto]" o nombre del proyecto; color del proyecto */
   projectLabel?: string | null;
   projectLabelColor?: string;
-  /** En vista agrupada por sección: ocultar badge y usar solo acento lateral */
   hideProjectLabel?: boolean;
-  /** Color del acento lateral (borde fino) cuando hideProjectLabel es true */
   sectionAccentColor?: string;
 }
 
@@ -40,6 +41,8 @@ export function TaskCard({
   task,
   index,
   expanded,
+  expandedDetails = false,
+  onToggleDetailsExpand,
   menuOpen,
   onToggle,
   onToggleExpansion,
@@ -59,8 +62,9 @@ export function TaskCard({
 
   const isProjectTask = task.project_id !== null && task.project_id !== undefined;
   const showLabel = !hideProjectLabel && projectLabel != null && projectLabel !== '';
-  const isSuelta = showLabel && projectLabel === 'Suelta';
+  const isIndependiente = showLabel && (projectLabel === 'Suelta' || projectLabel === 'Independiente');
   const borderColor = !hideProjectLabel && isProjectTask && projectLabelColor ? projectLabelColor : sectionAccentColor;
+  const hasDetails = onToggleDetailsExpand && (task.category || task.is_priority || projectLabel);
 
   return (
     <View style={styles.taskWrapper}>
@@ -112,12 +116,12 @@ export function TaskCard({
             <View
               style={[
                 styles.projectBadge,
-                isSuelta
-                  ? styles.projectBadgeSuelta
+                isIndependiente
+                  ? styles.projectBadgeIndependiente
                   : { backgroundColor: (projectLabelColor ?? THEME.colors.gradient.blue) + '22' },
               ]}
             >
-              {isSuelta ? (
+              {isIndependiente ? (
                 <FileText size={12} color={THEME.colors.text.secondary} />
               ) : (
                 <FolderKanban size={12} color={projectLabelColor ?? THEME.colors.gradient.blue} />
@@ -125,11 +129,11 @@ export function TaskCard({
               <Text
                 style={[
                   styles.projectBadgeText,
-                  isSuelta ? styles.projectBadgeTextSuelta : { color: projectLabelColor ?? THEME.colors.gradient.blue },
+                  isIndependiente ? styles.projectBadgeTextIndependiente : { color: projectLabelColor ?? THEME.colors.gradient.blue },
                 ]}
                 numberOfLines={1}
               >
-                {isSuelta ? 'Suelta' : projectLabel!.replace(/^Pertenece a /, '')}
+                {projectLabel}
               </Text>
             </View>
           )}
@@ -154,6 +158,23 @@ export function TaskCard({
                 {completedSubtasks}/{totalSubtasks} completadas
               </Text>
             </View>
+          )}
+
+          {hasDetails && (
+            <TouchableOpacity
+              style={styles.detailsToggleRow}
+              onPress={onToggleDetailsExpand}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={expandedDetails ? 'Ocultar especificaciones' : 'Ver más especificaciones'}
+            >
+              <Text style={styles.detailsToggleText}>Ver más especificaciones</Text>
+              {expandedDetails ? (
+                <ChevronDown size={18} color={THEME.colors.gradient.blue} />
+              ) : (
+                <ChevronRight size={18} color={THEME.colors.gradient.blue} />
+              )}
+            </TouchableOpacity>
           )}
         </View>
 
@@ -188,6 +209,48 @@ export function TaskCard({
           </View>
         )}
       </View>
+
+      {expandedDetails && hasDetails && (
+        <View style={styles.detailsPanel}>
+          <Text style={styles.detailsPanelTitle}>Especificaciones</Text>
+          {task.category ? (
+            <View style={styles.detailsRow}>
+              <Text style={styles.detailsLabel}>Categoría</Text>
+              <View style={[styles.detailsChip, { backgroundColor: getCategoryColor(task.category) + '28' }]}>
+                <Text style={[styles.detailsChipText, { color: getCategoryColor(task.category) }]} numberOfLines={1}>
+                  {task.category}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+          {task.is_priority && !task.is_completed && (
+            <View style={styles.detailsRow}>
+              <Text style={styles.detailsLabel}>Prioridad</Text>
+              <View style={[styles.detailsChip, { backgroundColor: THEME.colors.gradient.blue + '28' }]}>
+                <Text style={[styles.detailsChipText, { color: THEME.colors.gradient.blue }]}>Alta</Text>
+              </View>
+            </View>
+          )}
+          {projectLabel && (
+            <View style={styles.detailsRow}>
+              <Text style={styles.detailsLabel}>Contexto</Text>
+              <View
+                style={[
+                  styles.detailsChip,
+                  { backgroundColor: (projectLabelColor ?? THEME.colors.gradient.blue) + '28' },
+                ]}
+              >
+                <Text
+                  style={[styles.detailsChipText, { color: projectLabelColor ?? THEME.colors.gradient.blue }]}
+                  numberOfLines={1}
+                >
+                  {projectLabel}
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
+      )}
 
       {expanded && hasSubtasks && (
         <View style={styles.subtasksContainer}>
@@ -260,16 +323,16 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     marginBottom: 6,
   },
-  projectBadgeSuelta: {
+  projectBadgeIndependiente: {
     backgroundColor: THEME.colors.fill[200],
   },
   projectBadgeText: {
     ...THEME.typography.small,
     fontSize: 11,
     fontFamily: THEME.fonts.heading.medium,
-    maxWidth: 140,
+    maxWidth: 160,
   },
-  projectBadgeTextSuelta: {
+  projectBadgeTextIndependiente: {
     color: THEME.colors.text.secondary,
   },
   priorityNumberContainer: {
@@ -404,6 +467,61 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     fontSize: 11,
+  },
+  detailsToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    paddingRight: THEME.spacing.xs,
+  },
+  detailsToggleText: {
+    ...THEME.typography.small,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
+    fontSize: 13,
+  },
+  detailsPanel: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.standard,
+    padding: THEME.spacing.sm,
+    marginTop: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: THEME.colors.gradient.blue,
+  },
+  detailsPanelTitle: {
+    ...THEME.typography.small,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.sm,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  detailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: THEME.spacing.xs,
+    gap: THEME.spacing.sm,
+  },
+  detailsLabel: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    fontSize: 12,
+    minWidth: 72,
+  },
+  detailsChip: {
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: 4,
+    borderRadius: THEME.borderRadius.pill,
+    maxWidth: 180,
+  },
+  detailsChipText: {
+    ...THEME.typography.small,
+    fontSize: 12,
+    fontFamily: THEME.fonts.heading.medium,
   },
   menuButton: {
     padding: THEME.spacing.sm,

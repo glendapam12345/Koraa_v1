@@ -10,7 +10,6 @@ import { ValueCard } from '@/components/tasks/ValueCard';
 import { ProgressBar } from '@/components/tasks/ProgressBar';
 import { FlowGuideCard } from '@/components/flow/FlowGuideCard';
 import { TaskList } from '@/components/tasks/TaskList';
-import { SectionHeader } from '@/components/tasks/SectionHeader';
 import { useCheckIn } from '@/hooks/useCheckIn';
 import { useTasks } from '@/hooks/useTasks';
 import { useTaskActions } from '@/hooks/useTaskActions';
@@ -54,6 +53,7 @@ const NoPendingTasksCelebration = lazy(() =>
 
 export default function TodayScreen() {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  const [expandedDetailsTasks, setExpandedDetailsTasks] = useState<Set<string>>(new Set());
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editContent, setEditContent] = useState('');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
@@ -381,6 +381,15 @@ export default function TodayScreen() {
   }, [tasks, loading]);
 
   // La animación de la barra de progreso ahora se maneja en el hook useProgress
+
+  const toggleDetailsExpansion = useCallback((taskId: string) => {
+    setExpandedDetailsTasks((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  }, []);
 
   const toggleTaskExpansion = useCallback((taskId: string) => {
     setExpandedTasks((prev) => {
@@ -913,78 +922,39 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {/* Tareas agrupadas por sección: Sueltas primero, luego cada proyecto */}
-        {!loading && incompleteTasks.length > 0 && (() => {
-          type Section = { id: string; title: string; color: string; isSuelta: boolean; tasks: Task[] };
-          const sections: Section[] = [];
-          const sueltaTasks = incompleteTasks.filter((t) => t.project_id == null);
-          if (sueltaTasks.length > 0) {
-            sections.push({
-              id: 'suelta',
-              title: 'Tareas sueltas',
-              color: THEME.colors.text.secondary,
-              isSuelta: true,
-              tasks: sueltaTasks,
-            });
-          }
-          const byProject = new Map<string, Task[]>();
-          incompleteTasks.forEach((t) => {
-            if (t.project_id == null) return;
-            const list = byProject.get(t.project_id) ?? [];
-            list.push(t);
-            byProject.set(t.project_id, list);
-          });
-          const projectIds = Array.from(byProject.keys()).sort((a, b) => {
-            const na = projectsMap[a]?.name ?? '';
-            const nb = projectsMap[b]?.name ?? '';
-            return na.localeCompare(nb);
-          });
-          projectIds.forEach((pid) => {
-            const tasks = byProject.get(pid) ?? [];
-            const p = projectsMap[pid];
-            sections.push({
-              id: pid,
-              title: p?.name ?? 'Proyecto',
-              color: p?.color ?? THEME.colors.gradient.blue,
-              isSuelta: false,
-              tasks,
-            });
-          });
-          return (
+        {/* Lista única de tareas: prioridad arriba; cada card con tipo (Independiente / Parte de proyecto) y expandible */}
+        {!loading && incompleteTasks.length > 0 && (
           <View style={styles.tasksContainer}>
             <View style={styles.tasksListCard}>
-              {sections.map((sec) => (
-                <View key={sec.id} style={styles.taskSection}>
-                  <SectionHeader
-                    title={sec.title}
-                    count={sec.tasks.length}
-                    color={sec.color}
-                    isSuelta={sec.isSuelta}
-                  />
-                  <TaskList
-                    tasks={incompleteTasks}
-                    incompleteTasks={sec.tasks}
-                    expandedTasks={expandedTasks}
-                    menuOpen={menuOpen}
-                    onToggleTask={handleToggleTask}
-                    onToggleExpansion={toggleTaskExpansion}
-                    onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
-                    onEditTask={handleEditTask}
-                    onDeleteTask={handleDeleteTask}
-                    getCategoryColor={getCategoryColor}
-                    onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
-                    getProjectInfo={(task) => {
-                      if (task.project_id) {
-                        const p = projectsMap[task.project_id];
-                        return { label: `Pertenece a ${p?.name ?? 'Proyecto'}`, color: p?.color ?? THEME.colors.gradient.blue };
-                      }
-                      return { label: 'Suelta', color: THEME.colors.text.secondary };
-                    }}
-                    hideProjectLabel
-                    sectionAccentColor={sec.color}
-                  />
-                </View>
-              ))}
+              <TaskList
+                tasks={incompleteTasks}
+                incompleteTasks={[...incompleteTasks].sort((a, b) => (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0))}
+                expandedTasks={expandedTasks}
+                expandedDetailsTasks={expandedDetailsTasks}
+                menuOpen={menuOpen}
+                onToggleTask={handleToggleTask}
+                onToggleExpansion={toggleTaskExpansion}
+                onToggleDetailsExpansion={toggleDetailsExpansion}
+                onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+                onEditTask={handleEditTask}
+                onDeleteTask={handleDeleteTask}
+                getCategoryColor={getCategoryColor}
+                onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
+                getProjectInfo={(task) => {
+                  if (task.parent_task_id) {
+                    const parent = incompleteTasks.find((t) => t.id === task.parent_task_id) ?? tasks.find((t) => t.id === task.parent_task_id);
+                    const pid = parent?.project_id;
+                    const p = pid ? projectsMap[pid] : null;
+                    const name = p?.name ?? 'proyecto';
+                    return { label: `Parte de ${name}`, color: p?.color ?? THEME.colors.gradient.blue };
+                  }
+                  if (task.project_id) {
+                    const p = projectsMap[task.project_id];
+                    return { label: p?.name ?? 'Proyecto', color: p?.color ?? THEME.colors.gradient.blue };
+                  }
+                  return { label: 'Independiente', color: THEME.colors.text.secondary };
+                }}
+              />
             </View>
             <View style={styles.agregarMasWrap}>
               <TouchableOpacity
@@ -1000,8 +970,7 @@ export default function TodayScreen() {
               <Text style={styles.agregarMasHint}>Lleva a la pestaña Vaciar</Text>
             </View>
           </View>
-          );
-        })()}
+        )}
 
         {/* Mensaje cuando no hay tareas pendientes pero sí completadas */}
         {!loading && todayMood && incompleteTasks.length === 0 && tasks.length > 0 && !dismissedCelebration && (

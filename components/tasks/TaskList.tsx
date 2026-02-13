@@ -5,15 +5,17 @@ interface TaskListProps {
   tasks: Task[];
   incompleteTasks: Task[];
   expandedTasks: Set<string>;
+  expandedDetailsTasks?: Set<string>;
   menuOpen: string | null;
   onToggleTask: (taskId: string, isSubtask?: boolean, parentTaskId?: string) => void;
   onToggleExpansion: (taskId: string) => void;
+  onToggleDetailsExpansion?: (taskId: string) => void;
   onMenuPress: (taskId: string) => void;
   onEditTask: (task: Task) => void;
   onDeleteTask: (task: Task) => void;
   getCategoryColor: (category: string) => string;
   onSubtaskToggle: (subtaskId: string, parentTaskId: string) => void;
-  /** Opcional: devuelve etiqueta y color para mostrar "Pertenece a [proyecto]" o "Suelta" */
+  /** Opcional: devuelve etiqueta y color para mostrar "Independiente" / "Parte de [proyecto]" / nombre proyecto */
   getProjectInfo?: (task: Task) => { label: string; color: string } | null;
   /** En vista agrupada: ocultar badge en cada tarjeta y usar acento de sección */
   hideProjectLabel?: boolean;
@@ -25,9 +27,11 @@ export function TaskList({
   tasks,
   incompleteTasks,
   expandedTasks,
+  expandedDetailsTasks = new Set(),
   menuOpen,
   onToggleTask,
   onToggleExpansion,
+  onToggleDetailsExpansion,
   onMenuPress,
   onEditTask,
   onDeleteTask,
@@ -47,6 +51,8 @@ export function TaskList({
             task={task}
             index={index}
             expanded={expandedTasks.has(task.id)}
+            expandedDetails={onToggleDetailsExpansion ? expandedDetailsTasks.has(task.id) : false}
+            onToggleDetailsExpand={onToggleDetailsExpansion ? () => onToggleDetailsExpansion(task.id) : undefined}
             menuOpen={menuOpen === task.id}
             onToggle={() => onToggleTask(task.id)}
             onToggleExpansion={() => onToggleExpansion(task.id)}
