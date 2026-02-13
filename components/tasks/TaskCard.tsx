@@ -1,199 +1,188 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { memo, useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
-import { ChevronDown, ChevronUp, MoreVertical } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, MoreVertical } from 'lucide-react-native';
 
 export interface Task {
   id: string;
   content: string;
-  category: string;
   is_completed: boolean;
-  is_priority?: boolean;
-  parent_task_id: string | null;
-  project_id?: string | null;
+  is_priority: boolean;
+  category: string;
+  completed_at: string | null;
+  created_at: string;
   subtasks?: Task[];
+  parent_task_id: string | null;
 }
 
 interface TaskCardProps {
   task: Task;
   index: number;
-  isCompleted: boolean;
-  isExpanded: boolean;
+  expanded: boolean;
+  menuOpen: boolean;
   onToggle: () => void;
   onToggleExpansion: () => void;
   onMenuPress: () => void;
+  onEditTask: () => void;
+  onDeleteTask: () => void;
   getCategoryColor: (category: string) => string;
+  onSubtaskToggle: (subtaskId: string) => void;
 }
 
-export const TaskCard = memo(function TaskCard({
+export function TaskCard({
   task,
   index,
-  isCompleted,
-  isExpanded,
+  expanded,
+  menuOpen,
   onToggle,
   onToggleExpansion,
   onMenuPress,
+  onEditTask,
+  onDeleteTask,
   getCategoryColor,
+  onSubtaskToggle,
 }: TaskCardProps) {
-  const hasSubtasks = useMemo(() => task.subtasks && task.subtasks.length > 0, [task.subtasks]);
-  const { completedSubtasks, totalSubtasks, subtasksProgress } = useMemo(() => {
-    if (!hasSubtasks) {
-      return { completedSubtasks: 0, totalSubtasks: 0, subtasksProgress: 0 };
-    }
-    const completed = task.subtasks!.filter(st => st.is_completed).length;
-    const total = task.subtasks!.length;
-    return {
-      completedSubtasks: completed,
-      totalSubtasks: total,
-      subtasksProgress: total > 0 ? (completed / total) * 100 : 0,
-    };
-  }, [hasSubtasks, task.subtasks]);
+  const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+  const completedSubtasks = task.subtasks?.filter((st) => st.is_completed).length || 0;
+  const totalSubtasks = task.subtasks?.length || 0;
 
   return (
     <View style={styles.taskWrapper}>
-      <TouchableOpacity
-        onPress={hasSubtasks ? onToggleExpansion : onToggle}
+      <View
         style={[
           styles.taskCard,
-          isCompleted && styles.taskCardCompleted,
+          task.is_completed && styles.taskCardCompleted,
           hasSubtasks && styles.taskCardWithSubtasks,
-          isCompleted && { opacity: 0.5 },
         ]}
-        activeOpacity={0.7}
-        accessibilityRole="button"
-        accessibilityLabel={isCompleted ? `Tarea completada: ${task.content}` : `Tarea ${index + 1}: ${task.content}`}
-        accessibilityHint={hasSubtasks ? "Doble toque para expandir o colapsar subtareas" : "Doble toque para marcar como completada"}
       >
-        {/* Número de prioridad (solo para tareas no completadas) */}
-        {!isCompleted && (
+        {task.is_priority && !task.is_completed && (
           <View style={styles.priorityNumberContainer}>
             <View style={styles.priorityNumber}>
-              <Text style={styles.priorityNumberText}>{index}</Text>
+              <Text style={styles.priorityNumberText}>{index + 1}</Text>
             </View>
           </View>
         )}
 
-        {/* Botón expandir/colapsar si tiene subtareas */}
         {hasSubtasks && (
           <TouchableOpacity
-            onPress={onToggleExpansion}
             style={styles.expandButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            onPress={onToggleExpansion}
+            activeOpacity={0.7}
             accessibilityRole="button"
-            accessibilityLabel={isExpanded ? "Colapsar subtareas" : "Expandir subtareas"}
-            accessibilityHint={`Tiene ${totalSubtasks} subtareas, ${completedSubtasks} completadas`}
+            accessibilityLabel={expanded ? 'Contraer subtareas' : 'Expandir subtareas'}
           >
-            {isExpanded ? (
-              <ChevronUp size={20} color={THEME.colors.text.secondary} />
-            ) : (
+            {expanded ? (
               <ChevronDown size={20} color={THEME.colors.text.secondary} />
+            ) : (
+              <ChevronRight size={20} color={THEME.colors.text.secondary} />
             )}
           </TouchableOpacity>
         )}
 
         <TouchableOpacity
-          onPress={onToggle}
           style={styles.taskCheckbox}
+          onPress={onToggle}
           activeOpacity={0.7}
           accessibilityRole="checkbox"
           accessibilityState={{ checked: task.is_completed }}
-          accessibilityLabel={task.is_completed ? "Marcar como no completada" : "Marcar como completada"}
-          accessibilityHint={`Tarea: ${task.content}`}
         >
           {task.is_completed && <View style={styles.taskCheckboxChecked} />}
         </TouchableOpacity>
-        
-        <View style={styles.taskContent}>
-          {/* Badge de tipo de tarea - Mejorado para claridad visual */}
-          <View style={styles.taskTypeContainer}>
-            {hasSubtasks ? (
-              <View style={[styles.taskTypeBadge, styles.projectBadge]}>
-                <Text style={styles.taskTypeIcon}>📁</Text>
-                <Text style={styles.taskTypeText}>PROYECTO</Text>
-              </View>
-            ) : task.parent_task_id ? (
-              <View style={[styles.taskTypeBadge, styles.subtaskBadge]}>
-                <Text style={styles.taskTypeIcon}>└</Text>
-                <Text style={styles.taskTypeText}>Subtarea</Text>
-              </View>
-            ) : (
-              <View style={[styles.taskTypeBadge, styles.taskBadge]}>
-                <Text style={styles.taskTypeIcon}>•</Text>
-                <Text style={styles.taskTypeText}>Tarea suelta</Text>
-              </View>
-            )}
-          </View>
 
-          <Text style={[
-            styles.taskText,
-            isCompleted && styles.taskTextCompleted,
-          ]}>
+        <View style={styles.taskContent}>
+          <Text
+            style={[styles.taskText, task.is_completed && styles.taskTextCompleted]}
+            numberOfLines={3}
+          >
             {task.content}
           </Text>
-          
-          {/* Indicador de progreso de subtareas */}
-          {hasSubtasks && !isCompleted && (
+
+          {hasSubtasks && (
             <View style={styles.subtasksProgressContainer}>
               <View style={styles.subtasksProgressBar}>
-                <View 
+                <View
                   style={[
                     styles.subtasksProgressFill,
-                    { width: `${subtasksProgress}%` }
-                  ]} 
+                    { width: `${(completedSubtasks / totalSubtasks) * 100}%` },
+                  ]}
                 />
               </View>
               <Text style={styles.subtasksProgressText}>
-                {completedSubtasks} de {totalSubtasks} completadas
-              </Text>
-            </View>
-          )}
-          
-          {task.category && (
-            <View style={[
-              styles.categoryBadge,
-              { backgroundColor: getCategoryColor(task.category) + '20' },
-            ]}>
-              <Text style={[
-                styles.categoryText,
-                { color: getCategoryColor(task.category) },
-              ]}>
-                {task.category}
+                {completedSubtasks}/{totalSubtasks} completadas
               </Text>
             </View>
           )}
         </View>
 
-        {/* Botón de menú */}
         <TouchableOpacity
-          onPress={onMenuPress}
           style={styles.menuButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          onPress={onMenuPress}
+          activeOpacity={0.7}
           accessibilityRole="button"
-          accessibilityLabel="Opciones de tarea"
-          accessibilityHint="Abre menú para editar o eliminar esta tarea"
+          accessibilityLabel="Más opciones"
         >
           <MoreVertical size={20} color={THEME.colors.text.secondary} />
         </TouchableOpacity>
-      </TouchableOpacity>
+
+        {menuOpen && (
+          <View style={styles.menuDropdown}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={onEditTask}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+            >
+              <Text style={styles.menuItemText}>Editar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.menuItem, styles.menuItemDanger]}
+              onPress={onDeleteTask}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.menuItemText, styles.menuItemTextDanger]}>Eliminar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      {expanded && hasSubtasks && (
+        <View style={styles.subtasksContainer}>
+          {task.subtasks!.map((subtask) => (
+            <View
+              key={subtask.id}
+              style={[
+                styles.subtaskCard,
+                subtask.is_completed && styles.subtaskCardCompleted,
+              ]}
+            >
+              <TouchableOpacity
+                style={styles.subtaskCheckbox}
+                onPress={() => onSubtaskToggle(subtask.id)}
+                activeOpacity={0.7}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: subtask.is_completed }}
+              >
+                {subtask.is_completed && <View style={styles.subtaskCheckboxChecked} />}
+              </TouchableOpacity>
+
+              <View style={styles.subtaskContent}>
+                <Text
+                  style={[
+                    styles.subtaskText,
+                    subtask.is_completed && styles.subtaskTextCompleted,
+                  ]}
+                  numberOfLines={2}
+                >
+                  {subtask.content}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
-}, (prevProps, nextProps) => {
-  // Comparación personalizada para evitar re-renders innecesarios
-  return (
-    prevProps.task.id === nextProps.task.id &&
-    prevProps.task.is_completed === nextProps.task.is_completed &&
-    prevProps.task.content === nextProps.task.content &&
-    prevProps.task.category === nextProps.task.category &&
-    prevProps.index === nextProps.index &&
-    prevProps.isCompleted === nextProps.isCompleted &&
-    prevProps.isExpanded === nextProps.isExpanded &&
-    prevProps.task.subtasks?.length === nextProps.task.subtasks?.length &&
-    prevProps.task.subtasks?.every((st, i) => 
-      nextProps.task.subtasks?.[i]?.id === st.id &&
-      nextProps.task.subtasks?.[i]?.is_completed === st.is_completed
-    ) !== false
-  );
-});
+}
 
 const styles = StyleSheet.create({
   taskWrapper: {
@@ -251,42 +240,6 @@ const styles = StyleSheet.create({
   taskContent: {
     flex: 1,
   },
-  taskTypeContainer: {
-    marginBottom: THEME.spacing.xs,
-  },
-  taskTypeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: THEME.spacing.xs,
-    paddingVertical: 2,
-    borderRadius: THEME.borderRadius.pill,
-    gap: 4,
-  },
-  projectBadge: {
-    backgroundColor: 'rgba(74, 144, 226, 0.15)',
-    borderWidth: 1.5,
-    borderColor: '#4A90E2',
-  },
-  taskBadge: {
-    backgroundColor: THEME.colors.fill[200],
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-  },
-  subtaskBadge: {
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 107, 107, 0.3)',
-  },
-  taskTypeIcon: {
-    fontSize: 12,
-  },
-  taskTypeText: {
-    ...THEME.typography.caption,
-    fontSize: 9,
-    fontFamily: THEME.fonts.heading.bold,
-    letterSpacing: 0.5,
-  },
   taskText: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
@@ -295,16 +248,6 @@ const styles = StyleSheet.create({
   taskTextCompleted: {
     textDecorationLine: 'line-through',
     color: THEME.colors.text.secondary,
-  },
-  categoryBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: THEME.spacing.xs,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  categoryText: {
-    ...THEME.typography.small,
-    fontFamily: THEME.fonts.heading.medium,
   },
   taskCardWithSubtasks: {
     borderLeftWidth: 4,
@@ -318,6 +261,56 @@ const styles = StyleSheet.create({
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  subtasksContainer: {
+    marginLeft: THEME.spacing.lg,
+    marginTop: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
+    paddingLeft: THEME.spacing.md,
+    borderLeftWidth: 2,
+    borderLeftColor: THEME.colors.stroke[100],
+  },
+  subtaskCard: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.standard,
+    padding: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
+    marginLeft: THEME.spacing.lg,
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(255, 107, 107, 0.25)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+  },
+  subtaskCardCompleted: {
+    opacity: 0.6,
+  },
+  subtaskCheckbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: THEME.colors.gradient.blue,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subtaskCheckboxChecked: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: THEME.colors.gradient.blue,
+  },
+  subtaskContent: {
+    flex: 1,
+  },
+  subtaskText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontSize: 14,
+  },
+  subtaskTextCompleted: {
+    textDecorationLine: 'line-through',
+    color: THEME.colors.text.secondary,
   },
   subtasksProgressContainer: {
     marginTop: THEME.spacing.xs,
@@ -348,5 +341,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
+  },
+  menuDropdown: {
+    position: 'absolute',
+    right: 0,
+    top: 50,
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.standard,
+    padding: THEME.spacing.xs,
+    minWidth: 150,
+    ...THEME.shadows.soft,
+    zIndex: 1000,
+    elevation: 5,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    padding: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.standard,
+  },
+  menuItemDanger: {
+    marginTop: THEME.spacing.xs,
+  },
+  menuItemText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontSize: 14,
+  },
+  menuItemTextDanger: {
+    color: '#FF6B6B',
   },
 });

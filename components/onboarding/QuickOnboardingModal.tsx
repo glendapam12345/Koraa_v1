@@ -1,9 +1,7 @@
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-import { Sparkles } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
+import { X, Sparkles } from 'lucide-react-native';
 
 interface QuickOnboardingModalProps {
   visible: boolean;
@@ -11,188 +9,175 @@ interface QuickOnboardingModalProps {
 }
 
 export function QuickOnboardingModal({ visible, onClose }: QuickOnboardingModalProps) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.9)).current;
-
-  useEffect(() => {
-    if (visible) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 50,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      fadeAnim.setValue(0);
-      scaleAnim.setValue(0.9);
-    }
-  }, [visible]);
-
-  const handleClose = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 0.9,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      onClose();
-    });
-  };
-
-  if (!visible) return null;
-
   return (
     <Modal
-      transparent
       visible={visible}
-      animationType="none"
-      onRequestClose={() => {}} // No permitir cerrar con botón de Android/iOS
+      animationType="fade"
+      transparent
+      onRequestClose={onClose}
     >
-      <Animated.View
-        style={[
-          styles.overlay,
-          {
-            opacity: fadeAnim,
-          },
-        ]}
-      >
-        <View style={styles.overlayTouchable}>
-          <Animated.View
-            style={[
-              styles.container,
-              {
-                transform: [{ scale: scaleAnim }],
-              },
-            ]}
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={onClose}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar"
           >
-            <View style={styles.modalContent}>
-              <LinearGradient
-                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.modal}
-              >
-                {/* Botón X removido - solo se cierra con Continuar */}
+            <X size={24} color={THEME.colors.text.main} />
+          </TouchableOpacity>
 
-                <View style={styles.iconContainer}>
-                  <View style={styles.iconCircle}>
-                    <Sparkles size={40} color="#FFFFFF" />
-                  </View>
-                </View>
+          <View style={styles.iconContainer}>
+            <Sparkles size={48} color={THEME.colors.gradient.blue} />
+          </View>
 
-                <Text style={styles.title}>¡Bienvenida a Kora!</Text>
-                
-                <Text style={styles.message}>
-                  Organiza tu día sintiendo, no estructurando.{'\n\n'}
-                  <Text style={styles.highlight}>
-                    • Vaciar:</Text> Agrega tus tareas{'\n'}
-                  <Text style={styles.highlight}>
-                    • Sentir:</Text> Di cómo te sientes{'\n'}
-                  <Text style={styles.highlight}>
-                    • Accionar:</Text> Ve tus prioridades automáticas
+          <Text style={styles.title}>¡Bienvenida a Koraa!</Text>
+          <Text style={styles.subtitle}>
+            Tu asistente inteligente para organizar tu día según cómo te sientes
+          </Text>
+
+          <View style={styles.stepsContainer}>
+            <View style={styles.step}>
+              <Text style={styles.stepNumber}>1</Text>
+              <View style={styles.stepContent}>
+                <Text style={styles.stepTitle}>Vaciar</Text>
+                <Text style={styles.stepDescription}>
+                  Agrega todas tus tareas sin pensar en el orden
                 </Text>
-
-                <TouchableOpacity
-                  onPress={handleClose}
-                  style={styles.button}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.buttonText}>Continuar →</Text>
-                </TouchableOpacity>
-              </LinearGradient>
+              </View>
             </View>
-          </Animated.View>
+
+            <View style={styles.step}>
+              <Text style={styles.stepNumber}>2</Text>
+              <View style={styles.stepContent}>
+                <Text style={styles.stepTitle}>Sentir</Text>
+                <Text style={styles.stepDescription}>
+                  Registra cómo te sientes hoy
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.step}>
+              <Text style={styles.stepNumber}>3</Text>
+              <View style={styles.stepContent}>
+                <Text style={styles.stepTitle}>Accionar</Text>
+                <Text style={styles.stepDescription}>
+                  Koraa priorizará tus tareas automáticamente
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.startButton}
+            onPress={onClose}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+          >
+            <LinearGradient
+              colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.startButtonGradient}
+            >
+              <Text style={styles.startButtonText}>Comenzar</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
-      </Animated.View>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  overlayTouchable: {
-    flex: 1,
-    width: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: THEME.spacing.lg,
-    // No permitir cerrar tocando fuera del modal
   },
   modalContent: {
-    width: '100%',
-  },
-  container: {
-    width: '100%',
-    maxWidth: 400,
-  },
-  modal: {
+    backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.xl,
+    width: '100%',
+    maxWidth: 400,
     ...THEME.shadows.soft,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: THEME.spacing.md,
+    right: THEME.spacing.md,
+    padding: THEME.spacing.xs,
+    zIndex: 1,
   },
   iconContainer: {
     alignItems: 'center',
-    marginBottom: THEME.spacing.lg,
-    marginTop: THEME.spacing.md,
-  },
-  iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: THEME.spacing.md,
   },
   title: {
     ...THEME.typography.h1,
-    color: '#FFFFFF',
+    color: THEME.colors.text.main,
     textAlign: 'center',
+    marginBottom: THEME.spacing.sm,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  subtitle: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: THEME.spacing.lg,
+    lineHeight: 22,
+  },
+  stepsContainer: {
+    marginBottom: THEME.spacing.lg,
+  },
+  step: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     marginBottom: THEME.spacing.md,
-    fontFamily: THEME.fonts.heading.bold,
   },
-  message: {
-    ...THEME.typography.body,
-    color: '#FFFFFF',
+  stepNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: THEME.colors.gradient.blue,
+    color: THEME.colors.fill[100],
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: THEME.spacing.xl,
-    opacity: 0.95,
-  },
-  highlight: {
+    lineHeight: 32,
     fontFamily: THEME.fonts.heading.bold,
-    color: '#FFFFFF',
+    fontSize: 16,
+    marginRight: THEME.spacing.sm,
   },
-  button: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+  stepContent: {
+    flex: 1,
   },
-  buttonText: {
+  stepTitle: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: 4,
+  },
+  stepDescription: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+  },
+  startButton: {
+    borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  startButtonGradient: {
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.lg,
+    alignItems: 'center',
+  },
+  startButtonText: {
+    ...THEME.typography.body,
+    color: THEME.colors.fill[100],
     fontFamily: THEME.fonts.heading.bold,
     fontSize: 16,
   },

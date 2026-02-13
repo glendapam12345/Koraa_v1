@@ -1,5 +1,4 @@
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { memo } from 'react';
 import { THEME } from '@/constants/theme';
 
 type EmotionCardProps = {
@@ -9,7 +8,7 @@ type EmotionCardProps = {
   onPress: () => void;
 };
 
-export const EmotionCard = memo(function EmotionCard({ emoji, label, selected, onPress }: EmotionCardProps) {
+export function EmotionCard({ emoji, label, selected, onPress }: EmotionCardProps) {
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -18,22 +17,12 @@ export const EmotionCard = memo(function EmotionCard({ emoji, label, selected, o
         selected && styles.selected,
       ]}
       activeOpacity={0.7}
-      accessibilityRole="radio"
-      accessibilityLabel={`Emoción: ${label}`}
-      accessibilityHint={selected ? "Emoción seleccionada. Toca para deseleccionar" : "Toca para seleccionar esta emoción"}
-      accessibilityState={{ selected }}
     >
       <Text style={styles.emoji}>{emoji}</Text>
       <Text style={styles.label}>{label}</Text>
     </TouchableOpacity>
   );
-}, (prevProps, nextProps) => {
-  return (
-    prevProps.emoji === nextProps.emoji &&
-    prevProps.label === nextProps.label &&
-    prevProps.selected === nextProps.selected
-  );
-});
+}
 
 const styles = StyleSheet.create({
   container: {

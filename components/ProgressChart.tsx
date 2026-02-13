@@ -1,5 +1,11 @@
-import { View, Text, StyleSheet, Animated } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { useEffect } from 'react';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withDelay,
+} from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 
@@ -15,22 +21,31 @@ type ProgressChartProps = {
   data: DayData[];
 };
 
-const CHART_HEIGHT = 120;
+const CHART_HEIGHT = 100;
+const BAR_WIDTH = 16;
+const BAR_SPACING = 4;
 
-const getEmotionColors = (emotion?: string): [string, string] => {
-  switch (emotion?.toLowerCase()) {
-    case 'feliz':
-    case 'emocionada':
-      return [THEME.colors.gradient.pink, '#FFD700'] as const;
+// Función para obtener colores según emoción
+const getEmotionColors = (emotion?: string): readonly [string, string] => {
+  if (!emotion) {
+    return [THEME.colors.gradient.blue, THEME.colors.gradient.pink] as const;
+  }
+
+  const emotionLower = emotion.toLowerCase();
+
+  switch (emotionLower) {
     case 'tranquila':
-    case 'relajada':
-      return [THEME.colors.gradient.blue, '#87CEEB'] as const;
+      return ['#6BB6FF', '#4A90E2'] as const; // Azul suave
+    case 'enfocada':
+      return ['#52C9A2', '#2E9D7A'] as const; // Verde
+    case 'motivada':
+      return ['#FFD93D', '#FFB84D'] as const; // Amarillo/Naranja
     case 'ansiosa':
-    case 'estresada':
-      return ['#FF6B6B', '#FF8C00'] as const;
-    case 'triste':
-    case 'melancólica':
-      return ['#9B59B6', '#E74C3C'] as const;
+      return ['#FF9F66', '#FF7F50'] as const; // Naranja suave
+    case 'agotada':
+      return ['#FF6B6B', '#E55555'] as const; // Rojo suave
+    case 'abrumada':
+      return ['#B794F6', '#9B7EDE'] as const; // Morado suave
     default:
       return [THEME.colors.gradient.blue, THEME.colors.gradient.pink] as const;
   }
@@ -48,7 +63,7 @@ function AnimatedBar({
   maxBarHeight: number;
   minBarHeight: number;
 }) {
-  const heightValue = useRef(new Animated.Value(0)).current;
+  const heightValue = useSharedValue(0);
 
   useEffect(() => {
     // Calculate target height
@@ -61,16 +76,18 @@ function AnimatedBar({
     }
 
     // Animate with staggered delay
-    const delay = index * 40;
-    setTimeout(() => {
-      Animated.spring(heightValue, {
-        toValue: targetHeight,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: false, // height no soporta useNativeDriver
-      }).start();
-    }, delay);
+    heightValue.value = withDelay(
+      index * 40,
+      withSpring(targetHeight, {
+        damping: 12,
+        stiffness: 100,
+      })
+    );
   }, [day.hasCheckIn, day.energyLevel, index, maxBarHeight, minBarHeight]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    height: heightValue.value,
+  }));
 
   const emotionColors = getEmotionColors(day.emotion);
 
@@ -78,7 +95,7 @@ function AnimatedBar({
     <View style={styles.barWrapper}>
       <View style={styles.barContainer}>
         {day.hasCheckIn ? (
-          <Animated.View style={[{ overflow: 'hidden', height: heightValue }]}>
+          <Animated.View style={[{ overflow: 'hidden' }, animatedStyle]}>
             <LinearGradient
               colors={emotionColors}
               start={{ x: 0, y: 1 }}
@@ -87,7 +104,7 @@ function AnimatedBar({
             />
           </Animated.View>
         ) : (
-          <Animated.View style={[styles.barEmpty, { height: heightValue }]} />
+          <Animated.View style={[styles.barEmpty, animatedStyle]} />
         )}
       </View>
       <Text style={styles.label}>{day.dayLabel}</Text>
@@ -97,47 +114,52 @@ function AnimatedBar({
 
 export function ProgressChart({ data }: ProgressChartProps) {
   const maxBarHeight = CHART_HEIGHT - 32;
-  const minBarHeight = 8;
+  const minBarHeight = 20;
 
-  // Get unique emotions for legend
-  const emotions = Array.from(new Set(data.filter(d => d.emotion).map(d => d.emotion)));
+  // Extraer emociones únicas de los datos
+  const emotionsInData = Array.from(
+    new Set(data.filter(d => d.emotion).map(d => d.emotion))
+  );
 
   return (
     <View style={styles.container}>
-      <View style={styles.chart}>
-        {data.map((day, index) => (
-          <AnimatedBar
-            key={day.date}
-            day={day}
-            index={index}
-            maxBarHeight={maxBarHeight}
-            minBarHeight={minBarHeight}
-          />
-        ))}
+      <View style={styles.chartContainer}>
+        <View style={styles.chart}>
+          {data.map((day, index) => (
+            <AnimatedBar
+              key={day.date}
+              day={day}
+              index={index}
+              maxBarHeight={maxBarHeight}
+              minBarHeight={minBarHeight}
+            />
+          ))}
+        </View>
       </View>
 
-      {/* Legend */}
-      {emotions.length > 0 && (
-        <View style={styles.legend}>
-          <Text style={styles.legendTitle}>Emociones:</Text>
-          <View style={styles.legendItems}>
-            {emotions.map((emotion) => {
-              const colors = getEmotionColors(emotion);
-              return (
-                <View key={emotion} style={styles.legendItem}>
-                  <LinearGradient
-                    colors={colors}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.legendSquare}
-                  />
-                  <Text style={styles.legendText}>{emotion}</Text>
-                </View>
-              );
-            })}
+      {/* Leyenda simplificada */}
+      {emotionsInData.length > 0 && (
+        <View style={styles.legendContainer}>
+          <View style={styles.legendRow}>
+            <View style={styles.legendItems}>
+              {emotionsInData.slice(0, 6).map((emotion) => {
+                const colors = getEmotionColors(emotion);
+                return (
+                  <View key={emotion} style={styles.legendItem}>
+                    <LinearGradient
+                      colors={colors}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.legendColor}
+                    />
+                    <Text style={styles.legendText}>{emotion}</Text>
+                  </View>
+                );
+              })}
+            </View>
           </View>
           <Text style={styles.legendNote}>
-            La altura de las barras representa tu nivel de energía
+            Altura = energía (1-5) • Color = emoción
           </Text>
         </View>
       )}
@@ -147,81 +169,78 @@ export function ProgressChart({ data }: ProgressChartProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: THEME.spacing.md,
+    width: '100%',
+  },
+  chartContainer: {
+    height: CHART_HEIGHT + 24,
   },
   chart: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
     height: CHART_HEIGHT,
-    marginBottom: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.xs,
   },
   barWrapper: {
-    flex: 1,
     alignItems: 'center',
-    marginHorizontal: 2,
+    flex: 1,
+    maxWidth: BAR_WIDTH + BAR_SPACING,
   },
   barContainer: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'flex-end',
+    width: BAR_WIDTH,
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginBottom: 8,
   },
   bar: {
-    width: '100%',
-    borderRadius: THEME.borderRadius.standard,
-    minHeight: 8,
+    width: BAR_WIDTH,
+    borderRadius: THEME.borderRadius.standard / 2,
+    minHeight: 6,
   },
   barEmpty: {
-    width: '100%',
+    width: BAR_WIDTH,
+    borderRadius: THEME.borderRadius.standard / 2,
     backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.standard,
     minHeight: 6,
   },
   label: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
-    marginTop: THEME.spacing.xs,
-    fontSize: 10,
+    fontSize: 9,
+    textAlign: 'center',
+    width: BAR_WIDTH + 4,
   },
-  legend: {
-    marginTop: THEME.spacing.md,
-    paddingTop: THEME.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: THEME.colors.stroke[100],
+  legendContainer: {
+    marginTop: THEME.spacing.sm,
   },
-  legendTitle: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
+  legendRow: {
     marginBottom: THEME.spacing.xs,
   },
   legendItems: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: THEME.spacing.sm,
-    marginBottom: THEME.spacing.xs,
+    gap: THEME.spacing.xs,
+    justifyContent: 'center',
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: THEME.spacing.xs,
+    gap: 4,
   },
-  legendSquare: {
+  legendColor: {
     width: 12,
     height: 12,
-    borderRadius: 2,
+    borderRadius: 6,
   },
   legendText: {
     ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
+    color: THEME.colors.text.main,
     fontSize: 11,
   },
   legendNote: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
-    fontStyle: 'italic',
     fontSize: 10,
-    marginTop: THEME.spacing.xs,
+    textAlign: 'center',
   },
 });

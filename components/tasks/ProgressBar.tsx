@@ -1,74 +1,68 @@
-import { View, Text, StyleSheet, Animated } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
 
 interface ProgressBarProps {
-  completed: number;
-  total: number;
-  progressWidth?: number;
+  completedCount: number;
+  totalCount: number;
+  progressPercentage: number;
 }
 
-export function ProgressBar({ completed, total, progressWidth = 0 }: ProgressBarProps) {
-  const animatedWidth = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (total > 0) {
-      const percentage = (completed / total) * 100;
-      Animated.timing(animatedWidth, {
-        toValue: percentage,
-        duration: 500,
-        useNativeDriver: false, // width no soporta useNativeDriver
-      }).start();
-    }
-  }, [completed, total]);
-
-  if (total === 0) {
-    return null;
-  }
-
-  const percentage = (completed / total) * 100;
-
+export function ProgressBar({
+  completedCount,
+  totalCount,
+  progressPercentage,
+}: ProgressBarProps) {
   return (
-    <View style={styles.container}>
-      <View style={styles.track}>
-        <Animated.View
-          style={[
-            styles.fill,
-            {
-              width: animatedWidth.interpolate({
-                inputRange: [0, 100],
-                outputRange: ['0%', '100%'],
-              }),
-            },
-          ]}
-        />
+    <View style={styles.progressIndicator}>
+      <View style={styles.progressHeader}>
+        <Text style={styles.progressLabel}>Progreso de hoy</Text>
+        <Text style={styles.progressCount}>
+          {completedCount}/{totalCount}
+        </Text>
       </View>
-      <Text style={styles.text}>
-        {completed} de {total} completadas
-      </Text>
+      <View style={styles.progressBarContainer}>
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: `${progressPercentage}%` }]} />
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginVertical: THEME.spacing.md,
-  },
-  track: {
-    height: 8,
+  progressIndicator: {
     backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.pill,
-    overflow: 'hidden',
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: THEME.spacing.xs,
   },
-  fill: {
-    height: '100%',
-    backgroundColor: THEME.colors.gradient.blue,
-    borderRadius: THEME.borderRadius.pill,
-  },
-  text: {
+  progressLabel: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    textAlign: 'center',
+  },
+  progressCount: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  progressBarContainer: {
+    width: '100%',
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: THEME.colors.stroke[100],
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: THEME.colors.gradient.blue,
+    borderRadius: 4,
   },
 });

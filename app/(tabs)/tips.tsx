@@ -4,7 +4,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
 import { supabase } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
 import { getEmotionTips } from '@/lib/emotionTips';
 import { generatePersonalizedRecommendations } from '@/lib/personalizedRecommendations';
 import { Lightbulb, Moon, Zap, Brain, Sparkles, Heart, Plus } from 'lucide-react-native';
@@ -40,18 +39,18 @@ const CATEGORY_COLORS = {
   productivity: '#30CFD0',
 };
 
-type UserProfile = {
-  age?: number;
-  favorite_activities?: string[];
-  interests?: string[];
-  other_preferences?: Record<string, unknown>;
-};
-
 export default function TipsScreen() {
   const [todayMood, setTodayMood] = useState<string>('');
   const [energyLevel, setEnergyLevel] = useState<number>(0);
   const [availableTime, setAvailableTime] = useState<string>('');
   const [focusLevel, setFocusLevel] = useState<string>('');
+  type UserProfile = {
+    age?: number;
+    favorite_activities?: string[];
+    interests?: string[];
+    other_preferences?: Record<string, any>;
+  };
+  
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -74,7 +73,7 @@ export default function TipsScreen() {
         .maybeSingle();
 
       if (error) {
-        logger.error('Error cargando check-in:', error);
+        console.error('Error cargando check-in:', error);
         setLoading(false);
         return;
       }
@@ -99,9 +98,9 @@ export default function TipsScreen() {
         .maybeSingle();
 
       if (profileError) {
-        logger.error('Error cargando perfil:', profileError);
-        // No mostrar error crítico al usuario aquí, solo continuar sin recomendaciones personalizadas
-        // El usuario puede seguir usando la app sin problemas (solo verá tips genéricos)
+        console.error('Error cargando perfil:', profileError);
+        // No mostrar error al usuario aquí, solo continuar sin recomendaciones personalizadas
+        // El usuario puede seguir usando la app sin problemas
         setUserProfile(null);
       } else if (profile) {
         setUserProfile(profile);
@@ -109,9 +108,7 @@ export default function TipsScreen() {
         setUserProfile(null);
       }
     } catch (error) {
-      logger.error('Error inesperado cargando perfil:', error);
-      // Continuar sin perfil - la app funciona sin recomendaciones personalizadas
-      setUserProfile(null);
+      console.error('Error inesperado:', error);
     } finally {
       setLoading(false);
     }
@@ -133,26 +130,21 @@ export default function TipsScreen() {
     setRefreshing(false);
   };
 
-  // Memoizar datos de emoción para evitar recálculos innecesarios
-  const emotionData = useMemo(() => {
+  const getEmotionData = () => {
     return EMOTIONS.find(e => e.id === todayMood) || null;
-  }, [todayMood]);
+  };
 
-  // Memoizar tips para evitar recálculos innecesarios
-  const tips = useMemo(() => {
-    return todayMood ? getEmotionTips(todayMood) : [];
-  }, [todayMood]);
+  const emotionData = getEmotionData();
+  const tips = todayMood ? getEmotionTips(todayMood) : [];
   
-  // Agrupar tips por categoría - Memoizado
-  const tipsByCategory = useMemo(() => {
-    return tips.reduce((acc, tip) => {
-      if (!acc[tip.category]) {
-        acc[tip.category] = [];
-      }
-      acc[tip.category].push(tip);
-      return acc;
-    }, {} as Record<string, typeof tips>);
-  }, [tips]);
+  // Agrupar tips por categoría
+  const tipsByCategory = tips.reduce((acc, tip) => {
+    if (!acc[tip.category]) {
+      acc[tip.category] = [];
+    }
+    acc[tip.category].push(tip);
+    return acc;
+  }, {} as Record<string, typeof tips>);
 
   // Generar recomendaciones personalizadas
   const personalizedRecommendations = useMemo(() => {
@@ -177,7 +169,7 @@ export default function TipsScreen() {
         }
       );
     } catch (error) {
-      logger.error('Error generando recomendaciones:', error);
+      console.error('Error generando recomendaciones:', error);
       return []; // Retornar array vacío en caso de error
     }
   }, [todayMood, userProfile, energyLevel, availableTime, focusLevel]);
@@ -254,22 +246,17 @@ export default function TipsScreen() {
                     <View style={styles.recommendationContent}>
                       <Text style={styles.recommendationTitle}>{rec.title}</Text>
                       <Text style={styles.recommendationMessage}>{rec.message}</Text>
-                      {rec.suggestion && rec.suggestion.trim() && (
+                      {rec.suggestion && (
                         <TouchableOpacity
                           style={styles.suggestionButton}
                           onPress={() => {
-                            // Validar que suggestion no esté vacío antes de navegar
-                            if (rec.suggestion && rec.suggestion.trim()) {
-                              router.push({
-                                pathname: '/(tabs)/vaciar',
-                                params: { suggestion: rec.suggestion.trim() },
-                              });
-                            }
+                            // Navegar a Vaciar con la sugerencia pre-rellenada
+                            router.push({
+                              pathname: '/(tabs)/vaciar',
+                              params: { suggestion: rec.suggestion },
+                            });
                           }}
                           activeOpacity={0.7}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Agregar "${rec.suggestion}" a mis tareas`}
-                          accessibilityHint="Abre la pantalla Vaciar con esta sugerencia pre-llenada"
                         >
                           <Plus size={16} color={THEME.colors.gradient.blue} />
                           <Text style={styles.suggestionButtonText}>Agregar a mis tareas</Text>
@@ -516,11 +503,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: THEME.spacing.xs,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
-    minHeight: 44,
-    borderRadius: THEME.borderRadius.pill,
+    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.sm,
     backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.pill,
     alignSelf: 'flex-start',
   },
   suggestionButtonText: {

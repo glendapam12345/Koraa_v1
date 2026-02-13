@@ -1,4 +1,13 @@
-import { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  Modal,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { THEME } from '@/constants/theme';
 import { X } from 'lucide-react-native';
 
@@ -10,29 +19,38 @@ interface TaskEditModalProps {
   onClose: () => void;
 }
 
-export function TaskEditModal({ 
-  visible, 
-  content, 
-  onContentChange, 
-  onSave, 
-  onClose 
+export function TaskEditModal({
+  visible,
+  content,
+  onContentChange,
+  onSave,
+  onClose,
 }: TaskEditModalProps) {
   return (
     <Modal
       visible={visible}
-      transparent={true}
       animationType="slide"
+      transparent
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
+      <KeyboardAvoidingView
+        style={styles.modalOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={onClose}
+        />
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Editar tarea</Text>
             <TouchableOpacity
-              onPress={onClose}
               style={styles.modalCloseButton}
+              onPress={onClose}
+              activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="Cerrar modal"
+              accessibilityLabel="Cerrar"
             >
               <X size={24} color={THEME.colors.text.main} />
             </TouchableOpacity>
@@ -42,38 +60,32 @@ export function TaskEditModal({
             style={styles.editInput}
             value={content}
             onChangeText={onContentChange}
-            placeholder="Contenido de la tarea"
+            placeholder="Edita tu tarea..."
             placeholderTextColor={THEME.colors.text.secondary}
             multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-            maxLength={300}
-            accessibilityLabel="Contenido de la tarea"
-            accessibilityHint="Edita el texto de la tarea"
+            autoFocus
           />
 
           <View style={styles.modalActions}>
             <TouchableOpacity
               style={[styles.modalButton, styles.modalButtonCancel]}
               onPress={onClose}
+              activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="Cancelar edición"
             >
               <Text style={styles.modalButtonCancelText}>Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.modalButton, styles.modalButtonSave]}
               onPress={onSave}
-              disabled={!content.trim()}
+              activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="Guardar cambios"
-              accessibilityState={{ disabled: !content.trim() }}
             >
               <Text style={styles.modalButtonSaveText}>Guardar</Text>
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -83,6 +95,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    flex: 1,
   },
   modalContent: {
     backgroundColor: THEME.colors.fill[100],
