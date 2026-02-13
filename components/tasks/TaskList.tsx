@@ -13,6 +13,8 @@ interface TaskListProps {
   onDeleteTask: (task: Task) => void;
   getCategoryColor: (category: string) => string;
   onSubtaskToggle: (subtaskId: string, parentTaskId: string) => void;
+  /** Opcional: devuelve etiqueta y color para mostrar "Pertenece a [proyecto]" o "Suelta" */
+  getProjectInfo?: (task: Task) => { label: string; color: string } | null;
 }
 
 export function TaskList({
@@ -27,25 +29,31 @@ export function TaskList({
   onDeleteTask,
   getCategoryColor,
   onSubtaskToggle,
+  getProjectInfo,
 }: TaskListProps) {
   return (
     <View style={styles.container}>
-      {incompleteTasks.map((task, index) => (
-        <TaskCard
-          key={task.id}
-          task={task}
-          index={index}
-          expanded={expandedTasks.has(task.id)}
-          menuOpen={menuOpen === task.id}
-          onToggle={() => onToggleTask(task.id)}
-          onToggleExpansion={() => onToggleExpansion(task.id)}
-          onMenuPress={() => onMenuPress(task.id)}
-          onEditTask={() => onEditTask(task)}
-          onDeleteTask={() => onDeleteTask(task)}
-          getCategoryColor={getCategoryColor}
-          onSubtaskToggle={(subtaskId) => onSubtaskToggle(subtaskId, task.id)}
-        />
-      ))}
+      {incompleteTasks.map((task, index) => {
+        const projectInfo = getProjectInfo?.(task) ?? null;
+        return (
+          <TaskCard
+            key={task.id}
+            task={task}
+            index={index}
+            expanded={expandedTasks.has(task.id)}
+            menuOpen={menuOpen === task.id}
+            onToggle={() => onToggleTask(task.id)}
+            onToggleExpansion={() => onToggleExpansion(task.id)}
+            onMenuPress={() => onMenuPress(task.id)}
+            onEditTask={() => onEditTask(task)}
+            onDeleteTask={() => onDeleteTask(task)}
+            getCategoryColor={getCategoryColor}
+            onSubtaskToggle={(subtaskId) => onSubtaskToggle(subtaskId, task.id)}
+            projectLabel={projectInfo?.label ?? null}
+            projectLabelColor={projectInfo?.color}
+          />
+        );
+      })}
     </View>
   );
 }

@@ -27,6 +27,9 @@ interface TaskCardProps {
   onDeleteTask: () => void;
   getCategoryColor: (category: string) => string;
   onSubtaskToggle: (subtaskId: string) => void;
+  /** Si se pasa, se muestra una etiqueta "Pertenece a [proyecto]" en el color del proyecto, o "Suelta" en gris */
+  projectLabel?: string | null;
+  projectLabelColor?: string;
 }
 
 export function TaskCard({
@@ -41,12 +44,15 @@ export function TaskCard({
   onDeleteTask,
   getCategoryColor,
   onSubtaskToggle,
+  projectLabel,
+  projectLabelColor,
 }: TaskCardProps) {
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
   const completedSubtasks = task.subtasks?.filter((st) => st.is_completed).length || 0;
   const totalSubtasks = task.subtasks?.length || 0;
 
   const isProjectTask = task.project_id !== null && task.project_id !== undefined;
+  const showLabel = projectLabel != null && projectLabel !== '';
 
   return (
     <View style={styles.taskWrapper}>
@@ -58,7 +64,7 @@ export function TaskCard({
           isProjectTask && styles.taskCardProject,
         ]}
       >
-        {isProjectTask && (
+        {isProjectTask && !showLabel && (
           <View style={styles.projectIndicator}>
             <View style={styles.projectIndicatorBar} />
           </View>
@@ -99,6 +105,17 @@ export function TaskCard({
         </TouchableOpacity>
 
         <View style={styles.taskContent}>
+          {showLabel && (
+            <Text
+              style={[
+                styles.projectLabelText,
+                { color: projectLabelColor ?? THEME.colors.text.secondary },
+              ]}
+              numberOfLines={1}
+            >
+              {projectLabel}
+            </Text>
+          )}
           <Text
             style={[styles.taskText, task.is_completed && styles.taskTextCompleted]}
             numberOfLines={3}
@@ -283,6 +300,12 @@ const styles = StyleSheet.create({
   },
   taskContent: {
     flex: 1,
+  },
+  projectLabelText: {
+    ...THEME.typography.small,
+    fontSize: 11,
+    marginBottom: 4,
+    fontFamily: THEME.fonts.heading.medium,
   },
   taskText: {
     ...THEME.typography.body,

@@ -53,13 +53,21 @@ export default function SemanaScreen() {
         }
       >
         <View style={styles.header}>
-          <View style={styles.headerIcon}>
-            <Calendar size={28} color={THEME.colors.gradient.blue} />
+          <TouchableOpacity
+            style={styles.headerCalendarButton}
+            onPress={() => router.push('/(tabs)/vaciar')}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir y agregar tareas"
+          >
+            <Calendar size={24} color={THEME.colors.gradient.blue} />
+          </TouchableOpacity>
+          <View style={styles.headerTextWrap}>
+            <Text style={styles.title}>Tu semana</Text>
+            <Text style={styles.subtitle}>
+              Elige una semana y ve tus tareas por día
+            </Text>
           </View>
-          <Text style={styles.title}>Tu semana</Text>
-          <Text style={styles.subtitle}>
-            Elige una semana y ve tus tareas por día
-          </Text>
         </View>
 
         <Text style={styles.weekSelectorHint}>Desliza para elegir otra semana</Text>
@@ -100,7 +108,11 @@ export default function SemanaScreen() {
           <Text style={styles.weekRange}>{weekLabel}</Text>
         ) : null}
 
-        {weekTasks.map(({ day, tasks }) => (
+        {loading ? (
+          <Text style={styles.loadingWeek}>Cargando días...</Text>
+        ) : null}
+
+        {!loading && weekTasks.map(({ day, tasks }) => (
           <View key={day.dateStr} style={styles.daySection}>
             <View
               style={[
@@ -262,19 +274,25 @@ const styles = StyleSheet.create({
     paddingBottom: THEME.spacing.xl,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: THEME.spacing.lg,
     paddingTop: THEME.spacing.lg,
     paddingBottom: THEME.spacing.md,
-    alignItems: 'center',
+    gap: THEME.spacing.md,
   },
-  headerIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  headerCalendarButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: THEME.colors.fill[200],
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: THEME.spacing.sm,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  headerTextWrap: {
+    flex: 1,
   },
   title: {
     ...THEME.typography.h2,
@@ -284,7 +302,6 @@ const styles = StyleSheet.create({
   subtitle: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
-    textAlign: 'center',
     marginBottom: THEME.spacing.xs,
   },
   weekSelectorHint: {
@@ -298,6 +315,12 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     marginBottom: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.lg,
+  },
+  loadingWeek: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    paddingHorizontal: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
   },
   weekSelectorScroll: {
     marginBottom: THEME.spacing.sm,

@@ -461,7 +461,7 @@ export default function TodayScreen() {
         return;
       }
 
-      showToast('Tareas vaciadas correctamente', 'success');
+      showToast('Prioridad quitada. Tus tareas siguen ahí.', 'success');
       await loadTasks();
     } catch (error) {
       logger.error('Error inesperado:', error);
@@ -475,11 +475,11 @@ export default function TodayScreen() {
       return;
     }
     Alert.alert(
-      'Vaciar tareas',
-      '¿Quieres quitar la prioridad de todas las tareas de hoy?',
+      'Vaciar tus tareas',
+      'No se elimina nada: solo se quita la prioridad de hoy. ¿Quieres vaciar tus tareas?',
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Vaciar', style: 'destructive', onPress: runVaciarTareas },
+        { text: 'Vaciar tus tareas', onPress: runVaciarTareas },
       ]
     );
   };
@@ -845,9 +845,15 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {/* Cuadro de Prioridades - Simplificado */}
+        {/* Cuadro de Prioridades - Rediseñado */}
         {!loading && incompleteTasks.length > 0 && (
-          <View style={styles.prioritiesCard}>
+          <View style={styles.prioritiesCardWrap}>
+            <LinearGradient
+              colors={['rgba(74, 144, 226, 0.08)', 'rgba(255, 107, 107, 0.04)', THEME.colors.fill[200]]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.prioritiesCard}
+            >
             <View style={styles.prioritiesHeader}>
               <View style={styles.prioritiesHeaderLeft}>
                 <Text style={styles.prioritiesTitle} numberOfLines={1}>Tus prioridades para hoy</Text>
@@ -858,7 +864,7 @@ export default function TodayScreen() {
                 onPress={handleVaciarTareas}
                 activeOpacity={0.8}
                 accessibilityRole="button"
-                accessibilityLabel="Vaciar tareas"
+                accessibilityLabel="Vaciar tus tareas (quitar prioridad)"
               >
                 <LinearGradient
                   colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -902,100 +908,51 @@ export default function TodayScreen() {
                 </Text>
               </View>
             )}
+            </LinearGradient>
           </View>
         )}
 
-        {/* Lista de tareas organizadas por proyecto */}
-        {!loading && incompleteTasks.length > 0 && (() => {
-          const tasksByProject = new Map<string | null, Task[]>();
-          const standaloneTasks: Task[] = [];
-
-          incompleteTasks.forEach((task: Task) => {
-            if (task.project_id) {
-              if (!tasksByProject.has(task.project_id)) {
-                tasksByProject.set(task.project_id, []);
-              }
-              tasksByProject.get(task.project_id)!.push(task);
-            } else {
-              standaloneTasks.push(task);
-            }
-          });
-
-          return (
-            <View style={styles.tasksContainer}>
-              {/* Bloques por proyecto con nombre real */}
-              {Array.from(tasksByProject.entries()).map(([projectId, projectTasks]) => {
-                const projectInfo = projectId ? projectsMap[projectId] : undefined;
-                const projectName = projectInfo?.name ?? 'Proyecto';
-                const projectColor = projectInfo?.color ?? THEME.colors.gradient.blue;
-                return (
-                  <View key={`project-${projectId}`} style={styles.taskBlock}>
-                    <View style={styles.taskBlockHeader}>
-                      <View style={[styles.taskBlockDot, { backgroundColor: projectColor }]} />
-                      <Text style={styles.taskBlockTitle} numberOfLines={1}>{projectName}</Text>
-                      <Text style={styles.taskBlockCount}>{projectTasks.length}</Text>
-                    </View>
-                    <View style={styles.taskBlockContent}>
-                      <TaskList
-                        tasks={projectTasks}
-                        incompleteTasks={projectTasks}
-                        expandedTasks={expandedTasks}
-                        menuOpen={menuOpen}
-                        onToggleTask={handleToggleTask}
-                        onToggleExpansion={toggleTaskExpansion}
-                        onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
-                        onEditTask={handleEditTask}
-                        onDeleteTask={handleDeleteTask}
-                        getCategoryColor={getCategoryColor}
-                        onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
-                      />
-                    </View>
-                  </View>
-                );
-              })}
-
-              {/* Tareas sueltas */}
-              {standaloneTasks.length > 0 && (
-                <View style={styles.taskBlock}>
-                  <View style={styles.taskBlockHeader}>
-                    <View style={[styles.taskBlockDot, { backgroundColor: THEME.colors.text.secondary }]} />
-                    <Text style={styles.taskBlockTitle} numberOfLines={1}>Suelta</Text>
-                    <Text style={styles.taskBlockCount}>{standaloneTasks.length}</Text>
-                  </View>
-                  <View style={styles.taskBlockContent}>
-                    <TaskList
-                      tasks={standaloneTasks}
-                      incompleteTasks={standaloneTasks}
-                      expandedTasks={expandedTasks}
-                      menuOpen={menuOpen}
-                      onToggleTask={handleToggleTask}
-                      onToggleExpansion={toggleTaskExpansion}
-                      onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
-                      onEditTask={handleEditTask}
-                      onDeleteTask={handleDeleteTask}
-                      getCategoryColor={getCategoryColor}
-                      onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
-                    />
-                  </View>
-                </View>
-              )}
-
-              <View style={styles.agregarMasWrap}>
-                <TouchableOpacity
-                  style={styles.agregarMasButton}
-                  onPress={() => router.push('/(tabs)/vaciar')}
-                  activeOpacity={0.8}
-                  accessibilityRole="button"
-                  accessibilityLabel="Agregar más tareas o proyectos"
-                >
-                  <Plus size={18} color={THEME.colors.gradient.blue} />
-                  <Text style={styles.agregarMasButtonText} numberOfLines={1}>Agregar más tareas o proyectos</Text>
-                </TouchableOpacity>
-                <Text style={styles.agregarMasHint}>Lleva a la pestaña Vaciar</Text>
-              </View>
+        {/* Lista única de tareas: cada una con etiqueta de proyecto en color o "Suelta" */}
+        {!loading && incompleteTasks.length > 0 && (
+          <View style={styles.tasksContainer}>
+            <View style={styles.tasksListCard}>
+              <TaskList
+                tasks={incompleteTasks}
+                incompleteTasks={incompleteTasks}
+                expandedTasks={expandedTasks}
+                menuOpen={menuOpen}
+                onToggleTask={handleToggleTask}
+                onToggleExpansion={toggleTaskExpansion}
+                onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+                onEditTask={handleEditTask}
+                onDeleteTask={handleDeleteTask}
+                getCategoryColor={getCategoryColor}
+                onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
+                getProjectInfo={(task) => {
+                  if (task.project_id) {
+                    const p = projectsMap[task.project_id];
+                    const name = p?.name ?? 'Proyecto';
+                    return { label: `Pertenece a ${name}`, color: p?.color ?? THEME.colors.gradient.blue };
+                  }
+                  return { label: 'Suelta', color: THEME.colors.text.secondary };
+                }}
+              />
             </View>
-          );
-        })()}
+            <View style={styles.agregarMasWrap}>
+              <TouchableOpacity
+                style={styles.agregarMasButton}
+                onPress={() => router.push('/(tabs)/vaciar')}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Agregar más tareas o proyectos"
+              >
+                <Plus size={18} color={THEME.colors.gradient.blue} />
+                <Text style={styles.agregarMasButtonText} numberOfLines={1}>Agregar más tareas o proyectos</Text>
+              </TouchableOpacity>
+              <Text style={styles.agregarMasHint}>Lleva a la pestaña Vaciar</Text>
+            </View>
+          </View>
+        )}
 
         {/* Mensaje cuando no hay tareas pendientes pero sí completadas */}
         {!loading && todayMood && incompleteTasks.length === 0 && tasks.length > 0 && !dismissedCelebration && (
@@ -1058,9 +1015,9 @@ export default function TodayScreen() {
           onPress={() => setShowVaciarConfirm(false)}
         >
           <View style={styles.vaciarConfirmCard} onStartShouldSetResponder={() => true}>
-            <Text style={styles.vaciarConfirmTitle}>Vaciar tareas</Text>
+            <Text style={styles.vaciarConfirmTitle}>Vaciar tus tareas</Text>
             <Text style={styles.vaciarConfirmMessage}>
-              ¿Quieres quitar la prioridad de todas las tareas de hoy?
+              No se elimina nada: solo se quita la prioridad de hoy. ¿Quieres vaciar tus tareas?
             </Text>
             <View style={styles.vaciarConfirmActions}>
               <TouchableOpacity
@@ -1078,7 +1035,7 @@ export default function TodayScreen() {
                 }}
                 activeOpacity={0.8}
               >
-                <Text style={styles.vaciarConfirmOkText}>Vaciar</Text>
+                <Text style={styles.vaciarConfirmOkText}>Vaciar tus tareas</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1437,13 +1394,19 @@ const styles = StyleSheet.create({
   flowArrow: {
     paddingHorizontal: 2,
   },
-  prioritiesCard: {
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
+  prioritiesCardWrap: {
     marginBottom: THEME.spacing.md,
     marginHorizontal: THEME.spacing.lg,
+    borderRadius: THEME.borderRadius.rounded + 4,
     overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  prioritiesCard: {
+    borderRadius: THEME.borderRadius.rounded + 4,
+    padding: THEME.spacing.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(74, 144, 226, 0.15)',
   },
   prioritiesHeader: {
     flexDirection: 'row',
@@ -1488,7 +1451,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   prioritiesContext: {
-    marginBottom: THEME.spacing.sm,
+    marginTop: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
   },
   prioritiesContextHeader: {
     flexDirection: 'row',
@@ -1521,7 +1485,8 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.medium,
     marginBottom: 4,
-    textAlign: 'center',
+    fontSize: 14,
+    lineHeight: 20,
   },
   prioritiesContextAccent: {
     fontFamily: THEME.fonts.accent.italic,
@@ -1531,10 +1496,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: THEME.spacing.xs,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: THEME.borderRadius.standard,
     padding: THEME.spacing.sm,
     marginTop: THEME.spacing.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: THEME.colors.gradient.blue,
   },
   prioritiesSuggestion: {
     ...THEME.typography.body,
@@ -1658,6 +1625,14 @@ const styles = StyleSheet.create({
   tasksContainer: {
     paddingHorizontal: THEME.spacing.lg,
     paddingBottom: THEME.spacing.lg,
+  },
+  tasksListCard: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.sm,
+    marginBottom: THEME.spacing.sm,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
   },
   taskBlock: {
     marginBottom: THEME.spacing.lg,
@@ -2138,7 +2113,7 @@ const styles = StyleSheet.create({
   },
   vaciarConfirmOkText: {
     ...THEME.typography.body,
-    color: '#E53935',
+    color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.bold,
   },
   menuDropdown: {
