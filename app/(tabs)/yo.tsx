@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { router, useFocusEffect } from 'expo-router';
-import { LogOut, Settings, Circle as HelpCircle, CreditCard as Edit, X, Plus, Folder, RotateCcw } from 'lucide-react-native';
+import { LogOut, Settings, Circle as HelpCircle, CreditCard as Edit, X, Plus, Folder, RotateCcw, Lock } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase, getErrorMessage } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
@@ -44,6 +44,11 @@ export default function ProfileScreen() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [showProjects, setShowProjects] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changePasswordError, setChangePasswordError] = useState<string | null>(null);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const loadProgressData = useCallback(async () => {
     if (!user) return;
@@ -216,6 +221,37 @@ export default function ProfileScreen() {
   const handleSignOut = async () => {
     await signOut();
     router.replace('/onboarding/welcome');
+  };
+
+  const handleChangePassword = async () => {
+    setChangePasswordError(null);
+    if (newPassword.length < 6) {
+      setChangePasswordError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setChangePasswordError('Las contraseñas no coinciden');
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        setChangePasswordError(getErrorMessage(error));
+        return;
+      }
+      setShowChangePassword(false);
+      setNewPassword('');
+      setConfirmPassword('');
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      Alert.alert('Listo', 'Tu contraseña se actualizó. La próxima vez que inicies sesión usa la nueva contraseña.');
+    } catch (err) {
+      setChangePasswordError(err instanceof Error ? err.message : 'Ocurrió un error');
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const MAX_ITEMS = 25; // Límite máximo de actividades/intereses
@@ -593,6 +629,23 @@ export default function ProfileScreen() {
             <Text style={styles.menuItemText}>Ayuda</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setShowChangePassword(true);
+              setNewPassword('');
+              setConfirmPassword('');
+              setChangePasswordError(null);
+            }}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Cambiar contraseña"
+            accessibilityHint="Elige una nueva contraseña desde la app"
+          >
+            <Lock size={24} color={THEME.colors.text.main} />
+            <Text style={styles.menuItemText}>Cambiar contraseña</Text>
+          </TouchableOpacity>
+
           {/* Botón de desarrollo para resetear onboarding */}
           {__DEV__ && (
             <TouchableOpacity 
@@ -941,6 +994,93 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Modal cambiar contraseña */}
+      <Modal
+        visible={showChangePassword}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          if (!changingPassword) {
+            setShowChangePassword(false);
+            setChangePasswordError(null);
+          }
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalKeyboardView}
+          >
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Elegir nueva contraseña</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (!changingPassword) {
+                      setShowChangePassword(false);
+                      setChangePasswordError(null);
+                    }
+                  }}
+                  style={styles.modalCloseButton}
+                  disabled={changingPassword}
+                >
+                  <X size={24} color={THEME.colors.text.main} />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.changePasswordHint}>
+                Mínimo 6 caracteres. La usarás la próxima vez que inicies sesión.
+              </Text>
+              <View style={styles.formSection}>
+                <Text style={styles.formLabel}>Nueva contraseña</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  placeholder="••••••••"
+                  placeholderTextColor={THEME.colors.text.secondary}
+                  secureTextEntry
+                  editable={!changingPassword}
+                />
+              </View>
+              <View style={styles.formSection}>
+                <Text style={styles.formLabel}>Confirmar contraseña</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="••••••••"
+                  placeholderTextColor={THEME.colors.text.secondary}
+                  secureTextEntry
+                  editable={!changingPassword}
+                />
+              </View>
+              {changePasswordError ? (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{changePasswordError}</Text>
+                </View>
+              ) : null}
+              <TouchableOpacity
+                style={[styles.changePasswordButton, changingPassword && styles.changePasswordButtonDisabled]}
+                onPress={handleChangePassword}
+                disabled={changingPassword || !newPassword || !confirmPassword}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.changePasswordButtonGradient}
+                >
+                  <Text style={styles.changePasswordButtonText}>
+                    {changingPassword ? 'Guardando…' : 'Guardar contraseña'}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1212,6 +1352,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: THEME.spacing.md,
     fontStyle: 'italic',
+  },
+  changePasswordHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.sm,
+  },
+  changePasswordButton: {
+    marginTop: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.standard,
+    overflow: 'hidden',
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+  },
+  changePasswordButtonDisabled: {
+    opacity: 0.6,
+  },
+  changePasswordButtonGradient: {
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  changePasswordButtonText: {
+    ...THEME.typography.body,
+    color: THEME.colors.fill[100],
+    fontWeight: '600',
   },
   modalActions: {
     flexDirection: 'row',

@@ -13,7 +13,9 @@ export default function AuthScreen() {
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotSuccess, setForgotSuccess] = useState(false);
+  const { signIn, signUp, resetPasswordForEmail } = useAuth();
 
   // Validación de email
   const validateEmail = (email: string): boolean => {
@@ -109,6 +111,112 @@ export default function AuthScreen() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    setError('');
+    if (!email.trim()) {
+      setError('Ingresa tu email para enviarte el enlace de recuperación');
+      return;
+    }
+    if (!validateEmail(email)) {
+      setError('Por favor ingresa un email válido');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error: err } = await resetPasswordForEmail(email);
+      if (err) {
+        setError(err.message || 'No se pudo enviar el enlace. Revisa tu email.');
+      } else {
+        setForgotSuccess(true);
+        setError('');
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Ocurrió un error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (showForgotPassword) {
+    return (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <View style={styles.iconCircle}>
+              <Sparkles size={32} color={THEME.colors.gradient.blue} />
+            </View>
+            <Text style={styles.title}>Recuperar contraseña</Text>
+            <Text style={styles.subtitle}>
+              Te enviaremos un enlace a tu email para restablecer tu contraseña.
+            </Text>
+          </View>
+
+          {forgotSuccess ? (
+            <View style={styles.successContainer}>
+              <Text style={styles.successText}>
+                Revisa tu correo. Te enviamos un enlace para restablecer tu contraseña.
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowForgotPassword(false);
+                  setForgotSuccess(false);
+                }}
+                style={styles.switchButton}
+              >
+                <Text style={styles.switchTextBold}>Volver a iniciar sesión</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="tu@email.com"
+                  placeholderTextColor={THEME.colors.text.secondary}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  editable={!loading}
+                />
+              </View>
+              {error ? (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              ) : null}
+              <GradientButton
+                title="Enviar enlace de recuperación"
+                onPress={handleForgotPassword}
+                disabled={loading || !email.trim()}
+              />
+              <TouchableOpacity
+                onPress={() => {
+                  setShowForgotPassword(false);
+                  setError('');
+                }}
+                style={styles.switchButton}
+              >
+                <Text style={styles.switchText}>
+                  Volver a{' '}
+                  <Text style={styles.switchTextBold}>iniciar sesión</Text>
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -167,6 +275,18 @@ export default function AuthScreen() {
             placeholderTextColor={THEME.colors.text.secondary}
             secureTextEntry
           />
+          {!isSignUp && (
+            <TouchableOpacity
+              onPress={() => {
+                setShowForgotPassword(true);
+                setError('');
+              }}
+              style={styles.forgotLink}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.forgotLinkText}>Olvidé mi contraseña</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {error && (
@@ -273,5 +393,23 @@ const styles = StyleSheet.create({
   switchTextBold: {
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.gradient.blue,
+  },
+  forgotLink: {
+    marginTop: THEME.spacing.xs,
+    alignSelf: 'flex-start',
+  },
+  forgotLinkText: {
+    ...THEME.typography.small,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  successContainer: {
+    marginBottom: THEME.spacing.lg,
+  },
+  successText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    textAlign: 'center',
+    marginBottom: THEME.spacing.md,
   },
 });
