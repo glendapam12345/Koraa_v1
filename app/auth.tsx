@@ -1,9 +1,10 @@
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { Sparkles } from 'lucide-react-native';
 
 export default function AuthScreen() {
@@ -16,6 +17,23 @@ export default function AuthScreen() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotSuccess, setForgotSuccess] = useState(false);
   const { signIn, signUp, resetPasswordForEmail } = useAuth();
+
+  // Limpiar cualquier sesión existente al montar la pantalla
+  useEffect(() => {
+    const clearExistingSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          console.log('[Auth Screen] Sesión existente detectada, cerrando...');
+          await supabase.auth.signOut();
+          console.log('[Auth Screen] Sesión cerrada');
+        }
+      } catch (err) {
+        console.error('[Auth Screen] Error al limpiar sesión:', err);
+      }
+    };
+    clearExistingSession();
+  }, []);
 
   // Validación de email
   const validateEmail = (email: string): boolean => {

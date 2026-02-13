@@ -82,19 +82,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Verificar si hay una sesión activa primero
       const { data: { session: existingSession } } = await supabase.auth.getSession();
+      logger.info('Sesión existente:', existingSession ? 'Sí (ID: ' + existingSession.user?.id + ')' : 'No');
+      
       if (existingSession) {
         logger.warn('Ya hay una sesión activa. Cerrando sesión antes de iniciar nueva...');
-        await supabase.auth.signOut();
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) {
+          logger.error('Error al cerrar sesión existente:', signOutError);
+        } else {
+          logger.info('Sesión existente cerrada exitosamente');
+        }
         // Pequeña pausa para asegurar que la sesión se cerró
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Verificar que se cerró
+        const { data: { session: checkSession } } = await supabase.auth.getSession();
+        logger.info('Sesión después de cerrar:', checkSession ? 'Aún existe' : 'Cerrada correctamente');
       }
 
       const trimmedEmail = email.trim();
       const trimmedPassword = password.trim();
       
       logger.info('Intentando iniciar sesión con email:', trimmedEmail);
-      logger.info('Longitud de contraseña:', trimmedPassword.length);
+      logger.info('Longitud de contraseña original:', password.length);
+      logger.info('Longitud de contraseña después de trim:', trimmedPassword.length);
+      logger.info('¿Contraseña tiene espacios al inicio/fin?:', password !== trimmedPassword);
       
+      // Intentar login
+      logger.info('Enviando petición a Supabase...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email: trimmedEmail,
         password: trimmedPassword,
@@ -103,7 +118,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         logger.error('Error en signIn - Código:', error.status);
         logger.error('Error en signIn - Mensaje:', error.message);
+        logger.error('Error en signIn - Code:', (error as any)?.code);
         logger.error('Error completo:', JSON.stringify(error, null, 2));
+        
+        // Si es invalid_credentials, verificar si el usuario existe
+        if ((error as any)?.code === 'invalid_credentials') {
+          logger.warn('Credenciales inválidas. Verificando si el email existe...');
+          // Intentar verificar si el email está registrado (sin exponer información sensible)
+          try {
+            const { data: checkData, error: checkError } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+              redirectTo: Platform.OS === 'web' ? 'http://localhost:8089/reset-password' : 'myapp://reset-password',
+            });
+            if (!checkError) {
+              logger.info('El email existe en el sistema (reset password funcionó)');
+            } else {
+              logger.warn('Error al verificar email:', checkError.message);
+            }
+          } catch (checkErr) {
+            logger.error('Error al verificar email:', checkErr);
+          }
+        }
+        
         return { error };
       }
       
