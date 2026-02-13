@@ -45,6 +45,10 @@ const QuickCheckInModal = lazy(() =>
   import('@/components/QuickCheckInModal').then(module => ({ default: module.QuickCheckInModal }))
     .catch(() => ({ default: () => null as any }))
 );
+const NoPendingTasksCelebration = lazy(() => 
+  import('@/components/NoPendingTasksCelebration').then(module => ({ default: module.NoPendingTasksCelebration }))
+    .catch(() => ({ default: () => null as any }))
+);
 
 export default function TodayScreen() {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
@@ -718,107 +722,44 @@ export default function TodayScreen() {
           />
         )}
 
-        <View style={styles.section}>
-          {/* Indicador de flujo - solo si hay check-in */}
-          {!loading && todayMood && (
-            <FlowIndicator currentStep="accionar" />
-          )}
-          
-          {/* Mensaje explicativo con razonamiento emocional - solo si hay check-in y tareas */}
-          {todayMood && tasks.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>{explanation.title}</Text>
-              
-              {/* Validación de valor: Comparación antes/después - Mejorado para engagement */}
-              {totalTasksBefore !== null && totalTasksBefore > 0 && (
-                <ValueCard
-                  totalTasksBefore={totalTasksBefore}
-                  prioritizedTasks={tasks.length}
-                />
-              )}
-              
-              {/* Mensaje explicativo con razonamiento emocional */}
-              {incompleteTasks.length > 0 && explanation.reasoning && (
-                <View style={styles.explanationCard}>
-                  <Text style={styles.explanationText}>
-                    {explanation.message}
-                  </Text>
-                  <Text style={styles.explanationReasoning}>
-                    {explanation.reasoning}
-                  </Text>
-                  {explanation.suggestion && (
-                    <Text style={styles.explanationSuggestion}>
-                      {explanation.suggestion}
-                    </Text>
-                  )}
-                </View>
-              )}
-            </>
-          )}
-
-
-          {/* Guía contextual cuando hay tareas pero no hay check-in */}
-          {!todayMood && incompleteTasks.length > 0 && (
-            <View style={styles.flowGuide}>
-              <Text style={styles.flowGuideText}>
-                💡 Ve a <Text style={styles.flowGuideAccent}>Sentir</Text> para que Kora priorice estas tareas según cómo te sientes hoy
-              </Text>
+        {/* Sección de Prioridades del Día */}
+        {!loading && todayMood && incompleteTasks.length > 0 && (
+          <View style={styles.prioritiesSection}>
+            <Text style={styles.prioritiesTitle}>Tus prioridades del día</Text>
+            <View style={styles.tasksContainer}>
+              <TaskList
+                tasks={tasks}
+                incompleteTasks={incompleteTasks}
+                expandedTasks={expandedTasks}
+                menuOpen={menuOpen}
+                onToggleTask={handleToggleTask}
+                onToggleExpansion={toggleTaskExpansion}
+                onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+                onEditTask={handleEditTask}
+                onDeleteTask={handleDeleteTask}
+                getCategoryColor={getCategoryColor}
+                onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
+              />
             </View>
-          )}
+            <TouchableOpacity
+              style={styles.addTaskButton}
+              onPress={() => router.push('/(tabs)/vaciar')}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Agregar tarea"
+            >
+              <Plus size={20} color={THEME.colors.gradient.blue} />
+              <Text style={styles.addTaskButtonText}>Agregar tarea</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-          {/* Resumen diario - Mejorado para engagement */}
-          {todayMood && totalPriorityTasks > 0 && (
-            <View style={[styles.summaryCard, styles.engagementCard]}>
-              <View style={styles.summaryRow}>
-                <View style={styles.summaryItem}>
-                  <Text style={styles.summaryLabel}>Emoción</Text>
-                  <Text style={styles.summaryValue}>
-                    {todayMood ? todayMood.charAt(0).toUpperCase() + todayMood.slice(1) : '-'}
-                  </Text>
-                </View>
-                <View style={styles.summaryDivider} />
-                <View style={styles.summaryItem}>
-                  <Text style={styles.summaryLabel}>Energía</Text>
-                  <Text style={styles.summaryValue}>{energyLevel}/5</Text>
-                </View>
-                <View style={styles.summaryDivider} />
-                <View style={styles.summaryItem}>
-                  <Text style={styles.summaryLabel}>Completadas</Text>
-                  <Text style={styles.summaryValue}>
-                    {completedToday}/{totalPriorityTasks}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          )}
-
-          {/* Indicador de progreso */}
-          {totalPriorityTasks > 0 && (
-            <ProgressBar
-              completed={completedToday}
-              total={totalPriorityTasks}
-            />
-          )}
-        </View>
-
-        <View style={styles.tasksContainer}>
-          {/* Estado vacío removido por solicitud del usuario */}
-          {tasks.length === 0 ? null : (
-            <TaskList
-              tasks={tasks}
-              incompleteTasks={incompleteTasks}
-              expandedTasks={expandedTasks}
-              menuOpen={menuOpen}
-              onToggleTask={handleToggleTask}
-              onToggleExpansion={toggleTaskExpansion}
-              onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
-              onEditTask={handleEditTask}
-              onDeleteTask={handleDeleteTask}
-              getCategoryColor={getCategoryColor}
-              onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
-            />
-          )}
-        </View>
+        {/* Mensaje cuando no hay tareas pendientes */}
+        {!loading && todayMood && incompleteTasks.length === 0 && tasks.length > 0 && (
+          <Suspense fallback={null}>
+            <NoPendingTasksCelebration />
+          </Suspense>
+        )}
 
         {/* Sección de Recomendaciones */}
         {user && (
@@ -1104,6 +1045,34 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: THEME.colors.gradient.blue,
     borderRadius: 4,
+  },
+  prioritiesSection: {
+    marginTop: THEME.spacing.lg,
+    marginBottom: THEME.spacing.lg,
+  },
+  prioritiesTitle: {
+    ...THEME.typography.h2,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.lg,
+  },
+  addTaskButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
+    marginTop: THEME.spacing.md,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.pill,
+    alignSelf: 'center',
+  },
+  addTaskButtonText: {
+    ...THEME.typography.body,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
   },
   tasksContainer: {
     gap: THEME.spacing.sm,
