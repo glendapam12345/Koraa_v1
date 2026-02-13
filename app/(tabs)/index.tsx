@@ -701,101 +701,56 @@ export default function TodayScreen() {
           />
         )}
 
-        {/* Guía visual del flujo - Mejorada para claridad */}
+        {/* Guía visual del flujo - Compacta */}
         {!loading && (
-          <TouchableOpacity
-            style={styles.flowGuideSection}
-            onPress={() => {
-              // Aquí podrías abrir un modal o navegar a una pantalla de ayuda
-              // Por ahora solo hacemos que sea interactivo
-            }}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Ver cómo funciona Koraa"
-            accessibilityHint="Toca para ver una explicación detallada del flujo"
-          >
-            <View style={styles.flowGuideHeader}>
-              <Text style={styles.flowGuideTitle}>¿Cómo funciona Koraa?</Text>
-              <Sparkles size={18} color={THEME.colors.gradient.blue} />
-            </View>
+          <View style={styles.flowGuideSection}>
+            <Text style={styles.flowGuideTitle}>¿Cómo funciona?</Text>
             <View style={styles.flowStepsContainer}>
               <View style={styles.flowStep}>
                 <View style={[styles.flowStepNumber, styles.flowStepNumberActive]}>
-                  <PenTool size={16} color="#FFFFFF" />
+                  <PenTool size={14} color="#FFFFFF" />
                 </View>
                 <Text style={styles.flowStepLabel}>Vaciar</Text>
-                <Text style={styles.flowStepDesc}>Agrega tus tareas</Text>
               </View>
               <View style={styles.flowArrow}>
-                <ArrowRight size={16} color={THEME.colors.text.secondary} />
+                <ArrowRight size={14} color={THEME.colors.text.secondary} />
               </View>
               <View style={styles.flowStep}>
                 <View style={styles.flowStepNumber}>
-                  <Heart size={16} color={THEME.colors.text.secondary} />
+                  <Heart size={14} color={THEME.colors.text.secondary} />
                 </View>
                 <Text style={styles.flowStepLabel}>Sentir</Text>
-                <Text style={styles.flowStepDesc}>Di cómo te sientes</Text>
               </View>
               <View style={styles.flowArrow}>
-                <ArrowRight size={16} color={THEME.colors.text.secondary} />
+                <ArrowRight size={14} color={THEME.colors.text.secondary} />
               </View>
               <View style={styles.flowStep}>
                 <View style={styles.flowStepNumber}>
-                  <Target size={16} color={THEME.colors.text.secondary} />
+                  <Target size={14} color={THEME.colors.text.secondary} />
                 </View>
-                <Text style={styles.flowStepLabel}>Accionar</Text>
-                <Text style={styles.flowStepDesc}>Ve tus prioridades</Text>
+                <Text style={styles.flowStepLabel}>Hoy</Text>
               </View>
             </View>
-          </TouchableOpacity>
+          </View>
         )}
 
-        {/* Cuadro de Prioridades con contexto */}
+        {/* Cuadro de Prioridades - Simplificado */}
         {!loading && incompleteTasks.length > 0 && (
           <View style={styles.prioritiesCard}>
-            <View style={styles.prioritiesHeader}>
-              <Text style={styles.prioritiesTitle}>Tus prioridades para hoy</Text>
-              <Sparkles size={20} color={THEME.colors.gradient.blue} />
-            </View>
-            
-            {todayMood && explanation.reasoning && (
-              <View style={styles.prioritiesContext}>
-                <Text style={styles.prioritiesContextText}>
-                  {explanation.reasoning}
-                </Text>
-                {explanation.suggestion && (
-                  <Text style={styles.prioritiesSuggestion}>
-                    💡 {explanation.suggestion}
-                  </Text>
-                )}
-              </View>
-            )}
-
-            {!todayMood && (
-              <View style={styles.prioritiesContext}>
-                <Text style={styles.prioritiesContextText}>
-                  Ve a <Text style={styles.prioritiesContextAccent}>Sentir</Text> para que Kora priorice estas tareas.
-                </Text>
-              </View>
-            )}
-
-            <TouchableOpacity
-              style={styles.vaciarTareasButton}
-              onPress={() => router.push('/(tabs)/vaciar')}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Vaciar tareas"
-            >
+            <View style={styles.prioritiesIconContainer}>
               <LinearGradient
                 colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
                 start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.vaciarTareasButtonGradient}
+                end={{ x: 1, y: 1 }}
+                style={styles.prioritiesIconGradient}
               >
-                <Plus size={18} color="#FFFFFF" />
-                <Text style={styles.vaciarTareasButtonText}>Vaciar tareas</Text>
+                <Target size={28} color="#FFFFFF" />
               </LinearGradient>
-            </TouchableOpacity>
+            </View>
+            <Text style={styles.prioritiesTitle}>Tus prioridades</Text>
+            <Text style={styles.prioritiesSubtitle}>
+              {incompleteTasks.length} {incompleteTasks.length === 1 ? 'tarea' : 'tareas'} para hoy
+            </Text>
           </View>
         )}
 
@@ -1191,39 +1146,34 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   flowGuideSection: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.lg,
-    marginBottom: THEME.spacing.lg,
-    marginHorizontal: THEME.spacing.lg,
-    ...THEME.shadows.soft,
-  },
-  flowGuideHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
+    marginHorizontal: THEME.spacing.lg,
   },
   flowGuideTitle: {
-    ...THEME.typography.h3,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
+    marginBottom: THEME.spacing.sm,
+    textAlign: 'center',
+    fontSize: 11,
   },
   flowStepsContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingHorizontal: THEME.spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
   },
   flowStep: {
-    flex: 1,
     alignItems: 'center',
-    minWidth: 70,
+    minWidth: 60,
   },
   flowStepNumber: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: THEME.colors.fill[100],
     borderWidth: 2,
     borderColor: THEME.colors.stroke[100],
@@ -1236,64 +1186,44 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.gradient.blue,
   },
   flowStepLabel: {
-    ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-    fontSize: 12,
-    marginBottom: 2,
-    textAlign: 'center',
-  },
-  flowStepDesc: {
     ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    fontSize: 10,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
+    fontSize: 11,
     textAlign: 'center',
-    lineHeight: 14,
   },
   flowArrow: {
-    paddingHorizontal: THEME.spacing.xs,
-    paddingTop: THEME.spacing.xs * 2,
+    paddingHorizontal: 2,
   },
   prioritiesCard: {
-    backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.lg,
-    marginBottom: THEME.spacing.lg,
-    marginHorizontal: THEME.spacing.lg,
-    ...THEME.shadows.soft,
-  },
-  prioritiesHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: THEME.spacing.md,
-  },
-  prioritiesTitle: {
-    ...THEME.typography.h2,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  prioritiesContext: {
     backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
+    marginHorizontal: THEME.spacing.lg,
+    alignItems: 'center',
   },
-  prioritiesContextText: {
-    ...THEME.typography.body,
+  prioritiesIconContainer: {
+    marginBottom: THEME.spacing.sm,
+  },
+  prioritiesIconGradient: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  prioritiesTitle: {
+    ...THEME.typography.h3,
     color: THEME.colors.text.main,
-    lineHeight: 22,
-    fontSize: 14,
-  },
-  prioritiesContextAccent: {
     fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.gradient.blue,
+    marginBottom: 4,
+    textAlign: 'center',
   },
-  prioritiesSuggestion: {
+  prioritiesSubtitle: {
     ...THEME.typography.caption,
-    color: THEME.colors.gradient.pink,
-    fontFamily: THEME.fonts.heading.medium,
-    marginTop: THEME.spacing.xs,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
     fontSize: 12,
   },
   vaciarTareasButton: {

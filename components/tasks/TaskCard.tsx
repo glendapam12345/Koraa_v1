@@ -12,6 +12,7 @@ export interface Task {
   created_at: string;
   subtasks?: Task[];
   parent_task_id: string | null;
+  project_id?: string | null;
 }
 
 interface TaskCardProps {
@@ -191,10 +192,11 @@ const styles = StyleSheet.create({
   },
   taskCard: {
     backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.standard,
+    padding: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.md,
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: THEME.spacing.sm,
     ...THEME.shadows.soft,
   },
@@ -227,9 +229,6 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.gradient.blue,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 44,
-    minHeight: 44,
-    padding: THEME.spacing.xs,
   },
   taskCheckboxChecked: {
     width: 14,
@@ -243,7 +242,8 @@ const styles = StyleSheet.create({
   taskText: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
-    marginBottom: THEME.spacing.xs,
+    fontSize: 14,
+    lineHeight: 20,
   },
   taskTextCompleted: {
     textDecorationLine: 'line-through',

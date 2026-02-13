@@ -13,6 +13,7 @@ export interface Task {
   created_at: string;
   subtasks?: Task[];
   parent_task_id: string | null;
+  project_id?: string | null;
 }
 
 export function useTasks(
