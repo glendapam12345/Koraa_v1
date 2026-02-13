@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, RefreshControl, Modal } from 'react-native';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -69,6 +69,7 @@ export default function TodayScreen() {
   const [morningMeditationDone, setMorningMeditationDone] = useState(false);
   const [eveningMeditationDone, setEveningMeditationDone] = useState(false);
   const [dismissedCelebration, setDismissedCelebration] = useState(false);
+  const [showVaciarModal, setShowVaciarModal] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backgroundLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -406,6 +407,55 @@ export default function TodayScreen() {
     await handleSaveEditAction(editingTask, editContent, setEditingTask, setEditContent);
   };
 
+  const handleVaciarTareas = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      Alert.alert(
+        'Vaciar tareas',
+        '¿Quieres quitar la prioridad de todas las tareas de hoy?',
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+          },
+          {
+            text: 'Vaciar',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                // Quitar prioridad a todas las tareas prioritarias del usuario
+                const { error } = await supabase
+                  .from('tasks')
+                  .update({ is_priority: false })
+                  .eq('user_id', user.id)
+                  .eq('is_priority', true)
+                  .eq('is_completed', false);
+
+                if (error) {
+                  logger.error('Error vaciando tareas:', error);
+                  showToast('Error al vaciar tareas', 'error');
+                  return;
+                }
+
+                showToast('Tareas vaciadas correctamente', 'success');
+                setShowVaciarModal(false);
+                await loadTasks();
+              } catch (error) {
+                logger.error('Error inesperado:', error);
+                showToast('Ocurrió un error', 'error');
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      logger.error('Error vaciando tareas:', error);
+      showToast('Ocurrió un error', 'error');
+    }
+  };
+
   const handleDeleteTask = (task: Task) => {
     Alert.alert(
       'Eliminar tarea',
@@ -737,30 +787,70 @@ export default function TodayScreen() {
         {/* Cuadro de Prioridades - Simplificado */}
         {!loading && incompleteTasks.length > 0 && (
           <View style={styles.prioritiesCard}>
-            <View style={styles.prioritiesIconContainer}>
-              <LinearGradient
-                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.prioritiesIconGradient}
-              >
-                <Target size={28} color="#FFFFFF" />
-              </LinearGradient>
+            <View style={styles.prioritiesHeader}>
+              <Text style={styles.prioritiesTitle}>Tus prioridades para hoy</Text>
+              <Sparkles size={20} color={THEME.colors.gradient.blue} />
             </View>
-            <Text style={styles.prioritiesTitle}>Tus prioridades</Text>
-            <Text style={styles.prioritiesSubtitle}>
-              {incompleteTasks.length} {incompleteTasks.length === 1 ? 'tarea' : 'tareas'} para hoy
-            </Text>
+            
+            {todayMood && explanation.reasoning && (
+              <View style={styles.prioritiesContext}>
+                <Text style={styles.prioritiesContextText}>
+                  {explanation.reasoning}
+                </Text>
+                {explanation.suggestion && (
+                  <Text style={styles.prioritiesSuggestion}>
+                    💡 {explanation.suggestion}
+                  </Text>
+                )}
+              </View>
+            )}
+
+            {!todayMood && (
+              <View style={styles.prioritiesContext}>
+                <Text style={styles.prioritiesContextText}>
+                  Ve a <Text style={styles.prioritiesContextAccent}>Sentir</Text> para que Kora priorice estas tareas.
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.vaciarButtonsContainer}>
+              <TouchableOpacity
+                style={styles.vaciarTareasButton}
+                onPress={() => setShowVaciarModal(true)}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Vaciar tareas"
+              >
+                <LinearGradient
+                  colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.vaciarTareasButtonGradient}
+                >
+                  <Text style={styles.vaciarTareasButtonText}>Vaciar</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.agregarTareasButton}
+                onPress={() => router.push('/(tabs)/vaciar')}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Agregar tareas"
+              >
+                <Plus size={18} color={THEME.colors.gradient.blue} />
+                <Text style={styles.agregarTareasButtonText}>Agregar</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
         {/* Lista de tareas organizadas por proyecto */}
         {!loading && incompleteTasks.length > 0 && (() => {
           // Agrupar tareas por proyecto
-          const tasksByProject = new Map<string | null, typeof incompleteTasks>();
-          const standaloneTasks: typeof incompleteTasks = [];
+          const tasksByProject = new Map<string | null, Task[]>();
+          const standaloneTasks: Task[] = [];
           
-          incompleteTasks.forEach(task => {
+          incompleteTasks.forEach((task: Task) => {
             if (task.project_id) {
               if (!tasksByProject.has(task.project_id)) {
                 tasksByProject.set(task.project_id, []);
@@ -1226,7 +1316,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 12,
   },
+  vaciarButtonsContainer: {
+    flexDirection: 'row',
+    gap: THEME.spacing.sm,
+    marginTop: THEME.spacing.md,
+  },
   vaciarTareasButton: {
+    flex: 1,
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
     ...THEME.shadows.soft,
@@ -1235,11 +1331,87 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: THEME.spacing.xs,
     paddingVertical: THEME.spacing.md,
     paddingHorizontal: THEME.spacing.lg,
   },
   vaciarTareasButtonText: {
+    ...THEME.typography.body,
+    color: '#FFFFFF',
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  agregarTareasButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.lg,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  agregarTareasButtonText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: THEME.spacing.lg,
+  },
+  modalContent: {
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+    ...THEME.shadows.soft,
+  },
+  modalTitle: {
+    ...THEME.typography.h2,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: THEME.spacing.md,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    lineHeight: 22,
+    marginBottom: THEME.spacing.xl,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: THEME.spacing.md,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.lg,
+    borderRadius: THEME.borderRadius.rounded,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: THEME.colors.fill[200],
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  modalButtonCancelText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  modalButtonConfirm: {
+    backgroundColor: THEME.colors.gradient.blue,
+  },
+  modalButtonConfirmText: {
     ...THEME.typography.body,
     color: '#FFFFFF',
     fontFamily: THEME.fonts.heading.bold,
@@ -1589,62 +1761,6 @@ const styles = StyleSheet.create({
   },
   menuItemTextDanger: {
     color: '#FF6B6B',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: THEME.colors.fill[100],
-    borderTopLeftRadius: THEME.borderRadius.rounded,
-    borderTopRightRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.lg,
-    paddingBottom: THEME.spacing.xl * 2,
-    maxHeight: '90%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: THEME.spacing.lg,
-  },
-  modalTitle: {
-    ...THEME.typography.h2,
-    color: THEME.colors.text.main,
-  },
-  modalCloseButton: {
-    padding: THEME.spacing.xs,
-  },
-  editInput: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    minHeight: 100,
-    marginBottom: THEME.spacing.md,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: THEME.spacing.md,
-  },
-  modalButton: {
-    flex: 1,
-    padding: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.rounded,
-    alignItems: 'center',
-  },
-  modalButtonCancel: {
-    backgroundColor: THEME.colors.fill[200],
-  },
-  modalButtonSave: {
-    backgroundColor: THEME.colors.gradient.blue,
-  },
-  modalButtonCancelText: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
   },
   modalButtonSaveText: {
     ...THEME.typography.body,

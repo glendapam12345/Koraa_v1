@@ -46,6 +46,8 @@ export function TaskCard({
   const completedSubtasks = task.subtasks?.filter((st) => st.is_completed).length || 0;
   const totalSubtasks = task.subtasks?.length || 0;
 
+  const isProjectTask = task.project_id !== null && task.project_id !== undefined;
+
   return (
     <View style={styles.taskWrapper}>
       <View
@@ -53,8 +55,15 @@ export function TaskCard({
           styles.taskCard,
           task.is_completed && styles.taskCardCompleted,
           hasSubtasks && styles.taskCardWithSubtasks,
+          isProjectTask && styles.taskCardProject,
         ]}
       >
+        {isProjectTask && (
+          <View style={styles.projectIndicator}>
+            <View style={styles.projectIndicatorBar} />
+          </View>
+        )}
+
         {task.is_priority && !task.is_completed && (
           <View style={styles.priorityNumberContainer}>
             <View style={styles.priorityNumber}>
@@ -90,6 +99,11 @@ export function TaskCard({
         </TouchableOpacity>
 
         <View style={styles.taskContent}>
+          {isProjectTask && (
+            <View style={styles.projectBadge}>
+              <Text style={styles.projectBadgeText}>Proyecto</Text>
+            </View>
+          )}
           <Text
             style={[styles.taskText, task.is_completed && styles.taskTextCompleted]}
             numberOfLines={3}
@@ -199,6 +213,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: THEME.spacing.sm,
     ...THEME.shadows.soft,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  taskCardProject: {
+    borderLeftWidth: 4,
+    borderLeftColor: THEME.colors.gradient.blue,
+    backgroundColor: THEME.colors.fill[200],
+  },
+  projectIndicator: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+  },
+  projectIndicatorBar: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: THEME.colors.gradient.blue,
+  },
+  projectBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: THEME.colors.gradient.blue,
+    borderRadius: THEME.borderRadius.pill,
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: 2,
+    marginBottom: THEME.spacing.xs,
+  },
+  projectBadgeText: {
+    ...THEME.typography.caption,
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontFamily: THEME.fonts.heading.bold,
   },
   priorityNumberContainer: {
     alignItems: 'center',

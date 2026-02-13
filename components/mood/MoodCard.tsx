@@ -11,7 +11,7 @@ const getMoodEmoji = (mood: string): string => {
     case 'tranquila':
       return '😌';
     case 'enfocada':
-      return '🎯';
+      return '😊';
     case 'motivada':
       return '✨';
     case 'ansiosa':
@@ -57,14 +57,6 @@ export const MoodCard = memo(function MoodCard({ todayMood, energy, time, focusL
       style={styles.moodCard}
     >
       <View style={styles.moodHeader}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.moodLabel}>Hoy te sientes</Text>
-          <View style={styles.moodTitleContainer}>
-            <Text style={styles.moodTitle}>
-              {moodEmoji} {moodTitle}
-            </Text>
-          </View>
-        </View>
         <TouchableOpacity
           style={styles.refreshButton}
           onPress={onRefresh}
@@ -74,6 +66,13 @@ export const MoodCard = memo(function MoodCard({ todayMood, energy, time, focusL
         >
           <RefreshCw size={20} color={THEME.colors.fill[100]} />
         </TouchableOpacity>
+        <View style={styles.moodTitleCenterContainer}>
+          <Text style={styles.moodLabel}>Hoy te sientes</Text>
+          <Text style={styles.moodTitle}>
+            {moodEmoji} {moodTitle}
+          </Text>
+        </View>
+        <View style={styles.refreshButtonPlaceholder} />
       </View>
       {hasStats ? (
         <View style={styles.moodStats}>
@@ -132,23 +131,32 @@ const styles = StyleSheet.create({
   moodHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: THEME.spacing.xs,
+    alignItems: 'center',
+    marginBottom: THEME.spacing.md,
+  },
+  moodTitleCenterContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   moodLabel: {
     ...THEME.typography.caption,
     color: THEME.colors.fill[100],
     opacity: 0.9,
-    fontSize: 11,
-  },
-  moodTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: THEME.spacing.xs / 2,
   },
   moodTitle: {
-    ...THEME.typography.h3,
+    ...THEME.typography.h2,
     color: THEME.colors.fill[100],
-    fontSize: 18,
+    fontSize: 24,
+    fontFamily: THEME.fonts.heading.bold,
+    textAlign: 'center',
+  },
+  refreshButtonPlaceholder: {
+    width: 32,
+    height: 32,
   },
   refreshButton: {
     width: 32,
