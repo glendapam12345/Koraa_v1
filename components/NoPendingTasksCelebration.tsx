@@ -131,7 +131,14 @@ export function NoPendingTasksCelebration({ recommendation, onDismiss }: NoPendi
           accessibilityRole="button"
           accessibilityLabel="De acuerdo"
         >
-          <Text style={styles.dismissButtonText}>De acuerdo</Text>
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.35)', 'rgba(255, 255, 255, 0.25)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.dismissButtonGradient}
+          >
+            <Text style={styles.dismissButtonText}>De acuerdo</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </LinearGradient>
     </Animated.View>
@@ -174,18 +181,25 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   dismissButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    borderRadius: THEME.borderRadius.pill,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.lg,
     alignSelf: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    marginTop: THEME.spacing.xs,
+    ...THEME.shadows.soft,
+  },
+  dismissButtonGradient: {
+    borderRadius: THEME.borderRadius.pill,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.xl,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    minWidth: 140,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dismissButtonText: {
     ...THEME.typography.body,
     color: '#FFFFFF',
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 14,
+    fontSize: 15,
+    letterSpacing: 0.5,
   },
 });
