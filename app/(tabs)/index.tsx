@@ -668,48 +668,8 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {/* Guía visual del flujo completo cuando no hay check-in - REMOVIDO por solicitud del usuario */}
-        {/* {!loading && !todayMood && <FlowGuideCard />} */}
-
-        {/* Si hay check-in pero no hay tareas */}
-        {!loading && todayMood && tasks.length === 0 && (
-          <View style={styles.emptyStateCard}>
-            <Text style={styles.emptyStateTitle}>
-              Ya registraste cómo te sientes hoy
-            </Text>
-            <Text style={styles.emptyStateEmotion}>
-              {todayMood.charAt(0).toUpperCase() + todayMood.slice(1)}
-            </Text>
-            <Text style={styles.emptyStateMessage}>
-              Agrega tus tareas para que Kora las priorice según cómo te sientes
-            </Text>
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={() => router.push('/(tabs)/vaciar')}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Vaciar tus pendientes"
-              accessibilityHint="Abre la pantalla para agregar tus tareas y pendientes"
-            >
-              <LinearGradient
-                colors={[THEME.colors.gradient.pink, THEME.colors.gradient.blue]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.secondaryButtonGradient}
-              >
-                <Plus size={24} color="#FFFFFF" />
-                <View style={styles.secondaryButtonContent}>
-                  <Text style={styles.secondaryButtonText}>
-                    Vacía tus pendientes
-                  </Text>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Si hay check-in y tareas: mostrar tarjeta de mood normal */}
-        {!loading && todayMood && tasks.length > 0 && (
+        {/* Sección de Cómo te sientes hoy - Siempre mostrar si hay check-in */}
+        {!loading && todayMood && (
           <MoodCard
             todayMood={todayMood}
             energy={energy}
@@ -722,10 +682,23 @@ export default function TodayScreen() {
           />
         )}
 
-        {/* Sección de Prioridades del Día */}
-        {!loading && todayMood && incompleteTasks.length > 0 && (
+        {/* Sección de Prioridades del Día - Mostrar si hay tareas, con o sin check-in */}
+        {!loading && incompleteTasks.length > 0 && (
           <View style={styles.prioritiesSection}>
             <Text style={styles.prioritiesTitle}>Tus prioridades del día</Text>
+            {!todayMood && (
+              <TouchableOpacity
+                style={styles.checkInPrompt}
+                onPress={() => router.push('/(tabs)/sentir')}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Registra cómo te sientes"
+              >
+                <Text style={styles.checkInPromptText}>
+                  💡 Ve a <Text style={styles.checkInPromptAccent}>Sentir</Text> para que Kora priorice estas tareas según cómo te sientes hoy
+                </Text>
+              </TouchableOpacity>
+            )}
             <View style={styles.tasksContainer}>
               <TaskList
                 tasks={tasks}
@@ -754,7 +727,7 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {/* Mensaje cuando no hay tareas pendientes */}
+        {/* Mensaje cuando no hay tareas pendientes pero sí completadas */}
         {!loading && todayMood && incompleteTasks.length === 0 && tasks.length > 0 && (
           <Suspense fallback={null}>
             <NoPendingTasksCelebration />
@@ -1073,6 +1046,22 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
+  },
+  checkInPrompt: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+  },
+  checkInPromptText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  checkInPromptAccent: {
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.gradient.blue,
   },
   tasksContainer: {
     gap: THEME.spacing.sm,
