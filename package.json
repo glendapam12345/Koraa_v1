@@ -7,6 +7,7 @@
     "postinstall": "node scripts/worklets-shim.js",
     "dev": "EXPO_NO_TELEMETRY=1 expo start",
     "dev:clear": "EXPO_NO_TELEMETRY=1 expo start --clear",
+    "dev:fresh": "rm -rf .expo node_modules/.cache 2>/dev/null; EXPO_NO_TELEMETRY=1 expo start --clear",
     "build:web": "expo export --platform web",
     "publish": "eas update --auto",
     "lint": "expo lint",
