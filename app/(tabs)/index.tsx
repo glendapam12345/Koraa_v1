@@ -70,6 +70,7 @@ export default function TodayScreen() {
   const [morningMeditationDone, setMorningMeditationDone] = useState(false);
   const [eveningMeditationDone, setEveningMeditationDone] = useState(false);
   const [dismissedCelebration, setDismissedCelebration] = useState(false);
+  const [showVaciarConfirm, setShowVaciarConfirm] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backgroundLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -99,6 +100,21 @@ export default function TodayScreen() {
     loadTasks,
     setTasks,
   } = useTasks(todayMood, showToast);
+
+  const [projectsMap, setProjectsMap] = useState<Record<string, { name: string; color: string }>>({});
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('id, name, color')
+        .eq('user_id', user.id);
+      if (!error && data) {
+        setProjectsMap(Object.fromEntries(data.map((p) => [p.id, { name: p.name, color: p.color }])));
+      }
+    })();
+  }, [user]);
 
   const {
     incompleteTasks,
@@ -427,52 +443,45 @@ export default function TodayScreen() {
     await handleSaveEditAction(editingTask, editContent, setEditingTask, setEditContent);
   };
 
-  const handleVaciarTareas = async () => {
+  const runVaciarTareas = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      Alert.alert(
-        'Vaciar tareas',
-        '¿Quieres quitar la prioridad de todas las tareas de hoy?',
-        [
-          {
-            text: 'Cancelar',
-            style: 'cancel',
-          },
-          {
-            text: 'Vaciar',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                // Quitar prioridad a todas las tareas prioritarias del usuario
-                const { error } = await supabase
-                  .from('tasks')
-                  .update({ is_priority: false })
-                  .eq('user_id', user.id)
-                  .eq('is_priority', true)
-                  .eq('is_completed', false);
+      const { error } = await supabase
+        .from('tasks')
+        .update({ is_priority: false })
+        .eq('user_id', user.id)
+        .eq('is_priority', true)
+        .eq('is_completed', false);
 
-                if (error) {
-                  logger.error('Error vaciando tareas:', error);
-                  showToast('Error al vaciar tareas', 'error');
-                  return;
-                }
+      if (error) {
+        logger.error('Error vaciando tareas:', error);
+        showToast('Error al vaciar tareas', 'error');
+        return;
+      }
 
-                showToast('Tareas vaciadas correctamente', 'success');
-                await loadTasks();
-              } catch (error) {
-                logger.error('Error inesperado:', error);
-                showToast('Ocurrió un error', 'error');
-              }
-            },
-          },
-        ]
-      );
+      showToast('Tareas vaciadas correctamente', 'success');
+      await loadTasks();
     } catch (error) {
-      logger.error('Error vaciando tareas:', error);
+      logger.error('Error inesperado:', error);
       showToast('Ocurrió un error', 'error');
     }
+  }, [loadTasks, showToast]);
+
+  const handleVaciarTareas = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      setShowVaciarConfirm(true);
+      return;
+    }
+    Alert.alert(
+      'Vaciar tareas',
+      '¿Quieres quitar la prioridad de todas las tareas de hoy?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Vaciar', style: 'destructive', onPress: runVaciarTareas },
+      ]
+    );
   };
 
   const handleDeleteTask = (task: Task) => {
@@ -774,7 +783,7 @@ export default function TodayScreen() {
         {!loading && (
           <View style={styles.flowGuideSection}>
             <View style={styles.flowGuideHeader}>
-              <Text style={styles.flowGuideTitle}>¿Cómo funciona Koraa?</Text>
+              <Text style={styles.flowGuideTitle} numberOfLines={1}>¿Cómo funciona Koraa?</Text>
               <Sparkles size={18} color={THEME.colors.gradient.blue} />
             </View>
             <View style={styles.flowStepsContainer}>
@@ -782,8 +791,8 @@ export default function TodayScreen() {
                 <View style={[styles.flowStepNumber, styles.flowStepNumberActive]}>
                   <PenTool size={14} color="#FFFFFF" />
                 </View>
-                <Text style={styles.flowStepLabel}>Vaciar</Text>
-                <Text style={styles.flowStepDesc}>Agrega tus tareas</Text>
+                <Text style={styles.flowStepLabel} numberOfLines={1}>Vaciar</Text>
+                <Text style={styles.flowStepDesc} numberOfLines={1}>Agrega tus tareas</Text>
               </View>
               <View style={styles.flowArrow}>
                 <ArrowRight size={14} color={THEME.colors.text.secondary} />
@@ -792,8 +801,8 @@ export default function TodayScreen() {
                 <View style={styles.flowStepNumber}>
                   <Heart size={14} color={THEME.colors.text.secondary} />
                 </View>
-                <Text style={styles.flowStepLabel}>Sentir</Text>
-                <Text style={styles.flowStepDesc}>Di cómo te sientes</Text>
+                <Text style={styles.flowStepLabel} numberOfLines={1}>Sentir</Text>
+                <Text style={styles.flowStepDesc} numberOfLines={1}>Di cómo te sientes</Text>
               </View>
               <View style={styles.flowArrow}>
                 <ArrowRight size={14} color={THEME.colors.text.secondary} />
@@ -802,8 +811,8 @@ export default function TodayScreen() {
                 <View style={styles.flowStepNumber}>
                   <Target size={14} color={THEME.colors.text.secondary} />
                 </View>
-                <Text style={styles.flowStepLabel}>Hoy</Text>
-                <Text style={styles.flowStepDesc}>Ve tus prioridades</Text>
+                <Text style={styles.flowStepLabel} numberOfLines={1}>Hoy</Text>
+                <Text style={styles.flowStepDesc} numberOfLines={1}>Ve tus prioridades</Text>
               </View>
             </View>
           </View>
@@ -841,12 +850,12 @@ export default function TodayScreen() {
           <View style={styles.prioritiesCard}>
             <View style={styles.prioritiesHeader}>
               <View style={styles.prioritiesHeaderLeft}>
-                <Text style={styles.prioritiesTitle}>Tus prioridades para hoy</Text>
-                <Text style={styles.prioritiesSubtitle}>{incompleteTasks.length} {incompleteTasks.length === 1 ? 'tarea' : 'tareas'} para hoy</Text>
+                <Text style={styles.prioritiesTitle} numberOfLines={1}>Tus prioridades para hoy</Text>
+                <Text style={styles.prioritiesSubtitle} numberOfLines={1}>{incompleteTasks.length} {incompleteTasks.length === 1 ? 'tarea' : 'tareas'} para hoy</Text>
               </View>
               <TouchableOpacity
                 style={styles.vaciarButton}
-                onPress={() => handleVaciarTareas()}
+                onPress={handleVaciarTareas}
                 activeOpacity={0.8}
                 accessibilityRole="button"
                 accessibilityLabel="Vaciar tareas"
@@ -898,10 +907,9 @@ export default function TodayScreen() {
 
         {/* Lista de tareas organizadas por proyecto */}
         {!loading && incompleteTasks.length > 0 && (() => {
-          // Agrupar tareas por proyecto
           const tasksByProject = new Map<string | null, Task[]>();
           const standaloneTasks: Task[] = [];
-          
+
           incompleteTasks.forEach((task: Task) => {
             if (task.project_id) {
               if (!tasksByProject.has(task.project_id)) {
@@ -915,75 +923,63 @@ export default function TodayScreen() {
 
           return (
             <View style={styles.tasksContainer}>
-              {/* Tareas de proyectos */}
-              {Array.from(tasksByProject.entries()).map(([projectId, projectTasks]) => (
-                <View key={`project-${projectId}`} style={styles.projectSection}>
-                  <View style={styles.projectSectionHeader}>
-                    <View style={styles.projectSectionHeaderLeft}>
-                      <View style={styles.projectSectionIcon}>
-                        <FolderKanban size={18} color={THEME.colors.gradient.blue} />
-                      </View>
-                      <View>
-                        <Text style={styles.projectSectionTitle}>Tareas de proyecto</Text>
-                        <Text style={styles.projectSectionSubtitle}>
-                          {projectTasks.length} {projectTasks.length === 1 ? 'tarea' : 'tareas'} · Agrupadas por proyecto
-                        </Text>
-                      </View>
+              {/* Bloques por proyecto con nombre real */}
+              {Array.from(tasksByProject.entries()).map(([projectId, projectTasks]) => {
+                const projectInfo = projectId ? projectsMap[projectId] : undefined;
+                const projectName = projectInfo?.name ?? 'Proyecto';
+                const projectColor = projectInfo?.color ?? THEME.colors.gradient.blue;
+                return (
+                  <View key={`project-${projectId}`} style={styles.taskBlock}>
+                    <View style={styles.taskBlockHeader}>
+                      <View style={[styles.taskBlockDot, { backgroundColor: projectColor }]} />
+                      <Text style={styles.taskBlockTitle} numberOfLines={1}>{projectName}</Text>
+                      <Text style={styles.taskBlockCount}>{projectTasks.length}</Text>
+                    </View>
+                    <View style={styles.taskBlockContent}>
+                      <TaskList
+                        tasks={projectTasks}
+                        incompleteTasks={projectTasks}
+                        expandedTasks={expandedTasks}
+                        menuOpen={menuOpen}
+                        onToggleTask={handleToggleTask}
+                        onToggleExpansion={toggleTaskExpansion}
+                        onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+                        onEditTask={handleEditTask}
+                        onDeleteTask={handleDeleteTask}
+                        getCategoryColor={getCategoryColor}
+                        onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
+                      />
                     </View>
                   </View>
-                  <View style={styles.projectSectionContent}>
-                    <TaskList
-                    tasks={projectTasks}
-                    incompleteTasks={projectTasks}
-                    expandedTasks={expandedTasks}
-                    menuOpen={menuOpen}
-                    onToggleTask={handleToggleTask}
-                    onToggleExpansion={toggleTaskExpansion}
-                    onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
-                    onEditTask={handleEditTask}
-                    onDeleteTask={handleDeleteTask}
-                    getCategoryColor={getCategoryColor}
-                    onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
-                    />
-                  </View>
-                </View>
-              ))}
-              
+                );
+              })}
+
               {/* Tareas sueltas */}
               {standaloneTasks.length > 0 && (
-                <View style={styles.standaloneSection}>
-                  <View style={styles.standaloneSectionHeader}>
-                    <View style={styles.standaloneSectionHeaderLeft}>
-                      <View style={styles.standaloneSectionIcon}>
-                        <FileText size={18} color={THEME.colors.text.secondary} />
-                      </View>
-                      <View>
-                        <Text style={styles.standaloneSectionTitle}>Tareas sueltas</Text>
-                        <Text style={styles.standaloneSectionSubtitle}>
-                          {standaloneTasks.length} {standaloneTasks.length === 1 ? 'tarea' : 'tareas'} · Sin asignar a ningún proyecto
-                        </Text>
-                      </View>
-                    </View>
+                <View style={styles.taskBlock}>
+                  <View style={styles.taskBlockHeader}>
+                    <View style={[styles.taskBlockDot, { backgroundColor: THEME.colors.text.secondary }]} />
+                    <Text style={styles.taskBlockTitle} numberOfLines={1}>Suelta</Text>
+                    <Text style={styles.taskBlockCount}>{standaloneTasks.length}</Text>
                   </View>
-                  <View style={styles.standaloneSectionContent}>
+                  <View style={styles.taskBlockContent}>
                     <TaskList
-                    tasks={standaloneTasks}
-                    incompleteTasks={standaloneTasks}
-                    expandedTasks={expandedTasks}
-                    menuOpen={menuOpen}
-                    onToggleTask={handleToggleTask}
-                    onToggleExpansion={toggleTaskExpansion}
-                    onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
-                    onEditTask={handleEditTask}
-                    onDeleteTask={handleDeleteTask}
-                    getCategoryColor={getCategoryColor}
-                    onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
+                      tasks={standaloneTasks}
+                      incompleteTasks={standaloneTasks}
+                      expandedTasks={expandedTasks}
+                      menuOpen={menuOpen}
+                      onToggleTask={handleToggleTask}
+                      onToggleExpansion={toggleTaskExpansion}
+                      onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+                      onEditTask={handleEditTask}
+                      onDeleteTask={handleDeleteTask}
+                      getCategoryColor={getCategoryColor}
+                      onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
                     />
                   </View>
                 </View>
               )}
 
-              {/* Botón para agregar más tareas (siempre visible cuando hay lista) */}
               <View style={styles.agregarMasWrap}>
                 <TouchableOpacity
                   style={styles.agregarMasButton}
@@ -993,7 +989,7 @@ export default function TodayScreen() {
                   accessibilityLabel="Agregar más tareas o proyectos"
                 >
                   <Plus size={18} color={THEME.colors.gradient.blue} />
-                  <Text style={styles.agregarMasButtonText}>Agregar más tareas o proyectos</Text>
+                  <Text style={styles.agregarMasButtonText} numberOfLines={1}>Agregar más tareas o proyectos</Text>
                 </TouchableOpacity>
                 <Text style={styles.agregarMasHint}>Lleva a la pestaña Vaciar</Text>
               </View>
@@ -1049,6 +1045,46 @@ export default function TodayScreen() {
         </Suspense>
       )}
       
+      {/* Modal confirmación Vaciar (web) */}
+      <Modal
+        visible={showVaciarConfirm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowVaciarConfirm(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowVaciarConfirm(false)}
+        >
+          <View style={styles.vaciarConfirmCard} onStartShouldSetResponder={() => true}>
+            <Text style={styles.vaciarConfirmTitle}>Vaciar tareas</Text>
+            <Text style={styles.vaciarConfirmMessage}>
+              ¿Quieres quitar la prioridad de todas las tareas de hoy?
+            </Text>
+            <View style={styles.vaciarConfirmActions}>
+              <TouchableOpacity
+                style={styles.vaciarConfirmCancel}
+                onPress={() => setShowVaciarConfirm(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.vaciarConfirmCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.vaciarConfirmOk}
+                onPress={() => {
+                  setShowVaciarConfirm(false);
+                  runVaciarTareas();
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.vaciarConfirmOkText}>Vaciar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Toast notification */}
       {toastMessage && (
         <Toast
@@ -1336,6 +1372,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.lg,
     marginBottom: THEME.spacing.lg,
     marginHorizontal: THEME.spacing.lg,
+    overflow: 'hidden',
     ...THEME.shadows.soft,
     borderWidth: 1,
     borderColor: THEME.colors.stroke[100],
@@ -1343,27 +1380,29 @@ const styles = StyleSheet.create({
   flowGuideHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     marginBottom: THEME.spacing.md,
-    marginHorizontal: THEME.spacing.lg,
+    gap: THEME.spacing.xs,
   },
   flowGuideTitle: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
     fontFamily: THEME.fonts.heading.medium,
-    marginBottom: THEME.spacing.sm,
     textAlign: 'center',
     fontSize: 11,
+    flexShrink: 0,
   },
   flowStepsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    flexWrap: 'wrap',
     gap: THEME.spacing.xs,
   },
   flowStep: {
     alignItems: 'center',
-    minWidth: 60,
+    minWidth: 72,
+    flexShrink: 0,
   },
   flowStepNumber: {
     width: 32,
@@ -1384,16 +1423,16 @@ const styles = StyleSheet.create({
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
-    fontSize: 13,
-    marginBottom: 4,
+    fontSize: 12,
+    marginBottom: 2,
     textAlign: 'center',
   },
   flowStepDesc: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
-    fontSize: 11,
+    fontSize: 10,
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 14,
   },
   flowArrow: {
     paddingHorizontal: 2,
@@ -1404,23 +1443,25 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
     marginHorizontal: THEME.spacing.lg,
-    alignItems: 'center',
+    overflow: 'hidden',
   },
   prioritiesHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: THEME.spacing.md,
-    gap: THEME.spacing.md,
+    gap: THEME.spacing.sm,
   },
   prioritiesHeaderLeft: {
     flex: 1,
+    minWidth: 0,
   },
   prioritiesTitle: {
     ...THEME.typography.h3,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
     marginBottom: 4,
+    fontSize: 16,
   },
   prioritiesSubtitle: {
     ...THEME.typography.caption,
@@ -1430,6 +1471,7 @@ const styles = StyleSheet.create({
   vaciarButton: {
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
+    flexShrink: 0,
     ...THEME.shadows.soft,
   },
   vaciarButtonGradient: {
@@ -1437,12 +1479,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 44,
   },
   vaciarButtonText: {
     ...THEME.typography.body,
     color: '#FFFFFF',
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 14,
+    fontSize: 15,
   },
   prioritiesContext: {
     marginBottom: THEME.spacing.sm,
@@ -1613,9 +1656,46 @@ const styles = StyleSheet.create({
     color: THEME.colors.gradient.blue,
   },
   tasksContainer: {
-    gap: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.lg,
     paddingBottom: THEME.spacing.lg,
+  },
+  taskBlock: {
+    marginBottom: THEME.spacing.lg,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  taskBlockHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    marginBottom: THEME.spacing.sm,
+    paddingBottom: THEME.spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.colors.stroke[100],
+  },
+  taskBlockDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  taskBlockTitle: {
+    flex: 1,
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    fontSize: 14,
+  },
+  taskBlockCount: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontSize: 12,
+  },
+  taskBlockContent: {
+    paddingTop: THEME.spacing.xs,
   },
   addFromInicioCard: {
     backgroundColor: THEME.colors.fill[200],
@@ -2020,6 +2100,46 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 999,
+  },
+  vaciarConfirmCard: {
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.lg,
+    width: '100%',
+    maxWidth: 340,
+  },
+  vaciarConfirmTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: THEME.spacing.sm,
+  },
+  vaciarConfirmMessage: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.lg,
+  },
+  vaciarConfirmActions: {
+    flexDirection: 'row',
+    gap: THEME.spacing.sm,
+    justifyContent: 'flex-end',
+  },
+  vaciarConfirmCancel: {
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+  },
+  vaciarConfirmCancelText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+  },
+  vaciarConfirmOk: {
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+  },
+  vaciarConfirmOkText: {
+    ...THEME.typography.body,
+    color: '#E53935',
+    fontFamily: THEME.fonts.heading.bold,
   },
   menuDropdown: {
     position: 'absolute',

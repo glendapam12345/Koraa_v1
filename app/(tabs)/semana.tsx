@@ -113,6 +113,7 @@ export default function SemanaScreen() {
                   styles.dayLabel,
                   day.isToday && styles.dayLabelToday,
                 ]}
+                numberOfLines={1}
               >
                 {day.label}
               </Text>
@@ -126,21 +127,43 @@ export default function SemanaScreen() {
             {tasks.length === 0 ? (
               <View style={styles.emptyDay}>
                 <Text style={styles.emptyDayText}>Sin tareas este día</Text>
+                <TouchableOpacity
+                  style={styles.addDayButton}
+                  onPress={() => router.push(`/(tabs)/vaciar?date=${day.dateStr}`)}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Agregar tareas para ${day.label}`}
+                >
+                  <Plus size={16} color={THEME.colors.gradient.blue} />
+                  <Text style={styles.addDayButtonText}>Agregar tareas o proyectos</Text>
+                </TouchableOpacity>
               </View>
             ) : (
-              <View style={styles.taskList}>
-                {tasks.map((task) => (
-                  <WeekTaskItem
-                    key={task.id}
-                    task={task}
-                    projectName={
-                      task.project_id
-                        ? projectsMap[task.project_id]?.name || 'Proyecto'
-                        : null
-                    }
-                  />
-                ))}
-              </View>
+              <>
+                <View style={styles.taskList}>
+                  {tasks.map((task) => (
+                    <WeekTaskItem
+                      key={task.id}
+                      task={task}
+                      projectName={
+                        task.project_id
+                          ? projectsMap[task.project_id]?.name || 'Proyecto'
+                          : null
+                      }
+                    />
+                  ))}
+                </View>
+                <TouchableOpacity
+                  style={styles.addDayButton}
+                  onPress={() => router.push(`/(tabs)/vaciar?date=${day.dateStr}`)}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Agregar más tareas para ${day.label}`}
+                >
+                  <Plus size={16} color={THEME.colors.gradient.blue} />
+                  <Text style={styles.addDayButtonText}>Agregar tareas o proyectos</Text>
+                </TouchableOpacity>
+              </>
             )}
           </View>
         ))}
@@ -309,16 +332,22 @@ const styles = StyleSheet.create({
   },
   daySection: {
     marginHorizontal: THEME.spacing.lg,
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.lg,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+    overflow: 'hidden',
   },
   dayHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
     paddingVertical: THEME.spacing.xs,
     paddingHorizontal: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.standard,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.fill[100],
   },
   dayHeaderToday: {
     backgroundColor: 'rgba(74, 144, 226, 0.12)',
@@ -353,6 +382,26 @@ const styles = StyleSheet.create({
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
     fontStyle: 'italic',
+    marginBottom: THEME.spacing.sm,
+  },
+  addDayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.standard,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.fill[100],
+    marginTop: THEME.spacing.xs,
+  },
+  addDayButtonText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
+    fontSize: 13,
   },
   taskList: {
     gap: THEME.spacing.xs,

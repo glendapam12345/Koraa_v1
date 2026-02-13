@@ -18,7 +18,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 // Categorías ahora son invisibles - se detectan automáticamente en lib/categoryDetection.ts
 
 export default function VaciarScreen() {
-  const { suggestion } = useLocalSearchParams<{ suggestion?: string }>();
+  const { suggestion, date: dateParam } = useLocalSearchParams<{ suggestion?: string; date?: string }>();
   const [taskInput, setTaskInput] = useState('');
   const [isPriority, setIsPriority] = useState(false);
   const [hasSubtasks, setHasSubtasks] = useState(false);
@@ -38,12 +38,15 @@ export default function VaciarScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const { user } = useAuth();
 
-  // Pre-llenar input si hay sugerencia desde Tips
+  // Pre-llenar input si hay sugerencia desde Tips; pre-seleccionar fecha si viene desde Semana
   useEffect(() => {
     if (suggestion) {
       setTaskInput(suggestion);
     }
-  }, [suggestion]);
+    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+      setSelectedDate(dateParam);
+    }
+  }, [suggestion, dateParam]);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToastMessage(message);
