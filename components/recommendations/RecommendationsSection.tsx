@@ -98,6 +98,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
   const [selectedRecommendation, setSelectedRecommendation] = useState<Recommendation | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [showAllRecommendations, setShowAllRecommendations] = useState(false);
   const animatedHeights = useRef<Map<string, Animated.Value>>(new Map());
 
   useEffect(() => {
@@ -231,7 +232,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
 
       <View style={styles.recommendationsContainer}>
         {Array.from(recommendationsByCategory.entries())
-          .slice(0, 3)
+          .slice(0, showAllRecommendations ? 3 : 1)
           .map(([category, categoryRecs]) => {
             const illustration = CATEGORY_ILLUSTRATIONS[category] || CATEGORY_ILLUSTRATIONS['bienestar'];
             const isExpanded = expandedCategories.has(category);
@@ -309,6 +310,30 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
               </View>
             );
           })}
+        {!showAllRecommendations && Array.from(recommendationsByCategory.entries()).length > 1 && (
+          <TouchableOpacity
+            style={styles.verMasRecommendations}
+            onPress={() => setShowAllRecommendations(true)}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Ver más recomendaciones"
+          >
+            <Text style={styles.verMasRecommendationsText}>Ver más recomendaciones</Text>
+            <ChevronDown size={18} color={THEME.colors.gradient.blue} />
+          </TouchableOpacity>
+        )}
+        {showAllRecommendations && Array.from(recommendationsByCategory.entries()).length > 1 && (
+          <TouchableOpacity
+            style={styles.verMasRecommendations}
+            onPress={() => setShowAllRecommendations(false)}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Ver menos recomendaciones"
+          >
+            <Text style={styles.verMasRecommendationsText}>Ver menos</Text>
+            <ChevronUp size={18} color={THEME.colors.gradient.blue} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Modal de detalle */}
@@ -388,6 +413,20 @@ const styles = StyleSheet.create({
   recommendationsContainer: {
     paddingHorizontal: THEME.spacing.lg,
     gap: THEME.spacing.md,
+  },
+  verMasRecommendations: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.sm,
+    marginTop: THEME.spacing.xs,
+  },
+  verMasRecommendationsText: {
+    ...THEME.typography.body,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
+    fontSize: 14,
   },
   recommendationCardWrapper: {
     marginBottom: THEME.spacing.sm,

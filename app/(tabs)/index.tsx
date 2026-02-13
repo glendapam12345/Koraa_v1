@@ -20,7 +20,7 @@ import { detectCategory } from '@/lib/categoryDetection';
 import { generatePrioritizationExplanation } from '@/lib/smartPrioritization';
 import { getEmotionEmoji } from '@/lib/emotionalInsights';
 import { logger } from '@/lib/logger';
-import { Sparkles, Plus, Flame, Sunrise, Moon, PenTool, Heart, Target, ArrowRight, Lightbulb, Zap, Clock, Focus, FolderKanban, FileText } from 'lucide-react-native';
+import { Sparkles, Plus, Flame, PenTool, Heart, Target, ArrowRight, Lightbulb, ChevronDown, ChevronRight } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { lazy, Suspense } from 'react';
 import { ActivityIndicator, View as ViewRN } from 'react-native';
@@ -72,7 +72,7 @@ export default function TodayScreen() {
   const [morningMeditationDone, setMorningMeditationDone] = useState(false);
   const [eveningMeditationDone, setEveningMeditationDone] = useState(false);
   const [dismissedCelebration, setDismissedCelebration] = useState(false);
-  const [showVaciarConfirm, setShowVaciarConfirm] = useState(false);
+  const [flowGuideCollapsed, setFlowGuideCollapsed] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backgroundLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -462,47 +462,6 @@ export default function TodayScreen() {
     await handleSaveEditAction(editingTask, editContent, setEditingTask, setEditContent);
   };
 
-  const runVaciarTareas = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { error } = await supabase
-        .from('tasks')
-        .update({ is_priority: false })
-        .eq('user_id', user.id)
-        .eq('is_priority', true)
-        .eq('is_completed', false);
-
-      if (error) {
-        logger.error('Error vaciando tareas:', error);
-        showToast('Error al vaciar tareas', 'error');
-        return;
-      }
-
-      showToast('Prioridad quitada. Tus tareas siguen ahí.', 'success');
-      await loadTasks();
-    } catch (error) {
-      logger.error('Error inesperado:', error);
-      showToast('Ocurrió un error', 'error');
-    }
-  }, [loadTasks, showToast]);
-
-  const handleVaciarTareas = () => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      setShowVaciarConfirm(true);
-      return;
-    }
-    Alert.alert(
-      'Vaciar tus tareas',
-      'No se elimina nada: solo se quita la prioridad de hoy. ¿Quieres vaciar tus tareas?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Vaciar tus tareas', onPress: runVaciarTareas },
-      ]
-    );
-  };
-
   const handleDeleteTask = (task: Task) => {
     Alert.alert(
       'Eliminar tarea',
@@ -637,6 +596,54 @@ export default function TodayScreen() {
     [todayMood, energyLevel, incompleteTasks.length, time, focusLevel, tasks.length]
   );
 
+  type TaskSection = { id: string; title: string; color: string; isProject: boolean; tasks: Task[] };
+  const CATEGORY_ORDER = ['Hogar', 'Trabajo', 'Personal', 'Salud', 'Contenido', 'Marca', 'Otros'];
+  const taskSections = useMemo(() => {
+    const byProject = new Map<string, Task[]>();
+    const byCategory = new Map<string, Task[]>();
+    incompleteTasks.forEach((t) => {
+      if (t.project_id != null) {
+        const list = byProject.get(t.project_id) ?? [];
+        list.push(t);
+        byProject.set(t.project_id, list);
+      } else {
+        const cat = (t.category && t.category.trim() !== '') ? t.category.trim() : 'Personal';
+        const key = cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
+        const list = byCategory.get(key) ?? [];
+        list.push(t);
+        byCategory.set(key, list);
+      }
+    });
+    const sections: TaskSection[] = [];
+    CATEGORY_ORDER.forEach((title) => {
+      const key = title.toLowerCase();
+      const matchKey = Array.from(byCategory.keys()).find((k) => k.toLowerCase() === key);
+      const taskList = matchKey ? byCategory.get(matchKey) ?? [] : [];
+      if (taskList.length === 0) return;
+      const color = getCategoryColor(key);
+      sections.push({ id: `cat-${key}`, title, color, isProject: false, tasks: [...taskList].sort((a, b) => (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0)) });
+    });
+    byCategory.forEach((taskList, key) => {
+      if (CATEGORY_ORDER.some((c) => c.toLowerCase() === key.toLowerCase())) return;
+      const title = key.charAt(0).toUpperCase() + key.slice(1);
+      const color = getCategoryColor(key.toLowerCase());
+      sections.push({ id: `cat-${key}`, title, color, isProject: false, tasks: [...taskList].sort((a, b) => (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0)) });
+    });
+    const projectIds = Array.from(byProject.keys()).sort((a, b) => (projectsMap[a]?.name ?? '').localeCompare(projectsMap[b]?.name ?? ''));
+    projectIds.forEach((pid) => {
+      const taskList = byProject.get(pid) ?? [];
+      const p = projectsMap[pid];
+      sections.push({
+        id: `proj-${pid}`,
+        title: p?.name ?? 'Proyecto',
+        color: p?.color ?? THEME.colors.gradient.blue,
+        isProject: true,
+        tasks: [...taskList].sort((a, b) => (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0)),
+      });
+    });
+    return sections;
+  }, [incompleteTasks, projectsMap, getCategoryColor]);
+
   // Función para manejar pull to refresh
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -677,6 +684,14 @@ export default function TodayScreen() {
           />
         }
       >
+        {/* Estado de carga */}
+        {loading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
+            <Text style={styles.loadingText}>Preparando tu día...</Text>
+          </View>
+        )}
+
         {/* Título de bienvenida con racha */}
         {!loading && (
           <View style={styles.welcomeSection}>
@@ -798,13 +813,24 @@ export default function TodayScreen() {
           />
         )}
 
-        {/* Guía visual del flujo - Cómo funciona Koraa */}
+        {/* Guía visual del flujo - Cómo funciona Koraa (colapsable) */}
         {!loading && (
           <View style={styles.flowGuideSection}>
-            <View style={styles.flowGuideHeader}>
+            <TouchableOpacity
+              style={styles.flowGuideHeader}
+              onPress={() => setFlowGuideCollapsed((c) => !c)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={flowGuideCollapsed ? 'Expandir guía Cómo funciona Koraa' : 'Contraer guía'}
+            >
               <Text style={styles.flowGuideTitle} numberOfLines={1}>¿Cómo funciona Koraa?</Text>
-              <Sparkles size={18} color={THEME.colors.gradient.blue} />
-            </View>
+              {flowGuideCollapsed ? (
+                <ChevronRight size={20} color={THEME.colors.gradient.blue} />
+              ) : (
+                <ChevronDown size={20} color={THEME.colors.gradient.blue} />
+              )}
+            </TouchableOpacity>
+            {!flowGuideCollapsed && (
             <View style={styles.flowStepsContainer}>
               <View style={styles.flowStep}>
                 <View style={[styles.flowStepNumber, styles.flowStepNumberActive]}>
@@ -834,165 +860,66 @@ export default function TodayScreen() {
                 <Text style={styles.flowStepDesc} numberOfLines={1}>Ve tus prioridades</Text>
               </View>
             </View>
+            )}
           </View>
         )}
 
-        {/* CTA para agregar cuando no hay tareas pendientes */}
-        {!loading && incompleteTasks.length === 0 && (
-          <View style={styles.addFromInicioCard}>
-            <Text style={styles.addFromInicioTitle}>¿Qué quieres hacer hoy?</Text>
-            <Text style={styles.addFromInicioSubtitle}>
-              Agrega tareas sueltas o crea un proyecto en la pestaña Vaciar.
-            </Text>
-            <TouchableOpacity
-              style={styles.addFromInicioButton}
-              onPress={() => router.push('/(tabs)/vaciar')}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Agregar tareas o proyectos"
-            >
-              <LinearGradient
-                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.addFromInicioButtonGradient}
-              >
-                <Plus size={20} color="#FFFFFF" />
-                <Text style={styles.addFromInicioButtonText}>Agregar tareas o proyectos</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Cuadro de Prioridades - Rediseñado */}
-        {!loading && incompleteTasks.length > 0 && (
-          <View style={styles.prioritiesCardWrap}>
-            <LinearGradient
-              colors={['rgba(74, 144, 226, 0.08)', 'rgba(255, 107, 107, 0.04)', THEME.colors.fill[200]]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.prioritiesCard}
-            >
-            <View style={styles.prioritiesHeader}>
-              <View style={styles.prioritiesHeaderLeft}>
-                <Text style={styles.prioritiesTitle} numberOfLines={1}>Tus prioridades para hoy</Text>
-                <Text style={styles.prioritiesSubtitle} numberOfLines={1}>{incompleteTasks.length} {incompleteTasks.length === 1 ? 'tarea' : 'tareas'} para hoy</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.vaciarButton}
-                onPress={handleVaciarTareas}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel="Vaciar tus tareas (quitar prioridad)"
-              >
-                <LinearGradient
-                  colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.vaciarButtonGradient}
-                >
-                  <Text style={styles.vaciarButtonText}>Vaciar</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-            
-            {todayMood && explanation.reasoning && (
-              <View style={styles.prioritiesContext}>
-                <View style={styles.prioritiesContextHeader}>
-                  <View style={[styles.emotionIconContainer, { backgroundColor: getEmotionColor(todayMood) }]}>
-                    <Text style={styles.emotionIconEmoji}>{getEmotionEmoji(todayMood)}</Text>
-                  </View>
-                  <View style={styles.prioritiesContextHeaderText}>
-                    <Text style={styles.prioritiesContextTitle}>Basado en cómo te sientes</Text>
-                    <Text style={styles.prioritiesContextText}>
-                      {explanation.reasoning}
-                    </Text>
-                  </View>
+        {/* Bloque único Hoy: # Tareas + explicación (si hay check-in) + lista o CTA vacío */}
+        {!loading && (
+          <View style={styles.tasksContainer}>
+            <View style={styles.tasksListCard}>
+              <View style={styles.tareasHeaderRow}>
+                <View>
+                  <Text style={styles.tareasTitle}># Tareas</Text>
+                  <Text style={styles.tareasDate}>
+                    {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </Text>
+                  <Text style={styles.tareasSubtitle}>
+                    {incompleteTasks.length === 0 ? 'Aún no tienes tareas para hoy' : `${incompleteTasks.length} ${incompleteTasks.length === 1 ? 'tarea' : 'tareas'} para hoy`}
+                  </Text>
                 </View>
-                {explanation.suggestion && (
-                  <View style={styles.prioritiesSuggestionBox}>
-                    <Lightbulb size={16} color={THEME.colors.gradient.blue} />
-                    <Text style={styles.prioritiesSuggestion}>
-                      {explanation.suggestion}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            )}
-
-            {!todayMood && (
-              <View style={styles.prioritiesContext}>
-                <Text style={styles.prioritiesContextText}>
-                  Ve a <Text style={styles.prioritiesContextAccent}>Sentir</Text> para que Kora priorice estas tareas.
-                </Text>
-              </View>
-            )}
-            </LinearGradient>
-          </View>
-        )}
-
-        {/* Lista de tareas por secciones (categoría/proyecto), prioridad arriba en cada bloque */}
-        {!loading && incompleteTasks.length > 0 && (() => {
-          type Section = { id: string; title: string; color: string; isProject: boolean; tasks: Task[] };
-          const CATEGORY_ORDER = ['Hogar', 'Trabajo', 'Personal', 'Salud', 'Contenido', 'Marca', 'Otros'];
-          const byProject = new Map<string, Task[]>();
-          const byCategory = new Map<string, Task[]>();
-          incompleteTasks.forEach((t) => {
-            if (t.project_id != null) {
-              const list = byProject.get(t.project_id) ?? [];
-              list.push(t);
-              byProject.set(t.project_id, list);
-            } else {
-              const cat = (t.category && t.category.trim() !== '') ? t.category.trim() : 'Personal';
-              const key = cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
-              const list = byCategory.get(key) ?? [];
-              list.push(t);
-              byCategory.set(key, list);
-            }
-          });
-          const sections: Section[] = [];
-          CATEGORY_ORDER.forEach((title) => {
-            const key = title.toLowerCase();
-            const matchKey = Array.from(byCategory.keys()).find((k) => k.toLowerCase() === key);
-            const taskList = matchKey ? byCategory.get(matchKey) ?? [] : [];
-            if (taskList.length === 0) return;
-            const color = getCategoryColor(key);
-            sections.push({ id: `cat-${key}`, title, color, isProject: false, tasks: [...taskList].sort((a, b) => (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0)) });
-          });
-          byCategory.forEach((taskList, key) => {
-            if (CATEGORY_ORDER.some((c) => c.toLowerCase() === key.toLowerCase())) return;
-            const title = key.charAt(0).toUpperCase() + key.slice(1);
-            const color = getCategoryColor(key.toLowerCase());
-            sections.push({ id: `cat-${key}`, title, color, isProject: false, tasks: [...taskList].sort((a, b) => (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0)) });
-          });
-          const projectIds = Array.from(byProject.keys()).sort((a, b) => (projectsMap[a]?.name ?? '').localeCompare(projectsMap[b]?.name ?? ''));
-          projectIds.forEach((pid) => {
-            const taskList = byProject.get(pid) ?? [];
-            const p = projectsMap[pid];
-            sections.push({
-              id: `proj-${pid}`,
-              title: p?.name ?? 'Proyecto',
-              color: p?.color ?? THEME.colors.gradient.blue,
-              isProject: true,
-              tasks: [...taskList].sort((a, b) => (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0)),
-            });
-          });
-          const todayStr = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
-          return (
-            <View style={styles.tasksContainer}>
-              <View style={styles.tasksListCard}>
-                <View style={styles.tareasHeaderRow}>
-                  <View>
-                    <Text style={styles.tareasTitle}># Tareas</Text>
-                    <Text style={styles.tareasDate}>{todayStr}</Text>
-                  </View>
-                  <View style={styles.priorityLegend}>
+                {incompleteTasks.length > 0 && (
+                  <View
+                    style={styles.priorityLegend}
+                    accessibilityLabel="Las tareas de mayor prioridad aparecen arriba; las de menor prioridad, abajo."
+                    accessibilityRole="text"
+                  >
                     <Text style={styles.priorityLegendHigh}>Prioridad alta</Text>
                     <View style={styles.priorityLegendArrow} />
                     <Text style={styles.priorityLegendLow}>Prioridad baja</Text>
                   </View>
+                )}
+              </View>
+
+              {todayMood && explanation.reasoning && (
+                <View style={styles.prioritiesContext}>
+                  <View style={styles.prioritiesContextHeader}>
+                    <View style={[styles.emotionIconContainer, { backgroundColor: getEmotionColor(todayMood) }]}>
+                      <Text style={styles.emotionIconEmoji}>{getEmotionEmoji(todayMood)}</Text>
+                    </View>
+                    <View style={styles.prioritiesContextHeaderText}>
+                      <Text style={styles.prioritiesContextTitle}>Basado en cómo te sientes</Text>
+                      <Text style={styles.prioritiesContextText}>{explanation.reasoning}</Text>
+                    </View>
+                  </View>
+                  {explanation.suggestion && (
+                    <View style={styles.prioritiesSuggestionBox}>
+                      <Lightbulb size={16} color={THEME.colors.gradient.blue} />
+                      <Text style={styles.prioritiesSuggestion}>{explanation.suggestion}</Text>
+                    </View>
+                  )}
                 </View>
-                {sections.map((sec) => (
+              )}
+              {!todayMood && (
+                <View style={styles.prioritiesContext}>
+                  <Text style={styles.prioritiesContextText}>
+                    Ve a <Text style={styles.prioritiesContextAccent}>Sentir</Text> para que Kora priorice estas tareas.
+                  </Text>
+                </View>
+              )}
+
+              {incompleteTasks.length > 0 ? (
+                taskSections.map((sec) => (
                   <View key={sec.id} style={styles.taskSection}>
                     <SectionHeader
                       title={sec.title}
@@ -1032,24 +959,45 @@ export default function TodayScreen() {
                       sectionAccentColor={sec.color}
                     />
                   </View>
-                ))}
-              </View>
-              <View style={styles.agregarMasWrap}>
+                ))
+              ) : (
                 <TouchableOpacity
-                  style={styles.agregarMasButton}
+                  style={styles.addFromInicioButton}
                   onPress={() => router.push('/(tabs)/vaciar')}
                   activeOpacity={0.8}
                   accessibilityRole="button"
-                  accessibilityLabel="Agregar más tareas o proyectos"
+                  accessibilityLabel="Agregar tareas o proyectos"
                 >
-                  <Plus size={18} color={THEME.colors.gradient.blue} />
-                  <Text style={styles.agregarMasButtonText} numberOfLines={1}>Agregar más tareas o proyectos</Text>
+                  <LinearGradient
+                    colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.addFromInicioButtonGradient}
+                  >
+                    <Plus size={20} color="#FFFFFF" />
+                    <Text style={styles.addFromInicioButtonText}>Agregar tareas o proyectos</Text>
+                  </LinearGradient>
                 </TouchableOpacity>
-                <Text style={styles.agregarMasHint}>Lleva a la pestaña Vaciar</Text>
-              </View>
+              )}
+
+              {incompleteTasks.length > 0 && (
+                <View style={styles.agregarMasWrap}>
+                  <TouchableOpacity
+                    style={styles.agregarMasButton}
+                    onPress={() => router.push('/(tabs)/vaciar')}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Agregar más tareas o proyectos"
+                  >
+                    <Plus size={18} color={THEME.colors.gradient.blue} />
+                    <Text style={styles.agregarMasButtonText} numberOfLines={1}>Agregar más tareas o proyectos</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.agregarMasHint}>Lleva a la pestaña Vaciar</Text>
+                </View>
+              )}
             </View>
-          );
-        })()}
+          </View>
+        )}
 
         {/* Mensaje cuando no hay tareas pendientes pero sí completadas */}
         {!loading && todayMood && incompleteTasks.length === 0 && tasks.length > 0 && !dismissedCelebration && (
@@ -1099,46 +1047,6 @@ export default function TodayScreen() {
         </Suspense>
       )}
       
-      {/* Modal confirmación Vaciar (web) */}
-      <Modal
-        visible={showVaciarConfirm}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowVaciarConfirm(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowVaciarConfirm(false)}
-        >
-          <View style={styles.vaciarConfirmCard} onStartShouldSetResponder={() => true}>
-            <Text style={styles.vaciarConfirmTitle}>Vaciar tus tareas</Text>
-            <Text style={styles.vaciarConfirmMessage}>
-              No se elimina nada: solo se quita la prioridad de hoy. ¿Quieres vaciar tus tareas?
-            </Text>
-            <View style={styles.vaciarConfirmActions}>
-              <TouchableOpacity
-                style={styles.vaciarConfirmCancel}
-                onPress={() => setShowVaciarConfirm(false)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.vaciarConfirmCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.vaciarConfirmOk}
-                onPress={() => {
-                  setShowVaciarConfirm(false);
-                  runVaciarTareas();
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.vaciarConfirmOkText}>Vaciar tus tareas</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
       {/* Toast notification */}
       {toastMessage && (
         <Toast
@@ -1187,6 +1095,16 @@ const styles = StyleSheet.create({
   content: {
     paddingTop: THEME.spacing.xl * 2,
     paddingBottom: THEME.spacing.lg,
+  },
+  loadingContainer: {
+    paddingVertical: THEME.spacing.xl * 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.md,
+  },
+  loadingText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
   },
   moodCard: {
     borderRadius: THEME.borderRadius.rounded,
@@ -1749,6 +1667,12 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     marginTop: 2,
+  },
+  tareasSubtitle: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    marginTop: 2,
+    fontSize: 13,
   },
   priorityLegend: {
     alignItems: 'flex-end',
