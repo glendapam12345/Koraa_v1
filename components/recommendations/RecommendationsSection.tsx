@@ -199,45 +199,43 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
         <Sparkles size={20} color={THEME.colors.gradient.blue} />
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {Array.from(recommendationsByCategory.entries()).map(([category, categoryRecs]) => {
-          const illustration = CATEGORY_ILLUSTRATIONS[category] || CATEGORY_ILLUSTRATIONS['bienestar'];
-          const mainRecommendation = categoryRecs[0]; // Mostrar la primera recomendación de cada categoría
+      <View style={styles.recommendationsGrid}>
+        {Array.from(recommendationsByCategory.entries())
+          .slice(0, 3)
+          .map(([category, categoryRecs]) => {
+            const illustration = CATEGORY_ILLUSTRATIONS[category] || CATEGORY_ILLUSTRATIONS['bienestar'];
+            const mainRecommendation = categoryRecs[0]; // Mostrar la primera recomendación de cada categoría
 
-          return (
-            <TouchableOpacity
-              key={category}
-              style={styles.recommendationCard}
-              onPress={() => handleRecommendationPress(mainRecommendation)}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel={`Recomendación: ${illustration.title}`}
-            >
-              <LinearGradient
-                colors={illustration.gradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.cardGradient}
+            return (
+              <TouchableOpacity
+                key={category}
+                style={styles.recommendationCard}
+                onPress={() => handleRecommendationPress(mainRecommendation)}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={`Recomendación: ${illustration.title}`}
               >
-                <View style={styles.cardContent}>
-                  <Text style={styles.emoji}>{illustration.emoji}</Text>
-                  <Text style={styles.categoryTitle}>{illustration.title}</Text>
-                  <Text style={styles.recommendationTitle} numberOfLines={2}>
-                    {mainRecommendation.title}
-                  </Text>
-                  <Text style={styles.recommendationMessage} numberOfLines={2}>
-                    {mainRecommendation.message}
-                  </Text>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+                <LinearGradient
+                  colors={illustration.gradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.cardGradient}
+                >
+                  <View style={styles.cardContent}>
+                    <Text style={styles.emoji}>{illustration.emoji}</Text>
+                    <Text style={styles.categoryTitle}>{illustration.title}</Text>
+                    <Text style={styles.recommendationTitle} numberOfLines={2}>
+                      {mainRecommendation.title}
+                    </Text>
+                    <Text style={styles.recommendationMessage} numberOfLines={3}>
+                      {mainRecommendation.message}
+                    </Text>
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            );
+          })}
+      </View>
 
       {/* Modal de detalle */}
       <Modal
@@ -313,13 +311,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     padding: THEME.spacing.lg,
   },
-  scrollContent: {
+  recommendationsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.lg,
-    gap: THEME.spacing.md,
+    justifyContent: 'space-between',
   },
   recommendationCard: {
-    width: 280,
-    height: 200,
+    width: '31%',
+    minWidth: 100,
+    aspectRatio: 0.9,
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
     ...THEME.shadows.soft,

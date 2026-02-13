@@ -18,7 +18,7 @@ import { supabase, getErrorMessage } from '@/lib/supabase';
 import { detectCategory } from '@/lib/categoryDetection';
 import { generatePrioritizationExplanation } from '@/lib/smartPrioritization';
 import { logger } from '@/lib/logger';
-import { Sparkles, Plus, Flame, Sunrise, Moon } from 'lucide-react-native';
+import { Sparkles, Plus, Flame, Sunrise, Moon, PenTool, Heart, Target, ArrowRight } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { lazy, Suspense } from 'react';
 import { ActivityIndicator, View as ViewRN } from 'react-native';
@@ -557,6 +557,14 @@ export default function TodayScreen() {
     }
   };
 
+  // Función para obtener saludo basado en la hora del día
+  const getGreeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Buenos días';
+    if (hour < 18) return 'Buenas tardes';
+    return 'Buenas noches';
+  }, []);
+
   return (
     <View style={styles.container}>
       <ScrollView 
@@ -571,6 +579,14 @@ export default function TodayScreen() {
           />
         }
       >
+        {/* Título de bienvenida */}
+        {!loading && (
+          <View style={styles.welcomeSection}>
+            <Text style={styles.welcomeTitle}>{getGreeting} ✨</Text>
+            <Text style={styles.welcomeSubtitle}>Tu día organizado sintiendo</Text>
+          </View>
+        )}
+
         {/* Racha sutil en la parte superior */}
         {!loading && currentStreak > 0 && (
           <View style={styles.streakBadge}>
@@ -611,12 +627,12 @@ export default function TodayScreen() {
                   end={{ x: 1, y: 1 }}
                   style={styles.meditationButtonGradient}
                 >
-                  <Sunrise size={28} color={morningMeditationDone ? '#999' : THEME.colors.fill[100]} />
+                  <Text style={styles.meditationEmoji}>🧘</Text>
                   <Text style={[
                     styles.meditationButtonText,
                     morningMeditationDone && styles.meditationButtonTextDone
                   ]}>
-                    {morningMeditationDone ? 'Mañana completada' : 'Iniciar el día'}
+                    {morningMeditationDone ? 'Mañana completada' : 'Meditar por la mañana'}
                   </Text>
                   {morningMeditationDone && (
                     <View style={styles.checkmark}>
@@ -650,12 +666,12 @@ export default function TodayScreen() {
                   end={{ x: 1, y: 1 }}
                   style={styles.meditationButtonGradient}
                 >
-                  <Moon size={28} color={eveningMeditationDone ? '#999' : THEME.colors.fill[100]} />
+                  <Text style={styles.meditationEmoji}>🧘</Text>
                   <Text style={[
                     styles.meditationButtonText,
                     eveningMeditationDone && styles.meditationButtonTextDone
                   ]}>
-                    {eveningMeditationDone ? 'Noche completada' : 'Terminar el día'}
+                    {eveningMeditationDone ? 'Noche completada' : 'Meditar por la noche'}
                   </Text>
                   {eveningMeditationDone && (
                     <View style={styles.checkmark}>
@@ -682,48 +698,107 @@ export default function TodayScreen() {
           />
         )}
 
-        {/* Sección de Prioridades del Día - Mostrar si hay tareas, con o sin check-in */}
-        {!loading && incompleteTasks.length > 0 && (
-          <View style={styles.prioritiesSection}>
-            <Text style={styles.prioritiesTitle}>Tus prioridades del día</Text>
-            {!todayMood && (
-              <TouchableOpacity
-                style={styles.checkInPrompt}
-                onPress={() => router.push('/(tabs)/sentir')}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel="Registra cómo te sientes"
-              >
-                <Text style={styles.checkInPromptText}>
-                  💡 Ve a <Text style={styles.checkInPromptAccent}>Sentir</Text> para que Kora priorice estas tareas según cómo te sientes hoy
-                </Text>
-              </TouchableOpacity>
-            )}
-            <View style={styles.tasksContainer}>
-              <TaskList
-                tasks={tasks}
-                incompleteTasks={incompleteTasks}
-                expandedTasks={expandedTasks}
-                menuOpen={menuOpen}
-                onToggleTask={handleToggleTask}
-                onToggleExpansion={toggleTaskExpansion}
-                onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
-                onEditTask={handleEditTask}
-                onDeleteTask={handleDeleteTask}
-                getCategoryColor={getCategoryColor}
-                onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
-              />
+        {/* Guía visual del flujo - Antes de las prioridades */}
+        {!loading && (
+          <View style={styles.flowGuideSection}>
+            <Text style={styles.flowGuideTitle}>¿Cómo funciona Kora?</Text>
+            <View style={styles.flowStepsContainer}>
+              <View style={styles.flowStep}>
+                <View style={[styles.flowStepNumber, styles.flowStepNumberActive]}>
+                  <PenTool size={16} color="#FFFFFF" />
+                </View>
+                <Text style={styles.flowStepLabel}>Vaciar</Text>
+                <Text style={styles.flowStepDesc}>Agrega tus tareas</Text>
+              </View>
+              <View style={styles.flowArrow}>
+                <ArrowRight size={16} color={THEME.colors.text.secondary} />
+              </View>
+              <View style={styles.flowStep}>
+                <View style={styles.flowStepNumber}>
+                  <Heart size={16} color={THEME.colors.text.secondary} />
+                </View>
+                <Text style={styles.flowStepLabel}>Sentir</Text>
+                <Text style={styles.flowStepDesc}>Di cómo te sientes</Text>
+              </View>
+              <View style={styles.flowArrow}>
+                <ArrowRight size={16} color={THEME.colors.text.secondary} />
+              </View>
+              <View style={styles.flowStep}>
+                <View style={styles.flowStepNumber}>
+                  <Target size={16} color={THEME.colors.text.secondary} />
+                </View>
+                <Text style={styles.flowStepLabel}>Inicio</Text>
+                <Text style={styles.flowStepDesc}>Ve tus prioridades</Text>
+              </View>
             </View>
+          </View>
+        )}
+
+        {/* Cuadro de Prioridades con contexto */}
+        {!loading && incompleteTasks.length > 0 && (
+          <View style={styles.prioritiesCard}>
+            <View style={styles.prioritiesHeader}>
+              <Text style={styles.prioritiesTitle}>Tus prioridades para hoy</Text>
+              <Sparkles size={20} color={THEME.colors.gradient.blue} />
+            </View>
+            
+            {todayMood && explanation.reasoning && (
+              <View style={styles.prioritiesContext}>
+                <Text style={styles.prioritiesContextText}>
+                  {explanation.reasoning}
+                </Text>
+                {explanation.suggestion && (
+                  <Text style={styles.prioritiesSuggestion}>
+                    💡 {explanation.suggestion}
+                  </Text>
+                )}
+              </View>
+            )}
+
+            {!todayMood && (
+              <View style={styles.prioritiesContext}>
+                <Text style={styles.prioritiesContextText}>
+                  Ve a <Text style={styles.prioritiesContextAccent}>Sentir</Text> para que Kora priorice estas tareas según cómo te sientes hoy.
+                </Text>
+              </View>
+            )}
+
             <TouchableOpacity
-              style={styles.addTaskButton}
+              style={styles.vaciarTareasButton}
               onPress={() => router.push('/(tabs)/vaciar')}
               activeOpacity={0.8}
               accessibilityRole="button"
-              accessibilityLabel="Agregar tarea"
+              accessibilityLabel="Vaciar tareas"
             >
-              <Plus size={20} color={THEME.colors.gradient.blue} />
-              <Text style={styles.addTaskButtonText}>Agregar tarea</Text>
+              <LinearGradient
+                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.vaciarTareasButtonGradient}
+              >
+                <Plus size={18} color="#FFFFFF" />
+                <Text style={styles.vaciarTareasButtonText}>Vaciar tareas</Text>
+              </LinearGradient>
             </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Lista de tareas */}
+        {!loading && incompleteTasks.length > 0 && (
+          <View style={styles.tasksContainer}>
+            <TaskList
+              tasks={tasks}
+              incompleteTasks={incompleteTasks}
+              expandedTasks={expandedTasks}
+              menuOpen={menuOpen}
+              onToggleTask={handleToggleTask}
+              onToggleExpansion={toggleTaskExpansion}
+              onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+              onEditTask={handleEditTask}
+              onDeleteTask={handleDeleteTask}
+              getCategoryColor={getCategoryColor}
+              onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
+            />
           </View>
         )}
 
@@ -1019,16 +1094,138 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.gradient.blue,
     borderRadius: 4,
   },
-  prioritiesSection: {
-    marginTop: THEME.spacing.lg,
+  welcomeSection: {
     marginBottom: THEME.spacing.lg,
+    paddingHorizontal: THEME.spacing.lg,
+  },
+  welcomeTitle: {
+    ...THEME.typography.h1,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: THEME.spacing.xs,
+  },
+  welcomeSubtitle: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    fontSize: 15,
+  },
+  flowGuideSection: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.lg,
+    marginHorizontal: THEME.spacing.lg,
+  },
+  flowGuideTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    textAlign: 'center',
+    marginBottom: THEME.spacing.md,
+  },
+  flowStepsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: THEME.spacing.xs,
+  },
+  flowStep: {
+    flex: 1,
+    alignItems: 'center',
+    minWidth: 70,
+  },
+  flowStepNumber: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 2,
+    borderColor: THEME.colors.stroke[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: THEME.spacing.xs,
+  },
+  flowStepNumberActive: {
+    backgroundColor: THEME.colors.gradient.blue,
+    borderColor: THEME.colors.gradient.blue,
+  },
+  flowStepLabel: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
+    fontSize: 12,
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+  flowStepDesc: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    fontSize: 10,
+    textAlign: 'center',
+  },
+  flowArrow: {
+    paddingHorizontal: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
+  },
+  prioritiesCard: {
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.lg,
+    marginBottom: THEME.spacing.lg,
+    marginHorizontal: THEME.spacing.lg,
+    ...THEME.shadows.soft,
+  },
+  prioritiesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: THEME.spacing.md,
   },
   prioritiesTitle: {
     ...THEME.typography.h2,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
+  },
+  prioritiesContext: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
+  },
+  prioritiesContextText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    lineHeight: 22,
+    fontSize: 14,
+  },
+  prioritiesContextAccent: {
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.gradient.blue,
+  },
+  prioritiesSuggestion: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.pink,
+    fontFamily: THEME.fonts.heading.medium,
+    marginTop: THEME.spacing.xs,
+    fontSize: 12,
+  },
+  vaciarTareasButton: {
+    borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  vaciarTareasButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.md,
     paddingHorizontal: THEME.spacing.lg,
+  },
+  vaciarTareasButtonText: {
+    ...THEME.typography.body,
+    color: '#FFFFFF',
+    fontFamily: THEME.fonts.heading.bold,
   },
   addTaskButton: {
     flexDirection: 'row',
@@ -1538,61 +1735,6 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.md,
     fontFamily: THEME.fonts.heading.bold,
   },
-  flowStepsContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingHorizontal: THEME.spacing.sm,
-    marginTop: THEME.spacing.sm,
-  },
-  flowStep: {
-    flex: 1,
-    alignItems: 'center',
-    minWidth: 80,
-  },
-  flowStepNumber: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: THEME.colors.fill[200],
-    borderWidth: 2,
-    borderColor: THEME.colors.stroke[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: THEME.spacing.xs,
-  },
-  flowStepNumberActive: {
-    backgroundColor: THEME.colors.gradient.blue,
-    borderColor: THEME.colors.gradient.blue,
-  },
-  flowStepNumberText: {
-    ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.bold,
-    fontSize: 16,
-    color: THEME.colors.text.secondary,
-  },
-  flowStepNumberTextActive: {
-    color: THEME.colors.fill[100],
-  },
-  flowStepLabel: {
-    ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.text.main,
-    fontSize: 13,
-    marginBottom: THEME.spacing.xs / 2,
-    textAlign: 'center',
-  },
-  flowStepDescription: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    fontSize: 11,
-    textAlign: 'center',
-    lineHeight: 14,
-  },
-  flowArrow: {
-    paddingHorizontal: THEME.spacing.xs,
-    paddingTop: THEME.spacing.xs * 2,
-  },
   flowArrowText: {
     ...THEME.typography.h2,
     color: THEME.colors.text.secondary,
@@ -1742,6 +1884,10 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.xs,
     minHeight: 120,
     justifyContent: 'center',
+  },
+  meditationEmoji: {
+    fontSize: 32,
+    marginBottom: THEME.spacing.xs,
   },
   meditationButtonText: {
     ...THEME.typography.body,

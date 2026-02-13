@@ -104,12 +104,12 @@ export const TaskCard = memo(function TaskCard({
         </TouchableOpacity>
         
         <View style={styles.taskContent}>
-          {/* Badge de tipo de tarea */}
+          {/* Badge de tipo de tarea - Mejorado para claridad visual */}
           <View style={styles.taskTypeContainer}>
             {hasSubtasks ? (
               <View style={[styles.taskTypeBadge, styles.projectBadge]}>
                 <Text style={styles.taskTypeIcon}>📁</Text>
-                <Text style={styles.taskTypeText}>Proyecto</Text>
+                <Text style={styles.taskTypeText}>PROYECTO</Text>
               </View>
             ) : task.parent_task_id ? (
               <View style={[styles.taskTypeBadge, styles.subtaskBadge]}>
@@ -118,8 +118,8 @@ export const TaskCard = memo(function TaskCard({
               </View>
             ) : (
               <View style={[styles.taskTypeBadge, styles.taskBadge]}>
-                <Text style={styles.taskTypeIcon}>✓</Text>
-                <Text style={styles.taskTypeText}>Tarea</Text>
+                <Text style={styles.taskTypeIcon}>•</Text>
+                <Text style={styles.taskTypeText}>Tarea suelta</Text>
               </View>
             )}
           </View>
@@ -264,9 +264,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   projectBadge: {
-    backgroundColor: 'rgba(74, 144, 226, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(74, 144, 226, 0.25)',
+    backgroundColor: 'rgba(74, 144, 226, 0.15)',
+    borderWidth: 1.5,
+    borderColor: '#4A90E2',
   },
   taskBadge: {
     backgroundColor: THEME.colors.fill[200],
@@ -274,17 +274,18 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.stroke[100],
   },
   subtaskBadge: {
-    backgroundColor: 'rgba(255, 107, 107, 0.08)',
+    backgroundColor: 'rgba(255, 107, 107, 0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 107, 107, 0.19)',
+    borderColor: 'rgba(255, 107, 107, 0.3)',
   },
   taskTypeIcon: {
     fontSize: 12,
   },
   taskTypeText: {
     ...THEME.typography.caption,
-    fontSize: 10,
-    fontFamily: THEME.fonts.heading.medium,
+    fontSize: 9,
+    fontFamily: THEME.fonts.heading.bold,
+    letterSpacing: 0.5,
   },
   taskText: {
     ...THEME.typography.body,
