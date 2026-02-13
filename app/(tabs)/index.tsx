@@ -17,8 +17,9 @@ import { useProgress } from '@/hooks/useProgress';
 import { supabase, getErrorMessage } from '@/lib/supabase';
 import { detectCategory } from '@/lib/categoryDetection';
 import { generatePrioritizationExplanation } from '@/lib/smartPrioritization';
+import { getEmotionEmoji } from '@/lib/emotionalInsights';
 import { logger } from '@/lib/logger';
-import { Sparkles, Plus, Flame, Sunrise, Moon, PenTool, Heart, Target, ArrowRight } from 'lucide-react-native';
+import { Sparkles, Plus, Flame, Sunrise, Moon, PenTool, Heart, Target, ArrowRight, Lightbulb, Zap, Clock, Focus } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { lazy, Suspense } from 'react';
 import { ActivityIndicator, View as ViewRN } from 'react-native';
@@ -392,6 +393,26 @@ export default function TodayScreen() {
         return '#9B59B6';
       default:
         return THEME.colors.text.secondary;
+    }
+  }, []);
+
+  const getEmotionColor = useCallback((emotion: string) => {
+    const emotionLower = emotion.toLowerCase();
+    switch (emotionLower) {
+      case 'enfocada':
+        return 'rgba(74, 144, 226, 0.15)';
+      case 'motivada':
+        return 'rgba(255, 107, 107, 0.15)';
+      case 'tranquila':
+        return 'rgba(78, 205, 196, 0.15)';
+      case 'ansiosa':
+        return 'rgba(255, 193, 7, 0.15)';
+      case 'agotada':
+        return 'rgba(155, 89, 182, 0.15)';
+      case 'abrumada':
+        return 'rgba(255, 152, 0, 0.15)';
+      default:
+        return 'rgba(74, 144, 226, 0.15)';
     }
   }, []);
 
@@ -794,13 +815,24 @@ export default function TodayScreen() {
             
             {todayMood && explanation.reasoning && (
               <View style={styles.prioritiesContext}>
-                <Text style={styles.prioritiesContextText}>
-                  {explanation.reasoning}
-                </Text>
+                <View style={styles.prioritiesContextHeader}>
+                  <View style={[styles.emotionIconContainer, { backgroundColor: getEmotionColor(todayMood) }]}>
+                    <Text style={styles.emotionIconEmoji}>{getEmotionEmoji(todayMood)}</Text>
+                  </View>
+                  <View style={styles.prioritiesContextHeaderText}>
+                    <Text style={styles.prioritiesContextTitle}>Basado en cómo te sientes</Text>
+                    <Text style={styles.prioritiesContextText}>
+                      {explanation.reasoning}
+                    </Text>
+                  </View>
+                </View>
                 {explanation.suggestion && (
-                  <Text style={styles.prioritiesSuggestion}>
-                    💡 {explanation.suggestion}
-                  </Text>
+                  <View style={styles.prioritiesSuggestionBox}>
+                    <Lightbulb size={16} color={THEME.colors.gradient.blue} />
+                    <Text style={styles.prioritiesSuggestion}>
+                      {explanation.suggestion}
+                    </Text>
+                  </View>
                 )}
               </View>
             )}
@@ -1238,7 +1270,17 @@ const styles = StyleSheet.create({
   flowGuideSection: {
     backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
+    padding: THEME.spacing.lg,
+    marginBottom: THEME.spacing.lg,
+    marginHorizontal: THEME.spacing.lg,
+    ...THEME.shadows.soft,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  flowGuideHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: THEME.spacing.md,
     marginHorizontal: THEME.spacing.lg,
   },
@@ -1276,11 +1318,19 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.gradient.blue,
   },
   flowStepLabel: {
-    ...THEME.typography.small,
-    fontFamily: THEME.fonts.heading.medium,
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
+    fontSize: 13,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  flowStepDesc: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
     fontSize: 11,
     textAlign: 'center',
+    lineHeight: 16,
   },
   flowArrow: {
     paddingHorizontal: 2,
@@ -1293,15 +1343,11 @@ const styles = StyleSheet.create({
     marginHorizontal: THEME.spacing.lg,
     alignItems: 'center',
   },
-  prioritiesIconContainer: {
-    marginBottom: THEME.spacing.sm,
-  },
-  prioritiesIconGradient: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  prioritiesHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    marginBottom: THEME.spacing.sm,
   },
   prioritiesTitle: {
     ...THEME.typography.h3,
@@ -1310,11 +1356,62 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     textAlign: 'center',
   },
-  prioritiesSubtitle: {
+  prioritiesContext: {
+    marginBottom: THEME.spacing.sm,
+  },
+  prioritiesContextHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: THEME.spacing.sm,
+    marginBottom: THEME.spacing.sm,
+  },
+  emotionIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emotionIconEmoji: {
+    fontSize: 20,
+  },
+  prioritiesContextHeaderText: {
+    flex: 1,
+  },
+  prioritiesContextTitle: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
+    fontSize: 11,
+    marginBottom: 4,
+  },
+  prioritiesContextText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+    marginBottom: 4,
     textAlign: 'center',
+  },
+  prioritiesContextAccent: {
+    fontFamily: THEME.fonts.accent.italic,
+    color: THEME.colors.gradient.blue,
+  },
+  prioritiesSuggestionBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: THEME.spacing.xs,
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.standard,
+    padding: THEME.spacing.sm,
+    marginTop: THEME.spacing.sm,
+  },
+  prioritiesSuggestion: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
     fontSize: 12,
+    flex: 1,
+    lineHeight: 18,
   },
   vaciarButtonsContainer: {
     flexDirection: 'row',

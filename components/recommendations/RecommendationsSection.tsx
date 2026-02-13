@@ -1,11 +1,11 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
-import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Animated } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { generatePersonalizedRecommendations, type Recommendation, type UserPreferences, type CheckInContext } from '@/lib/personalizedRecommendations';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
-import { X, Sparkles, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { X, Sparkles, ChevronDown, ChevronUp, Info } from 'lucide-react-native';
 
 // Mapeo de categorías a emojis/ilustraciones
 const CATEGORY_ILLUSTRATIONS: Record<string, { emoji: string; gradient: [string, string, ...string[]]; title: string }> = {
@@ -98,6 +98,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
   const [selectedRecommendation, setSelectedRecommendation] = useState<Recommendation | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const animatedHeights = useRef<Map<string, Animated.Value>>(new Map());
 
   useEffect(() => {
     loadRecommendations();
@@ -172,11 +173,26 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
 
   const toggleCategory = (category: string) => {
     const newExpanded = new Set(expandedCategories);
-    if (newExpanded.has(category)) {
+    const wasExpanded = newExpanded.has(category);
+    
+    if (wasExpanded) {
       newExpanded.delete(category);
     } else {
       newExpanded.add(category);
     }
+    
+    // Animación suave
+    if (!animatedHeights.current.has(category)) {
+      animatedHeights.current.set(category, new Animated.Value(0));
+    }
+    
+    const animValue = animatedHeights.current.get(category)!;
+    Animated.timing(animValue, {
+      toValue: wasExpanded ? 0 : 1,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+    
     setExpandedCategories(newExpanded);
   };
 
@@ -244,22 +260,36 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
                           <Text style={styles.recommendationTitle} numberOfLines={1}>
                             {mainRecommendation.title}
                           </Text>
+                          {!isExpanded && (
+                            <Text style={styles.recommendationPreview} numberOfLines={2}>
+                              {mainRecommendation.message}
+                            </Text>
+                          )}
                         </View>
                       </View>
-                      {isExpanded ? (
-                        <ChevronUp size={20} color="#FFFFFF" />
-                      ) : (
-                        <ChevronDown size={20} color="#FFFFFF" />
-                      )}
+                      <View style={styles.cardHeaderRight}>
+                        {!isExpanded && (
+                          <View style={styles.expandHint}>
+                            <Info size={14} color="rgba(255, 255, 255, 0.7)" />
+                            <Text style={styles.expandHintText}>Toca para ver más</Text>
+                          </View>
+                        )}
+                        {isExpanded ? (
+                          <ChevronUp size={20} color="#FFFFFF" />
+                        ) : (
+                          <ChevronDown size={20} color="#FFFFFF" />
+                        )}
+                      </View>
                     </View>
                     
                     {isExpanded && (
-                      <View style={styles.expandedContent}>
+                      <Animated.View style={styles.expandedContent}>
                         <Text style={styles.recommendationMessage}>
                           {mainRecommendation.message}
                         </Text>
                         {categoryRecs.length > 1 && (
                           <View style={styles.additionalRecommendations}>
+                            <Text style={styles.additionalRecTitle}>Más sugerencias:</Text>
                             {categoryRecs.slice(1).map((rec, idx) => (
                               <TouchableOpacity
                                 key={rec.id || idx}
@@ -272,7 +302,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
                             ))}
                           </View>
                         )}
-                      </View>
+                      </Animated.View>
                     )}
                   </LinearGradient>
                 </TouchableOpacity>
@@ -372,17 +402,36 @@ const styles = StyleSheet.create({
   },
   cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
   cardHeaderContent: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     flex: 1,
     gap: THEME.spacing.sm,
   },
   cardHeaderText: {
     flex: 1,
+  },
+  cardHeaderRight: {
+    alignItems: 'flex-end',
+    gap: THEME.spacing.xs,
+  },
+  expandHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  expandHintText: {
+    ...THEME.typography.small,
+    color: '#FFFFFF',
+    opacity: 0.8,
+    fontSize: 10,
   },
   emoji: {
     fontSize: 32,
@@ -400,6 +449,15 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontFamily: THEME.fonts.heading.bold,
     fontSize: 14,
+    marginBottom: 4,
+  },
+  recommendationPreview: {
+    ...THEME.typography.small,
+    color: '#FFFFFF',
+    opacity: 0.85,
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 2,
   },
   expandedContent: {
     marginTop: THEME.spacing.md,
@@ -416,7 +474,18 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.sm,
   },
   additionalRecommendations: {
-    marginTop: THEME.spacing.xs,
+    marginTop: THEME.spacing.md,
+    paddingTop: THEME.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  additionalRecTitle: {
+    ...THEME.typography.caption,
+    color: '#FFFFFF',
+    opacity: 0.9,
+    fontFamily: THEME.fonts.heading.medium,
+    marginBottom: THEME.spacing.xs,
+    fontSize: 12,
   },
   additionalRecItem: {
     paddingVertical: THEME.spacing.xs,

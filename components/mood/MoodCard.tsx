@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { memo, useMemo } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-import { RefreshCw } from 'lucide-react-native';
+import { RefreshCw, Zap, Clock, Focus } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 const getMoodEmoji = (mood: string): string => {
@@ -78,21 +78,36 @@ export const MoodCard = memo(function MoodCard({ todayMood, energy, time, focusL
         <View style={styles.moodStats}>
           {energy && (
             <View style={styles.moodStatItem}>
+              <View style={styles.moodStatIconContainer}>
+                <Zap size={14} color={THEME.colors.fill[100]} />
+              </View>
               <Text style={styles.moodStatLabel}>Energía</Text>
               <Text style={styles.moodStatValue}>{energy}</Text>
             </View>
           )}
           {time && (
-            <View style={styles.moodStatItem}>
-              <Text style={styles.moodStatLabel}>Tiempo disponible</Text>
-              <Text style={styles.moodStatValue}>{time}</Text>
-            </View>
+            <>
+              <View style={styles.moodStatSeparator} />
+              <View style={styles.moodStatItem}>
+                <View style={styles.moodStatIconContainer}>
+                  <Clock size={14} color={THEME.colors.fill[100]} />
+                </View>
+                <Text style={styles.moodStatLabel}>Tiempo</Text>
+                <Text style={styles.moodStatValue}>{time}</Text>
+              </View>
+            </>
           )}
           {focusLevel && (
-            <View style={styles.moodStatItem}>
-              <Text style={styles.moodStatLabel}>Enfoque</Text>
-              <Text style={styles.moodStatValue}>{focusLevel}</Text>
-            </View>
+            <>
+              <View style={styles.moodStatSeparator} />
+              <View style={styles.moodStatItem}>
+                <View style={styles.moodStatIconContainer}>
+                  <Focus size={14} color={THEME.colors.fill[100]} />
+                </View>
+                <Text style={styles.moodStatLabel}>Enfoque</Text>
+                <Text style={styles.moodStatValue}>{focusLevel}</Text>
+              </View>
+            </>
           )}
         </View>
       ) : null}
@@ -168,29 +183,49 @@ const styles = StyleSheet.create({
   },
   moodStats: {
     flexDirection: 'row',
-    gap: THEME.spacing.xs,
-    marginTop: THEME.spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: THEME.spacing.sm,
     flexWrap: 'wrap',
+    gap: THEME.spacing.xs,
   },
   moodStatItem: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: THEME.borderRadius.rounded,
-    paddingHorizontal: THEME.spacing.xs,
-    paddingVertical: 4,
-    minWidth: 80,
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    minWidth: 90,
+    alignItems: 'center',
+    gap: 4,
+  },
+  moodStatIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  moodStatSeparator: {
+    width: 1,
+    height: 32,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    marginHorizontal: THEME.spacing.xs / 2,
   },
   moodStatLabel: {
     ...THEME.typography.caption,
     color: THEME.colors.fill[100],
-    opacity: 0.8,
+    opacity: 0.9,
     fontSize: 10,
-    marginBottom: 2,
+    textAlign: 'center',
   },
   moodStatValue: {
     ...THEME.typography.body,
     color: THEME.colors.fill[100],
-    fontFamily: THEME.fonts.heading.medium,
-    fontSize: 13,
+    fontFamily: THEME.fonts.heading.bold,
+    fontSize: 12,
+    textAlign: 'center',
   },
   updateCheckInButton: {
     marginTop: THEME.spacing.xs,

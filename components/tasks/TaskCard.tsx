@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
-import { ChevronDown, ChevronRight, MoreVertical } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, MoreVertical, FolderKanban } from 'lucide-react-native';
 
 export interface Task {
   id: string;
@@ -101,6 +101,7 @@ export function TaskCard({
         <View style={styles.taskContent}>
           {isProjectTask && (
             <View style={styles.projectBadge}>
+              <FolderKanban size={12} color="#FFFFFF" />
               <Text style={styles.projectBadgeText}>Proyecto</Text>
             </View>
           )}
@@ -235,10 +236,13 @@ const styles = StyleSheet.create({
   },
   projectBadge: {
     alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: THEME.colors.gradient.blue,
     borderRadius: THEME.borderRadius.pill,
     paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: 4,
     marginBottom: THEME.spacing.xs,
   },
   projectBadgeText: {

@@ -145,7 +145,7 @@ export function generateEmotionalInsights(
   return insights.slice(0, 3);
 }
 
-function getEmotionEmoji(emotion: string): string {
+export function getEmotionEmoji(emotion: string): string {
   const emotionLower = emotion.toLowerCase();
   switch (emotionLower) {
     case 'tranquila':
