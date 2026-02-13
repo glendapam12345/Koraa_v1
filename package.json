@@ -8,6 +8,7 @@
     "dev": "EXPO_NO_TELEMETRY=1 expo start",
     "dev:clear": "EXPO_NO_TELEMETRY=1 expo start --clear",
     "dev:fresh": "rm -rf .expo node_modules/.cache 2>/dev/null; EXPO_NO_TELEMETRY=1 expo start --clear",
+    "dev:bolt": "REACT_NATIVE_PACKAGER_PORT=8081 EXPO_NO_TELEMETRY=1 expo start --port 8081",
     "build:web": "expo export --platform web",
     "publish": "eas update --auto",
     "lint": "expo lint",
