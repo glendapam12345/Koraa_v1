@@ -10,6 +10,7 @@ import { ValueCard } from '@/components/tasks/ValueCard';
 import { ProgressBar } from '@/components/tasks/ProgressBar';
 import { FlowGuideCard } from '@/components/flow/FlowGuideCard';
 import { TaskList } from '@/components/tasks/TaskList';
+import { SectionHeader } from '@/components/tasks/SectionHeader';
 import { useCheckIn } from '@/hooks/useCheckIn';
 import { useTasks } from '@/hooks/useTasks';
 import { useTaskActions } from '@/hooks/useTaskActions';
@@ -412,10 +413,18 @@ export default function TodayScreen() {
     switch (category.toLowerCase()) {
       case 'trabajo':
         return '#4A90E2';
+      case 'hogar':
+        return '#27AE60';
       case 'salud':
         return '#FF6B6B';
       case 'personal':
         return '#9B59B6';
+      case 'contenido':
+        return '#E67E22';
+      case 'marca':
+        return '#8E44AD';
+      case 'otros':
+        return THEME.colors.text.secondary;
       default:
         return THEME.colors.text.secondary;
     }
@@ -922,55 +931,125 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {/* Lista única de tareas: prioridad arriba; cada card con tipo (Independiente / Parte de proyecto) y expandible */}
-        {!loading && incompleteTasks.length > 0 && (
-          <View style={styles.tasksContainer}>
-            <View style={styles.tasksListCard}>
-              <TaskList
-                tasks={incompleteTasks}
-                incompleteTasks={[...incompleteTasks].sort((a, b) => (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0))}
-                expandedTasks={expandedTasks}
-                expandedDetailsTasks={expandedDetailsTasks}
-                menuOpen={menuOpen}
-                onToggleTask={handleToggleTask}
-                onToggleExpansion={toggleTaskExpansion}
-                onToggleDetailsExpansion={toggleDetailsExpansion}
-                onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
-                onEditTask={handleEditTask}
-                onDeleteTask={handleDeleteTask}
-                getCategoryColor={getCategoryColor}
-                onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
-                getProjectInfo={(task) => {
-                  if (task.parent_task_id) {
-                    const parent = incompleteTasks.find((t) => t.id === task.parent_task_id) ?? tasks.find((t) => t.id === task.parent_task_id);
-                    const pid = parent?.project_id;
-                    const p = pid ? projectsMap[pid] : null;
-                    const name = p?.name ?? 'proyecto';
-                    return { label: `Parte de ${name}`, color: p?.color ?? THEME.colors.gradient.blue };
-                  }
-                  if (task.project_id) {
-                    const p = projectsMap[task.project_id];
-                    return { label: p?.name ?? 'Proyecto', color: p?.color ?? THEME.colors.gradient.blue };
-                  }
-                  return { label: 'Independiente', color: THEME.colors.text.secondary };
-                }}
-              />
+        {/* Lista de tareas por secciones (categoría/proyecto), prioridad arriba en cada bloque */}
+        {!loading && incompleteTasks.length > 0 && (() => {
+          type Section = { id: string; title: string; color: string; isProject: boolean; tasks: Task[] };
+          const CATEGORY_ORDER = ['Hogar', 'Trabajo', 'Personal', 'Salud', 'Contenido', 'Marca', 'Otros'];
+          const byProject = new Map<string, Task[]>();
+          const byCategory = new Map<string, Task[]>();
+          incompleteTasks.forEach((t) => {
+            if (t.project_id != null) {
+              const list = byProject.get(t.project_id) ?? [];
+              list.push(t);
+              byProject.set(t.project_id, list);
+            } else {
+              const cat = (t.category && t.category.trim() !== '') ? t.category.trim() : 'Personal';
+              const key = cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
+              const list = byCategory.get(key) ?? [];
+              list.push(t);
+              byCategory.set(key, list);
+            }
+          });
+          const sections: Section[] = [];
+          CATEGORY_ORDER.forEach((title) => {
+            const key = title.toLowerCase();
+            const matchKey = Array.from(byCategory.keys()).find((k) => k.toLowerCase() === key);
+            const taskList = matchKey ? byCategory.get(matchKey) ?? [] : [];
+            if (taskList.length === 0) return;
+            const color = getCategoryColor(key);
+            sections.push({ id: `cat-${key}`, title, color, isProject: false, tasks: [...taskList].sort((a, b) => (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0)) });
+          });
+          byCategory.forEach((taskList, key) => {
+            if (CATEGORY_ORDER.some((c) => c.toLowerCase() === key.toLowerCase())) return;
+            const title = key.charAt(0).toUpperCase() + key.slice(1);
+            const color = getCategoryColor(key.toLowerCase());
+            sections.push({ id: `cat-${key}`, title, color, isProject: false, tasks: [...taskList].sort((a, b) => (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0)) });
+          });
+          const projectIds = Array.from(byProject.keys()).sort((a, b) => (projectsMap[a]?.name ?? '').localeCompare(projectsMap[b]?.name ?? ''));
+          projectIds.forEach((pid) => {
+            const taskList = byProject.get(pid) ?? [];
+            const p = projectsMap[pid];
+            sections.push({
+              id: `proj-${pid}`,
+              title: p?.name ?? 'Proyecto',
+              color: p?.color ?? THEME.colors.gradient.blue,
+              isProject: true,
+              tasks: [...taskList].sort((a, b) => (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0)),
+            });
+          });
+          const todayStr = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+          return (
+            <View style={styles.tasksContainer}>
+              <View style={styles.tasksListCard}>
+                <View style={styles.tareasHeaderRow}>
+                  <View>
+                    <Text style={styles.tareasTitle}># Tareas</Text>
+                    <Text style={styles.tareasDate}>{todayStr}</Text>
+                  </View>
+                  <View style={styles.priorityLegend}>
+                    <Text style={styles.priorityLegendHigh}>Prioridad alta</Text>
+                    <View style={styles.priorityLegendArrow} />
+                    <Text style={styles.priorityLegendLow}>Prioridad baja</Text>
+                  </View>
+                </View>
+                {sections.map((sec) => (
+                  <View key={sec.id} style={styles.taskSection}>
+                    <SectionHeader
+                      title={sec.title}
+                      count={sec.tasks.length}
+                      color={sec.color}
+                      isSuelta={false}
+                    />
+                    <TaskList
+                      tasks={tasks}
+                      incompleteTasks={sec.tasks}
+                      expandedTasks={expandedTasks}
+                      expandedDetailsTasks={expandedDetailsTasks}
+                      menuOpen={menuOpen}
+                      onToggleTask={handleToggleTask}
+                      onToggleExpansion={toggleTaskExpansion}
+                      onToggleDetailsExpansion={toggleDetailsExpansion}
+                      onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+                      onEditTask={handleEditTask}
+                      onDeleteTask={handleDeleteTask}
+                      getCategoryColor={getCategoryColor}
+                      onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
+                      getProjectInfo={(task) => {
+                        if (task.parent_task_id) {
+                          const parent = incompleteTasks.find((t) => t.id === task.parent_task_id) ?? tasks.find((t) => t.id === task.parent_task_id);
+                          const pid = parent?.project_id;
+                          const p = pid ? projectsMap[pid] : null;
+                          const name = p?.name ?? 'proyecto';
+                          return { label: `Parte de ${name}`, color: p?.color ?? THEME.colors.gradient.blue };
+                        }
+                        if (task.project_id) {
+                          const p = projectsMap[task.project_id];
+                          return { label: p?.name ?? 'Proyecto', color: p?.color ?? THEME.colors.gradient.blue };
+                        }
+                        return { label: 'Independiente', color: THEME.colors.text.secondary };
+                      }}
+                      hideProjectLabel={false}
+                      sectionAccentColor={sec.color}
+                    />
+                  </View>
+                ))}
+              </View>
+              <View style={styles.agregarMasWrap}>
+                <TouchableOpacity
+                  style={styles.agregarMasButton}
+                  onPress={() => router.push('/(tabs)/vaciar')}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Agregar más tareas o proyectos"
+                >
+                  <Plus size={18} color={THEME.colors.gradient.blue} />
+                  <Text style={styles.agregarMasButtonText} numberOfLines={1}>Agregar más tareas o proyectos</Text>
+                </TouchableOpacity>
+                <Text style={styles.agregarMasHint}>Lleva a la pestaña Vaciar</Text>
+              </View>
             </View>
-            <View style={styles.agregarMasWrap}>
-              <TouchableOpacity
-                style={styles.agregarMasButton}
-                onPress={() => router.push('/(tabs)/vaciar')}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel="Agregar más tareas o proyectos"
-              >
-                <Plus size={18} color={THEME.colors.gradient.blue} />
-                <Text style={styles.agregarMasButtonText} numberOfLines={1}>Agregar más tareas o proyectos</Text>
-              </TouchableOpacity>
-              <Text style={styles.agregarMasHint}>Lleva a la pestaña Vaciar</Text>
-            </View>
-          </View>
-        )}
+          );
+        })()}
 
         {/* Mensaje cuando no hay tareas pendientes pero sí completadas */}
         {!loading && todayMood && incompleteTasks.length === 0 && tasks.length > 0 && !dismissedCelebration && (
@@ -1651,6 +1730,52 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.sm,
     borderWidth: 1,
     borderColor: THEME.colors.stroke[100],
+  },
+  tareasHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: THEME.spacing.md,
+    paddingBottom: THEME.spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.colors.stroke[100],
+  },
+  tareasTitle: {
+    ...THEME.typography.h2,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  tareasDate: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    marginTop: 2,
+  },
+  priorityLegend: {
+    alignItems: 'flex-end',
+  },
+  priorityLegendHigh: {
+    ...THEME.typography.small,
+    fontSize: 10,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  priorityLegendArrow: {
+    width: 0,
+    height: 0,
+    marginVertical: 4,
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderTopWidth: 6,
+    borderBottomWidth: 0,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderTopColor: THEME.colors.text.secondary,
+  },
+  priorityLegendLow: {
+    ...THEME.typography.small,
+    fontSize: 10,
+    color: THEME.colors.text.secondary,
   },
   taskSection: {
     marginBottom: THEME.spacing.lg,
