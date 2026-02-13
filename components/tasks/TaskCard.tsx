@@ -99,12 +99,6 @@ export function TaskCard({
         </TouchableOpacity>
 
         <View style={styles.taskContent}>
-          {isProjectTask && (
-            <View style={styles.projectBadge}>
-              <FolderKanban size={12} color="#FFFFFF" />
-              <Text style={styles.projectBadgeText}>Proyecto</Text>
-            </View>
-          )}
           <Text
             style={[styles.taskText, task.is_completed && styles.taskTextCompleted]}
             numberOfLines={3}
