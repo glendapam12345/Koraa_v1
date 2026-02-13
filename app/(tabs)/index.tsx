@@ -1147,32 +1147,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
-  prioritizationTip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.md,
-    marginHorizontal: THEME.spacing.lg,
-    gap: THEME.spacing.sm,
-  },
-  prioritizationTipText: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  prioritizationTipClose: {
-    padding: THEME.spacing.xs,
-  },
-  prioritizationTipCloseText: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-    fontSize: 18,
-    lineHeight: 18,
-  },
   flowGuideSection: {
     backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.rounded,
