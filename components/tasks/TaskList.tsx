@@ -1,0 +1,57 @@
+import { View, StyleSheet } from 'react-native';
+import { Task, TaskCard } from './TaskCard';
+
+interface TaskListProps {
+  tasks: Task[];
+  incompleteTasks: Task[];
+  expandedTasks: Set<string>;
+  menuOpen: string | null;
+  onToggleTask: (taskId: string, isSubtask?: boolean, parentTaskId?: string) => void;
+  onToggleExpansion: (taskId: string) => void;
+  onMenuPress: (taskId: string) => void;
+  onEditTask: (task: Task) => void;
+  onDeleteTask: (task: Task) => void;
+  getCategoryColor: (category: string) => string;
+  onSubtaskToggle: (subtaskId: string, parentTaskId: string) => void;
+}
+
+export function TaskList({
+  tasks,
+  incompleteTasks,
+  expandedTasks,
+  menuOpen,
+  onToggleTask,
+  onToggleExpansion,
+  onMenuPress,
+  onEditTask,
+  onDeleteTask,
+  getCategoryColor,
+  onSubtaskToggle,
+}: TaskListProps) {
+  return (
+    <View style={styles.container}>
+      {incompleteTasks.map((task, index) => (
+        <TaskCard
+          key={task.id}
+          task={task}
+          index={index}
+          expanded={expandedTasks.has(task.id)}
+          menuOpen={menuOpen === task.id}
+          onToggle={() => onToggleTask(task.id)}
+          onToggleExpansion={() => onToggleExpansion(task.id)}
+          onMenuPress={() => onMenuPress(task.id)}
+          onEditTask={() => onEditTask(task)}
+          onDeleteTask={() => onDeleteTask(task)}
+          getCategoryColor={getCategoryColor}
+          onSubtaskToggle={(subtaskId) => onSubtaskToggle(subtaskId, task.id)}
+        />
+      ))}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
