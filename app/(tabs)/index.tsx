@@ -1629,7 +1629,7 @@ const styles = StyleSheet.create({
   tasksListCard: {
     backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.sm,
+    padding: THEME.spacing.md,
     marginBottom: THEME.spacing.sm,
     borderWidth: 1,
     borderColor: THEME.colors.stroke[100],

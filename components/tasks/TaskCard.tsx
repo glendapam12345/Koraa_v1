@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
-import { ChevronDown, ChevronRight, MoreVertical, FolderKanban } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, MoreVertical, FolderKanban, FileText } from 'lucide-react-native';
 
 export interface Task {
   id: string;
@@ -53,6 +53,8 @@ export function TaskCard({
 
   const isProjectTask = task.project_id !== null && task.project_id !== undefined;
   const showLabel = projectLabel != null && projectLabel !== '';
+  const isSuelta = showLabel && projectLabel === 'Suelta';
+  const borderColor = isProjectTask && projectLabelColor ? projectLabelColor : undefined;
 
   return (
     <View style={styles.taskWrapper}>
@@ -62,14 +64,9 @@ export function TaskCard({
           task.is_completed && styles.taskCardCompleted,
           hasSubtasks && styles.taskCardWithSubtasks,
           isProjectTask && styles.taskCardProject,
+          borderColor ? { borderLeftColor: borderColor } : undefined,
         ]}
       >
-        {isProjectTask && !showLabel && (
-          <View style={styles.projectIndicator}>
-            <View style={styles.projectIndicatorBar} />
-          </View>
-        )}
-
         {task.is_priority && !task.is_completed && (
           <View style={styles.priorityNumberContainer}>
             <View style={styles.priorityNumber}>
@@ -106,15 +103,29 @@ export function TaskCard({
 
         <View style={styles.taskContent}>
           {showLabel && (
-            <Text
+            <View
               style={[
-                styles.projectLabelText,
-                { color: projectLabelColor ?? THEME.colors.text.secondary },
+                styles.projectBadge,
+                isSuelta
+                  ? styles.projectBadgeSuelta
+                  : { backgroundColor: (projectLabelColor ?? THEME.colors.gradient.blue) + '22' },
               ]}
-              numberOfLines={1}
             >
-              {projectLabel}
-            </Text>
+              {isSuelta ? (
+                <FileText size={12} color={THEME.colors.text.secondary} />
+              ) : (
+                <FolderKanban size={12} color={projectLabelColor ?? THEME.colors.gradient.blue} />
+              )}
+              <Text
+                style={[
+                  styles.projectBadgeText,
+                  isSuelta ? styles.projectBadgeTextSuelta : { color: projectLabelColor ?? THEME.colors.gradient.blue },
+                ]}
+                numberOfLines={1}
+              >
+                {isSuelta ? 'Suelta' : projectLabel!.replace(/^Pertenece a /, '')}
+              </Text>
+            </View>
           )}
           <Text
             style={[styles.taskText, task.is_completed && styles.taskTextCompleted]}
@@ -233,34 +244,27 @@ const styles = StyleSheet.create({
     borderLeftColor: THEME.colors.gradient.blue,
     backgroundColor: THEME.colors.fill[200],
   },
-  projectIndicator: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 4,
-  },
-  projectIndicatorBar: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: THEME.colors.gradient.blue,
-  },
   projectBadge: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: THEME.colors.gradient.blue,
+    gap: 6,
     borderRadius: THEME.borderRadius.pill,
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: 4,
-    marginBottom: THEME.spacing.xs,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginBottom: 6,
+  },
+  projectBadgeSuelta: {
+    backgroundColor: THEME.colors.fill[200],
   },
   projectBadgeText: {
-    ...THEME.typography.caption,
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontFamily: THEME.fonts.heading.bold,
+    ...THEME.typography.small,
+    fontSize: 11,
+    fontFamily: THEME.fonts.heading.medium,
+    maxWidth: 140,
+  },
+  projectBadgeTextSuelta: {
+    color: THEME.colors.text.secondary,
   },
   priorityNumberContainer: {
     alignItems: 'center',
@@ -300,12 +304,6 @@ const styles = StyleSheet.create({
   },
   taskContent: {
     flex: 1,
-  },
-  projectLabelText: {
-    ...THEME.typography.small,
-    fontSize: 11,
-    marginBottom: 4,
-    fontFamily: THEME.fonts.heading.medium,
   },
   taskText: {
     ...THEME.typography.body,
