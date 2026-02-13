@@ -26,13 +26,11 @@ Create a new markdown file here when you:
 - Make a performance improvement worth documenting
 - Learn something specific about Expo, React Native, or Supabase that's project-relevant
 
-## Example Files
+## Documented Learnings
 
-- `supabase-rls-patterns.md` - Row Level Security patterns that work well
-- `expo-router-navigation-patterns.md` - Navigation patterns with Expo Router
-- `theme-usage-best-practices.md` - Best practices for using THEME constants
-- `authentication-flow-lessons.md` - Lessons from implementing auth with Supabase
-- `performance-optimization-wins.md` - Optimizations that improved app performance
+- `CREAR_TABLA_PROFILES_SUPABASE.md` - Cómo crear tabla de perfiles en Supabase con RLS
+- `SUPABASE_RECUPERAR_CONTRASENA_EMAIL.md` - Implementación de recuperación de contraseña
+- `EXPO_GO_ENVIRONMENT_VARIABLES.md` - Cómo configurar variables de entorno para Expo Go
 
 ## File Naming
 

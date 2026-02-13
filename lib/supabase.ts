@@ -5,6 +5,16 @@ import Constants from 'expo-constants';
 const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl ?? process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
+// Debug: Log para verificar de dónde vienen las credenciales
+if (__DEV__) {
+  console.log('🔍 Supabase Config Source:', {
+    fromExpoConfig: !!Constants.expoConfig?.extra?.supabaseUrl,
+    fromEnv: !!process.env.EXPO_PUBLIC_SUPABASE_URL,
+    url: supabaseUrl ? '✅ URL configurada' : '❌ URL faltante',
+    key: supabaseAnonKey ? '✅ Key configurada' : '❌ Key faltante',
+  });
+}
+
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(
     'Missing Supabase configuration. Please set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in your environment variables or expo config.'
