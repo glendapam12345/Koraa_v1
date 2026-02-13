@@ -15,6 +15,10 @@ interface TaskListProps {
   onSubtaskToggle: (subtaskId: string, parentTaskId: string) => void;
   /** Opcional: devuelve etiqueta y color para mostrar "Pertenece a [proyecto]" o "Suelta" */
   getProjectInfo?: (task: Task) => { label: string; color: string } | null;
+  /** En vista agrupada: ocultar badge en cada tarjeta y usar acento de sección */
+  hideProjectLabel?: boolean;
+  /** Color del acento lateral para todas las tareas de esta sección */
+  sectionAccentColor?: string;
 }
 
 export function TaskList({
@@ -30,6 +34,8 @@ export function TaskList({
   getCategoryColor,
   onSubtaskToggle,
   getProjectInfo,
+  hideProjectLabel,
+  sectionAccentColor,
 }: TaskListProps) {
   return (
     <View style={styles.container}>
@@ -51,6 +57,8 @@ export function TaskList({
             onSubtaskToggle={(subtaskId) => onSubtaskToggle(subtaskId, task.id)}
             projectLabel={projectInfo?.label ?? null}
             projectLabelColor={projectInfo?.color}
+            hideProjectLabel={hideProjectLabel}
+            sectionAccentColor={sectionAccentColor}
           />
         );
       })}

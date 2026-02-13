@@ -30,6 +30,10 @@ interface TaskCardProps {
   /** Si se pasa, se muestra una etiqueta "Pertenece a [proyecto]" en el color del proyecto, o "Suelta" en gris */
   projectLabel?: string | null;
   projectLabelColor?: string;
+  /** En vista agrupada por sección: ocultar badge y usar solo acento lateral */
+  hideProjectLabel?: boolean;
+  /** Color del acento lateral (borde fino) cuando hideProjectLabel es true */
+  sectionAccentColor?: string;
 }
 
 export function TaskCard({
@@ -46,15 +50,17 @@ export function TaskCard({
   onSubtaskToggle,
   projectLabel,
   projectLabelColor,
+  hideProjectLabel,
+  sectionAccentColor,
 }: TaskCardProps) {
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
   const completedSubtasks = task.subtasks?.filter((st) => st.is_completed).length || 0;
   const totalSubtasks = task.subtasks?.length || 0;
 
   const isProjectTask = task.project_id !== null && task.project_id !== undefined;
-  const showLabel = projectLabel != null && projectLabel !== '';
+  const showLabel = !hideProjectLabel && projectLabel != null && projectLabel !== '';
   const isSuelta = showLabel && projectLabel === 'Suelta';
-  const borderColor = isProjectTask && projectLabelColor ? projectLabelColor : undefined;
+  const borderColor = !hideProjectLabel && isProjectTask && projectLabelColor ? projectLabelColor : sectionAccentColor;
 
   return (
     <View style={styles.taskWrapper}>
@@ -63,8 +69,8 @@ export function TaskCard({
           styles.taskCard,
           task.is_completed && styles.taskCardCompleted,
           hasSubtasks && styles.taskCardWithSubtasks,
-          isProjectTask && styles.taskCardProject,
-          borderColor ? { borderLeftColor: borderColor } : undefined,
+          !hideProjectLabel && isProjectTask && styles.taskCardProject,
+          borderColor ? { borderLeftWidth: sectionAccentColor ? 3 : 4, borderLeftColor: borderColor } : undefined,
         ]}
       >
         {task.is_priority && !task.is_completed && (
