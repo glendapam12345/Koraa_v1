@@ -9,7 +9,7 @@ export interface UserPreferences {
   age?: number;
   favorite_activities?: string[];
   interests?: string[];
-  other_preferences?: Record<string, unknown>;
+  other_preferences?: Record<string, any>;
 }
 
 export interface CheckInContext {
