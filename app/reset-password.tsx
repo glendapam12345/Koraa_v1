@@ -6,16 +6,56 @@ import { GradientButton } from '@/components/GradientButton';
 import { supabase } from '@/lib/supabase';
 import { Sparkles } from 'lucide-react-native';
 
-function parseTokensFromUrl(url: string | null): { access_token?: string; refresh_token?: string } | null {
+function parseTokensFromUrl(url: string | null): { access_token?: string; refresh_token?: string; type?: string } | null {
   if (!url) return null;
-  const hashIndex = url.indexOf('#');
-  if (hashIndex === -1) return null;
-  const fragment = url.slice(hashIndex + 1);
-  const params = new URLSearchParams(fragment);
-  const access_token = params.get('access_token') ?? undefined;
-  const refresh_token = params.get('refresh_token') ?? undefined;
+  
+  let access_token: string | undefined;
+  let refresh_token: string | undefined;
+  let type: string | undefined;
+  
+  try {
+    // Si es una URL HTTP completa (https://...)
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      const urlObj = new URL(url);
+      // Los tokens pueden estar en el hash (#) o en query params (?)
+      if (urlObj.hash) {
+        const hashParams = new URLSearchParams(urlObj.hash.slice(1));
+        access_token = hashParams.get('access_token') ?? undefined;
+        refresh_token = hashParams.get('refresh_token') ?? undefined;
+        type = hashParams.get('type') ?? undefined;
+      }
+      // Si no hay hash, buscar en query params
+      if (!access_token && urlObj.searchParams) {
+        access_token = urlObj.searchParams.get('access_token') ?? undefined;
+        refresh_token = urlObj.searchParams.get('refresh_token') ?? undefined;
+        type = urlObj.searchParams.get('type') ?? undefined;
+      }
+    }
+    // Si es un deep link (myapp://reset-password#...)
+    else if (url.includes('#')) {
+      const hashIndex = url.indexOf('#');
+      const fragment = url.slice(hashIndex + 1);
+      const params = new URLSearchParams(fragment);
+      access_token = params.get('access_token') ?? undefined;
+      refresh_token = params.get('refresh_token') ?? undefined;
+      type = params.get('type') ?? undefined;
+    }
+    // Si tiene query params directamente
+    else if (url.includes('?')) {
+      const urlObj = new URL(url, 'http://dummy.com'); // Base URL dummy para parsear
+      access_token = urlObj.searchParams.get('access_token') ?? undefined;
+      refresh_token = urlObj.searchParams.get('refresh_token') ?? undefined;
+      type = urlObj.searchParams.get('type') ?? undefined;
+    }
+  } catch (error) {
+    console.error('Error parsing URL:', error);
+    return null;
+  }
+  
+  // Para reset password, necesitamos access_token y refresh_token
   if (!access_token || !refresh_token) return null;
-  return { access_token, refresh_token };
+  
+  return { access_token, refresh_token, type };
 }
 
 export default function ResetPasswordScreen() {
@@ -26,32 +66,58 @@ export default function ResetPasswordScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleIncomingUrl = useCallback(async (url: string | null) => {
-    const tokens = parseTokensFromUrl(url);
-    if (!tokens) {
+    if (!url) {
       setStatus('invalid');
       return;
     }
+    
+    console.log('[ResetPassword] Processing URL:', url.substring(0, 100)); // Log parcial por seguridad
+    
+    const tokens = parseTokensFromUrl(url);
+    if (!tokens) {
+      console.log('[ResetPassword] No tokens found in URL');
+      setStatus('invalid');
+      return;
+    }
+    
+    console.log('[ResetPassword] Tokens found, setting session...');
     const { error: sessionError } = await supabase.auth.setSession({
       access_token: tokens.access_token!,
       refresh_token: tokens.refresh_token!,
     });
+    
     if (sessionError) {
+      console.error('[ResetPassword] Session error:', sessionError.message);
       setError(sessionError.message);
       setStatus('invalid');
       return;
     }
+    
+    console.log('[ResetPassword] Session set successfully');
     setStatus('form');
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // En web, los parámetros pueden venir en window.location
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        const currentUrl = window.location.href;
+        if (currentUrl.includes('reset-password') || currentUrl.includes('access_token')) {
+          await handleIncomingUrl(currentUrl);
+          return;
+        }
+      }
+      
+      // En mobile, usar Linking
       const url = await Linking.getInitialURL();
       if (cancelled) return;
-      if (url && url.includes('reset-password')) {
+      if (url && (url.includes('reset-password') || url.includes('access_token'))) {
         await handleIncomingUrl(url);
         return;
       }
+      
+      // Si no hay URL con tokens, verificar si hay sesión activa
       const { data: { session } } = await supabase.auth.getSession();
       if (cancelled) return;
       if (session) {
@@ -60,9 +126,30 @@ export default function ResetPasswordScreen() {
         setStatus('invalid');
       }
     })();
+    
     const sub = Linking.addEventListener('url', ({ url }) => {
-      if (url && url.includes('reset-password')) handleIncomingUrl(url);
+      if (url && (url.includes('reset-password') || url.includes('access_token'))) {
+        handleIncomingUrl(url);
+      }
     });
+    
+    // En web, también escuchar cambios en window.location
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const handleHashChange = () => {
+        const currentUrl = window.location.href;
+        if (currentUrl.includes('reset-password') || currentUrl.includes('access_token')) {
+          handleIncomingUrl(currentUrl);
+        }
+      };
+      window.addEventListener('hashchange', handleHashChange);
+      
+      return () => {
+        cancelled = true;
+        sub.remove();
+        window.removeEventListener('hashchange', handleHashChange);
+      };
+    }
+    
     return () => {
       cancelled = true;
       sub.remove();

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
+import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
@@ -90,9 +91,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetPasswordForEmail = async (email: string) => {
-    // Redirigir a la app para que el usuario ponga la nueva contraseña dentro de la app.
-    // En Supabase Dashboard → Auth → URL Configuration → Redirect URLs añade: myapp://reset-password
-    const redirectTo = 'myapp://reset-password';
+    // En mobile usa deep link, en web usa URL HTTP
+    // En Supabase Dashboard → Auth → URL Configuration → Redirect URLs añade:
+    // - myapp://reset-password (para iOS/Android)
+    // - https://tu-dominio.com/reset-password (para web) o http://localhost:8081/reset-password (desarrollo)
+    let redirectTo: string;
+    
+    if (Platform.OS === 'web') {
+      // En web, usar la URL actual de la página + /reset-password
+      if (typeof window !== 'undefined') {
+        const baseUrl = window.location.origin;
+        redirectTo = `${baseUrl}/reset-password`;
+      } else {
+        // Fallback para desarrollo
+        redirectTo = 'http://localhost:8081/reset-password';
+      }
+    } else {
+      // En mobile, usar deep link
+      redirectTo = 'myapp://reset-password';
+    }
+    
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo,
     });
