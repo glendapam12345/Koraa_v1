@@ -799,24 +799,67 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {/* Lista de tareas */}
-        {!loading && incompleteTasks.length > 0 && (
-          <View style={styles.tasksContainer}>
-            <TaskList
-              tasks={tasks}
-              incompleteTasks={incompleteTasks}
-              expandedTasks={expandedTasks}
-              menuOpen={menuOpen}
-              onToggleTask={handleToggleTask}
-              onToggleExpansion={toggleTaskExpansion}
-              onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
-              onEditTask={handleEditTask}
-              onDeleteTask={handleDeleteTask}
-              getCategoryColor={getCategoryColor}
-              onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
-            />
-          </View>
-        )}
+        {/* Lista de tareas organizadas por proyecto */}
+        {!loading && incompleteTasks.length > 0 && (() => {
+          // Agrupar tareas por proyecto
+          const tasksByProject = new Map<string | null, typeof incompleteTasks>();
+          const standaloneTasks: typeof incompleteTasks = [];
+          
+          incompleteTasks.forEach(task => {
+            if (task.project_id) {
+              if (!tasksByProject.has(task.project_id)) {
+                tasksByProject.set(task.project_id, []);
+              }
+              tasksByProject.get(task.project_id)!.push(task);
+            } else {
+              standaloneTasks.push(task);
+            }
+          });
+
+          return (
+            <View style={styles.tasksContainer}>
+              {/* Tareas de proyectos */}
+              {Array.from(tasksByProject.entries()).map(([projectId, projectTasks]) => (
+                <View key={`project-${projectId}`} style={styles.projectSection}>
+                  <Text style={styles.projectSectionTitle}>Proyecto</Text>
+                  <TaskList
+                    tasks={projectTasks}
+                    incompleteTasks={projectTasks}
+                    expandedTasks={expandedTasks}
+                    menuOpen={menuOpen}
+                    onToggleTask={handleToggleTask}
+                    onToggleExpansion={toggleTaskExpansion}
+                    onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+                    onEditTask={handleEditTask}
+                    onDeleteTask={handleDeleteTask}
+                    getCategoryColor={getCategoryColor}
+                    onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
+                  />
+                </View>
+              ))}
+              
+              {/* Tareas sueltas */}
+              {standaloneTasks.length > 0 && (
+                <View style={styles.standaloneSection}>
+                  <Text style={styles.standaloneSectionTitle}>Tareas sueltas</Text>
+                  <TaskList
+                    tasks={standaloneTasks}
+                    incompleteTasks={standaloneTasks}
+                    expandedTasks={expandedTasks}
+                    menuOpen={menuOpen}
+                    onToggleTask={handleToggleTask}
+                    onToggleExpansion={toggleTaskExpansion}
+                    onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+                    onEditTask={handleEditTask}
+                    onDeleteTask={handleDeleteTask}
+                    getCategoryColor={getCategoryColor}
+                    onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
+                  />
+                </View>
+              )}
+            </View>
+          );
+        })()}
 
         {/* Mensaje cuando no hay tareas pendientes pero sí completadas */}
         {!loading && todayMood && incompleteTasks.length === 0 && tasks.length > 0 && !dismissedCelebration && (
@@ -1148,10 +1191,10 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   flowGuideSection: {
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.md,
+    padding: THEME.spacing.lg,
+    marginBottom: THEME.spacing.lg,
     marginHorizontal: THEME.spacing.lg,
     ...THEME.shadows.soft,
   },
@@ -1306,6 +1349,27 @@ const styles = StyleSheet.create({
   },
   tasksContainer: {
     gap: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.lg,
+  },
+  projectSection: {
+    marginBottom: THEME.spacing.lg,
+  },
+  projectSectionTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+  },
+  standaloneSection: {
+    marginTop: THEME.spacing.lg,
+  },
+  standaloneSectionTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
   },
   emptyState: {
     backgroundColor: THEME.colors.fill[200],
