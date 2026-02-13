@@ -14,6 +14,7 @@ export interface Task {
   subtasks?: Task[];
   parent_task_id: string | null;
   project_id?: string | null;
+  scheduled_date?: string | null;
 }
 
 export function useTasks(

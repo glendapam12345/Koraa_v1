@@ -772,16 +772,20 @@ export default function TodayScreen() {
           />
         )}
 
-        {/* Guía visual del flujo - Compacta */}
+        {/* Guía visual del flujo - Cómo funciona Koraa */}
         {!loading && (
           <View style={styles.flowGuideSection}>
-            <Text style={styles.flowGuideTitle}>¿Cómo funciona?</Text>
+            <View style={styles.flowGuideHeader}>
+              <Text style={styles.flowGuideTitle}>¿Cómo funciona Koraa?</Text>
+              <Sparkles size={18} color={THEME.colors.gradient.blue} />
+            </View>
             <View style={styles.flowStepsContainer}>
               <View style={styles.flowStep}>
                 <View style={[styles.flowStepNumber, styles.flowStepNumberActive]}>
                   <PenTool size={14} color="#FFFFFF" />
                 </View>
                 <Text style={styles.flowStepLabel}>Vaciar</Text>
+                <Text style={styles.flowStepDesc}>Agrega tus tareas</Text>
               </View>
               <View style={styles.flowArrow}>
                 <ArrowRight size={14} color={THEME.colors.text.secondary} />
@@ -791,6 +795,7 @@ export default function TodayScreen() {
                   <Heart size={14} color={THEME.colors.text.secondary} />
                 </View>
                 <Text style={styles.flowStepLabel}>Sentir</Text>
+                <Text style={styles.flowStepDesc}>Di cómo te sientes</Text>
               </View>
               <View style={styles.flowArrow}>
                 <ArrowRight size={14} color={THEME.colors.text.secondary} />
@@ -800,6 +805,7 @@ export default function TodayScreen() {
                   <Target size={14} color={THEME.colors.text.secondary} />
                 </View>
                 <Text style={styles.flowStepLabel}>Hoy</Text>
+                <Text style={styles.flowStepDesc}>Ve tus prioridades</Text>
               </View>
             </View>
           </View>
