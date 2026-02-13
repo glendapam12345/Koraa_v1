@@ -13,9 +13,34 @@ interface MoodCardProps {
   onRefresh: () => void;
 }
 
+const getMoodEmoji = (mood: string): string => {
+  const moodLower = mood.toLowerCase();
+  switch (moodLower) {
+    case 'tranquila':
+      return '😌';
+    case 'enfocada':
+      return '🎯';
+    case 'motivada':
+      return '✨';
+    case 'ansiosa':
+      return '😰';
+    case 'agotada':
+      return '😔';
+    case 'abrumada':
+      return '🥺';
+    default:
+      return '💭';
+  }
+};
+
 export const MoodCard = memo(function MoodCard({ todayMood, energy, time, focusLevel, onRefresh }: MoodCardProps) {
   const moodTitle = useMemo(
     () => todayMood.charAt(0).toUpperCase() + todayMood.slice(1),
+    [todayMood]
+  );
+
+  const moodEmoji = useMemo(
+    () => getMoodEmoji(todayMood),
     [todayMood]
   );
 
@@ -34,9 +59,11 @@ export const MoodCard = memo(function MoodCard({ todayMood, energy, time, focusL
       <View style={styles.moodHeader}>
         <View style={{ flex: 1 }}>
           <Text style={styles.moodLabel}>Hoy te sientes</Text>
-          <Text style={styles.moodTitle}>
-            {moodTitle}
-          </Text>
+          <View style={styles.moodTitleContainer}>
+            <Text style={styles.moodTitle}>
+              {moodEmoji} {moodTitle}
+            </Text>
+          </View>
         </View>
         <TouchableOpacity
           style={styles.refreshButton}
@@ -112,6 +139,10 @@ const styles = StyleSheet.create({
     color: THEME.colors.fill[100],
     opacity: 0.9,
     fontSize: 11,
+  },
+  moodTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   moodTitle: {
     ...THEME.typography.h3,
