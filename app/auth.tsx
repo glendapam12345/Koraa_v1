@@ -31,6 +31,24 @@ export default function AuthScreen() {
     return name.trim().length >= 2;
   };
 
+  // Mensajes de error de Supabase en español y con sugerencias
+  const getAuthErrorMessage = (message: string): string => {
+    const lower = message.toLowerCase();
+    if (lower.includes('invalid login credentials') || lower.includes('invalid_credentials')) {
+      return 'Email o contraseña incorrectos. Revisa que estén bien escritos o regístrate si aún no tienes cuenta.';
+    }
+    if (lower.includes('email not confirmed')) {
+      return 'Revisa tu correo y confirma tu cuenta antes de iniciar sesión.';
+    }
+    if (lower.includes('user already registered') || lower.includes('already registered')) {
+      return 'Este email ya está registrado. Inicia sesión o usa "¿Olvidaste tu contraseña?" si no recuerdas la contraseña.';
+    }
+    if (lower.includes('password')) {
+      return 'Revisa tu contraseña (mínimo 6 caracteres).';
+    }
+    return message;
+  };
+
   const handleAuth = async () => {
     setError('');
 
@@ -71,21 +89,21 @@ export default function AuthScreen() {
       if (isSignUp) {
         const { error } = await signUp(email, password, fullName);
         if (error) {
-          setError(error.message);
+          setError(getAuthErrorMessage(error.message));
         } else {
           router.replace('/onboarding/welcome');
         }
       } else {
         const { error } = await signIn(email, password);
         if (error) {
-          setError(error.message);
+          setError(getAuthErrorMessage(error.message));
         } else {
           router.replace('/(tabs)');
         }
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Ocurrió un error inesperado';
-      setError(message);
+      setError(getAuthErrorMessage(message));
     } finally {
       setLoading(false);
     }
