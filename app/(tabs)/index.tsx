@@ -68,7 +68,6 @@ export default function TodayScreen() {
   const [meditationType, setMeditationType] = useState<'morning' | 'evening'>('morning');
   const [morningMeditationDone, setMorningMeditationDone] = useState(false);
   const [eveningMeditationDone, setEveningMeditationDone] = useState(false);
-  const [showPrioritizationTip, setShowPrioritizationTip] = useState(false);
   const [dismissedCelebration, setDismissedCelebration] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -595,40 +594,21 @@ export default function TodayScreen() {
           />
         }
       >
-        {/* Título de bienvenida */}
+        {/* Título de bienvenida con racha */}
         {!loading && (
           <View style={styles.welcomeSection}>
-            <Text style={styles.welcomeTitle}>{getGreeting} ✨</Text>
-            <Text style={styles.welcomeSubtitle}>Tu día organizado sintiendo</Text>
-          </View>
-        )}
-
-        {/* Tip de priorización automática - Solo la primera vez */}
-        {!loading && showPrioritizationTip && (
-          <View style={styles.prioritizationTip}>
-            <Sparkles size={18} color={THEME.colors.gradient.blue} />
-            <Text style={styles.prioritizationTipText}>
-              Kora prioriza automáticamente según cómo te sientes
+            <View style={styles.welcomeHeader}>
+              <Text style={styles.welcomeTitle}>{getGreeting} ✨</Text>
+              {currentStreak > 0 && (
+                <View style={styles.streakBadgeInline}>
+                  <Flame size={16} color="#FF6B6B" />
+                  <Text style={styles.streakTextInline}>{currentStreak}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.welcomeSubtitle}>
+              Koraa prioriza tus tareas según cómo te sientes
             </Text>
-            <TouchableOpacity
-              onPress={() => {
-                setShowPrioritizationTip(false);
-                AsyncStorage.setItem('hasSeenPrioritizationTip', 'true').catch(() => {});
-              }}
-              style={styles.prioritizationTipClose}
-              accessibilityRole="button"
-              accessibilityLabel="Cerrar"
-            >
-              <Text style={styles.prioritizationTipCloseText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Racha sutil en la parte superior */}
-        {!loading && currentStreak > 0 && (
-          <View style={styles.streakBadge}>
-            <Flame size={18} color="#FF6B6B" />
-            <Text style={styles.streakText}>{currentStreak}</Text>
           </View>
         )}
 
@@ -735,36 +715,53 @@ export default function TodayScreen() {
           />
         )}
 
-        {/* Guía visual del flujo - Compacta */}
+        {/* Guía visual del flujo - Mejorada para claridad */}
         {!loading && (
-          <View style={styles.flowGuideSection}>
+          <TouchableOpacity
+            style={styles.flowGuideSection}
+            onPress={() => {
+              // Aquí podrías abrir un modal o navegar a una pantalla de ayuda
+              // Por ahora solo hacemos que sea interactivo
+            }}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Ver cómo funciona Koraa"
+            accessibilityHint="Toca para ver una explicación detallada del flujo"
+          >
+            <View style={styles.flowGuideHeader}>
+              <Text style={styles.flowGuideTitle}>¿Cómo funciona Koraa?</Text>
+              <Sparkles size={18} color={THEME.colors.gradient.blue} />
+            </View>
             <View style={styles.flowStepsContainer}>
               <View style={styles.flowStep}>
                 <View style={[styles.flowStepNumber, styles.flowStepNumberActive]}>
-                  <PenTool size={14} color="#FFFFFF" />
+                  <PenTool size={16} color="#FFFFFF" />
                 </View>
                 <Text style={styles.flowStepLabel}>Vaciar</Text>
+                <Text style={styles.flowStepDesc}>Agrega tus tareas</Text>
               </View>
               <View style={styles.flowArrow}>
-                <ArrowRight size={14} color={THEME.colors.text.secondary} />
+                <ArrowRight size={16} color={THEME.colors.text.secondary} />
               </View>
               <View style={styles.flowStep}>
                 <View style={styles.flowStepNumber}>
-                  <Heart size={14} color={THEME.colors.text.secondary} />
+                  <Heart size={16} color={THEME.colors.text.secondary} />
                 </View>
                 <Text style={styles.flowStepLabel}>Sentir</Text>
+                <Text style={styles.flowStepDesc}>Di cómo te sientes</Text>
               </View>
               <View style={styles.flowArrow}>
-                <ArrowRight size={14} color={THEME.colors.text.secondary} />
+                <ArrowRight size={16} color={THEME.colors.text.secondary} />
               </View>
               <View style={styles.flowStep}>
                 <View style={styles.flowStepNumber}>
-                  <Target size={14} color={THEME.colors.text.secondary} />
+                  <Target size={16} color={THEME.colors.text.secondary} />
                 </View>
-                <Text style={styles.flowStepLabel}>Inicio</Text>
+                <Text style={styles.flowStepLabel}>Accionar</Text>
+                <Text style={styles.flowStepDesc}>Ve tus prioridades</Text>
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
 
         {/* Cuadro de Prioridades con contexto */}
@@ -1131,16 +1128,38 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.lg,
     paddingHorizontal: THEME.spacing.lg,
   },
+  welcomeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: THEME.spacing.xs,
+  },
   welcomeTitle: {
     ...THEME.typography.h1,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
-    marginBottom: THEME.spacing.xs,
+    flex: 1,
+  },
+  streakBadgeInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.pill,
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: 4,
+    gap: 4,
+  },
+  streakTextInline: {
+    ...THEME.typography.caption,
+    color: '#FF6B6B',
+    fontFamily: THEME.fonts.heading.bold,
+    fontSize: 13,
   },
   welcomeSubtitle: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
     fontSize: 15,
+    lineHeight: 22,
   },
   prioritizationTip: {
     flexDirection: 'row',
@@ -1171,31 +1190,43 @@ const styles = StyleSheet.create({
   flowGuideSection: {
     backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.rounded,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
+    padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
     marginHorizontal: THEME.spacing.lg,
+    ...THEME.shadows.soft,
+  },
+  flowGuideHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: THEME.spacing.md,
+  },
+  flowGuideTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
   },
   flowStepsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: THEME.spacing.xs,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    paddingHorizontal: THEME.spacing.xs,
   },
   flowStep: {
+    flex: 1,
     alignItems: 'center',
-    minWidth: 60,
+    minWidth: 70,
   },
   flowStepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: THEME.colors.fill[100],
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: THEME.colors.stroke[100],
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: THEME.spacing.xs / 2,
+    marginBottom: THEME.spacing.xs,
   },
   flowStepNumberActive: {
     backgroundColor: THEME.colors.gradient.blue,
@@ -1203,14 +1234,22 @@ const styles = StyleSheet.create({
   },
   flowStepLabel: {
     ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.medium,
+    fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
-    fontSize: 11,
+    fontSize: 12,
+    marginBottom: 2,
     textAlign: 'center',
   },
+  flowStepDesc: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    fontSize: 10,
+    textAlign: 'center',
+    lineHeight: 14,
+  },
   flowArrow: {
-    paddingHorizontal: THEME.spacing.xs / 2,
-    marginBottom: THEME.spacing.xs / 2,
+    paddingHorizontal: THEME.spacing.xs,
+    paddingTop: THEME.spacing.xs * 2,
   },
   prioritiesCard: {
     backgroundColor: THEME.colors.fill[100],
