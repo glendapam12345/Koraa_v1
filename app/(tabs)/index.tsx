@@ -805,6 +805,33 @@ export default function TodayScreen() {
           </View>
         )}
 
+        {/* CTA para agregar cuando no hay tareas pendientes */}
+        {!loading && incompleteTasks.length === 0 && (
+          <View style={styles.addFromInicioCard}>
+            <Text style={styles.addFromInicioTitle}>¿Qué quieres hacer hoy?</Text>
+            <Text style={styles.addFromInicioSubtitle}>
+              Agrega tareas sueltas o crea un proyecto en la pestaña Vaciar.
+            </Text>
+            <TouchableOpacity
+              style={styles.addFromInicioButton}
+              onPress={() => router.push('/(tabs)/vaciar')}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Agregar tareas o proyectos"
+            >
+              <LinearGradient
+                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.addFromInicioButtonGradient}
+              >
+                <Plus size={20} color="#FFFFFF" />
+                <Text style={styles.addFromInicioButtonText}>Agregar tareas o proyectos</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Cuadro de Prioridades - Simplificado */}
         {!loading && incompleteTasks.length > 0 && (
           <View style={styles.prioritiesCard}>
@@ -904,8 +931,10 @@ export default function TodayScreen() {
                         <FolderKanban size={18} color={THEME.colors.gradient.blue} />
                       </View>
                       <View>
-                        <Text style={styles.projectSectionTitle}>Proyecto</Text>
-                        <Text style={styles.projectSectionSubtitle}>{projectTasks.length} {projectTasks.length === 1 ? 'tarea' : 'tareas'}</Text>
+                        <Text style={styles.projectSectionTitle}>Tareas de proyecto</Text>
+                        <Text style={styles.projectSectionSubtitle}>
+                          {projectTasks.length} {projectTasks.length === 1 ? 'tarea' : 'tareas'} · Agrupadas por proyecto
+                        </Text>
                       </View>
                     </View>
                   </View>
@@ -937,7 +966,9 @@ export default function TodayScreen() {
                       </View>
                       <View>
                         <Text style={styles.standaloneSectionTitle}>Tareas sueltas</Text>
-                        <Text style={styles.standaloneSectionSubtitle}>{standaloneTasks.length} {standaloneTasks.length === 1 ? 'tarea' : 'tareas'}</Text>
+                        <Text style={styles.standaloneSectionSubtitle}>
+                          {standaloneTasks.length} {standaloneTasks.length === 1 ? 'tarea' : 'tareas'} · Sin asignar a ningún proyecto
+                        </Text>
                       </View>
                     </View>
                   </View>
@@ -958,6 +989,18 @@ export default function TodayScreen() {
                   </View>
                 </View>
               )}
+
+              {/* Botón para agregar más tareas (siempre visible cuando hay lista) */}
+              <TouchableOpacity
+                style={styles.agregarMasButton}
+                onPress={() => router.push('/(tabs)/vaciar')}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Agregar más tareas o proyectos"
+              >
+                <Plus size={18} color={THEME.colors.gradient.blue} />
+                <Text style={styles.agregarMasButtonText}>Agregar más tareas o proyectos</Text>
+              </TouchableOpacity>
             </View>
           );
         })()}
@@ -1371,24 +1414,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-<<<<<<< HEAD
-    marginBottom: THEME.spacing.sm,
-=======
     marginBottom: THEME.spacing.md,
     gap: THEME.spacing.md,
   },
   prioritiesHeaderLeft: {
     flex: 1,
->>>>>>> e596aa8 (feat: Mejorar diferenciación visual entre tareas de proyectos y tareas sueltas)
   },
   prioritiesTitle: {
     ...THEME.typography.h3,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
     marginBottom: 4,
-<<<<<<< HEAD
-    textAlign: 'center',
-=======
   },
   prioritiesSubtitle: {
     ...THEME.typography.caption,
@@ -1411,7 +1447,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontFamily: THEME.fonts.heading.bold,
     fontSize: 14,
->>>>>>> e596aa8 (feat: Mejorar diferenciación visual entre tareas de proyectos y tareas sueltas)
   },
   prioritiesContext: {
     marginBottom: THEME.spacing.sm,
@@ -1584,6 +1619,66 @@ const styles = StyleSheet.create({
   tasksContainer: {
     gap: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.lg,
+    paddingBottom: THEME.spacing.lg,
+  },
+  addFromInicioCard: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.lg,
+    marginHorizontal: THEME.spacing.lg,
+    marginBottom: THEME.spacing.lg,
+    alignItems: 'center',
+    ...THEME.shadows.soft,
+  },
+  addFromInicioTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    marginBottom: THEME.spacing.xs,
+    textAlign: 'center',
+  },
+  addFromInicioSubtitle: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.sm,
+  },
+  addFromInicioButton: {
+    borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+    alignSelf: 'stretch',
+    ...THEME.shadows.soft,
+  },
+  addFromInicioButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.lg,
+  },
+  addFromInicioButtonText: {
+    ...THEME.typography.body,
+    color: '#FFFFFF',
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  agregarMasButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.md,
+    marginTop: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.standard,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.fill[100],
+  },
+  agregarMasButtonText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
   },
   projectSection: {
     marginBottom: THEME.spacing.xl,
@@ -1613,10 +1708,6 @@ const styles = StyleSheet.create({
     ...THEME.typography.h3,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
-<<<<<<< HEAD
-    marginBottom: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.lg,
-=======
     fontSize: 16,
   },
   projectSectionSubtitle: {
@@ -1627,15 +1718,14 @@ const styles = StyleSheet.create({
   },
   projectSectionContent: {
     marginTop: THEME.spacing.xs,
->>>>>>> e596aa8 (feat: Mejorar diferenciación visual entre tareas de proyectos y tareas sueltas)
   },
   standaloneSection: {
-    marginTop: THEME.spacing.xl,
+    marginTop: THEME.spacing.md,
     backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    borderLeftWidth: 4,
+    borderLeftColor: THEME.colors.stroke[100],
   },
   standaloneSectionHeader: {
     marginBottom: THEME.spacing.md,
@@ -1657,10 +1747,6 @@ const styles = StyleSheet.create({
     ...THEME.typography.h3,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
-<<<<<<< HEAD
-    marginBottom: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.lg,
-=======
     fontSize: 16,
   },
   standaloneSectionSubtitle: {
@@ -1671,7 +1757,6 @@ const styles = StyleSheet.create({
   },
   standaloneSectionContent: {
     marginTop: THEME.spacing.xs,
->>>>>>> e596aa8 (feat: Mejorar diferenciación visual entre tareas de proyectos y tareas sueltas)
   },
   emptyState: {
     backgroundColor: THEME.colors.fill[200],
