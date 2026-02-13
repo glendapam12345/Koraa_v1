@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 
 type AuthContextType = {
   session: Session | null;
@@ -19,21 +20,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
+    // Cargar sesión inicial con manejo de errores
+    supabase.auth.getSession()
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          logger.error('Error obteniendo sesión:', error);
+        }
         setSession(session);
         setUser(session?.user ?? null);
+        setLoading(false);
+      })
+      .catch((error) => {
+        logger.error('Error inesperado obteniendo sesión:', error);
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+      });
+
+    // Escuchar cambios de autenticación
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      (async () => {
+        try {
+          setSession(session);
+          setUser(session?.user ?? null);
+        } catch (error) {
+          logger.error('Error en onAuthStateChange:', error);
+        }
       })();
     });
 
     return () => {
-      authListener.subscription.unsubscribe();
+      authListener?.subscription?.unsubscribe();
     };
   }, []);
 
