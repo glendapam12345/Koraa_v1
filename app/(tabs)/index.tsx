@@ -314,20 +314,6 @@ export default function TodayScreen() {
       }
     })();
 
-    // Mostrar tip de priorización automática solo la primera vez
-    (async () => {
-      try {
-        const hasSeenTip = await AsyncStorage.getItem('hasSeenPrioritizationTip');
-        if (!hasSeenTip) {
-          setTimeout(() => {
-            setShowPrioritizationTip(true);
-          }, 1000);
-        }
-      } catch (error) {
-        logger.debug('Error checking prioritization tip:', error);
-      }
-    })();
-
     // Cleanup: limpiar todos los timeouts si el componente se desmonta
     return () => {
       if (timeoutRef.current) {
