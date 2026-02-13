@@ -910,8 +910,8 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.fill[100],
   },
   content: {
-    padding: THEME.spacing.lg,
     paddingTop: THEME.spacing.xl * 2,
+    paddingBottom: THEME.spacing.lg,
   },
   moodCard: {
     borderRadius: THEME.borderRadius.rounded,
@@ -1266,6 +1266,7 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
+    marginHorizontal: THEME.spacing.lg,
   },
   checkInPromptText: {
     ...THEME.typography.body,
@@ -1289,7 +1290,7 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
     marginBottom: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.lg,
   },
   standaloneSection: {
     marginTop: THEME.spacing.lg,
@@ -1299,7 +1300,7 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
     marginBottom: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.lg,
   },
   emptyState: {
     backgroundColor: THEME.colors.fill[200],
@@ -1307,6 +1308,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.xl,
     alignItems: 'center',
     marginTop: THEME.spacing.lg,
+    marginHorizontal: THEME.spacing.lg,
   },
   emptyIconContainer: {
     width: 96,
@@ -1651,6 +1653,7 @@ const styles = StyleSheet.create({
   },
   checkInBanner: {
     marginBottom: THEME.spacing.md,
+    marginHorizontal: THEME.spacing.lg,
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
     ...THEME.shadows.soft,
@@ -1677,6 +1680,7 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
+    marginHorizontal: THEME.spacing.lg,
     ...THEME.shadows.soft,
   },
   summaryRow: {
@@ -1710,6 +1714,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.xl,
     alignItems: 'center',
     marginTop: THEME.spacing.lg,
+    marginHorizontal: THEME.spacing.lg,
   },
   completionIconContainer: {
     width: 80,
@@ -1748,6 +1753,7 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
+    marginHorizontal: THEME.spacing.lg,
   },
   flowGuideText: {
     ...THEME.typography.body,
@@ -1764,6 +1770,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.lg,
     marginBottom: THEME.spacing.lg,
     marginTop: THEME.spacing.sm,
+    marginHorizontal: THEME.spacing.lg,
     ...THEME.shadows.soft,
   },
   flowGuideCardTitle: {
@@ -1781,6 +1788,7 @@ const styles = StyleSheet.create({
   mainRegisterButton: {
     borderRadius: THEME.borderRadius.rounded,
     marginBottom: THEME.spacing.lg,
+    marginHorizontal: THEME.spacing.lg,
     overflow: 'hidden',
     ...THEME.shadows.soft,
   },
@@ -1816,6 +1824,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.xl,
     alignItems: 'center',
     marginBottom: THEME.spacing.lg,
+    marginHorizontal: THEME.spacing.lg,
     ...THEME.shadows.soft,
   },
   emptyStateTitle: {
@@ -1840,7 +1849,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
-    width: '100%',
+    marginHorizontal: THEME.spacing.lg,
     ...THEME.shadows.soft,
   },
   secondaryButtonGradient: {
@@ -1893,6 +1902,7 @@ const styles = StyleSheet.create({
   },
   meditationSection: {
     marginBottom: THEME.spacing.lg,
+    paddingHorizontal: THEME.spacing.lg,
   },
   meditationSectionTitle: {
     ...THEME.typography.h3,

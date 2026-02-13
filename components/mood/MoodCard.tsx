@@ -127,6 +127,7 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.sm,
     marginBottom: THEME.spacing.md,
+    marginHorizontal: THEME.spacing.lg,
   },
   moodHeader: {
     flexDirection: 'row',
