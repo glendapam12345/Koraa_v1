@@ -8,7 +8,11 @@ import { Sparkles, ArrowRight } from 'lucide-react-native';
 export default function Intro3Screen() {
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.iconContainer}>
           <View style={styles.iconCircle}>
             <Sparkles size={32} color={THEME.colors.gradient.pink} />
@@ -98,9 +102,16 @@ export default function Intro3Screen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: '100%',
+    alignSelf: 'stretch',
     backgroundColor: THEME.colors.fill[100],
   },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
   content: {
+    width: '100%',
     padding: THEME.spacing.lg,
     paddingTop: THEME.spacing.xl * 2,
   },

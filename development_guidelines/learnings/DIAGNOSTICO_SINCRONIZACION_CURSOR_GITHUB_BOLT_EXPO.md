@@ -111,7 +111,9 @@ El túnel de Bolt **solo funciona si Metro corre en el puerto 8081**. Si Metro u
 1. En **Cursor:** terminar cambios → `git add` → `git commit` → `git push origin main`.
 2. En **Bolt:** cuando diga "I've detected changes made externally" → **Update codebase with external changes** (Write changes).
 3. En **Bolt:** usar **Start application** (no escribir `npm run dev` a mano si antes daba conflicto de puerto).
-4. En **Expo Go:** abrir el proyecto (QR o URL); si no cambia nada, cerrar la app y reabrirla o Reload.
+4. En **Expo Go:** abrir el proyecto con **el QR o la URL que muestra Bolt** (así Bolt y Expo Go usan el mismo Metro y ves lo mismo en ambos). Si no cambia nada, cerrar la app y reabrirla o Reload.
+
+**Guía corta:** Ver [BOLT_Y_EXPO_GO_CONECTADOS.md](BOLT_Y_EXPO_GO_CONECTADOS.md) para pasos concretos de “Bolt y Expo conectados”.
 
 Si Bolt sigue sin poder usar 8081, la alternativa es desarrollar y probar en **Cursor + tu Mac**: terminal en la carpeta del proyecto, `npm run dev`, y abrir en simulador o Expo Go en el mismo Mac / misma red.
 
