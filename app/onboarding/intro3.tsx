@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
-import { Sparkles, ArrowRight } from 'lucide-react-native';
+import { Sparkles, ChevronDown } from 'lucide-react-native';
 
 export default function Intro3Screen() {
   return (
@@ -26,7 +26,7 @@ export default function Intro3Screen() {
           Kora prioriza por ti. Solo enfócate en lo que realmente importa hoy.
         </Text>
 
-        {/* Flujo visual completo */}
+        {/* Flujo visual: pasos en columna con flechas hacia abajo */}
         <View style={styles.flowContainer}>
           <View style={styles.flowStep}>
             <View style={styles.flowStepNumber}>
@@ -38,8 +38,8 @@ export default function Intro3Screen() {
             </View>
           </View>
 
-          <View style={styles.flowArrow}>
-            <ArrowRight size={20} color={THEME.colors.text.secondary} />
+          <View style={styles.flowArrowDown}>
+            <ChevronDown size={24} color={THEME.colors.text.secondary} />
           </View>
 
           <View style={styles.flowStep}>
@@ -52,8 +52,8 @@ export default function Intro3Screen() {
             </View>
           </View>
 
-          <View style={styles.flowArrow}>
-            <ArrowRight size={20} color={THEME.colors.text.secondary} />
+          <View style={styles.flowArrowDown}>
+            <ChevronDown size={24} color={THEME.colors.text.secondary} />
           </View>
 
           <View style={styles.flowStep}>
@@ -164,16 +164,18 @@ const styles = StyleSheet.create({
   flowContainer: {
     marginTop: THEME.spacing.xl,
     marginBottom: THEME.spacing.lg,
+    width: '100%',
   },
   flowStep: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: THEME.spacing.md,
+    width: '100%',
+    marginBottom: 0,
   },
   flowStepNumber: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: THEME.colors.gradient.blue,
     alignItems: 'center',
     justifyContent: 'center',
@@ -186,21 +188,24 @@ const styles = StyleSheet.create({
   },
   flowStepContent: {
     flex: 1,
+    minWidth: 0,
   },
   flowStepTitle: {
-    ...THEME.typography.body,
+    ...THEME.typography.h3,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   flowStepDesc: {
-    ...THEME.typography.caption,
+    ...THEME.typography.body,
     color: THEME.colors.text.secondary,
+    lineHeight: 22,
   },
-  flowArrow: {
+  flowArrowDown: {
     alignItems: 'center',
-    marginLeft: 18,
-    marginBottom: THEME.spacing.md,
+    justifyContent: 'center',
+    paddingVertical: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
   },
   resultCard: {
     borderRadius: THEME.borderRadius.rounded,
