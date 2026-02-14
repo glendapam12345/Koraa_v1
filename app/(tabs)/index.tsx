@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, RefreshControl, Modal } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -52,7 +53,10 @@ const NoPendingTasksCelebration = lazy(() =>
     .catch(() => ({ default: () => null as any }))
 );
 
+const HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 };
+
 export default function TodayScreen() {
+  const insets = useSafeAreaInsets();
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [expandedDetailsTasks, setExpandedDetailsTasks] = useState<Set<string>>(new Set());
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -673,7 +677,7 @@ export default function TodayScreen() {
   return (
     <View style={styles.container}>
       <ScrollView 
-        contentContainerStyle={styles.content} 
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]} 
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -820,6 +824,7 @@ export default function TodayScreen() {
               style={styles.flowGuideHeader}
               onPress={() => setFlowGuideCollapsed((c) => !c)}
               activeOpacity={0.7}
+              hitSlop={HIT_SLOP}
               accessibilityRole="button"
               accessibilityLabel={flowGuideCollapsed ? 'Expandir guía Cómo funciona Koraa' : 'Contraer guía'}
             >
@@ -965,6 +970,7 @@ export default function TodayScreen() {
                   style={styles.addFromInicioButton}
                   onPress={() => router.push('/(tabs)/vaciar')}
                   activeOpacity={0.8}
+                  hitSlop={HIT_SLOP}
                   accessibilityRole="button"
                   accessibilityLabel="Agregar tareas o proyectos"
                 >
@@ -1093,7 +1099,6 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.fill[100],
   },
   content: {
-    paddingTop: THEME.spacing.xl * 2,
     paddingBottom: THEME.spacing.lg,
   },
   loadingContainer: {
@@ -1768,6 +1773,7 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
     alignSelf: 'stretch',
+    minHeight: THEME.sizes.touchTarget,
     ...THEME.shadows.soft,
   },
   addFromInicioButtonGradient: {
@@ -1776,6 +1782,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: THEME.spacing.sm,
     paddingVertical: THEME.spacing.md,
+    minHeight: THEME.sizes.touchTarget,
     paddingHorizontal: THEME.spacing.lg,
   },
   addFromInicioButtonText: {
@@ -2050,8 +2057,8 @@ const styles = StyleSheet.create({
   expandButton: {
     padding: THEME.spacing.sm,
     marginRight: THEME.spacing.xs,
-    minWidth: 44,
-    minHeight: 44,
+    minWidth: THEME.sizes.touchTarget,
+    minHeight: THEME.sizes.touchTarget,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2132,8 +2139,8 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: THEME.spacing.sm,
     marginLeft: THEME.spacing.xs,
-    minWidth: 44,
-    minHeight: 44,
+    minWidth: THEME.sizes.touchTarget,
+    minHeight: THEME.sizes.touchTarget,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
@@ -2483,10 +2490,11 @@ const styles = StyleSheet.create({
   meditationButtons: {
     flexDirection: 'row',
     gap: THEME.spacing.md,
+    height: 130,
   },
   meditationButton: {
     flex: 1,
-    minHeight: 120,
+    maxHeight: 130,
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
     ...THEME.shadows.soft,
@@ -2497,11 +2505,10 @@ const styles = StyleSheet.create({
   meditationButtonGradient: {
     width: '100%',
     height: '100%',
-    padding: THEME.spacing.md,
+    padding: THEME.spacing.sm,
     alignItems: 'center',
-    gap: THEME.spacing.xs,
-    minHeight: 120,
     justifyContent: 'center',
+    gap: THEME.spacing.xs,
   },
   meditationEmoji: {
     fontSize: 32,

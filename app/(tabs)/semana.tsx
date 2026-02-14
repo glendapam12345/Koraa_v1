@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
@@ -8,6 +9,7 @@ import { Calendar, Plus, FolderKanban, FileText, ChevronRight } from 'lucide-rea
 import { router } from 'expo-router';
 
 export default function SemanaScreen() {
+  const insets = useSafeAreaInsets();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [selectedWeekStart, setSelectedWeekStart] = useState<string | null>(null);
   const showToast = useCallback((msg: string) => setToastMessage(msg), []);
@@ -42,7 +44,7 @@ export default function SemanaScreen() {
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

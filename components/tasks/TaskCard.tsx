@@ -90,6 +90,7 @@ export function TaskCard({
             style={styles.expandButton}
             onPress={onToggleExpansion}
             activeOpacity={0.7}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             accessibilityRole="button"
             accessibilityLabel={expanded ? 'Contraer subtareas' : 'Expandir subtareas'}
           >
@@ -165,6 +166,7 @@ export function TaskCard({
               style={styles.detailsToggleRow}
               onPress={onToggleDetailsExpand}
               activeOpacity={0.7}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               accessibilityRole="button"
               accessibilityLabel={expandedDetails ? 'Ocultar especificaciones' : 'Ver más especificaciones'}
             >
@@ -182,6 +184,7 @@ export function TaskCard({
           style={styles.menuButton}
           onPress={onMenuPress}
           activeOpacity={0.7}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityRole="button"
           accessibilityLabel="Más opciones"
         >
@@ -392,8 +395,8 @@ const styles = StyleSheet.create({
   expandButton: {
     padding: THEME.spacing.sm,
     marginRight: THEME.spacing.xs,
-    minWidth: 44,
-    minHeight: 44,
+    minWidth: THEME.sizes.touchTarget,
+    minHeight: THEME.sizes.touchTarget,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -526,8 +529,8 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: THEME.spacing.sm,
     marginLeft: THEME.spacing.xs,
-    minWidth: 44,
-    minHeight: 44,
+    minWidth: THEME.sizes.touchTarget,
+    minHeight: THEME.sizes.touchTarget,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,

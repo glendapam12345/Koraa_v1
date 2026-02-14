@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, RefreshControl } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
@@ -18,6 +19,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 // Categorías ahora son invisibles - se detectan automáticamente en lib/categoryDetection.ts
 
 export default function VaciarScreen() {
+  const insets = useSafeAreaInsets();
   const { suggestion, date: dateParam } = useLocalSearchParams<{ suggestion?: string; date?: string }>();
   const [taskInput, setTaskInput] = useState('');
   const [isPriority, setIsPriority] = useState(false);
@@ -409,7 +411,7 @@ export default function VaciarScreen() {
       )}
 
       <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           refreshControl={
@@ -670,7 +672,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: THEME.spacing.lg,
-    paddingTop: THEME.spacing.xl * 2,
   },
   title: {
     ...THEME.typography.h1,

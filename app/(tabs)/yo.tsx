@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, RefreshControl, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,6 +31,7 @@ type UserProfile = {
 };
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
   const [progressData, setProgressData] = useState<DayData[]>([]);
   const [currentStreak, setCurrentStreak] = useState<number>(0);
@@ -474,7 +476,7 @@ export default function ProfileScreen() {
       {/* {showConfetti && <ConfettiCelebration />} */}
 
       <ScrollView 
-        contentContainerStyle={styles.content} 
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]} 
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -1092,7 +1094,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: THEME.spacing.lg,
-    paddingTop: THEME.spacing.xl * 2,
   },
   header: {
     alignItems: 'center',

@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
@@ -22,6 +23,7 @@ const EMOTIONS = [
 ];
 
 export default function SentirScreen() {
+  const insets = useSafeAreaInsets();
   const [selectedEmotion, setSelectedEmotion] = useState<string>('');
   const [hasTasks, setHasTasks] = useState<boolean | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -106,7 +108,7 @@ export default function SentirScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]} showsVerticalScrollIndicator={false}>
         {/* Indicador de flujo */}
         <FlowIndicator currentStep="sentir" />
 
@@ -203,7 +205,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: THEME.spacing.lg,
-    paddingTop: THEME.spacing.xl * 2,
   },
   title: {
     ...THEME.typography.h1,
