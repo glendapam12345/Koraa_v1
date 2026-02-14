@@ -1,11 +1,15 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Animated } from 'react-native';
-import { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Dimensions } from 'react-native';
+import { useState, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { generatePersonalizedRecommendations, type Recommendation, type UserPreferences, type CheckInContext } from '@/lib/personalizedRecommendations';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
-import { X, Sparkles, ChevronDown, ChevronUp, Info } from 'lucide-react-native';
+import { X, Sparkles, ChevronUp } from 'lucide-react-native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = SCREEN_WIDTH - THEME.spacing.lg * 2;
+const CARD_GAP = THEME.spacing.sm;
 
 // Mapeo de categorías a emojis/ilustraciones
 const CATEGORY_ILLUSTRATIONS: Record<string, { emoji: string; gradient: [string, string, ...string[]]; title: string }> = {
@@ -97,9 +101,6 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
   const [loading, setLoading] = useState(true);
   const [selectedRecommendation, setSelectedRecommendation] = useState<Recommendation | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  const [showAllRecommendations, setShowAllRecommendations] = useState(false);
-  const animatedHeights = useRef<Map<string, Animated.Value>>(new Map());
 
   useEffect(() => {
     loadRecommendations();
@@ -172,31 +173,6 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
     setShowDetailModal(true);
   };
 
-  const toggleCategory = (category: string) => {
-    const newExpanded = new Set(expandedCategories);
-    const wasExpanded = newExpanded.has(category);
-    
-    if (wasExpanded) {
-      newExpanded.delete(category);
-    } else {
-      newExpanded.add(category);
-    }
-    
-    // Animación suave
-    if (!animatedHeights.current.has(category)) {
-      animatedHeights.current.set(category, new Animated.Value(0));
-    }
-    
-    const animValue = animatedHeights.current.get(category)!;
-    Animated.timing(animValue, {
-      toValue: wasExpanded ? 0 : 1,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-    
-    setExpandedCategories(newExpanded);
-  };
-
   if (loading) {
     return (
       <View style={styles.container}>
@@ -213,7 +189,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
     return null;
   }
 
-  // Agrupar recomendaciones por categoría
+  // Agrupar por categoría y ordenar por prioridad (más relevante primero)
   const recommendationsByCategory = new Map<string, Recommendation[]>();
   recommendations.forEach((rec) => {
     const category = getRecommendationCategory(rec);
@@ -223,6 +199,14 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
     recommendationsByCategory.get(category)!.push(rec);
   });
 
+  const categoryEntries = Array.from(recommendationsByCategory.entries())
+    .sort(([, recsA], [, recsB]) => {
+      const maxPrioA = Math.max(...recsA.map((r) => r.priority));
+      const maxPrioB = Math.max(...recsB.map((r) => r.priority));
+      return maxPrioB - maxPrioA;
+    })
+    .slice(0, 3);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -230,111 +214,56 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
         <Sparkles size={20} color={THEME.colors.gradient.blue} />
       </View>
 
-      <View style={styles.recommendationsContainer}>
-        {Array.from(recommendationsByCategory.entries())
-          .slice(0, showAllRecommendations ? 3 : 1)
-          .map(([category, categoryRecs]) => {
-            const illustration = CATEGORY_ILLUSTRATIONS[category] || CATEGORY_ILLUSTRATIONS['bienestar'];
-            const isExpanded = expandedCategories.has(category);
-            const mainRecommendation = categoryRecs[0];
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.horizontalScrollContent}
+        snapToInterval={CARD_WIDTH + CARD_GAP}
+        snapToAlignment="start"
+        decelerationRate="fast"
+      >
+        {categoryEntries.map(([category, categoryRecs]) => {
+          const illustration = CATEGORY_ILLUSTRATIONS[category] || CATEGORY_ILLUSTRATIONS['bienestar'];
+          const mainRecommendation = categoryRecs[0];
 
-            return (
-              <View key={category} style={styles.recommendationCardWrapper}>
-                <TouchableOpacity
-                  style={styles.recommendationCard}
-                  onPress={() => toggleCategory(category)}
-                  activeOpacity={0.8}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${illustration.title} - Toca para ${isExpanded ? 'cerrar' : 'expandir'}`}
-                >
-                  <LinearGradient
-                    colors={illustration.gradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.cardGradient}
-                  >
-                    <View style={styles.cardHeader}>
-                      <View style={styles.cardHeaderContent}>
-                        <Text style={styles.emoji}>{illustration.emoji}</Text>
-                        <View style={styles.cardHeaderText}>
-                          <Text style={styles.categoryTitle}>{illustration.title}</Text>
-                          <Text style={styles.recommendationTitle} numberOfLines={1}>
-                            {mainRecommendation.title}
-                          </Text>
-                          {!isExpanded && (
-                            <Text style={styles.recommendationPreview} numberOfLines={2}>
-                              {mainRecommendation.message}
-                            </Text>
-                          )}
-                        </View>
-                      </View>
-                      <View style={styles.cardHeaderRight}>
-                        {!isExpanded && (
-                          <View style={styles.expandHint}>
-                            <Info size={14} color="rgba(255, 255, 255, 0.7)" />
-                            <Text style={styles.expandHintText}>Toca para ver más</Text>
-                          </View>
-                        )}
-                        {isExpanded ? (
-                          <ChevronUp size={20} color="#FFFFFF" />
-                        ) : (
-                          <ChevronDown size={20} color="#FFFFFF" />
-                        )}
-                      </View>
-                    </View>
-                    
-                    {isExpanded && (
-                      <Animated.View style={styles.expandedContent}>
-                        <Text style={styles.recommendationMessage}>
-                          {mainRecommendation.message}
-                        </Text>
-                        {categoryRecs.length > 1 && (
-                          <View style={styles.additionalRecommendations}>
-                            <Text style={styles.additionalRecTitle}>Más sugerencias:</Text>
-                            {categoryRecs.slice(1).map((rec, idx) => (
-                              <TouchableOpacity
-                                key={rec.id || idx}
-                                style={styles.additionalRecItem}
-                                onPress={() => handleRecommendationPress(rec)}
-                                activeOpacity={0.7}
-                              >
-                                <Text style={styles.additionalRecText}>• {rec.title}</Text>
-                              </TouchableOpacity>
-                            ))}
-                          </View>
-                        )}
-                      </Animated.View>
-                    )}
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-            );
-          })}
-        {!showAllRecommendations && Array.from(recommendationsByCategory.entries()).length > 1 && (
-          <TouchableOpacity
-            style={styles.verMasRecommendations}
-            onPress={() => setShowAllRecommendations(true)}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Ver más recomendaciones"
-          >
-            <Text style={styles.verMasRecommendationsText}>Ver más recomendaciones</Text>
-            <ChevronDown size={18} color={THEME.colors.gradient.blue} />
-          </TouchableOpacity>
-        )}
-        {showAllRecommendations && Array.from(recommendationsByCategory.entries()).length > 1 && (
-          <TouchableOpacity
-            style={styles.verMasRecommendations}
-            onPress={() => setShowAllRecommendations(false)}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Ver menos recomendaciones"
-          >
-            <Text style={styles.verMasRecommendationsText}>Ver menos</Text>
-            <ChevronUp size={18} color={THEME.colors.gradient.blue} />
-          </TouchableOpacity>
-        )}
-      </View>
+          return (
+            <TouchableOpacity
+              key={category}
+              style={[styles.horizontalCardWrap, { width: CARD_WIDTH, marginRight: CARD_GAP }]}
+              onPress={() => handleRecommendationPress(mainRecommendation)}
+              activeOpacity={0.88}
+              accessibilityRole="button"
+              accessibilityLabel={`${illustration.title}: ${mainRecommendation.title}`}
+            >
+              <LinearGradient
+                colors={illustration.gradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.horizontalCardGradient}
+              >
+                <View style={styles.horizontalCardHeader}>
+                  <View style={styles.cardHeaderContent}>
+                    <Text style={styles.emoji}>{illustration.emoji}</Text>
+                    <Text style={styles.categoryTitle}>{illustration.title}</Text>
+                  </View>
+                  <ChevronUp size={18} color="rgba(255, 255, 255, 0.8)" />
+                </View>
+                <Text style={styles.horizontalCardTitle} numberOfLines={2}>
+                  {mainRecommendation.title}
+                </Text>
+                <Text style={styles.horizontalCardPreview} numberOfLines={3}>
+                  {mainRecommendation.message}
+                </Text>
+                {categoryRecs.length > 1 && (
+                  <Text style={styles.horizontalCardMore}>
+                    +{categoryRecs.length - 1} más en esta categoría
+                  </Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
 
       {/* Modal de detalle */}
       <Modal
@@ -410,9 +339,45 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     padding: THEME.spacing.lg,
   },
-  recommendationsContainer: {
+  horizontalScrollContent: {
     paddingHorizontal: THEME.spacing.lg,
-    gap: THEME.spacing.md,
+    paddingBottom: THEME.spacing.sm,
+  },
+  horizontalCardWrap: {
+    borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  horizontalCardGradient: {
+    padding: THEME.spacing.lg,
+    minHeight: 160,
+    justifyContent: 'space-between',
+  },
+  horizontalCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: THEME.spacing.sm,
+  },
+  horizontalCardTitle: {
+    ...THEME.typography.h3,
+    color: '#FFFFFF',
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: THEME.spacing.xs,
+  },
+  horizontalCardPreview: {
+    ...THEME.typography.small,
+    color: '#FFFFFF',
+    opacity: 0.9,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  horizontalCardMore: {
+    ...THEME.typography.small,
+    color: '#FFFFFF',
+    opacity: 0.75,
+    fontSize: 11,
+    marginTop: THEME.spacing.xs,
   },
   verMasRecommendations: {
     flexDirection: 'row',
