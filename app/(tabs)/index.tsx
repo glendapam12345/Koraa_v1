@@ -923,6 +923,15 @@ export default function TodayScreen() {
                 </View>
               )}
 
+              {incompleteTasks.length > 0 && (
+                <View style={styles.categoryLegendWrap}>
+                  <View style={[styles.categoryLegendBar, { backgroundColor: THEME.colors.gradient.blue }]} />
+                  <Text style={styles.categoryLegendText} accessibilityRole="text">
+                    Color = categoría o proyecto
+                  </Text>
+                </View>
+              )}
+
               {incompleteTasks.length > 0 ? (
                 taskSections.map((sec) => (
                   <View key={sec.id} style={styles.taskSection}>
@@ -1705,6 +1714,23 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     fontSize: 10,
     color: THEME.colors.text.secondary,
+  },
+  categoryLegendWrap: {
+    marginBottom: THEME.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  categoryLegendBar: {
+    width: 3,
+    height: 12,
+    borderRadius: 2,
+  },
+  categoryLegendText: {
+    ...THEME.typography.small,
+    fontSize: 11,
+    color: THEME.colors.text.secondary,
+    letterSpacing: 0.2,
   },
   taskSection: {
     marginBottom: THEME.spacing.lg,

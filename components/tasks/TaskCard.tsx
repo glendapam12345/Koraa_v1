@@ -389,8 +389,7 @@ const styles = StyleSheet.create({
   },
   taskCardWithSubtasks: {
     borderLeftWidth: 4,
-    borderLeftColor: THEME.colors.gradient.blue,
-    backgroundColor: 'rgba(74, 144, 226, 0.02)',
+    /* El color de la barra lo define sectionAccentColor/projectLabelColor en el estilo inline */
   },
   expandButton: {
     padding: THEME.spacing.sm,
