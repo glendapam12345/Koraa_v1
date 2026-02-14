@@ -869,9 +869,31 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {/* Bloque único Hoy: # Tareas + explicación (si hay check-in) + lista o CTA vacío */}
+        {/* Bloque Hoy: cuadro agregar tareas arriba + # Tareas + lista */}
         {!loading && (
           <View style={styles.tasksContainer}>
+            {/* Cuadro para agregar tareas — siempre visible arriba */}
+            <TouchableOpacity
+              style={styles.addTasksCard}
+              onPress={() => router.push('/(tabs)/vaciar')}
+              activeOpacity={0.88}
+              accessibilityRole="button"
+              accessibilityLabel="Ir a Vaciar para agregar tareas"
+            >
+              <LinearGradient
+                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.addTasksCardGradient}
+              >
+                <Plus size={22} color="#FFFFFF" />
+                <View style={styles.addTasksCardTextWrap}>
+                  <Text style={styles.addTasksCardTitle}>Agregar tareas</Text>
+                  <Text style={styles.addTasksCardHint}>En Vaciar sueltas todo sin orden</Text>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+
             <View style={styles.tasksListCard}>
               <View style={styles.tareasHeaderRow}>
                 <View>
@@ -975,40 +997,22 @@ export default function TodayScreen() {
                   </View>
                 ))
               ) : (
-                <TouchableOpacity
-                  style={styles.addFromInicioButton}
-                  onPress={() => router.push('/(tabs)/vaciar')}
-                  activeOpacity={0.8}
-                  hitSlop={HIT_SLOP}
-                  accessibilityRole="button"
-                  accessibilityLabel="Agregar tareas o proyectos"
-                >
-                  <LinearGradient
-                    colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.addFromInicioButtonGradient}
-                  >
-                    <Plus size={20} color="#FFFFFF" />
-                    <Text style={styles.addFromInicioButtonText}>Agregar tareas o proyectos</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
+                <View style={styles.emptyTasksInCard}>
+                  <Text style={styles.emptyTasksInCardText}>Usa el cuadro de arriba para agregar tu primera tarea.</Text>
+                </View>
               )}
 
               {incompleteTasks.length > 0 && (
-                <View style={styles.agregarMasWrap}>
-                  <TouchableOpacity
-                    style={styles.agregarMasButton}
-                    onPress={() => router.push('/(tabs)/vaciar')}
-                    activeOpacity={0.8}
-                    accessibilityRole="button"
-                    accessibilityLabel="Agregar más tareas o proyectos"
-                  >
-                    <Plus size={18} color={THEME.colors.gradient.blue} />
-                    <Text style={styles.agregarMasButtonText} numberOfLines={1}>Agregar más tareas o proyectos</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.agregarMasHint}>Lleva a la pestaña Vaciar</Text>
-                </View>
+                <TouchableOpacity
+                  style={styles.agregarMasWrap}
+                  onPress={() => router.push('/(tabs)/vaciar')}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Agregar más tareas"
+                >
+                  <Plus size={16} color={THEME.colors.gradient.blue} />
+                  <Text style={styles.agregarMasHint}>Agregar más · pestaña Vaciar</Text>
+                </TouchableOpacity>
               )}
             </View>
           </View>
@@ -1655,6 +1659,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.lg,
     paddingBottom: THEME.spacing.lg,
   },
+  addTasksCard: {
+    borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+    marginBottom: THEME.spacing.md,
+    ...THEME.shadows.soft,
+  },
+  addTasksCardGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.lg,
+    gap: THEME.spacing.sm,
+    minHeight: 56,
+  },
+  addTasksCardTextWrap: {
+    flex: 1,
+  },
+  addTasksCardTitle: {
+    ...THEME.typography.h3,
+    color: '#FFFFFF',
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: 2,
+  },
+  addTasksCardHint: {
+    ...THEME.typography.small,
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  emptyTasksInCard: {
+    paddingVertical: THEME.spacing.lg,
+    alignItems: 'center',
+  },
+  emptyTasksInCardText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+  },
   tasksListCard: {
     backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.rounded,
@@ -1817,29 +1858,16 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
   },
   agregarMasWrap: {
-    marginTop: THEME.spacing.sm,
-    marginBottom: THEME.spacing.xs,
-    alignItems: 'center',
-  },
-  agregarMasButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: THEME.spacing.xs,
-    paddingVertical: THEME.spacing.md,
-    paddingHorizontal: THEME.spacing.lg,
-    borderRadius: THEME.borderRadius.standard,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    backgroundColor: THEME.colors.fill[100],
+    marginTop: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.sm,
   },
   agregarMasHint: {
     ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    marginTop: THEME.spacing.xs,
-  },
-  agregarMasButtonText: {
-    ...THEME.typography.caption,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
   },
