@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
   },
   horizontalCardGradient: {
     padding: THEME.spacing.lg,
-    minHeight: 160,
+    height: 200,
     justifyContent: 'space-between',
   },
   horizontalCardHeader: {
