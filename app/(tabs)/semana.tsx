@@ -3,8 +3,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
+import { useAuth } from '@/contexts/AuthContext';
 import { useWeekTasks, getWeekOptions } from '@/hooks/useWeekTasks';
 import type { Task } from '@/hooks/useTasks';
+import { getSupabaseEnvStatus } from '@/lib/envCheck';
 import { Calendar, Plus, FolderKanban, FileText, ChevronRight, ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 
@@ -18,12 +20,15 @@ function formatDayLabel(dateStr: string): string {
 
 export default function SemanaScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [selectedWeekStart, setSelectedWeekStart] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const showToast = useCallback((msg: string) => setToastMessage(msg), []);
 
-  const { weekTasks, projects, loading, loadWeekTasks, getWeekBounds } = useWeekTasks(showToast);
+  const { weekTasks, projects, loading, loadWeekTasks, getWeekBounds, lastLoadError } = useWeekTasks(showToast);
+  const envStatus = getSupabaseEnvStatus();
+  const supabaseEnvOk = envStatus.url && envStatus.key;
 
   const currentWeekStart = getWeekBounds().start;
   const weekOptions = useMemo(() => getWeekOptions(6), []);
@@ -318,6 +323,23 @@ export default function SemanaScreen() {
             <Text style={styles.addButtonText}>Agregar tareas o proyectos</Text>
           </LinearGradient>
         </TouchableOpacity>
+
+        {__DEV__ ? (
+          <View style={styles.diagnostico}>
+            <Text style={styles.diagnosticoTitle}>Diagnóstico (solo desarrollo)</Text>
+            <Text style={styles.diagnosticoLine}>
+              Sesión: {user?.email ?? 'No iniciada'}
+            </Text>
+            <Text style={styles.diagnosticoLine}>
+              Supabase (.env): {supabaseEnvOk ? 'OK' : 'Faltante (URL o Key)'}
+            </Text>
+            {lastLoadError ? (
+              <Text style={[styles.diagnosticoLine, styles.diagnosticoError]} numberOfLines={3}>
+                Último error: {lastLoadError}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -750,5 +772,30 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: '#FFFFFF',
     fontFamily: THEME.fonts.heading.bold,
+  },
+  diagnostico: {
+    marginHorizontal: THEME.spacing.lg,
+    marginTop: THEME.spacing.lg,
+    marginBottom: THEME.spacing.xl,
+    padding: THEME.spacing.md,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.standard,
+    borderLeftWidth: 4,
+    borderLeftColor: THEME.colors.gradient.blue,
+  },
+  diagnosticoTitle: {
+    ...THEME.typography.small,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.xs,
+  },
+  diagnosticoLine: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.main,
+    marginBottom: 2,
+  },
+  diagnosticoError: {
+    color: THEME.colors.gradient.pink,
+    marginTop: THEME.spacing.xs,
   },
 });

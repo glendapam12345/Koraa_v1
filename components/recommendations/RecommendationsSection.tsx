@@ -8,8 +8,37 @@ import { logger } from '@/lib/logger';
 import { X, Sparkles, ChevronUp } from 'lucide-react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH - THEME.spacing.lg * 2;
+const CARD_PEEK = 24;
+const CARD_WIDTH = SCREEN_WIDTH - THEME.spacing.lg * 2 - CARD_PEEK;
 const CARD_GAP = THEME.spacing.sm;
+const SNAP_INTERVAL = CARD_WIDTH + CARD_GAP;
+
+const CATEGORY_KEYS = ['bienestar', 'ejercicio', 'productividad', 'salud mental', 'social', 'creatividad', 'descanso', 'nutrición'] as const;
+
+function interestsToCategoryOrder(activities: string[] = [], interests: string[] = []): string[] {
+  const combined = [...(activities || []), ...(interests || [])].map((s) => s.toLowerCase().trim());
+  const order: string[] = [];
+  const seen = new Set<string>();
+  const map: Record<string, string> = {
+    yoga: 'bienestar', meditación: 'salud mental', mindfulness: 'salud mental',
+    correr: 'ejercicio', gym: 'ejercicio', ejercicio: 'ejercicio', deporte: 'ejercicio',
+    leer: 'productividad', estudio: 'productividad', trabajo: 'productividad',
+    amigos: 'social', social: 'social', familia: 'social',
+    arte: 'creatividad', crear: 'creatividad', música: 'creatividad',
+    descanso: 'descanso', dormir: 'descanso', sueño: 'descanso',
+    comida: 'nutrición', alimentación: 'nutrición', nutrición: 'nutrición',
+  };
+  for (const item of combined) {
+    for (const [key, cat] of Object.entries(map)) {
+      if (item.includes(key) && !seen.has(cat)) {
+        seen.add(cat);
+        order.push(cat);
+      }
+    }
+  }
+  const rest = CATEGORY_KEYS.filter((c) => !seen.has(c));
+  return [...order, ...rest];
+}
 
 // Mapeo de categorías a emojis/ilustraciones
 const CATEGORY_ILLUSTRATIONS: Record<string, { emoji: string; gradient: [string, string, ...string[]]; title: string }> = {
@@ -101,6 +130,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
   const [loading, setLoading] = useState(true);
   const [selectedRecommendation, setSelectedRecommendation] = useState<Recommendation | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [userCategoryOrder, setUserCategoryOrder] = useState<string[]>([]);
 
   useEffect(() => {
     loadRecommendations();
@@ -136,11 +166,14 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
         logger.error('Error loading check-in for recommendations:', checkInError);
       }
 
-      // Preparar datos para recomendaciones
+      const activities = profileData?.favorite_activities || [];
+      const interests = profileData?.interests || [];
+      setUserCategoryOrder(interestsToCategoryOrder(activities, interests));
+
       const preferences: UserPreferences = {
         age: profileData?.age,
-        favorite_activities: profileData?.favorite_activities || [],
-        interests: profileData?.interests || [],
+        favorite_activities: activities,
+        interests,
         other_preferences: profileData?.other_preferences || {},
       };
 
@@ -189,7 +222,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
     return null;
   }
 
-  // Agrupar por categoría y ordenar por prioridad (más relevante primero)
+  // Agrupar por categoría
   const recommendationsByCategory = new Map<string, Recommendation[]>();
   recommendations.forEach((rec) => {
     const category = getRecommendationCategory(rec);
@@ -199,18 +232,47 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
     recommendationsByCategory.get(category)!.push(rec);
   });
 
-  const categoryEntries = Array.from(recommendationsByCategory.entries())
-    .sort(([, recsA], [, recsB]) => {
+  let categoryEntries = Array.from(recommendationsByCategory.entries())
+    .sort(([catA, recsA], [catB, recsB]) => {
+      const indexA = userCategoryOrder.indexOf(catA);
+      const indexB = userCategoryOrder.indexOf(catB);
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
       const maxPrioA = Math.max(...recsA.map((r) => r.priority));
       const maxPrioB = Math.max(...recsB.map((r) => r.priority));
       return maxPrioB - maxPrioA;
     })
     .slice(0, 3);
 
+  const filledEntries: Array<[string, Recommendation[]]> = [...categoryEntries];
+  const existingCats = new Set(filledEntries.map(([c]) => c));
+  for (const cat of userCategoryOrder) {
+    if (filledEntries.length >= 3) break;
+    if (existingCats.has(cat)) continue;
+    const illustration = CATEGORY_ILLUSTRATIONS[cat] || CATEGORY_ILLUSTRATIONS['bienestar'];
+    const placeholderRec: Recommendation = {
+      id: `placeholder-${cat}`,
+      type: 'wellness',
+      title: `Recomendaciones de ${illustration.title}`,
+      message: 'Completa tu check-in diario en Sentir para ver sugerencias personalizadas aquí.',
+      emoji: illustration.emoji,
+      priority: 0,
+    };
+    filledEntries.push([cat, [placeholderRec]]);
+    existingCats.add(cat);
+  }
+  categoryEntries = filledEntries.slice(0, 3);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.sectionTitle}>Recomendaciones para ti</Text>
+        <View>
+          <Text style={styles.sectionTitle}>Recomendaciones para ti</Text>
+          {categoryEntries.length > 1 ? (
+            <Text style={styles.scrollHint}>Desliza a la derecha para ver más</Text>
+          ) : null}
+        </View>
         <Sparkles size={20} color={THEME.colors.gradient.blue} />
       </View>
 
@@ -218,7 +280,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.horizontalScrollContent}
-        snapToInterval={CARD_WIDTH + CARD_GAP}
+        snapToInterval={SNAP_INTERVAL}
         snapToAlignment="start"
         decelerationRate="fast"
       >
@@ -332,6 +394,11 @@ const styles = StyleSheet.create({
     ...THEME.typography.h2,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
+  },
+  scrollHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    marginTop: 2,
   },
   loadingText: {
     ...THEME.typography.body,

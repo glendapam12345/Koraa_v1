@@ -120,11 +120,11 @@ export default function AuthScreen() {
         
         const { error } = await signIn(email, password);
         if (error) {
-          console.error('[Auth Screen] Error al iniciar sesión:', error);
-          console.error('[Auth Screen] Error code:', (error as any)?.status);
-          console.error('[Auth Screen] Error message:', error.message);
           const errorMessage = error.message || 'Error desconocido';
           setError(getAuthErrorMessage(errorMessage));
+          if (__DEV__) {
+            console.warn('[Auth] Inicio de sesión fallido:', getAuthErrorMessage(errorMessage));
+          }
         } else {
           console.log('[Auth Screen] Inicio de sesión exitoso');
           router.replace('/(tabs)');

@@ -8,6 +8,7 @@
     "dev": "REACT_NATIVE_PACKAGER_PORT=8081 EXPO_NO_TELEMETRY=1 expo start --port 8081",
     "dev:clear": "REACT_NATIVE_PACKAGER_PORT=8081 EXPO_NO_TELEMETRY=1 expo start --port 8081 --clear",
     "dev:fresh": "rm -rf .expo node_modules/.cache 2>/dev/null; REACT_NATIVE_PACKAGER_PORT=8081 EXPO_NO_TELEMETRY=1 expo start --port 8081 --clear",
+    "dev:tunnel": "REACT_NATIVE_PACKAGER_PORT=8081 EXPO_NO_TELEMETRY=1 expo start --port 8081 --tunnel",
     "dev:bolt": "npm run dev",
     "build:web": "expo export --platform web",
     "publish": "eas update --auto",

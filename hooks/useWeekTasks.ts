@@ -91,6 +91,7 @@ export function useWeekTasks(
   const [weekTasks, setWeekTasks] = useState<DayTasks[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastLoadError, setLastLoadError] = useState<string | null>(null);
   const isLoadingRef = useRef(false);
 
   const loadWeekTasks = useCallback(async (weekStart?: string) => {
@@ -99,17 +100,22 @@ export function useWeekTasks(
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        isLoadingRef.current = false;
-        return;
-      }
-
       const { start, end } = weekStart
         ? getWeekBoundsForStart(weekStart)
         : getWeekBounds();
       const weekDays = buildWeekDays(start);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLastLoadError(null);
+        const emptyResult: DayTasks[] = weekDays.map((day) => ({ day, tasks: [] }));
+        setWeekTasks(emptyResult);
+        setProjects([]);
+        showToast('Inicia sesión para ver y agregar tareas en tu semana.', 'info');
+        setLoading(false);
+        isLoadingRef.current = false;
+        return;
+      }
 
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
@@ -133,11 +139,17 @@ export function useWeekTasks(
 
       if (tasksError) {
         logger.error('Error cargando tareas de la semana:', tasksError);
-        showToast(getErrorMessage(tasksError), 'error');
+        const errMsg = getErrorMessage(tasksError);
+        setLastLoadError(errMsg);
+        const emptyResult: DayTasks[] = weekDays.map((day) => ({ day, tasks: [] }));
+        setWeekTasks(emptyResult);
+        showToast('No se pudieron cargar las tareas. Revisa tu conexión o inicia sesión.', 'error');
         setLoading(false);
         isLoadingRef.current = false;
         return;
       }
+
+      setLastLoadError(null);
 
       const tasks = (tasksData || []) as Task[];
       const parentTasks = tasks.filter((t) => !t.parent_task_id);
@@ -167,7 +179,11 @@ export function useWeekTasks(
       setWeekTasks(result);
     } catch (error) {
       logger.error('Error inesperado cargando semana:', error);
-      showToast('Error al cargar la semana', 'error');
+      setLastLoadError(getErrorMessage(error));
+      const { start } = getWeekBounds();
+      const fallbackDays = buildWeekDays(start);
+      setWeekTasks(fallbackDays.map((day) => ({ day, tasks: [] })));
+      showToast('No se pudo cargar la semana. Revisa tu conexión.', 'error');
     } finally {
       setLoading(false);
       isLoadingRef.current = false;
@@ -181,5 +197,6 @@ export function useWeekTasks(
     loadWeekTasks,
     getWeekBounds,
     getWeekOptions,
+    lastLoadError,
   };
 }
