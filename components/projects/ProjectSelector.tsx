@@ -98,7 +98,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
         ) : (
           <View style={styles.selectedRow}>
             <FolderKanban size={20} color={THEME.colors.text.secondary} />
-            <Text style={[styles.selectorText, styles.placeholderText]}>Sin proyecto</Text>
+            <Text style={[styles.selectorText, styles.placeholderText]}>Mi lista</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -116,7 +116,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
         >
           <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Elegir proyecto</Text>
+              <Text style={styles.modalTitle}>¿En qué lista?</Text>
               <TouchableOpacity
                 onPress={() => setShowModal(false)}
                 style={styles.modalClose}
@@ -135,7 +135,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
                 activeOpacity={0.7}
               >
                 <FolderKanban size={20} color={THEME.colors.text.secondary} />
-                <Text style={styles.optionText}>Sin proyecto</Text>
+                <Text style={styles.optionText}>Mi lista</Text>
                 {!selectedProjectId && (
                   <Text style={styles.optionCheck}>✓</Text>
                 )}

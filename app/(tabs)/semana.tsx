@@ -375,7 +375,7 @@ function WeekTaskItem({
           ) : (
             <View style={styles.standaloneBadge}>
               <FileText size={12} color={THEME.colors.text.secondary} />
-              <Text style={styles.standaloneBadgeText}>Tarea suelta</Text>
+              <Text style={styles.standaloneBadgeText}>Mi lista</Text>
             </View>
           )}
           <Text

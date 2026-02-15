@@ -989,7 +989,7 @@ export default function TodayScreen() {
                           const p = projectsMap[task.project_id];
                           return { label: p?.name ?? 'Proyecto', color: p?.color ?? THEME.colors.gradient.blue };
                         }
-                        return { label: 'Independiente', color: THEME.colors.text.secondary };
+                        return { label: 'Mi lista', color: THEME.colors.text.secondary };
                       }}
                       hideProjectLabel={false}
                       sectionAccentColor={sec.color}

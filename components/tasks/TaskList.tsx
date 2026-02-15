@@ -15,7 +15,7 @@ interface TaskListProps {
   onDeleteTask: (task: Task) => void;
   getCategoryColor: (category: string) => string;
   onSubtaskToggle: (subtaskId: string, parentTaskId: string) => void;
-  /** Opcional: devuelve etiqueta y color para mostrar "Independiente" / "Parte de [proyecto]" / nombre proyecto */
+  /** Opcional: devuelve etiqueta y color para mostrar "Mi lista" / "Parte de [proyecto]" / nombre proyecto */
   getProjectInfo?: (task: Task) => { label: string; color: string } | null;
   /** En vista agrupada: ocultar badge en cada tarjeta y usar acento de sección */
   hideProjectLabel?: boolean;

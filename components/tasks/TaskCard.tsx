@@ -30,7 +30,7 @@ interface TaskCardProps {
   onDeleteTask: () => void;
   getCategoryColor: (category: string) => string;
   onSubtaskToggle: (subtaskId: string) => void;
-  /** Etiqueta: "Independiente", "Parte de [proyecto]" o nombre del proyecto; color del proyecto */
+  /** Etiqueta: "Mi lista", "Parte de [proyecto]" o nombre del proyecto; color del proyecto */
   projectLabel?: string | null;
   projectLabelColor?: string;
   hideProjectLabel?: boolean;
@@ -62,7 +62,7 @@ export function TaskCard({
 
   const isProjectTask = task.project_id !== null && task.project_id !== undefined;
   const showLabel = !hideProjectLabel && projectLabel != null && projectLabel !== '';
-  const isIndependiente = showLabel && (projectLabel === 'Suelta' || projectLabel === 'Independiente');
+  const isMiLista = showLabel && (projectLabel === 'Mi lista' || projectLabel === 'Suelta' || projectLabel === 'Independiente');
   const borderColor = !hideProjectLabel && isProjectTask && projectLabelColor ? projectLabelColor : sectionAccentColor;
   const hasDetails = onToggleDetailsExpand && (task.category || task.is_priority || projectLabel);
 
@@ -117,12 +117,12 @@ export function TaskCard({
             <View
               style={[
                 styles.projectBadge,
-                isIndependiente
+                isMiLista
                   ? styles.projectBadgeIndependiente
                   : { backgroundColor: (projectLabelColor ?? THEME.colors.gradient.blue) + '22' },
               ]}
             >
-              {isIndependiente ? (
+              {isMiLista ? (
                 <FileText size={12} color={THEME.colors.text.secondary} />
               ) : (
                 <FolderKanban size={12} color={projectLabelColor ?? THEME.colors.gradient.blue} />
@@ -130,7 +130,7 @@ export function TaskCard({
               <Text
                 style={[
                   styles.projectBadgeText,
-                  isIndependiente ? styles.projectBadgeTextIndependiente : { color: projectLabelColor ?? THEME.colors.gradient.blue },
+                  isMiLista ? styles.projectBadgeTextIndependiente : { color: projectLabelColor ?? THEME.colors.gradient.blue },
                 ]}
                 numberOfLines={1}
               >
