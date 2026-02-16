@@ -90,7 +90,6 @@ export function TaskCard({
         style={[
           styles.taskCard,
           task.is_completed && styles.taskCardCompleted,
-          hasSubtasks && styles.taskCardWithSubtasks,
           cardLeftBorderColor ? [styles.taskCardProject, { borderLeftColor: cardLeftBorderColor, borderLeftWidth: cardLeftBorderWidth }] : styles.taskCardSuelta,
         ]}
       >
@@ -102,32 +101,35 @@ export function TaskCard({
           </View>
         )}
 
-        {hasSubtasks && (
+        <View style={styles.leftColumn}>
+          {hasSubtasks ? (
+            <TouchableOpacity
+              style={styles.expandButton}
+              onPress={onToggleExpansion}
+              activeOpacity={0.7}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel={expanded ? 'Contraer subtareas' : 'Expandir subtareas'}
+            >
+              {expanded ? (
+                <ChevronDown size={20} color={THEME.colors.text.secondary} />
+              ) : (
+                <ChevronRight size={20} color={THEME.colors.text.secondary} />
+              )}
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.expandPlaceholder} />
+          )}
           <TouchableOpacity
-            style={styles.expandButton}
-            onPress={onToggleExpansion}
+            style={styles.taskCheckbox}
+            onPress={onToggle}
             activeOpacity={0.7}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            accessibilityRole="button"
-            accessibilityLabel={expanded ? 'Contraer subtareas' : 'Expandir subtareas'}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: task.is_completed }}
           >
-            {expanded ? (
-              <ChevronDown size={20} color={THEME.colors.text.secondary} />
-            ) : (
-              <ChevronRight size={20} color={THEME.colors.text.secondary} />
-            )}
+            {task.is_completed && <View style={styles.taskCheckboxChecked} />}
           </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          style={styles.taskCheckbox}
-          onPress={onToggle}
-          activeOpacity={0.7}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: task.is_completed }}
-        >
-          {task.is_completed && <View style={styles.taskCheckboxChecked} />}
-        </TouchableOpacity>
+        </View>
 
         <View style={styles.taskContent}>
           <View style={styles.taskTitleRow}>
@@ -148,6 +150,13 @@ export function TaskCard({
             )}
           </View>
           <View style={styles.metaRow}>
+            {hasSubtasks && (
+              <View style={styles.subtasksPill}>
+                <Text style={styles.subtasksPillText}>
+                  {completedSubtasks}/{totalSubtasks}
+                </Text>
+              </View>
+            )}
             {showLabel && (
               isMiLista ? (
                 <Text style={styles.sueltaLabel}>Suelta</Text>
@@ -163,13 +172,6 @@ export function TaskCard({
                 </View>
               )
             )}
-            {hasSubtasks && (
-              <View style={styles.subtasksPill}>
-                <Text style={styles.subtasksPillText}>
-                  {completedSubtasks}/{totalSubtasks}
-                </Text>
-              </View>
-            )}
             {hasDetails && (
               <TouchableOpacity
                 style={styles.detailsToggleRow}
@@ -183,9 +185,9 @@ export function TaskCard({
                   Detalles
                 </Text>
                 {expandedDetails ? (
-                  <ChevronDown size={16} color={THEME.colors.gradient.blue} />
+                  <ChevronDown size={14} color={THEME.colors.text.secondary} />
                 ) : (
-                  <ChevronRight size={16} color={THEME.colors.gradient.blue} />
+                  <ChevronRight size={14} color={THEME.colors.text.secondary} />
                 )}
               </TouchableOpacity>
             )}
@@ -304,16 +306,18 @@ export function TaskCard({
                 subtask.is_completed && styles.subtaskCardCompleted,
               ]}
             >
-              <TouchableOpacity
-                style={styles.subtaskCheckbox}
-                onPress={() => onSubtaskToggle(subtask.id)}
-                activeOpacity={0.7}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: subtask.is_completed }}
-              >
-                {subtask.is_completed && <View style={styles.subtaskCheckboxChecked} />}
-              </TouchableOpacity>
-
+              <View style={styles.subtaskLeftColumn}>
+                <View style={styles.expandPlaceholder} />
+                <TouchableOpacity
+                  style={styles.subtaskCheckbox}
+                  onPress={() => onSubtaskToggle(subtask.id)}
+                  activeOpacity={0.7}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: subtask.is_completed }}
+                >
+                  {subtask.is_completed && <View style={styles.subtaskCheckboxChecked} />}
+                </TouchableOpacity>
+              </View>
               <View style={styles.subtaskContent}>
                 <Text
                   style={[
@@ -391,9 +395,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-    minHeight: 24,
+    gap: 10,
+    marginTop: 6,
   },
   projectBadge: {
     flexDirection: 'row',
@@ -492,37 +495,40 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     color: THEME.colors.text.secondary,
   },
-  taskCardWithSubtasks: {
-    borderLeftWidth: 4,
-    /* El color de la barra lo define sectionAccentColor/projectLabelColor en el estilo inline */
+  leftColumn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   expandButton: {
-    padding: THEME.spacing.sm,
-    marginRight: THEME.spacing.xs,
-    minWidth: THEME.sizes.touchTarget,
-    minHeight: THEME.sizes.touchTarget,
+    width: 40,
+    minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  expandPlaceholder: {
+    width: 40,
+  },
   subtasksContainer: {
-    marginLeft: THEME.spacing.lg,
     marginTop: THEME.spacing.xs,
-    marginBottom: THEME.spacing.sm,
-    paddingLeft: THEME.spacing.md,
-    borderLeftWidth: 2,
-    borderLeftColor: THEME.colors.stroke[100],
+    marginBottom: THEME.spacing.xs,
   },
   subtaskCard: {
     backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.standard,
-    padding: THEME.spacing.sm,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     marginBottom: THEME.spacing.xs,
-    marginLeft: THEME.spacing.lg,
-    borderLeftWidth: 2,
-    borderLeftColor: 'rgba(255, 107, 107, 0.25)',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: THEME.spacing.sm,
+    gap: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: THEME.colors.gradient.blue + '40',
+  },
+  subtaskLeftColumn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   subtaskCardCompleted: {
     opacity: 0.6,
@@ -586,9 +592,8 @@ const styles = StyleSheet.create({
   },
   detailsToggleText: {
     ...THEME.typography.small,
-    color: THEME.colors.gradient.blue,
-    fontFamily: THEME.fonts.heading.medium,
-    fontSize: 12,
+    color: THEME.colors.text.secondary,
+    fontSize: 11,
   },
   verProyectoLink: {
     paddingVertical: 2,
