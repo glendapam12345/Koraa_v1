@@ -77,6 +77,11 @@ export function TaskCard({
   const categoryEmoji = getCategoryEmoji(task.category);
   const sectionEmoji = isMiLista ? '📋' : '📁';
 
+  const cardLeftBorderColor = !hideProjectLabel && isProjectTask && projectLabelColor
+    ? projectLabelColor
+    : undefined;
+  const cardLeftBorderWidth = cardLeftBorderColor ? 5 : 0;
+
   return (
     <View style={styles.taskWrapper}>
       <View
@@ -84,8 +89,7 @@ export function TaskCard({
           styles.taskCard,
           task.is_completed && styles.taskCardCompleted,
           hasSubtasks && styles.taskCardWithSubtasks,
-          !hideProjectLabel && isProjectTask && styles.taskCardProject,
-          borderColor ? { borderLeftWidth: sectionAccentColor ? 3 : 4, borderLeftColor: borderColor } : undefined,
+          cardLeftBorderColor ? [styles.taskCardProject, { borderLeftColor: cardLeftBorderColor, borderLeftWidth: cardLeftBorderWidth }] : styles.taskCardSuelta,
         ]}
       >
         {task.is_priority && !task.is_completed && (
@@ -143,25 +147,19 @@ export function TaskCard({
           </View>
           <View style={styles.metaRow}>
             {showLabel && (
-              <View
-                style={[
-                  styles.projectBadge,
-                  isMiLista
-                    ? styles.projectBadgeSuelta
-                    : [styles.projectBadgeProyecto, { borderLeftColor: projectLabelColor ?? THEME.colors.gradient.blue }],
-                ]}
-              >
-                <Text style={styles.projectBadgeEmoji}>{sectionEmoji}</Text>
-                <Text
-                  style={[
-                    styles.projectBadgeText,
-                    isMiLista ? styles.projectBadgeTextSuelta : [styles.projectBadgeTextProyecto, { color: projectLabelColor ?? THEME.colors.gradient.blue }],
-                  ]}
-                  numberOfLines={1}
-                >
-                  {projectLabel}
-                </Text>
-              </View>
+              isMiLista ? (
+                <Text style={styles.sueltaLabel}>Suelta</Text>
+              ) : (
+                <View style={[styles.projectBadge, styles.projectBadgeProyecto, { borderLeftColor: projectLabelColor ?? THEME.colors.gradient.blue, backgroundColor: (projectLabelColor ?? THEME.colors.gradient.blue) + '18' }]}>
+                  <Text style={styles.projectBadgeEmoji}>{sectionEmoji}</Text>
+                  <Text
+                    style={[styles.projectBadgeText, styles.projectBadgeTextProyecto, { color: projectLabelColor ?? THEME.colors.gradient.blue }]}
+                    numberOfLines={1}
+                  >
+                    {projectLabel}
+                  </Text>
+                </View>
+              )
             )}
             {hasSubtasks && (
               <View style={styles.subtasksPill}>
@@ -351,9 +349,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   taskCardProject: {
-    borderLeftWidth: 4,
-    borderLeftColor: THEME.colors.gradient.blue,
-    backgroundColor: THEME.colors.fill[200],
+    borderLeftWidth: 5,
+    backgroundColor: THEME.colors.fill[100],
+  },
+  taskCardSuelta: {
+    borderLeftWidth: 0,
+  },
+  sueltaLabel: {
+    ...THEME.typography.small,
+    fontSize: 11,
+    color: THEME.colors.text.secondary,
   },
   taskTitleRow: {
     flexDirection: 'row',
@@ -396,13 +401,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  projectBadgeSuelta: {
-    backgroundColor: THEME.colors.fill[200],
-    borderLeftWidth: 0,
-  },
   projectBadgeProyecto: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: THEME.borderRadius.standard,
     borderLeftWidth: 3,
-    backgroundColor: THEME.colors.fill[200],
   },
   projectBadgeEmoji: {
     fontSize: 11,
