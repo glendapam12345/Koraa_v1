@@ -62,7 +62,7 @@ export function TaskCard({
 
   const isProjectTask = task.project_id !== null && task.project_id !== undefined;
   const showLabel = !hideProjectLabel && projectLabel != null && projectLabel !== '';
-  const isMiLista = showLabel && (projectLabel === 'Mi lista' || projectLabel === 'Suelta' || projectLabel === 'Independiente');
+  const isMiLista = showLabel && (projectLabel === 'Mi lista' || projectLabel === 'Tareas sueltas' || projectLabel === 'Suelta' || projectLabel === 'Independiente');
   const borderColor = !hideProjectLabel && isProjectTask && projectLabelColor ? projectLabelColor : sectionAccentColor;
   const hasDetails = onToggleDetailsExpand && (task.category || task.is_priority || projectLabel);
 

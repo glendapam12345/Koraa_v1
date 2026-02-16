@@ -7,22 +7,27 @@ interface SectionHeaderProps {
   count: number;
   color: string;
   isSuelta?: boolean;
+  /** En tarjetas por área el acento es el borde de la tarjeta; no mostrar barra */
+  hideAccentBar?: boolean;
+  /** Título más grande para tarjetas por área (estilo QUITNOW) */
+  variant?: 'default' | 'card';
 }
 
-export function SectionHeader({ title, count, color, isSuelta }: SectionHeaderProps) {
+export function SectionHeader({ title, count, color, isSuelta, hideAccentBar, variant = 'default' }: SectionHeaderProps) {
+  const isCard = variant === 'card';
   return (
-    <View style={styles.wrapper}>
-      <View style={[styles.accentBar, { backgroundColor: color }]} />
+    <View style={[styles.wrapper, isCard && styles.wrapperCard]}>
+      {!hideAccentBar && <View style={[styles.accentBar, { backgroundColor: color }]} />}
       <View style={styles.content}>
         {isSuelta ? (
-          <Inbox size={18} color={THEME.colors.text.secondary} style={styles.icon} />
+          <Inbox size={isCard ? 20 : 18} color={THEME.colors.text.secondary} style={styles.icon} />
         ) : (
-          <FolderKanban size={18} color={color} style={styles.icon} />
+          <FolderKanban size={isCard ? 20 : 18} color={color} style={styles.icon} />
         )}
-        <Text style={[styles.title, isSuelta && styles.titleSuelta]} numberOfLines={1}>
+        <Text style={[styles.title, isSuelta && styles.titleSuelta, isCard && styles.titleCard]} numberOfLines={1}>
           {title}
         </Text>
-        <Text style={styles.count}>
+        <Text style={[styles.count, isCard && styles.countCard]}>
           {count} {count === 1 ? 'tarea' : 'tareas'}
         </Text>
       </View>
@@ -59,6 +64,16 @@ const styles = StyleSheet.create({
   },
   titleSuelta: {
     color: THEME.colors.text.secondary,
+  },
+  titleCard: {
+    fontSize: 16,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  wrapperCard: {
+    marginBottom: THEME.spacing.sm,
+  },
+  countCard: {
+    fontSize: 13,
   },
   count: {
     ...THEME.typography.small,

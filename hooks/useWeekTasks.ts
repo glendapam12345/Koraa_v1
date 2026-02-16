@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { supabase, getErrorMessage } from '@/lib/supabase';
+import { supabase, getErrorMessage, isSchemaError, getSchemaSetupMessage, type SchemaSetupType } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import type { Task } from '@/hooks/useTasks';
 
@@ -92,6 +92,7 @@ export function useWeekTasks(
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastLoadError, setLastLoadError] = useState<string | null>(null);
+  const [schemaSetupType, setSchemaSetupType] = useState<SchemaSetupType | null>(null);
   const isLoadingRef = useRef(false);
 
   const loadWeekTasks = useCallback(async (weekStart?: string) => {
@@ -108,6 +109,7 @@ export function useWeekTasks(
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setLastLoadError(null);
+        setSchemaSetupType(null);
         const emptyResult: DayTasks[] = weekDays.map((day) => ({ day, tasks: [] }));
         setWeekTasks(emptyResult);
         setProjects([]);
@@ -123,9 +125,15 @@ export function useWeekTasks(
         .eq('user_id', user.id);
 
       if (projectsError) {
-        logger.error('Error cargando proyectos:', projectsError);
+        if (isSchemaError(projectsError)) {
+          setProjects([]);
+        } else {
+          logger.error('Error cargando proyectos:', projectsError);
+          setProjects([]);
+        }
+      } else {
+        setProjects(projectsData || []);
       }
-      setProjects(projectsData || []);
 
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
@@ -138,18 +146,27 @@ export function useWeekTasks(
         .order('created_at', { ascending: true });
 
       if (tasksError) {
-        logger.error('Error cargando tareas de la semana:', tasksError);
-        const errMsg = getErrorMessage(tasksError);
-        setLastLoadError(errMsg);
-        const emptyResult: DayTasks[] = weekDays.map((day) => ({ day, tasks: [] }));
-        setWeekTasks(emptyResult);
-        showToast('No se pudieron cargar las tareas. Revisa tu conexión o inicia sesión.', 'error');
+        if (isSchemaError(tasksError)) {
+          setSchemaSetupType(getSchemaSetupMessage(tasksError) || 'schema');
+          setLastLoadError(null);
+          const emptyResult: DayTasks[] = weekDays.map((day) => ({ day, tasks: [] }));
+          setWeekTasks(emptyResult);
+          showToast('Para ver tareas por semana, actualiza la base de datos (ver instrucciones abajo).', 'info');
+        } else {
+          logger.error('Error cargando tareas de la semana:', tasksError);
+          setSchemaSetupType(null);
+          setLastLoadError(getErrorMessage(tasksError));
+          const emptyResult: DayTasks[] = weekDays.map((day) => ({ day, tasks: [] }));
+          setWeekTasks(emptyResult);
+          showToast('No se pudieron cargar las tareas. Revisa tu conexión o inicia sesión.', 'error');
+        }
         setLoading(false);
         isLoadingRef.current = false;
         return;
       }
 
       setLastLoadError(null);
+      setSchemaSetupType(null);
 
       const tasks = (tasksData || []) as Task[];
       const parentTasks = tasks.filter((t) => !t.parent_task_id);
@@ -179,11 +196,18 @@ export function useWeekTasks(
       setWeekTasks(result);
     } catch (error) {
       logger.error('Error inesperado cargando semana:', error);
-      setLastLoadError(getErrorMessage(error));
+      if (isSchemaError(error)) {
+        setSchemaSetupType(getSchemaSetupMessage(error) || 'schema');
+        setLastLoadError(null);
+        showToast('Para ver tareas por semana, actualiza la base de datos (ver instrucciones abajo).', 'info');
+      } else {
+        setSchemaSetupType(null);
+        setLastLoadError(getErrorMessage(error));
+        showToast('No se pudo cargar la semana. Revisa tu conexión.', 'error');
+      }
       const { start } = getWeekBounds();
       const fallbackDays = buildWeekDays(start);
       setWeekTasks(fallbackDays.map((day) => ({ day, tasks: [] })));
-      showToast('No se pudo cargar la semana. Revisa tu conexión.', 'error');
     } finally {
       setLoading(false);
       isLoadingRef.current = false;
@@ -198,5 +222,6 @@ export function useWeekTasks(
     getWeekBounds,
     getWeekOptions,
     lastLoadError,
+    schemaSetupType,
   };
 }

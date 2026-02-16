@@ -37,19 +37,26 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
   const [saving, setSaving] = useState(false);
 
   const loadProjects = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('projects')
       .select('id, name, color')
       .eq('user_id', userId)
       .order('priority', { ascending: false });
+    if (error) {
+      setProjects([]);
+      return;
+    }
     setProjects(data || []);
   };
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      await loadProjects();
-      setLoading(false);
+      try {
+        await loadProjects();
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, [userId]);
@@ -98,7 +105,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
         ) : (
           <View style={styles.selectedRow}>
             <FolderKanban size={20} color={THEME.colors.text.secondary} />
-            <Text style={[styles.selectorText, styles.placeholderText]}>Mi lista</Text>
+            <Text style={[styles.selectorText, styles.placeholderText]}>Tareas sueltas</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -135,7 +142,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
                 activeOpacity={0.7}
               >
                 <FolderKanban size={20} color={THEME.colors.text.secondary} />
-                <Text style={styles.optionText}>Mi lista</Text>
+                <Text style={styles.optionText}>Tareas sueltas</Text>
                 {!selectedProjectId && (
                   <Text style={styles.optionCheck}>✓</Text>
                 )}

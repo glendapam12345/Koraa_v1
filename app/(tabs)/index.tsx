@@ -628,11 +628,11 @@ export default function TodayScreen() {
       return categoryIndex(a.category ?? '') - categoryIndex(b.category ?? '');
     };
     const sections: TaskSection[] = [];
-    // Primero: una sola sección "Mi lista" (tareas sin proyecto) para que quede claro
+    // Primero: una sola sección "Tareas sueltas" (tareas sin proyecto)
     if (miListaTasks.length > 0) {
       sections.push({
         id: 'mi-lista',
-        title: 'Mi lista',
+        title: 'Tareas sueltas',
         color: THEME.colors.text.secondary,
         isProject: false,
         isSuelta: true,
@@ -952,55 +952,56 @@ export default function TodayScreen() {
                 </View>
               )}
 
-              {incompleteTasks.length > 0 && (
-                <View style={styles.categoryLegendWrap}>
-                  <View style={[styles.categoryLegendBar, { backgroundColor: THEME.colors.gradient.blue }]} />
-                  <Text style={styles.categoryLegendText} accessibilityRole="text">
-                    Color = categoría o proyecto
-                  </Text>
-                </View>
-              )}
-
               {incompleteTasks.length > 0 ? (
                 taskSections.map((sec) => (
-                  <View key={sec.id} style={styles.taskSection}>
-                    <SectionHeader
-                      title={sec.title}
-                      count={sec.tasks.length}
-                      color={sec.color}
-                      isSuelta={sec.isSuelta === true}
-                    />
-                    <TaskList
-                      tasks={tasks}
-                      incompleteTasks={sec.tasks}
-                      expandedTasks={expandedTasks}
-                      expandedDetailsTasks={expandedDetailsTasks}
-                      menuOpen={menuOpen}
-                      onToggleTask={handleToggleTask}
-                      onToggleExpansion={toggleTaskExpansion}
-                      onToggleDetailsExpansion={toggleDetailsExpansion}
-                      onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
-                      onEditTask={handleEditTask}
-                      onDeleteTask={handleDeleteTask}
-                      getCategoryColor={getCategoryColor}
-                      onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
-                      getProjectInfo={(task) => {
-                        if (task.parent_task_id) {
-                          const parent = incompleteTasks.find((t) => t.id === task.parent_task_id) ?? tasks.find((t) => t.id === task.parent_task_id);
-                          const pid = parent?.project_id;
-                          const p = pid ? projectsMap[pid] : null;
-                          const name = p?.name ?? 'proyecto';
-                          return { label: `Parte de ${name}`, color: p?.color ?? THEME.colors.gradient.blue };
-                        }
-                        if (task.project_id) {
-                          const p = projectsMap[task.project_id];
-                          return { label: p?.name ?? 'Proyecto', color: p?.color ?? THEME.colors.gradient.blue };
-                        }
-                        return { label: 'Mi lista', color: THEME.colors.text.secondary };
-                      }}
-                      hideProjectLabel={false}
-                      sectionAccentColor={sec.color}
-                    />
+                  <View
+                    key={sec.id}
+                    style={[
+                      styles.areaCard,
+                      { borderLeftColor: sec.color, borderLeftWidth: 5 },
+                    ]}
+                  >
+                    <View style={styles.areaCardInner}>
+                      <SectionHeader
+                        title={sec.title}
+                        count={sec.tasks.length}
+                        color={sec.color}
+                        isSuelta={sec.isSuelta === true}
+                        hideAccentBar
+                        variant="card"
+                      />
+                      <TaskList
+                        tasks={tasks}
+                        incompleteTasks={sec.tasks}
+                        expandedTasks={expandedTasks}
+                        expandedDetailsTasks={expandedDetailsTasks}
+                        menuOpen={menuOpen}
+                        onToggleTask={handleToggleTask}
+                        onToggleExpansion={toggleTaskExpansion}
+                        onToggleDetailsExpansion={toggleDetailsExpansion}
+                        onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+                        onEditTask={handleEditTask}
+                        onDeleteTask={handleDeleteTask}
+                        getCategoryColor={getCategoryColor}
+                        onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
+                        getProjectInfo={(task) => {
+                          if (task.parent_task_id) {
+                            const parent = incompleteTasks.find((t) => t.id === task.parent_task_id) ?? tasks.find((t) => t.id === task.parent_task_id);
+                            const pid = parent?.project_id;
+                            const p = pid ? projectsMap[pid] : null;
+                            const name = p?.name ?? 'proyecto';
+                            return { label: `Parte de ${name}`, color: p?.color ?? THEME.colors.gradient.blue };
+                          }
+                          if (task.project_id) {
+                            const p = projectsMap[task.project_id];
+                            return { label: p?.name ?? 'Proyecto', color: p?.color ?? THEME.colors.gradient.blue };
+                          }
+                          return { label: 'Tareas sueltas', color: THEME.colors.text.secondary };
+                        }}
+                        hideProjectLabel={false}
+                        sectionAccentColor={sec.color}
+                      />
+                    </View>
                   </View>
                 ))
               ) : (
@@ -1798,6 +1799,21 @@ const styles = StyleSheet.create({
   },
   taskSection: {
     marginBottom: THEME.spacing.lg,
+  },
+  areaCard: {
+    marginBottom: THEME.spacing.lg,
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 3,
+    borderLeftWidth: 5,
+  },
+  areaCardInner: {
+    padding: THEME.spacing.md,
+    paddingLeft: THEME.spacing.sm,
   },
   taskBlock: {
     marginBottom: THEME.spacing.lg,

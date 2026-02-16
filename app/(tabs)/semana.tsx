@@ -26,7 +26,7 @@ export default function SemanaScreen() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const showToast = useCallback((msg: string) => setToastMessage(msg), []);
 
-  const { weekTasks, projects, loading, loadWeekTasks, getWeekBounds, lastLoadError } = useWeekTasks(showToast);
+  const { weekTasks, projects, loading, loadWeekTasks, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast);
   const envStatus = getSupabaseEnvStatus();
   const supabaseEnvOk = envStatus.url && envStatus.key;
 
@@ -324,6 +324,28 @@ export default function SemanaScreen() {
           </LinearGradient>
         </TouchableOpacity>
 
+        {schemaSetupType ? (
+          <View style={styles.setupCard}>
+            <Text style={styles.setupCardTitle}>Configuración de la base de datos</Text>
+            <Text style={styles.setupCardText}>
+              {schemaSetupType === 'scheduled_date'
+                ? 'Para ver tareas por semana falta la columna scheduled_date en la tabla tasks.'
+                : schemaSetupType === 'projects_table'
+                  ? 'Para usar listas y proyectos falta la tabla projects.'
+                  : schemaSetupType === 'project_id'
+                    ? 'Para asociar tareas a listas falta la columna project_id en la tabla tasks.'
+                    : 'Falta actualizar el esquema de la base de datos para Semana y proyectos.'}
+            </Text>
+            <Text style={styles.setupCardSteps}>
+              1. Abre Supabase → SQL Editor{'\n'}
+              2. Ejecuta el archivo: supabase/migrations/20260212000000_add_projects_and_weekly_scheduling.sql
+            </Text>
+            <Text style={styles.setupCardHint}>
+              Después de ejecutarlo, arrastra hacia abajo aquí para recargar.
+            </Text>
+          </View>
+        ) : null}
+
         {__DEV__ ? (
           <View style={styles.diagnostico}>
             <Text style={styles.diagnosticoTitle}>Diagnóstico (solo desarrollo)</Text>
@@ -375,7 +397,7 @@ function WeekTaskItem({
           ) : (
             <View style={styles.standaloneBadge}>
               <FileText size={12} color={THEME.colors.text.secondary} />
-              <Text style={styles.standaloneBadgeText}>Mi lista</Text>
+              <Text style={styles.standaloneBadgeText}>Tareas sueltas</Text>
             </View>
           )}
           <Text
@@ -772,6 +794,38 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: '#FFFFFF',
     fontFamily: THEME.fonts.heading.bold,
+  },
+  setupCard: {
+    marginHorizontal: THEME.spacing.lg,
+    marginTop: THEME.spacing.md,
+    padding: THEME.spacing.md,
+    backgroundColor: 'rgba(74, 144, 226, 0.08)',
+    borderRadius: THEME.borderRadius.rounded,
+    borderLeftWidth: 4,
+    borderLeftColor: THEME.colors.gradient.blue,
+  },
+  setupCardTitle: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    marginBottom: THEME.spacing.xs,
+  },
+  setupCardText: {
+    ...THEME.typography.body,
+    fontSize: 14,
+    color: THEME.colors.text.main,
+    marginBottom: THEME.spacing.xs,
+  },
+  setupCardSteps: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    marginTop: THEME.spacing.xs,
+    marginBottom: THEME.spacing.xs,
+  },
+  setupCardHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    fontStyle: 'italic',
   },
   diagnostico: {
     marginHorizontal: THEME.spacing.lg,
