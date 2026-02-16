@@ -20,6 +20,7 @@ import { supabase, getErrorMessage } from '@/lib/supabase';
 import { detectCategory } from '@/lib/categoryDetection';
 import { generatePrioritizationExplanation } from '@/lib/smartPrioritization';
 import { getEmotionEmoji } from '@/lib/emotionalInsights';
+import { getSectionEmoji } from '@/constants/emojis';
 import { logger } from '@/lib/logger';
 import { Sparkles, Plus, Flame, PenTool, Heart, Target, ArrowRight, Lightbulb, ChevronDown, ChevronRight } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -904,7 +905,7 @@ export default function TodayScreen() {
             <View style={styles.tasksListCard}>
               <View style={styles.tareasHeaderRow}>
                 <View>
-                  <Text style={styles.tareasTitle}># Tareas</Text>
+                  <Text style={styles.tareasTitle}>📋 # Tareas</Text>
                   <Text style={styles.tareasDate}>
                     {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </Text>
@@ -967,6 +968,7 @@ export default function TodayScreen() {
                         count={sec.tasks.length}
                         color={sec.color}
                         isSuelta={sec.isSuelta === true}
+                        emoji={getSectionEmoji(sec.isSuelta === true)}
                         hideAccentBar
                         variant="card"
                       />
@@ -1692,10 +1694,10 @@ const styles = StyleSheet.create({
   addTasksCardGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: THEME.spacing.md,
-    paddingHorizontal: THEME.spacing.lg,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
     gap: THEME.spacing.sm,
-    minHeight: 56,
+    minHeight: 52,
   },
   addTasksCardTextWrap: {
     flex: 1,
@@ -1801,19 +1803,20 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.lg,
   },
   areaCard: {
-    marginBottom: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
     backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
     ...THEME.shadows.soft,
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
     elevation: 3,
     borderLeftWidth: 5,
   },
   areaCardInner: {
-    padding: THEME.spacing.md,
-    paddingLeft: THEME.spacing.sm,
+    padding: THEME.spacing.sm,
+    paddingLeft: 14,
   },
   taskBlock: {
     marginBottom: THEME.spacing.lg,

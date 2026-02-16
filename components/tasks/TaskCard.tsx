@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
+import { getCategoryEmoji } from '@/constants/emojis';
 import { ChevronDown, ChevronRight, MoreVertical, FolderKanban, FileText } from 'lucide-react-native';
 
 export interface Task {
@@ -65,6 +66,8 @@ export function TaskCard({
   const isMiLista = showLabel && (projectLabel === 'Mi lista' || projectLabel === 'Tareas sueltas' || projectLabel === 'Suelta' || projectLabel === 'Independiente');
   const borderColor = !hideProjectLabel && isProjectTask && projectLabelColor ? projectLabelColor : sectionAccentColor;
   const hasDetails = onToggleDetailsExpand && (task.category || task.is_priority || projectLabel);
+  const categoryEmoji = getCategoryEmoji(task.category);
+  const sectionEmoji = isMiLista ? '📋' : '📁';
 
   return (
     <View style={styles.taskWrapper}>
@@ -113,38 +116,71 @@ export function TaskCard({
         </TouchableOpacity>
 
         <View style={styles.taskContent}>
-          {showLabel && (
-            <View
-              style={[
-                styles.projectBadge,
-                isMiLista
-                  ? styles.projectBadgeIndependiente
-                  : { backgroundColor: (projectLabelColor ?? THEME.colors.gradient.blue) + '22' },
-              ]}
+          <View style={styles.taskTitleRow}>
+            <Text
+              style={[styles.taskText, task.is_completed && styles.taskTextCompleted]}
+              numberOfLines={2}
             >
-              {isMiLista ? (
-                <FileText size={12} color={THEME.colors.text.secondary} />
-              ) : (
-                <FolderKanban size={12} color={projectLabelColor ?? THEME.colors.gradient.blue} />
-              )}
-              <Text
+              {task.content}
+            </Text>
+            {task.category && task.category.trim() !== '' && !task.is_completed && (
+              <View style={[styles.categoryChip, { backgroundColor: getCategoryColor(task.category) + '22' }]}>
+                <Text style={styles.categoryChipEmoji}>{categoryEmoji}</Text>
+                <Text style={[styles.categoryChipText, { color: getCategoryColor(task.category) }]} numberOfLines={1}>
+                  {task.category}
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.metaRow}>
+            {showLabel && (
+              <View
                 style={[
-                  styles.projectBadgeText,
-                  isMiLista ? styles.projectBadgeTextIndependiente : { color: projectLabelColor ?? THEME.colors.gradient.blue },
+                  styles.projectBadge,
+                  isMiLista
+                    ? styles.projectBadgeIndependiente
+                    : { backgroundColor: (projectLabelColor ?? THEME.colors.gradient.blue) + '22' },
                 ]}
-                numberOfLines={1}
               >
-                {projectLabel}
-              </Text>
-            </View>
-          )}
-          <Text
-            style={[styles.taskText, task.is_completed && styles.taskTextCompleted]}
-            numberOfLines={3}
-          >
-            {task.content}
-          </Text>
-
+                <Text style={styles.projectBadgeEmoji}>{sectionEmoji}</Text>
+                <Text
+                  style={[
+                    styles.projectBadgeText,
+                    isMiLista ? styles.projectBadgeTextIndependiente : { color: projectLabelColor ?? THEME.colors.gradient.blue },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {projectLabel}
+                </Text>
+              </View>
+            )}
+            {hasSubtasks && (
+              <View style={styles.subtasksPill}>
+                <Text style={styles.subtasksPillText}>
+                  {completedSubtasks}/{totalSubtasks}
+                </Text>
+              </View>
+            )}
+            {hasDetails && (
+              <TouchableOpacity
+                style={styles.detailsToggleRow}
+                onPress={onToggleDetailsExpand}
+                activeOpacity={0.7}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityRole="button"
+                accessibilityLabel={expandedDetails ? 'Ocultar especificaciones' : 'Ver más especificaciones'}
+              >
+                <Text style={styles.detailsToggleText} numberOfLines={1}>
+                  Detalles
+                </Text>
+                {expandedDetails ? (
+                  <ChevronDown size={16} color={THEME.colors.gradient.blue} />
+                ) : (
+                  <ChevronRight size={16} color={THEME.colors.gradient.blue} />
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
           {hasSubtasks && (
             <View style={styles.subtasksProgressContainer}>
               <View style={styles.subtasksProgressBar}>
@@ -155,28 +191,7 @@ export function TaskCard({
                   ]}
                 />
               </View>
-              <Text style={styles.subtasksProgressText}>
-                {completedSubtasks}/{totalSubtasks} completadas
-              </Text>
             </View>
-          )}
-
-          {hasDetails && (
-            <TouchableOpacity
-              style={styles.detailsToggleRow}
-              onPress={onToggleDetailsExpand}
-              activeOpacity={0.7}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityRole="button"
-              accessibilityLabel={expandedDetails ? 'Ocultar especificaciones' : 'Ver más especificaciones'}
-            >
-              <Text style={styles.detailsToggleText}>Ver más especificaciones</Text>
-              {expandedDetails ? (
-                <ChevronDown size={18} color={THEME.colors.gradient.blue} />
-              ) : (
-                <ChevronRight size={18} color={THEME.colors.gradient.blue} />
-              )}
-            </TouchableOpacity>
           )}
         </View>
 
@@ -220,6 +235,7 @@ export function TaskCard({
             <View style={styles.detailsRow}>
               <Text style={styles.detailsLabel}>Categoría</Text>
               <View style={[styles.detailsChip, { backgroundColor: getCategoryColor(task.category) + '28' }]}>
+                <Text style={styles.detailsChipEmoji}>{getCategoryEmoji(task.category)}</Text>
                 <Text style={[styles.detailsChipText, { color: getCategoryColor(task.category) }]} numberOfLines={1}>
                   {task.category}
                 </Text>
@@ -297,16 +313,16 @@ export function TaskCard({
 const styles = StyleSheet.create({
   taskWrapper: {
     position: 'relative',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
   },
   taskCard: {
     backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.standard,
-    padding: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: THEME.spacing.sm,
+    gap: 8,
     ...THEME.shadows.soft,
     position: 'relative',
     overflow: 'hidden',
@@ -316,36 +332,81 @@ const styles = StyleSheet.create({
     borderLeftColor: THEME.colors.gradient.blue,
     backgroundColor: THEME.colors.fill[200],
   },
-  projectBadge: {
-    alignSelf: 'flex-start',
+  taskTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+    minWidth: 0,
+  },
+  categoryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: THEME.borderRadius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginBottom: 6,
+    flexShrink: 0,
+  },
+  categoryChipEmoji: {
+    fontSize: 12,
+  },
+  categoryChipText: {
+    ...THEME.typography.small,
+    fontSize: 11,
+    fontFamily: THEME.fonts.heading.medium,
+    maxWidth: 80,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 6,
+  },
+  projectBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: THEME.borderRadius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   projectBadgeIndependiente: {
     backgroundColor: THEME.colors.fill[200],
+  },
+  projectBadgeEmoji: {
+    fontSize: 12,
   },
   projectBadgeText: {
     ...THEME.typography.small,
     fontSize: 11,
     fontFamily: THEME.fonts.heading.medium,
-    maxWidth: 160,
+    maxWidth: 120,
   },
   projectBadgeTextIndependiente: {
     color: THEME.colors.text.secondary,
+  },
+  subtasksPill: {
+    backgroundColor: THEME.colors.gradient.blue + '18',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: THEME.borderRadius.pill,
+  },
+  subtasksPillText: {
+    ...THEME.typography.small,
+    fontSize: 11,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
   },
   priorityNumberContainer: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   priorityNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: THEME.colors.gradient.blue,
     alignItems: 'center',
     justifyContent: 'center',
@@ -354,7 +415,7 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.fill[100],
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 16,
+    fontSize: 13,
   },
   taskCardCompleted: {
     opacity: 0.6,
@@ -376,12 +437,16 @@ const styles = StyleSheet.create({
   },
   taskContent: {
     flex: 1,
+    minWidth: 0,
+    flexShrink: 1,
   },
   taskText: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
-    fontSize: 14,
+    fontSize: 15,
     lineHeight: 20,
+    flex: 1,
+    minWidth: 0,
   },
   taskTextCompleted: {
     textDecorationLine: 'line-through',
@@ -450,15 +515,17 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
   },
   subtasksProgressContainer: {
-    marginTop: THEME.spacing.xs,
-    marginBottom: THEME.spacing.xs,
+    marginTop: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   subtasksProgressBar: {
-    height: 4,
+    height: 3,
+    flex: 1,
+    minWidth: 0,
     backgroundColor: THEME.colors.stroke[100],
     borderRadius: 2,
     overflow: 'hidden',
-    marginBottom: 4,
   },
   subtasksProgressFill: {
     height: '100%',
@@ -469,20 +536,19 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     fontSize: 11,
+    flexShrink: 0,
   },
   detailsToggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.xs,
-    paddingRight: THEME.spacing.xs,
+    gap: 4,
+    flexShrink: 0,
   },
   detailsToggleText: {
     ...THEME.typography.small,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
-    fontSize: 13,
+    fontSize: 12,
   },
   detailsPanel: {
     backgroundColor: THEME.colors.fill[200],
@@ -515,10 +581,16 @@ const styles = StyleSheet.create({
     minWidth: 72,
   },
   detailsChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: 4,
     borderRadius: THEME.borderRadius.pill,
     maxWidth: 180,
+  },
+  detailsChipEmoji: {
+    fontSize: 14,
   },
   detailsChipText: {
     ...THEME.typography.small,
