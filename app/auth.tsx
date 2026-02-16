@@ -52,9 +52,11 @@ export default function AuthScreen() {
   };
 
   // Mensajes de error de Supabase en español y con sugerencias
-  const getAuthErrorMessage = (message: string): string => {
+  const getAuthErrorMessage = (err: { message?: string; code?: string } | string): string => {
+    const message = typeof err === 'string' ? err : (err?.message ?? '');
+    const code = typeof err === 'object' && err && 'code' in err ? (err as { code?: string }).code : undefined;
     const lower = message.toLowerCase();
-    if (lower.includes('invalid login credentials') || lower.includes('invalid_credentials')) {
+    if (code === 'invalid_credentials' || lower.includes('invalid login credentials') || lower.includes('invalid_credentials')) {
       return 'Email o contraseña incorrectos. Revisa que estén bien escritos o regístrate si aún no tienes cuenta.';
     }
     if (lower.includes('email not confirmed')) {
@@ -66,7 +68,7 @@ export default function AuthScreen() {
     if (lower.includes('password')) {
       return 'Revisa tu contraseña (mínimo 6 caracteres).';
     }
-    return message;
+    return message || 'No se pudo iniciar sesión. Intenta de nuevo.';
   };
 
   const handleAuth = async () => {
@@ -109,7 +111,7 @@ export default function AuthScreen() {
       if (isSignUp) {
         const { error } = await signUp(email, password, fullName);
         if (error) {
-          setError(getAuthErrorMessage(error.message));
+          setError(getAuthErrorMessage({ message: error.message, code: (error as { code?: string }).code }));
         } else {
           router.replace('/onboarding/welcome');
         }
@@ -120,11 +122,7 @@ export default function AuthScreen() {
         
         const { error } = await signIn(email, password);
         if (error) {
-          const errorMessage = error.message || 'Error desconocido';
-          setError(getAuthErrorMessage(errorMessage));
-          if (__DEV__) {
-            console.warn('[Auth] Inicio de sesión fallido:', getAuthErrorMessage(errorMessage));
-          }
+          setError(getAuthErrorMessage({ message: error.message, code: (error as { code?: string }).code }));
         } else {
           console.log('[Auth Screen] Inicio de sesión exitoso');
           router.replace('/(tabs)');

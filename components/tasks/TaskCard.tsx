@@ -34,6 +34,8 @@ interface TaskCardProps {
   /** Etiqueta: "Mi lista", "Parte de [proyecto]" o nombre del proyecto; color del proyecto */
   projectLabel?: string | null;
   projectLabelColor?: string;
+  projectId?: string | null;
+  onPressProject?: () => void;
   hideProjectLabel?: boolean;
   sectionAccentColor?: string;
 }
@@ -54,6 +56,8 @@ export function TaskCard({
   onSubtaskToggle,
   projectLabel,
   projectLabelColor,
+  projectId,
+  onPressProject,
   hideProjectLabel,
   sectionAccentColor,
 }: TaskCardProps) {
@@ -64,6 +68,7 @@ export function TaskCard({
   const isProjectTask = task.project_id !== null && task.project_id !== undefined;
   const showLabel = !hideProjectLabel && projectLabel != null && projectLabel !== '';
   const isMiLista = showLabel && (projectLabel === 'Mi lista' || projectLabel === 'Tareas sueltas' || projectLabel === 'Suelta' || projectLabel === 'Independiente');
+  const showVerProyecto = Boolean(projectId && onPressProject);
   const borderColor = !hideProjectLabel && isProjectTask && projectLabelColor ? projectLabelColor : sectionAccentColor;
   const hasDetails = onToggleDetailsExpand && (task.category || task.is_priority || projectLabel);
   const categoryEmoji = getCategoryEmoji(task.category);
@@ -178,6 +183,20 @@ export function TaskCard({
                 ) : (
                   <ChevronRight size={16} color={THEME.colors.gradient.blue} />
                 )}
+              </TouchableOpacity>
+            )}
+            {showVerProyecto && (
+              <TouchableOpacity
+                style={styles.verProyectoLink}
+                onPress={onPressProject}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="Ver tareas del proyecto"
+              >
+                <Text style={[styles.verProyectoLinkText, projectLabelColor ? { color: projectLabelColor } : undefined]}>
+                  Ver proyecto →
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -549,6 +568,16 @@ const styles = StyleSheet.create({
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
     fontSize: 12,
+  },
+  verProyectoLink: {
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+  },
+  verProyectoLinkText: {
+    ...THEME.typography.small,
+    fontSize: 12,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.gradient.blue,
   },
   detailsPanel: {
     backgroundColor: THEME.colors.fill[200],

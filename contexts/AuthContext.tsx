@@ -116,29 +116,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
       if (error) {
-        logger.error('Error en signIn - Código:', error.status);
-        logger.error('Error en signIn - Mensaje:', error.message);
-        logger.error('Error en signIn - Code:', (error as any)?.code);
-        logger.error('Error completo:', JSON.stringify(error, null, 2));
-        
-        // Si es invalid_credentials, verificar si el usuario existe
-        if ((error as any)?.code === 'invalid_credentials') {
-          logger.warn('Credenciales inválidas. Verificando si el email existe...');
-          // Intentar verificar si el email está registrado (sin exponer información sensible)
-          try {
-            const { data: checkData, error: checkError } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
-              redirectTo: Platform.OS === 'web' ? 'http://localhost:8089/reset-password' : 'myapp://reset-password',
-            });
-            if (!checkError) {
-              logger.info('El email existe en el sistema (reset password funcionó)');
-            } else {
-              logger.warn('Error al verificar email:', checkError.message);
-            }
-          } catch (checkErr) {
-            logger.error('Error al verificar email:', checkErr);
-          }
+        const isInvalidCreds = (error as { code?: string })?.code === 'invalid_credentials';
+        // Credenciales incorrectas es un caso esperado: no loguear como error para no mostrar overlay rojo
+        if (isInvalidCreds) {
+          logger.warn('Inicio de sesión: credenciales incorrectas');
+        } else {
+          logger.error('Error en signIn:', error.message, (error as { code?: string })?.code ?? error.status);
         }
-        
         return { error };
       }
       

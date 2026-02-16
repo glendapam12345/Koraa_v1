@@ -20,7 +20,7 @@ import { supabase, getErrorMessage } from '@/lib/supabase';
 import { detectCategory } from '@/lib/categoryDetection';
 import { generatePrioritizationExplanation } from '@/lib/smartPrioritization';
 import { getEmotionEmoji } from '@/lib/emotionalInsights';
-import { getSectionEmoji } from '@/constants/emojis';
+import { getSectionEmoji, getCategoryEmoji } from '@/constants/emojis';
 import { logger } from '@/lib/logger';
 import { Sparkles, Plus, Flame, PenTool, Heart, Target, ArrowRight, Lightbulb, ChevronDown, ChevronRight } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -604,57 +604,39 @@ export default function TodayScreen() {
     [todayMood, energyLevel, incompleteTasks.length, time, focusLevel, tasks.length]
   );
 
-  type TaskSection = { id: string; title: string; color: string; isProject: boolean; isSuelta?: boolean; tasks: Task[] };
+  type TaskSection = { id: string; title: string; color: string; isCategory: true; categoryKey: string; tasks: Task[] };
   const CATEGORY_ORDER = ['Hogar', 'Trabajo', 'Personal', 'Salud', 'Contenido', 'Marca', 'Otros'];
   const taskSections = useMemo(() => {
-    const miListaTasks: Task[] = [];
-    const byProject = new Map<string, Task[]>();
+    const byCategory = new Map<string, Task[]>();
+    const normalizeCategory = (cat: string | undefined | null): string => {
+      const key = (cat && cat.trim() !== '' ? cat.trim() : 'Otros').toLowerCase();
+      const known = CATEGORY_ORDER.map((c) => c.toLowerCase()).includes(key);
+      return known ? key : 'otros';
+    };
     incompleteTasks.forEach((t) => {
-      if (t.project_id != null) {
-        const list = byProject.get(t.project_id) ?? [];
-        list.push(t);
-        byProject.set(t.project_id, list);
-      } else {
-        miListaTasks.push(t);
-      }
+      const key = normalizeCategory(t.category);
+      const list = byCategory.get(key) ?? [];
+      list.push(t);
+      byCategory.set(key, list);
     });
-    const categoryIndex = (cat: string) => {
-      const key = (cat && cat.trim() !== '' ? cat.trim() : 'Personal').toLowerCase();
-      const i = CATEGORY_ORDER.findIndex((c) => c.toLowerCase() === key);
-      return i >= 0 ? i : CATEGORY_ORDER.length;
-    };
-    const sortByPriorityThenCategory = (a: Task, b: Task) => {
-      const prio = (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0);
-      if (prio !== 0) return prio;
-      return categoryIndex(a.category ?? '') - categoryIndex(b.category ?? '');
-    };
+    const sortByPriority = (a: Task, b: Task) => (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0);
     const sections: TaskSection[] = [];
-    // Primero: una sola sección "Tareas sueltas" (tareas sin proyecto)
-    if (miListaTasks.length > 0) {
+    CATEGORY_ORDER.forEach((label) => {
+      const key = label.toLowerCase();
+      const taskList = byCategory.get(key) ?? [];
+      if (taskList.length === 0) return;
+      const color = getCategoryColor(label);
       sections.push({
-        id: 'mi-lista',
-        title: 'Tareas sueltas',
-        color: THEME.colors.text.secondary,
-        isProject: false,
-        isSuelta: true,
-        tasks: [...miListaTasks].sort(sortByPriorityThenCategory),
-      });
-    }
-    // Después: una sección por cada proyecto
-    const projectIds = Array.from(byProject.keys()).sort((a, b) => (projectsMap[a]?.name ?? '').localeCompare(projectsMap[b]?.name ?? ''));
-    projectIds.forEach((pid) => {
-      const taskList = byProject.get(pid) ?? [];
-      const p = projectsMap[pid];
-      sections.push({
-        id: `proj-${pid}`,
-        title: p?.name ?? 'Proyecto',
-        color: p?.color ?? THEME.colors.gradient.blue,
-        isProject: true,
-        tasks: [...taskList].sort((a, b) => (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0)),
+        id: `cat-${key}`,
+        title: label,
+        color,
+        isCategory: true,
+        categoryKey: key,
+        tasks: [...taskList].sort(sortByPriority),
       });
     });
     return sections;
-  }, [incompleteTasks, projectsMap, getCategoryColor]);
+  }, [incompleteTasks, getCategoryColor]);
 
   // Función para manejar pull to refresh
   const handleRefresh = async () => {
@@ -967,8 +949,7 @@ export default function TodayScreen() {
                         title={sec.title}
                         count={sec.tasks.length}
                         color={sec.color}
-                        isSuelta={sec.isSuelta === true}
-                        emoji={getSectionEmoji(sec.isSuelta === true)}
+                        emoji={getCategoryEmoji(sec.categoryKey)}
                         hideAccentBar
                         variant="card"
                       />
@@ -987,19 +968,21 @@ export default function TodayScreen() {
                         getCategoryColor={getCategoryColor}
                         onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
                         getProjectInfo={(task) => {
-                          if (task.parent_task_id) {
-                            const parent = incompleteTasks.find((t) => t.id === task.parent_task_id) ?? tasks.find((t) => t.id === task.parent_task_id);
-                            const pid = parent?.project_id;
-                            const p = pid ? projectsMap[pid] : null;
+                          const projectId = task.parent_task_id
+                            ? (incompleteTasks.find((t) => t.id === task.parent_task_id) ?? tasks.find((t) => t.id === task.parent_task_id))?.project_id ?? task.project_id
+                            : task.project_id;
+                          if (task.parent_task_id && projectId) {
+                            const p = projectsMap[projectId];
                             const name = p?.name ?? 'proyecto';
-                            return { label: `Parte de ${name}`, color: p?.color ?? THEME.colors.gradient.blue };
+                            return { label: `Parte de ${name}`, color: p?.color ?? THEME.colors.gradient.blue, projectId };
                           }
                           if (task.project_id) {
                             const p = projectsMap[task.project_id];
-                            return { label: p?.name ?? 'Proyecto', color: p?.color ?? THEME.colors.gradient.blue };
+                            return { label: `Proyecto: ${p?.name ?? 'Proyecto'}`, color: p?.color ?? THEME.colors.gradient.blue, projectId: task.project_id };
                           }
                           return { label: 'Tareas sueltas', color: THEME.colors.text.secondary };
                         }}
+                        onPressProject={(projectId) => router.push({ pathname: '/project/[id]', params: { id: projectId } })}
                         hideProjectLabel={false}
                         sectionAccentColor={sec.color}
                       />
