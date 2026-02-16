@@ -35,12 +35,20 @@ interface TaskCardProps {
   projectLabel?: string | null;
   projectLabelColor?: string;
   projectId?: string | null;
+  /** Nombre del proyecto para leyenda "Pertenece a X" */
+  projectName?: string | null;
   onPressProject?: () => void;
+  /** Otras tareas del mismo proyecto (siguientes pasos) */
+  projectSteps?: Task[];
+  expandedProjectSteps?: boolean;
+  onToggleProjectSteps?: () => void;
+  /** Para marcar completada una tarea (p. ej. desde pasos del proyecto) */
+  onToggleTask?: (taskId: string) => void;
   hideProjectLabel?: boolean;
   sectionAccentColor?: string;
   /** Categoría de la sección: si coincide con task.category, ocultar chip redundante */
   sectionCategory?: string;
-  /** Tarjeta uniforme: sin borde de proyecto ni badge Suelta/Proyecto en la fila principal */
+  /** Tarjeta uniforme: leyenda solo si proyecto "Pertenece a X"; si no, nada */
   uniformCard?: boolean;
 }
 
@@ -61,7 +69,12 @@ export function TaskCard({
   projectLabel,
   projectLabelColor,
   projectId,
+  projectName,
   onPressProject,
+  projectSteps,
+  expandedProjectSteps = false,
+  onToggleProjectSteps,
+  onToggleTask,
   hideProjectLabel,
   sectionAccentColor,
   sectionCategory,
@@ -72,6 +85,9 @@ export function TaskCard({
   const totalSubtasks = task.subtasks?.length || 0;
 
   const isProjectTask = task.project_id !== null && task.project_id !== undefined;
+  const hasProjectSteps = projectSteps && projectSteps.length > 0;
+  /** En modo uniforme: solo mostrar leyenda si pertenece a un proyecto; si no, nada */
+  const showProjectLegend = uniformCard && projectName != null && projectName !== '';
   const showLabel = !uniformCard && !hideProjectLabel && projectLabel != null && projectLabel !== '';
   const isMiLista = showLabel && (projectLabel === 'Mi lista' || projectLabel === 'Tareas sueltas' || projectLabel === 'Suelta' || projectLabel === 'Independiente');
   const showVerProyecto = Boolean(projectId && onPressProject);
@@ -157,7 +173,13 @@ export function TaskCard({
                 </Text>
               </View>
             )}
-            {showLabel && (
+            {uniformCard ? (
+              showProjectLegend && (
+                <Text style={styles.perteneceLabel} numberOfLines={1}>
+                  Pertenece a {projectName}
+                </Text>
+              )
+            ) : showLabel && (
               isMiLista ? (
                 <Text style={styles.sueltaLabel}>Suelta</Text>
               ) : (
@@ -171,6 +193,25 @@ export function TaskCard({
                   </Text>
                 </View>
               )
+            )}
+            {hasProjectSteps && onToggleProjectSteps && (
+              <TouchableOpacity
+                style={styles.verPasosRow}
+                onPress={onToggleProjectSteps}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel={expandedProjectSteps ? 'Ocultar pasos del proyecto' : `Ver ${projectSteps!.length} pasos del proyecto`}
+              >
+                <Text style={[styles.verPasosText, { color: projectLabelColor ?? THEME.colors.gradient.blue }]}>
+                  {expandedProjectSteps ? 'Ocultar pasos' : `Ver ${projectSteps!.length} pasos del proyecto`}
+                </Text>
+                {expandedProjectSteps ? (
+                  <ChevronDown size={16} color={projectLabelColor ?? THEME.colors.gradient.blue} />
+                ) : (
+                  <ChevronRight size={16} color={projectLabelColor ?? THEME.colors.gradient.blue} />
+                )}
+              </TouchableOpacity>
             )}
             {hasDetails && (
               <TouchableOpacity
@@ -333,6 +374,32 @@ export function TaskCard({
           ))}
         </View>
       )}
+
+      {expandedProjectSteps && hasProjectSteps && projectSteps && onToggleTask && (
+        <View style={styles.projectStepsContainer}>
+          <Text style={styles.projectStepsTitle}>Siguientes pasos del proyecto</Text>
+          {projectSteps.map((step) => (
+            <TouchableOpacity
+              key={step.id}
+              style={[styles.projectStepRow, step.is_completed && styles.projectStepRowCompleted]}
+              onPress={() => onToggleTask(step.id)}
+              activeOpacity={0.7}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: step.is_completed }}
+            >
+              <View style={styles.projectStepCheckbox}>
+                {step.is_completed && <View style={styles.taskCheckboxChecked} />}
+              </View>
+              <Text
+                style={[styles.projectStepText, step.is_completed && styles.projectStepTextCompleted]}
+                numberOfLines={2}
+              >
+                {step.content}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -346,7 +413,8 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.rounded,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 16,
+    minHeight: 72,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -364,6 +432,63 @@ const styles = StyleSheet.create({
   sueltaLabel: {
     ...THEME.typography.small,
     fontSize: 11,
+    color: THEME.colors.text.secondary,
+  },
+  perteneceLabel: {
+    ...THEME.typography.small,
+    fontSize: 12,
+    color: THEME.colors.text.secondary,
+  },
+  verPasosRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  verPasosText: {
+    ...THEME.typography.small,
+    fontSize: 12,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  projectStepsContainer: {
+    marginTop: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.xs,
+    paddingLeft: THEME.spacing.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: THEME.colors.gradient.blue + '50',
+  },
+  projectStepsTitle: {
+    ...THEME.typography.small,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.xs,
+  },
+  projectStepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    paddingRight: 8,
+  },
+  projectStepRowCompleted: {
+    opacity: 0.7,
+  },
+  projectStepCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: THEME.colors.gradient.blue,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  projectStepText: {
+    flex: 1,
+    ...THEME.typography.body,
+    fontSize: 14,
+    color: THEME.colors.text.main,
+  },
+  projectStepTextCompleted: {
+    textDecorationLine: 'line-through',
     color: THEME.colors.text.secondary,
   },
   taskTitleRow: {

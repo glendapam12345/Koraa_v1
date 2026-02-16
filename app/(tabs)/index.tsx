@@ -65,6 +65,8 @@ export default function TodayScreen() {
   const [expandedDetailsTasks, setExpandedDetailsTasks] = useState<Set<string>>(new Set());
   /** Secciones de categoría expandidas (null = todas expandidas) */
   const [expandedSections, setExpandedSections] = useState<Set<string> | null>(null);
+  /** Tareas con "pasos del proyecto" expandidos */
+  const [expandedProjectStepsTasks, setExpandedProjectStepsTasks] = useState<Set<string>>(new Set());
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editContent, setEditContent] = useState('');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
@@ -992,13 +994,28 @@ export default function TodayScreen() {
                               if (task.parent_task_id && projectId) {
                                 const p = projectsMap[projectId];
                                 const name = p?.name ?? 'proyecto';
-                                return { label: `Parte de ${name}`, color: p?.color ?? THEME.colors.gradient.blue, projectId };
+                                return { label: `Parte de ${name}`, color: p?.color ?? THEME.colors.gradient.blue, projectId, projectName: name };
                               }
                               if (task.project_id) {
                                 const p = projectsMap[task.project_id];
-                                return { label: `Proyecto: ${p?.name ?? 'Proyecto'}`, color: p?.color ?? THEME.colors.gradient.blue, projectId: task.project_id };
+                                const name = p?.name ?? 'Proyecto';
+                                return { label: `Proyecto: ${name}`, color: p?.color ?? THEME.colors.gradient.blue, projectId: task.project_id, projectName: name };
                               }
                               return { label: 'Tareas sueltas', color: THEME.colors.text.secondary };
+                            }}
+                            getProjectSteps={(projectId, excludeTaskId) =>
+                              tasks.filter(
+                                (t) => t.project_id === projectId && !t.is_completed && t.id !== excludeTaskId
+                              )
+                            }
+                            expandedProjectSteps={expandedProjectStepsTasks}
+                            onToggleProjectSteps={(taskId) => {
+                              setExpandedProjectStepsTasks((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(taskId)) next.delete(taskId);
+                                else next.add(taskId);
+                                return next;
+                              });
                             }}
                             onPressProject={(projectId) => router.push(`/project/${projectId}` as const)}
                             hideProjectLabel={false}

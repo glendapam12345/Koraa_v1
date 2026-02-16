@@ -117,11 +117,11 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
   },
   titleCard: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: THEME.fonts.heading.bold,
   },
   wrapperCard: {
-    marginBottom: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
   },
   countBadge: {
     paddingHorizontal: 10,

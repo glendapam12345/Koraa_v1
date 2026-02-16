@@ -15,8 +15,13 @@ interface TaskListProps {
   onDeleteTask: (task: Task) => void;
   getCategoryColor: (category: string) => string;
   onSubtaskToggle: (subtaskId: string, parentTaskId: string) => void;
-  /** Opcional: devuelve etiqueta, color y projectId para dimensión proyecto / tareas sueltas */
-  getProjectInfo?: (task: Task) => { label: string; color: string; projectId?: string } | null;
+  /** Opcional: devuelve etiqueta, color, projectId y projectName para leyenda / pasos */
+  getProjectInfo?: (task: Task) => { label: string; color: string; projectId?: string; projectName?: string } | null;
+  /** Tareas del mismo proyecto (excl. la actual) para "siguientes pasos" */
+  getProjectSteps?: (projectId: string, excludeTaskId: string) => Task[];
+  /** IDs de tareas con pasos del proyecto expandidos */
+  expandedProjectSteps?: Set<string>;
+  onToggleProjectSteps?: (taskId: string) => void;
   /** Al pulsar "Ver tareas del proyecto" */
   onPressProject?: (projectId: string) => void;
   /** En vista agrupada: ocultar badge en cada tarjeta y usar acento de sección */
@@ -25,7 +30,7 @@ interface TaskListProps {
   sectionAccentColor?: string;
   /** Categoría de la sección (para ocultar chip redundante) */
   sectionCategory?: string;
-  /** Tarjetas uniformes: sin borde de proyecto ni badge Suelta/Proyecto en la fila principal */
+  /** Tarjetas uniformes: leyenda solo "Pertenece a X", sin "Suelta" */
   uniformCard?: boolean;
 }
 
@@ -44,9 +49,12 @@ export function TaskList({
   getCategoryColor,
   onSubtaskToggle,
   getProjectInfo,
+  getProjectSteps,
+  expandedProjectSteps = new Set(),
+  onToggleProjectSteps,
+  onPressProject,
   hideProjectLabel,
   sectionAccentColor,
-  onPressProject,
   sectionCategory,
   uniformCard,
 }: TaskListProps) {
@@ -54,6 +62,8 @@ export function TaskList({
     <View style={styles.container}>
       {incompleteTasks.map((task, index) => {
         const projectInfo = getProjectInfo?.(task) ?? null;
+        const projectId = projectInfo?.projectId;
+        const projectSteps = projectId && getProjectSteps ? getProjectSteps(projectId, task.id) : undefined;
         return (
           <TaskCard
             key={task.id}
@@ -72,8 +82,13 @@ export function TaskList({
             onSubtaskToggle={(subtaskId) => onSubtaskToggle(subtaskId, task.id)}
             projectLabel={projectInfo?.label ?? null}
             projectLabelColor={projectInfo?.color}
-            projectId={projectInfo?.projectId}
-            onPressProject={projectInfo?.projectId && onPressProject ? () => onPressProject(projectInfo.projectId!) : undefined}
+            projectId={projectId}
+            projectName={projectInfo?.projectName}
+            onPressProject={projectId && onPressProject ? () => onPressProject(projectId) : undefined}
+            projectSteps={projectSteps}
+            expandedProjectSteps={expandedProjectSteps.has(task.id)}
+            onToggleProjectSteps={onToggleProjectSteps ? () => onToggleProjectSteps(task.id) : undefined}
+            onToggleTask={onToggleTask}
             hideProjectLabel={hideProjectLabel}
             sectionAccentColor={sectionAccentColor}
             sectionCategory={sectionCategory}
