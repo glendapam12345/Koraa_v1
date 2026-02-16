@@ -600,39 +600,43 @@ export default function TodayScreen() {
     [todayMood, energyLevel, incompleteTasks.length, time, focusLevel, tasks.length]
   );
 
-  type TaskSection = { id: string; title: string; color: string; isProject: boolean; tasks: Task[] };
+  type TaskSection = { id: string; title: string; color: string; isProject: boolean; isSuelta?: boolean; tasks: Task[] };
   const CATEGORY_ORDER = ['Hogar', 'Trabajo', 'Personal', 'Salud', 'Contenido', 'Marca', 'Otros'];
   const taskSections = useMemo(() => {
+    const miListaTasks: Task[] = [];
     const byProject = new Map<string, Task[]>();
-    const byCategory = new Map<string, Task[]>();
     incompleteTasks.forEach((t) => {
       if (t.project_id != null) {
         const list = byProject.get(t.project_id) ?? [];
         list.push(t);
         byProject.set(t.project_id, list);
       } else {
-        const cat = (t.category && t.category.trim() !== '') ? t.category.trim() : 'Personal';
-        const key = cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
-        const list = byCategory.get(key) ?? [];
-        list.push(t);
-        byCategory.set(key, list);
+        miListaTasks.push(t);
       }
     });
+    const categoryIndex = (cat: string) => {
+      const key = (cat && cat.trim() !== '' ? cat.trim() : 'Personal').toLowerCase();
+      const i = CATEGORY_ORDER.findIndex((c) => c.toLowerCase() === key);
+      return i >= 0 ? i : CATEGORY_ORDER.length;
+    };
+    const sortByPriorityThenCategory = (a: Task, b: Task) => {
+      const prio = (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0);
+      if (prio !== 0) return prio;
+      return categoryIndex(a.category ?? '') - categoryIndex(b.category ?? '');
+    };
     const sections: TaskSection[] = [];
-    CATEGORY_ORDER.forEach((title) => {
-      const key = title.toLowerCase();
-      const matchKey = Array.from(byCategory.keys()).find((k) => k.toLowerCase() === key);
-      const taskList = matchKey ? byCategory.get(matchKey) ?? [] : [];
-      if (taskList.length === 0) return;
-      const color = getCategoryColor(key);
-      sections.push({ id: `cat-${key}`, title, color, isProject: false, tasks: [...taskList].sort((a, b) => (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0)) });
-    });
-    byCategory.forEach((taskList, key) => {
-      if (CATEGORY_ORDER.some((c) => c.toLowerCase() === key.toLowerCase())) return;
-      const title = key.charAt(0).toUpperCase() + key.slice(1);
-      const color = getCategoryColor(key.toLowerCase());
-      sections.push({ id: `cat-${key}`, title, color, isProject: false, tasks: [...taskList].sort((a, b) => (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0)) });
-    });
+    // Primero: una sola sección "Mi lista" (tareas sin proyecto) para que quede claro
+    if (miListaTasks.length > 0) {
+      sections.push({
+        id: 'mi-lista',
+        title: 'Mi lista',
+        color: THEME.colors.text.secondary,
+        isProject: false,
+        isSuelta: true,
+        tasks: [...miListaTasks].sort(sortByPriorityThenCategory),
+      });
+    }
+    // Después: una sección por cada proyecto
     const projectIds = Array.from(byProject.keys()).sort((a, b) => (projectsMap[a]?.name ?? '').localeCompare(projectsMap[b]?.name ?? ''));
     projectIds.forEach((pid) => {
       const taskList = byProject.get(pid) ?? [];
@@ -961,7 +965,7 @@ export default function TodayScreen() {
                       title={sec.title}
                       count={sec.tasks.length}
                       color={sec.color}
-                      isSuelta={false}
+                      isSuelta={sec.isSuelta === true}
                     />
                     <TaskList
                       tasks={tasks}

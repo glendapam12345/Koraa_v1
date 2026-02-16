@@ -206,7 +206,7 @@ export default function ResetPasswordScreen() {
             </View>
             <Text style={styles.title}>Enlace no válido</Text>
             <Text style={styles.subtitle}>
-              Este enlace ha caducado o ya se usó. Pide otro desde "Olvidé mi contraseña" en la pantalla de inicio de sesión.
+              Este enlace ha caducado o ya se usó. Pide otro desde &quot;Olvidé mi contraseña&quot; en la pantalla de inicio de sesión.
             </Text>
           </View>
           {error ? <View style={styles.errorContainer}><Text style={styles.errorText}>{error}</Text></View> : null}

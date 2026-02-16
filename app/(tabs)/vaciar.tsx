@@ -517,8 +517,8 @@ export default function VaciarScreen() {
           </View>
         )}
 
-        {/* Proyecto y fecha: opcionales pero ayudan a organizar la semana */}
-        <Text style={styles.sectionLabel}>Proyecto y fecha (opcionales)</Text>
+        {/* Lista (Mi lista o proyecto) y fecha: opcionales pero ayudan a organizar */}
+        <Text style={styles.sectionLabel}>¿En qué lista? (opcional)</Text>
         {user && (
           <ProjectSelector
             selectedProjectId={selectedProjectId}
