@@ -517,8 +517,9 @@ export default function VaciarScreen() {
           </View>
         )}
 
-        {/* Lista (Mi lista o proyecto) y fecha: opcionales pero ayudan a organizar */}
-        <Text style={styles.sectionLabel}>¿En qué lista? (opcional)</Text>
+        {/* Proyecto: opcional; si no eliges, la tarea queda "suelta". Si eliges o creas uno, nombre + color. */}
+        <Text style={styles.sectionLabel}>¿Es para un proyecto o tarea suelta?</Text>
+        <Text style={styles.sectionHint}>Opcional. Tareas sueltas = sin proyecto. Si es proyecto, elige uno o crea nuevo (nombre y color).</Text>
         {user && (
           <ProjectSelector
             selectedProjectId={selectedProjectId}
@@ -691,6 +692,12 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    marginBottom: THEME.spacing.xs,
+  },
+  sectionHint: {
+    ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     marginBottom: THEME.spacing.sm,
   },

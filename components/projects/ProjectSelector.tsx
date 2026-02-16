@@ -86,26 +86,30 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
     <View style={styles.container}>
       <Text style={styles.label}>Proyecto (opcional)</Text>
       <TouchableOpacity
-        style={styles.selector}
+        style={[styles.selector, selectedProject && styles.selectorWithProject]}
         onPress={() => setShowModal(true)}
         activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel="Elegir proyecto"
+        accessibilityLabel={selectedProject ? `Proyecto: ${selectedProject.name}` : 'Tareas sueltas'}
       >
         {selectedProject ? (
-          <View style={styles.selectedRow}>
+          <View style={[styles.selectedRow, styles.selectedRowProject]}>
             <View
               style={[
-                styles.colorDot,
+                styles.colorBar,
                 { backgroundColor: selectedProject.color || THEME.colors.gradient.blue },
               ]}
             />
-            <Text style={styles.selectorText}>{selectedProject.name}</Text>
+            <View style={styles.selectedProjectInfo}>
+              <Text style={styles.selectedProjectLabel}>Proyecto</Text>
+              <Text style={styles.selectorText}>{selectedProject.name}</Text>
+              <Text style={styles.selectedColorHint}>Color: aplicado en Inicio</Text>
+            </View>
           </View>
         ) : (
           <View style={styles.selectedRow}>
             <FolderKanban size={20} color={THEME.colors.text.secondary} />
-            <Text style={[styles.selectorText, styles.placeholderText]}>Tareas sueltas</Text>
+            <Text style={[styles.selectorText, styles.placeholderText]}>Tareas sueltas (sin proyecto)</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -123,7 +127,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
         >
           <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>¿En qué lista?</Text>
+              <Text style={styles.modalTitle}>Proyecto o tareas sueltas</Text>
               <TouchableOpacity
                 onPress={() => setShowModal(false)}
                 style={styles.modalClose}
@@ -175,16 +179,17 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
                   ))}
                   {showNewProject ? (
                     <View style={styles.newProjectForm}>
+                      <Text style={styles.newProjectFormTitle}>Nuevo proyecto: nombre y color</Text>
                       <Text style={styles.newProjectLabel}>Nombre del proyecto</Text>
                       <TextInput
                         style={styles.newProjectInput}
                         value={newName}
                         onChangeText={setNewName}
-                        placeholder="Ej. Mi app"
+                        placeholder="Ej. Maratón, Mi app, Salud"
                         placeholderTextColor={THEME.colors.text.secondary}
                         autoFocus
                       />
-                      <Text style={styles.newProjectLabel}>Color</Text>
+                      <Text style={styles.newProjectLabel}>Color del proyecto</Text>
                       <View style={styles.colorRow}>
                         {PROJECT_COLORS.map((c) => (
                           <TouchableOpacity
@@ -225,7 +230,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
                       onPress={() => setShowNewProject(true)}
                     >
                       <Plus size={20} color={THEME.colors.gradient.blue} />
-                      <Text style={styles.addProjectText}>Nuevo proyecto</Text>
+                      <Text style={styles.addProjectText}>Nuevo proyecto (nombre + color)</Text>
                     </TouchableOpacity>
                   )}
                 </>
@@ -254,10 +259,37 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: THEME.colors.stroke[100],
   },
+  selectorWithProject: {
+    paddingLeft: THEME.spacing.xs,
+  },
   selectedRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: THEME.spacing.sm,
+  },
+  selectedRowProject: {
+    alignItems: 'stretch',
+    gap: 0,
+  },
+  colorBar: {
+    width: 4,
+    borderRadius: 2,
+    marginRight: THEME.spacing.sm,
+    minHeight: 40,
+  },
+  selectedProjectInfo: {
+    flex: 1,
+  },
+  selectedProjectLabel: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    marginBottom: 2,
+  },
+  selectedColorHint: {
+    ...THEME.typography.small,
+    fontSize: 11,
+    color: THEME.colors.text.secondary,
+    marginTop: 2,
   },
   colorDot: {
     width: 16,
@@ -344,6 +376,12 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
     backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.standard,
+  },
+  newProjectFormTitle: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    marginBottom: THEME.spacing.sm,
   },
   newProjectLabel: {
     ...THEME.typography.caption,
