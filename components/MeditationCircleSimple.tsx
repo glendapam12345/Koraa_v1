@@ -151,8 +151,9 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
           <View style={styles.content}>
             {isCompleted ? (
               <>
+                <View style={styles.completedGlow} />
                 <View style={styles.completedCircle}>
-                  <CheckCircle size={120} color={THEME.colors.fill[100]} strokeWidth={2} />
+                  <CheckCircle size={100} color={THEME.colors.fill[100]} strokeWidth={2.5} />
                 </View>
                 <Text style={styles.completedTitle}>{message.completed}</Text>
                 <Text style={styles.completedSubtitle}>¡Bien hecho! 🧘</Text>
@@ -163,24 +164,34 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
                 <Text style={styles.title}>{message.title}</Text>
                 <Text style={styles.subtitle}>{message.subtitle}</Text>
 
-                <View style={[styles.circleContainer, { width: CIRCLE_SIZE + 40, height: CIRCLE_SIZE + 40 }]}>
-                  {/* Anillo exterior (borde del círculo) */}
-                  <View style={[styles.ringOuter, { width: CIRCLE_SIZE, height: CIRCLE_SIZE, borderRadius: CIRCLE_SIZE / 2 }]}>
-                    {/* Relleno que crece con los segundos: de abajo hacia arriba */}
-                    <View style={[styles.ringFillClip, { height: CIRCLE_SIZE * fillProgress }]}>
-                      <View style={[styles.ringFill, { width: CIRCLE_SIZE, height: CIRCLE_SIZE, borderRadius: CIRCLE_SIZE / 2 }]} />
+                <View style={[styles.circleWrapper, { width: CIRCLE_SIZE + 56, height: CIRCLE_SIZE + 56 }]}>
+                  {/* Glow suave detrás del anillo */}
+                  <View style={[styles.ringGlow, { width: CIRCLE_SIZE + 24, height: CIRCLE_SIZE + 24, borderRadius: (CIRCLE_SIZE + 24) / 2 }]} />
+                  <View style={[styles.circleContainer, { width: CIRCLE_SIZE + 8, height: CIRCLE_SIZE + 8 }]}>
+                    {/* Anillo exterior (borde + pista) */}
+                    <View style={[styles.ringOuter, { width: CIRCLE_SIZE, height: CIRCLE_SIZE, borderRadius: CIRCLE_SIZE / 2 }]}>
+                      <View style={[styles.ringFillClip, { height: CIRCLE_SIZE * fillProgress }]}>
+                        <LinearGradient
+                          colors={['rgba(255,255,255,0.55)', 'rgba(255,255,255,0.35)']}
+                          start={{ x: 0.5, y: 1 }}
+                          end={{ x: 0.5, y: 0 }}
+                          style={[styles.ringFill, { width: CIRCLE_SIZE, height: CIRCLE_SIZE, borderRadius: CIRCLE_SIZE / 2 }]}
+                        />
+                      </View>
                     </View>
-                  </View>
-                  {/* Centro: número de segundos o ícono */}
-                  <View style={styles.ringCenter}>
-                    {!isActive ? (
-                      <Sparkles size={72} color={THEME.colors.fill[100]} strokeWidth={1.5} />
-                    ) : (
-                      <>
-                        <Text style={styles.timerText}>{secondsRemaining}</Text>
-                        <Text style={styles.timerLabel}>seg</Text>
-                      </>
-                    )}
+                    {/* Centro: cristal + número o ícono */}
+                    <View style={styles.ringCenter}>
+                      <View style={styles.centerGlass}>
+                        {!isActive ? (
+                          <Sparkles size={76} color={THEME.colors.fill[100]} strokeWidth={1.5} />
+                        ) : (
+                          <>
+                            <Text style={styles.timerText}>{secondsRemaining}</Text>
+                            <Text style={styles.timerLabel}>seg</Text>
+                          </>
+                        )}
+                      </View>
+                    </View>
                   </View>
                 </View>
 
@@ -190,7 +201,9 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
                   </TouchableOpacity>
                 ) : (
                   <View style={styles.instructionContainer}>
-                    <Text style={styles.cycleCounter}>Ciclo {cycleCount + 1} de {TOTAL_CYCLES}</Text>
+                    <View style={styles.cycleBadge}>
+                      <Text style={styles.cycleCounter}>Ciclo {cycleCount + 1} de {TOTAL_CYCLES}</Text>
+                    </View>
                     {breathPhase === 'inhale' && (
                       <>
                         <Text style={styles.instructionText}>Inhala</Text>
@@ -210,6 +223,9 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
                       </>
                     )}
                   </View>
+                )}
+                {!isActive && (
+                  <Text style={styles.hint}>3 ciclos · Inhala, aguanta, exhala</Text>
                 )}
               </>
             )}
@@ -234,10 +250,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 60,
     right: THEME.spacing.lg,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
@@ -247,32 +265,53 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.lg,
   },
   emoji: {
-    fontSize: 48,
-    marginBottom: THEME.spacing.md,
+    fontSize: 52,
+    marginBottom: THEME.spacing.sm,
   },
   title: {
     ...THEME.typography.h2,
+    fontSize: 26,
     color: THEME.colors.fill[100],
     textAlign: 'center',
     marginBottom: THEME.spacing.xs,
   },
   subtitle: {
     ...THEME.typography.body,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.92)',
     textAlign: 'center',
-    marginBottom: THEME.spacing.xl,
+    marginBottom: THEME.spacing.lg,
+    lineHeight: 22,
   },
-  circleContainer: {
+  circleWrapper: {
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: THEME.spacing.xl,
   },
+  ringGlow: {
+    position: 'absolute',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 28,
+    elevation: 8,
+  },
+  circleContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   ringOuter: {
-    borderWidth: 10,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
-    backgroundColor: 'transparent',
+    borderWidth: 12,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     overflow: 'hidden',
     position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
   ringFillClip: {
     position: 'absolute',
@@ -285,7 +324,6 @@ const styles = StyleSheet.create({
   ringFill: {
     position: 'absolute',
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.45)',
   },
   ringCenter: {
     position: 'absolute',
@@ -294,68 +332,131 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  centerGlass: {
+    width: 136,
+    height: 136,
+    borderRadius: 68,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...THEME.shadows.soft,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+  },
   timerText: {
-    fontSize: 80,
+    fontSize: 72,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.fill[100],
-    lineHeight: 80,
+    lineHeight: 72,
+    letterSpacing: -1,
   },
   timerLabel: {
     ...THEME.typography.body,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.92)',
     fontFamily: THEME.fonts.heading.medium,
-    marginTop: -THEME.spacing.xs,
+    marginTop: -4,
+    letterSpacing: 0.5,
+  },
+  hint: {
+    ...THEME.typography.caption,
+    color: 'rgba(255, 255, 255, 0.65)',
+    marginTop: THEME.spacing.sm,
+    textAlign: 'center',
   },
   startButton: {
     backgroundColor: THEME.colors.fill[100],
     paddingHorizontal: THEME.spacing.xl * 2,
-    paddingVertical: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.pill,
+    paddingVertical: THEME.spacing.md + 4,
+    borderRadius: THEME.borderRadius.full,
     ...THEME.shadows.soft,
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
   startButtonText: {
     ...THEME.typography.body,
+    fontSize: 17,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.bold,
   },
   instructionContainer: {
     alignItems: 'center',
+    paddingHorizontal: THEME.spacing.md,
+  },
+  cycleBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: THEME.spacing.md,
+    paddingVertical: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.pill,
+    marginBottom: THEME.spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   cycleCounter: {
     ...THEME.typography.caption,
-    color: 'rgba(255, 255, 255, 0.7)',
-    marginBottom: THEME.spacing.sm,
+    color: 'rgba(255, 255, 255, 0.95)',
     fontFamily: THEME.fonts.heading.medium,
   },
   instructionText: {
     ...THEME.typography.h2,
+    fontSize: 26,
     color: THEME.colors.fill[100],
     marginBottom: THEME.spacing.xs,
     fontFamily: THEME.fonts.heading.bold,
   },
   instructionSubtext: {
     ...THEME.typography.body,
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.88)',
     fontStyle: 'italic',
+    lineHeight: 22,
+  },
+  completedGlow: {
+    position: 'absolute',
+    top: 10,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 40,
+    elevation: 8,
   },
   completedCircle: {
     width: 160,
     height: 160,
     borderRadius: 80,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: THEME.spacing.lg,
+    ...THEME.shadows.soft,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
   },
   completedTitle: {
     ...THEME.typography.h2,
+    fontSize: 22,
     color: THEME.colors.fill[100],
     textAlign: 'center',
     marginBottom: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.lg,
+    lineHeight: 28,
   },
   completedSubtitle: {
     ...THEME.typography.body,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.92)',
     textAlign: 'center',
   },
 });
