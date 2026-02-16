@@ -25,6 +25,8 @@ interface TaskListProps {
   sectionAccentColor?: string;
   /** Categoría de la sección (para ocultar chip redundante) */
   sectionCategory?: string;
+  /** Tarjetas uniformes: sin borde de proyecto ni badge Suelta/Proyecto en la fila principal */
+  uniformCard?: boolean;
 }
 
 export function TaskList({
@@ -46,6 +48,7 @@ export function TaskList({
   sectionAccentColor,
   onPressProject,
   sectionCategory,
+  uniformCard,
 }: TaskListProps) {
   return (
     <View style={styles.container}>
@@ -74,6 +77,7 @@ export function TaskList({
             hideProjectLabel={hideProjectLabel}
             sectionAccentColor={sectionAccentColor}
             sectionCategory={sectionCategory}
+            uniformCard={uniformCard}
           />
         );
       })}

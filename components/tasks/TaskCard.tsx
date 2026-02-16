@@ -40,6 +40,8 @@ interface TaskCardProps {
   sectionAccentColor?: string;
   /** Categoría de la sección: si coincide con task.category, ocultar chip redundante */
   sectionCategory?: string;
+  /** Tarjeta uniforme: sin borde de proyecto ni badge Suelta/Proyecto en la fila principal */
+  uniformCard?: boolean;
 }
 
 export function TaskCard({
@@ -63,21 +65,21 @@ export function TaskCard({
   hideProjectLabel,
   sectionAccentColor,
   sectionCategory,
+  uniformCard = false,
 }: TaskCardProps) {
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
   const completedSubtasks = task.subtasks?.filter((st) => st.is_completed).length || 0;
   const totalSubtasks = task.subtasks?.length || 0;
 
   const isProjectTask = task.project_id !== null && task.project_id !== undefined;
-  const showLabel = !hideProjectLabel && projectLabel != null && projectLabel !== '';
+  const showLabel = !uniformCard && !hideProjectLabel && projectLabel != null && projectLabel !== '';
   const isMiLista = showLabel && (projectLabel === 'Mi lista' || projectLabel === 'Tareas sueltas' || projectLabel === 'Suelta' || projectLabel === 'Independiente');
   const showVerProyecto = Boolean(projectId && onPressProject);
-  const borderColor = !hideProjectLabel && isProjectTask && projectLabelColor ? projectLabelColor : sectionAccentColor;
   const hasDetails = onToggleDetailsExpand && (task.category || task.is_priority || projectLabel);
   const categoryEmoji = getCategoryEmoji(task.category);
   const sectionEmoji = isMiLista ? '📋' : '📁';
 
-  const cardLeftBorderColor = !hideProjectLabel && isProjectTask && projectLabelColor
+  const cardLeftBorderColor = !uniformCard && !hideProjectLabel && isProjectTask && projectLabelColor
     ? projectLabelColor
     : undefined;
   const cardLeftBorderWidth = cardLeftBorderColor ? 5 : 0;
@@ -187,7 +189,7 @@ export function TaskCard({
                 )}
               </TouchableOpacity>
             )}
-            {showVerProyecto && (
+            {!uniformCard && showVerProyecto && (
               <TouchableOpacity
                 style={styles.verProyectoLink}
                 onPress={onPressProject}

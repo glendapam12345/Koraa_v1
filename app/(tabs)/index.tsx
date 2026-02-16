@@ -63,6 +63,8 @@ export default function TodayScreen() {
   const insets = useSafeAreaInsets();
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [expandedDetailsTasks, setExpandedDetailsTasks] = useState<Set<string>>(new Set());
+  /** Secciones de categoría expandidas (null = todas expandidas) */
+  const [expandedSections, setExpandedSections] = useState<Set<string> | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editContent, setEditContent] = useState('');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
@@ -936,54 +938,79 @@ export default function TodayScreen() {
               )}
 
               {incompleteTasks.length > 0 ? (
-                taskSections.map((sec) => (
-                  <View key={sec.id} style={styles.areaCard}>
-                    <View style={styles.areaCardInner}>
-                      <SectionHeader
-                        title={sec.title}
-                        count={sec.tasks.length}
-                        color={sec.color}
-                        emoji={getCategoryEmoji(sec.categoryKey)}
-                        hideAccentBar
-                        variant="card"
-                      />
-                      <TaskList
-                        tasks={tasks}
-                        incompleteTasks={sec.tasks}
-                        expandedTasks={expandedTasks}
-                        expandedDetailsTasks={expandedDetailsTasks}
-                        menuOpen={menuOpen}
-                        onToggleTask={handleToggleTask}
-                        onToggleExpansion={toggleTaskExpansion}
-                        onToggleDetailsExpansion={toggleDetailsExpansion}
-                        onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
-                        onEditTask={handleEditTask}
-                        onDeleteTask={handleDeleteTask}
-                        getCategoryColor={getCategoryColor}
-                        onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
-                        getProjectInfo={(task) => {
-                          const projectId = task.parent_task_id
-                            ? (incompleteTasks.find((t) => t.id === task.parent_task_id) ?? tasks.find((t) => t.id === task.parent_task_id))?.project_id ?? task.project_id
-                            : task.project_id;
-                          if (task.parent_task_id && projectId) {
-                            const p = projectsMap[projectId];
-                            const name = p?.name ?? 'proyecto';
-                            return { label: `Parte de ${name}`, color: p?.color ?? THEME.colors.gradient.blue, projectId };
-                          }
-                          if (task.project_id) {
-                            const p = projectsMap[task.project_id];
-                            return { label: `Proyecto: ${p?.name ?? 'Proyecto'}`, color: p?.color ?? THEME.colors.gradient.blue, projectId: task.project_id };
-                          }
-                          return { label: 'Tareas sueltas', color: THEME.colors.text.secondary };
-                        }}
-                        onPressProject={(projectId) => router.push(`/project/${projectId}` as const)}
-                        hideProjectLabel={false}
-                        sectionAccentColor={sec.color}
-                        sectionCategory={sec.categoryKey}
-                      />
+                taskSections.map((sec) => {
+                  const isSectionExpanded = expandedSections === null || expandedSections.has(sec.id);
+                  const toggleSection = () => {
+                    setExpandedSections((prev) => {
+                      const expanded = prev === null || prev.has(sec.id);
+                      if (expanded) {
+                        if (prev === null) {
+                          return new Set<string>(taskSections.map((s) => s.id).filter((id) => id !== sec.id));
+                        }
+                        const next = new Set<string>(prev);
+                        next.delete(sec.id);
+                        return next;
+                      }
+                      const next = prev === null ? new Set<string>() : new Set<string>(prev);
+                      next.add(sec.id);
+                      return next;
+                    });
+                  };
+                  return (
+                    <View key={sec.id} style={styles.areaCard}>
+                      <View style={styles.areaCardInner}>
+                        <SectionHeader
+                          title={sec.title}
+                          count={sec.tasks.length}
+                          color={sec.color}
+                          emoji={getCategoryEmoji(sec.categoryKey)}
+                          hideAccentBar
+                          variant="card"
+                          expandable
+                          expanded={isSectionExpanded}
+                          onToggleExpand={toggleSection}
+                        />
+                        {isSectionExpanded && (
+                          <TaskList
+                            tasks={tasks}
+                            incompleteTasks={sec.tasks}
+                            expandedTasks={expandedTasks}
+                            expandedDetailsTasks={expandedDetailsTasks}
+                            menuOpen={menuOpen}
+                            onToggleTask={handleToggleTask}
+                            onToggleExpansion={toggleTaskExpansion}
+                            onToggleDetailsExpansion={toggleDetailsExpansion}
+                            onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+                            onEditTask={handleEditTask}
+                            onDeleteTask={handleDeleteTask}
+                            getCategoryColor={getCategoryColor}
+                            onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
+                            getProjectInfo={(task) => {
+                              const projectId = task.parent_task_id
+                                ? (incompleteTasks.find((t) => t.id === task.parent_task_id) ?? tasks.find((t) => t.id === task.parent_task_id))?.project_id ?? task.project_id
+                                : task.project_id;
+                              if (task.parent_task_id && projectId) {
+                                const p = projectsMap[projectId];
+                                const name = p?.name ?? 'proyecto';
+                                return { label: `Parte de ${name}`, color: p?.color ?? THEME.colors.gradient.blue, projectId };
+                              }
+                              if (task.project_id) {
+                                const p = projectsMap[task.project_id];
+                                return { label: `Proyecto: ${p?.name ?? 'Proyecto'}`, color: p?.color ?? THEME.colors.gradient.blue, projectId: task.project_id };
+                              }
+                              return { label: 'Tareas sueltas', color: THEME.colors.text.secondary };
+                            }}
+                            onPressProject={(projectId) => router.push(`/project/${projectId}` as const)}
+                            hideProjectLabel={false}
+                            sectionAccentColor={sec.color}
+                            sectionCategory={sec.categoryKey}
+                            uniformCard
+                          />
+                        )}
+                      </View>
                     </View>
-                  </View>
-                ))
+                  );
+                })
               ) : (
                 <View style={styles.emptyTasksInCard}>
                   <Text style={styles.emptyTasksInCardText}>Usa el cuadro de arriba para agregar tu primera tarea.</Text>
