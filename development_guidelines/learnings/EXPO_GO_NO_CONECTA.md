@@ -1,6 +1,6 @@
 # Expo Go no conecta: qué revisar
 
-Cuando Expo Go "ya no jala" (no abre la app o se queda cargando), suele ser por **red** o **caché**. Prueba en este orden.
+Cuando Expo Go muestra **"Could not connect to the server"** o "There was a problem running the requested app" con una URL tipo `exp://192.168.x.x:8081`, el teléfono **no puede alcanzar** el servidor de desarrollo en tu computadora. Suele ser por **red** o **firewall**. Prueba en este orden.
 
 ---
 
@@ -64,6 +64,7 @@ npm run dev:tunnel
 
 | Síntoma | Qué hacer |
 |--------|-----------|
+| **"Could not connect to the server"** / exp://192.168.x.x:8081 | Misma WiFi que el Mac, o **`npm run dev:tunnel`** y escanear el nuevo QR. |
 | No carga / "Unable to connect" | Misma WiFi que el Mac, o `npm run dev:tunnel` y escanear ese QR. |
 | QR no aparece en la terminal | `npm run dev:clear` y esperar. |
 | Sigue sin conectar | `npm run dev:tunnel`, actualizar Expo Go, cerrar y reabrir Expo Go. |

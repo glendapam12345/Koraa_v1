@@ -13,14 +13,15 @@ export default function TabLayout() {
         tabBarInactiveTintColor: THEME.colors.text.secondary,
         tabBarStyle: {
           backgroundColor: THEME.colors.fill[100],
+          borderTopWidth: 1,
           borderTopColor: THEME.colors.stroke[100],
-          height: 64 + insets.bottom,
-          paddingBottom: insets.bottom + 8,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom + 6,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
+          fontSize: 11,
+          fontFamily: THEME.fonts.heading.medium,
         },
       }}
     >

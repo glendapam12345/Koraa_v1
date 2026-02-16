@@ -83,8 +83,8 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.xs,
   },
   countBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: THEME.borderRadius.pill,
   },
   countCard: {

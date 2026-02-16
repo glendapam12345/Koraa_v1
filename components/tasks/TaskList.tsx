@@ -23,6 +23,8 @@ interface TaskListProps {
   hideProjectLabel?: boolean;
   /** Color del acento lateral para todas las tareas de esta sección */
   sectionAccentColor?: string;
+  /** Categoría de la sección (para ocultar chip redundante) */
+  sectionCategory?: string;
 }
 
 export function TaskList({
@@ -43,6 +45,7 @@ export function TaskList({
   hideProjectLabel,
   sectionAccentColor,
   onPressProject,
+  sectionCategory,
 }: TaskListProps) {
   return (
     <View style={styles.container}>
@@ -70,6 +73,7 @@ export function TaskList({
             onPressProject={projectInfo?.projectId && onPressProject ? () => onPressProject(projectInfo.projectId!) : undefined}
             hideProjectLabel={hideProjectLabel}
             sectionAccentColor={sectionAccentColor}
+            sectionCategory={sectionCategory}
           />
         );
       })}

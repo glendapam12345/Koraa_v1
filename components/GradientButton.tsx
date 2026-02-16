@@ -31,9 +31,10 @@ export function GradientButton({ title, onPress, style, disabled }: GradientButt
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: THEME.borderRadius.pill,
+    borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
     height: THEME.sizes.buttonHeight,
+    ...THEME.shadows.card,
   },
   gradient: {
     flex: 1,
@@ -44,5 +45,6 @@ const styles = StyleSheet.create({
   text: {
     ...THEME.typography.body,
     color: THEME.colors.fill[100],
+    fontFamily: THEME.fonts.heading.bold,
   } as TextStyle,
 });

@@ -10,7 +10,8 @@ import type { Task } from '@/components/tasks/TaskCard';
 import { TaskList } from '@/components/tasks/TaskList';
 
 export default function ProjectScreen() {
-  const { id: projectId } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string }>();
+  const projectId = typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : undefined;
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, TextInput, Keyboard } from 'react-native';
 import { useState, useEffect } from 'react';
 import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
@@ -87,7 +87,10 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
       <Text style={styles.label}>Proyecto (opcional)</Text>
       <TouchableOpacity
         style={[styles.selector, selectedProject && styles.selectorWithProject]}
-        onPress={() => setShowModal(true)}
+        onPress={() => {
+          Keyboard.dismiss();
+          setShowModal(true);
+        }}
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel={selectedProject ? `Proyecto: ${selectedProject.name}` : 'Tareas sueltas'}
@@ -119,6 +122,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
         transparent
         animationType="slide"
         onRequestClose={() => setShowModal(false)}
+        onShow={() => Keyboard.dismiss()}
       >
         <TouchableOpacity
           style={styles.modalOverlay}
@@ -191,9 +195,9 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
                       />
                       <Text style={styles.newProjectLabel}>Color del proyecto</Text>
                       <View style={styles.colorRow}>
-                        {PROJECT_COLORS.map((c) => (
+                        {PROJECT_COLORS.map((c, i) => (
                           <TouchableOpacity
-                            key={c}
+                            key={`project-color-${i}`}
                             style={[
                               styles.colorOption,
                               { backgroundColor: c },

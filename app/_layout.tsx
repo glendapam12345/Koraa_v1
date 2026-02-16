@@ -84,6 +84,7 @@ export default function RootLayout() {
             <Stack.Screen name="reset-password" />
             <Stack.Screen name="onboarding" />
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="project/[id]" />
             <Stack.Screen name="+not-found" />
           </Stack>
           <StatusBar style="auto" />

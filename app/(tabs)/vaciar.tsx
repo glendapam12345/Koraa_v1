@@ -706,11 +706,14 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
   },
   input: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
     minHeight: 120,
+    fontSize: 16,
   },
   recentContainer: {
     marginTop: THEME.spacing.lg,
@@ -733,7 +736,7 @@ const styles = StyleSheet.create({
   priorityToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: THEME.spacing.xs,
+    gap: THEME.spacing.sm,
     padding: THEME.spacing.md,
     backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.rounded,
@@ -742,8 +745,8 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.stroke[100],
   },
   priorityToggleActive: {
-    backgroundColor: THEME.colors.gradient.pink + '15',
-    borderColor: THEME.colors.gradient.pink,
+    backgroundColor: THEME.colors.gradient.pink + '12',
+    borderColor: THEME.colors.gradient.pink + '40',
   },
   priorityToggleText: {
     ...THEME.typography.body,
@@ -756,7 +759,7 @@ const styles = StyleSheet.create({
   subtasksToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: THEME.spacing.xs,
+    gap: THEME.spacing.sm,
     padding: THEME.spacing.md,
     backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.rounded,
@@ -765,8 +768,8 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.stroke[100],
   },
   subtasksToggleActive: {
-    backgroundColor: THEME.colors.gradient.blue + '15',
-    borderColor: THEME.colors.gradient.blue,
+    backgroundColor: THEME.colors.gradient.blue + '12',
+    borderColor: THEME.colors.gradient.blue + '40',
   },
   subtasksToggleText: {
     ...THEME.typography.body,

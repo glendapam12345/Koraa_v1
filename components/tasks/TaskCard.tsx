@@ -38,6 +38,8 @@ interface TaskCardProps {
   onPressProject?: () => void;
   hideProjectLabel?: boolean;
   sectionAccentColor?: string;
+  /** Categoría de la sección: si coincide con task.category, ocultar chip redundante */
+  sectionCategory?: string;
 }
 
 export function TaskCard({
@@ -60,6 +62,7 @@ export function TaskCard({
   onPressProject,
   hideProjectLabel,
   sectionAccentColor,
+  sectionCategory,
 }: TaskCardProps) {
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
   const completedSubtasks = task.subtasks?.filter((st) => st.is_completed).length || 0;
@@ -128,7 +131,8 @@ export function TaskCard({
             >
               {task.content}
             </Text>
-            {task.category && task.category.trim() !== '' && !task.is_completed && (
+            {task.category && task.category.trim() !== '' && !task.is_completed && 
+             (!sectionCategory || task.category.toLowerCase() !== sectionCategory.toLowerCase()) && (
               <View style={[styles.categoryChip, { backgroundColor: getCategoryColor(task.category) + '22' }]}>
                 <Text style={styles.categoryChipEmoji}>{categoryEmoji}</Text>
                 <Text style={[styles.categoryChipText, { color: getCategoryColor(task.category) }]} numberOfLines={1}>
@@ -143,15 +147,15 @@ export function TaskCard({
                 style={[
                   styles.projectBadge,
                   isMiLista
-                    ? styles.projectBadgeIndependiente
-                    : { backgroundColor: (projectLabelColor ?? THEME.colors.gradient.blue) + '22' },
+                    ? styles.projectBadgeSuelta
+                    : [styles.projectBadgeProyecto, { borderLeftColor: projectLabelColor ?? THEME.colors.gradient.blue }],
                 ]}
               >
                 <Text style={styles.projectBadgeEmoji}>{sectionEmoji}</Text>
                 <Text
                   style={[
                     styles.projectBadgeText,
-                    isMiLista ? styles.projectBadgeTextIndependiente : { color: projectLabelColor ?? THEME.colors.gradient.blue },
+                    isMiLista ? styles.projectBadgeTextSuelta : [styles.projectBadgeTextProyecto, { color: projectLabelColor ?? THEME.colors.gradient.blue }],
                   ]}
                   numberOfLines={1}
                 >
@@ -332,17 +336,17 @@ export function TaskCard({
 const styles = StyleSheet.create({
   taskWrapper: {
     position: 'relative',
-    marginBottom: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
   },
   taskCard: {
     backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.standard,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: THEME.borderRadius.rounded,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    ...THEME.shadows.soft,
+    ...THEME.shadows.card,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -380,31 +384,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 6,
+    gap: 8,
+    marginTop: 4,
+    minHeight: 24,
   },
   projectBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    borderRadius: THEME.borderRadius.pill,
+    borderRadius: THEME.borderRadius.standard,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  projectBadgeIndependiente: {
+  projectBadgeSuelta: {
+    backgroundColor: THEME.colors.fill[200],
+    borderLeftWidth: 0,
+  },
+  projectBadgeProyecto: {
+    borderLeftWidth: 3,
     backgroundColor: THEME.colors.fill[200],
   },
   projectBadgeEmoji: {
-    fontSize: 12,
+    fontSize: 11,
   },
   projectBadgeText: {
     ...THEME.typography.small,
     fontSize: 11,
     fontFamily: THEME.fonts.heading.medium,
-    maxWidth: 120,
+    maxWidth: 140,
   },
-  projectBadgeTextIndependiente: {
+  projectBadgeTextSuelta: {
     color: THEME.colors.text.secondary,
+  },
+  projectBadgeTextProyecto: {
+    fontFamily: THEME.fonts.heading.bold,
   },
   subtasksPill: {
     backgroundColor: THEME.colors.gradient.blue + '18',

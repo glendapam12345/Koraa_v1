@@ -982,9 +982,10 @@ export default function TodayScreen() {
                           }
                           return { label: 'Tareas sueltas', color: THEME.colors.text.secondary };
                         }}
-                        onPressProject={(projectId) => router.push({ pathname: '/project/[id]', params: { id: projectId } })}
+                        onPressProject={(projectId) => router.push(`/project/${projectId}` as const)}
                         hideProjectLabel={false}
                         sectionAccentColor={sec.color}
+                        sectionCategory={sec.categoryKey}
                       />
                     </View>
                   </View>
@@ -1336,10 +1337,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
   },
   welcomeTitle: {
     ...THEME.typography.h1,
+    fontSize: 28,
+    lineHeight: 34,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
     flex: 1,
@@ -1364,6 +1367,7 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     fontSize: 15,
     lineHeight: 22,
+    opacity: 0.95,
   },
   flowGuideSection: {
     backgroundColor: THEME.colors.fill[200],
@@ -1672,7 +1676,7 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
     marginBottom: THEME.spacing.md,
-    ...THEME.shadows.soft,
+    ...THEME.shadows.card,
   },
   addTasksCardGradient: {
     flexDirection: 'row',
@@ -1680,21 +1684,22 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.md,
     gap: THEME.spacing.sm,
-    minHeight: 52,
+    minHeight: 56,
   },
   addTasksCardTextWrap: {
     flex: 1,
   },
   addTasksCardTitle: {
     ...THEME.typography.h3,
+    fontSize: 18,
     color: '#FFFFFF',
     fontFamily: THEME.fonts.heading.bold,
     marginBottom: 2,
   },
   addTasksCardHint: {
     ...THEME.typography.small,
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.92)',
   },
   emptyTasksInCard: {
     paddingVertical: THEME.spacing.lg,
@@ -1706,24 +1711,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   tasksListCard: {
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.sm,
     borderWidth: 1,
     borderColor: THEME.colors.stroke[100],
+    ...THEME.shadows.card,
   },
   tareasHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
     paddingBottom: THEME.spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: THEME.colors.stroke[100],
   },
   tareasTitle: {
     ...THEME.typography.h2,
+    fontSize: 24,
+    lineHeight: 30,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
   },
@@ -1790,16 +1798,12 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
-    ...THEME.shadows.soft,
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-    borderLeftWidth: 5,
+    ...THEME.shadows.card,
+    borderLeftWidth: 4,
   },
   areaCardInner: {
     padding: THEME.spacing.sm,
-    paddingLeft: 14,
+    paddingLeft: 16,
   },
   taskBlock: {
     marginBottom: THEME.spacing.lg,
