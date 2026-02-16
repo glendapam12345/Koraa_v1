@@ -937,13 +937,7 @@ export default function TodayScreen() {
 
               {incompleteTasks.length > 0 ? (
                 taskSections.map((sec) => (
-                  <View
-                    key={sec.id}
-                    style={[
-                      styles.areaCard,
-                      { borderLeftColor: sec.color, borderLeftWidth: 5 },
-                    ]}
-                  >
+                  <View key={sec.id} style={styles.areaCard}>
                     <View style={styles.areaCardInner}>
                       <SectionHeader
                         title={sec.title}
@@ -1799,7 +1793,6 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
     ...THEME.shadows.card,
-    borderLeftWidth: 4,
   },
   areaCardInner: {
     padding: THEME.spacing.sm,
