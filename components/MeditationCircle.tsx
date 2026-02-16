@@ -254,8 +254,7 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
                   strokeDasharray={CIRCUMFERENCE}
                   strokeLinecap="round"
                   animatedProps={circleAnimatedProps}
-                  rotation="-90"
-                  origin={`${CIRCLE_SIZE / 2}, ${CIRCLE_SIZE / 2}`}
+                  transform={`rotate(-90 ${CIRCLE_SIZE / 2} ${CIRCLE_SIZE / 2})`}
                 />
               </Svg>
 

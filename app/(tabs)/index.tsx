@@ -30,6 +30,7 @@ import { RecommendationsSection } from '@/components/recommendations/Recommendat
 import { useAuth } from '@/contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QuickOnboardingModal } from '@/components/onboarding/QuickOnboardingModal';
+import { MeditationErrorBoundary } from '@/components/MeditationErrorBoundary';
 
 // Lazy loading para componentes pesados que no se usan inmediatamente
 const TaskEditModal = lazy(() => 
@@ -1095,16 +1096,23 @@ export default function TodayScreen() {
         </Suspense>
       )}
 
-      {/* Modal de meditación - Lazy loaded */}
+      {/* Modal de meditación - Lazy loaded y protegido por error boundary */}
       {showMeditation && (
-        <Suspense fallback={<ViewRN style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={THEME.colors.gradient.blue} /></ViewRN>}>
-          <MeditationCircle
-            visible={showMeditation}
-            onComplete={handleMeditationComplete}
-            onClose={() => setShowMeditation(false)}
-            type={meditationType}
-          />
-        </Suspense>
+        <MeditationErrorBoundary
+          onError={() => {
+            setShowMeditation(false);
+            showToast('No se pudo abrir la meditación. Intenta de nuevo.', 'error');
+          }}
+        >
+          <Suspense fallback={<ViewRN style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={THEME.colors.gradient.blue} /></ViewRN>}>
+            <MeditationCircle
+              visible={showMeditation}
+              onComplete={handleMeditationComplete}
+              onClose={() => setShowMeditation(false)}
+              type={meditationType}
+            />
+          </Suspense>
+        </MeditationErrorBoundary>
       )}
     </View>
   );
