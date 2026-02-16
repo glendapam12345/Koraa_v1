@@ -31,6 +31,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QuickOnboardingModal } from '@/components/onboarding/QuickOnboardingModal';
 import { MeditationErrorBoundary } from '@/components/MeditationErrorBoundary';
+import { MeditationCircleSimple } from '@/components/MeditationCircleSimple';
+import Constants from 'expo-constants';
 
 // Lazy loading para componentes pesados que no se usan inmediatamente
 const TaskEditModal = lazy(() => 
@@ -1096,23 +1098,32 @@ export default function TodayScreen() {
         </Suspense>
       )}
 
-      {/* Modal de meditación - Lazy loaded y protegido por error boundary */}
+      {/* Modal de meditación: en Expo Go usamos versión simple (sin Reanimated/SVG) para evitar crash */}
       {showMeditation && (
-        <MeditationErrorBoundary
-          onError={() => {
-            setShowMeditation(false);
-            showToast('No se pudo abrir la meditación. Intenta de nuevo.', 'error');
-          }}
-        >
-          <Suspense fallback={<ViewRN style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={THEME.colors.gradient.blue} /></ViewRN>}>
-            <MeditationCircle
-              visible={showMeditation}
-              onComplete={handleMeditationComplete}
-              onClose={() => setShowMeditation(false)}
-              type={meditationType}
-            />
-          </Suspense>
-        </MeditationErrorBoundary>
+        Constants.appOwnership === 'expo' ? (
+          <MeditationCircleSimple
+            visible={showMeditation}
+            onComplete={handleMeditationComplete}
+            onClose={() => setShowMeditation(false)}
+            type={meditationType}
+          />
+        ) : (
+          <MeditationErrorBoundary
+            onError={() => {
+              setShowMeditation(false);
+              showToast('No se pudo abrir la meditación. Intenta de nuevo.', 'error');
+            }}
+          >
+            <Suspense fallback={<ViewRN style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={THEME.colors.gradient.blue} /></ViewRN>}>
+              <MeditationCircle
+                visible={showMeditation}
+                onComplete={handleMeditationComplete}
+                onClose={() => setShowMeditation(false)}
+                type={meditationType}
+              />
+            </Suspense>
+          </MeditationErrorBoundary>
+        )
       )}
     </View>
   );

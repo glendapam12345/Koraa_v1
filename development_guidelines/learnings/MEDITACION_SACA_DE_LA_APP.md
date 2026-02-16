@@ -1,6 +1,6 @@
 # Meditación sacaba de la app al entrar
 
-**Síntoma:** Al tocar "Meditar por la mañana" o "Meditar por la noche" en Hoy, la app se cerraba (crash).
+**Síntoma:** Al tocar "Meditar por la mañana" o "Meditar por la noche" en Hoy, la app se cerraba (crash). Sobre todo en **Expo Go**.
 
 ---
 
@@ -14,6 +14,10 @@
 2. **Errores no capturados en el modal de meditación**  
    Si Reanimated o el SVG lanzaban en algún dispositivo, el error no se capturaba y la app se cerraba.  
    **Solución:** Se añadió un **error boundary** (`MeditationErrorBoundary`) que envuelve el modal de meditación. Si hay error, se cierra el modal y se muestra un toast; la app no se cierra.
+
+3. **Expo Go: Reanimated + SVG animado inestables**  
+   En Expo Go, la combinación de `react-native-reanimated` y `react-native-svg` con `Animated.createAnimatedComponent(Circle)` puede cerrar la app al abrir el modal.  
+   **Solución:** Cuando la app corre en **Expo Go** (`Constants.appOwnership === 'expo'`), se usa **MeditationCircleSimple**: misma pantalla y flujo (3 ciclos inhalar/aguantar/exhalar), pero solo con `View`, `Text`, `setInterval` y `expo-linear-gradient`, sin Reanimated ni SVG. En builds nativos o web se sigue usando el modal con animación completa.
 
 ---
 
