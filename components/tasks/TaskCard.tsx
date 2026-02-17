@@ -107,6 +107,7 @@ export function TaskCard({
           styles.taskCard,
           task.is_completed && styles.taskCardCompleted,
           cardLeftBorderColor ? [styles.taskCardProject, { borderLeftColor: cardLeftBorderColor, borderLeftWidth: cardLeftBorderWidth }] : styles.taskCardSuelta,
+          uniformCard && styles.taskCardAligned,
         ]}
       >
         {task.is_priority && !task.is_completed && (
@@ -117,8 +118,8 @@ export function TaskCard({
           </View>
         )}
 
-        <View style={styles.leftColumn}>
-          {hasSubtasks ? (
+        <View style={[styles.leftColumn, uniformCard && styles.leftColumnAligned]}>
+          {hasSubtasks && !uniformCard ? (
             <TouchableOpacity
               style={styles.expandButton}
               onPress={onToggleExpansion}
@@ -134,10 +135,10 @@ export function TaskCard({
               )}
             </TouchableOpacity>
           ) : (
-            <View style={styles.expandPlaceholder} />
+            !uniformCard && <View style={styles.expandPlaceholder} />
           )}
           <TouchableOpacity
-            style={styles.taskCheckbox}
+            style={[styles.taskCheckbox, uniformCard && styles.taskCheckboxAligned]}
             onPress={onToggle}
             activeOpacity={0.7}
             accessibilityRole="checkbox"
@@ -147,7 +148,7 @@ export function TaskCard({
           </TouchableOpacity>
         </View>
 
-        <View style={styles.taskContent}>
+        <View style={[styles.taskContent, uniformCard && styles.taskContentAligned]}>
           <View style={styles.taskTitleRow}>
             <Text
               style={[styles.taskText, task.is_completed && styles.taskTextCompleted]}
@@ -155,7 +156,7 @@ export function TaskCard({
             >
               {task.content}
             </Text>
-            {task.category && task.category.trim() !== '' && !task.is_completed && 
+            {!uniformCard && task.category && task.category.trim() !== '' && !task.is_completed && 
              (!sectionCategory || task.category.toLowerCase() !== sectionCategory.toLowerCase()) && (
               <View style={[styles.categoryChip, { backgroundColor: getCategoryColor(task.category) + '22' }]}>
                 <Text style={styles.categoryChipEmoji}>{categoryEmoji}</Text>
@@ -165,89 +166,117 @@ export function TaskCard({
               </View>
             )}
           </View>
-          <View style={styles.metaRow}>
-            {hasSubtasks && (
-              <View style={styles.subtasksPill}>
-                <Text style={styles.subtasksPillText}>
-                  {completedSubtasks}/{totalSubtasks}
+          {uniformCard ? (
+            <View style={styles.metaRowSimple}>
+              {showProjectLegend && (
+                <Text style={styles.metaLine} numberOfLines={1}>
+                  {projectName}
                 </Text>
-              </View>
-            )}
-            {uniformCard ? (
-              showProjectLegend && (
-                <Text style={styles.perteneceLabel} numberOfLines={1}>
-                  Pertenece a {projectName}
+              )}
+              {hasSubtasks && !showProjectLegend && (
+                <Text style={styles.metaLine} numberOfLines={1}>
+                  {completedSubtasks}/{totalSubtasks} pasos
                 </Text>
-              )
-            ) : showLabel && (
-              isMiLista ? (
-                <Text style={styles.sueltaLabel}>Suelta</Text>
-              ) : (
-                <View style={[styles.projectBadge, styles.projectBadgeProyecto, { borderLeftColor: projectLabelColor ?? THEME.colors.gradient.blue, backgroundColor: (projectLabelColor ?? THEME.colors.gradient.blue) + '18' }]}>
-                  <Text style={styles.projectBadgeEmoji}>{sectionEmoji}</Text>
-                  <Text
-                    style={[styles.projectBadgeText, styles.projectBadgeTextProyecto, { color: projectLabelColor ?? THEME.colors.gradient.blue }]}
-                    numberOfLines={1}
-                  >
-                    {projectLabel}
+              )}
+              {(showProjectLegend || hasDetails || hasProjectSteps || hasSubtasks) && onToggleDetailsExpand && (
+                <TouchableOpacity
+                  style={styles.verMasRow}
+                  onPress={onToggleDetailsExpand}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={expandedDetails ? 'Cerrar' : 'Ver más'}
+                >
+                  <Text style={styles.verMasText}>
+                    {expandedDetails ? 'Cerrar' : 'Ver más'}
+                  </Text>
+                  {expandedDetails ? (
+                    <ChevronDown size={16} color={THEME.colors.text.secondary} />
+                  ) : (
+                    <ChevronRight size={16} color={THEME.colors.text.secondary} />
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            <View style={styles.metaRow}>
+              {hasSubtasks && (
+                <View style={styles.subtasksPill}>
+                  <Text style={styles.subtasksPillText}>
+                    {completedSubtasks}/{totalSubtasks}
                   </Text>
                 </View>
-              )
-            )}
-            {hasProjectSteps && onToggleProjectSteps && (
-              <TouchableOpacity
-                style={styles.verPasosRow}
-                onPress={onToggleProjectSteps}
-                activeOpacity={0.7}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                accessibilityRole="button"
-                accessibilityLabel={expandedProjectSteps ? 'Ocultar pasos del proyecto' : `Ver ${projectSteps!.length} pasos del proyecto`}
-              >
-                <Text style={[styles.verPasosText, { color: projectLabelColor ?? THEME.colors.gradient.blue }]}>
-                  {expandedProjectSteps ? 'Ocultar pasos' : `Ver ${projectSteps!.length} pasos del proyecto`}
-                </Text>
-                {expandedProjectSteps ? (
-                  <ChevronDown size={16} color={projectLabelColor ?? THEME.colors.gradient.blue} />
+              )}
+              {showLabel && (
+                isMiLista ? (
+                  <Text style={styles.sueltaLabel}>Suelta</Text>
                 ) : (
-                  <ChevronRight size={16} color={projectLabelColor ?? THEME.colors.gradient.blue} />
-                )}
-              </TouchableOpacity>
-            )}
-            {hasDetails && (
-              <TouchableOpacity
-                style={styles.detailsToggleRow}
-                onPress={onToggleDetailsExpand}
-                activeOpacity={0.7}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                accessibilityRole="button"
-                accessibilityLabel={expandedDetails ? 'Ocultar especificaciones' : 'Ver más especificaciones'}
-              >
-                <Text style={styles.detailsToggleText} numberOfLines={1}>
-                  Detalles
-                </Text>
-                {expandedDetails ? (
-                  <ChevronDown size={14} color={THEME.colors.text.secondary} />
-                ) : (
-                  <ChevronRight size={14} color={THEME.colors.text.secondary} />
-                )}
-              </TouchableOpacity>
-            )}
-            {!uniformCard && showVerProyecto && (
-              <TouchableOpacity
-                style={styles.verProyectoLink}
-                onPress={onPressProject}
-                activeOpacity={0.7}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                accessibilityRole="button"
-                accessibilityLabel="Ver tareas del proyecto"
-              >
-                <Text style={[styles.verProyectoLinkText, projectLabelColor ? { color: projectLabelColor } : undefined]}>
-                  Ver proyecto →
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          {hasSubtasks && (
+                  <View style={[styles.projectBadge, styles.projectBadgeProyecto, { borderLeftColor: projectLabelColor ?? THEME.colors.gradient.blue, backgroundColor: (projectLabelColor ?? THEME.colors.gradient.blue) + '18' }]}>
+                    <Text style={styles.projectBadgeEmoji}>{sectionEmoji}</Text>
+                    <Text
+                      style={[styles.projectBadgeText, styles.projectBadgeTextProyecto, { color: projectLabelColor ?? THEME.colors.gradient.blue }]}
+                      numberOfLines={1}
+                    >
+                      {projectLabel}
+                    </Text>
+                  </View>
+                )
+              )}
+              {hasProjectSteps && onToggleProjectSteps && (
+                <TouchableOpacity
+                  style={styles.verPasosRow}
+                  onPress={onToggleProjectSteps}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={expandedProjectSteps ? 'Ocultar pasos del proyecto' : `Ver ${projectSteps!.length} pasos del proyecto`}
+                >
+                  <Text style={[styles.verPasosText, { color: projectLabelColor ?? THEME.colors.gradient.blue }]}>
+                    {expandedProjectSteps ? 'Ocultar pasos' : `Ver ${projectSteps!.length} pasos del proyecto`}
+                  </Text>
+                  {expandedProjectSteps ? (
+                    <ChevronDown size={16} color={projectLabelColor ?? THEME.colors.gradient.blue} />
+                  ) : (
+                    <ChevronRight size={16} color={projectLabelColor ?? THEME.colors.gradient.blue} />
+                  )}
+                </TouchableOpacity>
+              )}
+              {hasDetails && (
+                <TouchableOpacity
+                  style={styles.detailsToggleRow}
+                  onPress={onToggleDetailsExpand}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={expandedDetails ? 'Ocultar especificaciones' : 'Ver más especificaciones'}
+                >
+                  <Text style={styles.detailsToggleText} numberOfLines={1}>
+                    Detalles
+                  </Text>
+                  {expandedDetails ? (
+                    <ChevronDown size={14} color={THEME.colors.text.secondary} />
+                  ) : (
+                    <ChevronRight size={14} color={THEME.colors.text.secondary} />
+                  )}
+                </TouchableOpacity>
+              )}
+              {showVerProyecto && (
+                <TouchableOpacity
+                  style={styles.verProyectoLink}
+                  onPress={onPressProject}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ver tareas del proyecto"
+                >
+                  <Text style={[styles.verProyectoLinkText, projectLabelColor ? { color: projectLabelColor } : undefined]}>
+                    Ver proyecto →
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+          {!uniformCard && hasSubtasks && (
             <View style={styles.subtasksProgressContainer}>
               <View style={styles.subtasksProgressBar}>
                 <View
@@ -337,7 +366,7 @@ export function TaskCard({
         </View>
       )}
 
-      {expanded && hasSubtasks && (
+      {(expanded || (uniformCard && expandedDetails)) && hasSubtasks && (
         <View style={styles.subtasksContainer}>
           {task.subtasks!.map((subtask) => (
             <View
@@ -375,7 +404,7 @@ export function TaskCard({
         </View>
       )}
 
-      {expandedProjectSteps && hasProjectSteps && projectSteps && onToggleTask && (
+      {(expandedProjectSteps || (uniformCard && expandedDetails)) && hasProjectSteps && projectSteps && onToggleTask && (
         <View style={styles.projectStepsContainer}>
           <Text style={styles.projectStepsTitle}>Siguientes pasos del proyecto</Text>
           {projectSteps.map((step) => (
@@ -428,6 +457,20 @@ const styles = StyleSheet.create({
   },
   taskCardSuelta: {
     borderLeftWidth: 0,
+  },
+  taskCardAligned: {
+    marginLeft: -24,
+    paddingLeft: 24,
+  },
+  leftColumnAligned: {
+    width: 0,
+    gap: 0,
+  },
+  taskCheckboxAligned: {
+    marginLeft: -24,
+  },
+  taskContentAligned: {
+    /* Texto alineado con el título de sección (# Tareas) */
   },
   sueltaLabel: {
     ...THEME.typography.small,
@@ -522,6 +565,30 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
     marginTop: 6,
+  },
+  metaRowSimple: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 6,
+  },
+  metaLine: {
+    ...THEME.typography.small,
+    fontSize: 12,
+    color: THEME.colors.text.secondary,
+    flex: 1,
+    minWidth: 0,
+  },
+  verMasRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  verMasText: {
+    ...THEME.typography.small,
+    fontSize: 12,
+    color: THEME.colors.text.secondary,
   },
   projectBadge: {
     flexDirection: 'row',

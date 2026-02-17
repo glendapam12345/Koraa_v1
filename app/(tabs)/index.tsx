@@ -1839,8 +1839,10 @@ const styles = StyleSheet.create({
     ...THEME.shadows.card,
   },
   areaCardInner: {
-    padding: THEME.spacing.sm,
-    paddingLeft: 16,
+    paddingTop: THEME.spacing.sm,
+    paddingRight: THEME.spacing.sm,
+    paddingBottom: THEME.spacing.sm,
+    paddingLeft: 0,
   },
   taskBlock: {
     marginBottom: THEME.spacing.lg,
