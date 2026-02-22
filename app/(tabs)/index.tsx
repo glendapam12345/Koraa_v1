@@ -890,7 +890,7 @@ export default function TodayScreen() {
 
             <View style={styles.tasksListCard}>
               <View style={styles.tareasHeaderRow}>
-                <View>
+                <View style={styles.tareasHeaderLeft}>
                   <Text style={styles.tareasTitle}>📋 # Tareas</Text>
                   <Text style={styles.tareasDate}>
                     {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -912,33 +912,70 @@ export default function TodayScreen() {
                 )}
               </View>
 
-              {todayMood && explanation.reasoning && (
-                <View style={styles.prioritiesContext}>
-                  <View style={styles.prioritiesContextHeader}>
-                    <View style={[styles.emotionIconContainer, { backgroundColor: getEmotionColor(todayMood) }]}>
-                      <Text style={styles.emotionIconEmoji}>{getEmotionEmoji(todayMood)}</Text>
+              {todayMood && (
+                <View style={styles.heroTodayWrap}>
+                  <LinearGradient
+                    colors={[getEmotionColor(todayMood).replace('0.15', '0.28'), THEME.colors.fill[100]]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0.45 }}
+                    style={styles.heroTodayCard}
+                  >
+                    <Text style={styles.heroTodayHeadline}>Esto te conviene hoy</Text>
+                    <View style={styles.heroTodayStateRow}>
+                      <View style={[styles.heroTodayPill, { backgroundColor: getEmotionColor(todayMood) }]}>
+                        <Text style={styles.heroTodayPillEmoji}>{getEmotionEmoji(todayMood)}</Text>
+                        <Text style={styles.heroTodayPillText}>
+                          Sintiéndote {todayMood.charAt(0).toUpperCase() + todayMood.slice(1)}
+                        </Text>
+                      </View>
+                      <View style={styles.heroTodayPillNeutral}>
+                        <Text style={styles.heroTodayPillNeutralText}>Energía {energyLevel}/5</Text>
+                      </View>
                     </View>
-                    <View style={styles.prioritiesContextHeaderText}>
+                  </LinearGradient>
+                  {explanation.reasoning && (
+                    <View style={styles.prioritiesContext}>
                       <Text style={styles.prioritiesContextTitle}>Basado en cómo te sientes</Text>
                       <Text style={styles.prioritiesContextText}>{explanation.reasoning}</Text>
-                    </View>
-                  </View>
-                  {explanation.suggestion && (
-                    <View style={styles.prioritiesSuggestionBox}>
-                      <Lightbulb size={16} color={THEME.colors.gradient.blue} />
-                      <Text style={styles.prioritiesSuggestion}>{explanation.suggestion}</Text>
+                      {explanation.suggestion && (
+                        <View style={styles.prioritiesSuggestionBox}>
+                          <Lightbulb size={18} color={THEME.colors.gradient.blue} />
+                          <Text style={styles.prioritiesSuggestion}>{explanation.suggestion}</Text>
+                        </View>
+                      )}
                     </View>
                   )}
                 </View>
               )}
               {!todayMood && (
-                <View style={styles.prioritiesContext}>
-                  <Text style={styles.prioritiesContextText}>
-                    Ve a <Text style={styles.prioritiesContextAccent}>Sentir</Text> para que Kora priorice estas tareas.
-                  </Text>
-                </View>
+                <TouchableOpacity
+                  style={styles.ctaSentirCard}
+                  onPress={() => router.push('/(tabs)/sentir')}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ir a Sentir para configurar tu día"
+                >
+                  <LinearGradient
+                    colors={[THEME.colors.gradient.blue + '18', THEME.colors.gradient.pink + '12']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.ctaSentirGradient}
+                  >
+                    <Heart size={28} color={THEME.colors.gradient.blue} style={styles.ctaSentirIcon} />
+                    <View style={styles.ctaSentirTextWrap}>
+                      <Text style={styles.ctaSentirTitle}>Conecta cómo te sientes</Text>
+                      <Text style={styles.ctaSentirBody}>
+                        Cuando indiques cómo te sientes en Sentir, aquí verás solo lo que te conviene hoy.
+                      </Text>
+                      <Text style={styles.ctaSentirLink}>Ir a Sentir →</Text>
+                    </View>
+                  </LinearGradient>
+                </TouchableOpacity>
               )}
 
+              {todayMood && incompleteTasks.length > 0 && (
+                <Text style={styles.tasksForTodayLabel}>Estas tareas priorizamos para ti hoy</Text>
+              )}
               {incompleteTasks.length > 0 ? (
                 taskSections.map((sec) => {
                   const isSectionExpanded = expandedSections === null || expandedSections.has(sec.id);
@@ -1535,65 +1572,44 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   prioritiesContext: {
-    marginTop: THEME.spacing.sm,
+    marginTop: THEME.spacing.md,
+    paddingTop: THEME.spacing.sm,
     marginBottom: THEME.spacing.xs,
-  },
-  prioritiesContextHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: THEME.spacing.sm,
-    marginBottom: THEME.spacing.sm,
-  },
-  emotionIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emotionIconEmoji: {
-    fontSize: 20,
-  },
-  prioritiesContextHeaderText: {
-    flex: 1,
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.fill[200],
   },
   prioritiesContextTitle: {
-    ...THEME.typography.caption,
+    fontSize: 13,
+    fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.secondary,
-    fontFamily: THEME.fonts.heading.medium,
-    fontSize: 11,
-    marginBottom: 4,
+    marginBottom: 8,
+    letterSpacing: 0.25,
   },
   prioritiesContextText: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
-    marginBottom: 4,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  prioritiesContextAccent: {
-    fontFamily: THEME.fonts.accent.italic,
-    color: THEME.colors.gradient.blue,
+    fontSize: 15,
+    lineHeight: 23,
+    marginBottom: 2,
   },
   prioritiesSuggestionBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: THEME.spacing.xs,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    gap: THEME.spacing.sm,
+    backgroundColor: THEME.colors.gradient.blue + '0C',
     borderRadius: THEME.borderRadius.standard,
     padding: THEME.spacing.sm,
     marginTop: THEME.spacing.sm,
-    borderLeftWidth: 3,
+    borderLeftWidth: 4,
     borderLeftColor: THEME.colors.gradient.blue,
   },
   prioritiesSuggestion: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.medium,
-    fontSize: 12,
+    fontSize: 13,
     flex: 1,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   agregarTareasButton: {
     flexDirection: 'row',
@@ -1766,6 +1782,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: THEME.colors.stroke[100],
   },
+  tareasHeaderLeft: {
+    flex: 1,
+  },
   tareasTitle: {
     ...THEME.typography.h2,
     fontSize: 24,
@@ -1784,13 +1803,104 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 13,
   },
+  heroTodayWrap: {
+    marginTop: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
+  },
+  heroTodayCard: {
+    borderRadius: THEME.borderRadius.rounded,
+    paddingVertical: THEME.spacing.md + 4,
+    paddingHorizontal: THEME.spacing.lg,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  heroTodayHeadline: {
+    fontSize: 21,
+    lineHeight: 28,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    marginBottom: THEME.spacing.sm,
+    letterSpacing: 0.3,
+  },
+  heroTodayStateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.sm,
+  },
+  heroTodayPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: THEME.borderRadius.pill,
+  },
+  heroTodayPillEmoji: {
+    fontSize: 18,
+  },
+  heroTodayPillText: {
+    fontSize: 14,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
+  },
+  heroTodayPillNeutral: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[200],
+  },
+  heroTodayPillNeutralText: {
+    fontSize: 13,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.secondary,
+  },
+  ctaSentirCard: {
+    marginTop: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  ctaSentirGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: THEME.spacing.md + 4,
+    paddingHorizontal: THEME.spacing.lg,
+    gap: THEME.spacing.md,
+  },
+  ctaSentirIcon: {
+    opacity: 0.92,
+  },
+  ctaSentirTextWrap: {
+    flex: 1,
+  },
+  ctaSentirTitle: {
+    fontSize: 18,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    marginBottom: 6,
+    letterSpacing: 0.2,
+  },
+  ctaSentirBody: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: THEME.colors.text.secondary,
+    marginBottom: 10,
+  },
+  ctaSentirLink: {
+    fontSize: 14,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.gradient.blue,
+    letterSpacing: 0.2,
+  },
   priorityLegend: {
     alignItems: 'flex-end',
   },
   priorityLegendHigh: {
     ...THEME.typography.small,
     fontSize: 10,
-    color: THEME.colors.gradient.blue,
+    color: THEME.colors.text.secondary,
     fontFamily: THEME.fonts.heading.medium,
   },
   priorityLegendArrow: {
@@ -1828,6 +1938,14 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     letterSpacing: 0.2,
   },
+  tasksForTodayLabel: {
+    fontSize: 13,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.sm,
+    marginTop: THEME.spacing.xs,
+    letterSpacing: 0.15,
+  },
   taskSection: {
     marginBottom: THEME.spacing.lg,
   },
@@ -1840,9 +1958,9 @@ const styles = StyleSheet.create({
   },
   areaCardInner: {
     paddingTop: THEME.spacing.sm,
-    paddingRight: THEME.spacing.sm,
     paddingBottom: THEME.spacing.sm,
     paddingLeft: 0,
+    paddingRight: 0,
   },
   taskBlock: {
     marginBottom: THEME.spacing.lg,

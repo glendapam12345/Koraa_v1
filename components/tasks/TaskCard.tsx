@@ -460,7 +460,9 @@ const styles = StyleSheet.create({
   },
   taskCardAligned: {
     marginLeft: -24,
+    marginRight: -24,
     paddingLeft: 24,
+    paddingRight: 24,
   },
   leftColumnAligned: {
     width: 0,
