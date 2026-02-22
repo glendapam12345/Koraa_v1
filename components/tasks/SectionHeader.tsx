@@ -9,6 +9,8 @@ interface SectionHeaderProps {
   isSuelta?: boolean;
   /** Emoji para la sección (ej. 📋 Tareas sueltas, 📁 Proyecto) */
   emoji?: string;
+  /** Descripción breve de la sección (ej. "Tareas del hogar") */
+  subtitle?: string;
   /** En tarjetas por área el acento es el borde de la tarjeta; no mostrar barra */
   hideAccentBar?: boolean;
   /** Título más grande para tarjetas por área (estilo QUITNOW) */
@@ -27,6 +29,7 @@ export function SectionHeader({
   color,
   isSuelta,
   emoji,
+  subtitle,
   hideAccentBar,
   variant = 'default',
   expandable,
@@ -36,30 +39,37 @@ export function SectionHeader({
   const isCard = variant === 'card';
   const displayEmoji = emoji ?? (isSuelta ? '📋' : '📁');
   const content = (
-    <View style={styles.content}>
-      {!isCard && (isSuelta ? (
-        <Inbox size={18} color={THEME.colors.text.secondary} style={styles.icon} />
-      ) : (
-        <FolderKanban size={18} color={color} style={styles.icon} />
-      ))}
-      {isCard && <Text style={styles.emoji}>{displayEmoji}</Text>}
-      <Text style={[styles.title, isSuelta && styles.titleSuelta, isCard && styles.titleCard]} numberOfLines={1}>
-        {title}
-      </Text>
-      <View style={[styles.countBadge, isCard && { backgroundColor: color + '20' }]}>
-        <Text style={[styles.count, isCard && styles.countCard, isCard && { color }]}>
-          {count} {count === 1 ? 'tarea' : 'tareas'}
-        </Text>
-      </View>
-      {expandable && (
-        <View style={styles.chevronWrap}>
-          {expanded ? (
-            <ChevronUp size={22} color={color} strokeWidth={2.5} />
-          ) : (
-            <ChevronDown size={22} color={color} strokeWidth={2.5} />
+    <View style={[styles.content, subtitle && styles.contentWithSubtitle]}>
+      <View style={styles.titleRow}>
+        {!isCard && (isSuelta ? (
+          <Inbox size={18} color={THEME.colors.text.secondary} style={styles.icon} />
+        ) : (
+          <FolderKanban size={18} color={color} style={styles.icon} />
+        ))}
+        {isCard && <Text style={styles.emoji}>{displayEmoji}</Text>}
+        <View style={styles.titleWrap}>
+          <Text style={[styles.title, isSuelta && styles.titleSuelta, isCard && styles.titleCard]} numberOfLines={1}>
+            {title}
+          </Text>
+          {subtitle && (
+            <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
           )}
         </View>
-      )}
+        <View style={[styles.countBadge, isCard && { backgroundColor: color + '20' }]}>
+          <Text style={[styles.count, isCard && styles.countCard, isCard && { color }]}>
+            {count} {count === 1 ? 'tarea' : 'tareas'}
+          </Text>
+        </View>
+        {expandable && (
+          <View style={styles.chevronWrap}>
+            {expanded ? (
+              <ChevronUp size={22} color={color} strokeWidth={2.5} />
+            ) : (
+              <ChevronDown size={22} color={color} strokeWidth={2.5} />
+            )}
+          </View>
+        )}
+      </View>
     </View>
   );
   return (
@@ -100,6 +110,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  contentWithSubtitle: {
+    alignItems: 'center',
+  },
+  titleRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minWidth: 0,
+  },
+  titleWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  subtitle: {
+    ...THEME.typography.small,
+    fontSize: 12,
+    color: THEME.colors.text.secondary,
+    marginTop: 1,
+  },
   icon: {
     opacity: 0.9,
   },
@@ -111,7 +141,6 @@ const styles = StyleSheet.create({
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
-    flex: 1,
   },
   titleSuelta: {
     color: THEME.colors.text.secondary,

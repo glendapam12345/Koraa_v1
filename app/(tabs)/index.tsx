@@ -610,6 +610,15 @@ export default function TodayScreen() {
 
   type TaskSection = { id: string; title: string; color: string; isCategory: true; categoryKey: string; tasks: Task[] };
   const CATEGORY_ORDER = ['Hogar', 'Trabajo', 'Personal', 'Salud', 'Contenido', 'Marca', 'Otros'];
+  const CATEGORY_SUBTITLES: Record<string, string> = {
+    hogar: 'Tareas del hogar y casa',
+    trabajo: 'Tareas profesionales',
+    personal: 'Crecimiento y bienestar personal',
+    salud: 'Cuidado físico y mental',
+    contenido: 'Creación de contenido',
+    marca: 'Tu marca personal',
+    otros: 'Otras tareas',
+  };
   const taskSections = useMemo(() => {
     const byCategory = new Map<string, Task[]>();
     const normalizeCategory = (cat: string | undefined | null): string => {
@@ -1003,6 +1012,7 @@ export default function TodayScreen() {
                           count={sec.tasks.length}
                           color={sec.color}
                           emoji={getCategoryEmoji(sec.categoryKey)}
+                          subtitle={CATEGORY_SUBTITLES[sec.categoryKey]}
                           hideAccentBar
                           variant="card"
                           expandable

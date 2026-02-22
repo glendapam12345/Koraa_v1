@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { getCategoryEmoji } from '@/constants/emojis';
 import { ChevronDown, ChevronRight, MoreVertical, FolderKanban, FileText } from 'lucide-react-native';
@@ -292,35 +292,25 @@ export function TaskCard({
 
         <TouchableOpacity
           style={styles.menuButton}
-          onPress={onMenuPress}
+          onPress={() => {
+            Alert.alert(
+              'Opciones de la tarea',
+              task.content.length > 50 ? `${task.content.slice(0, 50)}…` : task.content,
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: 'Editar', onPress: onEditTask },
+                { text: 'Eliminar', style: 'destructive', onPress: onDeleteTask },
+              ],
+              { cancelable: true, onDismiss: onMenuPress }
+            );
+          }}
           activeOpacity={0.7}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityRole="button"
-          accessibilityLabel="Más opciones"
+          accessibilityLabel="Más opciones: editar o eliminar"
         >
           <MoreVertical size={20} color={THEME.colors.text.secondary} />
         </TouchableOpacity>
-
-        {menuOpen && (
-          <View style={styles.menuDropdown}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={onEditTask}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-            >
-              <Text style={styles.menuItemText}>Editar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.menuItem, styles.menuItemDanger]}
-              onPress={onDeleteTask}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-            >
-              <Text style={[styles.menuItemText, styles.menuItemTextDanger]}>Eliminar</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
 
       {expandedDetails && hasDetails && (
@@ -853,36 +843,5 @@ const styles = StyleSheet.create({
     minHeight: THEME.sizes.touchTarget,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 10,
-  },
-  menuDropdown: {
-    position: 'absolute',
-    right: 0,
-    top: 50,
-    backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.standard,
-    padding: THEME.spacing.xs,
-    minWidth: 150,
-    ...THEME.shadows.soft,
-    zIndex: 1000,
-    elevation: 5,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.sm,
-    padding: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.standard,
-  },
-  menuItemDanger: {
-    marginTop: THEME.spacing.xs,
-  },
-  menuItemText: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    fontSize: 14,
-  },
-  menuItemTextDanger: {
-    color: '#FF6B6B',
   },
 });
