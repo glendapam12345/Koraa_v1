@@ -806,7 +806,7 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {/* Bloque de meditación: card con fondo suave y dos opciones claras */}
+        {/* Una sola card de meditación: Mañana y Noche dentro del mismo bloque */}
         {!loading && (
           <View style={styles.meditationWrap}>
             <LinearGradient
@@ -819,66 +819,59 @@ export default function TodayScreen() {
                 <Text style={styles.meditationTitle}>Tu momento de <Text style={styles.meditationTitleAccent}>calma</Text></Text>
                 <Text style={styles.meditationSubtitle}>Respira. Escucha.</Text>
               </View>
-              <View style={styles.meditationStripRow}>
+              <View style={styles.meditationSingleCardInner}>
                 <TouchableOpacity
-                  style={[styles.meditationPill, morningMeditationDone && styles.meditationPillDone]}
+                  style={[styles.meditationRow, morningMeditationDone && styles.meditationRowDone]}
                   onPress={() => !morningMeditationDone && handleStartMeditation('morning')}
-                  activeOpacity={0.85}
+                  activeOpacity={0.8}
                   disabled={morningMeditationDone}
                   accessibilityRole="button"
                   accessibilityLabel={morningMeditationDone ? 'Meditación matutina completada' : 'Meditar por la mañana'}
                 >
-                  <LinearGradient
-                    colors={morningMeditationDone ? THEME.colors.meditationGradient.done : THEME.colors.meditationGradient.morning}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.meditationPillGradient}
-                  >
-                    <View style={styles.meditationPillIconWrap}>
-                      <Text style={styles.meditationPillEmoji}>🧘</Text>
-                      {morningMeditationDone && (
-                        <View style={styles.meditationCheckBadge}>
-                          <Text style={styles.meditationCheckText}>✓</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={[styles.meditationPillText, morningMeditationDone && styles.meditationPillTextDone]}>
-                      {morningMeditationDone ? 'Completada' : 'Mañana'}
+                  <View style={[styles.meditationRowIconWrap, !morningMeditationDone && styles.meditationRowIconMorning]}>
+                    <Text style={styles.meditationRowEmoji}>🧘</Text>
+                    {morningMeditationDone && (
+                      <View style={styles.meditationCheckBadge}>
+                        <Text style={styles.meditationCheckText}>✓</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.meditationRowTextWrap}>
+                    <Text style={[styles.meditationRowLabel, morningMeditationDone && styles.meditationRowLabelDone]}>
+                      {morningMeditationDone ? 'Mañana — Completada' : 'Mañana'}
                     </Text>
                     {!morningMeditationDone && (
-                      <Text style={styles.meditationPillHint}>Despierta con claridad</Text>
+                      <Text style={styles.meditationRowHint}>Despierta con claridad</Text>
                     )}
-                  </LinearGradient>
+                  </View>
+                  {!morningMeditationDone && <ChevronRight size={20} color={THEME.colors.text.tertiary} />}
                 </TouchableOpacity>
+                <View style={styles.meditationDivider} />
                 <TouchableOpacity
-                  style={[styles.meditationPill, eveningMeditationDone && styles.meditationPillDone]}
+                  style={[styles.meditationRow, eveningMeditationDone && styles.meditationRowDone]}
                   onPress={() => !eveningMeditationDone && handleStartMeditation('evening')}
-                  activeOpacity={0.85}
+                  activeOpacity={0.8}
                   disabled={eveningMeditationDone}
                   accessibilityRole="button"
                   accessibilityLabel={eveningMeditationDone ? 'Meditación nocturna completada' : 'Meditar por la noche'}
                 >
-                  <LinearGradient
-                    colors={eveningMeditationDone ? THEME.colors.meditationGradient.done : THEME.colors.meditationGradient.evening}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.meditationPillGradient}
-                  >
-                    <View style={styles.meditationPillIconWrap}>
-                      <Text style={styles.meditationPillEmoji}>🌙</Text>
-                      {eveningMeditationDone && (
-                        <View style={styles.meditationCheckBadge}>
-                          <Text style={styles.meditationCheckText}>✓</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={[styles.meditationPillText, eveningMeditationDone && styles.meditationPillTextDone]}>
-                      {eveningMeditationDone ? 'Completada' : 'Noche'}
+                  <View style={[styles.meditationRowIconWrap, !eveningMeditationDone && styles.meditationRowIconEvening]}>
+                    <Text style={styles.meditationRowEmoji}>🌙</Text>
+                    {eveningMeditationDone && (
+                      <View style={styles.meditationCheckBadge}>
+                        <Text style={styles.meditationCheckText}>✓</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.meditationRowTextWrap}>
+                    <Text style={[styles.meditationRowLabel, eveningMeditationDone && styles.meditationRowLabelDone]}>
+                      {eveningMeditationDone ? 'Noche — Completada' : 'Noche'}
                     </Text>
                     {!eveningMeditationDone && (
-                      <Text style={styles.meditationPillHint}>Termina el día en paz</Text>
+                      <Text style={styles.meditationRowHint}>Termina el día en paz</Text>
                     )}
-                  </LinearGradient>
+                  </View>
+                  {!eveningMeditationDone && <ChevronRight size={20} color={THEME.colors.text.tertiary} />}
                 </TouchableOpacity>
               </View>
             </LinearGradient>
@@ -1094,7 +1087,6 @@ export default function TodayScreen() {
         {/* Recomendaciones: siempre visibles al final */}
         {user && (
           <View style={styles.recommendationsWrap}>
-            <Text style={styles.recommendationsHeaderTitle}>Recomendaciones para ti</Text>
             <RecommendationsSection userId={user.id} />
           </View>
         )}
@@ -2895,76 +2887,82 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     letterSpacing: 0.3,
   },
-  meditationStripRow: {
-    flexDirection: 'row',
-    gap: THEME.spacing.md,
-  },
-  meditationPill: {
-    flex: 1,
+  meditationSingleCardInner: {
+    backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
-    minHeight: 88,
-    ...THEME.shadows.card,
+    ...THEME.shadows.soft,
   },
-  meditationPillDone: {
-    opacity: 0.82,
+  meditationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
+    gap: THEME.spacing.sm,
+    minHeight: THEME.sizes.touchTarget,
   },
-  meditationPillGradient: {
-    flex: 1,
+  meditationRowDone: {
+    opacity: 0.78,
+  },
+  meditationRowIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: THEME.spacing.md,
-    paddingHorizontal: THEME.spacing.sm,
-  },
-  meditationPillIconWrap: {
     position: 'relative',
-    marginBottom: THEME.spacing.xs,
   },
-  meditationPillEmoji: {
-    fontSize: 28,
+  meditationRowIconMorning: {
+    backgroundColor: THEME.colors.tint.pink.soft,
+  },
+  meditationRowIconEvening: {
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+  },
+  meditationRowEmoji: {
+    fontSize: 24,
+  },
+  meditationRowTextWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  meditationRowLabel: {
+    fontSize: 16,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+  },
+  meditationRowLabelDone: {
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  meditationRowHint: {
+    ...THEME.typography.small,
+    fontSize: 13,
+    color: THEME.colors.text.secondary,
+    marginTop: 2,
+  },
+  meditationDivider: {
+    height: 1,
+    backgroundColor: THEME.colors.stroke[100],
+    marginLeft: THEME.spacing.md + 44 + THEME.spacing.sm,
   },
   meditationCheckBadge: {
     position: 'absolute',
-    top: -4,
-    right: -8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    top: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: THEME.colors.semantic.success,
     alignItems: 'center',
     justifyContent: 'center',
   },
   meditationCheckText: {
     color: THEME.colors.fill[100],
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  meditationPillText: {
-    fontSize: 15,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-  },
-  meditationPillTextDone: {
-    color: THEME.colors.text.secondary,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  meditationPillHint: {
-    ...THEME.typography.small,
     fontSize: 11,
-    color: THEME.colors.text.secondary,
-    marginTop: 2,
-    opacity: 0.95,
+    fontWeight: 'bold',
   },
   recommendationsWrap: {
     marginBottom: THEME.spacing.xl,
-    paddingHorizontal: THEME.spacing.lg,
     paddingTop: THEME.spacing.sm,
-  },
-  recommendationsHeaderTitle: {
-    ...THEME.typography.h3,
-    fontSize: 18,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-    marginBottom: THEME.spacing.sm,
   },
 });
