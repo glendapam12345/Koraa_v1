@@ -150,12 +150,21 @@ export function TaskCard({
 
         <View style={[styles.taskContent, uniformCard && styles.taskContentAligned]}>
           <View style={styles.taskTitleRow}>
-            <Text
-              style={[styles.taskText, task.is_completed && styles.taskTextCompleted]}
-              numberOfLines={2}
+            <TouchableOpacity
+              style={styles.taskTextTouchable}
+              onPress={onEditTask}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 0, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Editar tarea"
             >
-              {task.content}
-            </Text>
+              <Text
+                style={[styles.taskText, task.is_completed && styles.taskTextCompleted]}
+                numberOfLines={2}
+              >
+                {task.content}
+              </Text>
+            </TouchableOpacity>
             {!uniformCard && task.category && task.category.trim() !== '' && !task.is_completed && 
              (!sectionCategory || task.category.toLowerCase() !== sectionCategory.toLowerCase()) && (
               <View style={[styles.categoryChip, { backgroundColor: getCategoryColor(task.category) + '22' }]}>
@@ -531,6 +540,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 8,
+    minWidth: 0,
+  },
+  taskTextTouchable: {
+    flex: 1,
     minWidth: 0,
   },
   categoryChip: {
