@@ -705,15 +705,31 @@ export default function TodayScreen() {
         )}
         {!loading && !todayMood && (
           <TouchableOpacity
-            style={styles.ctaSentirCompact}
+            style={styles.ctaSentirCardTop}
             onPress={() => router.push('/(tabs)/sentir')}
-            activeOpacity={0.85}
+            activeOpacity={0.88}
             accessibilityRole="button"
-            accessibilityLabel="Ir a Sentir para configurar tu día"
+            accessibilityLabel="Ir a Sentir para que Kora priorice tus tareas según cómo te sientes"
           >
-            <Heart size={18} color={THEME.colors.gradient.blue} />
-            <Text style={styles.ctaSentirCompactText}>Conecta cómo te sientes</Text>
-            <ChevronRight size={18} color={THEME.colors.gradient.blue} />
+            <LinearGradient
+              colors={[THEME.colors.gradient.blue + '14', THEME.colors.gradient.pink + '0C']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.ctaSentirCardTopGradient}
+            >
+              <View style={styles.ctaSentirCardTopIconWrap}>
+                <Heart size={24} color={THEME.colors.gradient.blue} strokeWidth={1.8} />
+              </View>
+              <View style={styles.ctaSentirCardTopTextWrap}>
+                <Text style={styles.ctaSentirCardTopBody}>
+                  Cuando indiques cómo te sientes en Sentir, aquí verás solo lo que te conviene hoy.
+                </Text>
+                <View style={styles.ctaSentirCardTopLinkRow}>
+                  <Text style={styles.ctaSentirCardTopLink}>Ir a Sentir</Text>
+                  <ChevronRight size={18} color={THEME.colors.gradient.blue} />
+                </View>
+              </View>
+            </LinearGradient>
           </TouchableOpacity>
         )}
 
@@ -948,32 +964,6 @@ export default function TodayScreen() {
                   )}
                 </View>
               )}
-              {!todayMood && (
-                <TouchableOpacity
-                  style={styles.ctaSentirCard}
-                  onPress={() => router.push('/(tabs)/sentir')}
-                  activeOpacity={0.85}
-                  accessibilityRole="button"
-                  accessibilityLabel="Ir a Sentir para configurar tu día"
-                >
-                  <LinearGradient
-                    colors={[THEME.colors.gradient.blue + '18', THEME.colors.gradient.pink + '12']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.ctaSentirGradient}
-                  >
-                    <Heart size={28} color={THEME.colors.gradient.blue} style={styles.ctaSentirIcon} />
-                    <View style={styles.ctaSentirTextWrap}>
-                      <Text style={styles.ctaSentirTitle}>Conecta cómo te sientes</Text>
-                      <Text style={styles.ctaSentirBody}>
-                        Cuando indiques cómo te sientes en Sentir, aquí verás solo lo que te conviene hoy.
-                      </Text>
-                      <Text style={styles.ctaSentirLink}>Ir a Sentir →</Text>
-                    </View>
-                  </LinearGradient>
-                </TouchableOpacity>
-              )}
-
               {todayMood && incompleteTasks.length > 0 && (
                 <Text style={styles.tasksForTodayLabel}>Estas tareas priorizamos para ti hoy</Text>
               )}
@@ -1440,24 +1430,51 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
   },
-  ctaSentirCompact: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.sm,
+  ctaSentirCardTop: {
     marginHorizontal: THEME.spacing.lg,
     marginBottom: THEME.spacing.md,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
     borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: THEME.colors.tint.blue.border,
+    ...THEME.shadows.soft,
   },
-  ctaSentirCompactText: {
+  ctaSentirCardTopGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
+    gap: THEME.spacing.md,
+  },
+  ctaSentirCardTopIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaSentirCardTopTextWrap: {
     flex: 1,
+    minWidth: 0,
+  },
+  ctaSentirCardTopBody: {
+    ...THEME.typography.body,
     fontSize: 15,
-    fontFamily: THEME.fonts.heading.medium,
+    lineHeight: 22,
+    color: THEME.colors.text.main,
+    marginBottom: THEME.spacing.xs,
+  },
+  ctaSentirCardTopLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ctaSentirCardTopLink: {
+    fontSize: 15,
+    fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.gradient.blue,
+    letterSpacing: 0.2,
   },
   addTasksPill: {
     marginHorizontal: THEME.spacing.lg,
@@ -1932,45 +1949,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.secondary,
-  },
-  ctaSentirCard: {
-    marginTop: THEME.spacing.md,
-    marginBottom: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.rounded,
-    overflow: 'hidden',
-    ...THEME.shadows.soft,
-  },
-  ctaSentirGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: THEME.spacing.md + 4,
-    paddingHorizontal: THEME.spacing.lg,
-    gap: THEME.spacing.md,
-  },
-  ctaSentirIcon: {
-    opacity: 0.92,
-  },
-  ctaSentirTextWrap: {
-    flex: 1,
-  },
-  ctaSentirTitle: {
-    fontSize: 18,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-    marginBottom: 6,
-    letterSpacing: 0.2,
-  },
-  ctaSentirBody: {
-    fontSize: 14,
-    lineHeight: 21,
-    color: THEME.colors.text.secondary,
-    marginBottom: 10,
-  },
-  ctaSentirLink: {
-    fontSize: 14,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.gradient.blue,
-    letterSpacing: 0.2,
   },
   priorityLegend: {
     alignItems: 'flex-end',
