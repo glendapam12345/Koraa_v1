@@ -84,7 +84,6 @@ export default function TodayScreen() {
   const [eveningMeditationDone, setEveningMeditationDone] = useState(false);
   const [dismissedCelebration, setDismissedCelebration] = useState(false);
   const [flowGuideCollapsed, setFlowGuideCollapsed] = useState(true);
-  const [showRecommendationsExpanded, setShowRecommendationsExpanded] = useState(false);
   const [heroReasoningExpanded, setHeroReasoningExpanded] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -791,7 +790,86 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {/* Bloque Hoy: # Tareas + lista (la CTA agregar ya está arriba como pill) */}
+        {/* Bloque de meditación: card con fondo suave y dos opciones claras */}
+        {!loading && (
+          <View style={styles.meditationWrap}>
+            <LinearGradient
+              colors={[THEME.colors.tint.blue.veryFaint, THEME.colors.tint.pink.soft, THEME.colors.fill[200]]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.meditationCard}
+            >
+              <View style={styles.meditationHeader}>
+                <Text style={styles.meditationTitle}>Tu momento de <Text style={styles.meditationTitleAccent}>calma</Text></Text>
+                <Text style={styles.meditationSubtitle}>Respira. Escucha.</Text>
+              </View>
+              <View style={styles.meditationStripRow}>
+                <TouchableOpacity
+                  style={[styles.meditationPill, morningMeditationDone && styles.meditationPillDone]}
+                  onPress={() => !morningMeditationDone && handleStartMeditation('morning')}
+                  activeOpacity={0.85}
+                  disabled={morningMeditationDone}
+                  accessibilityRole="button"
+                  accessibilityLabel={morningMeditationDone ? 'Meditación matutina completada' : 'Meditar por la mañana'}
+                >
+                  <LinearGradient
+                    colors={morningMeditationDone ? THEME.colors.meditationGradient.done : THEME.colors.meditationGradient.morning}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.meditationPillGradient}
+                  >
+                    <View style={styles.meditationPillIconWrap}>
+                      <Text style={styles.meditationPillEmoji}>🧘</Text>
+                      {morningMeditationDone && (
+                        <View style={styles.meditationCheckBadge}>
+                          <Text style={styles.meditationCheckText}>✓</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.meditationPillText, morningMeditationDone && styles.meditationPillTextDone]}>
+                      {morningMeditationDone ? 'Completada' : 'Mañana'}
+                    </Text>
+                    {!morningMeditationDone && (
+                      <Text style={styles.meditationPillHint}>Despierta con claridad</Text>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.meditationPill, eveningMeditationDone && styles.meditationPillDone]}
+                  onPress={() => !eveningMeditationDone && handleStartMeditation('evening')}
+                  activeOpacity={0.85}
+                  disabled={eveningMeditationDone}
+                  accessibilityRole="button"
+                  accessibilityLabel={eveningMeditationDone ? 'Meditación nocturna completada' : 'Meditar por la noche'}
+                >
+                  <LinearGradient
+                    colors={eveningMeditationDone ? THEME.colors.meditationGradient.done : THEME.colors.meditationGradient.evening}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.meditationPillGradient}
+                  >
+                    <View style={styles.meditationPillIconWrap}>
+                      <Text style={styles.meditationPillEmoji}>🌙</Text>
+                      {eveningMeditationDone && (
+                        <View style={styles.meditationCheckBadge}>
+                          <Text style={styles.meditationCheckText}>✓</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.meditationPillText, eveningMeditationDone && styles.meditationPillTextDone]}>
+                      {eveningMeditationDone ? 'Completada' : 'Noche'}
+                    </Text>
+                    {!eveningMeditationDone && (
+                      <Text style={styles.meditationPillHint}>Termina el día en paz</Text>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
+          </View>
+        )}
+
+        {/* Bloque Hoy: # Tareas por categoría (Trabajo, Salud, Hogar, etc.) */}
         {!loading && (
           <View style={styles.tasksContainer}>
             <View style={styles.tasksListCard}>
@@ -920,6 +998,10 @@ export default function TodayScreen() {
                   };
                   return (
                     <View key={sec.id} style={styles.areaCard}>
+                      <View style={[styles.categoryLabelStrip, { borderLeftColor: sec.color }]}>
+                        <Text style={styles.categoryLabelName}>{sec.title}</Text>
+                        <Text style={styles.categoryLabelCount}>{sec.tasks.length} {sec.tasks.length === 1 ? 'tarea' : 'tareas'}</Text>
+                      </View>
                       <View style={styles.areaCardInner}>
                         <SectionHeader
                           title={sec.title}
@@ -1019,75 +1101,11 @@ export default function TodayScreen() {
           </Suspense>
         )}
 
-        {/* Franja de meditación compacta (estilo Musa: una fila, dos pastillas) */}
-        {!loading && (
-          <View style={styles.meditationStrip}>
-            <Text style={styles.meditationStripLabel}>Tu momento de calma</Text>
-            <View style={styles.meditationStripRow}>
-              <TouchableOpacity
-                style={[styles.meditationPill, morningMeditationDone && styles.meditationPillDone]}
-                onPress={() => !morningMeditationDone && handleStartMeditation('morning')}
-                activeOpacity={0.8}
-                disabled={morningMeditationDone}
-                accessibilityRole="button"
-                accessibilityLabel={morningMeditationDone ? 'Meditación matutina completada' : 'Meditar por la mañana'}
-              >
-                <LinearGradient
-                  colors={morningMeditationDone ? THEME.colors.meditationGradient.done : THEME.colors.meditationGradient.morning}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.meditationPillGradient}
-                >
-                  <Text style={styles.meditationPillEmoji}>🧘</Text>
-                  <Text style={[styles.meditationPillText, morningMeditationDone && styles.meditationPillTextDone]} numberOfLines={1}>
-                    {morningMeditationDone ? 'Mañana ✓' : 'Mañana'}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.meditationPill, eveningMeditationDone && styles.meditationPillDone]}
-                onPress={() => !eveningMeditationDone && handleStartMeditation('evening')}
-                activeOpacity={0.8}
-                disabled={eveningMeditationDone}
-                accessibilityRole="button"
-                accessibilityLabel={eveningMeditationDone ? 'Meditación nocturna completada' : 'Meditar por la noche'}
-              >
-                <LinearGradient
-                  colors={eveningMeditationDone ? THEME.colors.meditationGradient.done : THEME.colors.meditationGradient.evening}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.meditationPillGradient}
-                >
-                  <Text style={styles.meditationPillEmoji}>🌙</Text>
-                  <Text style={[styles.meditationPillText, eveningMeditationDone && styles.meditationPillTextDone]} numberOfLines={1}>
-                    {eveningMeditationDone ? 'Noche ✓' : 'Noche'}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {/* Recomendaciones colapsables (no alargan la primera vista) */}
+        {/* Recomendaciones: siempre visibles al final */}
         {user && (
           <View style={styles.recommendationsWrap}>
-            <TouchableOpacity
-              style={styles.recommendationsHeader}
-              onPress={() => setShowRecommendationsExpanded((e) => !e)}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={showRecommendationsExpanded ? 'Ocultar recomendaciones' : 'Ver recomendaciones para ti'}
-            >
-              <Text style={styles.recommendationsHeaderTitle}>Recomendaciones para ti</Text>
-              {showRecommendationsExpanded ? (
-                <ChevronDown size={20} color={THEME.colors.gradient.blue} />
-              ) : (
-                <ChevronRight size={20} color={THEME.colors.gradient.blue} />
-              )}
-            </TouchableOpacity>
-            {showRecommendationsExpanded && (
-              <RecommendationsSection userId={user.id} />
-            )}
+            <Text style={styles.recommendationsHeaderTitle}>Recomendaciones para ti</Text>
+            <RecommendationsSection userId={user.id} />
           </View>
         )}
       </ScrollView>
@@ -2016,6 +2034,27 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...THEME.shadows.card,
   },
+  categoryLabelStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    borderLeftWidth: 4,
+    backgroundColor: THEME.colors.fill[200],
+  },
+  categoryLabelName: {
+    fontSize: 18,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    letterSpacing: 0.2,
+  },
+  categoryLabelCount: {
+    ...THEME.typography.caption,
+    fontSize: 13,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
+  },
   areaCardInner: {
     paddingTop: THEME.spacing.sm,
     paddingBottom: THEME.spacing.sm,
@@ -2839,66 +2878,115 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  meditationStrip: {
+  meditationWrap: {
     marginTop: THEME.spacing.lg,
     marginBottom: THEME.spacing.lg,
-    paddingHorizontal: THEME.spacing.lg,
+    marginHorizontal: THEME.spacing.lg,
+    borderRadius: THEME.borderRadius.rounded + 4,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
   },
-  meditationStripLabel: {
+  meditationCard: {
+    paddingVertical: THEME.spacing.lg,
+    paddingHorizontal: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+    borderRadius: THEME.borderRadius.rounded + 4,
+  },
+  meditationHeader: {
+    marginBottom: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.xs,
+  },
+  meditationTitle: {
+    ...THEME.typography.h3,
+    fontSize: 20,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    letterSpacing: 0.2,
+  },
+  meditationTitleAccent: {
+    fontFamily: THEME.fonts.accent.italic,
+    color: THEME.colors.gradient.pink,
+    fontStyle: 'italic',
+  },
+  meditationSubtitle: {
     ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.sm,
     fontSize: 13,
+    color: THEME.colors.text.secondary,
+    marginTop: 4,
+    fontStyle: 'italic',
+    letterSpacing: 0.3,
   },
   meditationStripRow: {
     flexDirection: 'row',
-    gap: THEME.spacing.sm,
+    gap: THEME.spacing.md,
   },
   meditationPill: {
     flex: 1,
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
-    minHeight: 52,
-    ...THEME.shadows.soft,
+    minHeight: 88,
+    ...THEME.shadows.card,
   },
   meditationPillDone: {
-    opacity: 0.75,
+    opacity: 0.82,
   },
   meditationPillGradient: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: THEME.spacing.xs,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.sm,
+  },
+  meditationPillIconWrap: {
+    position: 'relative',
+    marginBottom: THEME.spacing.xs,
   },
   meditationPillEmoji: {
-    fontSize: 20,
+    fontSize: 28,
+  },
+  meditationCheckBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: THEME.colors.semantic.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  meditationCheckText: {
+    color: THEME.colors.fill[100],
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   meditationPillText: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
   },
   meditationPillTextDone: {
-    color: THEME.colors.text.tertiary,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  meditationPillHint: {
+    ...THEME.typography.small,
+    fontSize: 11,
+    color: THEME.colors.text.secondary,
+    marginTop: 2,
+    opacity: 0.95,
   },
   recommendationsWrap: {
     marginBottom: THEME.spacing.xl,
-  },
-  recommendationsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: THEME.spacing.lg,
-    paddingVertical: THEME.spacing.md,
-    paddingBottom: THEME.spacing.sm,
+    paddingTop: THEME.spacing.sm,
   },
   recommendationsHeaderTitle: {
     ...THEME.typography.h3,
-    fontSize: 16,
+    fontSize: 18,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
+    marginBottom: THEME.spacing.sm,
   },
 });
