@@ -6,7 +6,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { Toast } from '@/components/Toast';
 import { FlowIndicator } from '@/components/FlowIndicator';
-import { MoodCard } from '@/components/mood/MoodCard';
 import { ValueCard } from '@/components/tasks/ValueCard';
 import { ProgressBar } from '@/components/tasks/ProgressBar';
 import { FlowGuideCard } from '@/components/flow/FlowGuideCard';
@@ -84,7 +83,9 @@ export default function TodayScreen() {
   const [morningMeditationDone, setMorningMeditationDone] = useState(false);
   const [eveningMeditationDone, setEveningMeditationDone] = useState(false);
   const [dismissedCelebration, setDismissedCelebration] = useState(false);
-  const [flowGuideCollapsed, setFlowGuideCollapsed] = useState(false);
+  const [flowGuideCollapsed, setFlowGuideCollapsed] = useState(true);
+  const [showRecommendationsExpanded, setShowRecommendationsExpanded] = useState(false);
+  const [heroReasoningExpanded, setHeroReasoningExpanded] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backgroundLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -668,128 +669,77 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {/* Título de bienvenida con racha */}
+        {/* Hero: bienvenida compacta + contexto del día */}
         {!loading && (
           <View style={styles.welcomeSection}>
             <View style={styles.welcomeHeader}>
               <Text style={styles.welcomeTitle}>{getGreeting} ✨</Text>
               {currentStreak > 0 && (
                 <View style={styles.streakBadgeInline}>
-                  <Flame size={16} color={THEME.colors.gradient.pink} />
+                  <Flame size={14} color={THEME.colors.gradient.pink} />
                   <Text style={styles.streakTextInline}>{currentStreak}</Text>
                 </View>
               )}
             </View>
-            <Text style={styles.welcomeSubtitle}>
-              Koraa prioriza tus tareas según cómo te sientes
+            <Text style={styles.welcomeSubtitle} numberOfLines={1}>
+              Koraa prioriza según cómo te sientes
             </Text>
           </View>
         )}
 
-        {/* Sección de Meditación */}
-        {!loading && (
-          <View style={styles.meditationSection}>
-            <Text style={styles.meditationSectionTitle}>
-              Tu momento de <Text style={styles.accentText}>calma</Text>
-            </Text>
-
-            <View style={styles.meditationButtons}>
-              {/* Meditación matutina */}
-              <TouchableOpacity
-                style={[
-                  styles.meditationButton,
-                  morningMeditationDone && styles.meditationButtonDone
-                ]}
-                onPress={() => !morningMeditationDone && handleStartMeditation('morning')}
-                activeOpacity={0.8}
-                disabled={morningMeditationDone}
-                accessibilityRole="button"
-                accessibilityLabel={morningMeditationDone ? "Meditación matutina completada" : "Iniciar meditación matutina"}
-                accessibilityHint={morningMeditationDone ? "Ya completaste tu meditación matutina de hoy" : "Abre la meditación guiada para comenzar el día con calma"}
-                accessibilityState={{ disabled: morningMeditationDone }}
-              >
-                <LinearGradient
-                  colors={
-                    morningMeditationDone
-                      ? THEME.colors.meditationGradient.done
-                      : THEME.colors.meditationGradient.morning
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.meditationButtonGradient}
-                >
-                  <Text style={styles.meditationEmoji}>🧘</Text>
-                  <Text style={[
-                    styles.meditationButtonText,
-                    morningMeditationDone && styles.meditationButtonTextDone
-                  ]}>
-                    {morningMeditationDone ? 'Mañana completada' : 'Meditar por la mañana'}
-                  </Text>
-                  {morningMeditationDone && (
-                    <View style={styles.checkmark}>
-                      <Text style={styles.checkmarkText}>✓</Text>
-                    </View>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-
-              {/* Meditación nocturna */}
-              <TouchableOpacity
-                style={[
-                  styles.meditationButton,
-                  eveningMeditationDone && styles.meditationButtonDone
-                ]}
-                onPress={() => !eveningMeditationDone && handleStartMeditation('evening')}
-                activeOpacity={0.8}
-                disabled={eveningMeditationDone}
-                accessibilityRole="button"
-                accessibilityLabel={eveningMeditationDone ? "Meditación nocturna completada" : "Iniciar meditación nocturna"}
-                accessibilityHint={eveningMeditationDone ? "Ya completaste tu meditación nocturna de hoy" : "Abre la meditación guiada para terminar el día con calma"}
-                accessibilityState={{ disabled: eveningMeditationDone }}
-              >
-                <LinearGradient
-                  colors={
-                    eveningMeditationDone
-                      ? THEME.colors.meditationGradient.done
-                      : THEME.colors.meditationGradient.evening
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.meditationButtonGradient}
-                >
-                  <Text style={styles.meditationEmoji}>🧘</Text>
-                  <Text style={[
-                    styles.meditationButtonText,
-                    eveningMeditationDone && styles.meditationButtonTextDone
-                  ]}>
-                    {eveningMeditationDone ? 'Noche completada' : 'Meditar por la noche'}
-                  </Text>
-                  {eveningMeditationDone && (
-                    <View style={styles.checkmark}>
-                      <Text style={styles.checkmarkText}>✓</Text>
-                    </View>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {/* Sección de Cómo te sientes hoy - Siempre mostrar si hay check-in */}
+        {/* Contexto del día: una línea (estado de ánimo + energía) o CTA a Sentir */}
         {!loading && todayMood && (
-          <MoodCard
-            todayMood={todayMood}
-            energy={energy}
-            time={time}
-            focusLevel={focusLevel}
-            onRefresh={() => {
-              loadTasks();
-              loadTodayCheckIn();
-            }}
-          />
+          <TouchableOpacity
+            style={styles.contextPillWrap}
+            onPress={() => router.push('/(tabs)/sentir')}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Ver y actualizar cómo te sientes hoy"
+          >
+            <View style={[styles.contextPill, { backgroundColor: getEmotionColor(todayMood) }]}>
+              <Text style={styles.contextPillEmoji}>{getEmotionEmoji(todayMood)}</Text>
+              <Text style={styles.contextPillText}>
+                Sintiéndote {todayMood.charAt(0).toUpperCase() + todayMood.slice(1)} · Energía {energyLevel}/5
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )}
+        {!loading && !todayMood && (
+          <TouchableOpacity
+            style={styles.ctaSentirCompact}
+            onPress={() => router.push('/(tabs)/sentir')}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Ir a Sentir para configurar tu día"
+          >
+            <Heart size={18} color={THEME.colors.gradient.blue} />
+            <Text style={styles.ctaSentirCompactText}>Conecta cómo te sientes</Text>
+            <ChevronRight size={18} color={THEME.colors.gradient.blue} />
+          </TouchableOpacity>
         )}
 
-        {/* Guía visual del flujo - Cómo funciona Koraa (colapsable) */}
+        {/* CTA principal: agregar tareas (estilo Musa: una acción clara) */}
+        {!loading && (
+          <TouchableOpacity
+            style={styles.addTasksPill}
+            onPress={() => router.push('/(tabs)/vaciar')}
+            activeOpacity={0.88}
+            accessibilityRole="button"
+            accessibilityLabel="Ir a Vaciar para agregar tareas"
+          >
+            <LinearGradient
+              colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.addTasksPillGradient}
+            >
+              <Plus size={20} color={THEME.colors.onGradient} />
+              <Text style={styles.addTasksPillTitle}>Agregar tareas</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+
+        {/* Guía visual del flujo - Cómo funciona Koraa (colapsable, cerrada por defecto) */}
         {!loading && (
           <View style={styles.flowGuideSection}>
             <TouchableOpacity
@@ -841,31 +791,9 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {/* Bloque Hoy: cuadro agregar tareas arriba + # Tareas + lista */}
+        {/* Bloque Hoy: # Tareas + lista (la CTA agregar ya está arriba como pill) */}
         {!loading && (
           <View style={styles.tasksContainer}>
-            {/* Cuadro para agregar tareas — siempre visible arriba */}
-            <TouchableOpacity
-              style={styles.addTasksCard}
-              onPress={() => router.push('/(tabs)/vaciar')}
-              activeOpacity={0.88}
-              accessibilityRole="button"
-              accessibilityLabel="Ir a Vaciar para agregar tareas"
-            >
-              <LinearGradient
-                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.addTasksCardGradient}
-              >
-                <Plus size={22} color={THEME.colors.onGradient} />
-                <View style={styles.addTasksCardTextWrap}>
-                  <Text style={styles.addTasksCardTitle}>Agregar tareas</Text>
-                  <Text style={styles.addTasksCardHint}>En Vaciar sueltas todo sin orden</Text>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-
             <View style={styles.tasksListCard}>
               <View style={styles.tareasHeaderRow}>
                 <View style={styles.tareasHeaderLeft}>
@@ -912,16 +840,33 @@ export default function TodayScreen() {
                     </View>
                   </LinearGradient>
                   {explanation.reasoning && (
-                    <View style={styles.prioritiesContext}>
-                      <Text style={styles.prioritiesContextTitle}>Basado en cómo te sientes</Text>
-                      <Text style={styles.prioritiesContextText}>{explanation.reasoning}</Text>
-                      {explanation.suggestion && (
-                        <View style={styles.prioritiesSuggestionBox}>
-                          <Lightbulb size={18} color={THEME.colors.gradient.blue} />
-                          <Text style={styles.prioritiesSuggestion}>{explanation.suggestion}</Text>
-                        </View>
+                    <TouchableOpacity
+                      style={styles.prioritiesContext}
+                      onPress={() => setHeroReasoningExpanded((e) => !e)}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel={heroReasoningExpanded ? 'Ocultar explicación' : 'Ver por qué priorizamos así'}
+                    >
+                      <View style={styles.prioritiesContextHeaderRow}>
+                        <Text style={styles.prioritiesContextTitle}>Basado en cómo te sientes</Text>
+                        {heroReasoningExpanded ? (
+                          <ChevronDown size={16} color={THEME.colors.text.secondary} />
+                        ) : (
+                          <ChevronRight size={16} color={THEME.colors.text.secondary} />
+                        )}
+                      </View>
+                      {heroReasoningExpanded && (
+                        <>
+                          <Text style={styles.prioritiesContextText}>{explanation.reasoning}</Text>
+                          {explanation.suggestion && (
+                            <View style={styles.prioritiesSuggestionBox}>
+                              <Lightbulb size={18} color={THEME.colors.gradient.blue} />
+                              <Text style={styles.prioritiesSuggestion}>{explanation.suggestion}</Text>
+                            </View>
+                          )}
+                        </>
                       )}
-                    </View>
+                    </TouchableOpacity>
                   )}
                 </View>
               )}
@@ -1074,9 +1019,76 @@ export default function TodayScreen() {
           </Suspense>
         )}
 
-        {/* Sección de Recomendaciones */}
+        {/* Franja de meditación compacta (estilo Musa: una fila, dos pastillas) */}
+        {!loading && (
+          <View style={styles.meditationStrip}>
+            <Text style={styles.meditationStripLabel}>Tu momento de calma</Text>
+            <View style={styles.meditationStripRow}>
+              <TouchableOpacity
+                style={[styles.meditationPill, morningMeditationDone && styles.meditationPillDone]}
+                onPress={() => !morningMeditationDone && handleStartMeditation('morning')}
+                activeOpacity={0.8}
+                disabled={morningMeditationDone}
+                accessibilityRole="button"
+                accessibilityLabel={morningMeditationDone ? 'Meditación matutina completada' : 'Meditar por la mañana'}
+              >
+                <LinearGradient
+                  colors={morningMeditationDone ? THEME.colors.meditationGradient.done : THEME.colors.meditationGradient.morning}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.meditationPillGradient}
+                >
+                  <Text style={styles.meditationPillEmoji}>🧘</Text>
+                  <Text style={[styles.meditationPillText, morningMeditationDone && styles.meditationPillTextDone]} numberOfLines={1}>
+                    {morningMeditationDone ? 'Mañana ✓' : 'Mañana'}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.meditationPill, eveningMeditationDone && styles.meditationPillDone]}
+                onPress={() => !eveningMeditationDone && handleStartMeditation('evening')}
+                activeOpacity={0.8}
+                disabled={eveningMeditationDone}
+                accessibilityRole="button"
+                accessibilityLabel={eveningMeditationDone ? 'Meditación nocturna completada' : 'Meditar por la noche'}
+              >
+                <LinearGradient
+                  colors={eveningMeditationDone ? THEME.colors.meditationGradient.done : THEME.colors.meditationGradient.evening}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.meditationPillGradient}
+                >
+                  <Text style={styles.meditationPillEmoji}>🌙</Text>
+                  <Text style={[styles.meditationPillText, eveningMeditationDone && styles.meditationPillTextDone]} numberOfLines={1}>
+                    {eveningMeditationDone ? 'Noche ✓' : 'Noche'}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Recomendaciones colapsables (no alargan la primera vista) */}
         {user && (
-          <RecommendationsSection userId={user.id} />
+          <View style={styles.recommendationsWrap}>
+            <TouchableOpacity
+              style={styles.recommendationsHeader}
+              onPress={() => setShowRecommendationsExpanded((e) => !e)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={showRecommendationsExpanded ? 'Ocultar recomendaciones' : 'Ver recomendaciones para ti'}
+            >
+              <Text style={styles.recommendationsHeaderTitle}>Recomendaciones para ti</Text>
+              {showRecommendationsExpanded ? (
+                <ChevronDown size={20} color={THEME.colors.gradient.blue} />
+              ) : (
+                <ChevronRight size={20} color={THEME.colors.gradient.blue} />
+              )}
+            </TouchableOpacity>
+            {showRecommendationsExpanded && (
+              <RecommendationsSection userId={user.id} />
+            )}
+          </View>
         )}
       </ScrollView>
 
@@ -1385,8 +1397,70 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   welcomeSection: {
-    marginBottom: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
     paddingHorizontal: THEME.spacing.lg,
+  },
+  contextPillWrap: {
+    paddingHorizontal: THEME.spacing.lg,
+    marginBottom: THEME.spacing.sm,
+  },
+  contextPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.md,
+    paddingVertical: THEME.spacing.xs + 2,
+    borderRadius: THEME.borderRadius.pill,
+    maxWidth: '100%',
+  },
+  contextPillEmoji: {
+    fontSize: 16,
+  },
+  contextPillText: {
+    fontSize: 14,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
+  },
+  ctaSentirCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    marginHorizontal: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+  },
+  ctaSentirCompactText: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.gradient.blue,
+  },
+  addTasksPill: {
+    marginHorizontal: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.pill,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  addTasksPillGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.sm + 4,
+    paddingHorizontal: THEME.spacing.xl,
+    minHeight: 48,
+  },
+  addTasksPillTitle: {
+    fontSize: 17,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.onGradient,
   },
   welcomeHeader: {
     flexDirection: 'row',
@@ -1557,6 +1631,12 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.xs,
     borderTopWidth: 1,
     borderTopColor: THEME.colors.fill[200],
+  },
+  prioritiesContextHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: THEME.spacing.xs,
   },
   prioritiesContextTitle: {
     fontSize: 13,
@@ -2758,5 +2838,67 @@ const styles = StyleSheet.create({
     color: THEME.colors.fill[100],
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  meditationStrip: {
+    marginTop: THEME.spacing.lg,
+    marginBottom: THEME.spacing.lg,
+    paddingHorizontal: THEME.spacing.lg,
+  },
+  meditationStripLabel: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.sm,
+    fontSize: 13,
+  },
+  meditationStripRow: {
+    flexDirection: 'row',
+    gap: THEME.spacing.sm,
+  },
+  meditationPill: {
+    flex: 1,
+    borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+    minHeight: 52,
+    ...THEME.shadows.soft,
+  },
+  meditationPillDone: {
+    opacity: 0.75,
+  },
+  meditationPillGradient: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+  },
+  meditationPillEmoji: {
+    fontSize: 20,
+  },
+  meditationPillText: {
+    fontSize: 14,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+  },
+  meditationPillTextDone: {
+    color: THEME.colors.text.tertiary,
+  },
+  recommendationsWrap: {
+    marginBottom: THEME.spacing.xl,
+  },
+  recommendationsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: THEME.spacing.lg,
+    paddingVertical: THEME.spacing.md,
+    paddingBottom: THEME.spacing.sm,
+  },
+  recommendationsHeaderTitle: {
+    ...THEME.typography.h3,
+    fontSize: 16,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
   },
 });
