@@ -422,44 +422,13 @@ export default function TodayScreen() {
   };
 
   const getCategoryColor = useCallback((category: string) => {
-    switch (category.toLowerCase()) {
-      case 'trabajo':
-        return '#4A90E2';
-      case 'hogar':
-        return '#27AE60';
-      case 'salud':
-        return '#FF6B6B';
-      case 'personal':
-        return '#9B59B6';
-      case 'contenido':
-        return '#E67E22';
-      case 'marca':
-        return '#8E44AD';
-      case 'otros':
-        return THEME.colors.text.secondary;
-      default:
-        return THEME.colors.text.secondary;
-    }
+    const key = category.toLowerCase();
+    return THEME.colors.category[key as keyof typeof THEME.colors.category] ?? THEME.colors.text.secondary;
   }, []);
 
   const getEmotionColor = useCallback((emotion: string) => {
-    const emotionLower = emotion.toLowerCase();
-    switch (emotionLower) {
-      case 'enfocada':
-        return 'rgba(74, 144, 226, 0.15)';
-      case 'motivada':
-        return 'rgba(255, 107, 107, 0.15)';
-      case 'tranquila':
-        return 'rgba(78, 205, 196, 0.15)';
-      case 'ansiosa':
-        return 'rgba(255, 193, 7, 0.15)';
-      case 'agotada':
-        return 'rgba(155, 89, 182, 0.15)';
-      case 'abrumada':
-        return 'rgba(255, 152, 0, 0.15)';
-      default:
-        return 'rgba(74, 144, 226, 0.15)';
-    }
+    const key = emotion.toLowerCase();
+    return THEME.colors.emotionTint[key as keyof typeof THEME.colors.emotionTint] ?? THEME.colors.emotionTint.default;
   }, []);
 
   // Categorías ahora son invisibles - se detectan automáticamente
@@ -706,7 +675,7 @@ export default function TodayScreen() {
               <Text style={styles.welcomeTitle}>{getGreeting} ✨</Text>
               {currentStreak > 0 && (
                 <View style={styles.streakBadgeInline}>
-                  <Flame size={16} color="#FF6B6B" />
+                  <Flame size={16} color={THEME.colors.gradient.pink} />
                   <Text style={styles.streakTextInline}>{currentStreak}</Text>
                 </View>
               )}
@@ -742,8 +711,8 @@ export default function TodayScreen() {
                 <LinearGradient
                   colors={
                     morningMeditationDone
-                      ? ['#E8E8E8', '#F5F5F5']
-                      : ['#FFA07A', '#FF6B6B']
+                      ? THEME.colors.meditationGradient.done
+                      : THEME.colors.meditationGradient.morning
                   }
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
@@ -781,8 +750,8 @@ export default function TodayScreen() {
                 <LinearGradient
                   colors={
                     eveningMeditationDone
-                      ? ['#E8E8E8', '#F5F5F5']
-                      : ['#9B59B6', '#6C5CE7']
+                      ? THEME.colors.meditationGradient.done
+                      : THEME.colors.meditationGradient.evening
                   }
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
@@ -842,7 +811,7 @@ export default function TodayScreen() {
             <View style={styles.flowStepsContainer}>
               <View style={styles.flowStep}>
                 <View style={[styles.flowStepNumber, styles.flowStepNumberActive]}>
-                  <PenTool size={14} color="#FFFFFF" />
+                  <PenTool size={14} color={THEME.colors.onGradient} />
                 </View>
                 <Text style={styles.flowStepLabel} numberOfLines={1}>Vaciar</Text>
                 <Text style={styles.flowStepDesc} numberOfLines={1}>Agrega tus tareas</Text>
@@ -889,7 +858,7 @@ export default function TodayScreen() {
                 end={{ x: 1, y: 0 }}
                 style={styles.addTasksCardGradient}
               >
-                <Plus size={22} color="#FFFFFF" />
+                <Plus size={22} color={THEME.colors.onGradient} />
                 <View style={styles.addTasksCardTextWrap}>
                   <Text style={styles.addTasksCardTitle}>Agregar tareas</Text>
                   <Text style={styles.addTasksCardHint}>En Vaciar sueltas todo sin orden</Text>
@@ -1125,7 +1094,7 @@ export default function TodayScreen() {
 
       {/* Modal de edición - Lazy loaded */}
       {editingTask !== null && (
-        <Suspense fallback={<ViewRN style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={THEME.colors.gradient.blue} /></ViewRN>}>
+        <Suspense fallback={<ViewRN style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: THEME.colors.overlay, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={THEME.colors.gradient.blue} /></ViewRN>}>
           <TaskEditModal
             visible={editingTask !== null}
             content={editContent}
@@ -1187,7 +1156,7 @@ export default function TodayScreen() {
               showToast('No se pudo abrir la meditación. Intenta de nuevo.', 'error');
             }}
           >
-            <Suspense fallback={<ViewRN style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={THEME.colors.gradient.blue} /></ViewRN>}>
+            <Suspense fallback={<ViewRN style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: THEME.colors.overlay, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={THEME.colors.gradient.blue} /></ViewRN>}>
               <MeditationCircle
                 visible={showMeditation}
                 onComplete={handleMeditationComplete}
@@ -1244,7 +1213,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: THEME.colors.surfaceOverlay.medium,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1255,7 +1224,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   moodStatItem: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: THEME.colors.surfaceOverlay.light,
     borderRadius: THEME.borderRadius.rounded,
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: THEME.spacing.xs,
@@ -1369,11 +1338,11 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.md,
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: THEME.colors.surfaceOverlay.strong,
     borderRadius: THEME.borderRadius.pill,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: THEME.colors.surfaceOverlay.border,
   },
   quickCheckInButtonText: {
     ...THEME.typography.body,
@@ -1444,7 +1413,7 @@ const styles = StyleSheet.create({
   },
   streakTextInline: {
     ...THEME.typography.caption,
-    color: '#FF6B6B',
+    color: THEME.colors.gradient.pink,
     fontFamily: THEME.fonts.heading.bold,
     fontSize: 13,
   },
@@ -1538,7 +1507,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.lg,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(74, 144, 226, 0.15)',
+    borderColor: THEME.colors.tint.blue.soft,
   },
   prioritiesHeader: {
     flexDirection: 'row',
@@ -1578,7 +1547,7 @@ const styles = StyleSheet.create({
   },
   vaciarButtonText: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
     fontSize: 15,
   },
@@ -1642,7 +1611,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: THEME.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: THEME.spacing.lg,
@@ -1696,7 +1665,7 @@ const styles = StyleSheet.create({
   },
   modalButtonConfirmText: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
   addTaskButton: {
@@ -1757,14 +1726,14 @@ const styles = StyleSheet.create({
   addTasksCardTitle: {
     ...THEME.typography.h3,
     fontSize: 18,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
     marginBottom: 2,
   },
   addTasksCardHint: {
     ...THEME.typography.small,
     fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.92)',
+    color: THEME.colors.onGradientMuted,
   },
   emptyTasksInCard: {
     paddingVertical: THEME.spacing.lg,
@@ -2051,7 +2020,7 @@ const styles = StyleSheet.create({
   },
   addFromInicioButtonText: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
   agregarMasWrap: {
@@ -2088,7 +2057,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(74, 144, 226, 0.1)',
+    backgroundColor: THEME.colors.tint.blue.faint,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2259,9 +2228,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   projectBadge: {
-    backgroundColor: 'rgba(74, 144, 226, 0.12)',
+    backgroundColor: THEME.colors.tint.blue.light,
     borderWidth: 1,
-    borderColor: 'rgba(74, 144, 226, 0.25)',
+    borderColor: THEME.colors.tint.blue.border,
   },
   taskBadge: {
     backgroundColor: THEME.colors.fill[200],
@@ -2269,9 +2238,9 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.stroke[100],
   },
   subtaskBadge: {
-    backgroundColor: 'rgba(255, 107, 107, 0.08)',
+    backgroundColor: THEME.colors.semantic.dangerSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 107, 107, 0.19)',
+    borderColor: THEME.colors.semantic.dangerBorder,
   },
   taskTypeIcon: {
     fontSize: 12,
@@ -2303,7 +2272,7 @@ const styles = StyleSheet.create({
   taskCardWithSubtasks: {
     borderLeftWidth: 4,
     borderLeftColor: THEME.colors.gradient.blue,
-    backgroundColor: 'rgba(74, 144, 226, 0.02)',
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
   },
   expandButton: {
     padding: THEME.spacing.sm,
@@ -2328,7 +2297,7 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.xs,
     marginLeft: THEME.spacing.lg,
     borderLeftWidth: 2,
-    borderLeftColor: 'rgba(255, 107, 107, 0.25)',
+    borderLeftColor: THEME.colors.tint.pink.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: THEME.spacing.sm,
@@ -2472,7 +2441,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   menuItemTextDanger: {
-    color: '#FF6B6B',
+    color: THEME.colors.gradient.pink,
   },
   modalButtonSaveText: {
     ...THEME.typography.body,
@@ -2629,7 +2598,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: THEME.colors.surfaceOverlay.medium,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: THEME.spacing.md,
@@ -2643,7 +2612,7 @@ const styles = StyleSheet.create({
   },
   mainRegisterSubtext: {
     ...THEME.typography.body,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: THEME.colors.onGradientMuted,
     textAlign: 'center',
   },
   emptyStateCard: {
@@ -2691,20 +2660,20 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
     marginBottom: 4,
   },
   secondaryButtonSubtext: {
     ...THEME.typography.caption,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: THEME.colors.onGradientMuted,
   },
   updateCheckInButton: {
     marginTop: THEME.spacing.md,
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.md,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: THEME.colors.surfaceOverlay.medium,
     alignSelf: 'center',
   },
   updateCheckInButtonText: {
@@ -2716,7 +2685,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-end',
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+    backgroundColor: THEME.colors.tint.pink.soft,
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: THEME.spacing.xs,
     borderRadius: THEME.borderRadius.pill,
@@ -2725,7 +2694,7 @@ const styles = StyleSheet.create({
   },
   streakText: {
     ...THEME.typography.caption,
-    color: '#FF6B6B',
+    color: THEME.colors.gradient.pink,
     fontFamily: THEME.fonts.heading.bold,
   },
   meditationSection: {
@@ -2772,7 +2741,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   meditationButtonTextDone: {
-    color: '#999',
+    color: THEME.colors.text.tertiary,
   },
   checkmark: {
     position: 'absolute',
@@ -2781,7 +2750,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#4CAF50',
+    backgroundColor: THEME.colors.semantic.success,
     justifyContent: 'center',
     alignItems: 'center',
   },

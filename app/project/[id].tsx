@@ -85,15 +85,8 @@ export default function ProjectScreen() {
 
   const incompleteTasks = tasks.filter((t) => !t.is_completed);
   const getCategoryColorCallback = useCallback((category: string) => {
-    switch (category.toLowerCase()) {
-      case 'trabajo': return '#4A90E2';
-      case 'hogar': return '#27AE60';
-      case 'salud': return '#FF6B6B';
-      case 'personal': return '#9B59B6';
-      case 'contenido': return '#E67E22';
-      case 'marca': return '#8E44AD';
-      default: return THEME.colors.text.secondary;
-    }
+    const key = category.toLowerCase();
+    return THEME.colors.category[key as keyof typeof THEME.colors.category] ?? THEME.colors.text.secondary;
   }, []);
 
   const toggleExpansion = useCallback((taskId: string) => {

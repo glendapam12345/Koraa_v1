@@ -136,7 +136,7 @@ export default function SentirScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.noTasksBannerGradient}
             >
-              <Plus size={20} color="#FFFFFF" />
+              <Plus size={20} color={THEME.colors.onGradient} />
               <View style={styles.noTasksBannerContent}>
                 <Text style={styles.noTasksBannerText}>
                   Paso 1: Agrega tus tareas primero
@@ -257,13 +257,13 @@ const styles = StyleSheet.create({
   },
   noTasksBannerText: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
     marginBottom: 4,
   },
   noTasksBannerSubtext: {
     ...THEME.typography.caption,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: THEME.colors.onGradientMuted,
   },
   flowGuide: {
     backgroundColor: THEME.colors.fill[200],

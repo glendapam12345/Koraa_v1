@@ -450,7 +450,7 @@ export default function VaciarScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.checkInBannerGradient}
             >
-              <Sparkles size={20} color="#FFFFFF" />
+              <Sparkles size={20} color={THEME.colors.onGradient} />
               <View style={styles.checkInBannerContent}>
                 <Text style={styles.checkInBannerText}>
                   Siguiente paso: Registra cómo te sientes
@@ -843,13 +843,13 @@ const styles = StyleSheet.create({
   },
   checkInBannerText: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
     marginBottom: 4,
   },
   checkInBannerSubtext: {
     ...THEME.typography.caption,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: THEME.colors.onGradientMuted,
   },
   voiceButton: {
     position: 'absolute',

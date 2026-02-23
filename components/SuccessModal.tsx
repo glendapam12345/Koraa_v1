@@ -52,7 +52,7 @@ export function SuccessModal({ visible, message = 'Guardado', onClose }: Success
         <Animated.View style={[styles.content, animatedStyle]}>
           <CheckCircle2
             size={24}
-            color="#10B981"
+            color={THEME.colors.semantic.success}
             strokeWidth={2}
           />
           <Text style={styles.message}>{message}</Text>

@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: THEME.colors.surfaceOverlay.medium,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.xs,
   },
   moodStatItem: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: THEME.colors.surfaceOverlay.light,
     borderRadius: THEME.borderRadius.rounded,
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: THEME.spacing.xs,
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: THEME.colors.surfaceOverlay.medium,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   moodStatSeparator: {
     width: 1,
     height: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: THEME.colors.surfaceOverlay.medium,
     marginHorizontal: THEME.spacing.xs / 2,
   },
   moodStatLabel: {
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: THEME.colors.surfaceOverlay.medium,
     alignSelf: 'center',
   },
   updateCheckInButtonText: {

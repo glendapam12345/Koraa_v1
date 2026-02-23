@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   },
   previewFooterText: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
 });

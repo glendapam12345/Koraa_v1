@@ -7,10 +7,10 @@ import { FolderKanban, X, Plus } from 'lucide-react-native';
 const PROJECT_COLORS = [
   THEME.colors.gradient.blue,
   THEME.colors.gradient.pink,
-  '#4A90E2',
-  '#FF6B6B',
+  THEME.colors.gradient.blue,
+  THEME.colors.gradient.pink,
   '#32CD32',
-  '#9B59B6',
+  THEME.colors.category.personal,
   '#FFA500',
   '#00CED1',
 ];
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: THEME.colors.overlayLight,
     justifyContent: 'flex-end',
   },
   modalContent: {
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
   },
   newProjectSaveText: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
 });

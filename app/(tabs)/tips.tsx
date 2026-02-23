@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   },
   emotionLabel: {
     ...THEME.typography.caption,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: THEME.colors.onGradientMuted,
     marginBottom: 4,
   },
   emotionName: {

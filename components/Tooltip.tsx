@@ -33,10 +33,10 @@ export function Tooltip({ visible, title, message, onClose }: TooltipProps) {
             style={styles.tooltip}
           >
             <View style={styles.header}>
-              <Info size={20} color="#FFFFFF" />
+              <Info size={20} color={THEME.colors.onGradient} />
               <Text style={styles.title}>{title}</Text>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <X size={18} color="#FFFFFF" />
+                <X size={18} color={THEME.colors.onGradient} />
               </TouchableOpacity>
             </View>
             <Text style={styles.message}>{message}</Text>
@@ -53,7 +53,7 @@ export function Tooltip({ visible, title, message, onClose }: TooltipProps) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: THEME.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: THEME.spacing.lg,
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...THEME.typography.h3,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     flex: 1,
     marginLeft: THEME.spacing.xs,
     marginRight: THEME.spacing.xs,
@@ -84,12 +84,12 @@ const styles = StyleSheet.create({
   },
   message: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     lineHeight: 24,
     marginBottom: THEME.spacing.md,
   },
   button: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: THEME.colors.surfaceOverlay.medium,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.sm,
     alignItems: 'center',
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
 });

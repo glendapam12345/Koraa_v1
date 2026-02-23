@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { THEME } from '@/constants/theme';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -9,7 +10,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 
-const CONFETTI_COLORS = ['#FF6B6B', '#4A90E2', '#9B59B6', '#FFD700', '#FF1493', '#00CED1'];
+const CONFETTI_COLORS = [...THEME.colors.confettiPalette];
 
 interface ConfettiPiece {
   id: number;

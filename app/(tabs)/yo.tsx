@@ -357,7 +357,7 @@ export default function ProfileScreen() {
       return {
         label: 'Maestra',
         icon: '⭐',
-        colors: [THEME.colors.gradient.pink, '#FFD700'] as const,
+        colors: [THEME.colors.gradient.pink, THEME.colors.accent.yellow] as const,
         message: '¡Eres una maestra de la consistencia!'
       };
     }
@@ -365,7 +365,7 @@ export default function ProfileScreen() {
       return {
         label: 'Experta',
         icon: '🌟',
-        colors: [THEME.colors.gradient.pink, '#FFA500'] as const,
+        colors: [THEME.colors.gradient.pink, THEME.colors.accent.orange] as const,
         message: '¡Nivel experto alcanzado!'
       };
     }
@@ -381,7 +381,7 @@ export default function ProfileScreen() {
       return {
         label: 'Consistente',
         icon: '💫',
-        colors: [THEME.colors.gradient.blue, '#9B59B6'] as const,
+        colors: [THEME.colors.gradient.blue, THEME.colors.category.personal] as const,
         message: '¡Excelente consistencia!'
       };
     }
@@ -1172,7 +1172,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: THEME.spacing.xs,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: THEME.colors.surfaceOverlay.medium,
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: 4,
     borderRadius: THEME.borderRadius.pill,
@@ -1246,7 +1246,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: THEME.colors.overlay,
     justifyContent: 'flex-end',
   },
   modalKeyboardView: {
@@ -1458,16 +1458,16 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   errorContainer: {
-    backgroundColor: '#FFE5E5',
+    backgroundColor: THEME.colors.errorSurface,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
     borderLeftWidth: 4,
-    borderLeftColor: '#FF6B6B',
+    borderLeftColor: THEME.colors.errorBorder,
   },
   errorText: {
     ...THEME.typography.body,
-    color: '#FF6B6B',
+    color: THEME.colors.gradient.pink,
     fontFamily: THEME.fonts.heading.medium,
   },
   lengthWarning: {
@@ -1485,7 +1485,7 @@ const styles = StyleSheet.create({
   },
   projectsModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: THEME.colors.overlay,
     justifyContent: 'flex-end',
   },
   projectsModalContent: {

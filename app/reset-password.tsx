@@ -361,14 +361,14 @@ const styles = StyleSheet.create({
     height: THEME.sizes.inputHeight,
   },
   errorContainer: {
-    backgroundColor: '#FF6B6B20',
+    backgroundColor: THEME.colors.gradient.pink + '20',
     borderRadius: THEME.borderRadius.standard,
     padding: THEME.spacing.sm,
     marginBottom: THEME.spacing.md,
   },
   errorText: {
     ...THEME.typography.caption,
-    color: '#FF6B6B',
+    color: THEME.colors.gradient.pink,
     textAlign: 'center',
   },
   linkButton: {

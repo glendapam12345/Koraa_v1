@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 
 // Configurar cómo se manejan las notificaciones cuando la app está en primer plano
@@ -74,7 +75,7 @@ async function registerForPushNotificationsAsync() {
       name: 'default',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF6B6B',
+      lightColor: THEME.colors.gradient.pink,
     });
   }
 

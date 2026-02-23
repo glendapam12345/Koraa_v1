@@ -172,7 +172,7 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
                     <View style={[styles.ringOuter, { width: CIRCLE_SIZE, height: CIRCLE_SIZE, borderRadius: CIRCLE_SIZE / 2 }]}>
                       <View style={[styles.ringFillClip, { height: CIRCLE_SIZE * fillProgress }]}>
                         <LinearGradient
-                          colors={['rgba(255,255,255,0.55)', 'rgba(255,255,255,0.35)']}
+                          colors={[THEME.colors.surfaceOverlay.strong, THEME.colors.surfaceOverlay.light]}
                           start={{ x: 0.5, y: 1 }}
                           end={{ x: 0.5, y: 0 }}
                           style={[styles.ringFill, { width: CIRCLE_SIZE, height: CIRCLE_SIZE, borderRadius: CIRCLE_SIZE / 2 }]}
@@ -239,7 +239,7 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: THEME.colors.overlay,
   },
   gradientBackground: {
     flex: 1,
@@ -253,9 +253,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: THEME.colors.surfaceOverlay.soft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderColor: THEME.colors.surfaceOverlay.strong,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   subtitle: {
     ...THEME.typography.body,
     fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.92)',
+    color: THEME.colors.onGradientMuted,
     textAlign: 'center',
     marginBottom: THEME.spacing.lg,
     lineHeight: 22,
@@ -290,8 +290,8 @@ const styles = StyleSheet.create({
   },
   ringGlow: {
     position: 'absolute',
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    shadowColor: '#FFFFFF',
+    backgroundColor: THEME.colors.surfaceOverlay.faint,
+    shadowColor: THEME.shadows.shadowColorLight,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.35,
     shadowRadius: 28,
@@ -303,11 +303,11 @@ const styles = StyleSheet.create({
   },
   ringOuter: {
     borderWidth: 12,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: THEME.colors.surfaceOverlay.borderStrong,
+    backgroundColor: THEME.colors.surfaceOverlay.veryFaint,
     overflow: 'hidden',
     position: 'relative',
-    shadowColor: '#000',
+    shadowColor: THEME.shadows.shadowColorDark,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -336,13 +336,13 @@ const styles = StyleSheet.create({
     width: 136,
     height: 136,
     borderRadius: 68,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: THEME.colors.surfaceOverlay.light,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderColor: THEME.colors.surfaceOverlay.strong,
     justifyContent: 'center',
     alignItems: 'center',
     ...THEME.shadows.soft,
-    shadowColor: '#000',
+    shadowColor: THEME.shadows.shadowColorDark,
     shadowOpacity: 0.12,
     shadowRadius: 16,
   },
@@ -356,14 +356,14 @@ const styles = StyleSheet.create({
   timerLabel: {
     ...THEME.typography.body,
     fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.92)',
+    color: THEME.colors.onGradientMuted,
     fontFamily: THEME.fonts.heading.medium,
     marginTop: -4,
     letterSpacing: 0.5,
   },
   hint: {
     ...THEME.typography.caption,
-    color: 'rgba(255, 255, 255, 0.65)',
+    color: THEME.colors.onGradientFaint,
     marginTop: THEME.spacing.sm,
     textAlign: 'center',
   },
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderColor: THEME.colors.surfaceOverlay.borderMedium,
   },
   startButtonText: {
     ...THEME.typography.body,
@@ -389,17 +389,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.md,
   },
   cycleBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: THEME.colors.surfaceOverlay.medium,
     paddingHorizontal: THEME.spacing.md,
     paddingVertical: THEME.spacing.xs,
     borderRadius: THEME.borderRadius.pill,
     marginBottom: THEME.spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: THEME.colors.surfaceOverlay.medium,
   },
   cycleCounter: {
     ...THEME.typography.caption,
-    color: 'rgba(255, 255, 255, 0.95)',
+    color: THEME.colors.onGradientSoft,
     fontFamily: THEME.fonts.heading.medium,
   },
   instructionText: {
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
   instructionSubtext: {
     ...THEME.typography.body,
     fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.88)',
+    color: THEME.colors.onGradientSubtle,
     fontStyle: 'italic',
     lineHeight: 22,
   },
@@ -422,8 +422,8 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    shadowColor: '#FFFFFF',
+    backgroundColor: THEME.colors.surfaceOverlay.light,
+    shadowColor: THEME.shadows.shadowColorLight,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 40,
@@ -433,14 +433,14 @@ const styles = StyleSheet.create({
     width: 160,
     height: 160,
     borderRadius: 80,
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    backgroundColor: THEME.colors.surfaceOverlay.strong,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
+    borderColor: THEME.colors.surfaceOverlay.border,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: THEME.spacing.lg,
     ...THEME.shadows.soft,
-    shadowColor: '#000',
+    shadowColor: THEME.shadows.shadowColorDark,
     shadowOpacity: 0.1,
     shadowRadius: 20,
   },
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
   completedSubtitle: {
     ...THEME.typography.body,
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.92)',
+    color: THEME.colors.onGradientMuted,
     textAlign: 'center',
   },
 });

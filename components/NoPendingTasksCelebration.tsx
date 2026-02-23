@@ -24,7 +24,7 @@ export function NoPendingTasksCelebration({ onDismiss }: NoPendingTasksCelebrati
           accessibilityLabel="De acuerdo"
         >
           <LinearGradient
-            colors={['rgba(255, 255, 255, 0.35)', 'rgba(255, 255, 255, 0.25)']}
+            colors={[THEME.colors.surfaceOverlay.strong, THEME.colors.surfaceOverlay.light]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.dismissButtonGradient}
@@ -85,14 +85,14 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.md,
     paddingHorizontal: THEME.spacing.xl,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: THEME.colors.surfaceOverlay.borderMedium,
     minWidth: 140,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dismissButtonText: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
     fontSize: 15,
     letterSpacing: 0.5,

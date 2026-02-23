@@ -88,7 +88,7 @@ export default function SemanaScreen() {
         }
       >
         <LinearGradient
-          colors={['rgba(74, 144, 226, 0.08)', 'rgba(255, 107, 107, 0.06)', 'transparent']}
+          colors={THEME.colors.gradientTint.header}
           style={styles.headerGradient}
         >
           <View style={styles.header}>
@@ -105,7 +105,7 @@ export default function SemanaScreen() {
                 end={{ x: 1, y: 1 }}
                 style={styles.headerCalendarButton}
               >
-                <Calendar size={22} color="#FFFFFF" />
+                <Calendar size={22} color={THEME.colors.onGradient} />
               </LinearGradient>
             </TouchableOpacity>
             <View style={styles.headerTextWrap}>
@@ -133,7 +133,7 @@ export default function SemanaScreen() {
           </TouchableOpacity>
           <View style={styles.weekNavCenterWrap}>
             <LinearGradient
-              colors={['rgba(74, 144, 226, 0.12)', 'rgba(255, 107, 107, 0.08)']}
+              colors={THEME.colors.gradientTint.weekNav}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.weekNavCenter}
@@ -203,7 +203,7 @@ export default function SemanaScreen() {
                       colors={[chipColor, chipColor]}
                       style={[styles.filterChipGradient, { opacity: 0.95 }]}
                     >
-                      <View style={[styles.filterChipDotLight, { backgroundColor: 'rgba(255,255,255,0.9)' }]} />
+                      <View style={[styles.filterChipDotLight, { backgroundColor: THEME.colors.onGradientMuted }]} />
                       <Text style={styles.filterChipTextSelected} numberOfLines={1}>{p.name}</Text>
                     </LinearGradient>
                   ) : (
@@ -226,7 +226,7 @@ export default function SemanaScreen() {
           <View key={day.dateStr} style={styles.daySection}>
             {day.isToday ? (
               <LinearGradient
-                colors={['rgba(74, 144, 226, 0.2)', 'rgba(255, 107, 107, 0.12)']}
+                colors={THEME.colors.gradientTint.dayToday}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={[styles.dayHeader, styles.dayHeaderToday]}
@@ -265,7 +265,7 @@ export default function SemanaScreen() {
                       end={{ x: 1, y: 0 }}
                       style={styles.addDayButton}
                     >
-                      <Plus size={18} color="#FFFFFF" />
+                      <Plus size={18} color={THEME.colors.onGradient} />
                       <Text style={styles.addDayButtonText}>Agregar tareas</Text>
                     </LinearGradient>
                   </TouchableOpacity>
@@ -319,7 +319,7 @@ export default function SemanaScreen() {
             end={{ x: 1, y: 0 }}
             style={styles.addButtonGradient}
           >
-            <Plus size={22} color="#FFFFFF" />
+            <Plus size={22} color={THEME.colors.onGradient} />
             <Text style={styles.addButtonText}>Agregar tareas o proyectos</Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
   },
   filterChipTextSelected: {
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
     fontSize: 13,
   },
@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
   },
   dayHeaderToday: {
     borderLeftWidth: 4,
-    borderLeftColor: 'rgba(255,255,255,0.5)',
+    borderLeftColor: THEME.colors.surfaceOverlay.borderMedium,
   },
   dayBody: {
     padding: THEME.spacing.md,
@@ -631,7 +631,7 @@ const styles = StyleSheet.create({
   },
   todayBadgeText: {
     ...THEME.typography.small,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
   emptyDay: {
@@ -670,7 +670,7 @@ const styles = StyleSheet.create({
   },
   addDayButtonText: {
     ...THEME.typography.caption,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
     fontSize: 14,
   },
@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderStyle: 'dashed',
     borderColor: THEME.colors.gradient.blue,
-    backgroundColor: 'rgba(74, 144, 226, 0.06)',
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
     marginTop: THEME.spacing.xs,
   },
   addDayButtonTextOutlined: {
@@ -792,14 +792,14 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
   setupCard: {
     marginHorizontal: THEME.spacing.lg,
     marginTop: THEME.spacing.md,
     padding: THEME.spacing.md,
-    backgroundColor: 'rgba(74, 144, 226, 0.08)',
+    backgroundColor: THEME.colors.tint.blue.veryLight,
     borderRadius: THEME.borderRadius.rounded,
     borderLeftWidth: 4,
     borderLeftColor: THEME.colors.gradient.blue,

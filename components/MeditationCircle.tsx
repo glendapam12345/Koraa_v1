@@ -239,7 +239,7 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
                   cx={CIRCLE_SIZE / 2}
                   cy={CIRCLE_SIZE / 2}
                   r={RADIUS}
-                  stroke="rgba(255, 255, 255, 0.2)"
+                  stroke={THEME.colors.surfaceOverlay.medium}
                   strokeWidth={STROKE_WIDTH}
                   fill="none"
                 />
@@ -327,7 +327,7 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: THEME.colors.overlay,
   },
   gradientBackground: {
     flex: 1,
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: THEME.colors.surfaceOverlay.medium,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...THEME.typography.body,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: THEME.colors.onGradientMuted,
     textAlign: 'center',
     marginBottom: THEME.spacing.xl,
   },
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   },
   timerLabel: {
     ...THEME.typography.body,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: THEME.colors.onGradientMuted,
     fontFamily: THEME.fonts.heading.medium,
     marginTop: -THEME.spacing.xs,
   },
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
   },
   cycleCounter: {
     ...THEME.typography.caption,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: THEME.colors.onGradientSubtle,
     marginBottom: THEME.spacing.sm,
     fontFamily: THEME.fonts.heading.medium,
   },
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
   },
   instructionSubtext: {
     ...THEME.typography.body,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: THEME.colors.onGradientMuted,
     fontStyle: 'italic',
   },
 });

@@ -54,13 +54,13 @@ export function Toast({ message, type = 'success', duration = 3000, onHide }: To
   const getIcon = () => {
     switch (type) {
       case 'success':
-        return <CheckCircle size={20} color="#FFFFFF" />;
+        return <CheckCircle size={20} color={THEME.colors.onGradient} />;
       case 'error':
-        return <AlertCircle size={20} color="#FFFFFF" />;
+        return <AlertCircle size={20} color={THEME.colors.onGradient} />;
       case 'info':
-        return <Info size={20} color="#FFFFFF" />;
+        return <Info size={20} color={THEME.colors.onGradient} />;
       default:
-        return <CheckCircle size={20} color="#FFFFFF" />;
+        return <CheckCircle size={20} color={THEME.colors.onGradient} />;
     }
   };
 
@@ -69,7 +69,7 @@ export function Toast({ message, type = 'success', duration = 3000, onHide }: To
       case 'success':
         return THEME.colors.gradient.blue;
       case 'error':
-        return '#FF6B6B';
+        return THEME.colors.gradient.pink;
       case 'info':
         return THEME.colors.gradient.pink;
       default:
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   },
   message: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     flex: 1,
     fontFamily: THEME.fonts.heading.medium,
   },

@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   },
   stepNumberText: {
     ...THEME.typography.h3,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
   stepContent: {
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   },
   priorityNumberText: {
     ...THEME.typography.caption,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
   priorityText: {
@@ -271,12 +271,12 @@ const styles = StyleSheet.create({
   },
   adaptationTitle: {
     ...THEME.typography.h3,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     marginBottom: THEME.spacing.sm,
   },
   adaptationText: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     lineHeight: 24,
   },
   dotContainer: {

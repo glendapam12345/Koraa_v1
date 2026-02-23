@@ -49,37 +49,37 @@ const CATEGORY_ILLUSTRATIONS: Record<string, { emoji: string; gradient: [string,
   },
   'ejercicio': {
     emoji: '💪',
-    gradient: [THEME.colors.gradient.pink, '#FF6B6B'],
+    gradient: [THEME.colors.gradient.pink, THEME.colors.gradient.pink],
     title: 'Ejercicio',
   },
   'productividad': {
     emoji: '📚',
-    gradient: [THEME.colors.gradient.blue, '#4A90E2'],
+    gradient: [THEME.colors.gradient.blue, THEME.colors.gradient.blue],
     title: 'Productividad',
   },
   'bienestar': {
     emoji: '✨',
-    gradient: [THEME.colors.gradient.pink, '#FFD700'],
+    gradient: [THEME.colors.gradient.pink, THEME.colors.accent.yellow],
     title: 'Bienestar',
   },
   'social': {
     emoji: '👥',
-    gradient: [THEME.colors.gradient.blue, '#9B59B6'],
+    gradient: [THEME.colors.gradient.blue, THEME.colors.category.personal],
     title: 'Social',
   },
   'creatividad': {
     emoji: '🎨',
-    gradient: [THEME.colors.gradient.pink, '#FF1493'],
+    gradient: [THEME.colors.gradient.pink, THEME.colors.gradient.pink],
     title: 'Creatividad',
   },
   'descanso': {
     emoji: '😴',
-    gradient: [THEME.colors.gradient.blue, '#00CED1'],
+    gradient: [THEME.colors.gradient.blue, THEME.colors.gradient.blue],
     title: 'Descanso',
   },
   'nutrición': {
     emoji: '🥗',
-    gradient: [THEME.colors.gradient.pink, '#32CD32'],
+    gradient: [THEME.colors.gradient.pink, THEME.colors.category.hogar],
     title: 'Nutrición',
   },
 };
@@ -308,7 +308,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
                     <Text style={styles.emoji}>{illustration.emoji}</Text>
                     <Text style={styles.categoryTitle}>{illustration.title}</Text>
                   </View>
-                  <ChevronUp size={18} color="rgba(255, 255, 255, 0.8)" />
+                  <ChevronUp size={18} color={THEME.colors.onGradientMuted} />
                 </View>
                 <Text style={styles.horizontalCardTitle} numberOfLines={2}>
                   {mainRecommendation.title}
@@ -428,20 +428,20 @@ const styles = StyleSheet.create({
   },
   horizontalCardTitle: {
     ...THEME.typography.h3,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
     marginBottom: THEME.spacing.xs,
   },
   horizontalCardPreview: {
     ...THEME.typography.small,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     opacity: 0.9,
     fontSize: 13,
     lineHeight: 20,
   },
   horizontalCardMore: {
     ...THEME.typography.small,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     opacity: 0.75,
     fontSize: 11,
     marginTop: THEME.spacing.xs,
@@ -493,14 +493,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: THEME.colors.surfaceOverlay.light,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
   },
   expandHintText: {
     ...THEME.typography.small,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     opacity: 0.8,
     fontSize: 10,
   },
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
   },
   categoryTitle: {
     ...THEME.typography.caption,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     opacity: 0.9,
     fontFamily: THEME.fonts.heading.medium,
     fontSize: 11,
@@ -517,14 +517,14 @@ const styles = StyleSheet.create({
   },
   recommendationTitle: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
     fontSize: 14,
     marginBottom: 4,
   },
   recommendationPreview: {
     ...THEME.typography.small,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     opacity: 0.85,
     fontSize: 11,
     lineHeight: 16,
@@ -534,11 +534,11 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.md,
     paddingTop: THEME.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    borderTopColor: THEME.colors.surfaceOverlay.medium,
   },
   recommendationMessage: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     opacity: 0.95,
     fontSize: 13,
     lineHeight: 20,
@@ -548,11 +548,11 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.md,
     paddingTop: THEME.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    borderTopColor: THEME.colors.surfaceOverlay.medium,
   },
   additionalRecTitle: {
     ...THEME.typography.caption,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     opacity: 0.9,
     fontFamily: THEME.fonts.heading.medium,
     marginBottom: THEME.spacing.xs,
@@ -563,13 +563,13 @@ const styles = StyleSheet.create({
   },
   additionalRecText: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     opacity: 0.85,
     fontSize: 12,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: THEME.colors.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {

@@ -93,7 +93,7 @@ export function QuickOnboardingModal({ visible, onClose }: QuickOnboardingModalP
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: THEME.colors.overlayStrong,
     justifyContent: 'center',
     alignItems: 'center',
     padding: THEME.spacing.lg,

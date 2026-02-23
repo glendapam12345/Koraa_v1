@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   },
   flowStepNumberText: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
   flowStepContent: {
@@ -219,12 +219,12 @@ const styles = StyleSheet.create({
   },
   resultTitle: {
     ...THEME.typography.h3,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     marginBottom: THEME.spacing.xs,
   },
   resultText: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     lineHeight: 24,
   },
 });

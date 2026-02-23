@@ -250,12 +250,12 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     ...THEME.typography.caption,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: THEME.colors.onGradientMuted,
     marginBottom: THEME.spacing.xs,
   },
   summaryValue: {
     ...THEME.typography.h2,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     marginBottom: THEME.spacing.md,
     fontFamily: THEME.fonts.heading.bold,
   },
@@ -270,12 +270,12 @@ const styles = StyleSheet.create({
   },
   summaryItemLabel: {
     ...THEME.typography.small,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: THEME.colors.onGradientMuted,
     marginBottom: 4,
   },
   summaryItemValue: {
     ...THEME.typography.body,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
   messageCard: {
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   },
   taskNumberText: {
     ...THEME.typography.caption,
-    color: '#FFFFFF',
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
   taskText: {

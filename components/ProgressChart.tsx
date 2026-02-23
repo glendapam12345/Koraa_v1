@@ -35,17 +35,17 @@ const getEmotionColors = (emotion?: string): readonly [string, string] => {
 
   switch (emotionLower) {
     case 'tranquila':
-      return ['#6BB6FF', '#4A90E2'] as const; // Azul suave
+      return [THEME.colors.chartPalette[0], THEME.colors.gradient.blue] as const;
     case 'enfocada':
-      return ['#52C9A2', '#2E9D7A'] as const; // Verde
+      return [THEME.colors.chartPalette[2], THEME.colors.chartPalette[3]] as const;
     case 'motivada':
-      return ['#FFD93D', '#FFB84D'] as const; // Amarillo/Naranja
+      return [THEME.colors.accent.yellow, THEME.colors.chartPalette[5]] as const;
     case 'ansiosa':
-      return ['#FF9F66', '#FF7F50'] as const; // Naranja suave
+      return [THEME.colors.chartPalette[6], THEME.colors.chartPalette[7]] as const;
     case 'agotada':
-      return ['#FF6B6B', '#E55555'] as const; // Rojo suave
+      return [THEME.colors.gradient.pink, THEME.colors.chartPalette[9]] as const;
     case 'abrumada':
-      return ['#B794F6', '#9B7EDE'] as const; // Morado suave
+      return [THEME.colors.chartPalette[10], THEME.colors.chartPalette[11]] as const;
     default:
       return [THEME.colors.gradient.blue, THEME.colors.gradient.pink] as const;
   }
