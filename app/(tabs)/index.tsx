@@ -1005,7 +1005,7 @@ export default function TodayScreen() {
                     });
                   };
                   return (
-                    <View key={sec.id} style={[styles.areaCard, { borderLeftWidth: 4, borderLeftColor: sec.color }]}>
+                    <View key={sec.id} style={styles.areaCard}>
                       <View style={styles.areaCardInner}>
                         <SectionHeader
                           title={sec.title}

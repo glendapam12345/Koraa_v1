@@ -110,7 +110,7 @@ export function TaskCard({
           uniformCard && styles.taskCardAligned,
         ]}
       >
-        {task.is_priority && !task.is_completed && (
+        {task.is_priority && !task.is_completed && !uniformCard && (
           <View style={styles.priorityNumberContainer}>
             <View style={styles.priorityNumber}>
               <Text style={styles.priorityNumberText}>{index + 1}</Text>

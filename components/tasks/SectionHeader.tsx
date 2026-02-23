@@ -76,7 +76,7 @@ export function SectionHeader({
     </View>
   );
   return (
-    <View style={[styles.wrapper, isCard && styles.wrapperCard, segmentStyle && styles.wrapperSegment, segmentStyle && { backgroundColor: color + '18' }]}>
+    <View style={[styles.wrapper, isCard && styles.wrapperCard, segmentStyle && styles.wrapperSegment, segmentStyle && { backgroundColor: color + '22', borderLeftWidth: 4, borderLeftColor: color }]}>
       {!hideAccentBar && <View style={[styles.accentBar, { backgroundColor: color }]} />}
       {expandable && onToggleExpand ? (
         <TouchableOpacity
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.sm,
   },
   wrapperSegment: {
-    paddingVertical: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.sm + 4,
     paddingHorizontal: THEME.spacing.md,
     marginBottom: 0,
     borderRadius: 0,
@@ -169,12 +169,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   titleSegment: {
-    fontSize: 17,
+    fontSize: 20,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
+    letterSpacing: 0.2,
   },
   subtitleSegment: {
+    fontSize: 13,
     color: THEME.colors.text.secondary,
+    marginTop: 2,
   },
   countBadge: {
     paddingHorizontal: 10,
