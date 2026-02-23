@@ -1015,6 +1015,7 @@ export default function TodayScreen() {
                           subtitle={CATEGORY_SUBTITLES[sec.categoryKey]}
                           hideAccentBar
                           variant="card"
+                          segmentStyle
                           expandable
                           expanded={isSectionExpanded}
                           onToggleExpand={toggleSection}

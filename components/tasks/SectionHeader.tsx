@@ -15,6 +15,8 @@ interface SectionHeaderProps {
   hideAccentBar?: boolean;
   /** Título más grande para tarjetas por área (estilo QUITNOW) */
   variant?: 'default' | 'card';
+  /** Estilo "segmento": la categoría es el título del bloque, con fondo de color */
+  segmentStyle?: boolean;
   /** Sección desplegable: mostrar chevron y permitir expandir/contraer */
   expandable?: boolean;
   /** Si está expandida (muestra contenido debajo) */
@@ -32,6 +34,7 @@ export function SectionHeader({
   subtitle,
   hideAccentBar,
   variant = 'default',
+  segmentStyle = false,
   expandable,
   expanded = true,
   onToggleExpand,
@@ -39,7 +42,7 @@ export function SectionHeader({
   const isCard = variant === 'card';
   const displayEmoji = emoji ?? (isSuelta ? '📋' : '📁');
   const content = (
-    <View style={[styles.content, subtitle && styles.contentWithSubtitle]}>
+    <View style={[styles.content, subtitle && styles.contentWithSubtitle, segmentStyle && styles.contentSegment]}>
       <View style={styles.titleRow}>
         {!isCard && (isSuelta ? (
           <Inbox size={18} color={THEME.colors.text.secondary} style={styles.icon} />
@@ -48,15 +51,15 @@ export function SectionHeader({
         ))}
         {isCard && <Text style={styles.emoji}>{displayEmoji}</Text>}
         <View style={styles.titleWrap}>
-          <Text style={[styles.title, isSuelta && styles.titleSuelta, isCard && styles.titleCard]} numberOfLines={1}>
+          <Text style={[styles.title, isSuelta && styles.titleSuelta, isCard && styles.titleCard, segmentStyle && styles.titleSegment]} numberOfLines={1}>
             {title}
           </Text>
           {subtitle && (
-            <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
+            <Text style={[styles.subtitle, segmentStyle && styles.subtitleSegment]} numberOfLines={1}>{subtitle}</Text>
           )}
         </View>
-        <View style={[styles.countBadge, isCard && { backgroundColor: color + '20' }]}>
-          <Text style={[styles.count, isCard && styles.countCard, isCard && { color }]}>
+        <View style={[styles.countBadge, isCard && { backgroundColor: color + '20' }, segmentStyle && { backgroundColor: color + '25' }]}>
+          <Text style={[styles.count, isCard && styles.countCard, (isCard || segmentStyle) && { color }]} numberOfLines={1}>
             {count} {count === 1 ? 'tarea' : 'tareas'}
           </Text>
         </View>
@@ -73,7 +76,7 @@ export function SectionHeader({
     </View>
   );
   return (
-    <View style={[styles.wrapper, isCard && styles.wrapperCard]}>
+    <View style={[styles.wrapper, isCard && styles.wrapperCard, segmentStyle && styles.wrapperSegment, segmentStyle && { backgroundColor: color + '18' }]}>
       {!hideAccentBar && <View style={[styles.accentBar, { backgroundColor: color }]} />}
       {expandable && onToggleExpand ? (
         <TouchableOpacity
@@ -151,6 +154,27 @@ const styles = StyleSheet.create({
   },
   wrapperCard: {
     marginBottom: THEME.spacing.sm,
+  },
+  wrapperSegment: {
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    marginBottom: 0,
+    borderRadius: 0,
+    borderTopLeftRadius: THEME.borderRadius.standard,
+    borderTopRightRadius: THEME.borderRadius.standard,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.colors.stroke[100],
+  },
+  contentSegment: {
+    alignItems: 'center',
+  },
+  titleSegment: {
+    fontSize: 17,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+  },
+  subtitleSegment: {
+    color: THEME.colors.text.secondary,
   },
   countBadge: {
     paddingHorizontal: 10,
