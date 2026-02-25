@@ -20,7 +20,7 @@ import { generatePrioritizationExplanation } from '@/lib/smartPrioritization';
 import { getEmotionEmoji } from '@/lib/emotionalInsights';
 import { getSectionEmoji, getCategoryEmoji } from '@/constants/emojis';
 import { logger } from '@/lib/logger';
-import { Sparkles, Plus, Flame, PenTool, Heart, Target, ArrowRight, Lightbulb, ChevronDown, ChevronRight } from 'lucide-react-native';
+import { Sparkles, Plus, Flame, PenTool, Heart, Target, ArrowRight, Lightbulb, ChevronDown, ChevronRight, FolderKanban } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { lazy, Suspense } from 'react';
 import { ActivityIndicator, View as ViewRN } from 'react-native';
@@ -619,6 +619,27 @@ export default function TodayScreen() {
     return sections;
   }, [incompleteTasks, getCategoryColor]);
 
+  // Agrupar tareas pendientes por proyecto para la sección "Por proyecto" en Inicio
+  const projectSectionsForToday = useMemo(() => {
+    const byProject = new Map<string, number>();
+    let looseCount = 0;
+    incompleteTasks.forEach((t) => {
+      const pid = t.project_id ?? null;
+      if (pid) {
+        byProject.set(pid, (byProject.get(pid) ?? 0) + 1);
+      } else {
+        looseCount += 1;
+      }
+    });
+    const list: { id: string; name: string; color: string; count: number }[] = [];
+    Object.entries(projectsMap).forEach(([id, { name, color }]) => {
+      const count = byProject.get(id) ?? 0;
+      list.push({ id, name, color: color ?? THEME.colors.gradient.blue, count });
+    });
+    list.sort((a, b) => b.count - a.count);
+    return { projectRows: list, looseCount };
+  }, [incompleteTasks, projectsMap]);
+
   // Función para manejar pull to refresh
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -958,6 +979,59 @@ export default function TodayScreen() {
               )}
               {todayMood && incompleteTasks.length > 0 && (
                 <Text style={styles.tasksForTodayLabel}>Estas tareas priorizamos para ti hoy</Text>
+              )}
+              {/* Sección Por proyecto: mismo flujo que Tareas y pantalla Proyectos */}
+              {(projectSectionsForToday.projectRows.length > 0 || projectSectionsForToday.looseCount > 0) && (
+                <View style={styles.byProjectSection}>
+                  <View style={styles.byProjectHeader}>
+                    <View style={styles.byProjectHeaderIconWrap}>
+                      <FolderKanban size={20} color={THEME.colors.gradient.blue} />
+                    </View>
+                    <Text style={styles.byProjectTitle}>Por proyecto</Text>
+                  </View>
+                  <View style={styles.byProjectList}>
+                    {projectSectionsForToday.projectRows.map((row) => (
+                      <TouchableOpacity
+                        key={row.id}
+                        style={styles.byProjectRow}
+                        onPress={() => router.push(`/project/${row.id}` as const)}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${row.name}, ${row.count} tareas pendientes`}
+                      >
+                        <View style={[styles.byProjectColorBar, { backgroundColor: row.color }]} />
+                        <View style={styles.byProjectRowContent}>
+                          <Text style={styles.byProjectRowName} numberOfLines={1}>{row.name}</Text>
+                          <Text style={styles.byProjectRowCount}>
+                            {row.count === 0 ? 'Sin pendientes' : `${row.count} ${row.count === 1 ? 'pendiente' : 'pendientes'}`}
+                          </Text>
+                        </View>
+                        <ChevronRight size={20} color={THEME.colors.text.tertiary} />
+                      </TouchableOpacity>
+                    ))}
+                    {projectSectionsForToday.looseCount > 0 && (
+                      <View style={styles.byProjectRowLoose}>
+                        <View style={[styles.byProjectColorBar, { backgroundColor: THEME.colors.text.tertiary }]} />
+                        <View style={styles.byProjectRowContent}>
+                          <Text style={styles.byProjectRowName}>Tareas sueltas</Text>
+                          <Text style={styles.byProjectRowCount}>
+                            {projectSectionsForToday.looseCount} {projectSectionsForToday.looseCount === 1 ? 'tarea' : 'tareas'}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                    <TouchableOpacity
+                      style={styles.byProjectVerTodos}
+                      onPress={() => router.push('/proyectos')}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel="Ver todos los proyectos"
+                    >
+                      <Text style={styles.byProjectVerTodosText}>Ver todos los proyectos</Text>
+                      <ChevronRight size={18} color={THEME.colors.gradient.blue} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
               )}
               {incompleteTasks.length > 0 ? (
                 taskSections.map((sec) => {
@@ -2133,6 +2207,88 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
+  },
+  byProjectSection: {
+    marginTop: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+    paddingTop: THEME.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.stroke[100],
+  },
+  byProjectHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: THEME.spacing.sm,
+  },
+  byProjectHeaderIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: THEME.spacing.sm,
+  },
+  byProjectTitle: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+  },
+  byProjectList: {
+    gap: THEME.spacing.xs,
+  },
+  byProjectRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.standard,
+    paddingVertical: THEME.spacing.sm,
+    paddingRight: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
+  },
+  byProjectRowLoose: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.standard,
+    paddingVertical: THEME.spacing.sm,
+    paddingRight: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
+  },
+  byProjectColorBar: {
+    width: 4,
+    height: '100%',
+    minHeight: 36,
+    borderTopLeftRadius: 2,
+    borderBottomLeftRadius: 2,
+    marginRight: THEME.spacing.sm,
+  },
+  byProjectRowContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  byProjectRowName: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
+  },
+  byProjectRowCount: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    marginTop: 2,
+  },
+  byProjectVerTodos: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingVertical: THEME.spacing.xs,
+    marginTop: THEME.spacing.xs,
+  },
+  byProjectVerTodosText: {
+    ...THEME.typography.small,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.gradient.blue,
+    marginRight: 4,
   },
   projectSection: {
     marginBottom: THEME.spacing.xl,

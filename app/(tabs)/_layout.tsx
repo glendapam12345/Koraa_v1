@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/constants/theme';
-import { Home, Edit3, Heart, User, Lightbulb, Calendar } from 'lucide-react-native';
+import { Home, Edit3, Heart, User, Calendar } from 'lucide-react-native';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();

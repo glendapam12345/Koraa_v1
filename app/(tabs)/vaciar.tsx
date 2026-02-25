@@ -7,13 +7,13 @@ import { GradientButton } from '@/components/GradientButton';
 import { Tooltip } from '@/components/Tooltip';
 import { Toast } from '@/components/Toast';
 import { FlowIndicator } from '@/components/FlowIndicator';
-import { supabase, getErrorMessage, isNetworkError } from '@/lib/supabase';
+import { supabase, getErrorMessage, isNetworkError, getSchemaSetupMessage } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { detectCategory } from '@/lib/categoryDetection';
 import { ProjectSelector } from '@/components/projects/ProjectSelector';
 import { DateSelector } from '@/components/tasks/DateSelector';
 import { useAuth } from '@/contexts/AuthContext';
-import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic, Calendar } from 'lucide-react-native';
+import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic, Calendar, FolderKanban, ChevronRight } from 'lucide-react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 
 // Categorías ahora son invisibles - se detectan automáticamente en lib/categoryDetection.ts
@@ -39,6 +39,7 @@ export default function VaciarScreen() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null); // Fecha programada para la tarea
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [projectCount, setProjectCount] = useState<number | null>(null);
   const { user } = useAuth();
 
   // Pre-llenar input si hay sugerencia desde Tips; pre-seleccionar fecha si viene desde Semana
@@ -83,12 +84,26 @@ export default function VaciarScreen() {
     loadRecentTaskSuggestions();
   }, []);
 
-  // Recargar banner cuando la pantalla recibe foco
+  const loadProjectCount = useCallback(async () => {
+    if (!user) {
+      setProjectCount(null);
+      return;
+    }
+    const { count, error } = await supabase
+      .from('projects')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+    if (!error && count != null) setProjectCount(count);
+    else setProjectCount(0);
+  }, [user]);
+
+  // Recargar banner y conteo de proyectos cuando la pantalla recibe foco
   useFocusEffect(
     useCallback(() => {
       checkTodayCheckIn();
       checkIfFirstTime();
-    }, [])
+      loadProjectCount();
+    }, [loadProjectCount])
   );
 
   const checkIfFirstTime = async () => {
@@ -277,6 +292,50 @@ export default function VaciarScreen() {
           setIsSaving(false);
           return;
         } else {
+          const schemaType = getSchemaSetupMessage(mainTaskError);
+          const isProjectOrScheduledSchema = schemaType === 'project_id' || schemaType === 'scheduled_date';
+          if (isProjectOrScheduledSchema) {
+            const { data: fallbackTask, error: fallbackError } = await supabase
+              .from('tasks')
+              .insert({
+                user_id: user.id,
+                content: taskInput.trim(),
+                category: detectedCategory,
+                is_priority: isPriority,
+                is_completed: false,
+                parent_task_id: null,
+              })
+              .select()
+              .single();
+            if (fallbackError) {
+              logger.error('Error guardando tarea (fallback):', fallbackError);
+              showToast(`No se pudo guardar la tarea: ${getErrorMessage(fallbackError)}`, 'error');
+              setIsSaving(false);
+              return;
+            }
+            if (hasSubtasks && fallbackTask) {
+              const validSubtasks = subtasks.filter(st => st.trim());
+              const subtasksToInsert = validSubtasks.map(subtask => ({
+                user_id: user.id,
+                content: subtask.trim(),
+                category: detectCategory(subtask.trim()),
+                is_priority: false,
+                is_completed: false,
+                parent_task_id: fallbackTask.id,
+              }));
+              await supabase.from('tasks').insert(subtasksToInsert);
+            }
+            setRecentTasks([taskInput.trim(), ...recentTasks.slice(0, 4)]);
+            setTaskInput('');
+            setIsPriority(false);
+            setHasSubtasks(false);
+            setSubtasks(['']);
+            setSelectedProjectId(null);
+            setSelectedDate(null);
+            showToast('Tarea guardada. Para usar proyectos y fechas, actualiza la base de datos (migración).', 'info');
+            setIsSaving(false);
+            return;
+          }
           logger.error('Error guardando tarea principal:', mainTaskError);
           const errorMessage = getErrorMessage(mainTaskError);
           showToast(`No se pudo guardar la tarea: ${errorMessage}`, 'error');
@@ -535,6 +594,35 @@ export default function VaciarScreen() {
           />
         )}
 
+        {/* Recuadro: ver todos los proyectos */}
+        {user && (
+          <TouchableOpacity
+            style={styles.projectsCard}
+            onPress={() => router.push('/proyectos')}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={projectCount !== null && projectCount > 0 ? `Ver mis proyectos, ${projectCount} en total` : 'Ver mis proyectos'}
+          >
+            <LinearGradient
+              colors={[THEME.colors.tint.blue.veryLight, THEME.colors.fill[200]]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.projectsCardGradient}
+            >
+              <FolderKanban size={24} color={THEME.colors.gradient.blue} />
+              <View style={styles.projectsCardContent}>
+                <Text style={styles.projectsCardTitle}>Mis proyectos</Text>
+                <Text style={styles.projectsCardSubtitle}>
+                  {projectCount !== null && projectCount > 0
+                    ? `${projectCount} ${projectCount === 1 ? 'proyecto' : 'proyectos'} · Ver tareas y fechas`
+                    : 'Ver todos y gestionar tareas por proyecto'}
+                </Text>
+              </View>
+              <ChevronRight size={22} color={THEME.colors.text.secondary} />
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+
         {/* Selector de Fecha */}
         <DateSelector
           selectedDate={selectedDate}
@@ -707,6 +795,36 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     marginBottom: THEME.spacing.sm,
+  },
+  projectsCard: {
+    marginBottom: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  projectsCardGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
+    gap: THEME.spacing.sm,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+    borderRadius: THEME.borderRadius.rounded,
+  },
+  projectsCardContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  projectsCardTitle: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
+  },
+  projectsCardSubtitle: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    marginTop: 2,
   },
   inputContainer: {
     backgroundColor: THEME.colors.fill[200],
