@@ -10,7 +10,6 @@ import { ValueCard } from '@/components/tasks/ValueCard';
 import { ProgressBar } from '@/components/tasks/ProgressBar';
 import { FlowGuideCard } from '@/components/flow/FlowGuideCard';
 import { TaskList } from '@/components/tasks/TaskList';
-import { SectionHeader } from '@/components/tasks/SectionHeader';
 import { useCheckIn } from '@/hooks/useCheckIn';
 import { useTasks } from '@/hooks/useTasks';
 import { useTaskActions } from '@/hooks/useTaskActions';
@@ -981,25 +980,26 @@ export default function TodayScreen() {
                   };
                   return (
                     <View key={sec.id} style={styles.areaCard}>
-                      <View style={[styles.categoryLabelStrip, { borderLeftColor: sec.color }]}>
+                      <TouchableOpacity
+                        style={[styles.categoryLabelStrip, { borderLeftColor: sec.color }]}
+                        onPress={toggleSection}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel={isSectionExpanded ? `Contraer ${sec.title}` : `Ver ${sec.tasks.length} tareas de ${sec.title}`}
+                        accessibilityState={{ expanded: isSectionExpanded }}
+                      >
                         <Text style={styles.categoryLabelName}>{sec.title}</Text>
-                        <Text style={styles.categoryLabelCount}>{sec.tasks.length} {sec.tasks.length === 1 ? 'tarea' : 'tareas'}</Text>
-                      </View>
-                      <View style={styles.areaCardInner}>
-                        <SectionHeader
-                          title={sec.title}
-                          count={sec.tasks.length}
-                          color={sec.color}
-                          emoji={getCategoryEmoji(sec.categoryKey)}
-                          subtitle={CATEGORY_SUBTITLES[sec.categoryKey]}
-                          hideAccentBar
-                          variant="card"
-                          segmentStyle
-                          expandable
-                          expanded={isSectionExpanded}
-                          onToggleExpand={toggleSection}
-                        />
-                        {isSectionExpanded && (
+                        <View style={styles.categoryLabelRight}>
+                          <Text style={styles.categoryLabelCount}>{sec.tasks.length} {sec.tasks.length === 1 ? 'tarea' : 'tareas'}</Text>
+                          {isSectionExpanded ? (
+                            <ChevronDown size={20} color={sec.color} style={styles.categoryLabelChevron} />
+                          ) : (
+                            <ChevronRight size={20} color={sec.color} style={styles.categoryLabelChevron} />
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                      {isSectionExpanded && (
+                        <View style={styles.areaCardInner}>
                           <TaskList
                             tasks={tasks}
                             incompleteTasks={sec.tasks}
@@ -1050,8 +1050,8 @@ export default function TodayScreen() {
                             sectionCategory={sec.categoryKey}
                             uniformCard
                           />
-                        )}
-                      </View>
+                        </View>
+                      )}
                     </View>
                   );
                 })
@@ -2019,11 +2019,19 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     letterSpacing: 0.2,
   },
+  categoryLabelRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+  },
   categoryLabelCount: {
     ...THEME.typography.caption,
     fontSize: 13,
     color: THEME.colors.text.secondary,
     fontFamily: THEME.fonts.heading.medium,
+  },
+  categoryLabelChevron: {
+    flexShrink: 0,
   },
   areaCardInner: {
     paddingTop: THEME.spacing.sm,

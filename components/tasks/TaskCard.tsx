@@ -325,7 +325,7 @@ export function TaskCard({
       {expandedDetails && hasDetails && (
         <View style={styles.detailsPanel}>
           <Text style={styles.detailsPanelTitle}>Especificaciones</Text>
-          {task.category ? (
+          {task.category && (!sectionCategory || task.category.toLowerCase().trim() !== sectionCategory.toLowerCase()) ? (
             <View style={styles.detailsRow}>
               <Text style={styles.detailsLabel}>Categoría</Text>
               <View style={[styles.detailsChip, { backgroundColor: getCategoryColor(task.category) + '28' }]}>

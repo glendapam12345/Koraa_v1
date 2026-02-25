@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, RefreshControl, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
@@ -22,6 +22,7 @@ export default function VaciarScreen() {
   const insets = useSafeAreaInsets();
   const { suggestion, date: dateParam } = useLocalSearchParams<{ suggestion?: string; date?: string }>();
   const [taskInput, setTaskInput] = useState('');
+  const taskInputRef = useRef<TextInput>(null);
   const [isPriority, setIsPriority] = useState(false);
   const [hasSubtasks, setHasSubtasks] = useState(false);
   const [subtasks, setSubtasks] = useState<string[]>(['']);
@@ -465,6 +466,7 @@ export default function VaciarScreen() {
 
         <View style={styles.inputContainer}>
           <TextInput
+            ref={taskInputRef}
             style={styles.input}
             value={taskInput}
             onChangeText={setTaskInput}
@@ -518,13 +520,18 @@ export default function VaciarScreen() {
         )}
 
         {/* Proyecto: opcional; si no eliges, la tarea queda "suelta". Si eliges o creas uno, nombre + color. */}
-        <Text style={styles.sectionLabel}>¿Es para un proyecto o tarea suelta?</Text>
-        <Text style={styles.sectionHint}>Opcional. Tareas sueltas = sin proyecto. Si es proyecto, elige uno o crea nuevo (nombre y color).</Text>
+        <Text style={styles.sectionLabel}>Proyecto (opcional)</Text>
+        <Text style={styles.sectionHint}>Tareas sueltas = sin proyecto. Elige un proyecto o crea uno nuevo.</Text>
         {user && (
           <ProjectSelector
             selectedProjectId={selectedProjectId}
             onSelect={setSelectedProjectId}
             userId={user.id}
+            showLabel={false}
+            onBeforeOpenModal={() => {
+              Keyboard.dismiss();
+              taskInputRef.current?.blur();
+            }}
           />
         )}
 

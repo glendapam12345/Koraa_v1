@@ -11,7 +11,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.impermanencecasaartisitca.koraav1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "Koraa"
       }
     },
     "web": {

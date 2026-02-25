@@ -1,5 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, TextInput, Keyboard } from 'react-native';
-import { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, TextInput, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
 import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { FolderKanban, X, Plus } from 'lucide-react-native';
@@ -25,9 +25,13 @@ interface ProjectSelectorProps {
   selectedProjectId: string | null;
   onSelect: (projectId: string | null) => void;
   userId: string;
+  /** Llamado al abrir el modal (p. ej. para cerrar teclado del formulario principal) */
+  onBeforeOpenModal?: () => void;
+  /** Si false, no se muestra la etiqueta "Proyecto (opcional)" (útil cuando el padre ya la muestra) */
+  showLabel?: boolean;
 }
 
-export function ProjectSelector({ selectedProjectId, onSelect, userId }: ProjectSelectorProps) {
+export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeOpenModal, showLabel = true }: ProjectSelectorProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -35,6 +39,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState(PROJECT_COLORS[0]);
   const [saving, setSaving] = useState(false);
+  const newProjectInputRef = useRef<TextInput>(null);
 
   const loadProjects = async () => {
     const { data, error } = await supabase
@@ -84,11 +89,12 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Proyecto (opcional)</Text>
+      {showLabel && <Text style={styles.label}>Proyecto (opcional)</Text>}
       <TouchableOpacity
         style={[styles.selector, selectedProject && styles.selectorWithProject]}
         onPress={() => {
           Keyboard.dismiss();
+          onBeforeOpenModal?.();
           setShowModal(true);
         }}
         activeOpacity={0.7}
@@ -121,126 +127,151 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId }: Project
         visible={showModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowModal(false)}
-        onShow={() => Keyboard.dismiss()}
+        onRequestClose={() => { Keyboard.dismiss(); setShowModal(false); }}
+        onShow={() => {
+          Keyboard.dismiss();
+          setShowNewProject(false);
+          setNewName('');
+        }}
       >
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={() => setShowModal(false)}
+          onPress={() => { Keyboard.dismiss(); setShowModal(false); }}
         >
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Proyecto o tareas sueltas</Text>
-              <TouchableOpacity
-                onPress={() => setShowModal(false)}
-                style={styles.modalClose}
-                accessibilityLabel="Cerrar"
-              >
-                <X size={24} color={THEME.colors.text.main} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
-              <TouchableOpacity
-                style={styles.optionRow}
-                onPress={() => {
-                  onSelect(null);
-                  setShowModal(false);
-                }}
-                activeOpacity={0.7}
-              >
-                <FolderKanban size={20} color={THEME.colors.text.secondary} />
-                <Text style={styles.optionText}>Tareas sueltas</Text>
-                {!selectedProjectId && (
-                  <Text style={styles.optionCheck}>✓</Text>
-                )}
-              </TouchableOpacity>
-              {loading ? (
-                <Text style={styles.loadingText}>Cargando…</Text>
-              ) : (
-                <>
-                  {projects.map((p) => (
-                    <TouchableOpacity
-                      key={p.id}
-                      style={styles.optionRow}
-                      onPress={() => {
-                        onSelect(p.id);
-                        setShowModal(false);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <View
-                        style={[
-                          styles.colorDot,
-                          { backgroundColor: p.color || THEME.colors.gradient.blue },
-                        ]}
-                      />
-                      <Text style={styles.optionText}>{p.name}</Text>
-                      {selectedProjectId === p.id && (
-                        <Text style={styles.optionCheck}>✓</Text>
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                  {showNewProject ? (
-                    <View style={styles.newProjectForm}>
-                      <Text style={styles.newProjectFormTitle}>Nuevo proyecto: nombre y color</Text>
-                      <Text style={styles.newProjectLabel}>Nombre del proyecto</Text>
-                      <TextInput
-                        style={styles.newProjectInput}
-                        value={newName}
-                        onChangeText={setNewName}
-                        placeholder="Ej. Maratón, Mi app, Salud"
-                        placeholderTextColor={THEME.colors.text.secondary}
-                        autoFocus
-                      />
-                      <Text style={styles.newProjectLabel}>Color del proyecto</Text>
-                      <View style={styles.colorRow}>
-                        {PROJECT_COLORS.map((c, i) => (
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={styles.modalKeyboardWrap}
+          >
+            <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>¿Proyecto o tareas sueltas?</Text>
+                <TouchableOpacity
+                  onPress={() => { Keyboard.dismiss(); setShowModal(false); }}
+                  style={styles.modalClose}
+                  accessibilityLabel="Cerrar"
+                >
+                  <X size={24} color={THEME.colors.text.main} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                <Text style={styles.modalSectionHint}>Elige una opción. Si no eliges proyecto, la tarea queda suelta.</Text>
+                <TouchableOpacity
+                  style={[styles.optionRow, styles.optionRowFirst]}
+                  onPress={() => {
+                    onSelect(null);
+                    setShowModal(false);
+                  }}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Tareas sueltas, sin proyecto"
+                >
+                  <FolderKanban size={22} color={THEME.colors.text.secondary} />
+                  <View style={styles.optionTextWrap}>
+                    <Text style={styles.optionText}>Tareas sueltas</Text>
+                    <Text style={styles.optionSubtext}>Sin proyecto</Text>
+                  </View>
+                  {!selectedProjectId && <Text style={styles.optionCheck}>✓</Text>}
+                </TouchableOpacity>
+
+                {loading ? (
+                  <Text style={styles.loadingText}>Cargando proyectos…</Text>
+                ) : (
+                  <>
+                    {projects.length > 0 && (
+                      <Text style={styles.modalSectionTitle}>Mis proyectos</Text>
+                    )}
+                    {projects.map((p) => (
+                      <TouchableOpacity
+                        key={p.id}
+                        style={styles.optionRow}
+                        onPress={() => {
+                          onSelect(p.id);
+                          setShowModal(false);
+                        }}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Proyecto ${p.name}`}
+                      >
+                        <View
+                          style={[
+                            styles.colorDot,
+                            { backgroundColor: p.color || THEME.colors.gradient.blue },
+                          ]}
+                        />
+                        <Text style={styles.optionText}>{p.name}</Text>
+                        {selectedProjectId === p.id && <Text style={styles.optionCheck}>✓</Text>}
+                      </TouchableOpacity>
+                    ))}
+                    {showNewProject ? (
+                      <View style={styles.newProjectForm}>
+                        <Text style={styles.newProjectFormTitle}>Crear proyecto nuevo</Text>
+                        <Text style={styles.newProjectLabel}>Nombre del proyecto</Text>
+                        <TextInput
+                          ref={newProjectInputRef}
+                          style={styles.newProjectInput}
+                          value={newName}
+                          onChangeText={setNewName}
+                          placeholder="Ej. Maratón, Mi app, Salud"
+                          placeholderTextColor={THEME.colors.text.secondary}
+                          onSubmitEditing={handleCreateProject}
+                          returnKeyType="done"
+                        />
+                        <Text style={styles.newProjectLabel}>Color</Text>
+                        <View style={styles.colorRow}>
+                          {PROJECT_COLORS.map((c, i) => (
+                            <TouchableOpacity
+                              key={`project-color-${i}`}
+                              style={[
+                                styles.colorOption,
+                                { backgroundColor: c },
+                                newColor === c && styles.colorOptionSelected,
+                              ]}
+                              onPress={() => setNewColor(c)}
+                            />
+                          ))}
+                        </View>
+                        <View style={styles.newProjectButtons}>
                           <TouchableOpacity
-                            key={`project-color-${i}`}
-                            style={[
-                              styles.colorOption,
-                              { backgroundColor: c },
-                              newColor === c && styles.colorOptionSelected,
-                            ]}
-                            onPress={() => setNewColor(c)}
-                          />
-                        ))}
+                            style={styles.newProjectCancel}
+                            onPress={() => {
+                              setShowNewProject(false);
+                              setNewName('');
+                              Keyboard.dismiss();
+                            }}
+                          >
+                            <Text style={styles.newProjectCancelText}>Cancelar</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.newProjectSave, saving && styles.newProjectSaveDisabled]}
+                            onPress={handleCreateProject}
+                            disabled={saving || !newName.trim()}
+                          >
+                            <Text style={styles.newProjectSaveText}>
+                              {saving ? 'Guardando…' : 'Crear proyecto'}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
-                      <View style={styles.newProjectButtons}>
-                        <TouchableOpacity
-                          style={styles.newProjectCancel}
-                          onPress={() => {
-                            setShowNewProject(false);
-                            setNewName('');
-                          }}
-                        >
-                          <Text style={styles.newProjectCancelText}>Cancelar</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.newProjectSave, saving && styles.newProjectSaveDisabled]}
-                          onPress={handleCreateProject}
-                          disabled={saving || !newName.trim()}
-                        >
-                          <Text style={styles.newProjectSaveText}>
-                            {saving ? 'Guardando…' : 'Crear'}
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.addProjectRow}
-                      onPress={() => setShowNewProject(true)}
-                    >
-                      <Plus size={20} color={THEME.colors.gradient.blue} />
-                      <Text style={styles.addProjectText}>Nuevo proyecto (nombre + color)</Text>
-                    </TouchableOpacity>
-                  )}
-                </>
-              )}
-            </ScrollView>
-          </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.addProjectRow}
+                        onPress={() => {
+                          setShowNewProject(true);
+                          setTimeout(() => newProjectInputRef.current?.focus(), 300);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel="Crear nuevo proyecto"
+                      >
+                        <Plus size={20} color={THEME.colors.gradient.blue} />
+                        <Text style={styles.addProjectText}>Crear nuevo proyecto</Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                )}
+              </ScrollView>
+            </View>
+          </KeyboardAvoidingView>
         </TouchableOpacity>
       </Modal>
     </View>
@@ -312,11 +343,28 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.overlayLight,
     justifyContent: 'flex-end',
   },
+  modalKeyboardWrap: {
+    maxHeight: '85%',
+  },
   modalContent: {
     backgroundColor: THEME.colors.fill[100],
     borderTopLeftRadius: THEME.borderRadius.rounded * 2,
     borderTopRightRadius: THEME.borderRadius.rounded * 2,
-    maxHeight: '70%',
+    maxHeight: '85%',
+  },
+  modalSectionHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.xs,
+  },
+  modalSectionTitle: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.secondary,
+    marginTop: THEME.spacing.md,
+    marginBottom: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.xs,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -345,10 +393,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.standard,
   },
+  optionRowFirst: {
+    backgroundColor: THEME.colors.fill[200],
+  },
+  optionTextWrap: {
+    flex: 1,
+  },
   optionText: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
-    flex: 1,
+  },
+  optionSubtext: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    marginTop: 2,
   },
   optionCheck: {
     ...THEME.typography.body,

@@ -15,11 +15,11 @@ Notifications.setNotificationHandler({
   }),
 });
 
+type Subscription = { remove: () => void };
+
 export function useNotifications() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const notificationListener = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const responseListener = useRef<any>(null);
+  const notificationListener = useRef<Subscription | null>(null);
+  const responseListener = useRef<Subscription | null>(null);
 
   useEffect(() => {
     if (Platform.OS === 'web') {
