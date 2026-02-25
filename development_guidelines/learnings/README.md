@@ -1,6 +1,6 @@
 # Learnings Directory
 
-This directory stores lessons learned, proven patterns, and wisdom gained from building Kora.
+This directory stores lessons learned, proven patterns, and wisdom gained from building Koraa.
 
 ## Purpose
 

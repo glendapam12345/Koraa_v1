@@ -701,7 +701,7 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Kora v1.0.0</Text>
+          <Text style={styles.footerText}>Koraa v1.0.0</Text>
           <Text style={styles.footerSubtext}>
             Organiza tu día{' '}
             <Text style={styles.footerAccent}>sintiendo</Text>

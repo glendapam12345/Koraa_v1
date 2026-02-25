@@ -456,7 +456,7 @@ export default function VaciarScreen() {
                   Siguiente paso: Registra cómo te sientes
                 </Text>
                 <Text style={styles.checkInBannerSubtext}>
-                  Después de agregar tus tareas, ve a &quot;Sentir&quot; para que Kora las priorice según tu estado
+                  Después de agregar tus tareas, ve a &quot;Sentir&quot; para que Koraa las priorice según tu estado
                 </Text>
               </View>
             </LinearGradient>
@@ -659,7 +659,7 @@ export default function VaciarScreen() {
       <Tooltip
         visible={showTooltip}
         title="Vacía tu mente"
-        message="Aquí puedes escribir todas tus tareas sin pensar en categorías o prioridades. Solo suelta lo que tienes en mente. Después, haz tu check-in diario para que Kora las priorice automáticamente."
+        message="Aquí puedes escribir todas tus tareas sin pensar en categorías o prioridades. Solo suelta lo que tienes en mente. Después, haz tu check-in diario para que Koraa las priorice automáticamente."
         onClose={() => setShowTooltip(false)}
       />
     </KeyboardAvoidingView>

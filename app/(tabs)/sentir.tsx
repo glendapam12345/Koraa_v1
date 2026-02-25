@@ -117,7 +117,7 @@ export default function SentirScreen() {
         <Text style={styles.subtitle}>hoy?</Text>
 
         <Text style={styles.description}>
-          Kora prioriza por ti. Solo enfócate en lo que realmente importa hoy.
+          Koraa prioriza por ti. Solo enfócate en lo que realmente importa hoy.
         </Text>
 
         {/* Banner si no hay tareas - Paso 1 del flujo */}
@@ -191,7 +191,7 @@ export default function SentirScreen() {
       <Tooltip
         visible={showTooltip}
         title="Haz tu check-in diario"
-        message="Di cómo te sientes hoy (emoción, energía, tiempo y enfoque) y Kora priorizará automáticamente tus tareas según tu estado. Hazlo cada día para mejores resultados."
+        message="Di cómo te sientes hoy (emoción, energía, tiempo y enfoque) y Koraa priorizará automáticamente tus tareas según tu estado. Hazlo cada día para mejores resultados."
         onClose={() => setShowTooltip(false)}
       />
     </View>

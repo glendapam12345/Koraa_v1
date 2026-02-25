@@ -1,5 +1,5 @@
 /*
-  # Kora App Database Schema
+  # Koraa App Database Schema
 
   1. New Tables
     - `profiles`

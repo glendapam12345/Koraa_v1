@@ -256,7 +256,7 @@ export default function AuthScreen() {
           <View style={styles.iconCircle}>
             <Sparkles size={32} color={THEME.colors.gradient.blue} />
           </View>
-          <Text style={styles.title}>Kora</Text>
+          <Text style={styles.title}>Koraa</Text>
           <Text style={styles.subtitle}>
             Organiza tu día{' '}
             <Text style={styles.accentText}>sintiendo</Text>

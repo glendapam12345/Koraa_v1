@@ -1,4 +1,4 @@
-# 🚀 Despliegue Rápido de Kora
+# 🚀 Despliegue Rápido de Koraa
 
 ## 📱 MÓVIL: Publicar en Expo Go (Más Rápido)
 
@@ -244,7 +244,7 @@ Una vez que la versión web esté funcionando:
 
 ## 🎉 ¡Listo!
 
-Tu app Kora está ahora accesible públicamente. Comparte el link y comienza a recibir feedback de usuarios.
+Tu app Koraa está ahora accesible públicamente. Comparte el link y comienza a recibir feedback de usuarios.
 
 **Próximos pasos sugeridos**:
 - Configura dominio personalizado

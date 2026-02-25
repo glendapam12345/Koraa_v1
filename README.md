@@ -1,4 +1,4 @@
-# Kora - Organiza tu día sintiendo
+# Koraa - Organiza tu día sintiendo
 
 A mobile-first wellness productivity app that prioritizes tasks based on emotional state, built with Expo and Supabase.
 

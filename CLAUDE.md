@@ -8,7 +8,7 @@
 
 ### About This Project
 
-Kora is a mobile-first wellness productivity app that prioritizes tasks based on emotional state. Users complete daily emotional check-ins (emotion, energy, time availability, focus level) and the app adapts task prioritization accordingly. The app features a "brain dump" interface for frictionless task capture and a beautiful, ethereal UI with gradient aesthetics.
+Koraa is a mobile-first wellness productivity app that prioritizes tasks based on emotional state. Users complete daily emotional check-ins (emotion, energy, time availability, focus level) and the app adapts task prioritization accordingly. The app features a "brain dump" interface for frictionless task capture and a beautiful, ethereal UI with gradient aesthetics.
 
 **Project Type**: React Native mobile app with Expo, supporting iOS, Android, and Web
 

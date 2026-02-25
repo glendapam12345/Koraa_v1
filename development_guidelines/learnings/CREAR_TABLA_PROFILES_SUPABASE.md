@@ -11,7 +11,7 @@ Esto significa que la tabla `profiles` no existe en tu base de datos de Supabase
 ### Paso 1: Abre Supabase Dashboard
 
 1. Ve a [https://supabase.com/dashboard](https://supabase.com/dashboard)
-2. Selecciona tu proyecto Kora
+2. Selecciona tu proyecto Koraa
 
 ### Paso 2: Abre SQL Editor
 

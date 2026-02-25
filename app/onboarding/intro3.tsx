@@ -23,7 +23,7 @@ export default function Intro3Screen() {
         <Text style={styles.titleAccent}>automática</Text>
 
         <Text style={styles.description}>
-          Kora prioriza por ti. Solo enfócate en lo que realmente importa hoy.
+          Koraa prioriza por ti. Solo enfócate en lo que realmente importa hoy.
         </Text>
 
         {/* Flujo visual: pasos en columna con flechas hacia abajo */}

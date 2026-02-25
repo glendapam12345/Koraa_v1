@@ -4,7 +4,7 @@ import { THEME } from '@/constants/theme';
 export function FlowGuideCard() {
   return (
     <View style={styles.flowGuideCard}>
-      <Text style={styles.flowGuideCardTitle}>Flujo de Kora</Text>
+      <Text style={styles.flowGuideCardTitle}>Flujo de Koraa</Text>
       <View style={styles.flowSteps}>
         <View style={styles.flowStep}>
           <Text style={styles.flowStepNumber}>1</Text>

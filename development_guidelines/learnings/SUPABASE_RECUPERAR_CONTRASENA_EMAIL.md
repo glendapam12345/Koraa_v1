@@ -4,7 +4,7 @@
 
 1. El usuario toca **"Olvidé mi contraseña"** en la pantalla de login.
 2. Se envía un correo con un **enlace** (Supabase).
-3. Si el usuario **abre ese enlace en el mismo dispositivo** donde tiene la app, se abre **Kora** y entra en la pantalla **"Nueva contraseña"**.
+3. Si el usuario **abre ese enlace en el mismo dispositivo** donde tiene la app, se abre **Koraa** y entra en la pantalla **"Nueva contraseña"**.
 4. El usuario escribe la nueva contraseña y confirma **dentro de la app**.
 5. Al guardar, ya puede iniciar sesión con la nueva contraseña.
 

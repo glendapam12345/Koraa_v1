@@ -142,7 +142,7 @@ export async function scheduleDailyReminder() {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: '¿Cómo te sientes hoy?',
-        body: 'Haz tu check-in diario y Kora organizará tu día automáticamente 💭',
+        body: 'Haz tu check-in diario y Koraa organizará tu día automáticamente 💭',
         sound: true,
         data: { type: 'daily_checkin_reminder' },
       },

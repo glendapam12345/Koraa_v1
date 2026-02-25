@@ -34,7 +34,7 @@ export default function WelcomeScreen() {
             <Text style={styles.exampleSubtitle}>Energía: 2/5</Text>
             <View style={styles.exampleDivider} />
             <Text style={styles.exampleResult}>
-              Kora prioriza solo 2 tareas esenciales
+              Koraa prioriza solo 2 tareas esenciales
             </Text>
           </View>
 
@@ -50,7 +50,7 @@ export default function WelcomeScreen() {
             <Text style={styles.exampleSubtitle}>Energía: 5/5</Text>
             <View style={styles.exampleDivider} />
             <Text style={styles.exampleResult}>
-              Kora prioriza hasta 5 tareas
+              Koraa prioriza hasta 5 tareas
             </Text>
           </View>
         </View>

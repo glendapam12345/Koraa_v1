@@ -13,7 +13,7 @@ export default function HowItWorksScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>¿Cómo funciona</Text>
-        <Text style={styles.titleAccent}>Kora?</Text>
+        <Text style={styles.titleAccent}>Koraa?</Text>
 
         <Text style={styles.subtitle}>
           Tu rutina diaria en 3 pasos simples
@@ -91,7 +91,7 @@ export default function HowItWorksScreen() {
               <Text style={styles.stepTitle}>Hoy</Text>
             </View>
             <Text style={styles.stepDescription}>
-              Kora prioriza automáticamente tus tareas según cómo te sientes. Solo enfócate en lo que realmente importa hoy.
+              Koraa prioriza automáticamente tus tareas según cómo te sientes. Solo enfócate en lo que realmente importa hoy.
             </Text>
             <View style={styles.exampleCard}>
               <View style={styles.priorityExample}>

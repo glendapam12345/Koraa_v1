@@ -1,6 +1,6 @@
 # Planned Directory
 
-This directory documents future improvements, known bugs, technical debt, and roadmap items for Kora.
+This directory documents future improvements, known bugs, technical debt, and roadmap items for Koraa.
 
 ## Purpose
 

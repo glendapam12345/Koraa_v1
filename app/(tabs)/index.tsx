@@ -511,7 +511,7 @@ export default function TodayScreen() {
         title: 'Tu plan de hoy',
         message: 'Sigue estos pasos para organizar tu día:',
         suggestion: '1. Vaciar → 2. Sentir → 3. Accionar',
-        reasoning: 'Primero agrega tus tareas en "Vaciar", luego registra cómo te sientes en "Sentir" para que Kora priorice automáticamente tus tareas aquí.',
+        reasoning: 'Primero agrega tus tareas en "Vaciar", luego registra cómo te sientes en "Sentir" para que Koraa priorice automáticamente tus tareas aquí.',
       };
     }
 
@@ -709,7 +709,7 @@ export default function TodayScreen() {
             onPress={() => router.push('/(tabs)/sentir')}
             activeOpacity={0.88}
             accessibilityRole="button"
-            accessibilityLabel="Ir a Sentir para que Kora priorice tus tareas según cómo te sientes"
+            accessibilityLabel="Ir a Sentir para que Koraa priorice tus tareas según cómo te sientes"
           >
             <LinearGradient
               colors={[THEME.colors.gradient.blue + '14', THEME.colors.gradient.pink + '0C']}

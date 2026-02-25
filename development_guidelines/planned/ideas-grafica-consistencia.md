@@ -7,7 +7,7 @@
 
 ## 🎯 Contexto de la App
 
-Kora es una app de bienestar que ayuda a los usuarios a organizar su día **basándose en cómo se sienten**, no en listas rígidas. El propósito es crear conciencia emocional y autoconocimiento a través de check-ins diarios.
+Koraa es una app de bienestar que ayuda a los usuarios a organizar su día **basándose en cómo se sienten**, no en listas rígidas. El propósito es crear conciencia emocional y autoconocimiento a través de check-ins diarios.
 
 ---
 
