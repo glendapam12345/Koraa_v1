@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, TextInput, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { THEME } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
+import { supabase, getErrorMessage, getSchemaSetupMessage } from '@/lib/supabase';
 import { FolderKanban, X, Plus } from 'lucide-react-native';
 
 const PROJECT_COLORS = [
@@ -29,9 +29,13 @@ interface ProjectSelectorProps {
   onBeforeOpenModal?: () => void;
   /** Si false, no se muestra la etiqueta "Proyecto (opcional)" (útil cuando el padre ya la muestra) */
   showLabel?: boolean;
+  /** Llamado cuando falla la creación de un proyecto (ej. toast de error) */
+  onError?: (message: string) => void;
+  /** Llamado cuando se crea un proyecto correctamente (ej. toast de éxito) */
+  onSuccess?: (projectName: string) => void;
 }
 
-export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeOpenModal, showLabel = true }: ProjectSelectorProps) {
+export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeOpenModal, showLabel = true, onError, onSuccess }: ProjectSelectorProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -76,13 +80,21 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
       .select('id, name, color')
       .single();
     setSaving(false);
-    if (error) return;
+    if (error) {
+      const schemaType = getSchemaSetupMessage(error);
+      const message = schemaType === 'projects_table'
+        ? 'No se pudo crear el proyecto. Falta la tabla de proyectos en la base de datos (ejecuta la migración en Supabase).'
+        : getErrorMessage(error);
+      onError?.(message);
+      return;
+    }
     setProjects((prev) => [data as Project, ...prev]);
     onSelect(data.id);
     setNewName('');
     setNewColor(PROJECT_COLORS[0]);
     setShowNewProject(false);
     setShowModal(false);
+    onSuccess?.(data.name);
   };
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
@@ -145,7 +157,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
           >
             <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>¿Proyecto o tareas sueltas?</Text>
+                <Text style={styles.modalTitle}>¿En qué proyecto va esta tarea?</Text>
                 <TouchableOpacity
                   onPress={() => { Keyboard.dismiss(); setShowModal(false); }}
                   style={styles.modalClose}
@@ -155,7 +167,9 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                 </TouchableOpacity>
               </View>
               <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                <Text style={styles.modalSectionHint}>Elige una opción. Si no eliges proyecto, la tarea queda suelta.</Text>
+                <Text style={styles.modalSectionHint}>
+                  Es opcional. Si no eliges proyecto, la tarea queda «suelta». Puedes elegir uno de la lista o crear uno nuevo abajo.
+                </Text>
                 <TouchableOpacity
                   style={[styles.optionRow, styles.optionRowFirst]}
                   onPress={() => {
@@ -205,8 +219,8 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                     ))}
                     {showNewProject ? (
                       <View style={styles.newProjectForm}>
-                        <Text style={styles.newProjectFormTitle}>Crear proyecto nuevo</Text>
-                        <Text style={styles.newProjectLabel}>Nombre del proyecto</Text>
+                        <Text style={styles.newProjectFormTitle}>Nuevo proyecto</Text>
+                        <Text style={styles.newProjectLabel}>Nombre</Text>
                         <TextInput
                           ref={newProjectInputRef}
                           style={styles.newProjectInput}

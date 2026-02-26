@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -101,16 +102,24 @@ export default function ProyectosScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-          accessibilityLabel="Volver"
-        >
-          <ChevronLeft size={24} color={THEME.colors.text.main} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mis proyectos</Text>
-      </View>
+      <LinearGradient
+        colors={THEME.colors.gradientTint.header}
+        style={styles.headerGradient}
+      >
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+            accessibilityLabel="Volver"
+          >
+            <ChevronLeft size={24} color={THEME.colors.text.main} />
+          </TouchableOpacity>
+          <View style={styles.headerTextWrap}>
+            <Text style={styles.headerTitle}>Mis proyectos</Text>
+            <Text style={styles.headerSubtitle}>Tareas organizadas por proyecto</Text>
+          </View>
+        </View>
+      </LinearGradient>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -130,19 +139,36 @@ export default function ProyectosScreen() {
           </View>
         ) : projects.length === 0 ? (
           <View style={styles.empty}>
-            <FolderKanban size={48} color={THEME.colors.text.tertiary} />
+            <View style={styles.emptyIconWrap}>
+              <FolderKanban size={56} color={THEME.colors.gradient.blue} />
+            </View>
             <Text style={styles.emptyTitle}>Aún no tienes proyectos</Text>
             <Text style={styles.emptyText}>
-              Crea uno al agregar una tarea y elegir «Crear nuevo proyecto» en el selector de proyecto.
+              Crea proyectos al agregar una tarea en Tareas: toca el selector de proyecto y elige «Crear nuevo proyecto».
             </Text>
             <TouchableOpacity
               style={styles.addButton}
-              onPress={() => router.back()}
+              onPress={() => router.push('/(tabs)/vaciar')}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="Volver a tareas"
+              accessibilityLabel="Ir a Tareas para agregar"
             >
-              <Text style={styles.addButtonText}>Volver a Tareas</Text>
+              <LinearGradient
+                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.addButtonGradient}
+              >
+                <Text style={styles.addButtonText}>Ir a Tareas</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.backLink}
+              onPress={() => router.back()}
+              activeOpacity={0.7}
+              accessibilityLabel="Volver"
+            >
+              <Text style={styles.backLinkText}>Volver</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -151,7 +177,7 @@ export default function ProyectosScreen() {
               key={project.id}
               style={styles.card}
               onPress={() => router.push(`/project/${project.id}`)}
-              activeOpacity={0.7}
+              activeOpacity={0.85}
               accessibilityRole="button"
               accessibilityLabel={`Proyecto ${project.name}, ${project.incompleteCount} tareas pendientes`}
             >
@@ -199,22 +225,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: THEME.spacing.xl,
   },
+  headerGradient: {
+    paddingBottom: THEME.spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.colors.stroke[100],
+  },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: THEME.spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.stroke[100],
-    backgroundColor: THEME.colors.fill[100],
   },
   backButton: {
     padding: THEME.spacing.xs,
     marginRight: THEME.spacing.xs,
   },
+  headerTextWrap: {
+    flex: 1,
+  },
   headerTitle: {
     ...THEME.typography.h3,
     color: THEME.colors.text.main,
+  },
+  headerSubtitle: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    marginTop: 2,
   },
   scroll: {
     flex: 1,
@@ -231,31 +267,54 @@ const styles = StyleSheet.create({
   },
   empty: {
     alignItems: 'center',
-    paddingVertical: THEME.spacing.xl,
+    paddingVertical: THEME.spacing.xl * 1.5,
     paddingHorizontal: THEME.spacing.lg,
+  },
+  emptyIconWrap: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: THEME.spacing.md,
   },
   emptyTitle: {
     ...THEME.typography.h3,
     color: THEME.colors.text.main,
-    marginTop: THEME.spacing.md,
+    marginTop: THEME.spacing.sm,
+    textAlign: 'center',
   },
   emptyText: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
     marginTop: THEME.spacing.sm,
     textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: THEME.spacing.sm,
   },
   addButton: {
-    marginTop: THEME.spacing.lg,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.lg,
-    backgroundColor: THEME.colors.fill[200],
+    marginTop: THEME.spacing.xl,
     borderRadius: THEME.borderRadius.pill,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  addButtonGradient: {
+    paddingVertical: THEME.spacing.sm + 4,
+    paddingHorizontal: THEME.spacing.xl,
   },
   addButtonText: {
     ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.onGradient,
+  },
+  backLink: {
+    marginTop: THEME.spacing.md,
+    paddingVertical: THEME.spacing.xs,
+  },
+  backLinkText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
   },
   card: {
     flexDirection: 'row',
