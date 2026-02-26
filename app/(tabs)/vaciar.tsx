@@ -471,9 +471,10 @@ export default function VaciarScreen() {
       )}
 
       <ScrollView
-          contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]}
+          contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg, paddingBottom: THEME.spacing.xl * 2 }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -556,6 +557,12 @@ export default function VaciarScreen() {
           )}
         </View>
 
+        {taskInput.trim() ? (
+          <Text style={styles.flowClarification}>
+            Esta es tu tarea. Abajo puedes asignarla a un proyecto (opcional) o agregar pasos (subtareas).
+          </Text>
+        ) : null}
+
         {/* Sugerencias de tareas recientes */}
         {recentTaskSuggestions.length > 0 && !taskInput.trim() && (
           <View style={styles.suggestionsContainer}>
@@ -578,9 +585,9 @@ export default function VaciarScreen() {
           </View>
         )}
 
-        {/* Proyecto: opcional; si no eliges, la tarea queda "suelta". Si eliges o creas uno, nombre + color. */}
-        <Text style={styles.sectionLabel}>Proyecto (opcional)</Text>
-        <Text style={styles.sectionHint}>Tareas sueltas = sin proyecto. Elige un proyecto o crea uno nuevo.</Text>
+        {/* Proyecto: opcional; aclara que es asignar ESTA tarea a un proyecto o dejarla suelta. */}
+        <Text style={styles.sectionLabel}>¿Asignar esta tarea a un proyecto?</Text>
+        <Text style={styles.sectionHint}>Opcional. Si no eliges, queda como tarea suelta. Si eliges un proyecto, esta tarea se agrupa ahí.</Text>
         {user && (
           <ProjectSelector
             selectedProjectId={selectedProjectId}
@@ -656,7 +663,7 @@ export default function VaciarScreen() {
           </Text>
         </TouchableOpacity>
 
-        {/* Toggle para subtareas */}
+        {/* Toggle para subtareas: pasos de esta misma tarea */}
         <TouchableOpacity
           style={[
             styles.subtasksToggle,
@@ -670,8 +677,8 @@ export default function VaciarScreen() {
           }}
           activeOpacity={0.7}
           accessibilityRole="switch"
-          accessibilityLabel={hasSubtasks ? "Agregar subtareas activado" : "Agregar subtareas desactivado"}
-          accessibilityHint="Activa para agregar subtareas a esta tarea"
+          accessibilityLabel={hasSubtasks ? "Pasos de la tarea activado" : "Agregar pasos a esta tarea"}
+          accessibilityHint="Activa para dividir esta tarea en pasos (subtareas)"
           accessibilityState={{ checked: hasSubtasks }}
         >
           {hasSubtasks ? (
@@ -683,7 +690,7 @@ export default function VaciarScreen() {
             styles.subtasksToggleText,
             hasSubtasks && styles.subtasksToggleTextActive,
           ]}>
-            Agregar subtareas
+            Agregar pasos a esta tarea (subtareas)
           </Text>
         </TouchableOpacity>
 
@@ -691,7 +698,7 @@ export default function VaciarScreen() {
         {hasSubtasks && (
           <View style={styles.subtasksContainer}>
             <Text style={styles.subtasksLabel}>
-              Subtareas (divide tu tarea en pasos más pequeños)
+              Pasos de esta tarea (divide en subtareas más pequeñas)
             </Text>
             {subtasks.map((subtask, index) => (
               <View key={index} style={styles.subtaskRow}>
@@ -797,6 +804,12 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     marginBottom: THEME.spacing.sm,
+  },
+  flowClarification: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.sm,
+    fontStyle: 'italic',
   },
   projectsCard: {
     marginBottom: THEME.spacing.md,
