@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/constants/theme';
-import { Home, Edit3, Heart, User, Calendar } from 'lucide-react-native';
+import { Home, Edit3, Heart, User, Calendar, FolderKanban } from 'lucide-react-native';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -58,6 +58,15 @@ export default function TabLayout() {
           title: 'Semana',
           tabBarIcon: ({ size, color }) => (
             <Calendar size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="proyectos"
+        options={{
+          title: 'Proyectos',
+          tabBarIcon: ({ size, color }) => (
+            <FolderKanban size={size} color={color} />
           ),
         }}
       />

@@ -598,7 +598,7 @@ export default function VaciarScreen() {
         {user && (
           <TouchableOpacity
             style={styles.projectsCard}
-            onPress={() => router.push('/proyectos')}
+            onPress={() => router.push('/(tabs)/proyectos')}
             activeOpacity={0.85}
             accessibilityRole="button"
             accessibilityLabel={projectCount !== null && projectCount > 0 ? `Ver mis proyectos, ${projectCount} en total` : 'Ver mis proyectos'}

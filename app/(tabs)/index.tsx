@@ -1022,7 +1022,7 @@ export default function TodayScreen() {
                     )}
                     <TouchableOpacity
                       style={styles.byProjectVerTodos}
-                      onPress={() => router.push('/proyectos')}
+                      onPress={() => router.push('/(tabs)/proyectos')}
                       activeOpacity={0.7}
                       accessibilityRole="button"
                       accessibilityLabel="Ver todos los proyectos"
