@@ -65,6 +65,8 @@ export default function TodayScreen() {
   const [expandedSections, setExpandedSections] = useState<Set<string> | null>(null);
   /** Tareas con "pasos del proyecto" expandidos */
   const [expandedProjectStepsTasks, setExpandedProjectStepsTasks] = useState<Set<string>>(new Set());
+  /** Sección "Tareas sueltas" expandida para ver la lista */
+  const [looseTasksExpanded, setLooseTasksExpanded] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editContent, setEditContent] = useState('');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
@@ -640,6 +642,11 @@ export default function TodayScreen() {
     return { projectRows: list, looseCount };
   }, [incompleteTasks, projectsMap]);
 
+  const looseTasksList = useMemo(
+    () => incompleteTasks.filter((t) => !t.project_id),
+    [incompleteTasks]
+  );
+
   // Función para manejar pull to refresh
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -1010,15 +1017,64 @@ export default function TodayScreen() {
                       </TouchableOpacity>
                     ))}
                     {projectSectionsForToday.looseCount > 0 && (
-                      <View style={styles.byProjectRowLoose}>
-                        <View style={[styles.byProjectColorBar, { backgroundColor: THEME.colors.text.tertiary }]} />
-                        <View style={styles.byProjectRowContent}>
-                          <Text style={styles.byProjectRowName}>Tareas sueltas</Text>
-                          <Text style={styles.byProjectRowCount}>
-                            {projectSectionsForToday.looseCount} {projectSectionsForToday.looseCount === 1 ? 'tarea' : 'tareas'}
-                          </Text>
-                        </View>
-                      </View>
+                      <>
+                        <TouchableOpacity
+                          style={styles.byProjectRowLoose}
+                          onPress={() => setLooseTasksExpanded((e) => !e)}
+                          activeOpacity={0.7}
+                          accessibilityRole="button"
+                          accessibilityLabel={looseTasksExpanded ? 'Contraer tareas sueltas' : `Ver ${projectSectionsForToday.looseCount} tareas sueltas`}
+                          accessibilityState={{ expanded: looseTasksExpanded }}
+                        >
+                          <View style={[styles.byProjectColorBar, { backgroundColor: THEME.colors.text.tertiary }]} />
+                          <View style={styles.byProjectRowContent}>
+                            <Text style={styles.byProjectRowName}>Tareas sueltas</Text>
+                            <Text style={styles.byProjectRowCount}>
+                              {projectSectionsForToday.looseCount} {projectSectionsForToday.looseCount === 1 ? 'tarea' : 'tareas'}
+                            </Text>
+                          </View>
+                          {looseTasksExpanded ? (
+                            <ChevronDown size={20} color={THEME.colors.text.tertiary} />
+                          ) : (
+                            <ChevronRight size={20} color={THEME.colors.text.tertiary} />
+                          )}
+                        </TouchableOpacity>
+                        {looseTasksExpanded && looseTasksList.length > 0 && (
+                          <View style={styles.byProjectLooseList}>
+                            <TaskList
+                              tasks={tasks}
+                              incompleteTasks={looseTasksList}
+                              expandedTasks={expandedTasks}
+                              expandedDetailsTasks={expandedDetailsTasks}
+                              menuOpen={menuOpen}
+                              onToggleTask={handleToggleTask}
+                              onToggleExpansion={toggleTaskExpansion}
+                              onToggleDetailsExpansion={toggleDetailsExpansion}
+                              onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+                              onEditTask={handleEditTask}
+                              onDeleteTask={handleDeleteTask}
+                              getCategoryColor={getCategoryColor}
+                              onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
+                              getProjectInfo={() => ({ label: 'Tareas sueltas', color: THEME.colors.text.secondary })}
+                              getProjectSteps={(_projectId, _excludeTaskId) => []}
+                              expandedProjectSteps={expandedProjectStepsTasks}
+                              onToggleProjectSteps={(taskId) => {
+                                setExpandedProjectStepsTasks((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(taskId)) next.delete(taskId);
+                                  else next.add(taskId);
+                                  return next;
+                                });
+                              }}
+                              onPressProject={() => {}}
+                              hideProjectLabel={true}
+                              sectionAccentColor={THEME.colors.text.secondary}
+                              sectionCategory="otros"
+                              uniformCard
+                            />
+                          </View>
+                        )}
+                      </>
                     )}
                     <TouchableOpacity
                       style={styles.byProjectVerTodos}
@@ -2254,6 +2310,10 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.sm,
     paddingRight: THEME.spacing.sm,
     marginBottom: THEME.spacing.xs,
+  },
+  byProjectLooseList: {
+    marginBottom: THEME.spacing.sm,
+    paddingLeft: THEME.spacing.xs,
   },
   byProjectColorBar: {
     width: 4,
