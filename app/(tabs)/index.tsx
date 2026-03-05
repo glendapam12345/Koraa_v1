@@ -621,7 +621,7 @@ export default function TodayScreen() {
     return sections;
   }, [incompleteTasks, getCategoryColor]);
 
-  // Agrupar tareas pendientes por proyecto para la sección "Por proyecto" en Inicio
+  // Agrupar tareas pendientes por proyecto para la sección de resumen en Inicio
   const projectSectionsForToday = useMemo(() => {
     const byProject = new Map<string, number>();
     let looseCount = 0;
@@ -987,14 +987,14 @@ export default function TodayScreen() {
               {todayMood && incompleteTasks.length > 0 && (
                 <Text style={styles.tasksForTodayLabel}>Estas tareas priorizamos para ti hoy</Text>
               )}
-              {/* Sección Por proyecto: mismo flujo que Tareas y pantalla Proyectos */}
-              {(projectSectionsForToday.projectRows.length > 0 || projectSectionsForToday.looseCount > 0) && (
+              {/* Resumen por tipo de tarea: proyectos y tareas sin proyecto */}
+              {(projectSectionsForToday.projectRows.length > 0) && (
                 <View style={styles.byProjectSection}>
                   <View style={styles.byProjectHeader}>
                     <View style={styles.byProjectHeaderIconWrap}>
                       <FolderKanban size={20} color={THEME.colors.gradient.blue} />
                     </View>
-                    <Text style={styles.byProjectTitle}>Por proyecto</Text>
+                    <Text style={styles.byProjectTitle}>Resumen de tareas</Text>
                   </View>
                   <View style={styles.byProjectList}>
                     {projectSectionsForToday.projectRows.map((row) => (
@@ -1028,7 +1028,7 @@ export default function TodayScreen() {
                         >
                           <View style={[styles.byProjectColorBar, { backgroundColor: THEME.colors.text.tertiary }]} />
                           <View style={styles.byProjectRowContent}>
-                            <Text style={styles.byProjectRowName}>Tareas sueltas</Text>
+                            <Text style={styles.byProjectRowName}>Tareas sin proyecto</Text>
                             <Text style={styles.byProjectRowCount}>
                               {projectSectionsForToday.looseCount} {projectSectionsForToday.looseCount === 1 ? 'tarea' : 'tareas'}
                             </Text>
