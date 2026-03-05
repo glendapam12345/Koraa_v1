@@ -36,4 +36,14 @@ Si aun así ves la versión vieja, usa los 3 pasos de arriba (correr en Cursor) 
 
 ---
 
+## Cómo comprobar que Expo Go tiene la última versión
+
+1. **Versión en la app:** Abre la pestaña **Yo** y baja hasta el pie. Debe decir **"Koraa v1.0.0"** (o la versión que esté en `app.json`). Si coincide con la del repo, el bundle que sirve Metro es el actual.
+2. **Inicio (Hoy):** En la tarjeta de tareas debe aparecer el título **"Resumen de tareas"** y la fila **"Tareas sin proyecto"** (no "Por proyecto" ni "Tareas sueltas"). Eso confirma que tienes los últimos textos del flujo de proyectos.
+3. **Tareas (Vaciar):** Al agregar una tarea, el texto de proyecto debe ser **"¿Asignar esta tarea a un proyecto?"** y la aclaración sobre pasos/subtareas visible.
+
+Si ves esos textos y la versión correcta en Yo, lo que ves en Expo Go es la misma versión que el código actual del repo.
+
+---
+
 **Última actualización:** febrero 2026

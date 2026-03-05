@@ -14,6 +14,7 @@ import { ProjectManager } from '@/components/projects/ProjectManager';
 import * as Haptics from 'expo-haptics';
 import { generateEmotionalInsights } from '@/lib/emotionalInsights';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
 type DayData = {
   date: string;
@@ -701,7 +702,7 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Koraa v1.0.0</Text>
+          <Text style={styles.footerText}>Koraa v{Constants.expoConfig?.version ?? '1.0.0'}</Text>
           <Text style={styles.footerSubtext}>
             Organiza tu día{' '}
             <Text style={styles.footerAccent}>sintiendo</Text>

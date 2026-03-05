@@ -84,7 +84,6 @@ export default function TodayScreen() {
   const [morningMeditationDone, setMorningMeditationDone] = useState(false);
   const [eveningMeditationDone, setEveningMeditationDone] = useState(false);
   const [dismissedCelebration, setDismissedCelebration] = useState(false);
-  const [flowGuideCollapsed, setFlowGuideCollapsed] = useState(true);
   const [heroReasoningExpanded, setHeroReasoningExpanded] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -730,29 +729,59 @@ export default function TodayScreen() {
             </View>
           </TouchableOpacity>
         )}
-        {!loading && !todayMood && (
+        {/* Una sola tarjeta: cómo funciona Koraa (reemplaza CTA Sentir + guía colapsable) */}
+        {!loading && (
           <TouchableOpacity
-            style={styles.ctaSentirCardTop}
+            style={styles.howKoraaCard}
             onPress={() => router.push('/(tabs)/sentir')}
             activeOpacity={0.88}
             accessibilityRole="button"
-            accessibilityLabel="Ir a Sentir para que Koraa priorice tus tareas según cómo te sientes"
+            accessibilityLabel="Cómo funciona Koraa. Ir a Sentir para indicar cómo te sientes."
           >
             <LinearGradient
-              colors={[THEME.colors.gradient.blue + '14', THEME.colors.gradient.pink + '0C']}
+              colors={[THEME.colors.gradient.blue + '12', THEME.colors.gradient.pink + '08']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.ctaSentirCardTopGradient}
+              style={styles.howKoraaCardGradient}
             >
-              <View style={styles.ctaSentirCardTopIconWrap}>
-                <Heart size={24} color={THEME.colors.gradient.blue} strokeWidth={1.8} />
+              <View style={styles.howKoraaCardIconWrap}>
+                <Heart size={26} color={THEME.colors.gradient.blue} strokeWidth={1.8} />
               </View>
-              <View style={styles.ctaSentirCardTopTextWrap}>
-                <Text style={styles.ctaSentirCardTopBody}>
-                  Cuando indiques cómo te sientes en Sentir, aquí verás solo lo que te conviene hoy.
+              <View style={styles.howKoraaCardContent}>
+                <Text style={styles.howKoraaCardTitle}>Cómo funciona Koraa</Text>
+                <Text style={styles.howKoraaCardBody}>
+                  Agrega tus tareas en Tareas, indica cómo te sientes en Sentir, y aquí verás solo lo que te conviene hoy.
                 </Text>
-                <View style={styles.ctaSentirCardTopLinkRow}>
-                  <Text style={styles.ctaSentirCardTopLink}>Ir a Sentir</Text>
+                <View style={styles.howKoraaCardFlow}>
+                  <View style={styles.howKoraaCardStep}>
+                    <View style={[styles.howKoraaCardStepDot, styles.howKoraaCardStepDotActive]}>
+                      <PenTool size={12} color={THEME.colors.onGradient} />
+                    </View>
+                    <Text style={styles.howKoraaCardStepLabel}>Tareas</Text>
+                  </View>
+                  <View style={styles.howKoraaCardArrow}>
+                    <ArrowRight size={14} color={THEME.colors.text.tertiary} />
+                  </View>
+                  <View style={styles.howKoraaCardStep}>
+                    <View style={styles.howKoraaCardStepDot}>
+                      <Heart size={12} color={THEME.colors.gradient.blue} />
+                    </View>
+                    <Text style={styles.howKoraaCardStepLabel}>Sentir</Text>
+                  </View>
+                  <View style={styles.howKoraaCardArrow}>
+                    <ArrowRight size={14} color={THEME.colors.text.tertiary} />
+                  </View>
+                  <View style={styles.howKoraaCardStep}>
+                    <View style={styles.howKoraaCardStepDot}>
+                      <Target size={12} color={THEME.colors.text.secondary} />
+                    </View>
+                    <Text style={styles.howKoraaCardStepLabel}>Hoy</Text>
+                  </View>
+                </View>
+                <View style={styles.howKoraaCardCta}>
+                  <Text style={styles.howKoraaCardCtaText}>
+                    {todayMood ? 'Actualizar en Sentir' : 'Ir a Sentir'}
+                  </Text>
                   <ChevronRight size={18} color={THEME.colors.gradient.blue} />
                 </View>
               </View>
@@ -760,7 +789,7 @@ export default function TodayScreen() {
           </TouchableOpacity>
         )}
 
-        {/* CTA principal: agregar tareas (estilo Musa: una acción clara) */}
+        {/* CTA principal: agregar tareas */}
         {!loading && (
           <TouchableOpacity
             style={styles.addTasksPill}
@@ -779,58 +808,6 @@ export default function TodayScreen() {
               <Text style={styles.addTasksPillTitle}>Agregar tareas</Text>
             </LinearGradient>
           </TouchableOpacity>
-        )}
-
-        {/* Guía visual del flujo - Cómo funciona Koraa (colapsable, cerrada por defecto) */}
-        {!loading && (
-          <View style={styles.flowGuideSection}>
-            <TouchableOpacity
-              style={styles.flowGuideHeader}
-              onPress={() => setFlowGuideCollapsed((c) => !c)}
-              activeOpacity={0.7}
-              hitSlop={HIT_SLOP}
-              accessibilityRole="button"
-              accessibilityLabel={flowGuideCollapsed ? 'Expandir guía Cómo funciona Koraa' : 'Contraer guía'}
-            >
-              <Text style={styles.flowGuideTitle} numberOfLines={1}>¿Cómo funciona Koraa?</Text>
-              {flowGuideCollapsed ? (
-                <ChevronRight size={20} color={THEME.colors.gradient.blue} />
-              ) : (
-                <ChevronDown size={20} color={THEME.colors.gradient.blue} />
-              )}
-            </TouchableOpacity>
-            {!flowGuideCollapsed && (
-            <View style={styles.flowStepsContainer}>
-              <View style={styles.flowStep}>
-                <View style={[styles.flowStepNumber, styles.flowStepNumberActive]}>
-                  <PenTool size={14} color={THEME.colors.onGradient} />
-                </View>
-                <Text style={styles.flowStepLabel} numberOfLines={1}>Vaciar</Text>
-                <Text style={styles.flowStepDesc} numberOfLines={1}>Agrega tus tareas</Text>
-              </View>
-              <View style={styles.flowArrow}>
-                <ArrowRight size={14} color={THEME.colors.text.secondary} />
-              </View>
-              <View style={styles.flowStep}>
-                <View style={styles.flowStepNumber}>
-                  <Heart size={14} color={THEME.colors.text.secondary} />
-                </View>
-                <Text style={styles.flowStepLabel} numberOfLines={1}>Sentir</Text>
-                <Text style={styles.flowStepDesc} numberOfLines={1}>Di cómo te sientes</Text>
-              </View>
-              <View style={styles.flowArrow}>
-                <ArrowRight size={14} color={THEME.colors.text.secondary} />
-              </View>
-              <View style={styles.flowStep}>
-                <View style={styles.flowStepNumber}>
-                  <Target size={14} color={THEME.colors.text.secondary} />
-                </View>
-                <Text style={styles.flowStepLabel} numberOfLines={1}>Hoy</Text>
-                <Text style={styles.flowStepDesc} numberOfLines={1}>Ve tus prioridades</Text>
-              </View>
-            </View>
-            )}
-          </View>
         )}
 
         {/* Una sola card de meditación: Mañana y Noche dentro del mismo bloque */}
@@ -1552,7 +1529,7 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
   },
-  ctaSentirCardTop: {
+  howKoraaCard: {
     marginHorizontal: THEME.spacing.lg,
     marginBottom: THEME.spacing.md,
     borderRadius: THEME.borderRadius.rounded,
@@ -1561,38 +1538,77 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.tint.blue.border,
     ...THEME.shadows.soft,
   },
-  ctaSentirCardTopGradient: {
+  howKoraaCardGradient: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingVertical: THEME.spacing.md,
     paddingHorizontal: THEME.spacing.md,
     gap: THEME.spacing.md,
   },
-  ctaSentirCardTopIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  howKoraaCardIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: THEME.colors.tint.blue.veryFaint,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ctaSentirCardTopTextWrap: {
+  howKoraaCardContent: {
     flex: 1,
     minWidth: 0,
   },
-  ctaSentirCardTopBody: {
+  howKoraaCardTitle: {
     ...THEME.typography.body,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 16,
+    fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
     marginBottom: THEME.spacing.xs,
   },
-  ctaSentirCardTopLinkRow: {
+  howKoraaCardBody: {
+    ...THEME.typography.body,
+    fontSize: 14,
+    lineHeight: 21,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.sm,
+  },
+  howKoraaCardFlow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: THEME.spacing.sm,
+  },
+  howKoraaCardStep: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  howKoraaCardStepDot: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: THEME.colors.fill[200],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  howKoraaCardStepDotActive: {
+    backgroundColor: THEME.colors.gradient.blue,
+  },
+  howKoraaCardStepLabel: {
+    ...THEME.typography.caption,
+    fontSize: 12,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  howKoraaCardArrow: {
+    marginHorizontal: 2,
+  },
+  howKoraaCardCta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  ctaSentirCardTopLink: {
+  howKoraaCardCtaText: {
     fontSize: 15,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.gradient.blue,
@@ -1654,77 +1670,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     opacity: 0.95,
-  },
-  flowGuideSection: {
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.lg,
-    marginBottom: THEME.spacing.lg,
-    marginHorizontal: THEME.spacing.lg,
-    overflow: 'hidden',
-    ...THEME.shadows.soft,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-  },
-  flowGuideHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: THEME.spacing.md,
-    gap: THEME.spacing.xs,
-  },
-  flowGuideTitle: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    fontFamily: THEME.fonts.heading.medium,
-    textAlign: 'center',
-    fontSize: 11,
-    flexShrink: 0,
-  },
-  flowStepsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: THEME.spacing.xs,
-  },
-  flowStep: {
-    alignItems: 'center',
-    minWidth: 72,
-    flexShrink: 0,
-  },
-  flowStepNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: THEME.colors.fill[100],
-    borderWidth: 2,
-    borderColor: THEME.colors.stroke[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: THEME.spacing.xs,
-  },
-  flowStepNumberActive: {
-    backgroundColor: THEME.colors.gradient.blue,
-    borderColor: THEME.colors.gradient.blue,
-  },
-  flowStepLabel: {
-    ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-    fontSize: 12,
-    marginBottom: 2,
-    textAlign: 'center',
-  },
-  flowStepDesc: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    fontSize: 10,
-    textAlign: 'center',
-    lineHeight: 14,
-  },
-  flowArrow: {
-    paddingHorizontal: 2,
   },
   prioritiesCardWrap: {
     marginBottom: THEME.spacing.md,
