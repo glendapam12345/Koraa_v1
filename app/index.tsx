@@ -15,7 +15,8 @@ export default function IndexScreen() {
         if (user) {
           router.replace('/(tabs)');
         } else {
-          router.replace('/onboarding/welcome');
+          // Sin sesión: ir a login (evita confusión con onboarding sin cuenta)
+          router.replace('/auth');
         }
       }, 100);
 
@@ -27,8 +28,8 @@ export default function IndexScreen() {
   useEffect(() => {
     if (loading) {
       const timeout = setTimeout(() => {
-        logger.error('Timeout en carga de autenticación, redirigiendo a welcome');
-        router.replace('/onboarding/welcome');
+        logger.error('Timeout en carga de autenticación, redirigiendo a auth');
+        router.replace('/auth');
       }, 10000);
 
       return () => clearTimeout(timeout);

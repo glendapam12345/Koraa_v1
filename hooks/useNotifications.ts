@@ -3,6 +3,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
+import { getDailyReminderTime } from '@/lib/notificationPreferences';
 
 // Configurar cómo se manejan las notificaciones cuando la app está en primer plano
 Notifications.setNotificationHandler({
@@ -123,10 +124,7 @@ export async function scheduleDailyReminder() {
       return;
     }
 
-    // Obtener hora preferida del usuario (por ahora, 9 AM por defecto)
-    // TODO: Permitir al usuario configurar su hora preferida
-    const reminderHour = 9;
-    const reminderMinute = 0;
+    const { hour: reminderHour, minute: reminderMinute } = await getDailyReminderTime();
 
     // Programar notificación para hoy si aún no pasó la hora
     const now = new Date();

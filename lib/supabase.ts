@@ -1,17 +1,26 @@
 import 'react-native-url-polyfill/auto';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 
-const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl ?? process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+function trimEnv(s: string | undefined): string {
+  return (s ?? '').trim();
+}
 
-// Debug: Log para verificar de dónde vienen las credenciales
+/** .env (Metro) primero; luego extra del manifest (app.config.js / EAS). */
+const supabaseUrl =
+  trimEnv(process.env.EXPO_PUBLIC_SUPABASE_URL) ||
+  trimEnv(Constants.expoConfig?.extra?.supabaseUrl as string | undefined);
+const supabaseAnonKey =
+  trimEnv(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY) ||
+  trimEnv(Constants.expoConfig?.extra?.supabaseAnonKey as string | undefined);
+
 if (__DEV__) {
-  console.log('🔍 Supabase Config Source:', {
-    fromExpoConfig: !!Constants.expoConfig?.extra?.supabaseUrl,
-    fromEnv: !!process.env.EXPO_PUBLIC_SUPABASE_URL,
-    url: supabaseUrl ? '✅ URL configurada' : '❌ URL faltante',
-    key: supabaseAnonKey ? '✅ Key configurada' : '❌ Key faltante',
+  const host = supabaseUrl ? new URL(supabaseUrl).host : '—';
+  console.log('🔍 Supabase:', {
+    host,
+    fromEnvUrl: !!trimEnv(process.env.EXPO_PUBLIC_SUPABASE_URL),
+    fromExtraUrl: !!trimEnv(Constants.expoConfig?.extra?.supabaseUrl as string | undefined),
   });
 }
 
@@ -23,11 +32,36 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
+    storage: AsyncStorage,
+    storageKey: 'koraa.supabase.auth',
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
   },
 });
+
+/** Comprueba si el teléfono puede llegar a Supabase (misma red que el login). */
+export async function canReachSupabase(): Promise<{ ok: boolean; detail?: string }> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const res = await fetch(`${supabaseUrl}/auth/v1/health`, {
+      method: 'GET',
+      signal: ctrl.signal,
+      headers: {
+        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${supabaseAnonKey}`,
+      },
+    });
+    clearTimeout(t);
+    if (res.ok) return { ok: true, detail: String(res.status) };
+    return { ok: res.status < 500, detail: `HTTP ${res.status}` };
+  } catch (e) {
+    clearTimeout(t);
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, detail: msg };
+  }
+}
 
 // Tipo para errores de Supabase
 interface SupabaseError {
@@ -74,7 +108,8 @@ export const getSchemaSetupMessage = (error: unknown): SchemaSetupType | null =>
   const err = error as SupabaseError & { message?: string };
   const msg = (err.message || '').toLowerCase();
   if (msg.includes('scheduled_date')) return 'scheduled_date';
-  if (msg.includes("'projects'") || (msg.includes('projects') && msg.includes('table'))) return 'projects_table';
+  // Solo "projects_table" cuando el error indica explícitamente que la tabla/relación no existe
+  if ((msg.includes('does not exist') || msg.includes('no existe')) && msg.includes('projects')) return 'projects_table';
   if (msg.includes('project_id')) return 'project_id';
   return 'schema';
 };

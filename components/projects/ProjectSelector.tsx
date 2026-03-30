@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, TextInput, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { THEME } from '@/constants/theme';
 import { supabase, getErrorMessage, getSchemaSetupMessage } from '@/lib/supabase';
 import { FolderKanban, X, Plus } from 'lucide-react-native';
@@ -25,17 +25,15 @@ interface ProjectSelectorProps {
   selectedProjectId: string | null;
   onSelect: (projectId: string | null) => void;
   userId: string;
-  /** Llamado al abrir el modal (p. ej. para cerrar teclado del formulario principal) */
   onBeforeOpenModal?: () => void;
-  /** Si false, no se muestra la etiqueta "Proyecto (opcional)" (útil cuando el padre ya la muestra) */
   showLabel?: boolean;
-  /** Llamado cuando falla la creación de un proyecto (ej. toast de error) */
   onError?: (message: string) => void;
-  /** Llamado cuando se crea un proyecto correctamente (ej. toast de éxito) */
   onSuccess?: (projectName: string) => void;
+  /** Cuando true, el usuario ya eligió "Sí" a proyecto: mostrar "Elige un proyecto" y poner "Ninguno" al final del modal */
+  assignMode?: boolean;
 }
 
-export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeOpenModal, showLabel = true, onError, onSuccess }: ProjectSelectorProps) {
+export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeOpenModal, showLabel = true, onError, onSuccess, assignMode = false }: ProjectSelectorProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -45,7 +43,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
   const [saving, setSaving] = useState(false);
   const newProjectInputRef = useRef<TextInput>(null);
 
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     const { data, error } = await supabase
       .from('projects')
       .select('id, name, color')
@@ -56,7 +54,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
       return;
     }
     setProjects(data || []);
-  };
+  }, [userId]);
 
   useEffect(() => {
     const load = async () => {
@@ -68,7 +66,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
       }
     };
     load();
-  }, [userId]);
+  }, [userId, loadProjects]);
 
   const handleCreateProject = async () => {
     const name = newName.trim();
@@ -111,7 +109,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
         }}
         activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel={selectedProject ? `Proyecto: ${selectedProject.name}` : 'Tareas sueltas'}
+        accessibilityLabel={selectedProject ? `Proyecto: ${selectedProject.name}` : assignMode ? 'Elige un proyecto' : 'Tareas sueltas'}
       >
         {selectedProject ? (
           <View style={[styles.selectedRow, styles.selectedRowProject]}>
@@ -129,8 +127,10 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
           </View>
         ) : (
           <View style={styles.selectedRow}>
-            <FolderKanban size={20} color={THEME.colors.text.secondary} />
-            <Text style={[styles.selectorText, styles.placeholderText]}>Tareas sueltas (sin proyecto)</Text>
+            <FolderKanban size={20} color={THEME.colors.gradient.blue} />
+            <Text style={[styles.selectorText, styles.placeholderText]}>
+              {assignMode ? 'Elige un proyecto' : 'Tareas sueltas (sin proyecto)'}
+            </Text>
           </View>
         )}
       </TouchableOpacity>
@@ -157,7 +157,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
           >
             <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>¿En qué proyecto va esta tarea?</Text>
+                <Text style={styles.modalTitle}>{assignMode ? 'Elige un proyecto' : '¿En qué proyecto va esta tarea?'}</Text>
                 <TouchableOpacity
                   onPress={() => { Keyboard.dismiss(); setShowModal(false); }}
                   style={styles.modalClose}
@@ -167,26 +167,30 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                 </TouchableOpacity>
               </View>
               <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                <Text style={styles.modalSectionHint}>
-                  Es opcional. Si no eliges proyecto, la tarea queda «suelta». Puedes elegir uno de la lista o crear uno nuevo abajo.
-                </Text>
-                <TouchableOpacity
-                  style={[styles.optionRow, styles.optionRowFirst]}
-                  onPress={() => {
-                    onSelect(null);
-                    setShowModal(false);
-                  }}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel="Tareas sueltas, sin proyecto"
-                >
-                  <FolderKanban size={22} color={THEME.colors.text.secondary} />
-                  <View style={styles.optionTextWrap}>
-                    <Text style={styles.optionText}>Tareas sueltas</Text>
-                    <Text style={styles.optionSubtext}>Sin proyecto</Text>
-                  </View>
-                  {!selectedProjectId && <Text style={styles.optionCheck}>✓</Text>}
-                </TouchableOpacity>
+                {!assignMode && (
+                  <Text style={styles.modalSectionHint}>
+                    Es opcional. Si no eliges proyecto, la tarea queda «suelta». Puedes elegir uno de la lista o crear uno nuevo abajo.
+                  </Text>
+                )}
+                {!assignMode && (
+                  <TouchableOpacity
+                    style={[styles.optionRow, styles.optionRowFirst]}
+                    onPress={() => {
+                      onSelect(null);
+                      setShowModal(false);
+                    }}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="Tareas sueltas, sin proyecto"
+                  >
+                    <FolderKanban size={22} color={THEME.colors.text.secondary} />
+                    <View style={styles.optionTextWrap}>
+                      <Text style={styles.optionText}>Tareas sueltas</Text>
+                      <Text style={styles.optionSubtext}>Sin proyecto</Text>
+                    </View>
+                    {!selectedProjectId && <Text style={styles.optionCheck}>✓</Text>}
+                  </TouchableOpacity>
+                )}
 
                 {loading ? (
                   <Text style={styles.loadingText}>Cargando proyectos…</Text>
@@ -217,6 +221,24 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                         {selectedProjectId === p.id && <Text style={styles.optionCheck}>✓</Text>}
                       </TouchableOpacity>
                     ))}
+                    {assignMode && (
+                      <TouchableOpacity
+                        style={[styles.optionRow, styles.optionRowNone]}
+                        onPress={() => {
+                          onSelect(null);
+                          setShowModal(false);
+                        }}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel="No asignar a proyecto"
+                      >
+                        <FolderKanban size={22} color={THEME.colors.text.tertiary} />
+                        <View style={styles.optionTextWrap}>
+                          <Text style={styles.optionSubtext}>No asignar a proyecto</Text>
+                        </View>
+                        {!selectedProjectId && <Text style={styles.optionCheck}>✓</Text>}
+                      </TouchableOpacity>
+                    )}
                     {showNewProject ? (
                       <View style={styles.newProjectForm}>
                         <Text style={styles.newProjectFormTitle}>Nuevo proyecto</Text>
@@ -409,6 +431,12 @@ const styles = StyleSheet.create({
   },
   optionRowFirst: {
     backgroundColor: THEME.colors.fill[200],
+  },
+  optionRowNone: {
+    marginTop: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.stroke[100],
   },
   optionTextWrap: {
     flex: 1,

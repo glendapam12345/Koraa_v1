@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-import { PartyPopper, X } from 'lucide-react-native';
+import { PartyPopper } from 'lucide-react-native';
 
 interface NoPendingTasksCelebrationProps {
   onDismiss: () => void;

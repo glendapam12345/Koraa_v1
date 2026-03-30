@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
@@ -33,17 +33,9 @@ export default function CheckInSummaryScreen() {
   }>();
   const { user } = useAuth();
   const [prioritizedTasks, setPrioritizedTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      loadPrioritizedTasks();
-    } else {
-      setLoading(false);
-    }
-  }, [user]);
-
-  const loadPrioritizedTasks = async () => {
+  const loadPrioritizedTasks = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -69,7 +61,15 @@ export default function CheckInSummaryScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadPrioritizedTasks();
+    } else {
+      setLoading(false);
+    }
+  }, [user, loadPrioritizedTasks]);
 
   const getEmotionData = () => {
     return EMOTIONS.find(e => e.id === emotion?.toLowerCase()) || EMOTIONS[0];
@@ -77,8 +77,7 @@ export default function CheckInSummaryScreen() {
 
   const getMotivationalMessage = () => {
     const emotionData = getEmotionData();
-    const energyLevel = parseInt(energy || '3');
-    
+
     if (emotionData.id === 'agotada' || emotionData.id === 'abrumada') {
       return 'Tómalo con calma. Priorizamos solo lo esencial para hoy.';
     } else if (emotionData.id === 'ansiosa') {

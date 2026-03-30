@@ -83,6 +83,7 @@ function AnimatedBar({
         stiffness: 100,
       })
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- heightValue is a ref
   }, [day.hasCheckIn, day.energyLevel, index, maxBarHeight, minBarHeight]);
 
   const animatedStyle = useAnimatedStyle(() => ({

@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
 import { supabase } from '@/lib/supabase';
+import { fetchProfilePreferences } from '@/lib/profilePreferences';
 import { getEmotionTips } from '@/lib/emotionTips';
 import { generatePersonalizedRecommendations } from '@/lib/personalizedRecommendations';
 import { Lightbulb, Moon, Zap, Brain, Sparkles, Heart, Plus } from 'lucide-react-native';
@@ -90,20 +91,18 @@ export default function TipsScreen() {
         setFocusLevel('');
       }
 
-      // Cargar perfil del usuario
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('age, favorite_activities, interests, other_preferences')
-        .eq('id', user.id)
-        .maybeSingle();
+      const { data: prefs, error: profileError } = await fetchProfilePreferences(user.id);
 
       if (profileError) {
         console.error('Error cargando perfil:', profileError);
-        // No mostrar error al usuario aquí, solo continuar sin recomendaciones personalizadas
-        // El usuario puede seguir usando la app sin problemas
         setUserProfile(null);
-      } else if (profile) {
-        setUserProfile(profile);
+      } else if (prefs) {
+        setUserProfile({
+          age: prefs.age ?? undefined,
+          favorite_activities: prefs.favorite_activities,
+          interests: prefs.interests,
+          other_preferences: prefs.other_preferences,
+        });
       } else {
         setUserProfile(null);
       }

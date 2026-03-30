@@ -61,21 +61,32 @@ All tables include Row Level Security (RLS) policies for data protection.
 ## Getting Started
 
 ```bash
-# Install dependencies
 npm install
 
-# Start development server
-npm run dev
+# 1) Crear .env si no existe (copia .env.example)
+npm run env:bootstrap
 
-# Run type checking
+# 2) Rellena EXPO_PUBLIC_SUPABASE_* en .env (Supabase → Settings → API)
+
+# 3) Comprueba API + lista de migraciones SQL a aplicar en el dashboard
+npm run verify:local
+
+# 4) Arranca Metro (usa -clear tras cambiar .env)
+npm run dev:clear
+```
+
+Checklist detallado: [LOCAL_DEV_THREE_STEPS.md](development_guidelines/learnings/LOCAL_DEV_THREE_STEPS.md).
+
+```bash
 npm run typecheck
-
-# Build for web
 npm run build:web
 ```
 
 ## Environment Variables
 
-Required in `.env`:
+Required in `.env` (see `.env.example`):
+
 - `EXPO_PUBLIC_SUPABASE_URL`: Your Supabase project URL
-- `EXPO_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anon key
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anon public key (not `service_role`)
+
+Optional (legal links on `/help`): `EXPO_PUBLIC_PRIVACY_POLICY_URL`, `EXPO_PUBLIC_TERMS_OF_SERVICE_URL`.

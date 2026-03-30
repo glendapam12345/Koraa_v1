@@ -33,6 +33,7 @@ Koraa is a mobile-first wellness productivity app that prioritizes tasks based o
 │   ├── _layout.tsx         # Root layout with font loading, AuthProvider
 │   ├── index.tsx           # Entry point / welcome screen
 │   ├── auth.tsx            # Authentication screen
+│   ├── help.tsx            # FAQ, legal links, soporte (ruta /help)
 │   ├── (tabs)/             # Tab navigation group
 │   │   ├── index.tsx       # "Hoy" - Today's prioritized tasks
 │   │   ├── vaciar.tsx      # "Vaciar" - Brain dump for tasks
@@ -49,7 +50,8 @@ Koraa is a mobile-first wellness productivity app that prioritizes tasks based o
 │   ├── EmotionCard.tsx
 │   └── GradientButton.tsx
 ├── constants/              # App constants and design tokens
-│   └── theme.ts            # Complete design system (THEME)
+│   ├── theme.ts            # Complete design system (THEME)
+│   └── legalUrls.ts        # URLs opcionales privacidad/términos + email soporte
 ├── contexts/               # React Context providers
 │   └── AuthContext.tsx     # Authentication state management
 ├── hooks/                  # Custom React hooks
@@ -155,6 +157,12 @@ npm install                    # Install dependencies
 npm run lint                   # Run Expo linter
 npm run typecheck              # Run TypeScript compiler in check mode (no emit)
 
+# Supabase (local checks & migration hints)
+npm run env:bootstrap          # Crea .env desde .env.example si no existe
+npm run check:supabase       # Verifica .env, DNS y /auth/v1/health
+npm run check:supabase:migrations  # Lista migraciones y orden sugerido (ver guía)
+npm run verify:local         # check:supabase + check:supabase:migrations
+
 # Building
 npm run build:web              # Export web build using Expo
 ```
@@ -214,6 +222,8 @@ Before making any code changes:
 3. **Update Types** - Ensure TypeScript types match new schema
 4. **Update RLS Policies** - Add/update Row Level Security policies
 5. **Test Queries** - Verify Supabase queries work with new schema
+
+**Schema, migraciones y SQL Editor (orden, columnas faltantes):** [SUPABASE_SCHEMA_AND_MIGRATIONS.md](development_guidelines/learnings/SUPABASE_SCHEMA_AND_MIGRATIONS.md)
 
 ---
 
@@ -315,6 +325,8 @@ Required in `.env` file:
 EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
+
+Opcional (pantalla **Ayuda** → enlaces legales): `EXPO_PUBLIC_PRIVACY_POLICY_URL`, `EXPO_PUBLIC_TERMS_OF_SERVICE_URL`. Ver [KORAA_HELP_AND_LEGAL_URLS.md](development_guidelines/learnings/KORAA_HELP_AND_LEGAL_URLS.md).
 
 ### Design System
 

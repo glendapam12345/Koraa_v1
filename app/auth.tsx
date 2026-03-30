@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
@@ -18,21 +18,21 @@ export default function AuthScreen() {
   const [forgotSuccess, setForgotSuccess] = useState(false);
   const { signIn, signUp, resetPasswordForEmail } = useAuth();
 
-  // Limpiar cualquier sesión existente al montar la pantalla
+  // Si ya hay sesión (p. ej. deep link a /auth), ir al inicio sin cerrar sesión
   useEffect(() => {
-    const clearExistingSession = async () => {
+    const redirectIfLoggedIn = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (session) {
-          console.log('[Auth Screen] Sesión existente detectada, cerrando...');
-          await supabase.auth.signOut();
-          console.log('[Auth Screen] Sesión cerrada');
+          router.replace('/(tabs)');
         }
       } catch (err) {
-        console.error('[Auth Screen] Error al limpiar sesión:', err);
+        console.error('[Auth Screen] Error comprobando sesión:', err);
       }
     };
-    clearExistingSession();
+    redirectIfLoggedIn();
   }, []);
 
   // Validación de email
@@ -57,16 +57,34 @@ export default function AuthScreen() {
     const code = typeof err === 'object' && err && 'code' in err ? (err as { code?: string }).code : undefined;
     const lower = message.toLowerCase();
     if (code === 'invalid_credentials' || lower.includes('invalid login credentials') || lower.includes('invalid_credentials')) {
-      return 'Email o contraseña incorrectos. Revisa que estén bien escritos o regístrate si aún no tienes cuenta.';
+      return [
+        'Email o contraseña no coinciden con este proyecto.',
+        '',
+        '• Prueba «Olvidé mi contraseña».',
+        '• Comprueba que en Supabase → Users exista el usuario en el mismo proyecto que tu .env.',
+      ].join('\n');
     }
-    if (lower.includes('email not confirmed')) {
-      return 'Revisa tu correo y confirma tu cuenta antes de iniciar sesión.';
+    if (
+      lower.includes('email not confirmed') ||
+      lower.includes('email_not_confirmed') ||
+      code === 'email_not_confirmed' ||
+      code === 'email_address_not_confirmed'
+    ) {
+      return 'Debes confirmar tu correo antes de entrar, o en Supabase → Providers → Email desactiva «Confirm email» para desarrollo.';
     }
     if (lower.includes('user already registered') || lower.includes('already registered')) {
       return 'Este email ya está registrado. Inicia sesión o usa "¿Olvidaste tu contraseña?" si no recuerdas la contraseña.';
     }
     if (lower.includes('password')) {
       return 'Revisa tu contraseña (mínimo 6 caracteres).';
+    }
+    if (
+      code === 'network_unreachable' ||
+      lower.includes('network request failed') ||
+      lower.includes('network error') ||
+      lower.includes('failed to fetch')
+    ) {
+      return 'Sin conexión con el servidor. Prueba datos móviles u otra WiFi, apaga VPN y Private Relay (iCloud), y vuelve a intentar.';
     }
     return message || 'No se pudo iniciar sesión. Intenta de nuevo.';
   };
@@ -109,9 +127,14 @@ export default function AuthScreen() {
 
     try {
       if (isSignUp) {
-        const { error } = await signUp(email, password, fullName);
+        const { error, needsEmailConfirmation } = await signUp(email, password, fullName);
         if (error) {
           setError(getAuthErrorMessage({ message: error.message, code: (error as { code?: string }).code }));
+        } else if (needsEmailConfirmation) {
+          setIsSignUp(false);
+          setError(
+            'Si no puedes iniciar sesión, en Supabase desactiva «Confirm email» (Authentication → Providers → Email) o confirma el enlace del correo.',
+          );
         } else {
           router.replace('/onboarding/welcome');
         }
@@ -148,12 +171,20 @@ export default function AuthScreen() {
     }
     setLoading(true);
     try {
-      const { error: err } = await resetPasswordForEmail(email);
+      const { error: err, redirectTo } = await resetPasswordForEmail(email);
       if (err) {
         setError(err.message || 'No se pudo enviar el enlace. Revisa tu email.');
       } else {
         setForgotSuccess(true);
         setError('');
+        // Expo Go usa exp://..., no localhost. Hay que permitirla en Supabase Redirect URLs.
+        if (redirectTo && Platform.OS !== 'web') {
+          Alert.alert(
+            'Añade esta URL en Supabase',
+            `En Authentication → URL Configuration → Redirect URLs → Add URL, pega EXACTAMENTE:\n\n${redirectTo}\n\n(O prueba el comodín: exp://**)\n\nLuego vuelve a pedir el enlace por correo.`,
+            [{ text: 'OK' }]
+          );
+        }
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Ocurrió un error');
@@ -409,7 +440,7 @@ const styles = StyleSheet.create({
   errorText: {
     ...THEME.typography.caption,
     color: THEME.colors.gradient.pink,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   switchButton: {
     marginTop: THEME.spacing.md,

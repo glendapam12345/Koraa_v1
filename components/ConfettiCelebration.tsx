@@ -12,7 +12,7 @@ import Animated, {
 
 const CONFETTI_COLORS = [...THEME.colors.confettiPalette];
 
-interface ConfettiPiece {
+interface ConfettiPieceData {
   id: number;
   color: string;
   startX: number;
@@ -21,7 +21,7 @@ interface ConfettiPiece {
 
 export function ConfettiCelebration() {
   // Crear piezas de confetti
-  const confettiPieces: ConfettiPiece[] = Array.from({ length: 30 }, (_, i) => ({
+  const confettiPieces: ConfettiPieceData[] = Array.from({ length: 30 }, (_, i) => ({
     id: i,
     color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
     startX: Math.random() * 100,
@@ -31,13 +31,13 @@ export function ConfettiCelebration() {
   return (
     <View style={styles.container} pointerEvents="none">
       {confettiPieces.map((piece) => (
-        <ConfettiPiece key={piece.id} {...piece} />
+        <ConfettiPieceComponent key={piece.id} {...piece} />
       ))}
     </View>
   );
 }
 
-function ConfettiPiece({ color, startX, delay }: Omit<ConfettiPiece, 'id'>) {
+function ConfettiPieceComponent({ color, startX, delay }: Omit<ConfettiPieceData, 'id'>) {
   const translateY = useSharedValue(-20);
   const translateX = useSharedValue(0);
   const rotate = useSharedValue(0);
@@ -91,6 +91,7 @@ function ConfettiPiece({ color, startX, delay }: Omit<ConfettiPiece, 'id'>) {
         withTiming(1, { duration: 200 })
       )
     );
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- animation run-once, deps are refs
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({

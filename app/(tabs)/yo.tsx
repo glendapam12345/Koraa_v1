@@ -1,20 +1,43 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, RefreshControl, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  Platform,
+  RefreshControl,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Dimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { router, useFocusEffect } from 'expo-router';
-import { LogOut, Settings, Circle as HelpCircle, CreditCard as Edit, X, Plus, Folder, RotateCcw, Lock } from 'lucide-react-native';
+import { LogOut, Settings, Circle as HelpCircle, CreditCard as Edit, X, Plus, Folder, RotateCcw, Lock, Bell } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase, getErrorMessage } from '@/lib/supabase';
+import { fetchProfilePreferences } from '@/lib/profilePreferences';
 import { logger } from '@/lib/logger';
 import { ProgressChart } from '@/components/ProgressChart';
-import { ConfettiCelebration } from '@/components/ConfettiCelebration';
 import { ProjectManager } from '@/components/projects/ProjectManager';
 import * as Haptics from 'expo-haptics';
 import { generateEmotionalInsights } from '@/lib/emotionalInsights';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import {
+  getDailyReminderTime,
+  setDailyReminderTime,
+  DAILY_REMINDER_PRESETS,
+  formatReminderTime,
+} from '@/lib/notificationPreferences';
+import { scheduleDailyReminder, checkNotificationPermissions } from '@/hooks/useNotifications';
+
+const WINDOW_H = Dimensions.get('window').height;
+const PROFILE_MODAL_SCROLL_MAX = Math.min(WINDOW_H * 0.58, 520);
 
 type DayData = {
   date: string;
@@ -25,6 +48,7 @@ type DayData = {
 };
 
 type UserProfile = {
+  full_name?: string;
   age?: number;
   favorite_activities?: string[];
   interests?: string[];
@@ -36,22 +60,26 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const [progressData, setProgressData] = useState<DayData[]>([]);
   const [currentStreak, setCurrentStreak] = useState<number>(0);
-  const [showConfetti, setShowConfetti] = useState(false);
+  const [, setShowConfetti] = useState(false);
   const [previousStreak, setPreviousStreak] = useState<number>(0);
   const [refreshing, setRefreshing] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({});
+  const [fullNameInput, setFullNameInput] = useState('');
   const [ageInput, setAgeInput] = useState('');
   const [newActivity, setNewActivity] = useState('');
   const [newInterest, setNewInterest] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [showProjects, setShowProjects] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changePasswordError, setChangePasswordError] = useState<string | null>(null);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [notifReminderTime, setNotifReminderTime] = useState({ hour: 9, minute: 0 });
+  const [notifSaving, setNotifSaving] = useState(false);
 
   const loadProgressData = useCallback(async () => {
     if (!user) return;
@@ -154,11 +182,7 @@ export default function ProfileScreen() {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('age, favorite_activities, interests, other_preferences')
-        .eq('id', user.id)
-        .maybeSingle();
+      const { data, error } = await fetchProfilePreferences(user.id);
 
       if (error) {
         logger.error('Error cargando perfil:', error);
@@ -172,13 +196,14 @@ export default function ProfileScreen() {
 
       if (data) {
         setProfile({
-          age: data.age || undefined,
-          favorite_activities: data.favorite_activities || [],
-          interests: data.interests || [],
-          other_preferences: data.other_preferences || {},
+          full_name: data.full_name?.trim() || undefined,
+          age: data.age ?? undefined,
+          favorite_activities: data.favorite_activities,
+          interests: data.interests,
+          other_preferences: data.other_preferences,
         });
-        setAgeInput(data.age ? data.age.toString() : '');
-        setProfileError(null); // Limpiar error si se cargó correctamente
+        setAgeInput(data.age != null ? String(data.age) : '');
+        setProfileError(null);
       }
     } catch (error) {
       logger.error('Error inesperado:', error);
@@ -254,6 +279,40 @@ export default function ProfileScreen() {
       setChangePasswordError(err instanceof Error ? err.message : 'Ocurrió un error');
     } finally {
       setChangingPassword(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!showSettingsModal || Platform.OS === 'web') return;
+    void getDailyReminderTime().then(setNotifReminderTime);
+  }, [showSettingsModal]);
+
+  const applyNotificationPreset = async (hour: number, minute: number) => {
+    if (Platform.OS === 'web') return;
+    setNotifSaving(true);
+    try {
+      await setDailyReminderTime({ hour, minute });
+      setNotifReminderTime({ hour, minute });
+      const ok = await checkNotificationPermissions();
+      if (!ok) {
+        Alert.alert(
+          'Permisos de notificación',
+          'Activa las notificaciones para Koraa en los ajustes del sistema para recibir el recordatorio de Sentir.',
+        );
+      }
+      await scheduleDailyReminder();
+      if (Platform.OS === 'ios' || Platform.OS === 'android') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      Alert.alert(
+        'Recordatorio guardado',
+        `Te avisaremos sobre las ${formatReminderTime({ hour, minute })} si aún no hiciste check-in ese día.`,
+      );
+    } catch (e) {
+      logger.error('Error guardando recordatorio:', e);
+      Alert.alert('Error', 'No se pudo guardar la hora del recordatorio.');
+    } finally {
+      setNotifSaving(false);
     }
   };
 
@@ -352,6 +411,34 @@ export default function ProfileScreen() {
     return generateEmotionalInsights(progressData, currentStreak);
   }, [progressData, currentStreak]);
 
+  const displayName = useMemo(() => {
+    const fromProfile = profile.full_name?.trim();
+    if (fromProfile) return fromProfile;
+    const meta = user?.user_metadata;
+    if (meta && typeof meta.full_name === 'string' && meta.full_name.trim()) {
+      return meta.full_name.trim();
+    }
+    return 'Bienvenida';
+  }, [profile.full_name, user?.user_metadata]);
+
+  const avatarLetter = useMemo(() => {
+    const fromProfile = profile.full_name?.trim();
+    const fromMeta =
+      typeof user?.user_metadata?.full_name === 'string' ? user.user_metadata.full_name.trim() : '';
+    const base = fromProfile || fromMeta;
+    if (base) return base[0]!.toUpperCase();
+    return user?.email?.[0]?.toUpperCase() ?? 'K';
+  }, [profile.full_name, user?.user_metadata?.full_name, user?.email]);
+
+  /** Al abrir el modal, sincroniza el campo nombre con perfil o metadata. */
+  useEffect(() => {
+    if (!showEditProfile) return;
+    const fromProfile = profile.full_name?.trim() ?? '';
+    const fromMeta =
+      typeof user?.user_metadata?.full_name === 'string' ? user.user_metadata.full_name.trim() : '';
+    setFullNameInput(fromProfile || fromMeta);
+  }, [showEditProfile, profile.full_name, user?.user_metadata?.full_name]);
+
   // Función para obtener el nivel de racha y sus colores
   const getStreakLevel = (streak: number) => {
     if (streak >= 90) {
@@ -440,9 +527,12 @@ export default function ProfileScreen() {
         ageValue = parsedAge;
       }
 
+      const trimmedDisplayName = fullNameInput.trim();
+
       const { error } = await supabase
         .from('profiles')
         .update({
+          full_name: trimmedDisplayName || null,
           age: ageValue,
           favorite_activities: profile.favorite_activities || [],
           interests: profile.interests || [],
@@ -452,9 +542,24 @@ export default function ProfileScreen() {
       if (error) {
         logger.error('Error guardando perfil:', error);
         const errorMessage = getErrorMessage(error);
-        setProfileError(`No se pudo guardar el perfil: ${errorMessage}`);
+        const missingCol =
+          (error as { code?: string; message?: string }).code === '42703' ||
+          (typeof (error as { message?: string }).message === 'string' &&
+            (error as { message: string }).message.includes('does not exist'));
+        setProfileError(
+          missingCol
+            ? 'Faltan columnas en la base de datos. Ejecuta en Supabase el SQL de supabase/migrations/20260321140000_ensure_profiles_personalization_columns.sql'
+            : `No se pudo guardar el perfil: ${errorMessage}`,
+        );
         setIsSavingProfile(false);
         return;
+      }
+
+      const { error: metaErr } = await supabase.auth.updateUser({
+        data: { full_name: trimmedDisplayName },
+      });
+      if (metaErr) {
+        logger.warn('Nombre guardado en perfil; no se pudo sincronizar en la sesión:', metaErr);
       }
 
       // Recargar perfil después de guardar
@@ -488,15 +593,24 @@ export default function ProfileScreen() {
           />
         }
       >
-        <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.header}
+          onPress={() => setShowEditProfile(true)}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel="Editar perfil personal"
+          accessibilityHint="Abre nombre, edad, actividades e intereses"
+        >
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user?.email?.[0].toUpperCase() || 'K'}
-            </Text>
+            <Text style={styles.avatarText}>{avatarLetter}</Text>
           </View>
-          <Text style={styles.name}>Bienvenida</Text>
+          <Text style={styles.name}>{displayName}</Text>
           <Text style={styles.email}>{user?.email}</Text>
-        </View>
+          <View style={styles.headerEditHint}>
+            <Edit size={14} color={THEME.colors.gradient.blue} />
+            <Text style={styles.headerEditHintText}>Toca para editar tu perfil</Text>
+          </View>
+        </TouchableOpacity>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Tu progreso</Text>
@@ -584,6 +698,14 @@ export default function ProfileScreen() {
             <View style={styles.menuItemContent}>
               <Text style={styles.menuItemText}>Editar perfil personal</Text>
               <Text style={styles.menuItemSubtext}>
+                {(() => {
+                  const n =
+                    profile.full_name?.trim() ||
+                    (typeof user?.user_metadata?.full_name === 'string'
+                      ? user.user_metadata.full_name.trim()
+                      : '');
+                  return n ? `${n} · ` : '';
+                })()}
                 {profile.favorite_activities?.length || 0} actividades • {profile.interests?.length || 0} intereses
               </Text>
             </View>
@@ -613,6 +735,7 @@ export default function ProfileScreen() {
           <TouchableOpacity 
             style={styles.menuItem} 
             activeOpacity={0.7}
+            onPress={() => setShowSettingsModal(true)}
             accessibilityRole="button"
             accessibilityLabel="Ajustes"
             accessibilityHint="Abre la configuración de la aplicación"
@@ -624,6 +747,7 @@ export default function ProfileScreen() {
           <TouchableOpacity 
             style={styles.menuItem} 
             activeOpacity={0.7}
+            onPress={() => router.push('/help')}
             accessibilityRole="button"
             accessibilityLabel="Ayuda"
             accessibilityHint="Abre la sección de ayuda y soporte"
@@ -725,8 +849,9 @@ export default function ProfileScreen() {
       >
         <View style={styles.modalOverlay}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={styles.modalKeyboardView}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}
           >
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
@@ -749,18 +874,43 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               </View>
 
-              <ScrollView 
+              <ScrollView
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
-                style={styles.modalScrollView}
+                style={[styles.modalScrollView, { maxHeight: PROFILE_MODAL_SCROLL_MAX }]}
                 contentContainerStyle={styles.modalScrollContent}
+                nestedScrollEnabled
               >
+              <Text style={styles.modalIntro}>
+                Tu nombre, actividades e intereses alimentan las recomendaciones en Inicio.
+              </Text>
               {/* Mensaje de error si existe */}
               {profileError && (
                 <View style={styles.errorContainer}>
                   <Text style={styles.errorText}>{profileError}</Text>
                 </View>
               )}
+
+              {/* Nombre para mostrar */}
+              <View style={styles.formSection}>
+                <Text style={styles.formLabel}>Tu nombre</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={fullNameInput}
+                  onChangeText={setFullNameInput}
+                  placeholder="Cómo quieres que te llamemos"
+                  placeholderTextColor={THEME.colors.text.secondary}
+                  autoCapitalize="words"
+                  autoCorrect
+                  editable={!isSavingProfile}
+                  maxLength={80}
+                  accessibilityLabel="Tu nombre o apodo"
+                  accessibilityHint="Se muestra en la cabecera de esta pantalla"
+                />
+                <Text style={styles.formHelpText}>
+                  Opcional. El correo solo se cambia desde el proveedor de cuenta (no aquí).
+                </Text>
+              </View>
 
               {/* Edad */}
               <View style={styles.formSection}>
@@ -998,6 +1148,134 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
+      {/* Modal de ajustes */}
+      <Modal
+        visible={showSettingsModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowSettingsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Ajustes</Text>
+              <TouchableOpacity
+                onPress={() => setShowSettingsModal(false)}
+                style={styles.modalCloseButton}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar ajustes"
+              >
+                <X size={24} color={THEME.colors.text.main} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalScrollContent}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowSettingsModal(false);
+                  setShowEditProfile(true);
+                }}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel="Editar perfil personal"
+              >
+                <Edit size={22} color={THEME.colors.gradient.blue} />
+                <Text style={styles.menuItemText}>Editar perfil personal</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowSettingsModal(false);
+                  router.push('/help');
+                }}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel="Ayuda"
+              >
+                <HelpCircle size={22} color={THEME.colors.text.main} />
+                <Text style={styles.menuItemText}>Ayuda</Text>
+              </TouchableOpacity>
+
+              {Platform.OS === 'web' ? (
+                <Text style={styles.notifWebNote}>
+                  En la versión web no hay recordatorios push. Usa la app en el teléfono para programar el aviso de Sentir.
+                </Text>
+              ) : (
+                <View style={styles.notifSection}>
+                  <View style={styles.notifSectionHeader}>
+                    <Bell size={20} color={THEME.colors.gradient.blue} />
+                    <Text style={styles.notifSectionTitle}>Recordatorio Sentir</Text>
+                  </View>
+                  <Text style={styles.notifSectionHint}>
+                    Hora actual: {formatReminderTime(notifReminderTime)}. Te recordamos hacer check-in si ese día aún no lo hiciste.
+                  </Text>
+                  <View style={styles.notifChipsWrap}>
+                    {DAILY_REMINDER_PRESETS.map((p) => (
+                      <TouchableOpacity
+                        key={p.label}
+                        style={[
+                          styles.notifChip,
+                          notifReminderTime.hour === p.hour &&
+                            notifReminderTime.minute === p.minute &&
+                            styles.notifChipActive,
+                        ]}
+                        onPress={() => applyNotificationPreset(p.hour, p.minute)}
+                        disabled={notifSaving}
+                        activeOpacity={0.8}
+                      >
+                        <Text
+                          style={[
+                            styles.notifChipText,
+                            notifReminderTime.hour === p.hour &&
+                              notifReminderTime.minute === p.minute &&
+                              styles.notifChipTextActive,
+                          ]}
+                        >
+                          {p.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowSettingsModal(false);
+                  setShowChangePassword(true);
+                  setNewPassword('');
+                  setConfirmPassword('');
+                  setChangePasswordError(null);
+                }}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel="Cambiar contraseña"
+              >
+                <Lock size={22} color={THEME.colors.text.main} />
+                <Text style={styles.menuItemText}>Cambiar contraseña</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowSettingsModal(false);
+                  handleSignOut();
+                }}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar sesión"
+              >
+                <LogOut size={22} color={THEME.colors.gradient.pink} />
+                <Text style={[styles.menuItemText, { color: THEME.colors.gradient.pink }]}>Cerrar sesión</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Modal cambiar contraseña */}
       <Modal
         visible={showChangePassword}
@@ -1120,6 +1398,19 @@ const styles = StyleSheet.create({
   },
   email: {
     ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+  },
+  headerEditHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.sm,
+  },
+  headerEditHintText: {
+    ...THEME.typography.small,
+    fontSize: 13,
     color: THEME.colors.text.secondary,
   },
   section: {
@@ -1245,6 +1536,60 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.text.main,
   },
+  notifWebNote: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.md,
+    lineHeight: 20,
+  },
+  notifSection: {
+    marginBottom: THEME.spacing.md,
+    paddingBottom: THEME.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.colors.stroke[100],
+  },
+  notifSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
+  },
+  notifSectionTitle: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+  },
+  notifSectionHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.sm,
+    lineHeight: 20,
+  },
+  notifChipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.xs,
+  },
+  notifChip: {
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[200],
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  notifChipActive: {
+    backgroundColor: THEME.colors.fill[100],
+    borderColor: THEME.colors.gradient.blue,
+  },
+  notifChipText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.main,
+  },
+  notifChipTextActive: {
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: THEME.colors.overlay,
@@ -1253,16 +1598,22 @@ const styles = StyleSheet.create({
   modalKeyboardView: {
     flex: 1,
     justifyContent: 'flex-end',
+    width: '100%',
   },
   modalContent: {
     backgroundColor: THEME.colors.fill[100],
     borderTopLeftRadius: THEME.borderRadius.rounded,
     borderTopRightRadius: THEME.borderRadius.rounded,
-    maxHeight: '90%',
-    paddingBottom: THEME.spacing.xl * 2,
+    width: '100%',
+    maxHeight: Math.min(WINDOW_H * 0.92, 720),
+    paddingBottom: THEME.spacing.lg,
   },
-  modalScrollView: {
-    flex: 1,
+  modalScrollView: {},
+  modalIntro: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 20,
+    marginBottom: THEME.spacing.md,
   },
   modalScrollContent: {
     padding: THEME.spacing.lg,

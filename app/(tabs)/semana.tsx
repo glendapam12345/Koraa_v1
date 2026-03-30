@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
+import { Toast } from '@/components/Toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWeekTasks, getWeekOptions } from '@/hooks/useWeekTasks';
 import type { Task } from '@/hooks/useTasks';
@@ -76,6 +77,9 @@ export default function SemanaScreen() {
 
   return (
     <View style={styles.container}>
+      {toastMessage ? (
+        <Toast message={toastMessage} onHide={() => setToastMessage(null)} />
+      ) : null}
       <ScrollView
         contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]}
         showsVerticalScrollIndicator={false}
@@ -306,45 +310,47 @@ export default function SemanaScreen() {
           </View>
         ))}
 
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => router.push('/(tabs)/vaciar')}
-          activeOpacity={0.88}
-          accessibilityRole="button"
-          accessibilityLabel="Agregar tareas o proyectos"
-        >
-          <LinearGradient
-            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.addButtonGradient}
+        <View style={styles.bottomSection}>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => router.push('/(tabs)/vaciar')}
+            activeOpacity={0.88}
+            accessibilityRole="button"
+            accessibilityLabel="Agregar tareas o proyectos"
           >
-            <Plus size={22} color={THEME.colors.onGradient} />
-            <Text style={styles.addButtonText}>Agregar tareas o proyectos</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            <LinearGradient
+              colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.addButtonGradient}
+            >
+              <Plus size={22} color={THEME.colors.onGradient} />
+              <Text style={styles.addButtonText}>Agregar tareas o proyectos</Text>
+            </LinearGradient>
+          </TouchableOpacity>
 
-        {schemaSetupType ? (
-          <View style={styles.setupCard}>
-            <Text style={styles.setupCardTitle}>Configuración de la base de datos</Text>
-            <Text style={styles.setupCardText}>
-              {schemaSetupType === 'scheduled_date'
-                ? 'Para ver tareas por semana falta la columna scheduled_date en la tabla tasks.'
-                : schemaSetupType === 'projects_table'
-                  ? 'Para usar listas y proyectos falta la tabla projects.'
-                  : schemaSetupType === 'project_id'
-                    ? 'Para asociar tareas a listas falta la columna project_id en la tabla tasks.'
-                    : 'Falta actualizar el esquema de la base de datos para Semana y proyectos.'}
-            </Text>
-            <Text style={styles.setupCardSteps}>
-              1. Abre Supabase → SQL Editor{'\n'}
-              2. Ejecuta el archivo: supabase/migrations/20260212000000_add_projects_and_weekly_scheduling.sql
-            </Text>
-            <Text style={styles.setupCardHint}>
-              Después de ejecutarlo, arrastra hacia abajo aquí para recargar.
-            </Text>
-          </View>
-        ) : null}
+          {schemaSetupType ? (
+            <View style={styles.setupCard}>
+              <Text style={styles.setupCardTitle}>Configuración de la base de datos</Text>
+              <Text style={styles.setupCardText}>
+                {schemaSetupType === 'scheduled_date'
+                  ? 'Para ver tareas por semana falta la columna scheduled_date en la tabla tasks.'
+                  : schemaSetupType === 'projects_table'
+                    ? 'Para usar listas y proyectos falta la tabla projects.'
+                    : schemaSetupType === 'project_id'
+                      ? 'Para asociar tareas a listas falta la columna project_id en la tabla tasks.'
+                      : 'Falta actualizar el esquema de la base de datos para Semana y proyectos.'}
+              </Text>
+              <Text style={styles.setupCardSteps}>
+                1. Abre Supabase → SQL Editor{'\n'}
+                2. Ejecuta el archivo: supabase/migrations/20260212000000_add_projects_and_weekly_scheduling.sql
+              </Text>
+              <Text style={styles.setupCardHint}>
+                Después de ejecutarlo, arrastra hacia abajo aquí para recargar.
+              </Text>
+            </View>
+          ) : null}
+        </View>
 
         {__DEV__ ? (
           <View style={styles.diagnostico}>
@@ -772,9 +778,13 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     flex: 1,
   },
-  addButton: {
+  bottomSection: {
     marginHorizontal: THEME.spacing.lg,
     marginTop: THEME.spacing.lg,
+    marginBottom: THEME.spacing.xl,
+    gap: THEME.spacing.md,
+  },
+  addButton: {
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
     ...THEME.shadows.soft,
@@ -792,40 +802,48 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     ...THEME.typography.body,
+    fontSize: 16,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
   setupCard: {
-    marginHorizontal: THEME.spacing.lg,
-    marginTop: THEME.spacing.md,
-    padding: THEME.spacing.md,
+    padding: THEME.spacing.md + 4,
     backgroundColor: THEME.colors.tint.blue.veryLight,
     borderRadius: THEME.borderRadius.rounded,
     borderLeftWidth: 4,
     borderLeftColor: THEME.colors.gradient.blue,
+    ...THEME.shadows.soft,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
   },
   setupCardTitle: {
-    ...THEME.typography.caption,
+    ...THEME.typography.body,
+    fontSize: 15,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
-    marginBottom: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
   },
   setupCardText: {
     ...THEME.typography.body,
     fontSize: 14,
+    lineHeight: 21,
     color: THEME.colors.text.main,
-    marginBottom: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
   },
   setupCardSteps: {
     ...THEME.typography.small,
+    fontSize: 13,
+    lineHeight: 20,
     color: THEME.colors.text.secondary,
-    marginTop: THEME.spacing.xs,
     marginBottom: THEME.spacing.xs,
+    fontFamily: THEME.fonts.heading.medium,
   },
   setupCardHint: {
     ...THEME.typography.small,
+    fontSize: 12,
     color: THEME.colors.text.secondary,
     fontStyle: 'italic',
+    marginTop: 2,
   },
   diagnostico: {
     marginHorizontal: THEME.spacing.lg,

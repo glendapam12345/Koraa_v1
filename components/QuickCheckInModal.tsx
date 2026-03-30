@@ -1,6 +1,5 @@
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { useState } from 'react';
-import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { EmotionCard } from './EmotionCard';
 import { GradientButton } from './GradientButton';

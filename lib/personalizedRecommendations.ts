@@ -5,6 +5,23 @@
  * - Contexto (tiempo disponible, energía, enfoque)
  */
 
+// Recomendaciones concretas: podcasts y libros para productividad y bienestar
+const CONCRETE_PODCASTS: { title: string; message: string; suggestion: string }[] = [
+  { title: 'Escuchar: El podcast de Tim Ferriss', message: 'Episodios cortos sobre productividad y hábitos. Ideal para escuchar en movimiento.', suggestion: 'Escuchar podcast de Tim Ferriss' },
+  { title: 'Escuchar: Hábitos con James Clear', message: 'Si te interesa mejorar hábitos, busca episodios de James Clear en español.', suggestion: 'Buscar podcast de James Clear' },
+  { title: 'Escuchar: Radio Ambulante', message: 'Historias en español, perfectas para caminar o viajar. Narrativa y reflexión.', suggestion: 'Escuchar Radio Ambulante' },
+  { title: 'Escuchar: Entiende tu mente', message: 'Psicología y bienestar en español. Episodios de unos 30 min.', suggestion: 'Escuchar Entiende tu mente' },
+  { title: 'Escuchar: Crear es vivir', message: 'Creatividad y proceso creativo. Inspiración para proyectos.', suggestion: 'Escuchar Crear es vivir' },
+];
+
+const CONCRETE_BOOKS: { title: string; message: string; suggestion: string }[] = [
+  { title: 'Leer: Hábitos atómicos (James Clear)', message: 'Pequeños cambios para grandes resultados. Muy práctico para productividad.', suggestion: 'Leer Hábitos atómicos' },
+  { title: 'Leer: El poder del ahora (Eckhart Tolle)', message: 'Sobre presencia y calma. Recomendado cuando te sientes ansiosa.', suggestion: 'Leer El poder del ahora' },
+  { title: 'Leer: Deep Work (Cal Newport)', message: 'Enfocarse sin distracciones. Ideal si tienes tiempo para concentrarte.', suggestion: 'Leer Deep Work' },
+  { title: 'Leer: La semana laboral de 4 horas', message: 'Ideas sobre eficiencia y priorización. Inspira a hacer más con menos.', suggestion: 'Leer La semana laboral de 4 horas' },
+  { title: 'Leer: El monje que vendió su Ferrari', message: 'Fábula sobre prioridades y sentido de vida. Lectura ligera.', suggestion: 'Leer El monje que vendió su Ferrari' },
+];
+
 export interface UserPreferences {
   age?: number;
   favorite_activities?: string[];
@@ -78,11 +95,53 @@ export function generatePersonalizedRecommendations(
     recommendations.push(...wellnessRecommendations);
   }
 
+  // Añadir recomendaciones concretas (podcasts, libros) para dar opciones específicas
+  const concreteRecs = getConcreteRecommendations(checkIn);
+  recommendations.push(...concreteRecs);
+
   // Ordenar por prioridad (mayor a menor)
   recommendations.sort((a, b) => b.priority - a.priority);
 
   // Retornar top 5 recomendaciones
   return recommendations.slice(0, 5);
+}
+
+/**
+ * Recomendaciones concretas: podcasts y libros según contexto
+ */
+function getConcreteRecommendations(checkIn: CheckInContext): Recommendation[] {
+  const recs: Recommendation[] = [];
+  const { energyLevel, availableTime } = checkIn;
+  const hasShortTime = availableTime?.toLowerCase().includes('poco') || availableTime?.toLowerCase().includes('1');
+  const hasMoreTime = availableTime?.toLowerCase().includes('medio') || availableTime?.toLowerCase().includes('2') || availableTime?.toLowerCase().includes('4');
+
+  // Si tiene poco tiempo o poca energía → podcast
+  if (hasShortTime || energyLevel <= 3) {
+    const pick = CONCRETE_PODCASTS[Math.floor(Math.random() * CONCRETE_PODCASTS.length)];
+    recs.push({
+      id: `concrete-podcast-${pick.title.slice(0, 15).replace(/\s/g, '-')}`,
+      type: 'productivity',
+      title: pick.title,
+      message: pick.message,
+      suggestion: pick.suggestion,
+      emoji: '🎧',
+      priority: 4,
+    });
+  }
+  // Si tiene más tiempo o buena energía → libro
+  if (hasMoreTime || energyLevel >= 3) {
+    const pick = CONCRETE_BOOKS[Math.floor(Math.random() * CONCRETE_BOOKS.length)];
+    recs.push({
+      id: `concrete-book-${pick.title.slice(0, 15).replace(/\s/g, '-')}`,
+      type: 'productivity',
+      title: pick.title,
+      message: pick.message,
+      suggestion: pick.suggestion,
+      emoji: '📚',
+      priority: 3,
+    });
+  }
+  return recs;
 }
 
 /**
@@ -295,6 +354,10 @@ function getGenericRecommendations(checkIn: CheckInContext): Recommendation[] {
       priority: 4,
     });
   }
+
+  // Siempre incluir al menos una recomendación concreta (podcast o libro)
+  const concrete = getConcreteRecommendations(checkIn);
+  recommendations.push(...concrete);
 
   return recommendations;
 }

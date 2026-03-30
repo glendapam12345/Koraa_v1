@@ -1,17 +1,22 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
-import { supabase } from '@/lib/supabase';
+import { createURL } from 'expo-linking';
+import { supabase, canReachSupabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 type AuthContextType = {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string,
+  ) => Promise<{ error: any; needsEmailConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
-  resetPasswordForEmail: (email: string) => Promise<{ error: any }>;
+  resetPasswordForEmail: (email: string) => Promise<{ error: any; redirectTo?: string | null }>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -57,62 +62,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    const emailNorm = email.trim().toLowerCase();
+    // full_name va en user_metadata; la fila en `profiles` la crea el trigger
+    // `handle_new_user` en Supabase (migración 20260321120000), no el cliente.
+    // Así se evita RLS: sin sesión aún, INSERT desde la app fallaba.
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: emailNorm,
       password,
+      options: {
+        data: {
+          full_name: fullName.trim(),
+        },
+      },
     });
 
-    if (!error && data.user) {
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: data.user.id,
-        email,
-        full_name: fullName,
-        onboarding_completed: false,
-      });
+    const needsEmailConfirmation = Boolean(data?.user && !data.session);
 
-      if (profileError) {
-        return { error: profileError };
-      }
-    }
-
-    return { error };
+    return { error, needsEmailConfirmation };
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Verificar si hay una sesión activa primero
-      const { data: { session: existingSession } } = await supabase.auth.getSession();
-      logger.info('Sesión existente:', existingSession ? 'Sí (ID: ' + existingSession.user?.id + ')' : 'No');
-      
-      if (existingSession) {
-        logger.warn('Ya hay una sesión activa. Cerrando sesión antes de iniciar nueva...');
-        const { error: signOutError } = await supabase.auth.signOut();
-        if (signOutError) {
-          logger.error('Error al cerrar sesión existente:', signOutError);
-        } else {
-          logger.info('Sesión existente cerrada exitosamente');
-        }
-        // Pequeña pausa para asegurar que la sesión se cerró
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Verificar que se cerró
-        const { data: { session: checkSession } } = await supabase.auth.getSession();
-        logger.info('Sesión después de cerrar:', checkSession ? 'Aún existe' : 'Cerrada correctamente');
+      // Cerrar sesión solo en el dispositivo (sin petición de red). Evita "Network request failed"
+      // por signOut global antes del login en redes inestables.
+      await supabase.auth.signOut({ scope: 'local' });
+
+      const trimmedEmail = email.trim().toLowerCase();
+      // No hacer trim() de la contraseña: debe coincidir exactamente con la guardada en Supabase.
+      const passwordForSignIn = password;
+
+      logger.info('Intentando iniciar sesión con email:', trimmedEmail);
+
+      // Intentar login
+      const reach = await canReachSupabase();
+      if (!reach.ok) {
+        logger.warn('Supabase no alcanzable:', reach.detail);
+        return {
+          error: {
+            message:
+              'No hay conexión con el servidor. Prueba: 1) Cambiar de WiFi a datos móviles (o al revés) 2) Apagar VPN e iCloud Private Relay (Ajustes → Apple ID → iCloud → Private Relay) 3) En Safari abre la URL de tu proyecto Supabase para comprobar red.',
+            code: 'network_unreachable',
+          },
+        };
       }
 
-      const trimmedEmail = email.trim();
-      const trimmedPassword = password.trim();
-      
-      logger.info('Intentando iniciar sesión con email:', trimmedEmail);
-      logger.info('Longitud de contraseña original:', password.length);
-      logger.info('Longitud de contraseña después de trim:', trimmedPassword.length);
-      logger.info('¿Contraseña tiene espacios al inicio/fin?:', password !== trimmedPassword);
-      
-      // Intentar login
       logger.info('Enviando petición a Supabase...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email: trimmedEmail,
-        password: trimmedPassword,
+        password: passwordForSignIn,
       });
       
       if (error) {
@@ -162,34 +159,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 
   const resetPasswordForEmail = async (email: string) => {
-    // En mobile usa deep link, en web usa URL HTTP
-    // En Supabase Dashboard → Auth → URL Configuration → Redirect URLs añade:
-    // - myapp://reset-password (para iOS/Android)
-    // - https://tu-dominio.com/reset-password (para web) o http://localhost:8081/reset-password (desarrollo)
+    // Expo Go necesita exp://... (createURL), NO myapp:// ni localhost en el móvil.
+    // Supabase Dashboard → Authentication → URL Configuration → Redirect URLs debe incluir
+    // la URL que ves en consola al pedir el enlace (y http://localhost:8081/** si usas web).
     let redirectTo: string;
-    
-    if (Platform.OS === 'web') {
-      // En web, usar la URL actual de la página + /reset-password
-      if (typeof window !== 'undefined') {
-        const baseUrl = window.location.origin;
-        redirectTo = `${baseUrl}/reset-password`;
-      } else {
-        // Fallback para desarrollo
-        redirectTo = 'http://localhost:8081/reset-password';
-      }
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      redirectTo = `${window.location.origin}/reset-password`;
     } else {
-      // En mobile, usar deep link
-      redirectTo = 'myapp://reset-password';
+      redirectTo = createURL('/reset-password');
     }
-    
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    if (__DEV__) {
+      logger.info(
+        'Enlace de recuperación usará redirectTo. Añádelo en Supabase → Auth → URL Configuration → Redirect URLs:',
+        redirectTo
+      );
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
       redirectTo,
     });
-    return { error };
+    return { error, redirectTo };
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, loading, signUp, signIn, signOut, resetPasswordForEmail }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        user,
+        loading,
+        signUp,
+        signIn,
+        signOut,
+        resetPasswordForEmail,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

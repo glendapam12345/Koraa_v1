@@ -1,11 +1,11 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, CheckCircle2 } from 'lucide-react-native';
 import type { Task } from '@/components/tasks/TaskCard';
 import { TaskList } from '@/components/tasks/TaskList';
 
@@ -22,6 +22,8 @@ export default function ProjectScreen() {
   const [expandedDetailsTasks, setExpandedDetailsTasks] = useState<Set<string>>(new Set());
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
+  const isLoose = projectId === 'sin-proyecto';
+
   const loadProjectAndTasks = useCallback(async () => {
     if (!user || !projectId) {
       setLoading(false);
@@ -29,61 +31,96 @@ export default function ProjectScreen() {
     }
     setLoading(true);
     try {
-      const { data: projectData, error: projectError } = await supabase
-        .from('projects')
-        .select('name, color')
-        .eq('id', projectId)
-        .eq('user_id', user.id)
-        .single();
+      if (isLoose) {
+        setProject({ name: 'Tareas sin proyecto', color: THEME.colors.text.tertiary });
 
-      if (projectError || !projectData) {
-        setProject(null);
-        setTasks([]);
-        setLoading(false);
-        return;
+        const { data: tasksData, error: tasksError } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', user.id)
+          .is('project_id', null)
+          .is('parent_task_id', null)
+          .order('is_priority', { ascending: false })
+          .order('created_at', { ascending: true });
+
+        if (tasksError) {
+          setTasks([]);
+          setLoading(false);
+          return;
+        }
+
+        const { data: subtasksData } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', user.id)
+          .not('parent_task_id', 'is', null)
+          .order('created_at', { ascending: true });
+
+        const tasksWithSubtasks = (tasksData ?? []).map((task: Task) => ({
+          ...task,
+          subtasks: (subtasksData ?? []).filter((st: Task) => st.parent_task_id === task.id),
+        }));
+        setTasks(tasksWithSubtasks);
+      } else {
+        const { data: projectData, error: projectError } = await supabase
+          .from('projects')
+          .select('name, color')
+          .eq('id', projectId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (projectError || !projectData) {
+          setProject(null);
+          setTasks([]);
+          setLoading(false);
+          return;
+        }
+        setProject({ name: projectData.name, color: projectData.color ?? THEME.colors.gradient.blue });
+
+        const { data: tasksData, error: tasksError } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('project_id', projectId)
+          .is('parent_task_id', null)
+          .order('is_priority', { ascending: false })
+          .order('created_at', { ascending: true });
+
+        if (tasksError) {
+          setTasks([]);
+          setLoading(false);
+          return;
+        }
+
+        const { data: subtasksData } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', user.id)
+          .not('parent_task_id', 'is', null)
+          .order('created_at', { ascending: true });
+
+        const tasksWithSubtasks = (tasksData ?? []).map((task: Task) => ({
+          ...task,
+          subtasks: (subtasksData ?? []).filter((st: Task) => st.parent_task_id === task.id),
+        }));
+        setTasks(tasksWithSubtasks);
       }
-      setProject({ name: projectData.name, color: projectData.color ?? THEME.colors.gradient.blue });
-
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('project_id', projectId)
-        .is('parent_task_id', null)
-        .order('is_priority', { ascending: false })
-        .order('created_at', { ascending: true });
-
-      if (tasksError) {
-        setTasks([]);
-        setLoading(false);
-        return;
-      }
-
-      const { data: subtasksData } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .not('parent_task_id', 'is', null)
-        .order('created_at', { ascending: true });
-
-      const tasksWithSubtasks = (tasksData ?? []).map((task: Task) => ({
-        ...task,
-        subtasks: (subtasksData ?? []).filter((st: Task) => st.parent_task_id === task.id),
-      }));
-      setTasks(tasksWithSubtasks);
     } catch {
       setProject(null);
       setTasks([]);
     } finally {
       setLoading(false);
     }
-  }, [user, projectId]);
+  }, [user, projectId, isLoose]);
 
   useEffect(() => {
     loadProjectAndTasks();
   }, [loadProjectAndTasks]);
 
   const incompleteTasks = tasks.filter((t) => !t.is_completed);
+  const completedTasks = tasks.filter((t) => t.is_completed);
+  const allDone = completedTasks.length > 0 && incompleteTasks.length === 0;
+
   const getCategoryColorCallback = useCallback((category: string) => {
     const key = category.toLowerCase();
     return THEME.colors.category[key as keyof typeof THEME.colors.category] ?? THEME.colors.text.secondary;
@@ -105,6 +142,48 @@ export default function ProjectScreen() {
       return next;
     });
   }, []);
+
+  const handleToggleTask = useCallback(
+    async (taskId: string) => {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task || !user) return;
+      const newCompleted = !task.is_completed;
+      const { error } = await supabase
+        .from('tasks')
+        .update({
+          is_completed: newCompleted,
+          completed_at: newCompleted ? new Date().toISOString() : null,
+        })
+        .eq('id', taskId);
+      if (!error) loadProjectAndTasks();
+    },
+    [tasks, user, loadProjectAndTasks]
+  );
+
+  const handleDeleteTask = useCallback(
+    (task: Task) => {
+      Alert.alert(
+        'Eliminar tarea',
+        `¿Eliminar "${task.content.length > 40 ? task.content.slice(0, 40) + '…' : task.content}"?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Eliminar',
+            style: 'destructive',
+            onPress: async () => {
+              if (task.subtasks?.length) {
+                const ids = task.subtasks.map((s) => s.id);
+                await supabase.from('tasks').delete().in('id', ids);
+              }
+              const { error } = await supabase.from('tasks').delete().eq('id', task.id);
+              if (!error) loadProjectAndTasks();
+            },
+          },
+        ]
+      );
+    },
+    [loadProjectAndTasks]
+  );
 
   if (!projectId) {
     return (
@@ -144,9 +223,11 @@ export default function ProjectScreen() {
           <ChevronLeft size={24} color={THEME.colors.text.main} />
         </TouchableOpacity>
         <View style={styles.headerTextWrap}>
-          <Text style={styles.headerTitle}>Proyecto: {project.name}</Text>
-          <Text style={styles.headerSubtitle}>
-            {incompleteTasks.length} {incompleteTasks.length === 1 ? 'tarea' : 'tareas'} pendientes
+          <Text style={styles.headerTitle} numberOfLines={1}>{project.name}</Text>
+          <Text style={styles.headerSubtitle} numberOfLines={1}>
+            {allDone
+              ? `Proyecto completado ✓ · ${completedTasks.length} ${completedTasks.length === 1 ? 'tarea' : 'tareas'}`
+              : `${incompleteTasks.length} de ${tasks.length} pendientes`}
           </Text>
         </View>
       </View>
@@ -155,29 +236,66 @@ export default function ProjectScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {incompleteTasks.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>No hay tareas pendientes en este proyecto</Text>
+        {allDone && (
+          <View style={styles.completedBanner}>
+            <CheckCircle2 size={28} color={THEME.colors.semantic.success} />
+            <Text style={styles.completedBannerText}>Proyecto completado</Text>
+            <Text style={styles.completedBannerSub}>Todas las tareas con palomita ✓</Text>
           </View>
-        ) : (
-          <TaskList
-            tasks={tasks}
-            incompleteTasks={incompleteTasks}
-            expandedTasks={expandedTasks}
-            expandedDetailsTasks={expandedDetailsTasks}
-            menuOpen={menuOpen}
-            onToggleTask={async () => {}}
-            onToggleExpansion={toggleExpansion}
-            onToggleDetailsExpansion={toggleDetailsExpansion}
-            onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
-            onEditTask={() => {}}
-            onDeleteTask={() => {}}
-            getCategoryColor={getCategoryColorCallback}
-            onSubtaskToggle={() => {}}
-            getProjectInfo={() => ({ label: `Proyecto: ${project.name}`, color: project.color })}
-            hideProjectLabel={true}
-            sectionAccentColor={project.color}
-          />
+        )}
+
+        {incompleteTasks.length > 0 && (
+          <>
+            <Text style={[styles.sectionLabel, styles.sectionLabelFirst]}>Pendientes</Text>
+            <TaskList
+              tasks={tasks}
+              incompleteTasks={incompleteTasks}
+              expandedTasks={expandedTasks}
+              expandedDetailsTasks={expandedDetailsTasks}
+              menuOpen={menuOpen}
+              onToggleTask={handleToggleTask}
+              onToggleExpansion={toggleExpansion}
+              onToggleDetailsExpansion={toggleDetailsExpansion}
+              onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+              onEditTask={() => {}}
+              onDeleteTask={handleDeleteTask}
+              getCategoryColor={getCategoryColorCallback}
+              onSubtaskToggle={() => {}}
+              getProjectInfo={() => ({ label: project.name, color: project.color })}
+              hideProjectLabel={true}
+              sectionAccentColor={project.color}
+            />
+          </>
+        )}
+
+        {completedTasks.length > 0 && (
+          <>
+            <Text style={styles.sectionLabel}>Completadas ({completedTasks.length})</Text>
+            <TaskList
+              tasks={tasks}
+              incompleteTasks={completedTasks}
+              expandedTasks={expandedTasks}
+              expandedDetailsTasks={expandedDetailsTasks}
+              menuOpen={menuOpen}
+              onToggleTask={handleToggleTask}
+              onToggleExpansion={toggleExpansion}
+              onToggleDetailsExpansion={toggleDetailsExpansion}
+              onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+              onEditTask={() => {}}
+              onDeleteTask={handleDeleteTask}
+              getCategoryColor={getCategoryColorCallback}
+              onSubtaskToggle={() => {}}
+              getProjectInfo={() => ({ label: project.name, color: project.color })}
+              hideProjectLabel={true}
+              sectionAccentColor={project.color}
+            />
+          </>
+        )}
+
+        {tasks.length === 0 && (
+          <View style={styles.empty}>
+            <Text style={styles.emptyText}>Aún no hay tareas en este proyecto</Text>
+          </View>
         )}
       </ScrollView>
     </View>
@@ -208,6 +326,7 @@ const styles = StyleSheet.create({
   },
   headerTextWrap: {
     flex: 1,
+    minWidth: 0,
   },
   headerTitle: {
     ...THEME.typography.h3,
@@ -242,5 +361,37 @@ const styles = StyleSheet.create({
   emptyText: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
+  },
+  completedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    backgroundColor: THEME.colors.semantic.success + '18',
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    marginBottom: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.semantic.success + '40',
+  },
+  completedBannerText: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    flex: 1,
+  },
+  completedBannerSub: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+  },
+  sectionLabel: {
+    ...THEME.typography.small,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.xs,
+    marginTop: THEME.spacing.sm,
+  },
+  sectionLabelFirst: {
+    marginTop: 0,
   },
 });

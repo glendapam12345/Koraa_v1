@@ -13,10 +13,19 @@ import { detectCategory } from '@/lib/categoryDetection';
 import { ProjectSelector } from '@/components/projects/ProjectSelector';
 import { DateSelector } from '@/components/tasks/DateSelector';
 import { useAuth } from '@/contexts/AuthContext';
-import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic, Calendar, FolderKanban, ChevronRight } from 'lucide-react-native';
+import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic, FolderKanban, ChevronRight } from 'lucide-react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 
-// Categorías ahora son invisibles - se detectan automáticamente en lib/categoryDetection.ts
+// Categorías cuando el usuario elige "No" a proyecto (mismas que en Inicio)
+const CATEGORY_OPTIONS: { key: string; label: string }[] = [
+  { key: 'hogar', label: 'Hogar' },
+  { key: 'trabajo', label: 'Trabajo' },
+  { key: 'personal', label: 'Personal' },
+  { key: 'salud', label: 'Salud' },
+  { key: 'contenido', label: 'Contenido' },
+  { key: 'marca', label: 'Marca' },
+  { key: 'otros', label: 'Otros' },
+];
 
 export default function VaciarScreen() {
   const insets = useSafeAreaInsets();
@@ -30,16 +39,23 @@ export default function VaciarScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasCheckInToday, setHasCheckInToday] = useState<boolean | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
-  const [hasTasks, setHasTasks] = useState<boolean | null>(null);
+  const [, setHasTasks] = useState<boolean | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
   const [refreshing, setRefreshing] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [recentTaskSuggestions, setRecentTaskSuggestions] = useState<string[]>([]);
+  /** true = asignar a proyecto, false = solo categoría, null = no ha elegido */
+  const [assignToProject, setAssignToProject] = useState<boolean | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('otros');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null); // Fecha programada para la tarea
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [projectCount, setProjectCount] = useState<number | null>(null);
+  void setIsListening;
+  void setShowDatePicker;
+  void showDatePicker;
+  const [, setProjectCount] = useState<number | null>(null);
+  const [opcionesExpanded, setOpcionesExpanded] = useState(false);
   const { user } = useAuth();
 
   // Pre-llenar input si hay sugerencia desde Tips; pre-seleccionar fecha si viene desde Semana
@@ -229,20 +245,20 @@ export default function VaciarScreen() {
         return;
       }
 
-      // Detectar categoría automáticamente (invisible para el usuario)
       const detectedCategory = detectCategory(taskInput.trim());
-      
-      // Crear tarea principal
+      const categoryToSave = assignToProject === false ? selectedCategory : (detectedCategory || 'otros');
+      const projectIdToSave = assignToProject === true ? selectedProjectId : null;
+
       const { data: mainTask, error: mainTaskError } = await supabase
         .from('tasks')
         .insert({
           user_id: user.id,
           content: taskInput.trim(),
-          category: detectedCategory,
+          category: categoryToSave,
           is_priority: isPriority,
           is_completed: false,
           parent_task_id: null,
-          project_id: selectedProjectId,
+          project_id: projectIdToSave,
           scheduled_date: selectedDate,
         })
         .select()
@@ -256,35 +272,36 @@ export default function VaciarScreen() {
           // Guardar tarea principal y obtener su ID generado
           const mainTaskId = await saveTaskOffline({
             content: taskInput.trim(),
-            category: detectedCategory,
+            category: categoryToSave,
             is_priority: isPriority,
             is_completed: false,
             parent_task_id: null,
-            project_id: selectedProjectId,
-            scheduled_date: selectedDate, // Las subtareas heredan la fecha programada
+            project_id: projectIdToSave,
+            scheduled_date: selectedDate,
           });
-          
-          // Guardar subtareas offline también si existen
+
           if (hasSubtasks) {
             const validSubtasks = subtasks.filter(st => st.trim());
             for (const subtask of validSubtasks) {
-              const subtaskCategory = detectCategory(subtask.trim());
+              const stCat = detectCategory(subtask.trim()) || categoryToSave;
               await saveTaskOffline({
                 content: subtask.trim(),
-                category: subtaskCategory,
+                category: stCat,
                 is_priority: false,
                 is_completed: false,
-                parent_task_id: mainTaskId, // Usar ID de la tarea principal
-                project_id: selectedProjectId, // Las subtareas heredan el proyecto de la tarea principal
+                parent_task_id: mainTaskId,
+                project_id: projectIdToSave,
               });
             }
           }
-          
+
           setRecentTasks([taskInput.trim(), ...recentTasks.slice(0, 4)]);
           setTaskInput('');
           setIsPriority(false);
           setHasSubtasks(false);
           setSubtasks(['']);
+          setAssignToProject(null);
+          setSelectedCategory('otros');
           setSelectedProjectId(null);
           setSelectedDate(null);
           
@@ -300,7 +317,7 @@ export default function VaciarScreen() {
               .insert({
                 user_id: user.id,
                 content: taskInput.trim(),
-                category: detectedCategory,
+                category: categoryToSave,
                 is_priority: isPriority,
                 is_completed: false,
                 parent_task_id: null,
@@ -330,9 +347,11 @@ export default function VaciarScreen() {
             setIsPriority(false);
             setHasSubtasks(false);
             setSubtasks(['']);
+            setAssignToProject(null);
+            setSelectedCategory('otros');
             setSelectedProjectId(null);
             setSelectedDate(null);
-            showToast('Tarea guardada. Para usar proyectos y fechas, actualiza la base de datos (migración).', 'info');
+            showToast('Tarea guardada. Para proyectos y fechas: ejecuta la migración en Supabase (Dashboard → SQL Editor).', 'success');
             setIsSaving(false);
             return;
           }
@@ -351,11 +370,12 @@ export default function VaciarScreen() {
           const subtasksToInsert = validSubtasks.map(subtask => ({
             user_id: user.id,
             content: subtask.trim(),
-            category: detectCategory(subtask.trim()), // Detectar categoría automáticamente
-            is_priority: false, // Las subtareas no tienen prioridad independiente
+            category: detectCategory(subtask.trim()) || categoryToSave,
+            is_priority: false,
             is_completed: false,
             parent_task_id: mainTask.id,
-            scheduled_date: selectedDate, // Las subtareas heredan la fecha programada
+            project_id: projectIdToSave,
+            scheduled_date: selectedDate,
           }));
 
           const { error: subtasksError } = await supabase
@@ -379,10 +399,12 @@ export default function VaciarScreen() {
       setIsPriority(false);
       setHasSubtasks(false);
       setSubtasks(['']);
+      setAssignToProject(null);
+      setSelectedCategory('otros');
       setSelectedProjectId(null);
       setSelectedDate(null);
-      
-      // Recargar sugerencias después de agregar tarea
+
+      await loadRecentTaskSuggestions();
       await loadRecentTaskSuggestions();
       
       // Cerrar tooltip después de agregar primera tarea
@@ -557,12 +579,6 @@ export default function VaciarScreen() {
           )}
         </View>
 
-        {taskInput.trim() ? (
-          <Text style={styles.flowClarification}>
-            Esta es tu tarea. Abajo puedes asignarla a un proyecto (opcional) o agregar pasos (subtareas).
-          </Text>
-        ) : null}
-
         {/* Sugerencias de tareas recientes */}
         {recentTaskSuggestions.length > 0 && !taskInput.trim() && (
           <View style={styles.suggestionsContainer}>
@@ -585,162 +601,183 @@ export default function VaciarScreen() {
           </View>
         )}
 
-        {/* Proyecto: opcional; aclara que es asignar ESTA tarea a un proyecto o dejarla suelta. */}
-        <Text style={styles.sectionLabel}>¿Asignar esta tarea a un proyecto?</Text>
-        <Text style={styles.sectionHint}>Opcional. Si no eliges, queda como tarea suelta. Si eliges un proyecto, esta tarea se agrupa ahí.</Text>
-        {user && (
-          <ProjectSelector
-            selectedProjectId={selectedProjectId}
-            onSelect={setSelectedProjectId}
-            userId={user.id}
-            showLabel={false}
-            onBeforeOpenModal={() => {
-              Keyboard.dismiss();
-              taskInputRef.current?.blur();
-            }}
-            onError={(message) => showToast(message, 'error')}
-            onSuccess={(projectName) => showToast(`Proyecto «${projectName}» creado`, 'success')}
-          />
-        )}
+        {/* ¿Asignar a un proyecto? Sí / No */}
+        {taskInput.trim() ? (
+          <View style={styles.assignSection}>
+            <Text style={styles.assignQuestion}>¿Asignar esta tarea a un proyecto?</Text>
+            <View style={styles.assignButtonsRow}>
+              <TouchableOpacity
+                style={[styles.assignButton, styles.assignButtonYes, assignToProject === true && styles.assignButtonYesSelected]}
+                onPress={() => {
+                  setAssignToProject(true);
+                  setSelectedCategory('otros');
+                }}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Sí, asignar a un proyecto"
+              >
+                <Text style={[styles.assignButtonText, assignToProject === true ? styles.assignButtonTextSelectedYes : null]}>Sí</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.assignButton, styles.assignButtonNo, assignToProject === false && styles.assignButtonNoSelected]}
+                onPress={() => {
+                  setAssignToProject(false);
+                  setSelectedProjectId(null);
+                  setHasSubtasks(false);
+                  setSubtasks(['']);
+                }}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="No, solo categoría"
+              >
+                <Text style={[styles.assignButtonText, assignToProject === false && styles.assignButtonTextSelected]}>No</Text>
+              </TouchableOpacity>
+            </View>
 
-        {/* Recuadro: ver todos los proyectos */}
-        {user && (
+            {assignToProject === false && (
+              <View style={styles.categorySection}>
+                <Text style={styles.categorySectionLabel}>Elige categoría</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryChipsWrap}>
+                  {CATEGORY_OPTIONS.map((opt) => {
+                    const isSelected = selectedCategory === opt.key;
+                    const color = THEME.colors.category[opt.key as keyof typeof THEME.colors.category] ?? THEME.colors.text.secondary;
+                    return (
+                      <TouchableOpacity
+                        key={opt.key}
+                        style={[styles.categoryChip, isSelected && { backgroundColor: color, borderColor: color }]}
+                        onPress={() => setSelectedCategory(opt.key)}
+                        activeOpacity={0.8}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Categoría ${opt.label}${isSelected ? ', seleccionada' : ''}`}
+                      >
+                        <Text style={[styles.categoryChipText, isSelected && styles.categoryChipTextSelected]}>
+                          {opt.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+
+            {assignToProject === true && user && (
+              <View style={styles.projectBlock}>
+                <ProjectSelector
+                  selectedProjectId={selectedProjectId}
+                  onSelect={setSelectedProjectId}
+                  userId={user.id}
+                  showLabel={false}
+                  assignMode={true}
+                  onBeforeOpenModal={() => {
+                    Keyboard.dismiss();
+                    taskInputRef.current?.blur();
+                  }}
+                  onError={(message) => showToast(message, 'error')}
+                  onSuccess={(projectName) => showToast(`Proyecto «${projectName}» creado`, 'success')}
+                />
+                <TouchableOpacity
+                  style={[styles.subtasksToggle, hasSubtasks && styles.subtasksToggleActive]}
+                  onPress={() => {
+                    setHasSubtasks(!hasSubtasks);
+                    if (!hasSubtasks) setSubtasks(['']);
+                  }}
+                  activeOpacity={0.7}
+                  accessibilityRole="switch"
+                  accessibilityLabel={hasSubtasks ? 'Pasos activado' : 'Agregar pasos'}
+                  accessibilityState={{ checked: hasSubtasks }}
+                >
+                  {hasSubtasks ? <ChevronUp size={20} color={THEME.colors.gradient.blue} /> : <ChevronDown size={20} color={THEME.colors.text.secondary} />}
+                  <Text style={[styles.subtasksToggleText, hasSubtasks && styles.subtasksToggleTextActive]}>
+                    Agregar pasos (subtareas)
+                  </Text>
+                </TouchableOpacity>
+                {hasSubtasks && (
+                  <View style={styles.subtasksContainer}>
+                    {subtasks.map((subtask, index) => (
+                      <View key={index} style={styles.subtaskRow}>
+                        <View style={styles.subtaskInputContainer}>
+                          <TextInput
+                            style={styles.subtaskInput}
+                            value={subtask}
+                            onChangeText={(value) => updateSubtask(index, value)}
+                            placeholder={`Paso ${index + 1}`}
+                            placeholderTextColor={THEME.colors.text.secondary}
+                            maxLength={300}
+                          />
+                        </View>
+                        {subtasks.length > 1 && (
+                          <TouchableOpacity style={styles.removeSubtaskButton} onPress={() => removeSubtask(index)} activeOpacity={0.7}>
+                            <X size={18} color={THEME.colors.text.secondary} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    ))}
+                    <TouchableOpacity style={styles.addSubtaskButton} onPress={addSubtask} activeOpacity={0.7}>
+                      <Plus size={18} color={THEME.colors.gradient.blue} />
+                      <Text style={styles.addSubtaskText}>Agregar otro paso</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+        ) : null}
+
+        {/* Box aparte: Ver proyectos y tareas sin proyecto */}
+        {taskInput.trim() && user ? (
           <TouchableOpacity
-            style={styles.projectsCard}
+            style={styles.verProyectosBox}
             onPress={() => router.push('/proyectos')}
             activeOpacity={0.85}
             accessibilityRole="button"
-            accessibilityLabel={projectCount !== null && projectCount > 0 ? `Ver mis proyectos, ${projectCount} en total` : 'Ver mis proyectos'}
+            accessibilityLabel="Ver proyectos y tareas sin proyecto"
           >
-            <LinearGradient
-              colors={[THEME.colors.tint.blue.veryLight, THEME.colors.fill[200]]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.projectsCardGradient}
-            >
-              <FolderKanban size={24} color={THEME.colors.gradient.blue} />
-              <View style={styles.projectsCardContent}>
-                <Text style={styles.projectsCardTitle}>Mis proyectos</Text>
-                <Text style={styles.projectsCardSubtitle}>
-                  {projectCount !== null && projectCount > 0
-                    ? `${projectCount} ${projectCount === 1 ? 'proyecto' : 'proyectos'} · Ver tareas y fechas`
-                    : 'Ver todos y gestionar tareas por proyecto'}
-                </Text>
+            <View style={styles.verProyectosBoxInner}>
+              <View style={styles.verProyectosBoxIconWrap}>
+                <FolderKanban size={22} color={THEME.colors.gradient.blue} strokeWidth={1.8} />
               </View>
-              <ChevronRight size={22} color={THEME.colors.text.secondary} />
-            </LinearGradient>
+              <View style={styles.verProyectosBoxTextWrap}>
+                <Text style={styles.verProyectosBoxTitle}>Ver proyectos y tareas sin proyecto</Text>
+                <Text style={styles.verProyectosBoxHint}>Abre la lista de proyectos y tareas sueltas</Text>
+              </View>
+              <ChevronRight size={22} color={THEME.colors.gradient.blue} strokeWidth={2} />
+            </View>
           </TouchableOpacity>
-        )}
+        ) : null}
 
-        {/* Selector de Fecha */}
-        <DateSelector
-          selectedDate={selectedDate}
-          onSelect={setSelectedDate}
-        />
-
-        <TouchableOpacity
-          style={[
-            styles.priorityToggle,
-            isPriority && styles.priorityToggleActive,
-          ]}
-          onPress={() => setIsPriority(!isPriority)}
-          accessibilityRole="switch"
-          accessibilityLabel={isPriority ? "Tarea prioritaria activada" : "Tarea prioritaria desactivada"}
-          accessibilityHint="Activa o desactiva la prioridad de esta tarea"
-          accessibilityState={{ checked: isPriority }}
-          activeOpacity={0.7}
-        >
-          <Star
-            size={20}
-            color={isPriority ? THEME.colors.gradient.pink : THEME.colors.text.secondary}
-            fill={isPriority ? THEME.colors.gradient.pink : 'none'}
-          />
-          <Text style={[
-            styles.priorityToggleText,
-            isPriority && styles.priorityToggleTextActive,
-          ]}>
-            Marcar como prioridad
-          </Text>
-        </TouchableOpacity>
-
-        {/* Toggle para subtareas: pasos de esta misma tarea */}
-        <TouchableOpacity
-          style={[
-            styles.subtasksToggle,
-            hasSubtasks && styles.subtasksToggleActive,
-          ]}
-          onPress={() => {
-            setHasSubtasks(!hasSubtasks);
-            if (!hasSubtasks) {
-              setSubtasks(['']);
-            }
-          }}
-          activeOpacity={0.7}
-          accessibilityRole="switch"
-          accessibilityLabel={hasSubtasks ? "Pasos de la tarea activado" : "Agregar pasos a esta tarea"}
-          accessibilityHint="Activa para dividir esta tarea en pasos (subtareas)"
-          accessibilityState={{ checked: hasSubtasks }}
-        >
-          {hasSubtasks ? (
-            <ChevronUp size={20} color={THEME.colors.gradient.blue} />
-          ) : (
-            <ChevronDown size={20} color={THEME.colors.text.secondary} />
-          )}
-          <Text style={[
-            styles.subtasksToggleText,
-            hasSubtasks && styles.subtasksToggleTextActive,
-          ]}>
-            Agregar pasos a esta tarea (subtareas)
-          </Text>
-        </TouchableOpacity>
-
-        {/* Campos de subtareas */}
-        {hasSubtasks && (
-          <View style={styles.subtasksContainer}>
-            <Text style={styles.subtasksLabel}>
-              Pasos de esta tarea (divide en subtareas más pequeñas)
-            </Text>
-            {subtasks.map((subtask, index) => (
-              <View key={index} style={styles.subtaskRow}>
-                <View style={styles.subtaskInputContainer}>
-                  <TextInput
-                    style={styles.subtaskInput}
-                    value={subtask}
-                    onChangeText={(value) => updateSubtask(index, value)}
-                    placeholder={`Subtarea ${index + 1}`}
-                    placeholderTextColor={THEME.colors.text.secondary}
-                    maxLength={300}
-                    accessibilityLabel={`Campo de texto para subtarea ${index + 1}`}
-                    accessibilityHint="Escribe el contenido de la subtarea"
-                  />
-                </View>
-                {subtasks.length > 1 && (
-                  <TouchableOpacity
-                    style={styles.removeSubtaskButton}
-                    onPress={() => removeSubtask(index)}
-                    activeOpacity={0.7}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Eliminar subtarea ${index + 1}`}
-                    accessibilityHint="Elimina esta subtarea de la lista"
-                  >
-                    <X size={18} color={THEME.colors.text.secondary} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
+        {/* Opciones: fecha y prioridad (colapsable) */}
+        {taskInput.trim() ? (
+          <View style={styles.opcionesSection}>
             <TouchableOpacity
-              style={styles.addSubtaskButton}
-              onPress={addSubtask}
+              style={styles.opcionesHeader}
+              onPress={() => setOpcionesExpanded((e) => !e)}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="Agregar otra subtarea"
-              accessibilityHint="Agrega un nuevo campo para otra subtarea"
+              accessibilityLabel={opcionesExpanded ? 'Cerrar opciones' : 'Abrir opciones de fecha y prioridad'}
             >
-              <Plus size={18} color={THEME.colors.gradient.blue} />
-              <Text style={styles.addSubtaskText}>Agregar otra subtarea</Text>
+              <View>
+                <Text style={styles.opcionesHeaderText}>Opciones</Text>
+                <Text style={styles.opcionesHeaderHint}>Fecha, prioridad</Text>
+              </View>
+              {opcionesExpanded ? <ChevronUp size={20} color={THEME.colors.text.secondary} /> : <ChevronDown size={20} color={THEME.colors.text.secondary} />}
             </TouchableOpacity>
+            {opcionesExpanded && (
+              <View style={styles.opcionesContent}>
+                <DateSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
+                <TouchableOpacity
+                  style={[styles.priorityToggle, isPriority && styles.priorityToggleActive]}
+                  onPress={() => setIsPriority(!isPriority)}
+                  activeOpacity={0.7}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: isPriority }}
+                >
+                  <Star size={20} color={isPriority ? THEME.colors.gradient.pink : THEME.colors.text.secondary} fill={isPriority ? THEME.colors.gradient.pink : 'none'} />
+                  <Text style={[styles.priorityToggleText, isPriority && styles.priorityToggleTextActive]}>Marcar como prioridad</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
-        )}
+        ) : null}
 
         <GradientButton
           title={isSaving ? "Guardando..." : "Soltar"}
@@ -805,41 +842,168 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     marginBottom: THEME.spacing.sm,
   },
-  flowClarification: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.sm,
-    fontStyle: 'italic',
+  assignSection: {
+    marginBottom: THEME.spacing.md,
   },
-  projectsCard: {
+  assignQuestion: {
+    ...THEME.typography.body,
+    fontSize: 16,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    marginBottom: THEME.spacing.sm,
+  },
+  assignButtonsRow: {
+    flexDirection: 'row',
+    gap: THEME.spacing.sm,
+    marginBottom: THEME.spacing.md,
+  },
+  assignButton: {
+    flex: 1,
+    paddingVertical: THEME.spacing.sm + 2,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 2,
+    borderColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.fill[200],
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  assignButtonYes: {
+    borderColor: THEME.colors.gradient.blue,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+  },
+  assignButtonYesSelected: {
+    backgroundColor: THEME.colors.gradient.blue,
+    borderColor: THEME.colors.gradient.blue,
+  },
+  assignButtonNo: {
+    borderColor: THEME.colors.text.tertiary,
+    backgroundColor: THEME.colors.fill[200],
+  },
+  assignButtonNoSelected: {
+    backgroundColor: THEME.colors.text.tertiary + '20',
+    borderColor: THEME.colors.text.secondary,
+  },
+  assignButtonText: {
+    ...THEME.typography.body,
+    fontSize: 16,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.secondary,
+  },
+  assignButtonTextSelected: {
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  assignButtonTextSelectedYes: {
+    color: THEME.colors.fill[100],
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  categorySection: {
+    marginBottom: THEME.spacing.md,
+  },
+  categorySectionLabel: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.xs,
+  },
+  categoryChipsWrap: {
+    flexDirection: 'row',
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.xs,
+  },
+  categoryChip: {
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs + 2,
+    borderRadius: THEME.borderRadius.pill,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.fill[100],
+  },
+  categoryChipText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  categoryChipTextSelected: {
+    color: THEME.colors.fill[100],
+  },
+  projectBlock: {
+    marginTop: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
+  },
+  verProyectosBox: {
     marginBottom: THEME.spacing.md,
     borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.fill[100],
+    ...THEME.shadows.card,
     overflow: 'hidden',
-    ...THEME.shadows.soft,
   },
-  projectsCardGradient: {
+  verProyectosBoxInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: THEME.spacing.md,
+    paddingVertical: THEME.spacing.sm + 2,
     paddingHorizontal: THEME.spacing.md,
-    gap: THEME.spacing.sm,
-    borderWidth: 1,
-    borderColor: THEME.colors.tint.blue.border,
-    borderRadius: THEME.borderRadius.rounded,
   },
-  projectsCardContent: {
+  verProyectosBoxIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: THEME.borderRadius.standard + 2,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: THEME.spacing.sm,
+  },
+  verProyectosBoxTextWrap: {
     flex: 1,
     minWidth: 0,
   },
-  projectsCardTitle: {
+  verProyectosBoxTitle: {
     ...THEME.typography.body,
+    fontSize: 16,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
   },
-  projectsCardSubtitle: {
+  verProyectosBoxHint: {
     ...THEME.typography.small,
+    fontSize: 12,
     color: THEME.colors.text.secondary,
     marginTop: 2,
+  },
+  opcionesSection: {
+    marginBottom: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+    borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+    backgroundColor: THEME.colors.fill[200],
+  },
+  opcionesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+  },
+  opcionesHeaderText: {
+    ...THEME.typography.body,
+    fontSize: 15,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
+  },
+  opcionesHeaderHint: {
+    ...THEME.typography.caption,
+    fontSize: 12,
+    color: THEME.colors.text.tertiary,
+    marginTop: 2,
+  },
+  opcionesContent: {
+    paddingHorizontal: THEME.spacing.md,
+    paddingBottom: THEME.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.stroke[100],
   },
   inputContainer: {
     backgroundColor: THEME.colors.fill[200],

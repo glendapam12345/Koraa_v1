@@ -1,5 +1,15 @@
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  Platform,
+  Animated,
+  Easing,
+} from 'react-native';
 import { useState, useEffect, useRef } from 'react';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { X, Sparkles, CheckCircle } from 'lucide-react-native';
@@ -29,6 +39,15 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
   const [secondsRemaining, setSecondsRemaining] = useState(4);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const waveAnim = useRef(new Animated.Value(0)).current;
+
+  /** Azules de la paleta del tema: profundo → claro (efecto “agua” en el anillo). */
+  const waterColors = [
+    THEME.colors.chartPalette[3],
+    THEME.colors.gradient.blue,
+    THEME.colors.chartPalette[0],
+    THEME.colors.fill[100],
+  ] as const;
 
   useEffect(() => {
     if (!visible) {
@@ -41,8 +60,39 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
       setBreathPhase('inhale');
       setCycleCount(0);
       setSecondsRemaining(4);
+      waveAnim.setValue(0);
     }
-  }, [visible]);
+  }, [visible, waveAnim]);
+
+  useEffect(() => {
+    if (!isActive || isCompleted) {
+      waveAnim.setValue(0);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(waveAnim, {
+          toValue: 1,
+          duration: 2600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(waveAnim, {
+          toValue: 0,
+          duration: 2600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [isActive, isCompleted, waveAnim]);
+
+  const waveTranslateY = waveAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [5, -5],
+  });
 
   useEffect(() => {
     if (!isActive || isCompleted) return;
@@ -63,9 +113,8 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
     if (currentCycle >= TOTAL_CYCLES) {
       if (Platform.OS !== 'web') {
         try {
-          const Haptics = require('expo-haptics');
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        } catch (_) {}
+        } catch {}
       }
       setIsCompleted(true);
       completedTimeoutRef.current = setTimeout(() => {
@@ -76,25 +125,22 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
     setBreathPhase('inhale');
     if (Platform.OS !== 'web') {
       try {
-        const Haptics = require('expo-haptics');
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      } catch (_) {}
+      } catch {}
     }
     timeoutRef.current = setTimeout(() => {
       setBreathPhase('hold');
       if (Platform.OS !== 'web') {
         try {
-          const Haptics = require('expo-haptics');
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        } catch (_) {}
+        } catch {}
       }
       timeoutRef.current = setTimeout(() => {
         setBreathPhase('exhale');
         if (Platform.OS !== 'web') {
           try {
-            const Haptics = require('expo-haptics');
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          } catch (_) {}
+          } catch {}
         }
         timeoutRef.current = setTimeout(() => {
           const next = currentCycle + 1;
@@ -115,9 +161,8 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
     setCycleCount(0);
     if (Platform.OS !== 'web') {
       try {
-        const Haptics = require('expo-haptics');
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      } catch (_) {}
+      } catch {}
     }
     runCycle(0);
   };
@@ -171,12 +216,24 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
                     {/* Anillo exterior (borde + pista) */}
                     <View style={[styles.ringOuter, { width: CIRCLE_SIZE, height: CIRCLE_SIZE, borderRadius: CIRCLE_SIZE / 2 }]}>
                       <View style={[styles.ringFillClip, { height: CIRCLE_SIZE * fillProgress }]}>
-                        <LinearGradient
-                          colors={[THEME.colors.surfaceOverlay.strong, THEME.colors.surfaceOverlay.light]}
-                          start={{ x: 0.5, y: 1 }}
-                          end={{ x: 0.5, y: 0 }}
-                          style={[styles.ringFill, { width: CIRCLE_SIZE, height: CIRCLE_SIZE, borderRadius: CIRCLE_SIZE / 2 }]}
-                        />
+                        <Animated.View
+                          style={[
+                            styles.waterFillWrap,
+                            {
+                              height: CIRCLE_SIZE * 1.12,
+                              width: CIRCLE_SIZE,
+                              transform: [{ translateY: waveTranslateY }],
+                            },
+                          ]}
+                        >
+                          <LinearGradient
+                            colors={[...waterColors]}
+                            locations={[0, 0.28, 0.62, 1]}
+                            start={{ x: 0.5, y: 1 }}
+                            end={{ x: 0.5, y: 0 }}
+                            style={[styles.ringFill, { width: CIRCLE_SIZE, height: CIRCLE_SIZE * 1.12, borderRadius: CIRCLE_SIZE / 2 }]}
+                          />
+                        </Animated.View>
                       </View>
                     </View>
                     {/* Centro: cristal + número o ícono */}
@@ -185,10 +242,10 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
                         {!isActive ? (
                           <Sparkles size={76} color={THEME.colors.fill[100]} strokeWidth={1.5} />
                         ) : (
-                          <>
-                            <Text style={styles.timerText}>{secondsRemaining}</Text>
+                          <View style={styles.timerBlock}>
+                            <Text style={styles.timerText} numberOfLines={1}>{secondsRemaining}</Text>
                             <Text style={styles.timerLabel}>seg</Text>
-                          </>
+                          </View>
                         )}
                       </View>
                     </View>
@@ -321,6 +378,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
   },
+  waterFillWrap: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    overflow: 'hidden',
+  },
   ringFill: {
     position: 'absolute',
     bottom: 0,
@@ -333,32 +397,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   centerGlass: {
-    width: 136,
-    height: 136,
-    borderRadius: 68,
+    minWidth: 140,
+    minHeight: 140,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     backgroundColor: THEME.colors.surfaceOverlay.light,
     borderWidth: 1,
     borderColor: THEME.colors.surfaceOverlay.strong,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     ...THEME.shadows.soft,
     shadowColor: THEME.shadows.shadowColorDark,
     shadowOpacity: 0.12,
     shadowRadius: 16,
   },
+  timerBlock: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 88,
+  },
   timerText: {
-    fontSize: 72,
+    fontSize: 64,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.fill[100],
     lineHeight: 72,
     letterSpacing: -1,
+    minHeight: 72,
+    textAlign: 'center',
   },
   timerLabel: {
     ...THEME.typography.body,
-    fontSize: 15,
+    fontSize: 14,
     color: THEME.colors.onGradientMuted,
     fontFamily: THEME.fonts.heading.medium,
-    marginTop: -4,
+    marginTop: 2,
     letterSpacing: 0.5,
   },
   hint: {

@@ -21,7 +21,6 @@ function getNextDays(count: number): string[] {
 }
 
 function formatDateLabel(dateStr: string): string {
-  const d = new Date(dateStr + 'T12:00:00');
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
   if (dateStr === todayStr) return 'Hoy';

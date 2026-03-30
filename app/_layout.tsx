@@ -15,6 +15,7 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { logger } from '@/lib/logger';
 import { useNotifications, scheduleDailyReminder } from '@/hooks/useNotifications';
 
@@ -54,19 +55,41 @@ export default function RootLayout() {
 
   const router = useRouter();
   useEffect(() => {
-    const handleUrl = async (url: string | null) => {
-      if (!url || !url.includes('reset-password')) return;
+    const applySessionFromUrl = async (url: string | null) => {
+      if (!url) return;
       const hashIndex = url.indexOf('#');
       if (hashIndex === -1) return;
       const params = new URLSearchParams(url.slice(hashIndex + 1));
       const access_token = params.get('access_token');
       const refresh_token = params.get('refresh_token');
       if (!access_token || !refresh_token) return;
+
       const { error } = await supabase.auth.setSession({ access_token, refresh_token });
-      if (!error) router.replace('/reset-password');
+      if (error) {
+        logger.error('No se pudo aplicar sesión desde el enlace del correo:', error.message);
+        return;
+      }
+
+      // Evitar reprocesar el hash al recargar (web)
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+      }
+
+      // Recuperación de contraseña vs confirmación de email (ambos llevan tokens en #)
+      if (url.includes('reset-password')) {
+        router.replace('/reset-password');
+      } else {
+        router.replace('/(tabs)');
+      }
     };
-    Linking.getInitialURL().then(handleUrl);
-    const sub = Linking.addEventListener('url', ({ url }) => handleUrl(url));
+
+    // Web: el enlace de Supabase suele abrir el navegador en la raíz con #access_token=...
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      void applySessionFromUrl(window.location.href);
+    }
+
+    void Linking.getInitialURL().then(applySessionFromUrl);
+    const sub = Linking.addEventListener('url', ({ url }) => void applySessionFromUrl(url));
     return () => sub.remove();
   }, [router]);
 
@@ -75,23 +98,26 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <SafeAreaProvider>
-        <View style={styles.root}>
-          <Stack screenOptions={{ headerShown: false }}>
+    <GestureHandlerRootView style={styles.root}>
+      <AuthProvider>
+        <SafeAreaProvider>
+          <View style={styles.root}>
+            <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="auth" />
             <Stack.Screen name="reset-password" />
+            <Stack.Screen name="help" />
             <Stack.Screen name="onboarding" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="project/[id]" />
             <Stack.Screen name="proyectos" />
             <Stack.Screen name="+not-found" />
           </Stack>
-          <StatusBar style="auto" />
-        </View>
-      </SafeAreaProvider>
-    </AuthProvider>
+            <StatusBar style="auto" />
+          </View>
+        </SafeAreaProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
 

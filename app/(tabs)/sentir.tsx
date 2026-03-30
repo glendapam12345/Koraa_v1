@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -27,23 +27,32 @@ export default function SentirScreen() {
   const [selectedEmotion, setSelectedEmotion] = useState<string>('');
   const [hasTasks, setHasTasks] = useState<boolean | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
-  const [hasCheckInToday, setHasCheckInToday] = useState<boolean | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const [, setHasCheckInToday] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    checkTasks();
-    checkTodayCheckIn();
+  const checkTasks = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_completed', false)
+        .limit(1);
+
+      if (error) {
+        logger.error('Error verificando tareas:', error);
+        return;
+      }
+
+      setHasTasks((data?.length || 0) > 0);
+    } catch (error) {
+      console.error('Error inesperado:', error);
+    }
   }, []);
 
-  // Recargar banner cuando la pantalla recibe foco
-  useFocusEffect(
-    useCallback(() => {
-      checkTasks();
-      checkTodayCheckIn();
-    }, [])
-  );
-
-  const checkTodayCheckIn = async () => {
+  const checkTodayCheckIn = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -58,45 +67,28 @@ export default function SentirScreen() {
 
       if (error) {
         logger.error('Error verificando check-in:', error);
-        // No mostrar toast para errores no críticos de verificación
         return;
       }
 
       const hasCheckIn = !!data;
       setHasCheckInToday(hasCheckIn);
-      
-      // Mostrar tooltip solo si hay tareas pero no hay check-in hoy (primera vez del día)
-      if (hasTasks && !hasCheckIn) {
-        setShowTooltip(true);
-      }
+      setShowTooltip((prev) => (hasTasks && !hasCheckIn ? true : prev));
     } catch (error) {
       console.error('Error inesperado:', error);
     }
-  };
+  }, [hasTasks]);
 
-  const checkTasks = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  useEffect(() => {
+    checkTasks();
+    checkTodayCheckIn();
+  }, [checkTasks, checkTodayCheckIn]);
 
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('is_completed', false)
-        .limit(1);
-
-      if (error) {
-        logger.error('Error verificando tareas:', error);
-        // No mostrar toast para errores no críticos de verificación
-        return;
-      }
-
-      setHasTasks((data?.length || 0) > 0);
-    } catch (error) {
-      console.error('Error inesperado:', error);
-    }
-  };
+  useFocusEffect(
+    useCallback(() => {
+      checkTasks();
+      checkTodayCheckIn();
+    }, [checkTasks, checkTodayCheckIn])
+  );
 
   const handleContinue = async () => {
     if (!selectedEmotion) return;

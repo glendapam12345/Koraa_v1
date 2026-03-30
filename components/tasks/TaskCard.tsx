@@ -1,7 +1,22 @@
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { RectButton, Swipeable } from 'react-native-gesture-handler';
 import { THEME } from '@/constants/theme';
 import { getCategoryEmoji } from '@/constants/emojis';
-import { ChevronDown, ChevronRight, MoreVertical, FolderKanban, FileText } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, Check, Pencil, Trash2, Calendar } from 'lucide-react-native';
+
+function formatTaskDate(iso: string | null | undefined): string {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    const day = d.getDate();
+    const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const month = months[d.getMonth()];
+    return `${day} ${month}`;
+  } catch {
+    return '';
+  }
+}
 
 export interface Task {
   id: string;
@@ -14,6 +29,7 @@ export interface Task {
   subtasks?: Task[];
   parent_task_id: string | null;
   project_id?: string | null;
+  scheduled_date?: string | null;
 }
 
 interface TaskCardProps {
@@ -89,22 +105,67 @@ export function TaskCard({
   /** En modo uniforme: solo mostrar leyenda si pertenece a un proyecto; si no, nada */
   const showProjectLegend = uniformCard && projectName != null && projectName !== '';
   const showLabel = !uniformCard && !hideProjectLabel && projectLabel != null && projectLabel !== '';
-  const isMiLista = showLabel && (projectLabel === 'Mi lista' || projectLabel === 'Tareas sueltas' || projectLabel === 'Suelta' || projectLabel === 'Independiente');
+  const isLooseTask = showLabel && (projectLabel === 'Mi lista' || projectLabel === 'Tareas sueltas' || projectLabel === 'Suelta' || projectLabel === 'Independiente');
+  /** Texto claro para el usuario: siempre "Tareas sueltas" o "Proyecto: [nombre]" */
+  const contextDisplayText = isLooseTask ? 'Tareas sueltas' : (projectLabel ?? '');
   const showVerProyecto = Boolean(projectId && onPressProject);
   const hasDetails = onToggleDetailsExpand && (task.category || task.is_priority || projectLabel);
   const categoryEmoji = getCategoryEmoji(task.category);
-  const sectionEmoji = isMiLista ? '📋' : '📁';
+  const sectionEmoji = isLooseTask ? '📋' : '📁';
+  const scheduledLabel = task.scheduled_date ? formatTaskDate(task.scheduled_date) : '';
+  const completedLabel = task.is_completed && task.completed_at ? formatTaskDate(task.completed_at) : '';
+  const showDate = scheduledLabel || completedLabel;
 
   const cardLeftBorderColor = !uniformCard && !hideProjectLabel && isProjectTask && projectLabelColor
     ? projectLabelColor
     : undefined;
   const cardLeftBorderWidth = cardLeftBorderColor ? 5 : 0;
 
+  const swipeableRef = useRef<Swipeable>(null);
+
+  const handleSwipeAction = (fn: () => void) => {
+    swipeableRef.current?.close();
+    fn();
+  };
+
+  const renderRightActions = () => (
+    <View style={styles.swipeActionsRow}>
+      <RectButton
+        style={[styles.swipeActionBtn, styles.swipeActionBtnWide, styles.swipeActionComplete]}
+        onPress={() => handleSwipeAction(onToggle)}
+      >
+        <Check size={22} color={THEME.colors.fill[100]} strokeWidth={2.5} />
+        <Text style={styles.swipeActionLabel} numberOfLines={1}>{task.is_completed ? 'Pendiente' : 'Completar'}</Text>
+      </RectButton>
+      <RectButton
+        style={[styles.swipeActionBtn, styles.swipeActionEdit]}
+        onPress={() => handleSwipeAction(onEditTask)}
+      >
+        <Pencil size={20} color={THEME.colors.fill[100]} strokeWidth={2} />
+        <Text style={styles.swipeActionLabel} numberOfLines={1}>Editar</Text>
+      </RectButton>
+      <RectButton
+        style={[styles.swipeActionBtn, styles.swipeActionDelete]}
+        onPress={() => handleSwipeAction(onDeleteTask)}
+      >
+        <Trash2 size={20} color={THEME.colors.fill[100]} strokeWidth={2} />
+        <Text style={styles.swipeActionLabel} numberOfLines={1}>Eliminar</Text>
+      </RectButton>
+    </View>
+  );
+
   return (
     <View style={styles.taskWrapper}>
-      <View
-        style={[
-          styles.taskCard,
+      <Swipeable
+        ref={swipeableRef}
+        renderRightActions={renderRightActions}
+        friction={2}
+        rightThreshold={40}
+        overshootRight={false}
+      >
+        <View
+          style={[
+            styles.taskCard,
           task.is_completed && styles.taskCardCompleted,
           cardLeftBorderColor ? [styles.taskCardProject, { borderLeftColor: cardLeftBorderColor, borderLeftWidth: cardLeftBorderWidth }] : styles.taskCardSuelta,
           uniformCard && styles.taskCardAligned,
@@ -141,8 +202,10 @@ export function TaskCard({
             style={[styles.taskCheckbox, uniformCard && styles.taskCheckboxAligned]}
             onPress={onToggle}
             activeOpacity={0.7}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: task.is_completed }}
+            accessibilityLabel={task.is_completed ? 'Marcar como pendiente' : 'Marcar como completada'}
           >
             {task.is_completed && <View style={styles.taskCheckboxChecked} />}
           </TouchableOpacity>
@@ -177,6 +240,14 @@ export function TaskCard({
           </View>
           {uniformCard ? (
             <View style={styles.metaRowSimple}>
+              {showDate ? (
+                <View style={styles.dateChip}>
+                  <Calendar size={12} color={THEME.colors.text.secondary} />
+                  <Text style={styles.dateChipText} numberOfLines={1}>
+                    {task.is_completed && completedLabel ? `Completada el ${completedLabel}` : scheduledLabel ? `Para el ${scheduledLabel}` : ''}
+                  </Text>
+                </View>
+              ) : null}
               {showProjectLegend && (
                 <Text style={styles.metaLine} numberOfLines={1}>
                   {projectName}
@@ -209,27 +280,40 @@ export function TaskCard({
             </View>
           ) : (
             <View style={styles.metaRow}>
+              {showLabel && (
+                isLooseTask ? (
+                  <View style={[styles.contextBadge, styles.contextBadgeSueltas]}>
+                    <Text style={styles.contextBadgeEmoji}>{sectionEmoji}</Text>
+                    <Text style={styles.contextBadgeTextSueltas} numberOfLines={1}>
+                      Tareas sueltas
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={[styles.contextBadge, { borderLeftColor: projectLabelColor ?? THEME.colors.gradient.blue, backgroundColor: (projectLabelColor ?? THEME.colors.gradient.blue) + '18' }]}>
+                    <Text style={styles.contextBadgeEmoji}>{sectionEmoji}</Text>
+                    <Text
+                      style={[styles.contextBadgeText, { color: projectLabelColor ?? THEME.colors.gradient.blue }]}
+                      numberOfLines={1}
+                    >
+                      {contextDisplayText}
+                    </Text>
+                  </View>
+                )
+              )}
+              {showDate ? (
+                <View style={styles.dateChip}>
+                  <Calendar size={12} color={THEME.colors.text.secondary} />
+                  <Text style={styles.dateChipText} numberOfLines={1}>
+                    {task.is_completed && completedLabel ? `Completada el ${completedLabel}` : scheduledLabel ? `Para el ${scheduledLabel}` : ''}
+                  </Text>
+                </View>
+              ) : null}
               {hasSubtasks && (
                 <View style={styles.subtasksPill}>
                   <Text style={styles.subtasksPillText}>
                     {completedSubtasks}/{totalSubtasks}
                   </Text>
                 </View>
-              )}
-              {showLabel && (
-                isMiLista ? (
-                  <Text style={styles.sueltaLabel}>Suelta</Text>
-                ) : (
-                  <View style={[styles.projectBadge, styles.projectBadgeProyecto, { borderLeftColor: projectLabelColor ?? THEME.colors.gradient.blue, backgroundColor: (projectLabelColor ?? THEME.colors.gradient.blue) + '18' }]}>
-                    <Text style={styles.projectBadgeEmoji}>{sectionEmoji}</Text>
-                    <Text
-                      style={[styles.projectBadgeText, styles.projectBadgeTextProyecto, { color: projectLabelColor ?? THEME.colors.gradient.blue }]}
-                      numberOfLines={1}
-                    >
-                      {projectLabel}
-                    </Text>
-                  </View>
-                )
               )}
               {hasProjectSteps && onToggleProjectSteps && (
                 <TouchableOpacity
@@ -298,29 +382,8 @@ export function TaskCard({
             </View>
           )}
         </View>
-
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => {
-            Alert.alert(
-              'Opciones de la tarea',
-              task.content.length > 50 ? `${task.content.slice(0, 50)}…` : task.content,
-              [
-                { text: 'Cancelar', style: 'cancel' },
-                { text: 'Editar', onPress: onEditTask },
-                { text: 'Eliminar', style: 'destructive', onPress: onDeleteTask },
-              ],
-              { cancelable: true, onDismiss: onMenuPress }
-            );
-          }}
-          activeOpacity={0.7}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          accessibilityRole="button"
-          accessibilityLabel="Más opciones: editar o eliminar"
-        >
-          <MoreVertical size={20} color={THEME.colors.text.secondary} />
-        </TouchableOpacity>
       </View>
+      </Swipeable>
 
       {expandedDetails && hasDetails && (
         <View style={styles.detailsPanel}>
@@ -344,20 +407,20 @@ export function TaskCard({
               </View>
             </View>
           )}
-          {projectLabel && (
+          {(projectLabel || contextDisplayText) && (
             <View style={styles.detailsRow}>
               <Text style={styles.detailsLabel}>Contexto</Text>
               <View
                 style={[
                   styles.detailsChip,
-                  { backgroundColor: (projectLabelColor ?? THEME.colors.gradient.blue) + '28' },
+                  { backgroundColor: (isLooseTask ? THEME.colors.text.secondary : (projectLabelColor ?? THEME.colors.gradient.blue)) + '28' },
                 ]}
               >
                 <Text
-                  style={[styles.detailsChipText, { color: projectLabelColor ?? THEME.colors.gradient.blue }]}
+                  style={[styles.detailsChipText, { color: isLooseTask ? THEME.colors.text.secondary : (projectLabelColor ?? THEME.colors.gradient.blue) }]}
                   numberOfLines={1}
                 >
-                  {projectLabel}
+                  {contextDisplayText}
                 </Text>
               </View>
             </View>
@@ -437,6 +500,41 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginBottom: THEME.spacing.sm,
   },
+  swipeActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    borderTopRightRadius: THEME.borderRadius.rounded,
+    borderBottomRightRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+  },
+  swipeActionBtn: {
+    minWidth: 88,
+    width: 92,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: 8,
+  },
+  swipeActionBtnWide: {
+    minWidth: 98,
+    width: 102,
+  },
+  swipeActionComplete: {
+    backgroundColor: THEME.colors.semantic.success,
+  },
+  swipeActionEdit: {
+    backgroundColor: THEME.colors.gradient.blue,
+  },
+  swipeActionDelete: {
+    backgroundColor: THEME.colors.semantic.danger,
+  },
+  swipeActionLabel: {
+    fontSize: 12,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.fill[100],
+    textAlign: 'center',
+  },
   taskCard: {
     backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.rounded,
@@ -476,6 +574,34 @@ const styles = StyleSheet.create({
   sueltaLabel: {
     ...THEME.typography.small,
     fontSize: 11,
+    color: THEME.colors.text.secondary,
+  },
+  contextBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: THEME.borderRadius.standard,
+    borderLeftWidth: 3,
+  },
+  contextBadgeSueltas: {
+    borderLeftColor: THEME.colors.text.tertiary,
+    backgroundColor: THEME.colors.fill[200],
+  },
+  contextBadgeEmoji: {
+    fontSize: 12,
+  },
+  contextBadgeText: {
+    ...THEME.typography.small,
+    fontSize: 12,
+    fontFamily: THEME.fonts.heading.medium,
+    maxWidth: 140,
+  },
+  contextBadgeTextSueltas: {
+    ...THEME.typography.small,
+    fontSize: 12,
+    fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.secondary,
   },
   perteneceLabel: {
@@ -563,6 +689,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: THEME.fonts.heading.medium,
     maxWidth: 80,
+  },
+  dateChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dateChipText: {
+    ...THEME.typography.small,
+    fontSize: 11,
+    color: THEME.colors.text.secondary,
   },
   metaRow: {
     flexDirection: 'row',
@@ -848,13 +984,5 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     fontSize: 12,
     fontFamily: THEME.fonts.heading.medium,
-  },
-  menuButton: {
-    padding: THEME.spacing.sm,
-    marginLeft: THEME.spacing.xs,
-    minWidth: THEME.sizes.touchTarget,
-    minHeight: THEME.sizes.touchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

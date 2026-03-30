@@ -137,16 +137,49 @@ export function useTaskActions({
               }
             }
 
+            // Si era un paso (subtask) y lo acabamos de completar, ver si todos los pasos están hechos → completar tarea padre
+            if (isSubtask && parentTaskId && newCompletedState) {
+              const { data: siblingSubtasks } = await supabase
+                .from('tasks')
+                .select('id, is_completed')
+                .eq('parent_task_id', parentTaskId);
+              const allStepsComplete =
+                siblingSubtasks &&
+                siblingSubtasks.length > 0 &&
+                siblingSubtasks.every((s: { is_completed: boolean }) => s.is_completed);
+              if (allStepsComplete) {
+                const completedAt = new Date().toISOString();
+                const { error: parentError } = await supabase
+                  .from('tasks')
+                  .update({ is_completed: true, completed_at: completedAt })
+                  .eq('id', parentTaskId);
+                if (!parentError) {
+                  setTasks((prev: Task[]) =>
+                    prev.map((t: Task) =>
+                      t.id === parentTaskId
+                        ? { ...t, is_completed: true, completed_at: completedAt }
+                        : t
+                    )
+                  );
+                  showToast('¡Todos los pasos completados!', 'success');
+                  if (Platform.OS !== 'web') {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  }
+                }
+              }
+            }
+
             if (backgroundLoadTimeoutRef.current) {
               clearTimeout(backgroundLoadTimeoutRef.current);
             }
 
+            // Refrescar lista tras un retraso para dar tiempo al backend a persistir y evitar que la tarea reaparezca como pendiente
             backgroundLoadTimeoutRef.current = setTimeout(() => {
               if (!isLoadingTasksRef.current) {
                 loadTasks();
               }
               backgroundLoadTimeoutRef.current = null;
-            }, 1000);
+            }, 2000);
           }
         } catch (error) {
           logger.error('Error inesperado al actualizar:', error);

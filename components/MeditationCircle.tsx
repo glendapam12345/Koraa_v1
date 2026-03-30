@@ -51,6 +51,7 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
       setCycleCount(0);
       setSecondsRemaining(4);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- breatheScale, progress, scale are refs
   }, [visible]);
 
   // Contador de segundos

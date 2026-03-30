@@ -377,3 +377,14 @@ export function generatePrioritizationExplanation(
   
   return { message, reasoning, suggestion };
 }
+
+/** Textos cortos para la UI “cómo prioriza Koraa”. */
+export function getPrioritizationExplainerBullets(): string[] {
+  return [
+    'Tu energía (1–5) limita cuántas tareas te mostramos como foco del día: menos energía, menos carga visible.',
+    'El tiempo que marcaste en Sentir evita llenarte de tareas que no caben en tu día.',
+    'Tu enfoque hoy favorece tareas simples o más profundas, según cómo te concentras.',
+    'Tu emoción inclina el plan hacia cosas administrativas rápidas o creativas, según el momento.',
+    'El orden de la lista y las prioridades ordenan qué atacar primero; el resto sigue en la app (pestaña Todas o Semana).',
+  ];
+}

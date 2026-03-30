@@ -1,17 +1,23 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Dimensions } from 'react-native';
-import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { generatePersonalizedRecommendations, type Recommendation, type UserPreferences, type CheckInContext } from '@/lib/personalizedRecommendations';
 import { supabase } from '@/lib/supabase';
+import { fetchProfilePreferences } from '@/lib/profilePreferences';
 import { logger } from '@/lib/logger';
-import { X, Sparkles, ChevronUp } from 'lucide-react-native';
+import { Sparkles, ChevronRight } from 'lucide-react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_PEEK = 24;
-const CARD_WIDTH = SCREEN_WIDTH - THEME.spacing.lg * 2 - CARD_PEEK;
-const CARD_GAP = THEME.spacing.sm;
+/** Mismo valor para: margen izquierdo del carrusel, hueco entre tarjetas y “peek” de la siguiente (ritmo uniforme). */
+const CAROUSEL_GUTTER = THEME.spacing.lg;
+// W + gutter + peek = screen − padding; con gutter = peek = CAROUSEL_GUTTER y padding horizontal = CAROUSEL_GUTTER → W = screen − 3*gutter
+const CARD_WIDTH = SCREEN_WIDTH - 3 * CAROUSEL_GUTTER;
+const CARD_GAP = CAROUSEL_GUTTER;
 const SNAP_INTERVAL = CARD_WIDTH + CARD_GAP;
+/** Altura fija para que todas las tarjetas del carrusel se vean iguales. */
+const CARD_HEIGHT = 200;
 
 const CATEGORY_KEYS = ['bienestar', 'ejercicio', 'productividad', 'salud mental', 'social', 'creatividad', 'descanso', 'nutrición'] as const;
 
@@ -126,30 +132,27 @@ interface RecommendationsSectionProps {
 }
 
 export function RecommendationsSection({ userId }: RecommendationsSectionProps) {
+  const router = useRouter();
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRecommendation, setSelectedRecommendation] = useState<Recommendation | null>(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
   const [userCategoryOrder, setUserCategoryOrder] = useState<string[]>([]);
 
-  useEffect(() => {
-    loadRecommendations();
-  }, [userId]);
-
-  const loadRecommendations = async () => {
+  const loadRecommendations = useCallback(async () => {
     try {
       setLoading(true);
 
-      // Cargar perfil del usuario
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('age, favorite_activities, interests, other_preferences')
-        .eq('id', userId)
-        .single();
+      const { data: prefs, error: profileError, extendedColumnsAvailable } =
+        await fetchProfilePreferences(userId);
 
       if (profileError) {
         logger.error('Error loading profile for recommendations:', profileError);
+      } else if (!extendedColumnsAvailable && prefs) {
+        logger.warn(
+          'Perfil sin columnas de personalización. Opcional: ejecuta en Supabase 20260321140000_ensure_profiles_personalization_columns.sql',
+        );
       }
+
+      const profileData = prefs;
 
       // Cargar check-in de hoy
       const today = new Date().toISOString().split('T')[0];
@@ -166,15 +169,15 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
         logger.error('Error loading check-in for recommendations:', checkInError);
       }
 
-      const activities = profileData?.favorite_activities || [];
-      const interests = profileData?.interests || [];
+      const activities = profileData?.favorite_activities ?? [];
+      const interests = profileData?.interests ?? [];
       setUserCategoryOrder(interestsToCategoryOrder(activities, interests));
 
       const preferences: UserPreferences = {
-        age: profileData?.age,
+        age: profileData?.age ?? undefined,
         favorite_activities: activities,
         interests,
-        other_preferences: profileData?.other_preferences || {},
+        other_preferences: profileData?.other_preferences ?? {},
       };
 
       const checkIn: CheckInContext = checkInData
@@ -199,11 +202,17 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    loadRecommendations();
+  }, [loadRecommendations]);
 
   const handleRecommendationPress = (recommendation: Recommendation) => {
-    setSelectedRecommendation(recommendation);
-    setShowDetailModal(true);
+    router.push({
+      pathname: '/(tabs)/vaciar',
+      params: { suggestion: recommendation.title },
+    });
   };
 
   if (loading) {
@@ -245,7 +254,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
     })
     .slice(0, 3);
 
-  const filledEntries: Array<[string, Recommendation[]]> = [...categoryEntries];
+  const filledEntries: [string, Recommendation[]][] = [...categoryEntries];
   const existingCats = new Set(filledEntries.map(([c]) => c));
   for (const cat of userCategoryOrder) {
     if (filledEntries.length >= 3) break;
@@ -295,100 +304,61 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
               onPress={() => handleRecommendationPress(mainRecommendation)}
               activeOpacity={0.88}
               accessibilityRole="button"
-              accessibilityLabel={`${illustration.title}: ${mainRecommendation.title}`}
+              accessibilityLabel={`Agregar como tarea: ${mainRecommendation.title}`}
             >
               <LinearGradient
                 colors={illustration.gradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.horizontalCardGradient}
+                style={[styles.horizontalCardGradient, { height: CARD_HEIGHT }]}
               >
                 <View style={styles.horizontalCardHeader}>
                   <View style={styles.cardHeaderContent}>
                     <Text style={styles.emoji}>{illustration.emoji}</Text>
                     <Text style={styles.categoryTitle}>{illustration.title}</Text>
                   </View>
-                  <ChevronUp size={18} color={THEME.colors.onGradientMuted} />
+                  <View style={styles.verMasChip}>
+                    <Text style={styles.verMasChipText}>A tareas</Text>
+                    <ChevronRight size={14} color={THEME.colors.onGradientMuted} />
+                  </View>
                 </View>
-                <Text style={styles.horizontalCardTitle} numberOfLines={2}>
-                  {mainRecommendation.title}
-                </Text>
-                <Text style={styles.horizontalCardPreview} numberOfLines={3}>
-                  {mainRecommendation.message}
-                </Text>
-                {categoryRecs.length > 1 && (
-                  <Text style={styles.horizontalCardMore}>
-                    +{categoryRecs.length - 1} más en esta categoría
+                <View style={styles.horizontalCardBody}>
+                  <Text style={styles.horizontalCardTitle} numberOfLines={2}>
+                    {mainRecommendation.title}
                   </Text>
-                )}
+                  <Text style={styles.horizontalCardPreview} numberOfLines={3}>
+                    {mainRecommendation.message}
+                  </Text>
+                </View>
+                <View style={styles.horizontalCardFooter}>
+                  {categoryRecs.length > 1 ? (
+                    <Text style={styles.horizontalCardMore}>
+                      +{categoryRecs.length - 1} más en esta categoría
+                    </Text>
+                  ) : (
+                    <Text style={styles.horizontalCardMorePlaceholder}> </Text>
+                  )}
+                </View>
               </LinearGradient>
             </TouchableOpacity>
           );
         })}
       </ScrollView>
-
-      {/* Modal de detalle */}
-      <Modal
-        visible={showDetailModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowDetailModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {selectedRecommendation && (
-              <>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Recomendación</Text>
-                  <TouchableOpacity
-                    onPress={() => setShowDetailModal(false)}
-                    style={styles.closeButton}
-                    accessibilityRole="button"
-                    accessibilityLabel="Cerrar"
-                  >
-                    <X size={24} color={THEME.colors.text.main} />
-                  </TouchableOpacity>
-                </View>
-
-                <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
-                  <View style={styles.modalBody}>
-                    <Text style={styles.modalEmoji}>
-                      {CATEGORY_ILLUSTRATIONS[getRecommendationCategory(selectedRecommendation)]?.emoji || '✨'}
-                    </Text>
-                    <Text style={styles.modalRecommendationTitle}>
-                      {selectedRecommendation.title}
-                    </Text>
-                    <Text style={styles.modalRecommendationMessage}>
-                      {selectedRecommendation.message}
-                    </Text>
-                    {selectedRecommendation.suggestion && (
-                      <View style={styles.suggestionBox}>
-                        <Text style={styles.suggestionLabel}>Sugerencia:</Text>
-                        <Text style={styles.suggestionText}>{selectedRecommendation.suggestion}</Text>
-                      </View>
-                    )}
-                  </View>
-                </ScrollView>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: THEME.spacing.xl,
-    marginBottom: THEME.spacing.lg,
+    marginTop: THEME.spacing.sm,
+    marginBottom: THEME.spacing.sm,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: THEME.spacing.lg,
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.xs,
   },
   sectionTitle: {
     ...THEME.typography.h2,
@@ -407,8 +377,18 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.lg,
   },
   horizontalScrollContent: {
-    paddingHorizontal: THEME.spacing.lg,
-    paddingBottom: THEME.spacing.sm,
+    paddingHorizontal: CAROUSEL_GUTTER,
+    paddingBottom: THEME.spacing.xs,
+  },
+  verMasChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  verMasChipText: {
+    ...THEME.typography.small,
+    fontSize: 11,
+    color: THEME.colors.onGradientMuted,
   },
   horizontalCardWrap: {
     borderRadius: THEME.borderRadius.rounded,
@@ -416,9 +396,18 @@ const styles = StyleSheet.create({
     ...THEME.shadows.soft,
   },
   horizontalCardGradient: {
-    padding: THEME.spacing.lg,
-    height: 200,
+    padding: THEME.spacing.md,
+    minWidth: 0,
     justifyContent: 'space-between',
+  },
+  horizontalCardBody: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    minHeight: 0,
+  },
+  horizontalCardFooter: {
+    minHeight: 20,
+    justifyContent: 'flex-end',
   },
   horizontalCardHeader: {
     flexDirection: 'row',
@@ -444,7 +433,10 @@ const styles = StyleSheet.create({
     color: THEME.colors.onGradient,
     opacity: 0.75,
     fontSize: 11,
-    marginTop: THEME.spacing.xs,
+  },
+  horizontalCardMorePlaceholder: {
+    fontSize: 11,
+    opacity: 0,
   },
   verMasRecommendations: {
     flexDirection: 'row',
@@ -566,73 +558,5 @@ const styles = StyleSheet.create({
     color: THEME.colors.onGradient,
     opacity: 0.85,
     fontSize: 12,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: THEME.colors.overlay,
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: THEME.colors.fill[100],
-    borderTopLeftRadius: THEME.borderRadius.rounded,
-    borderTopRightRadius: THEME.borderRadius.rounded,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: THEME.spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.fill[200],
-  },
-  modalTitle: {
-    ...THEME.typography.h2,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  closeButton: {
-    padding: THEME.spacing.xs,
-  },
-  modalScroll: {
-    flex: 1,
-  },
-  modalBody: {
-    padding: THEME.spacing.lg,
-    alignItems: 'center',
-  },
-  modalEmoji: {
-    fontSize: 64,
-    marginBottom: THEME.spacing.md,
-  },
-  modalRecommendationTitle: {
-    ...THEME.typography.h2,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-    textAlign: 'center',
-    marginBottom: THEME.spacing.md,
-  },
-  modalRecommendationMessage: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    lineHeight: 24,
-    textAlign: 'center',
-    marginBottom: THEME.spacing.lg,
-  },
-  suggestionBox: {
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    width: '100%',
-  },
-  suggestionLabel: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    fontFamily: THEME.fonts.heading.medium,
-    marginBottom: THEME.spacing.xs,
-  },
-  suggestionText: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
   },
 });
