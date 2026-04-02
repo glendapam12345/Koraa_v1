@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/constants/theme';
-import { Home, Edit3, Heart, User, Calendar } from 'lucide-react-native';
+import { Home, Edit3, Heart, User, Calendar, Lightbulb } from 'lucide-react-native';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -62,18 +62,21 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="tips"
+        options={{
+          title: 'Consejos',
+          tabBarIcon: ({ size, color }) => (
+            <Lightbulb size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="yo"
         options={{
           title: 'Yo',
           tabBarIcon: ({ size, color }) => (
             <User size={size} color={color} />
           ),
-        }}
-      />
-      <Tabs.Screen
-        name="tips"
-        options={{
-          href: null, // Ocultar esta tab del tab bar
         }}
       />
     </Tabs>

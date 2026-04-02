@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
@@ -41,6 +42,7 @@ const CATEGORY_COLORS = {
 };
 
 export default function TipsScreen() {
+  const insets = useSafeAreaInsets();
   const [todayMood, setTodayMood] = useState<string>('');
   const [energyLevel, setEnergyLevel] = useState<number>(0);
   const [availableTime, setAvailableTime] = useState<string>('');
@@ -175,7 +177,7 @@ export default function TipsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Cargando...</Text>
         </View>
@@ -186,7 +188,10 @@ export default function TipsScreen() {
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + THEME.spacing.md, paddingBottom: insets.bottom + THEME.spacing.xl },
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -203,13 +208,29 @@ export default function TipsScreen() {
             <View style={styles.emptyIconContainer}>
               <Lightbulb size={64} color={THEME.colors.gradient.blue} />
             </View>
-            <Text style={styles.emptyTitle}>Tips personalizados</Text>
+            <Text style={styles.emptyTitle}>Consejos personalizados</Text>
             <Text style={styles.emptyMessage}>
-              Haz tu check-in diario en <Text style={styles.emptyAccent}>Sentir</Text> para ver tips personalizados según cómo te sientes hoy
+              Haz tu check-in diario en <Text style={styles.emptyAccent}>Sentir</Text> para ver consejos según cómo te sientes hoy
             </Text>
+            <TouchableOpacity
+              style={styles.emptyCta}
+              onPress={() => router.push('/(tabs)/sentir')}
+              activeOpacity={0.88}
+              accessibilityRole="button"
+              accessibilityLabel="Ir a Sentir para hacer check-in"
+            >
+              <LinearGradient
+                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.emptyCtaGradient}
+              >
+                <Text style={styles.emptyCtaText}>Ir a Sentir</Text>
+              </LinearGradient>
+            </TouchableOpacity>
             <View style={styles.emptyActionContainer}>
               <Text style={styles.emptyActionText}>
-                Ve a la tab <Text style={styles.emptyAccent}>Sentir</Text> y registra cómo te sientes
+                También puedes abrir la pestaña <Text style={styles.emptyAccent}>Sentir</Text> abajo y registrar cómo te sientes
               </Text>
             </View>
           </View>
@@ -296,7 +317,7 @@ export default function TipsScreen() {
             <View style={styles.footerMessage}>
               <Heart size={20} color={THEME.colors.gradient.pink} />
               <Text style={styles.footerText}>
-                Estos tips están personalizados para tu estado de hoy. Recuerda que puedes actualizar cómo te sientes en cualquier momento.
+                Estos consejos están personalizados para tu estado de hoy. Puedes actualizar cómo te sientes en Sentir cuando quieras.
               </Text>
             </View>
           </>
@@ -305,8 +326,8 @@ export default function TipsScreen() {
 
       <Tooltip
         visible={showTooltip}
-        title="Tips personalizados"
-        message="Los tips cambian según cómo te sientes hoy. Haz tu check-in diario para ver tips personalizados para tu estado emocional actual."
+        title="Consejos"
+        message="Los consejos cambian según tu check-in de hoy. Completa Sentir cada día para ver sugerencias acordes a tu estado."
         onClose={() => setShowTooltip(false)}
       />
     </View>
@@ -362,6 +383,25 @@ const styles = StyleSheet.create({
   },
   emptyAccent: {
     color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  emptyCta: {
+    alignSelf: 'stretch',
+    marginHorizontal: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.pill,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  emptyCtaGradient: {
+    paddingVertical: THEME.spacing.sm + 4,
+    paddingHorizontal: THEME.spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyCtaText: {
+    ...THEME.typography.body,
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
   emptyActionContainer: {

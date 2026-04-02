@@ -1078,7 +1078,7 @@ export default function ProfileScreen() {
               </View>
 
               <Text style={styles.formHelpText}>
-                Estos datos nos ayudan a darte recomendaciones más personalizadas en Tips
+                Estos datos nos ayudan a darte recomendaciones más personalizadas en Consejos
               </Text>
             </ScrollView>
 

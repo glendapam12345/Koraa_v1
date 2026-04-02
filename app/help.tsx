@@ -60,9 +60,9 @@ const FAQ_ITEMS: FaqItem[] = [
   },
   {
     id: 'tips',
-    question: '¿Qué son Tips?',
+    question: '¿Qué es la pestaña Consejos?',
     answer:
-      'Sugerencias personalizadas según tu perfil y hábitos. Cuanto más completes Sentir y tu perfil, más relevantes pueden ser las recomendaciones.',
+      'Sugerencias y tips según tu estado del día (Sentir) y tu perfil. Cuanto más completes el check-in y tu perfil, más relevantes serán. La encuentras en la barra inferior junto a Semana y Yo.',
   },
 ];
 
