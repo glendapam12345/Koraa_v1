@@ -231,6 +231,13 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
   const sectionHeader = () => (
     <View style={styles.simpleHeader}>
       <Text style={styles.simpleHeaderTitle}>Recomendaciones</Text>
+      <LinearGradient
+        colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.simpleHeaderAccent}
+      />
+      <Text style={styles.simpleHeaderSub}>Para tu día</Text>
     </View>
   );
 
@@ -249,7 +256,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
               style={[styles.skeletonCardWrap, { width: CARD_WIDTH, marginRight: CARD_GAP }]}
             >
               <LinearGradient
-                colors={[THEME.colors.fill[200], THEME.colors.fill[100]]}
+                colors={[THEME.colors.tint.blue.veryFaint, THEME.colors.fill[100]]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={[styles.skeletonCardInner, { height: CARD_HEIGHT }]}
@@ -443,6 +450,20 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
+    letterSpacing: 0.2,
+  },
+  simpleHeaderAccent: {
+    marginTop: 8,
+    width: 44,
+    height: 3,
+    borderRadius: 2,
+  },
+  simpleHeaderSub: {
+    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 18,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.accent.italic,
   },
   skeletonCardWrap: {
     borderRadius: THEME.borderRadius.rounded,
@@ -527,9 +548,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.surfaceOverlay.medium,
+    backgroundColor: THEME.colors.surfaceOverlay.strong,
     borderWidth: 1,
-    borderColor: THEME.colors.surfaceOverlay.border,
+    borderColor: THEME.colors.surfaceOverlay.borderMedium,
   },
   verMasChipText: {
     ...THEME.typography.small,
@@ -544,7 +565,7 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: THEME.colors.surfaceOverlay.borderStrong,
+    borderColor: THEME.colors.surfaceOverlay.borderMedium,
     ...THEME.shadows.soft,
   },
   horizontalCardGradient: {
@@ -637,11 +658,11 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: THEME.colors.surfaceOverlay.medium,
+    backgroundColor: THEME.colors.surfaceOverlay.strong,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: THEME.colors.surfaceOverlay.border,
+    borderColor: THEME.colors.surfaceOverlay.borderStrong,
   },
   cardHeaderTextStack: {
     flex: 1,
