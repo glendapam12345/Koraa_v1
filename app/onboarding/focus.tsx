@@ -225,7 +225,7 @@ export default function FocusScreen() {
         console.log('Error programando notificaciones (no crítico):', err);
       }
 
-      // Redirigir directamente a Accionar (pantalla principal) para ver prioridades
+      // Redirigir a tabs (Inicio) para ver prioridades
       try {
         router.replace('/(tabs)');
       } catch (navError) {

@@ -318,7 +318,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
                     <Text style={styles.categoryTitle}>{illustration.title}</Text>
                   </View>
                   <View style={styles.verMasChip}>
-                    <Text style={styles.verMasChipText}>A tareas</Text>
+                    <Text style={styles.verMasChipText}>A Tareas</Text>
                     <ChevronRight size={14} color={THEME.colors.onGradientMuted} />
                   </View>
                 </View>

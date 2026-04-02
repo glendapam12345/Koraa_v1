@@ -120,7 +120,7 @@ export default function SentirScreen() {
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel="Paso 1: Agrega tus tareas primero"
-            accessibilityHint="Abre la pantalla Vaciar para agregar tus tareas antes de hacer el check-in"
+            accessibilityHint="Abre la pestaña Tareas para agregar lo pendiente antes del check-in"
           >
             <LinearGradient
               colors={[THEME.colors.gradient.pink, THEME.colors.gradient.blue]}
@@ -134,7 +134,7 @@ export default function SentirScreen() {
                   Paso 1: Agrega tus tareas primero
                 </Text>
                 <Text style={styles.noTasksBannerSubtext}>
-                  Ve a &quot;Vaciar&quot; para agregar lo que necesitas hacer hoy, luego regresa aquí
+                  Ve a la pestaña Tareas para agregar lo que necesitas hacer hoy, luego regresa aquí
                 </Text>
               </View>
             </LinearGradient>

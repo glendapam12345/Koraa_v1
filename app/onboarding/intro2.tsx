@@ -22,7 +22,7 @@ export default function Intro2Screen() {
           Solo escribe lo que necesitas soltar.
         </Text>
 
-        {/* Preview visual de la pantalla Vaciar */}
+        {/* Preview visual de la pestaña Tareas */}
         <View style={styles.previewContainer}>
           <View style={styles.previewCard}>
             <View style={styles.previewHeader}>

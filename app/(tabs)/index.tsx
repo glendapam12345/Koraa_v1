@@ -537,8 +537,8 @@ export default function TodayScreen() {
       return {
         title: 'Tu plan de hoy',
         message: 'Sigue estos pasos para organizar tu día:',
-        suggestion: '1. Vaciar → 2. Sentir → 3. Accionar',
-        reasoning: 'Primero agrega tus tareas en "Vaciar", luego registra cómo te sientes en "Sentir" para que Koraa priorice automáticamente tus tareas aquí.',
+        suggestion: '1. Tareas → 2. Sentir → 3. Inicio',
+        reasoning: 'Primero agrega tus tareas en la pestaña Tareas, luego registra cómo te sientes en Sentir para que Koraa priorice automáticamente aquí en Inicio.',
       };
     }
 
@@ -831,7 +831,7 @@ export default function TodayScreen() {
             onPress={() => router.push('/(tabs)/vaciar')}
             activeOpacity={0.88}
             accessibilityRole="button"
-            accessibilityLabel="Ir a Vaciar para agregar tareas"
+            accessibilityLabel="Ir a la pestaña Tareas para agregar tareas"
           >
             <LinearGradient
               colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -1242,7 +1242,7 @@ export default function TodayScreen() {
                     <>
                       <Text style={styles.emptyTasksTitle}>Todo al día</Text>
                       <Text style={styles.emptyTasksInCardText}>
-                        No tienes tareas pendientes. Si añades algo en Vaciar, aparecerá aquí priorizado según cómo te sientas.
+                        No tienes tareas pendientes. Si añades algo en Tareas, aparecerá aquí priorizado según cómo te sientas.
                       </Text>
                     </>
                   ) : taskFilter === 'hoy' &&
@@ -1251,7 +1251,7 @@ export default function TodayScreen() {
                     <>
                       <Text style={styles.emptyTasksTitle}>Nada programado para hoy</Text>
                       <Text style={styles.emptyTasksInCardText}>
-                        Tienes tareas en otros días. Cambia a «Todas» para verlas o añade algo para hoy desde Vaciar.
+                        Tienes tareas en otros días. Cambia a «Todas» para verlas o añade algo para hoy desde la pestaña Tareas.
                       </Text>
                       <View style={styles.emptyTasksActions}>
                         <TouchableOpacity
@@ -1269,13 +1269,13 @@ export default function TodayScreen() {
                     <>
                       <Text style={styles.emptyTasksTitle}>Tu lista empieza aquí</Text>
                       <Text style={styles.emptyTasksInCardText}>
-                        Captura tareas en segundos en la pestaña Vaciar. Koraa las ordenará según tu check-in en Sentir.
+                        Captura tareas en segundos en la pestaña Tareas. Koraa las ordenará según tu check-in en Sentir.
                       </Text>
                     </>
                   )}
                   <View style={styles.emptyTasksCta}>
                     <GradientButton
-                      title="Ir a Vaciar"
+                      title="Ir a Tareas"
                       onPress={() => router.push('/(tabs)/vaciar')}
                     />
                   </View>
@@ -1373,7 +1373,7 @@ export default function TodayScreen() {
                   accessibilityLabel="Agregar más tareas"
                 >
                   <Plus size={16} color={THEME.colors.gradient.blue} />
-                  <Text style={styles.agregarMasHint}>Agregar más · pestaña Vaciar</Text>
+                  <Text style={styles.agregarMasHint}>Agregar más · pestaña Tareas</Text>
                 </TouchableOpacity>
               )}
             </View>

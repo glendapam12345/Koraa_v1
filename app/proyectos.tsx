@@ -190,7 +190,7 @@ export default function ProyectosScreen() {
               onPress={() => router.push('/(tabs)/vaciar')}
               activeOpacity={0.88}
               accessibilityRole="button"
-              accessibilityLabel="Agregar proyecto o tarea, ir a Vaciar"
+              accessibilityLabel="Agregar proyecto o tarea, ir a la pestaña Tareas"
             >
               <View style={styles.addProjectIconWrap}>
                 <Plus size={22} color={THEME.colors.gradient.blue} strokeWidth={2.2} />
@@ -198,7 +198,7 @@ export default function ProyectosScreen() {
               <View style={styles.addProjectTextWrap}>
                 <Text style={styles.addProjectTitle}>Agregar proyectos o tareas</Text>
                 <Text style={styles.addProjectHint}>
-                  En Vaciar escribe una tarea y asigna proyecto (o crea uno nuevo) para verlo aquí.
+                  En Tareas escribe una tarea y asigna proyecto (o crea uno nuevo) para verlo aquí.
                 </Text>
               </View>
               <ChevronRight size={20} color={THEME.colors.gradient.blue} />

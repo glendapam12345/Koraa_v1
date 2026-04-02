@@ -41,7 +41,7 @@ export function QuickOnboardingModal({ visible, onClose }: QuickOnboardingModalP
             <View style={styles.step}>
               <Text style={styles.stepNumber}>1</Text>
               <View style={styles.stepContent}>
-                <Text style={styles.stepTitle}>Vaciar</Text>
+                <Text style={styles.stepTitle}>Tareas</Text>
                 <Text style={styles.stepDescription}>
                   Agrega todas tus tareas sin pensar en el orden
                 </Text>
@@ -61,7 +61,7 @@ export function QuickOnboardingModal({ visible, onClose }: QuickOnboardingModalP
             <View style={styles.step}>
               <Text style={styles.stepNumber}>3</Text>
               <View style={styles.stepContent}>
-                <Text style={styles.stepTitle}>Accionar</Text>
+                <Text style={styles.stepTitle}>Inicio</Text>
                 <Text style={styles.stepDescription}>
                   Koraa priorizará tus tareas automáticamente
                 </Text>

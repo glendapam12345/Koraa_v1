@@ -45,7 +45,7 @@ Uses 8-point system: 8px, 16px, 24px, 32px, 48px
 
 ### Main Tabs
 - **Hoy**: Today's prioritized tasks based on check-in
-- **Vaciar**: Brain dump for capturing thoughts and tasks
+- **Tareas** (`vaciar.tsx`): captura rápida, proyectos y fechas; en la barra se muestra como «Tareas»
 - **Sentir**: Daily emotional check-in
 - **Yo**: Profile and settings
 

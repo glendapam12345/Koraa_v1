@@ -36,9 +36,9 @@ const FAQ_ITEMS: FaqItem[] = [
   },
   {
     id: 'vaciar',
-    question: '¿Para qué sirve Vaciar?',
+    question: '¿Para qué sirve la pestaña Tareas?',
     answer:
-      'Para volcar tareas rápido, sin fricción. Lo que captures ahí puedes organizarlo después en proyectos o verlo priorizado en Inicio según tu check-in.',
+      'Ahí capturas y organizas lo pendiente (volcar la mente, asignar proyecto o fecha). Lo que guardes se prioriza en Inicio según tu check-in en Sentir.',
   },
   {
     id: 'hoy',

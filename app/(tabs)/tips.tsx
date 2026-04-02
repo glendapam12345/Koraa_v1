@@ -249,7 +249,7 @@ export default function TipsScreen() {
                         <TouchableOpacity
                           style={styles.suggestionButton}
                           onPress={() => {
-                            // Navegar a Vaciar con la sugerencia pre-rellenada
+                            // Navegar a Tareas con la sugerencia pre-rellenada
                             router.push({
                               pathname: '/(tabs)/vaciar',
                               params: { suggestion: rec.suggestion },

@@ -182,7 +182,7 @@ export default function CheckInSummaryScreen() {
           <View style={styles.noTasksCard}>
             <Text style={styles.noTasksText}>
               No hay tareas para priorizar aún.{'\n'}
-              Agrega tareas en &quot;Vaciar&quot; para verlas aquí.
+              Agrega tareas en la pestaña Tareas para verlas aquí.
             </Text>
           </View>
         )}

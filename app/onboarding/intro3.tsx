@@ -33,7 +33,7 @@ export default function Intro3Screen() {
               <Text style={styles.flowStepNumberText}>1</Text>
             </View>
             <View style={styles.flowStepContent}>
-              <Text style={styles.flowStepTitle}>Vaciar</Text>
+              <Text style={styles.flowStepTitle}>Tareas</Text>
               <Text style={styles.flowStepDesc}>Escribe tus tareas</Text>
             </View>
           </View>

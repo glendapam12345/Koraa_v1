@@ -285,7 +285,7 @@ export function RedistributeWorkloadModal({
                       </View>
                     ) : projects.length === 0 ? (
                       <Text style={styles.hint}>
-                        Aún no tienes proyectos en la lista. Crea uno al guardar una tarea desde Vaciar (asigna nombre y color) y vuelve aquí para repartir sus tareas.
+                        Aún no tienes proyectos en la lista. Crea uno al guardar una tarea desde la pestaña Tareas (asigna nombre y color) y vuelve aquí para repartir sus tareas.
                       </Text>
                     ) : (
                       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>

@@ -36,7 +36,7 @@ Koraa is a mobile-first wellness productivity app that prioritizes tasks based o
 │   ├── help.tsx            # FAQ, legal links, soporte (ruta /help)
 │   ├── (tabs)/             # Tab navigation group
 │   │   ├── index.tsx       # "Hoy" - Today's prioritized tasks
-│   │   ├── vaciar.tsx      # "Vaciar" - Brain dump for tasks
+│   │   ├── vaciar.tsx      # Tab "Tareas" - captura y asignación de tareas
 │   │   ├── sentir.tsx      # "Sentir" - Daily emotional check-in
 │   │   └── yo.tsx          # "Yo" - Profile and settings
 │   ├── onboarding/         # Onboarding flow screens

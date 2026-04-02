@@ -27,7 +27,7 @@ export default function HowItWorksScreen() {
           <View style={styles.stepContent}>
             <View style={styles.stepHeader}>
               <PenTool size={24} color={THEME.colors.gradient.blue} />
-              <Text style={styles.stepTitle}>Vaciar</Text>
+              <Text style={styles.stepTitle}>Tareas</Text>
             </View>
             <Text style={styles.stepDescription}>
               Escribe todas tus tareas sin pensar en categorías o prioridades. Solo suelta lo que tienes en mente.

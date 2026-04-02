@@ -8,7 +8,7 @@ export function FlowGuideCard() {
       <View style={styles.flowSteps}>
         <View style={styles.flowStep}>
           <Text style={styles.flowStepNumber}>1</Text>
-          <Text style={styles.flowStepText}>Vaciar</Text>
+          <Text style={styles.flowStepText}>Tareas</Text>
           <Text style={styles.flowStepDesc}>Agrega tus tareas</Text>
         </View>
         <Text style={styles.flowArrowText}>→</Text>
