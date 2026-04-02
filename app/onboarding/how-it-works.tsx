@@ -1,11 +1,33 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { useState } from 'react';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { ArrowRight, PenTool, Heart, Target } from 'lucide-react-native';
+import { useAuth } from '@/contexts/AuthContext';
+import { markOnboardingCompleted } from '@/lib/onboardingGate';
 
 export default function HowItWorksScreen() {
+  const { user } = useAuth();
+  const [saving, setSaving] = useState(false);
+
+  const handleContinue = async () => {
+    if (user) {
+      setSaving(true);
+      const { error } = await markOnboardingCompleted(user.id);
+      setSaving(false);
+      if (error) {
+        Alert.alert(
+          'No se pudo guardar',
+          'Tu progreso no se registró. Revisa tu conexión e inténtalo de nuevo.',
+        );
+        return;
+      }
+    }
+    router.push('/auth');
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView 
@@ -135,10 +157,14 @@ export default function HowItWorksScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton
-          title="Entendido, continuar →"
-          onPress={() => router.push('/auth')}
-        />
+        {saving ? (
+          <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
+        ) : (
+          <GradientButton
+            title="Entendido, continuar →"
+            onPress={handleContinue}
+          />
+        )}
       </View>
     </View>
   );

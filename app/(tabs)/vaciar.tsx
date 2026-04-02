@@ -9,6 +9,7 @@ import { Toast } from '@/components/Toast';
 import { FlowIndicator } from '@/components/FlowIndicator';
 import { supabase, getErrorMessage, isNetworkError, getSchemaSetupMessage } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
+import { track } from '@/lib/analytics';
 import { detectCategory } from '@/lib/categoryDetection';
 import { ProjectSelector } from '@/components/projects/ProjectSelector';
 import { DateSelector } from '@/components/tasks/DateSelector';
@@ -26,6 +27,22 @@ const CATEGORY_OPTIONS: { key: string; label: string }[] = [
   { key: 'marca', label: 'Marca' },
   { key: 'otros', label: 'Otros' },
 ];
+
+function trackTaskCreated(args: {
+  priority: boolean;
+  projectId: string | null;
+  scheduledDate: string | null;
+  hasSubtasks: boolean;
+  offline?: boolean;
+}) {
+  void track('task_created', {
+    priority: args.priority,
+    has_project: Boolean(args.projectId),
+    has_date: Boolean(args.scheduledDate),
+    has_subtasks: args.hasSubtasks,
+    ...(args.offline !== undefined ? { offline: args.offline } : {}),
+  });
+}
 
 export default function VaciarScreen() {
   const insets = useSafeAreaInsets();
@@ -312,7 +329,15 @@ export default function VaciarScreen() {
           setSelectedCategory('otros');
           setSelectedProjectId(null);
           setSelectedDate(null);
-          
+
+          trackTaskCreated({
+            priority: isPriority,
+            projectId: projectIdToSave,
+            scheduledDate: selectedDate,
+            hasSubtasks: hasSubtasks && subtasks.some((st) => st.trim()),
+            offline: true,
+          });
+
           showToast('Tarea guardada offline. Se sincronizará cuando haya conexión.', 'info');
           setIsSaving(false);
           return;
@@ -359,6 +384,14 @@ export default function VaciarScreen() {
             setSelectedCategory('otros');
             setSelectedProjectId(null);
             setSelectedDate(null);
+
+            trackTaskCreated({
+              priority: isPriority,
+              projectId: projectIdToSave,
+              scheduledDate: selectedDate,
+              hasSubtasks: hasSubtasks && subtasks.some((st) => st.trim()),
+            });
+
             showToast('Tarea guardada. Para proyectos y fechas: ejecuta la migración en Supabase (Dashboard → SQL Editor).', 'success');
             setIsSaving(false);
             return;
@@ -401,6 +434,13 @@ export default function VaciarScreen() {
           }
         }
       }
+
+      trackTaskCreated({
+        priority: isPriority,
+        projectId: projectIdToSave,
+        scheduledDate: selectedDate,
+        hasSubtasks: hasSubtasks && subtasks.some((st) => st.trim()),
+      });
 
       setRecentTasks([taskInput.trim(), ...recentTasks.slice(0, 4)]);
       setTaskInput('');

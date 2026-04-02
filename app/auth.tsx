@@ -6,6 +6,7 @@ import { GradientButton } from '@/components/GradientButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Sparkles } from 'lucide-react-native';
+import { getPostAuthRoute } from '@/lib/onboardingGate';
 
 export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -25,8 +26,9 @@ export default function AuthScreen() {
         const {
           data: { session },
         } = await supabase.auth.getSession();
-        if (session) {
-          router.replace('/(tabs)');
+        if (session?.user) {
+          const next = await getPostAuthRoute(session.user.id);
+          router.replace(next);
         }
       } catch (err) {
         console.error('[Auth Screen] Error comprobando sesión:', err);
@@ -148,7 +150,15 @@ export default function AuthScreen() {
           setError(getAuthErrorMessage({ message: error.message, code: (error as { code?: string }).code }));
         } else {
           console.log('[Auth Screen] Inicio de sesión exitoso');
-          router.replace('/(tabs)');
+          const {
+            data: { user: signedUser },
+          } = await supabase.auth.getUser();
+          if (signedUser) {
+            const next = await getPostAuthRoute(signedUser.id);
+            router.replace(next);
+          } else {
+            router.replace('/(tabs)');
+          }
         }
       }
     } catch (err: unknown) {

@@ -330,6 +330,10 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 Opcional (pantalla **Ayuda** → enlaces legales): `EXPO_PUBLIC_PRIVACY_POLICY_URL`, `EXPO_PUBLIC_TERMS_OF_SERVICE_URL`. Ver [KORAA_HELP_AND_LEGAL_URLS.md](development_guidelines/learnings/KORAA_HELP_AND_LEGAL_URLS.md).
 
+Medición de producto (tabla `app_events`, `lib/analytics.ts`): [KORAA_ANALYTICS_PHASE_D.md](development_guidelines/delivered/KORAA_ANALYTICS_PHASE_D.md). Opcional: `EXPO_PUBLIC_ANALYTICS_ENABLED=false`.
+
+Onboarding obligatorio y tabs con sesión: [onboarding_gate_and_tabs_auth.md](development_guidelines/delivered/onboarding_gate_and_tabs_auth.md).
+
 ### Design System
 
 - **Colors**: White backgrounds, blue-to-pink gradients, subtle grays for text

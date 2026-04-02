@@ -248,7 +248,7 @@ export default function ProfileScreen() {
 
   const handleSignOut = async () => {
     await signOut();
-    router.replace('/onboarding/welcome');
+    router.replace('/auth');
   };
 
   const handleChangePassword = async () => {

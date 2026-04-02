@@ -1,27 +1,47 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { THEME } from '@/constants/theme';
 import { logger } from '@/lib/logger';
+import { getPostAuthRoute } from '@/lib/onboardingGate';
 
 export default function IndexScreen() {
   const { user, loading } = useAuth();
+  const navigatedRef = useRef(false);
 
   useEffect(() => {
-    if (!loading) {
-      // Pequeño delay para asegurar que la navegación funcione correctamente
-      const timer = setTimeout(() => {
-        if (user) {
-          router.replace('/(tabs)');
-        } else {
-          // Sin sesión: ir a login (evita confusión con onboarding sin cuenta)
-          router.replace('/auth');
-        }
-      }, 100);
+    navigatedRef.current = false;
+  }, [user?.id]);
 
-      return () => clearTimeout(timer);
-    }
+  useEffect(() => {
+    if (loading) return;
+
+    const run = async () => {
+      if (navigatedRef.current) return;
+
+      if (!user) {
+        navigatedRef.current = true;
+        router.replace('/auth');
+        return;
+      }
+
+      try {
+        const next = await getPostAuthRoute(user.id);
+        navigatedRef.current = true;
+        router.replace(next);
+      } catch (e) {
+        logger.debug('Index routing:', e);
+        navigatedRef.current = true;
+        router.replace('/(tabs)');
+      }
+    };
+
+    const t = setTimeout(() => {
+      void run();
+    }, 50);
+
+    return () => clearTimeout(t);
   }, [user, loading]);
 
   // Timeout de seguridad: si loading tarda más de 10 segundos, redirigir

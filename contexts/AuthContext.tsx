@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { createURL } from 'expo-linking';
 import { supabase, canReachSupabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
+import { track } from '@/lib/analytics';
 
 type AuthContextType = {
   session: Session | null;
@@ -78,6 +79,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const needsEmailConfirmation = Boolean(data?.user && !data.session);
 
+    // app_events requiere sesión (RLS): solo registramos alta si ya hay sesión activa.
+    if (!error && data?.session) {
+      void track('auth_sign_up', { email_confirmation_pending: false });
+    }
+
     return { error, needsEmailConfirmation };
   };
 
@@ -126,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.session) {
         logger.info('Sesión iniciada exitosamente para usuario:', data.user?.id);
         logger.info('Email del usuario:', data.user?.email);
+        void track('auth_sign_in');
       } else {
         logger.warn('No se obtuvo sesión después de signIn');
       }
@@ -140,6 +147,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       logger.info('Cerrando sesión...');
+      if (user) {
+        void track('auth_sign_out');
+      }
       const { error } = await supabase.auth.signOut();
       if (error) {
         logger.error('Error al cerrar sesión:', error);

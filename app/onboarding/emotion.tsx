@@ -17,7 +17,6 @@ const EMOTIONS = [
 
 export default function EmotionScreen() {
   const params = useLocalSearchParams();
-  const isFromSentir = params.from === 'sentir';
   const preSelectedEmotion = params.emotion as string | undefined;
   const [selectedEmotion, setSelectedEmotion] = useState<string>(preSelectedEmotion || '');
 
@@ -29,9 +28,12 @@ export default function EmotionScreen() {
 
   const handleContinue = () => {
     if (selectedEmotion) {
+      const rawFrom = typeof params.from === 'string' ? params.from : '';
+      const fromParam =
+        rawFrom === 'sentir' ? 'sentir' : rawFrom === 'quick' ? 'quick' : 'onboarding';
       router.push({
         pathname: '/onboarding/energy',
-        params: { emotion: selectedEmotion, from: isFromSentir ? 'sentir' : 'onboarding' },
+        params: { emotion: selectedEmotion, from: fromParam },
       });
     }
   };

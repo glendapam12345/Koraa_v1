@@ -7,6 +7,7 @@ import { Toast } from '@/components/Toast';
 import { Focus } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { track } from '@/lib/analytics';
 
 const FOCUS_OPTIONS = [
   { id: 'Muy distraída', label: 'Muy distraída' },
@@ -176,6 +177,8 @@ export default function FocusScreen() {
           focus_level: selectedFocus,
         }, { onConflict: 'user_id,date' });
 
+      let checkInSavedOffline = false;
+
       // Si hay error de red, guardar offline
       if (checkInError) {
         const isNetworkError = checkInError.message?.toLowerCase().includes('network') || 
@@ -192,6 +195,7 @@ export default function FocusScreen() {
             available_time: time,
             focus_level: selectedFocus,
           });
+          checkInSavedOffline = true;
           showToast('Check-in guardado offline. Se sincronizará cuando haya conexión.', 'info');
         } else {
           console.error('Error guardando check-in:', checkInError);
@@ -224,6 +228,11 @@ export default function FocusScreen() {
       } catch (err) {
         console.log('Error programando notificaciones (no crítico):', err);
       }
+
+      void track('check_in_completed', {
+        source: typeof from === 'string' && from.length > 0 ? from : 'onboarding',
+        offline: checkInSavedOffline,
+      });
 
       // Redirigir a tabs (Inicio) para ver prioridades
       try {

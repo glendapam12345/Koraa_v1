@@ -18,6 +18,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { logger } from '@/lib/logger';
 import { useNotifications, scheduleDailyReminder } from '@/hooks/useNotifications';
+import { AnalyticsScreenTracker } from '@/components/AnalyticsScreenTracker';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -101,6 +102,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={styles.root}>
       <AuthProvider>
         <SafeAreaProvider>
+          <AnalyticsScreenTracker />
           <View style={styles.root}>
             <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
