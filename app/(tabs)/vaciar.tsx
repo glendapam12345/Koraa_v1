@@ -29,7 +29,11 @@ const CATEGORY_OPTIONS: { key: string; label: string }[] = [
 
 export default function VaciarScreen() {
   const insets = useSafeAreaInsets();
-  const { suggestion, date: dateParam } = useLocalSearchParams<{ suggestion?: string; date?: string }>();
+  const { suggestion, date: dateParam, projectId: projectIdParam } = useLocalSearchParams<{
+    suggestion?: string;
+    date?: string;
+    projectId?: string;
+  }>();
   const [taskInput, setTaskInput] = useState('');
   const taskInputRef = useRef<TextInput>(null);
   const [isPriority, setIsPriority] = useState(false);
@@ -58,7 +62,7 @@ export default function VaciarScreen() {
   const [opcionesExpanded, setOpcionesExpanded] = useState(false);
   const { user } = useAuth();
 
-  // Pre-llenar input si hay sugerencia desde Tips; pre-seleccionar fecha si viene desde Semana
+  // Pre-llenar input si hay sugerencia desde Tips; fecha desde Semana; proyecto desde detalle de proyecto
   useEffect(() => {
     if (suggestion) {
       setTaskInput(suggestion);
@@ -66,7 +70,11 @@ export default function VaciarScreen() {
     if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
       setSelectedDate(dateParam);
     }
-  }, [suggestion, dateParam]);
+    if (projectIdParam && typeof projectIdParam === 'string' && projectIdParam.length >= 10) {
+      setAssignToProject(true);
+      setSelectedProjectId(projectIdParam);
+    }
+  }, [suggestion, dateParam, projectIdParam]);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToastMessage(message);

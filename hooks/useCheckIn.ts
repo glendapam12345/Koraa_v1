@@ -40,6 +40,12 @@ export function useCheckIn(showToast: (message: string, type: 'success' | 'error
         setEnergy(data.energy_level ? `${data.energy_level}/5` : '');
         setTime(data.available_time || '');
         setFocusLevel(data.focus_level || '');
+      } else {
+        setTodayMood(null);
+        setEnergyLevel(0);
+        setEnergy('');
+        setTime('');
+        setFocusLevel('');
       }
 
       setLoading(false);

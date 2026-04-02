@@ -2,10 +2,11 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { ChevronLeft, CheckCircle2 } from 'lucide-react-native';
+import { ChevronLeft, CheckCircle2, Plus } from 'lucide-react-native';
 import type { Task } from '@/components/tasks/TaskCard';
 import { TaskList } from '@/components/tasks/TaskList';
 
@@ -294,7 +295,38 @@ export default function ProjectScreen() {
 
         {tasks.length === 0 && (
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>Aún no hay tareas en este proyecto</Text>
+            <Text style={styles.emptyTitle}>
+              {isLoose ? 'Sin tareas sueltas' : 'Aún no hay tareas en este proyecto'}
+            </Text>
+            <Text style={styles.emptyText}>
+              {isLoose
+                ? 'Agrega lo que tengas pendiente en la pestaña Tareas, sin asignar a un proyecto.'
+                : 'Agrega una tarea y asígnala a este proyecto desde Tareas.'}
+            </Text>
+            <TouchableOpacity
+              style={styles.emptyCta}
+              onPress={() =>
+                isLoose
+                  ? router.push('/(tabs)/vaciar')
+                  : router.push({
+                      pathname: '/(tabs)/vaciar',
+                      params: { projectId: projectId as string },
+                    })
+              }
+              activeOpacity={0.88}
+              accessibilityRole="button"
+              accessibilityLabel={isLoose ? 'Ir a Tareas' : 'Agregar tarea a este proyecto'}
+            >
+              <LinearGradient
+                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.emptyCtaGradient}
+              >
+                <Plus size={20} color={THEME.colors.onGradient} />
+                <Text style={styles.emptyCtaText}>{isLoose ? 'Ir a Tareas' : 'Agregar tarea'}</Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -358,9 +390,39 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.xl,
     alignItems: 'center',
   },
+  emptyTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    textAlign: 'center',
+    marginBottom: THEME.spacing.sm,
+  },
   emptyText: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: THEME.spacing.lg,
+    maxWidth: 300,
+    lineHeight: 22,
+  },
+  emptyCta: {
+    borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+    minWidth: 200,
+    ...THEME.shadows.soft,
+  },
+  emptyCtaGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.lg,
+  },
+  emptyCtaText: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.onGradient,
   },
   completedBanner: {
     flexDirection: 'row',

@@ -228,7 +228,41 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
   }
 
   if (recommendations.length === 0) {
-    return null;
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.sectionTitle}>Recomendaciones para ti</Text>
+          <Sparkles size={20} color={THEME.colors.gradient.blue} />
+        </View>
+        <View style={styles.emptyRecommendations}>
+          <Text style={styles.emptyRecommendationsText}>
+            Cuando tengamos datos de tu perfil y tu check-in de hoy, aquí verás ideas para añadir como tareas.
+          </Text>
+          <View style={styles.emptyRecoRow}>
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/yo')}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Ir a perfil Yo"
+              style={styles.emptyRecoLink}
+            >
+              <Text style={styles.emptyRecoLinkText}>Ir a Yo</Text>
+              <ChevronRight size={18} color={THEME.colors.gradient.blue} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/sentir')}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Ir a Sentir"
+              style={styles.emptyRecoLink}
+            >
+              <Text style={styles.emptyRecoLinkText}>Ir a Sentir</Text>
+              <ChevronRight size={18} color={THEME.colors.gradient.blue} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
   }
 
   // Agrupar por categoría
@@ -375,6 +409,32 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     textAlign: 'center',
     padding: THEME.spacing.lg,
+  },
+  emptyRecommendations: {
+    paddingHorizontal: THEME.spacing.lg,
+    paddingBottom: THEME.spacing.md,
+  },
+  emptyRecommendationsText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    lineHeight: 22,
+    marginBottom: THEME.spacing.md,
+  },
+  emptyRecoRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.md,
+    alignItems: 'center',
+  },
+  emptyRecoLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  emptyRecoLinkText: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.gradient.blue,
   },
   horizontalScrollContent: {
     paddingHorizontal: CAROUSEL_GUTTER,

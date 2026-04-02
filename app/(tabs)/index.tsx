@@ -1010,7 +1010,7 @@ export default function TodayScreen() {
                   </Text>
                 </View>
               )}
-              {incompleteTasks.length >= 1 && user && (
+              {incompleteTasks.length >= 1 && user && todayMood && (
                 <TouchableOpacity
                   style={styles.redistributeCta}
                   onPress={() => setShowRedistribute(true)}
@@ -1029,6 +1029,32 @@ export default function TodayScreen() {
                 </TouchableOpacity>
               )}
               </View>
+
+              {!todayMood && displayedIncompleteTasks.length > 0 && (
+                <TouchableOpacity
+                  style={styles.checkInPromptBanner}
+                  onPress={() => router.push('/(tabs)/sentir')}
+                  activeOpacity={0.88}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ir a Sentir para registrar cómo te sientes y priorizar"
+                >
+                  <LinearGradient
+                    colors={[THEME.colors.tint.pink.soft, THEME.colors.tint.blue.veryFaint]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.checkInPromptBannerGradient}
+                  >
+                    <Heart size={22} color={THEME.colors.gradient.blue} />
+                    <View style={styles.checkInPromptBannerTextWrap}>
+                      <Text style={styles.checkInPromptBannerTitle}>¿Cómo te sientes hoy?</Text>
+                      <Text style={styles.checkInPromptBannerSub}>
+                        Haz tu check-in en Sentir para que Koraa ordene estas tareas según tu energía.
+                      </Text>
+                    </View>
+                    <ChevronRight size={22} color={THEME.colors.gradient.blue} />
+                  </LinearGradient>
+                </TouchableOpacity>
+              )}
 
               {/* Resumen por tipo de tarea: proyectos y tareas sin proyecto (debajo del encabezado para evitar hueco) */}
               {(projectSectionsForToday.projectRows.length > 0) && (
@@ -1263,6 +1289,19 @@ export default function TodayScreen() {
                         >
                           <Text style={styles.emptyTasksLinkPillText}>Ver todas</Text>
                         </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.emptyTasksLinkPill, styles.emptyTasksLinkPillSecond]}
+                          onPress={() =>
+                            router.push(
+                              `/(tabs)/vaciar?date=${new Date().toISOString().split('T')[0]}`,
+                            )
+                          }
+                          activeOpacity={0.85}
+                          accessibilityRole="button"
+                          accessibilityLabel="Agregar tarea con fecha de hoy"
+                        >
+                          <Text style={styles.emptyTasksLinkPillText}>Agregar para hoy</Text>
+                        </TouchableOpacity>
                       </View>
                     </>
                   ) : (
@@ -1278,6 +1317,18 @@ export default function TodayScreen() {
                       title="Ir a Tareas"
                       onPress={() => router.push('/(tabs)/vaciar')}
                     />
+                    {incompleteTasks.length === 0 && tasks.length > 0 ? (
+                      <TouchableOpacity
+                        style={styles.emptyTasksSecondaryCta}
+                        onPress={() => router.push('/(tabs)/sentir')}
+                        activeOpacity={0.85}
+                        accessibilityRole="button"
+                        accessibilityLabel="Ir a Sentir"
+                      >
+                        <Text style={styles.emptyTasksSecondaryCtaText}>Ir a Sentir</Text>
+                        <ChevronRight size={18} color={THEME.colors.gradient.blue} />
+                      </TouchableOpacity>
+                    ) : null}
                   </View>
                 </View>
               )}
@@ -2223,6 +2274,51 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.md,
     width: '100%',
     maxWidth: 280,
+    gap: THEME.spacing.sm,
+    alignItems: 'center',
+  },
+  emptyTasksSecondaryCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.sm,
+  },
+  emptyTasksSecondaryCtaText: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.gradient.blue,
+  },
+  emptyTasksLinkPillSecond: {
+    marginTop: THEME.spacing.sm,
+  },
+  checkInPromptBanner: {
+    marginBottom: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  checkInPromptBannerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
+    gap: THEME.spacing.sm,
+  },
+  checkInPromptBannerTextWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  checkInPromptBannerTitle: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    marginBottom: 4,
+  },
+  checkInPromptBannerSub: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 20,
   },
   tasksListCard: {
     backgroundColor: THEME.colors.fill[100],
