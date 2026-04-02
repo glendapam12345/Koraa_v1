@@ -101,7 +101,6 @@ export function TaskList({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  /** Sin flex:1 — evita hueco enorme bajo la última tarea dentro de tarjetas en ScrollView. */
+  container: {},
 });

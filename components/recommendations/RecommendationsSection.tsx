@@ -7,7 +7,7 @@ import { generatePersonalizedRecommendations, type Recommendation, type UserPref
 import { supabase } from '@/lib/supabase';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
 import { logger } from '@/lib/logger';
-import { Sparkles, ChevronRight } from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 /** Mismo valor para: margen izquierdo del carrusel, hueco entre tarjetas y “peek” de la siguiente (ritmo uniforme). */
@@ -16,8 +16,21 @@ const CAROUSEL_GUTTER = THEME.spacing.lg;
 const CARD_WIDTH = SCREEN_WIDTH - 3 * CAROUSEL_GUTTER;
 const CARD_GAP = CAROUSEL_GUTTER;
 const SNAP_INTERVAL = CARD_WIDTH + CARD_GAP;
-/** Altura fija para que todas las tarjetas del carrusel se vean iguales. */
-const CARD_HEIGHT = 200;
+/** Altura fija para alinear tarjetas del carrusel; el cuerpo recorta texto para no pisar el pie. */
+const CARD_HEIGHT = 188;
+
+/**
+ * Un gradiente distinto por posición del carrusel (0, 1, 2) para que no se repita el mismo azul.
+ * Orden fijo; el contenido sigue viniendo de la categoría detectada.
+ */
+const CAROUSEL_SLOT_GRADIENTS: readonly (readonly [string, string])[] = [
+  [THEME.colors.gradient.blue, '#5B8FD9'],
+  [THEME.colors.gradient.pink, '#E85D75'],
+  ['#3EB489', THEME.colors.gradient.blue],
+  [THEME.colors.category.personal, '#9B7EDE'],
+  ['#F4A261', THEME.colors.accent.orange],
+  ['#2A9D8F', '#48CAE4'],
+] as const;
 
 const CATEGORY_KEYS = ['bienestar', 'ejercicio', 'productividad', 'salud mental', 'social', 'creatividad', 'descanso', 'nutrición'] as const;
 
@@ -215,14 +228,39 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
     });
   };
 
+  const sectionHeader = () => (
+    <View style={styles.simpleHeader}>
+      <Text style={styles.simpleHeaderTitle}>Recomendaciones</Text>
+    </View>
+  );
+
   if (loading) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.sectionTitle}>Recomendaciones para ti</Text>
-          <Sparkles size={20} color={THEME.colors.gradient.blue} />
-        </View>
-        <Text style={styles.loadingText}>Cargando recomendaciones...</Text>
+        {sectionHeader()}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.horizontalScrollContent}
+        >
+          {[0, 1, 2].map((i) => (
+            <View
+              key={i}
+              style={[styles.skeletonCardWrap, { width: CARD_WIDTH, marginRight: CARD_GAP }]}
+            >
+              <LinearGradient
+                colors={[THEME.colors.fill[200], THEME.colors.fill[100]]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.skeletonCardInner, { height: CARD_HEIGHT }]}
+              >
+                <View style={styles.skeletonLineWide} />
+                <View style={styles.skeletonLineNarrow} />
+                <View style={styles.skeletonBlock} />
+              </LinearGradient>
+            </View>
+          ))}
+        </ScrollView>
       </View>
     );
   }
@@ -230,36 +268,40 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
   if (recommendations.length === 0) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.sectionTitle}>Recomendaciones para ti</Text>
-          <Sparkles size={20} color={THEME.colors.gradient.blue} />
-        </View>
+        {sectionHeader()}
         <View style={styles.emptyRecommendations}>
-          <Text style={styles.emptyRecommendationsText}>
-            Cuando tengamos datos de tu perfil y tu check-in de hoy, aquí verás ideas para añadir como tareas.
-          </Text>
-          <View style={styles.emptyRecoRow}>
-            <TouchableOpacity
-              onPress={() => router.push('/(tabs)/yo')}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel="Ir a perfil Yo"
-              style={styles.emptyRecoLink}
-            >
-              <Text style={styles.emptyRecoLinkText}>Ir a Yo</Text>
-              <ChevronRight size={18} color={THEME.colors.gradient.blue} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => router.push('/(tabs)/sentir')}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel="Ir a Sentir"
-              style={styles.emptyRecoLink}
-            >
-              <Text style={styles.emptyRecoLinkText}>Ir a Sentir</Text>
-              <ChevronRight size={18} color={THEME.colors.gradient.blue} />
-            </TouchableOpacity>
-          </View>
+          <LinearGradient
+            colors={[THEME.colors.fill[100], THEME.colors.tint.blue.veryFaint]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.emptyCard}
+          >
+            <Text style={styles.emptyRecommendationsText}>
+              Cuando tengamos datos de tu perfil y tu check-in de hoy, aquí verás ideas para añadir como tareas.
+            </Text>
+            <View style={styles.emptyRecoRow}>
+              <TouchableOpacity
+                onPress={() => router.push('/(tabs)/yo')}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Ir a perfil Yo"
+                style={styles.emptyRecoPill}
+              >
+                <Text style={styles.emptyRecoPillText}>Ir a Yo</Text>
+                <ChevronRight size={16} color={THEME.colors.gradient.blue} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => router.push('/(tabs)/sentir')}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Ir a Sentir"
+                style={styles.emptyRecoPill}
+              >
+                <Text style={styles.emptyRecoPillText}>Ir a Sentir</Text>
+                <ChevronRight size={16} color={THEME.colors.gradient.blue} />
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
         </View>
       </View>
     );
@@ -309,15 +351,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.sectionTitle}>Recomendaciones para ti</Text>
-          {categoryEntries.length > 1 ? (
-            <Text style={styles.scrollHint}>Desliza a la derecha para ver más</Text>
-          ) : null}
-        </View>
-        <Sparkles size={20} color={THEME.colors.gradient.blue} />
-      </View>
+      {sectionHeader()}
 
       <ScrollView
         horizontal
@@ -327,9 +361,11 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
         snapToAlignment="start"
         decelerationRate="fast"
       >
-        {categoryEntries.map(([category, categoryRecs]) => {
+        {categoryEntries.map(([category, categoryRecs], slotIndex) => {
           const illustration = CATEGORY_ILLUSTRATIONS[category] || CATEGORY_ILLUSTRATIONS['bienestar'];
           const mainRecommendation = categoryRecs[0];
+          const slotGradient =
+            CAROUSEL_SLOT_GRADIENTS[slotIndex % CAROUSEL_SLOT_GRADIENTS.length];
 
           return (
             <TouchableOpacity
@@ -341,15 +377,26 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
               accessibilityLabel={`Agregar como tarea: ${mainRecommendation.title}`}
             >
               <LinearGradient
-                colors={illustration.gradient}
+                colors={[...slotGradient]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={[styles.horizontalCardGradient, { height: CARD_HEIGHT }]}
               >
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={['rgba(255,255,255,0.28)', 'rgba(255,255,255,0)', 'transparent']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0.85 }}
+                  style={styles.cardShine}
+                />
                 <View style={styles.horizontalCardHeader}>
                   <View style={styles.cardHeaderContent}>
-                    <Text style={styles.emoji}>{illustration.emoji}</Text>
-                    <Text style={styles.categoryTitle}>{illustration.title}</Text>
+                    <View style={styles.emojiBubble}>
+                      <Text style={styles.emoji}>{illustration.emoji}</Text>
+                    </View>
+                    <View style={styles.cardHeaderTextStack}>
+                      <Text style={styles.categoryTitle}>{illustration.title}</Text>
+                    </View>
                   </View>
                   <View style={styles.verMasChip}>
                     <Text style={styles.verMasChipText}>A Tareas</Text>
@@ -360,13 +407,13 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
                   <Text style={styles.horizontalCardTitle} numberOfLines={2}>
                     {mainRecommendation.title}
                   </Text>
-                  <Text style={styles.horizontalCardPreview} numberOfLines={3}>
+                  <Text style={styles.horizontalCardPreview} numberOfLines={2}>
                     {mainRecommendation.message}
                   </Text>
                 </View>
                 <View style={styles.horizontalCardFooter}>
                   {categoryRecs.length > 1 ? (
-                    <Text style={styles.horizontalCardMore}>
+                    <Text style={styles.horizontalCardMore} numberOfLines={1}>
                       +{categoryRecs.length - 1} más en esta categoría
                     </Text>
                   ) : (
@@ -384,35 +431,61 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: THEME.spacing.sm,
-    marginBottom: THEME.spacing.sm,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: THEME.spacing.lg,
+    marginTop: 0,
     marginBottom: THEME.spacing.xs,
   },
-  sectionTitle: {
-    ...THEME.typography.h2,
+  simpleHeader: {
+    marginHorizontal: THEME.spacing.lg,
+    marginBottom: THEME.spacing.sm,
+  },
+  simpleHeaderTitle: {
+    fontSize: 20,
+    lineHeight: 26,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
   },
-  scrollHint: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    marginTop: 2,
+  skeletonCardWrap: {
+    borderRadius: THEME.borderRadius.rounded,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+    ...THEME.shadows.soft,
   },
-  loadingText: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-    textAlign: 'center',
-    padding: THEME.spacing.lg,
+  skeletonCardInner: {
+    padding: THEME.spacing.md,
+    justifyContent: 'flex-start',
+    gap: THEME.spacing.xs,
+  },
+  skeletonLineWide: {
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: THEME.colors.stroke[100],
+    width: '72%',
+  },
+  skeletonLineNarrow: {
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: THEME.colors.fill[200],
+    width: '40%',
+  },
+  skeletonBlock: {
+    marginTop: THEME.spacing.sm,
+    flex: 1,
+    borderRadius: THEME.borderRadius.standard,
+    backgroundColor: THEME.colors.stroke[100],
+    opacity: 0.45,
+    minHeight: 72,
   },
   emptyRecommendations: {
     paddingHorizontal: THEME.spacing.lg,
     paddingBottom: THEME.spacing.md,
+  },
+  emptyCard: {
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+    ...THEME.shadows.soft,
   },
   emptyRecommendationsText: {
     ...THEME.typography.body,
@@ -423,18 +496,25 @@ const styles = StyleSheet.create({
   emptyRecoRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: THEME.spacing.md,
+    gap: THEME.spacing.sm,
     alignItems: 'center',
   },
-  emptyRecoLink: {
+  emptyRecoPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    paddingVertical: 10,
+    paddingHorizontal: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
   },
-  emptyRecoLinkText: {
-    ...THEME.typography.body,
+  emptyRecoPillText: {
+    ...THEME.typography.small,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.gradient.blue,
+    fontSize: 14,
   },
   horizontalScrollContent: {
     paddingHorizontal: CAROUSEL_GUTTER,
@@ -443,50 +523,68 @@ const styles = StyleSheet.create({
   verMasChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.surfaceOverlay.medium,
+    borderWidth: 1,
+    borderColor: THEME.colors.surfaceOverlay.border,
   },
   verMasChipText: {
     ...THEME.typography.small,
     fontSize: 11,
     color: THEME.colors.onGradientMuted,
   },
+  cardShine: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: THEME.borderRadius.rounded,
+  },
   horizontalCardWrap: {
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: THEME.colors.surfaceOverlay.borderStrong,
     ...THEME.shadows.soft,
   },
   horizontalCardGradient: {
-    padding: THEME.spacing.md,
+    padding: THEME.spacing.sm,
     minWidth: 0,
+    flexDirection: 'column',
     justifyContent: 'space-between',
   },
   horizontalCardBody: {
     flex: 1,
     justifyContent: 'flex-start',
     minHeight: 0,
+    overflow: 'hidden',
   },
   horizontalCardFooter: {
-    minHeight: 20,
+    flexShrink: 0,
     justifyContent: 'flex-end',
+    paddingTop: 6,
+    minHeight: 22,
   },
   horizontalCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
+    flexShrink: 0,
   },
   horizontalCardTitle: {
-    ...THEME.typography.h3,
+    fontSize: 17,
+    lineHeight: 22,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
-    marginBottom: THEME.spacing.xs,
+    marginBottom: 6,
   },
   horizontalCardPreview: {
     ...THEME.typography.small,
     color: THEME.colors.onGradient,
-    opacity: 0.9,
-    fontSize: 13,
-    lineHeight: 20,
+    opacity: 0.92,
+    fontSize: 12,
+    lineHeight: 17,
   },
   horizontalCardMore: {
     ...THEME.typography.small,
@@ -530,9 +628,25 @@ const styles = StyleSheet.create({
   },
   cardHeaderContent: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     flex: 1,
-    gap: THEME.spacing.sm,
+    gap: THEME.spacing.xs,
+    minWidth: 0,
+  },
+  emojiBubble: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: THEME.colors.surfaceOverlay.medium,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: THEME.colors.surfaceOverlay.border,
+  },
+  cardHeaderTextStack: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
   },
   cardHeaderText: {
     flex: 1,
@@ -557,15 +671,15 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   emoji: {
-    fontSize: 32,
+    fontSize: 22,
   },
   categoryTitle: {
     ...THEME.typography.caption,
     color: THEME.colors.onGradient,
-    opacity: 0.9,
-    fontFamily: THEME.fonts.heading.medium,
-    fontSize: 11,
-    marginBottom: 2,
+    opacity: 0.95,
+    fontFamily: THEME.fonts.heading.bold,
+    fontSize: 12,
+    letterSpacing: 0.2,
   },
   recommendationTitle: {
     ...THEME.typography.body,

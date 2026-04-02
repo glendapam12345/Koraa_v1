@@ -89,8 +89,8 @@ export default function TodayScreen() {
   const [morningMeditationDone, setMorningMeditationDone] = useState(false);
   const [eveningMeditationDone, setEveningMeditationDone] = useState(false);
   const [dismissedCelebration, setDismissedCelebration] = useState(false);
-  const [heroReasoningExpanded, setHeroReasoningExpanded] = useState(false);
-  const [prioritizeHowExpanded, setPrioritizeHowExpanded] = useState(false);
+  /** Un solo desplegable: evita dos filas duplicando el mensaje del hero. */
+  const [heroDetailsExpanded, setHeroDetailsExpanded] = useState(false);
   const [showRedistribute, setShowRedistribute] = useState(false);
   const [taskFilter, setTaskFilter] = useState<'hoy' | 'todas'>('hoy');
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -921,6 +921,100 @@ export default function TodayScreen() {
         {!loading && (
           <View style={styles.tasksContainer}>
             <View style={styles.tasksListCard}>
+              {todayMood && (
+                <View style={[styles.heroTodayWrap, styles.heroTodayWrapFirst]}>
+                  <LinearGradient
+                    colors={[getEmotionColor(todayMood).replace('0.15', '0.22'), THEME.colors.fill[100]]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0.5 }}
+                    style={styles.heroTodayCard}
+                  >
+                    <Text style={styles.heroTodayHeadline}>Esto te conviene hoy</Text>
+                    <View style={styles.heroTodayStateRow}>
+                      <View style={[styles.heroTodayPill, { backgroundColor: getEmotionColor(todayMood) }]}>
+                        <Text style={styles.heroTodayPillEmoji}>{getEmotionEmoji(todayMood)}</Text>
+                        <Text style={styles.heroTodayPillText}>
+                          Sintiéndote {todayMood.charAt(0).toUpperCase() + todayMood.slice(1)}
+                        </Text>
+                      </View>
+                      <View style={styles.heroTodayPillNeutral}>
+                        <Text style={styles.heroTodayPillNeutralText}>Energía {energyLevel}/5</Text>
+                      </View>
+                    </View>
+                  </LinearGradient>
+                  <TouchableOpacity
+                    style={[styles.prioritiesContext, styles.prioritiesContextUnderHero]}
+                    onPress={() => setHeroDetailsExpanded((e) => !e)}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      heroDetailsExpanded
+                        ? 'Ocultar detalles del orden de tareas'
+                        : 'Ver detalles del orden de tareas'
+                    }
+                  >
+                    <View style={styles.prioritiesContextHeaderRow}>
+                      <Text style={styles.heroDetailsToggleTitle} numberOfLines={1}>
+                        Más sobre tu orden de hoy
+                      </Text>
+                      {heroDetailsExpanded ? (
+                        <ChevronDown size={16} color={THEME.colors.text.secondary} />
+                      ) : (
+                        <ChevronRight size={16} color={THEME.colors.text.secondary} />
+                      )}
+                    </View>
+                    {heroDetailsExpanded && (
+                      <View style={styles.heroDetailsExpandedBody}>
+                        {explanation.reasoning ? (
+                          <>
+                            <Text style={styles.heroDetailsSectionLabel}>Según tu check-in</Text>
+                            <Text style={styles.prioritiesContextText}>{explanation.reasoning}</Text>
+                            {explanation.suggestion ? (
+                              <View style={styles.prioritiesSuggestionBox}>
+                                <Lightbulb size={18} color={THEME.colors.gradient.blue} />
+                                <Text style={styles.prioritiesSuggestion}>{explanation.suggestion}</Text>
+                              </View>
+                            ) : null}
+                          </>
+                        ) : null}
+                        <Text style={styles.heroDetailsSectionLabel}>Cómo prioriza Koraa</Text>
+                        <View style={styles.prioritizeHowList}>
+                          {getPrioritizationExplainerBullets().map((line, i) => (
+                            <Text key={i} style={styles.prioritizeHowBullet}>
+                              • {line}
+                            </Text>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+              {!todayMood && displayedIncompleteTasks.length > 0 && (
+                <TouchableOpacity
+                  style={styles.checkInPromptBanner}
+                  onPress={() => router.push('/(tabs)/sentir')}
+                  activeOpacity={0.88}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ir a Sentir para registrar cómo te sientes y priorizar"
+                >
+                  <LinearGradient
+                    colors={[THEME.colors.tint.pink.soft, THEME.colors.tint.blue.veryFaint]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.checkInPromptBannerGradient}
+                  >
+                    <Heart size={22} color={THEME.colors.gradient.blue} />
+                    <View style={styles.checkInPromptBannerTextWrap}>
+                      <Text style={styles.checkInPromptBannerTitle}>¿Cómo te sientes hoy?</Text>
+                      <Text style={styles.checkInPromptBannerSub}>
+                        Haz tu check-in en Sentir para que Koraa ordene estas tareas según tu energía.
+                      </Text>
+                    </View>
+                    <ChevronRight size={22} color={THEME.colors.gradient.blue} />
+                  </LinearGradient>
+                </TouchableOpacity>
+              )}
               <View style={styles.tareasHeaderSection}>
               <Text style={styles.tareasTitle} numberOfLines={1}>
                 Tareas
@@ -988,27 +1082,13 @@ export default function TodayScreen() {
                 <Text style={styles.taskFilterHint}>Tareas de hoy y sin fecha asignada</Text>
               )}
               {displayedIncompleteTasks.length > 0 && (
-                <View
-                  style={styles.taskHelpCard}
-                  accessibilityLabel="Leyenda de prioridad e instrucción de gesto"
+                <Text
+                  style={styles.taskCompactHint}
+                  accessibilityLabel="Las tareas de mayor prioridad aparecen arriba. Desliza una tarea para completar, editar o eliminar."
+                  accessibilityRole="text"
                 >
-                  <Text style={styles.taskHelpCardLabel}>Orden</Text>
-                  <View
-                    style={styles.priorityLegendRow}
-                    accessibilityLabel="Las tareas de mayor prioridad aparecen arriba; las de menor, abajo."
-                    accessibilityRole="text"
-                  >
-                    <Text style={styles.priorityLegendHigh}>Prioridad alta</Text>
-                    <ChevronRight size={14} color={THEME.colors.text.tertiary} />
-                    <Text style={styles.priorityLegendLow}>Prioridad baja</Text>
-                  </View>
-                  <Text
-                    style={styles.swipeHint}
-                    accessibilityLabel="Desliza una tarea a la izquierda para ver opciones"
-                  >
-                    Desliza una tarea para completar, editar o eliminar
-                  </Text>
-                </View>
+                  Orden: prioridad alta → baja · Desliza para completar, editar o eliminar
+                </Text>
               )}
               {incompleteTasks.length >= 1 && user && todayMood && (
                 <TouchableOpacity
@@ -1021,40 +1101,14 @@ export default function TodayScreen() {
                   <CalendarRange size={20} color={THEME.colors.gradient.blue} />
                   <View style={styles.redistributeCtaTextWrap}>
                     <Text style={styles.redistributeCtaTitle}>Aliviar carga</Text>
-                    <Text style={styles.redistributeCtaSub}>
-                      Reparte pendientes por días hasta tu entrega, según tu energía y tiempo de hoy
+                    <Text style={styles.redistributeCtaSub} numberOfLines={2}>
+                      Reparte pendientes por días según tu energía y tiempo de hoy
                     </Text>
                   </View>
                   <ChevronRight size={20} color={THEME.colors.text.tertiary} />
                 </TouchableOpacity>
               )}
               </View>
-
-              {!todayMood && displayedIncompleteTasks.length > 0 && (
-                <TouchableOpacity
-                  style={styles.checkInPromptBanner}
-                  onPress={() => router.push('/(tabs)/sentir')}
-                  activeOpacity={0.88}
-                  accessibilityRole="button"
-                  accessibilityLabel="Ir a Sentir para registrar cómo te sientes y priorizar"
-                >
-                  <LinearGradient
-                    colors={[THEME.colors.tint.pink.soft, THEME.colors.tint.blue.veryFaint]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.checkInPromptBannerGradient}
-                  >
-                    <Heart size={22} color={THEME.colors.gradient.blue} />
-                    <View style={styles.checkInPromptBannerTextWrap}>
-                      <Text style={styles.checkInPromptBannerTitle}>¿Cómo te sientes hoy?</Text>
-                      <Text style={styles.checkInPromptBannerSub}>
-                        Haz tu check-in en Sentir para que Koraa ordene estas tareas según tu energía.
-                      </Text>
-                    </View>
-                    <ChevronRight size={22} color={THEME.colors.gradient.blue} />
-                  </LinearGradient>
-                </TouchableOpacity>
-              )}
 
               {/* Resumen por tipo de tarea: proyectos y tareas sin proyecto (debajo del encabezado para evitar hueco) */}
               {(projectSectionsForToday.projectRows.length > 0) && (
@@ -1161,9 +1215,6 @@ export default function TodayScreen() {
                     )}
                   </View>
                 </View>
-              )}
-              {todayMood && displayedIncompleteTasks.length > 0 && (
-                <Text style={styles.tasksForTodayLabel}>Estas tareas priorizamos para ti hoy</Text>
               )}
               {displayedIncompleteTasks.length > 0 ? (
                 taskSections.map((sec) => {
@@ -1330,88 +1381,6 @@ export default function TodayScreen() {
                       </TouchableOpacity>
                     ) : null}
                   </View>
-                </View>
-              )}
-
-              {todayMood && (
-                <View style={styles.heroTodayWrap}>
-                  <LinearGradient
-                    colors={[getEmotionColor(todayMood).replace('0.15', '0.28'), THEME.colors.fill[100]]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0.45 }}
-                    style={styles.heroTodayCard}
-                  >
-                    <Text style={styles.heroTodayHeadline}>Esto te conviene hoy</Text>
-                    <View style={styles.heroTodayStateRow}>
-                      <View style={[styles.heroTodayPill, { backgroundColor: getEmotionColor(todayMood) }]}>
-                        <Text style={styles.heroTodayPillEmoji}>{getEmotionEmoji(todayMood)}</Text>
-                        <Text style={styles.heroTodayPillText}>
-                          Sintiéndote {todayMood.charAt(0).toUpperCase() + todayMood.slice(1)}
-                        </Text>
-                      </View>
-                      <View style={styles.heroTodayPillNeutral}>
-                        <Text style={styles.heroTodayPillNeutralText}>Energía {energyLevel}/5</Text>
-                      </View>
-                    </View>
-                  </LinearGradient>
-                  {explanation.reasoning && (
-                    <TouchableOpacity
-                      style={styles.prioritiesContext}
-                      onPress={() => setHeroReasoningExpanded((e) => !e)}
-                      activeOpacity={0.8}
-                      accessibilityRole="button"
-                      accessibilityLabel={heroReasoningExpanded ? 'Ocultar explicación' : 'Ver por qué priorizamos así'}
-                    >
-                      <View style={styles.prioritiesContextHeaderRow}>
-                        <Text style={styles.prioritiesContextTitle}>Basado en cómo te sientes</Text>
-                        {heroReasoningExpanded ? (
-                          <ChevronDown size={16} color={THEME.colors.text.secondary} />
-                        ) : (
-                          <ChevronRight size={16} color={THEME.colors.text.secondary} />
-                        )}
-                      </View>
-                      {heroReasoningExpanded && (
-                        <>
-                          <Text style={styles.prioritiesContextText}>{explanation.reasoning}</Text>
-                          {explanation.suggestion && (
-                            <View style={styles.prioritiesSuggestionBox}>
-                              <Lightbulb size={18} color={THEME.colors.gradient.blue} />
-                              <Text style={styles.prioritiesSuggestion}>{explanation.suggestion}</Text>
-                            </View>
-                          )}
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  )}
-                  {todayMood && (
-                    <TouchableOpacity
-                      style={styles.prioritiesContext}
-                      onPress={() => setPrioritizeHowExpanded((e) => !e)}
-                      activeOpacity={0.8}
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        prioritizeHowExpanded ? 'Ocultar cómo prioriza Koraa' : 'Ver cómo prioriza Koraa'
-                      }
-                    >
-                      <View style={styles.prioritiesContextHeaderRow}>
-                        <Text style={styles.prioritiesContextTitle}>Cómo prioriza Koraa</Text>
-                        {prioritizeHowExpanded ? (
-                          <ChevronDown size={16} color={THEME.colors.text.secondary} />
-                        ) : (
-                          <ChevronRight size={16} color={THEME.colors.text.secondary} />
-                        )}
-                      </View>
-                      {prioritizeHowExpanded && (
-                        <View style={styles.prioritizeHowList}>
-                          {getPrioritizationExplainerBullets().map((line, i) => (
-                            <Text key={i} style={styles.prioritizeHowBullet}>
-                              • {line}
-                            </Text>
-                          ))}
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  )}
                 </View>
               )}
 
@@ -2008,18 +1977,33 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: THEME.colors.fill[200],
   },
+  prioritiesContextUnderHero: {
+    marginTop: THEME.spacing.sm,
+    paddingTop: THEME.spacing.sm,
+  },
   prioritiesContextHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: THEME.spacing.xs,
   },
-  prioritiesContextTitle: {
+  heroDetailsToggleTitle: {
+    flex: 1,
     fontSize: 13,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.secondary,
-    marginBottom: 8,
-    letterSpacing: 0.25,
+    letterSpacing: 0.2,
+  },
+  heroDetailsExpandedBody: {
+    gap: THEME.spacing.sm,
+    marginTop: THEME.spacing.xs,
+  },
+  heroDetailsSectionLabel: {
+    fontSize: 11,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.tertiary,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   prioritiesContextText: {
     ...THEME.typography.body,
@@ -2062,8 +2046,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: THEME.spacing.sm,
-    marginTop: THEME.spacing.md,
-    padding: THEME.spacing.md,
+    marginTop: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
     backgroundColor: THEME.colors.tint.blue.veryLight,
     borderRadius: THEME.borderRadius.rounded,
     borderWidth: 1,
@@ -2198,7 +2183,7 @@ const styles = StyleSheet.create({
   },
   tasksContainer: {
     paddingHorizontal: THEME.spacing.lg,
-    paddingBottom: THEME.spacing.lg,
+    paddingBottom: THEME.spacing.sm,
   },
   addTasksCard: {
     borderRadius: THEME.borderRadius.rounded,
@@ -2403,104 +2388,68 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     width: '100%',
   },
-  taskHelpCard: {
-    marginTop: 4,
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.xs,
-    borderRadius: THEME.borderRadius.standard,
-    backgroundColor: THEME.colors.fill[200],
-    gap: 4,
-    width: '100%',
-  },
-  taskHelpCardLabel: {
+  taskCompactHint: {
     ...THEME.typography.small,
     fontSize: 11,
+    lineHeight: 16,
     color: THEME.colors.text.tertiary,
-    fontFamily: THEME.fonts.heading.medium,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  priorityLegendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: THEME.spacing.xs,
+    marginTop: 6,
+    width: '100%',
   },
   heroTodayWrap: {
-    marginTop: THEME.spacing.sm,
-    marginBottom: THEME.spacing.xs,
+    marginTop: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
+  },
+  heroTodayWrapFirst: {
+    marginTop: 0,
   },
   heroTodayCard: {
-    borderRadius: THEME.borderRadius.rounded,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.standard,
+    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.sm,
     overflow: 'hidden',
     ...THEME.shadows.soft,
   },
   heroTodayHeadline: {
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 18,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
-    marginBottom: THEME.spacing.xs,
-    letterSpacing: 0.3,
+    marginBottom: 6,
+    letterSpacing: 0.2,
   },
   heroTodayStateRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: THEME.spacing.sm,
+    gap: THEME.spacing.xs,
   },
   heroTodayPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: THEME.borderRadius.pill,
   },
   heroTodayPillEmoji: {
-    fontSize: 18,
+    fontSize: 15,
   },
   heroTodayPillText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
   },
   heroTodayPillNeutral: {
-    paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: THEME.borderRadius.pill,
     backgroundColor: THEME.colors.fill[200],
   },
   heroTodayPillNeutralText: {
-    fontSize: 13,
-    fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.text.secondary,
-  },
-  priorityLegendHigh: {
-    ...THEME.typography.small,
     fontSize: 12,
-    color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.medium,
-  },
-  priorityLegendLow: {
-    ...THEME.typography.small,
-    fontSize: 12,
     color: THEME.colors.text.secondary,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  swipeHint: {
-    ...THEME.typography.small,
-    fontSize: 11,
-    color: THEME.colors.text.secondary,
-    textAlign: 'left',
-    marginTop: THEME.spacing.xs,
-    paddingTop: THEME.spacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: THEME.colors.stroke[100],
-    lineHeight: 16,
   },
   categoryLegendWrap: {
     marginBottom: THEME.spacing.sm,
@@ -2519,19 +2468,11 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     letterSpacing: 0.2,
   },
-  tasksForTodayLabel: {
-    fontSize: 13,
-    fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.xs,
-    marginTop: THEME.spacing.sm,
-    letterSpacing: 0.15,
-  },
   taskSection: {
     marginBottom: THEME.spacing.lg,
   },
   areaCard: {
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
     backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
@@ -2567,8 +2508,8 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   areaCardInner: {
-    paddingTop: THEME.spacing.sm,
-    paddingBottom: THEME.spacing.sm,
+    paddingTop: THEME.spacing.xs,
+    paddingBottom: THEME.spacing.xs,
     paddingLeft: 0,
     paddingRight: 0,
   },
@@ -2658,9 +2599,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: THEME.spacing.xs,
-    marginTop: THEME.spacing.sm,
-    marginBottom: THEME.spacing.xs,
-    paddingVertical: THEME.spacing.sm,
+    marginTop: THEME.spacing.xs,
+    marginBottom: 0,
+    paddingVertical: THEME.spacing.xs,
   },
   agregarMasHint: {
     ...THEME.typography.small,
@@ -3597,6 +3538,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   recommendationsWrap: {
+    marginTop: THEME.spacing.xs,
     marginBottom: THEME.spacing.xs,
     paddingTop: 0,
   },
