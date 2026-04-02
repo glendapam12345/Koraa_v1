@@ -8,11 +8,12 @@ import { getPostAuthRoute } from '@/lib/onboardingGate';
 
 export default function IndexScreen() {
   const { user, loading } = useAuth();
+  const userId = user?.id;
   const navigatedRef = useRef(false);
 
   useEffect(() => {
     navigatedRef.current = false;
-  }, [user?.id]);
+  }, [userId]);
 
   useEffect(() => {
     if (loading) return;
@@ -20,14 +21,14 @@ export default function IndexScreen() {
     const run = async () => {
       if (navigatedRef.current) return;
 
-      if (!user) {
+      if (!userId) {
         navigatedRef.current = true;
         router.replace('/auth');
         return;
       }
 
       try {
-        const next = await getPostAuthRoute(user.id);
+        const next = await getPostAuthRoute(userId);
         navigatedRef.current = true;
         router.replace(next);
       } catch (e) {
@@ -42,7 +43,7 @@ export default function IndexScreen() {
     }, 50);
 
     return () => clearTimeout(t);
-  }, [user, loading]);
+  }, [userId, loading]);
 
   // Timeout de seguridad: si loading tarda más de 10 segundos, redirigir
   useEffect(() => {

@@ -30,6 +30,11 @@ export function useCheckIn(showToast: (message: string, type: 'success' | 'error
         logger.error('Error cargando check-in:', error);
         const errorMessage = getErrorMessage(error);
         showToast(errorMessage, 'error');
+        setTodayMood(null);
+        setEnergyLevel(0);
+        setEnergy('');
+        setTime('');
+        setFocusLevel('');
         setLoading(false);
         return;
       }
@@ -51,6 +56,11 @@ export function useCheckIn(showToast: (message: string, type: 'success' | 'error
       setLoading(false);
     } catch (error) {
       logger.error('Error inesperado cargando check-in:', error);
+      setTodayMood(null);
+      setEnergyLevel(0);
+      setEnergy('');
+      setTime('');
+      setFocusLevel('');
       setLoading(false);
     }
   }, [showToast]);

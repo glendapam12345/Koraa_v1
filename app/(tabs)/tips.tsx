@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
@@ -10,6 +11,8 @@ import { getEmotionTips } from '@/lib/emotionTips';
 import { generatePersonalizedRecommendations } from '@/lib/personalizedRecommendations';
 import { Lightbulb, Moon, Zap, Brain, Sparkles, Heart, Plus } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
+
+const TIPS_TOOLTIP_SEEN_KEY = 'koraa_tips_tooltip_seen';
 
 const EMOTIONS = [
   { id: 'agotada', emoji: '😔', label: 'Agotada', color: ['#667eea', '#764ba2'] },
@@ -123,6 +126,25 @@ export default function TipsScreen() {
     useCallback(() => {
       loadTodayCheckIn();
     }, [loadTodayCheckIn])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      void (async () => {
+        try {
+          const seen = await AsyncStorage.getItem(TIPS_TOOLTIP_SEEN_KEY);
+          if (!cancelled && seen !== '1') {
+            setShowTooltip(true);
+          }
+        } catch {
+          /* ignore */
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [])
   );
 
   const handleRefresh = async () => {
@@ -328,7 +350,14 @@ export default function TipsScreen() {
         visible={showTooltip}
         title="Consejos"
         message="Los consejos cambian según tu check-in de hoy. Completa Sentir cada día para ver sugerencias acordes a tu estado."
-        onClose={() => setShowTooltip(false)}
+        onClose={async () => {
+          setShowTooltip(false);
+          try {
+            await AsyncStorage.setItem(TIPS_TOOLTIP_SEEN_KEY, '1');
+          } catch {
+            /* ignore */
+          }
+        }}
       />
     </View>
   );

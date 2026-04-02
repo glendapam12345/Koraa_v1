@@ -10,21 +10,22 @@ import { getPostAuthRoute } from '@/lib/onboardingGate';
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const { user, loading } = useAuth();
+  const userId = user?.id;
   const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
     setAllowed(false);
-  }, [user?.id]);
+  }, [userId]);
 
   useEffect(() => {
     if (loading) return;
-    if (!user) {
+    if (!userId) {
       router.replace('/auth');
       return;
     }
     let cancelled = false;
     void (async () => {
-      const next = await getPostAuthRoute(user.id);
+      const next = await getPostAuthRoute(userId);
       if (cancelled) return;
       if (next === '/onboarding/welcome') {
         router.replace('/onboarding/welcome');
@@ -35,9 +36,9 @@ export default function TabLayout() {
     return () => {
       cancelled = true;
     };
-  }, [user, loading]);
+  }, [userId, loading]);
 
-  if (loading || !user) {
+  if (loading || !userId) {
     return (
       <View style={styles.authGate}>
         <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
