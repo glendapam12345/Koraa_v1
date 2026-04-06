@@ -1019,22 +1019,11 @@ export default function TodayScreen() {
               <Text style={styles.tareasTitle} numberOfLines={1}>
                 Tareas
               </Text>
+              {/* Fecha + filtros en una fila; el estado va debajo a todo el ancho (evita columna estrecha al lado de los pills). */}
               <View style={styles.tareasHeaderMetaRow}>
-                <View style={styles.tareasMetaTexts}>
-                  <Text style={styles.tareasDate}>
-                    {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </Text>
-                  <Text style={styles.tareasSubtitle}>
-                    {displayedIncompleteTasks.length === 0
-                      ? taskFilter === 'hoy'
-                        ? 'Nada programado para hoy'
-                        : 'No hay tareas pendientes'
-                      : taskFilter === 'hoy'
-                        ? `${displayedIncompleteTasks.length} ${displayedIncompleteTasks.length === 1 ? 'tarea' : 'tareas'} para hoy`
-                        : `${displayedIncompleteTasks.length} ${displayedIncompleteTasks.length === 1 ? 'tarea' : 'tareas'} pendientes`}
-                  </Text>
-                </View>
-                {/* Filtro: Solo hoy | Todas (misma fila que fecha/contador → sin hueco vacío a la derecha) */}
+                <Text style={styles.tareasDate}>
+                  {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </Text>
                 <View style={styles.taskFilterWrap}>
                   <TouchableOpacity
                     style={[styles.taskFilterPill, taskFilter === 'hoy' && styles.taskFilterPillActive]}
@@ -1078,6 +1067,15 @@ export default function TodayScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
+              <Text style={styles.tareasSubtitle}>
+                {displayedIncompleteTasks.length === 0
+                  ? taskFilter === 'hoy'
+                    ? 'Nada programado para hoy'
+                    : 'No hay tareas pendientes'
+                  : taskFilter === 'hoy'
+                    ? `${displayedIncompleteTasks.length} ${displayedIncompleteTasks.length === 1 ? 'tarea' : 'tareas'} para hoy`
+                    : `${displayedIncompleteTasks.length} ${displayedIncompleteTasks.length === 1 ? 'tarea' : 'tareas'} pendientes`}
+              </Text>
               {taskFilter === 'hoy' && (
                 <Text style={styles.taskFilterHint}>Tareas de hoy y sin fecha asignada</Text>
               )}
@@ -2327,11 +2325,6 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.sm,
     marginTop: THEME.spacing.xs,
   },
-  tareasMetaTexts: {
-    flex: 1,
-    minWidth: 0,
-    paddingRight: THEME.spacing.xs,
-  },
   tareasTitle: {
     ...THEME.typography.h2,
     fontSize: 24,
@@ -2342,13 +2335,15 @@ const styles = StyleSheet.create({
   tareasDate: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
-    marginTop: 2,
+    flexShrink: 0,
   },
   tareasSubtitle: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
-    marginTop: 2,
+    marginTop: 6,
     fontSize: 13,
+    lineHeight: 18,
+    width: '100%',
   },
   taskFilterWrap: {
     flexDirection: 'row',
