@@ -1,10 +1,34 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { useState } from 'react';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { Wind } from 'lucide-react-native';
+import { useAuth } from '@/contexts/AuthContext';
+import { markOnboardingCompleted } from '@/lib/onboardingGate';
 
 export default function Intro2Screen() {
+  const { user } = useAuth();
+  const [skipLoading, setSkipLoading] = useState(false);
+
+  const handleSkipIntro = async () => {
+    if (!user?.id) {
+      router.replace('/auth/login');
+      return;
+    }
+    setSkipLoading(true);
+    const { error } = await markOnboardingCompleted(user.id);
+    setSkipLoading(false);
+    if (error) {
+      Alert.alert(
+        'No se pudo guardar',
+        'Tu preferencia no se registró. Revisa tu conexión e inténtalo de nuevo.',
+      );
+      return;
+    }
+    router.replace('/(tabs)');
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -70,10 +94,15 @@ export default function Intro2Screen() {
         />
 
         <TouchableOpacity
-          onPress={() => router.push('/auth')}
+          onPress={handleSkipIntro}
           style={styles.skipButton}
+          disabled={skipLoading}
         >
-          <Text style={styles.skipText}>Saltar introducción</Text>
+          {skipLoading ? (
+            <ActivityIndicator size="small" color={THEME.colors.gradient.blue} />
+          ) : (
+            <Text style={styles.skipText}>Saltar introducción</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>

@@ -25,7 +25,7 @@ export default function HowItWorksScreen() {
         return;
       }
     }
-    router.push('/auth');
+    router.replace('/(tabs)');
   };
 
   return (
