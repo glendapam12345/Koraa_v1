@@ -8,6 +8,8 @@ import { Focus } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { track } from '@/lib/analytics';
+import { fetchCurrentStreak, isStreakMilestone } from '@/lib/streak';
+import { publishCheckInCelebration } from '@/lib/checkInCelebration';
 
 const FOCUS_OPTIONS = [
   { id: 'Muy distraída', label: 'Muy distraída' },
@@ -234,12 +236,27 @@ export default function FocusScreen() {
         offline: checkInSavedOffline,
       });
 
+      let celebrationAfterSync: { streak: number; milestone: boolean } | null = null;
+      if (!checkInSavedOffline && user) {
+        try {
+          const streak = await fetchCurrentStreak(supabase, user.id);
+          celebrationAfterSync = { streak, milestone: isStreakMilestone(streak) };
+        } catch (e) {
+          console.warn('fetchCurrentStreak tras check-in:', e);
+        }
+      }
+
       // Redirigir a tabs (Inicio) para ver prioridades
       try {
         router.replace('/(tabs)');
       } catch (navError) {
         console.error('Error en navegación:', navError);
         router.replace('/(tabs)');
+      }
+
+      if (celebrationAfterSync) {
+        const payload = celebrationAfterSync;
+        setTimeout(() => publishCheckInCelebration(payload), 450);
       }
     } catch (error) {
       console.error('Error:', error);

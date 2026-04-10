@@ -22,7 +22,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { supabase, getErrorMessage } from '@/lib/supabase';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
 import { logger } from '@/lib/logger';
+import { subscribeCheckInCelebration } from '@/lib/checkInCelebration';
+import { pickDailyStreakEncouragement, getLocalDateKey } from '@/lib/streakDailyMessages';
 import { ProgressChart } from '@/components/ProgressChart';
+import { KoraaBloomLogo } from '@/components/branding/KoraaBloomLogo';
+import { StreakAura } from '@/components/branding/StreakAura';
 import { ProjectManager } from '@/components/projects/ProjectManager';
 import * as Haptics from 'expo-haptics';
 import { generateEmotionalInsights } from '@/lib/emotionalInsights';
@@ -38,6 +42,8 @@ import { scheduleDailyReminder, checkNotificationPermissions } from '@/hooks/use
 
 const WINDOW_H = Dimensions.get('window').height;
 const PROFILE_MODAL_SCROLL_MAX = Math.min(WINDOW_H * 0.58, 520);
+
+const STREAK_EXPLAINER_DISMISSED_KEY = 'koraa_streak_explainer_dismissed_v1';
 
 type DayData = {
   date: string;
@@ -80,6 +86,24 @@ export default function ProfileScreen() {
   const [changingPassword, setChangingPassword] = useState(false);
   const [notifReminderTime, setNotifReminderTime] = useState({ hour: 9, minute: 0 });
   const [notifSaving, setNotifSaving] = useState(false);
+  /** Clave de día local para rotar mensajes de racha (actualiza al enfocar Yo). */
+  const [streakMessageDayKey, setStreakMessageDayKey] = useState(getLocalDateKey);
+  const [streakExplainerDismissed, setStreakExplainerDismissed] = useState(false);
+
+  useEffect(() => {
+    void AsyncStorage.getItem(STREAK_EXPLAINER_DISMISSED_KEY).then((v) => {
+      if (v === '1') setStreakExplainerDismissed(true);
+    });
+  }, []);
+
+  const dismissStreakExplainer = useCallback(async () => {
+    setStreakExplainerDismissed(true);
+    try {
+      await AsyncStorage.setItem(STREAK_EXPLAINER_DISMISSED_KEY, '1');
+    } catch {
+      /* no-op */
+    }
+  }, []);
 
   const loadProgressData = useCallback(async () => {
     if (!user) return;
@@ -218,9 +242,18 @@ export default function ProfileScreen() {
     loadProfile();
   }, [loadProgressData, loadStreak, loadProfile]);
 
+  useEffect(() => {
+    const unsub = subscribeCheckInCelebration(() => {
+      void loadStreak();
+      void loadProgressData();
+    });
+    return unsub;
+  }, [loadStreak, loadProgressData]);
+
   // Recargar datos cuando la pantalla recibe foco
   useFocusEffect(
     useCallback(() => {
+      setStreakMessageDayKey(getLocalDateKey());
       loadProgressData();
       loadStreak();
       loadProfile();
@@ -439,14 +472,13 @@ export default function ProfileScreen() {
     setFullNameInput(fromProfile || fromMeta);
   }, [showEditProfile, profile.full_name, user?.user_metadata?.full_name]);
 
-  // Función para obtener el nivel de racha y sus colores
+  // Nivel de racha: etiqueta, icono y colores (el mensaje largo rota por día en `dailyStreakEncouragement`)
   const getStreakLevel = (streak: number) => {
     if (streak >= 90) {
       return {
         label: 'Maestra',
         icon: '⭐',
         colors: [THEME.colors.gradient.pink, THEME.colors.accent.yellow] as const,
-        message: '¡Eres una maestra de la consistencia!'
       };
     }
     if (streak >= 60) {
@@ -454,7 +486,6 @@ export default function ProfileScreen() {
         label: 'Experta',
         icon: '🌟',
         colors: [THEME.colors.gradient.pink, THEME.colors.accent.orange] as const,
-        message: '¡Nivel experto alcanzado!'
       };
     }
     if (streak >= 30) {
@@ -462,7 +493,6 @@ export default function ProfileScreen() {
         label: 'Avanzada',
         icon: '✨',
         colors: [THEME.colors.gradient.blue, THEME.colors.gradient.pink] as const,
-        message: '¡Racha avanzada! Sigue así'
       };
     }
     if (streak >= 14) {
@@ -470,7 +500,6 @@ export default function ProfileScreen() {
         label: 'Consistente',
         icon: '💫',
         colors: [THEME.colors.gradient.blue, THEME.colors.category.personal] as const,
-        message: '¡Excelente consistencia!'
       };
     }
     if (streak >= 7) {
@@ -478,18 +507,21 @@ export default function ProfileScreen() {
         label: 'En camino',
         icon: '🔥',
         colors: [THEME.colors.gradient.blue, THEME.colors.gradient.pink] as const,
-        message: '¡Buen comienzo! Sigue así'
       };
     }
     return {
       label: 'Comenzando',
       icon: '🔥',
       colors: [THEME.colors.gradient.blue, THEME.colors.gradient.pink] as const,
-      message: '¡Cada día cuenta!'
     };
   };
 
   const streakLevel = getStreakLevel(currentStreak);
+
+  const dailyStreakEncouragement = useMemo(
+    () => pickDailyStreakEncouragement(currentStreak, streakMessageDayKey),
+    [currentStreak, streakMessageDayKey],
+  );
 
   // Función para manejar pull to refresh
   const handleRefresh = async () => {
@@ -622,7 +654,11 @@ export default function ProfileScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.streakCard}
           >
-            <View style={styles.streakContent}>
+            <View style={styles.streakLeftRow}>
+              <StreakAura contentSize={48} intensity={Math.min(1, currentStreak / 21)}>
+                <KoraaBloomLogo size={48} active={currentStreak > 0} />
+              </StreakAura>
+              <View style={styles.streakContent}>
               {/* Número de racha */}
               <View style={styles.streakNumberContainer}>
                 <Text style={styles.streakNumber}>{currentStreak}</Text>
@@ -639,18 +675,36 @@ export default function ProfileScreen() {
                 </View>
               )}
             </View>
+            </View>
 
             {/* Mensaje motivacional */}
             {currentStreak > 0 ? (
               <Text style={styles.streakMessage}>
-                {streakLevel.message}
+                {dailyStreakEncouragement}
               </Text>
             ) : (
               <Text style={styles.streakMessage}>
-                ¡Comienza hoy!
+                Haz tu check-in en Sentir para encender la racha.
               </Text>
             )}
           </LinearGradient>
+          {!streakExplainerDismissed ? (
+            <View style={styles.streakExplainerBox}>
+              <Text style={styles.streakExplainer}>
+                Un día cuenta cuando completas Sentir (cómo te sientes y energía). Meditar es un extra y no cambia este
+                número.
+              </Text>
+              <TouchableOpacity
+                onPress={dismissStreakExplainer}
+                style={styles.streakExplainerDismissBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="Ocultar explicación de la racha"
+              >
+                <Text style={styles.streakExplainerDismissText}>Entendido</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
 
           <Text style={styles.sectionSubtitle}>
             Consistencia de check-ins en las últimas{' '}
@@ -1438,6 +1492,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: THEME.spacing.sm,
+  },
+  streakLeftRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
+    gap: THEME.spacing.sm,
   },
   streakContent: {
     flexDirection: 'row',
@@ -1483,6 +1545,33 @@ const styles = StyleSheet.create({
     color: THEME.colors.fill[100],
     opacity: 0.9,
     fontSize: 11,
+    flex: 1,
+    minWidth: 0,
+    textAlign: 'right',
+  },
+  streakExplainerBox: {
+    marginBottom: THEME.spacing.md,
+    marginTop: THEME.spacing.xs,
+  },
+  streakExplainer: {
+    ...THEME.typography.caption,
+    color: THEME.colors.accent.purple,
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: THEME.spacing.xs,
+    opacity: 0.92,
+  },
+  streakExplainerDismissBtn: {
+    alignSelf: 'flex-end',
+    paddingVertical: 4,
+    paddingHorizontal: THEME.spacing.xs,
+  },
+  streakExplainerDismissText: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    fontSize: 12,
+    color: THEME.colors.accent.purple,
+    textDecorationLine: 'underline',
   },
   accentTextWhite: {
     fontFamily: THEME.fonts.accent.italic,

@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, canReachSupabase, isSupabaseConfigured } from '@/lib/supabase';
+
+/** Mismo criterio que signInWithEmail: evita errores crípticos si no hay red o falta .env */
+function authUnreachableMessage(detail?: string): string {
+  if (detail === 'missing_config') return 'Falta configurar Supabase en la app.';
+  return 'No hay conexión con el servidor. Prueba otra red, desactiva VPN o Private Relay e inténtalo de nuevo.';
+}
 import { translateError } from '@/lib/errorMessages';
 import { logger } from '@/lib/logger';
 import { track } from '@/lib/analytics';
@@ -98,12 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const reach = await canReachSupabase();
       if (!reach.ok) {
-        return {
-          error:
-            reach.detail === 'missing_config'
-              ? 'Falta configurar Supabase en la app.'
-              : 'No hay conexión con el servidor. Prueba otra red, desactiva VPN o Private Relay e inténtalo de nuevo.',
-        };
+        return { error: authUnreachableMessage(reach.detail) };
       }
 
       const trimmedEmail = email.trim().toLowerCase();
@@ -135,6 +136,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUpWithEmail = async (email: string, password: string, fullName?: string): Promise<SignUpResult> => {
     try {
+      const reach = await canReachSupabase();
+      if (!reach.ok) {
+        return { error: authUnreachableMessage(reach.detail), needsConfirmation: false };
+      }
+
       const emailNorm = email.trim().toLowerCase();
       const meta =
         fullName !== undefined && fullName.trim().length > 0
@@ -238,6 +244,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetPassword = async (email: string) => {
     try {
+      const reach = await canReachSupabase();
+      if (!reach.ok) {
+        return { error: authUnreachableMessage(reach.detail), success: false };
+      }
+
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase());
       if (error) return { error: translateError(error), success: false };
       return { error: null, success: true };
@@ -304,6 +315,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const sendReauthOtp = async () => {
     try {
       if (!user?.email) return { error: 'No hay sesión activa', success: false };
+
+      const reach = await canReachSupabase();
+      if (!reach.ok) {
+        return { error: authUnreachableMessage(reach.detail), success: false };
+      }
 
       const { error } = await supabase.auth.signInWithOtp({
         email: user.email.trim().toLowerCase(),

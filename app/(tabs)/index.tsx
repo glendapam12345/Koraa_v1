@@ -30,6 +30,8 @@ import { GradientButton } from '@/components/GradientButton';
 import { router } from 'expo-router';
 import type { Task } from '@/components/tasks/TaskCard';
 import { RecommendationsSection } from '@/components/recommendations/RecommendationsSection';
+import { KoraaBloomLogo } from '@/components/branding/KoraaBloomLogo';
+import { subscribeCheckInCelebration } from '@/lib/checkInCelebration';
 import { useAuth } from '@/contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QuickOnboardingModal } from '@/components/onboarding/QuickOnboardingModal';
@@ -215,6 +217,33 @@ export default function TodayScreen() {
       // No mostrar toast para errores de racha (no crítico)
     }
   }, []);
+
+  useEffect(() => {
+    const unsub = subscribeCheckInCelebration((p) => {
+      void loadStreak();
+      void loadTodayCheckIn();
+      if (p.milestone) {
+        setShowConfetti(true);
+        showToast(`¡${p.streak} días de racha! ✨`, 'success');
+        if (confettiTimeoutRef.current) {
+          clearTimeout(confettiTimeoutRef.current);
+        }
+        confettiTimeoutRef.current = setTimeout(() => {
+          setShowConfetti(false);
+          confettiTimeoutRef.current = null;
+        }, 3500);
+        if (Platform.OS !== 'web') {
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      } else {
+        showToast('Listo: prioridades actualizadas según tu check-in ✨', 'success');
+        if (Platform.OS !== 'web') {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+      }
+    });
+    return unsub;
+  }, [loadStreak, loadTodayCheckIn, showToast]);
 
   const loadMeditations = useCallback(async () => {
     try {
@@ -725,17 +754,20 @@ export default function TodayScreen() {
               <View style={styles.welcomeHeaderRight}>
                 {user &&
                   (currentStreak > 0 ? (
-                    <TouchableOpacity
-                      style={styles.streakBadgeInline}
-                      onPress={() => router.push('/(tabs)/yo')}
-                      activeOpacity={0.75}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Racha de ${currentStreak} días. Ver en Yo`}
-                    >
-                      <Flame size={14} color={THEME.colors.gradient.pink} />
-                      <Text style={styles.streakTextInline}>{currentStreak}</Text>
-                      <Text style={styles.streakDaysLabel}>días</Text>
-                    </TouchableOpacity>
+                    <View style={styles.streakHeaderCluster}>
+                      <KoraaBloomLogo size={34} active />
+                      <TouchableOpacity
+                        style={styles.streakBadgeInline}
+                        onPress={() => router.push('/(tabs)/yo')}
+                        activeOpacity={0.75}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Racha de ${currentStreak} días. Ver en Yo`}
+                      >
+                        <Flame size={14} color={THEME.colors.gradient.pink} />
+                        <Text style={styles.streakTextInline}>{currentStreak}</Text>
+                        <Text style={styles.streakDaysLabel}>días</Text>
+                      </TouchableOpacity>
+                    </View>
                   ) : (
                     <TouchableOpacity
                       style={styles.streakBadgeMuted}
@@ -762,6 +794,11 @@ export default function TodayScreen() {
                 ) : null}
               </View>
             </View>
+            {user && (
+              <Text style={styles.streakHint} accessibilityRole="text">
+                La racha cuenta los días seguidos con check-in en Sentir. La meditación no suma a la racha.
+              </Text>
+            )}
           </View>
         )}
 
@@ -1879,6 +1916,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: THEME.spacing.sm,
   },
+  streakHeaderCluster: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   settingsHeaderBtn: {
     padding: THEME.spacing.xs,
     minWidth: THEME.sizes.touchTarget,
@@ -1936,6 +1978,14 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
     fontSize: 13,
+  },
+  streakHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.accent.purple,
+    lineHeight: 18,
+    marginTop: 2,
+    maxWidth: '100%',
+    opacity: 0.92,
   },
   prioritiesCardWrap: {
     marginBottom: THEME.spacing.md,
