@@ -1,19 +1,22 @@
 import 'react-native-url-polyfill/auto';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
 function trimEnv(s: string | undefined): string {
   return (s ?? '').trim();
 }
 
-/** .env (Metro) primero; luego extra del manifest (app.config.js / EAS). */
 const supabaseUrl =
   trimEnv(process.env.EXPO_PUBLIC_SUPABASE_URL) ||
   trimEnv(Constants.expoConfig?.extra?.supabaseUrl as string | undefined);
 const supabaseAnonKey =
   trimEnv(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY) ||
   trimEnv(Constants.expoConfig?.extra?.supabaseAnonKey as string | undefined);
+
+export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 
 if (__DEV__) {
   const host = supabaseUrl ? new URL(supabaseUrl).host : '—';
@@ -24,15 +27,77 @@ if (__DEV__) {
   });
 }
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'Missing Supabase configuration. Please set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in your environment variables or expo config.'
+if (!isSupabaseConfigured) {
+  console.warn(
+    'Supabase no configurado. Define EXPO_PUBLIC_SUPABASE_URL y EXPO_PUBLIC_SUPABASE_ANON_KEY en .env o extra de Expo.',
   );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+const resolvedUrl = supabaseUrl || 'https://placeholder.supabase.co';
+const resolvedKey = supabaseAnonKey || 'placeholder-anon-key';
+
+/** Web: localStorage. Native: SecureStore (fallback a AsyncStorage si falla lectura legacy). */
+const ExpoSecureStoreAdapter = {
+  getItem: async (key: string): Promise<string | null> => {
+    if (Platform.OS === 'web') {
+      try {
+        return localStorage.getItem(key);
+      } catch {
+        return null;
+      }
+    }
+    try {
+      const v = await SecureStore.getItemAsync(key);
+      if (v != null) return v;
+    } catch {
+      /* ignore */
+    }
+    try {
+      return await AsyncStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem: async (key: string, value: string): Promise<void> => {
+    if (Platform.OS === 'web') {
+      try {
+        localStorage.setItem(key, value);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+    try {
+      await SecureStore.setItemAsync(key, value);
+    } catch {
+      await AsyncStorage.setItem(key, value);
+    }
+  },
+  removeItem: async (key: string): Promise<void> => {
+    if (Platform.OS === 'web') {
+      try {
+        localStorage.removeItem(key);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+    try {
+      await SecureStore.deleteItemAsync(key);
+    } catch {
+      /* ignore */
+    }
+    try {
+      await AsyncStorage.removeItem(key);
+    } catch {
+      /* ignore */
+    }
+  },
+};
+
+export const supabase = createClient(resolvedUrl, resolvedKey, {
   auth: {
-    storage: AsyncStorage,
+    storage: ExpoSecureStoreAdapter,
     storageKey: 'koraa.supabase.auth',
     autoRefreshToken: true,
     persistSession: true,
@@ -42,15 +107,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 /** Comprueba si el teléfono puede llegar a Supabase (misma red que el login). */
 export async function canReachSupabase(): Promise<{ ok: boolean; detail?: string }> {
+  if (!isSupabaseConfigured) {
+    return { ok: false, detail: 'missing_config' };
+  }
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 15000);
   try {
-    const res = await fetch(`${supabaseUrl}/auth/v1/health`, {
+    const res = await fetch(`${resolvedUrl}/auth/v1/health`, {
       method: 'GET',
       signal: ctrl.signal,
       headers: {
-        apikey: supabaseAnonKey,
-        Authorization: `Bearer ${supabaseAnonKey}`,
+        apikey: resolvedKey,
+        Authorization: `Bearer ${resolvedKey}`,
       },
     });
     clearTimeout(t);
@@ -63,13 +131,11 @@ export async function canReachSupabase(): Promise<{ ok: boolean; detail?: string
   }
 }
 
-// Tipo para errores de Supabase
 interface SupabaseError {
   message?: string;
   code?: string;
 }
 
-// Helper para detectar errores de conexión
 export const isNetworkError = (error: unknown): boolean => {
   if (!error || typeof error !== 'object') return false;
 
@@ -88,10 +154,8 @@ export const isNetworkError = (error: unknown): boolean => {
   );
 };
 
-// Códigos de error de esquema (columna o tabla faltante en Supabase)
 const SCHEMA_ERROR_CODES = ['42703', 'PGRST204', 'PGRST205'];
 
-/** Indica si el error es por esquema (tabla/columna faltante). */
 export const isSchemaError = (error: unknown): boolean => {
   if (!error || typeof error !== 'object') return false;
   const err = error as SupabaseError & { code?: string };
@@ -102,30 +166,27 @@ export const isSchemaError = (error: unknown): boolean => {
 
 export type SchemaSetupType = 'scheduled_date' | 'projects_table' | 'project_id' | 'schema';
 
-/** Tipo de configuración faltante para errores de esquema (Semana / proyectos). */
 export const getSchemaSetupMessage = (error: unknown): SchemaSetupType | null => {
   if (!isSchemaError(error)) return null;
   const err = error as SupabaseError & { message?: string };
   const msg = (err.message || '').toLowerCase();
   if (msg.includes('scheduled_date')) return 'scheduled_date';
-  // Solo "projects_table" cuando el error indica explícitamente que la tabla/relación no existe
   if ((msg.includes('does not exist') || msg.includes('no existe')) && msg.includes('projects')) return 'projects_table';
   if (msg.includes('project_id')) return 'project_id';
   return 'schema';
 };
 
-// Helper para obtener mensaje de error amigable
 export const getErrorMessage = (error: unknown): string => {
   if (!error) return 'Ocurrió un error inesperado';
-  
+
   if (isNetworkError(error)) {
     return 'Sin conexión a internet. Verifica tu conexión e intenta de nuevo.';
   }
-  
+
   if (typeof error === 'object' && 'message' in error) {
     const err = error as SupabaseError;
     return err.message || 'Ocurrió un error inesperado. Por favor intenta de nuevo.';
   }
-  
+
   return 'Ocurrió un error inesperado. Por favor intenta de nuevo.';
 };

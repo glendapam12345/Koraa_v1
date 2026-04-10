@@ -23,7 +23,7 @@ export default function IndexScreen() {
 
       if (!userId) {
         navigatedRef.current = true;
-        router.replace('/auth');
+        router.replace('/auth/login');
         return;
       }
 
@@ -50,7 +50,7 @@ export default function IndexScreen() {
     if (loading) {
       const timeout = setTimeout(() => {
         logger.error('Timeout en carga de autenticación, redirigiendo a auth');
-        router.replace('/auth');
+        router.replace('/auth/login');
       }, 10000);
 
       return () => clearTimeout(timeout);

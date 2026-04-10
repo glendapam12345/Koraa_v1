@@ -210,7 +210,7 @@ export default function ResetPasswordScreen() {
             </Text>
           </View>
           {error ? <View style={styles.errorContainer}><Text style={styles.errorText}>{error}</Text></View> : null}
-          <TouchableOpacity onPress={() => router.replace('/auth')} style={styles.linkButton}>
+          <TouchableOpacity onPress={() => router.replace('/auth/login')} style={styles.linkButton}>
             <Text style={styles.linkText}>Ir a iniciar sesión</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -231,7 +231,7 @@ export default function ResetPasswordScreen() {
               Ya puedes iniciar sesión con tu nueva contraseña.
             </Text>
           </View>
-          <GradientButton title="Iniciar sesión" onPress={() => router.replace('/auth')} />
+          <GradientButton title="Iniciar sesión" onPress={() => router.replace('/auth/login')} />
         </ScrollView>
       </View>
     );

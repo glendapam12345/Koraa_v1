@@ -20,7 +20,7 @@ export default function TabLayout() {
   useEffect(() => {
     if (loading) return;
     if (!userId) {
-      router.replace('/auth');
+      router.replace('/auth/login');
       return;
     }
     let cancelled = false;

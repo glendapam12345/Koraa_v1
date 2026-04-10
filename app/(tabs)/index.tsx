@@ -25,7 +25,7 @@ import { supabase, getErrorMessage } from '@/lib/supabase';
 import { generatePrioritizationExplanation, getPrioritizationExplainerBullets } from '@/lib/smartPrioritization';
 import { getEmotionEmoji } from '@/lib/emotionalInsights';
 import { logger } from '@/lib/logger';
-import { Plus, Flame, PenTool, Heart, Target, ArrowRight, Lightbulb, ChevronDown, ChevronRight, FolderKanban, ClipboardList, CalendarRange } from 'lucide-react-native';
+import { Plus, Flame, PenTool, Heart, Target, ArrowRight, Lightbulb, ChevronDown, ChevronRight, FolderKanban, ClipboardList, CalendarRange, Settings } from 'lucide-react-native';
 import { GradientButton } from '@/components/GradientButton';
 import { router } from 'expo-router';
 import type { Task } from '@/components/tasks/TaskCard';
@@ -722,32 +722,45 @@ export default function TodayScreen() {
           <View style={styles.welcomeSection}>
             <View style={styles.welcomeHeader}>
               <Text style={styles.welcomeTitle}>{getGreeting} ✨</Text>
-              {user &&
-                (currentStreak > 0 ? (
+              <View style={styles.welcomeHeaderRight}>
+                {user &&
+                  (currentStreak > 0 ? (
+                    <TouchableOpacity
+                      style={styles.streakBadgeInline}
+                      onPress={() => router.push('/(tabs)/yo')}
+                      activeOpacity={0.75}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Racha de ${currentStreak} días. Ver en Yo`}
+                    >
+                      <Flame size={14} color={THEME.colors.gradient.pink} />
+                      <Text style={styles.streakTextInline}>{currentStreak}</Text>
+                      <Text style={styles.streakDaysLabel}>días</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.streakBadgeMuted}
+                      onPress={() => router.push('/(tabs)/sentir')}
+                      activeOpacity={0.75}
+                      accessibilityRole="button"
+                      accessibilityLabel="Sin racha aún. Ir a Sentir para tu check-in"
+                    >
+                      <Flame size={14} color={THEME.colors.text.tertiary} />
+                      <Text style={styles.streakTextMuted}>Racha</Text>
+                      <Text style={styles.streakTextMutedBold}>0</Text>
+                    </TouchableOpacity>
+                  ))}
+                {user ? (
                   <TouchableOpacity
-                    style={styles.streakBadgeInline}
-                    onPress={() => router.push('/(tabs)/yo')}
+                    onPress={() => router.push('/settings')}
+                    style={styles.settingsHeaderBtn}
                     activeOpacity={0.75}
                     accessibilityRole="button"
-                    accessibilityLabel={`Racha de ${currentStreak} días. Ver en Yo`}
+                    accessibilityLabel="Ajustes de cuenta"
                   >
-                    <Flame size={14} color={THEME.colors.gradient.pink} />
-                    <Text style={styles.streakTextInline}>{currentStreak}</Text>
-                    <Text style={styles.streakDaysLabel}>días</Text>
+                    <Settings size={THEME.sizes.iconStandard} color={THEME.colors.text.main} />
                   </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.streakBadgeMuted}
-                    onPress={() => router.push('/(tabs)/sentir')}
-                    activeOpacity={0.75}
-                    accessibilityRole="button"
-                    accessibilityLabel="Sin racha aún. Ir a Sentir para tu check-in"
-                  >
-                    <Flame size={14} color={THEME.colors.text.tertiary} />
-                    <Text style={styles.streakTextMuted}>Racha</Text>
-                    <Text style={styles.streakTextMutedBold}>0</Text>
-                  </TouchableOpacity>
-                ))}
+                ) : null}
+              </View>
             </View>
           </View>
         )}
@@ -1860,6 +1873,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: THEME.spacing.sm,
+  },
+  welcomeHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+  },
+  settingsHeaderBtn: {
+    padding: THEME.spacing.xs,
+    minWidth: THEME.sizes.touchTarget,
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   welcomeTitle: {
     ...THEME.typography.h1,
