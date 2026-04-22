@@ -17,7 +17,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { router, useFocusEffect } from 'expo-router';
-import { LogOut, Settings, Circle as HelpCircle, CreditCard as Edit, X, Plus, Folder, RotateCcw, Lock, Bell } from 'lucide-react-native';
+import { LogOut, Settings, Circle as HelpCircle, CreditCard as Edit, X, Plus, Folder, RotateCcw, Lock, Bell, Flame } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase, getErrorMessage } from '@/lib/supabase';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
@@ -25,7 +25,6 @@ import { logger } from '@/lib/logger';
 import { subscribeCheckInCelebration } from '@/lib/checkInCelebration';
 import { pickDailyStreakEncouragement, getLocalDateKey } from '@/lib/streakDailyMessages';
 import { ProgressChart } from '@/components/ProgressChart';
-import { KoraaBloomLogo } from '@/components/branding/KoraaBloomLogo';
 import { StreakAura } from '@/components/branding/StreakAura';
 import { ProjectManager } from '@/components/projects/ProjectManager';
 import * as Haptics from 'expo-haptics';
@@ -656,7 +655,9 @@ export default function ProfileScreen() {
           >
             <View style={styles.streakLeftRow}>
               <StreakAura contentSize={48} intensity={Math.min(1, currentStreak / 21)}>
-                <KoraaBloomLogo size={48} active={currentStreak > 0} />
+                <View style={styles.streakSymbolBadge}>
+                  <Flame size={26} color={THEME.colors.fill[100]} strokeWidth={2.25} />
+                </View>
               </StreakAura>
               <View style={styles.streakContent}>
               {/* Número de racha */}
@@ -1500,6 +1501,16 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     gap: THEME.spacing.sm,
+  },
+  streakSymbolBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.colors.surfaceOverlay.medium,
+    borderWidth: 1,
+    borderColor: THEME.colors.surfaceOverlay.borderStrong,
   },
   streakContent: {
     flexDirection: 'row',

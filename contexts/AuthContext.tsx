@@ -282,6 +282,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updatePassword = async (newPassword: string) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        return {
+          error: 'Tu sesión de recuperación caducó. Solicita un nuevo código e inténtalo otra vez.',
+          success: false,
+        };
+      }
+
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) return { error: translateError(error), success: false };
       setIsRecoveryMode(false);

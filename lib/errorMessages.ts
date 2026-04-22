@@ -12,6 +12,18 @@ const errorMappings: ErrorMapping[] = [
   { pattern: 'password should be at least', message: 'La contraseña debe tener al menos 8 caracteres' },
   { pattern: 'password is too weak', message: 'La contraseña es demasiado débil' },
   {
+    pattern: 'password has been found in an online data breach',
+    message: 'Esa contraseña es insegura (filtrada). Elige otra más fuerte.',
+  },
+  {
+    pattern: 'auth session missing',
+    message: 'Tu sesión de recuperación caducó. Solicita un nuevo código.',
+  },
+  {
+    pattern: 'session not found',
+    message: 'Tu sesión de recuperación caducó. Solicita un nuevo código.',
+  },
+  {
     pattern: 'token has expired or is invalid',
     message: 'El código expiró o no es válido. Solicita uno nuevo',
   },

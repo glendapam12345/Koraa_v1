@@ -11,10 +11,21 @@ function trimEnv(s: string | undefined): string {
 
 const supabaseUrl =
   trimEnv(process.env.EXPO_PUBLIC_SUPABASE_URL) ||
-  trimEnv(Constants.expoConfig?.extra?.supabaseUrl as string | undefined);
+  trimEnv(
+    (Constants.expoConfig?.extra?.supabaseUrl as string | undefined) ||
+      (Constants.manifest2 as { extra?: { supabaseUrl?: string } } | undefined)?.extra
+        ?.supabaseUrl ||
+      (Constants.manifest as { extra?: { supabaseUrl?: string } } | undefined)?.extra?.supabaseUrl,
+  );
 const supabaseAnonKey =
   trimEnv(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY) ||
-  trimEnv(Constants.expoConfig?.extra?.supabaseAnonKey as string | undefined);
+  trimEnv(
+    (Constants.expoConfig?.extra?.supabaseAnonKey as string | undefined) ||
+      (Constants.manifest2 as { extra?: { supabaseAnonKey?: string } } | undefined)?.extra
+        ?.supabaseAnonKey ||
+      (Constants.manifest as { extra?: { supabaseAnonKey?: string } } | undefined)?.extra
+        ?.supabaseAnonKey,
+  );
 
 export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 

@@ -1,19 +1,31 @@
 /**
  * Configuración única de Expo (sin app.json duplicado → expo-doctor OK).
  * Metro carga .env antes de evaluar este archivo.
+ *
+ * EAS Build: las variables deben existir en el entorno del build (EAS → Secrets)
+ * con nombres EXPO_PUBLIC_* o los alias de abajo; .env no se sube al build por defecto.
  */
+function firstTrimmed(...vals) {
+  for (const v of vals) {
+    const s = typeof v === 'string' ? v.trim() : '';
+    if (s) return s;
+  }
+  return undefined;
+}
+
 module.exports = {
   expo: {
     name: 'Koraa',
     slug: 'koraav1-1',
     version: '1.0.0',
     orientation: 'portrait',
-    icon: './assets/images/icon.png',
+    icon: './assets/images/koraa-logo.png',
     scheme: 'myapp',
     userInterfaceStyle: 'automatic',
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.impermanencecasaartisitca.koraav1',
+      buildNumber: '5',
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         CFBundleDisplayName: 'Koraa',
@@ -33,8 +45,17 @@ module.exports = {
       eas: {
         projectId: 'ef96554d-08d3-4cb6-a5fe-4217d7295541',
       },
-      supabaseUrl: (process.env.EXPO_PUBLIC_SUPABASE_URL || '').trim() || undefined,
-      supabaseAnonKey: (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '').trim() || undefined,
+      supabaseUrl: firstTrimmed(
+        process.env.EXPO_PUBLIC_SUPABASE_URL,
+        process.env.SUPABASE_URL,
+        process.env.API_Key,
+      ),
+      supabaseAnonKey: firstTrimmed(
+        process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+        process.env.SUPABASE_ANON_KEY,
+        process.env.anon_key,
+        process.env.ANON_KEY,
+      ),
     },
     owner: 'pamela.1234',
   },
