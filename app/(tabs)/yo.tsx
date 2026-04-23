@@ -1490,9 +1490,9 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
     ...THEME.shadows.soft,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
     gap: THEME.spacing.sm,
   },
   streakLeftRow: {
@@ -1515,6 +1515,8 @@ const styles = StyleSheet.create({
   streakContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
     gap: THEME.spacing.md,
   },
   streakNumberContainer: {
@@ -1536,6 +1538,7 @@ const styles = StyleSheet.create({
   streakLevelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 1,
     gap: THEME.spacing.xs,
     backgroundColor: THEME.colors.surfaceOverlay.medium,
     paddingHorizontal: THEME.spacing.sm,
@@ -1556,9 +1559,9 @@ const styles = StyleSheet.create({
     color: THEME.colors.fill[100],
     opacity: 0.9,
     fontSize: 11,
-    flex: 1,
-    minWidth: 0,
-    textAlign: 'right',
+    width: '100%',
+    textAlign: 'left',
+    lineHeight: 16,
   },
   streakExplainerBox: {
     marginBottom: THEME.spacing.md,
