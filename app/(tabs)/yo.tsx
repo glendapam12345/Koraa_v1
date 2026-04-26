@@ -17,7 +17,20 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { router, useFocusEffect } from 'expo-router';
-import { LogOut, Settings, Circle as HelpCircle, CreditCard as Edit, X, Plus, Folder, RotateCcw, Lock, Bell, Flame } from 'lucide-react-native';
+import {
+  LogOut,
+  Settings,
+  Circle as HelpCircle,
+  CreditCard as Edit,
+  X,
+  Plus,
+  Folder,
+  RotateCcw,
+  Lock,
+  Bell,
+  Flame,
+  Trash2,
+} from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase, getErrorMessage } from '@/lib/supabase';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
@@ -62,7 +75,7 @@ type UserProfile = {
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { user, signOut } = useAuth();
+  const { user, signOut, deleteAccount } = useAuth();
   const [progressData, setProgressData] = useState<DayData[]>([]);
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   const [, setShowConfetti] = useState(false);
@@ -79,6 +92,7 @@ export default function ProfileScreen() {
   const [showProjects, setShowProjects] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changePasswordError, setChangePasswordError] = useState<string | null>(null);
@@ -282,6 +296,48 @@ export default function ProfileScreen() {
     await signOut();
     router.replace('/auth/login');
   };
+
+  const handleDeleteAccount = useCallback(() => {
+    if (deletingAccount) return;
+    Alert.alert(
+      'Eliminar cuenta',
+      'Esta acción es permanente y borrará tu cuenta y tus datos en Koraa.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Continuar',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Confirmar eliminación',
+              '¿Seguro? No se puede deshacer.',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Sí, eliminar',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setDeletingAccount(true);
+                    try {
+                      const { error } = await deleteAccount();
+                      if (error) {
+                        Alert.alert('No se pudo eliminar', error);
+                        return;
+                      }
+                      Alert.alert('Cuenta eliminada', 'Tu cuenta y tus datos se eliminaron correctamente.');
+                      router.replace('/auth/login');
+                    } finally {
+                      setDeletingAccount(false);
+                    }
+                  },
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
+  }, [deleteAccount, deletingAccount]);
 
   const handleChangePassword = async () => {
     setChangePasswordError(null);
@@ -878,6 +934,21 @@ export default function ProfileScreen() {
               Cerrar sesión
             </Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleDeleteAccount}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Eliminar cuenta"
+            accessibilityHint="Elimina de forma permanente tu cuenta y tus datos"
+            disabled={deletingAccount}
+          >
+            <Trash2 size={24} color={THEME.colors.errorBorder} />
+            <Text style={[styles.menuItemText, styles.deleteAccountText]}>
+              {deletingAccount ? 'Eliminando cuenta…' : 'Eliminar cuenta'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
@@ -1326,6 +1397,23 @@ export default function ProfileScreen() {
                 <LogOut size={22} color={THEME.colors.gradient.pink} />
                 <Text style={[styles.menuItemText, { color: THEME.colors.gradient.pink }]}>Cerrar sesión</Text>
               </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowSettingsModal(false);
+                  handleDeleteAccount();
+                }}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel="Eliminar cuenta"
+                disabled={deletingAccount}
+              >
+                <Trash2 size={22} color={THEME.colors.errorBorder} />
+                <Text style={[styles.menuItemText, styles.deleteAccountText]}>
+                  {deletingAccount ? 'Eliminando cuenta…' : 'Eliminar cuenta'}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -1638,6 +1726,10 @@ const styles = StyleSheet.create({
   menuItemText: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
+  },
+  deleteAccountText: {
+    color: THEME.colors.errorBorder,
+    fontFamily: THEME.fonts.heading.medium,
   },
   notifWebNote: {
     ...THEME.typography.caption,
