@@ -3,11 +3,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-import { Toast } from '@/components/Toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWeekTasks, getWeekOptions } from '@/hooks/useWeekTasks';
 import type { Task } from '@/hooks/useTasks';
 import { getSupabaseEnvStatus } from '@/lib/envCheck';
+import { PremiumLock } from '@/components/PremiumLock';
 import { Calendar, Plus, FolderKanban, FileText, ChevronRight, ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 
@@ -23,6 +23,7 @@ export default function SemanaScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  void toastMessage; // used by showToast; Toast UI not rendered on this screen
   const [selectedWeekStart, setSelectedWeekStart] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const showToast = useCallback((msg: string) => setToastMessage(msg), []);
@@ -77,20 +78,21 @@ export default function SemanaScreen() {
 
   return (
     <View style={styles.container}>
-      {toastMessage ? (
-        <Toast message={toastMessage} onHide={() => setToastMessage(null)} />
-      ) : null}
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={loading}
-            onRefresh={() => loadWeekTasks(selectedWeekStart || undefined)}
-            tintColor={THEME.colors.gradient.blue}
-          />
-        }
+      <PremiumLock
+        title="Historial semanal premium"
+        description="Puedes seguir viendo tu semana y activar Premium cuando quieras."
       >
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={() => loadWeekTasks(selectedWeekStart || undefined)}
+              tintColor={THEME.colors.gradient.blue}
+            />
+          }
+        >
         <LinearGradient
           colors={THEME.colors.gradientTint.header}
           style={styles.headerGradient}
@@ -368,7 +370,8 @@ export default function SemanaScreen() {
             ) : null}
           </View>
         ) : null}
-      </ScrollView>
+        </ScrollView>
+      </PremiumLock>
     </View>
   );
 }

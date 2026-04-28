@@ -25,7 +25,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.impermanencecasaartisitca.koraav1',
-      buildNumber: '7',
+      buildNumber: '8',
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         CFBundleDisplayName: 'Koraa',
@@ -55,6 +55,14 @@ module.exports = {
         process.env.SUPABASE_ANON_KEY,
         process.env.anon_key,
         process.env.ANON_KEY,
+      ),
+      revenueCatApiKeyIOS: firstTrimmed(
+        process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS,
+        process.env.REVENUECAT_API_KEY_IOS,
+      ),
+      revenueCatApiKeyAndroid: firstTrimmed(
+        process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID,
+        process.env.REVENUECAT_API_KEY_ANDROID,
       ),
     },
     owner: 'pamela.1234',

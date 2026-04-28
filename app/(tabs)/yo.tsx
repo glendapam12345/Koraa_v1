@@ -30,6 +30,7 @@ import {
   Bell,
   Flame,
   Trash2,
+  Crown,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase, getErrorMessage } from '@/lib/supabase';
@@ -853,6 +854,21 @@ export default function ProfileScreen() {
           >
             <Settings size={24} color={THEME.colors.text.main} />
             <Text style={styles.menuItemText}>Ajustes</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            activeOpacity={0.7}
+            onPress={() => router.push('/paywall')}
+            accessibilityRole="button"
+            accessibilityLabel="Ver planes premium"
+            accessibilityHint="Abre el paywall para suscribirte o restaurar compra"
+          >
+            <Crown size={24} color={THEME.colors.gradient.blue} />
+            <View style={styles.menuItemContent}>
+              <Text style={styles.menuItemText}>Ver planes premium</Text>
+              <Text style={styles.menuItemSubtext}>Suscribirte o restaurar compra</Text>
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity 

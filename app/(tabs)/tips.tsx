@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
+import { PremiumLock } from '@/components/PremiumLock';
 import { supabase } from '@/lib/supabase';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
 import { getEmotionTips } from '@/lib/emotionTips';
@@ -209,21 +210,25 @@ export default function TipsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: insets.top + THEME.spacing.md, paddingBottom: insets.bottom + THEME.spacing.xl },
-        ]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={THEME.colors.gradient.blue}
-            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-          />
-        }
+      <PremiumLock
+        title="Consejos premium"
+        description="Abre el paywall para desbloquear recomendaciones completas cuando quieras."
       >
+        <ScrollView
+          contentContainerStyle={[
+            styles.content,
+            { paddingTop: insets.top + THEME.spacing.md, paddingBottom: insets.bottom + THEME.spacing.xl },
+          ]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={THEME.colors.gradient.blue}
+              colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+            />
+          }
+        >
         {!todayMood ? (
           // Sin check-in hoy
           <View style={styles.emptyState}>
@@ -344,7 +349,8 @@ export default function TipsScreen() {
             </View>
           </>
         ) : null}
-      </ScrollView>
+        </ScrollView>
+      </PremiumLock>
 
       <Tooltip
         visible={showTooltip}

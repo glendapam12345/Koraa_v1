@@ -246,9 +246,13 @@ export default function FocusScreen() {
         }
       }
 
-      // Redirigir a tabs (Inicio) para ver prioridades
+      // En onboarding, mostrar paywall suave antes de tabs.
       try {
-        router.replace('/(tabs)');
+        if (from === 'sentir') {
+          router.replace('/(tabs)');
+        } else {
+          router.replace({ pathname: '/paywall', params: { next: '/(tabs)' } });
+        }
       } catch (navError) {
         console.error('Error en navegación:', navError);
         router.replace('/(tabs)');

@@ -14,11 +14,13 @@ import {
 } from '@expo-google-fonts/libre-baskerville';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { logger } from '@/lib/logger';
 import { useNotifications, scheduleDailyReminder } from '@/hooks/useNotifications';
 import { AnalyticsScreenTracker } from '@/components/AnalyticsScreenTracker';
+import { initializeRevenueCat } from '@/lib/revenuecat';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -53,6 +55,11 @@ export default function RootLayout() {
 
   useFrameworkReady();
   useNotifications();
+
+  useEffect(() => {
+    if (!fontsLoaded) return;
+    void initializeRevenueCat();
+  }, [fontsLoaded]);
 
   const router = useRouter();
   useEffect(() => {
@@ -101,24 +108,27 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <AuthProvider>
-        <SafeAreaProvider>
-          <AnalyticsScreenTracker />
-          <View style={styles.root}>
-            <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="auth" />
-            <Stack.Screen name="settings" />
-            <Stack.Screen name="reset-password" />
-            <Stack.Screen name="help" />
-            <Stack.Screen name="onboarding" />
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="project/[id]" />
-            <Stack.Screen name="proyectos" />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-            <StatusBar style="auto" />
-          </View>
-        </SafeAreaProvider>
+        <SubscriptionProvider>
+          <SafeAreaProvider>
+            <AnalyticsScreenTracker />
+            <View style={styles.root}>
+              <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="auth" />
+              <Stack.Screen name="settings" />
+              <Stack.Screen name="reset-password" />
+              <Stack.Screen name="help" />
+              <Stack.Screen name="onboarding" />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="paywall" />
+              <Stack.Screen name="project/[id]" />
+              <Stack.Screen name="proyectos" />
+              <Stack.Screen name="+not-found" />
+            </Stack>
+              <StatusBar style="auto" />
+            </View>
+          </SafeAreaProvider>
+        </SubscriptionProvider>
       </AuthProvider>
     </GestureHandlerRootView>
   );
