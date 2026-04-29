@@ -9,6 +9,8 @@ import {
   RefreshControl,
   ActivityIndicator,
   View as ViewRN,
+  Animated,
+  Easing,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
@@ -95,10 +97,16 @@ export default function TodayScreen() {
   const [heroDetailsExpanded, setHeroDetailsExpanded] = useState(false);
   const [showRedistribute, setShowRedistribute] = useState(false);
   const [taskFilter, setTaskFilter] = useState<'hoy' | 'todas'>('hoy');
+  const [emotionalMemoryInsights, setEmotionalMemoryInsights] = useState<{
+    title: string;
+    message: string;
+    tip: string;
+  }[]>([]);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backgroundLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoadingTasksRef = useRef<boolean>(false);
+  const emotionalCardsAnim = useRef(new Animated.Value(0)).current;
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToastMessage(message);
@@ -218,10 +226,111 @@ export default function TodayScreen() {
     }
   }, []);
 
+  const loadEmotionalMemory = useCallback(async () => {
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const authUser = authData.user;
+      if (!authUser) return;
+
+      const fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - 42);
+
+      const { data, error } = await supabase
+        .from('daily_check_ins')
+        .select('date, energy_level, emotion')
+        .eq('user_id', authUser.id)
+        .gte('date', fromDate.toISOString().split('T')[0])
+        .order('date', { ascending: false });
+
+      if (error || !data || data.length < 4) {
+        setEmotionalMemoryInsights([]);
+        return;
+      }
+
+      const dayNames = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+      const byDay = new Map<number, number[]>();
+      const emotionCounts = new Map<string, number>();
+
+      data.forEach((item) => {
+        const dt = new Date(item.date);
+        const day = dt.getDay();
+        const energy = typeof item.energy_level === 'number' ? item.energy_level : null;
+        if (energy !== null) {
+          byDay.set(day, [...(byDay.get(day) ?? []), energy]);
+        }
+        if (item.emotion) {
+          const key = item.emotion.toLowerCase();
+          emotionCounts.set(key, (emotionCounts.get(key) ?? 0) + 1);
+        }
+      });
+
+      let lowestDay = -1;
+      let lowestAvg = Number.POSITIVE_INFINITY;
+      let highestDay = -1;
+      let highestAvg = Number.NEGATIVE_INFINITY;
+
+      byDay.forEach((energies, day) => {
+        if (energies.length < 2) return;
+        const avg = energies.reduce((sum, val) => sum + val, 0) / energies.length;
+        if (avg < lowestAvg) {
+          lowestAvg = avg;
+          lowestDay = day;
+        }
+        if (avg > highestAvg) {
+          highestAvg = avg;
+          highestDay = day;
+        }
+      });
+
+      const topEmotionEntry = Array.from(emotionCounts.entries()).sort((a, b) => b[1] - a[1])[0];
+      const topEmotion = topEmotionEntry ? topEmotionEntry[0] : null;
+
+      const insights: { title: string; message: string; tip: string }[] = [];
+
+      if (lowestDay !== -1 && lowestAvg <= 3.2) {
+        insights.push({
+          title: 'Memoria emocional',
+          message: `En las ultimas semanas, los ${dayNames[lowestDay]} sueles llegar con menos energia.`,
+          tip: `Ese dia deja tareas ligeras y protege recuperacion${topEmotion ? ` cuando te notes ${topEmotion}` : ''}.`,
+        });
+      }
+
+      if (highestDay !== -1 && highestAvg >= 4) {
+        insights.push({
+          title: 'Memoria emocional',
+          message: `Tu mejor ventana suele ser los ${dayNames[highestDay]}: ahi te notas con mas energia.`,
+          tip: 'Reserva ese dia para enfoque profundo y mueve lo operativo a bloques mas suaves.',
+        });
+      }
+
+      if (insights.length === 0) {
+        insights.push({
+          title: 'Memoria emocional',
+          message: 'Tu energia ha estado variable estas semanas, sin un patron rigido por dia.',
+          tip: 'Revisa Sentir al inicio del dia y ajusta tu carga en tiempo real.',
+        });
+      }
+
+      if (topEmotion && !insights.some((i) => i.message.includes(topEmotion))) {
+        insights.push({
+          title: 'Memoria emocional',
+          message: `Tu estado mas repetido recientemente fue ${topEmotion}.`,
+          tip: 'Cuando aparezca ese estado, reduce friccion y enfocate en una sola tarea clave.',
+        });
+      }
+
+      setEmotionalMemoryInsights(insights.slice(0, 3));
+    } catch (error) {
+      logger.debug('Error cargando memoria emocional:', error);
+      setEmotionalMemoryInsights([]);
+    }
+  }, []);
+
   useEffect(() => {
     const unsub = subscribeCheckInCelebration((p) => {
       void loadStreak();
       void loadTodayCheckIn();
+      void loadEmotionalMemory();
       if (p.milestone) {
         setShowConfetti(true);
         showToast(`¡${p.streak} días de racha! ✨`, 'success');
@@ -243,7 +352,7 @@ export default function TodayScreen() {
       }
     });
     return unsub;
-  }, [loadStreak, loadTodayCheckIn, showToast]);
+  }, [loadStreak, loadTodayCheckIn, loadEmotionalMemory, showToast]);
 
   const loadMeditations = useCallback(async () => {
     try {
@@ -370,6 +479,7 @@ export default function TodayScreen() {
     loadStreak();
     loadMeditations();
     loadPrioritizationMetadata();
+    loadEmotionalMemory();
 
     // Intentar sincronizar datos offline al cargar
     (async () => {
@@ -413,7 +523,7 @@ export default function TodayScreen() {
         backgroundLoadTimeoutRef.current = null;
       }
     };
-  }, [loadTasks, loadTodayCheckIn, loadStreak, loadMeditations, loadPrioritizationMetadata]);
+  }, [loadTasks, loadTodayCheckIn, loadStreak, loadMeditations, loadPrioritizationMetadata, loadEmotionalMemory]);
 
   // Onboarding rápido se muestra solo la primera vez (ya está en el useEffect principal)
 
@@ -633,6 +743,88 @@ export default function TodayScreen() {
     [getPriorityExplanation]
   );
 
+  const emotionalClosure = useMemo(() => {
+    if (!todayMood || energyLevel === 0) return null;
+
+    const totalCount = tasks.length;
+    const completedCount = tasks.filter((t: Task) => t.is_completed).length;
+    const pendingCount = Math.max(totalCount - completedCount, 0);
+    const completionRatio = totalCount > 0 ? completedCount / totalCount : 0;
+    const lowEnergyContext = energyLevel <= 2 || ['agotada', 'ansiosa', 'abrumada'].includes(todayMood.toLowerCase());
+
+    if (totalCount === 0) {
+      return {
+        title: 'Cierre emocional de hoy',
+        message: 'Hoy escuchaste cómo te sentías. Ese ya es un avance real.',
+        note: 'Cuando quieras, agrega una tarea pequeña para seguir el ritmo sin presión.',
+      };
+    }
+
+    if (completionRatio >= 0.8) {
+      return {
+        title: 'Cierre emocional de hoy',
+        message: `Hiciste suficiente para hoy: cerraste ${completedCount} de ${totalCount} tareas.`,
+        note: 'Puedes soltar con tranquilidad y retomar mañana con claridad.',
+      };
+    }
+
+    if (lowEnergyContext) {
+      return {
+        title: 'Cierre emocional de hoy',
+        message:
+          completedCount > 0
+            ? `Tuviste poca energía y aun así avanzaste ${completedCount} tarea${completedCount === 1 ? '' : 's'}. Eso cuenta.`
+            : 'Hoy no avanzaste tareas, y tiene sentido por cómo te sentías.',
+        note: pendingCount > 0 ? `Quedan ${pendingCount} pendientes; podemos repartirlos sin sobrecargarte.` : 'Mañana puedes retomar desde una tarea liviana.',
+      };
+    }
+
+    if (completionRatio >= 0.4) {
+      return {
+        title: 'Cierre emocional de hoy',
+        message: `Hoy avanzaste ${completedCount} de ${totalCount}. Es progreso, no perfección.`,
+        note: pendingCount > 0 ? `Te quedan ${pendingCount} tareas; priorizar una mañana será suficiente.` : 'Tu lista quedó limpia hoy. Buen cierre.',
+      };
+    }
+
+    return {
+      title: 'Cierre emocional de hoy',
+      message:
+        completedCount > 0
+          ? `Hoy hiciste ${completedCount} tarea${completedCount === 1 ? '' : 's'}. Parece poco, pero suma.`
+          : 'Hoy no se completaron tareas y también es válido cuando el día se complica.',
+      note: 'Si quieres, mañana arrancamos con la tarea más corta para ganar inercia.',
+    };
+  }, [todayMood, energyLevel, tasks]);
+
+  const emotionalToneLine = useMemo(() => {
+    if (!todayMood) return 'Tu forma de avanzar no tiene que parecerse a la de nadie mas.';
+    const mood = todayMood.toLowerCase();
+    if (['agotada', 'ansiosa', 'abrumada'].includes(mood)) {
+      return 'Hoy tocaba sostenerte primero. La productividad tambien puede ser compasiva.';
+    }
+    if (['motivada', 'enfocada'].includes(mood)) {
+      return 'Canaliza este impulso con intencion: menos dispersion, mas impacto.';
+    }
+    return 'Ritmo sereno, avance real: asi se construye consistencia durable.';
+  }, [todayMood]);
+
+  const selectedEmotionalMemoryInsight = useMemo(() => {
+    if (emotionalMemoryInsights.length === 0) return null;
+    const dayIndex = new Date().getDate() % emotionalMemoryInsights.length;
+    return emotionalMemoryInsights[dayIndex];
+  }, [emotionalMemoryInsights]);
+
+  useEffect(() => {
+    emotionalCardsAnim.setValue(0);
+    Animated.timing(emotionalCardsAnim, {
+      toValue: 1,
+      duration: 500,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [emotionalClosure, selectedEmotionalMemoryInsight, emotionalCardsAnim]);
+
   type TaskSection = { id: string; title: string; color: string; isCategory: true; categoryKey: string; tasks: Task[] };
   const taskSections = useMemo(() => {
     const byCategory = new Map<string, Task[]>();
@@ -701,6 +893,7 @@ export default function TodayScreen() {
         loadTodayCheckIn(),
         loadStreak(),
         loadMeditations(),
+        loadEmotionalMemory(),
       ]);
     } catch (error) {
       logger.error('Error al refrescar:', error);
@@ -1038,6 +1231,48 @@ export default function TodayScreen() {
                       </View>
                     )}
                   </TouchableOpacity>
+                  {emotionalClosure && (
+                    <Animated.View
+                      style={[
+                        styles.emotionalCardAnimatedWrap,
+                        {
+                          opacity: emotionalCardsAnim,
+                          transform: [
+                            {
+                              translateY: emotionalCardsAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [10, 0],
+                              }),
+                            },
+                          ],
+                        },
+                      ]}
+                    >
+                      <LinearGradient
+                        colors={[THEME.colors.tint.blue.veryFaint, THEME.colors.fill[100]]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.emotionalClosureCard}
+                      >
+                        <View style={styles.emotionalSignalBadgeRow}>
+                          <View style={styles.emotionalSignalBadge}>
+                            <Text style={styles.emotionalSignalBadgeText}>Loop emocional</Text>
+                          </View>
+                          <View style={styles.emotionalSignalDot} />
+                        </View>
+                        <View style={styles.emotionalClosureHeader}>
+                          <Target size={16} color={THEME.colors.gradient.blue} />
+                          <Text style={styles.emotionalClosureTitle}>{emotionalClosure.title}</Text>
+                        </View>
+                        <Text style={styles.emotionalClosureMessage}>{emotionalClosure.message}</Text>
+                        <View style={styles.emotionalSignalTipRow}>
+                          <ArrowRight size={14} color={THEME.colors.gradient.blue} />
+                          <Text style={styles.emotionalClosureNote}>{emotionalClosure.note}</Text>
+                        </View>
+                        <Text style={styles.emotionalToneLine}>{emotionalToneLine}</Text>
+                      </LinearGradient>
+                    </Animated.View>
+                  )}
                 </View>
               )}
               {!todayMood && displayedIncompleteTasks.length > 0 && (
@@ -1064,6 +1299,47 @@ export default function TodayScreen() {
                     <ChevronRight size={22} color={THEME.colors.gradient.blue} />
                   </LinearGradient>
                 </TouchableOpacity>
+              )}
+              {selectedEmotionalMemoryInsight && (
+                <Animated.View
+                  style={[
+                    styles.emotionalCardAnimatedWrap,
+                    {
+                      opacity: emotionalCardsAnim,
+                      transform: [
+                        {
+                          translateY: emotionalCardsAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [12, 0],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  <LinearGradient
+                    colors={[THEME.colors.tint.pink.soft, THEME.colors.fill[100]]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.emotionalMemoryCard}
+                  >
+                    <View style={styles.emotionalSignalBadgeRow}>
+                      <View style={[styles.emotionalSignalBadge, styles.emotionalMemoryBadge]}>
+                        <Text style={styles.emotionalSignalBadgeText}>Memoria semanal</Text>
+                      </View>
+                      <View style={styles.emotionalSignalDot} />
+                    </View>
+                    <View style={styles.emotionalMemoryHeader}>
+                      <Heart size={16} color={THEME.colors.gradient.pink} />
+                      <Text style={styles.emotionalMemoryTitle}>{selectedEmotionalMemoryInsight.title}</Text>
+                    </View>
+                    <Text style={styles.emotionalMemoryMessage}>{selectedEmotionalMemoryInsight.message}</Text>
+                    <View style={styles.emotionalSignalTipRow}>
+                      <ArrowRight size={14} color={THEME.colors.gradient.pink} />
+                      <Text style={styles.emotionalMemoryTip}>{selectedEmotionalMemoryInsight.tip}</Text>
+                    </View>
+                  </LinearGradient>
+                </Animated.View>
               )}
               <View style={styles.tareasHeaderSection}>
               <Text style={styles.tareasTitle} numberOfLines={1}>
@@ -2520,6 +2796,120 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.secondary,
+  },
+  emotionalClosureCard: {
+    marginTop: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.standard,
+    borderWidth: 1,
+    borderColor: THEME.colors.fill[200],
+    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.sm,
+    overflow: 'hidden',
+  },
+  emotionalCardAnimatedWrap: {
+    marginTop: THEME.spacing.xs,
+  },
+  emotionalSignalBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  emotionalSignalBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.fill[200],
+  },
+  emotionalMemoryBadge: {
+    backgroundColor: THEME.colors.tint.pink.soft,
+  },
+  emotionalSignalBadgeText: {
+    ...THEME.typography.small,
+    fontSize: 10,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.bold,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  emotionalSignalDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: THEME.colors.gradient.blue,
+    opacity: 0.65,
+  },
+  emotionalClosureHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  emotionalClosureTitle: {
+    fontSize: 12,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.secondary,
+    letterSpacing: 0.2,
+  },
+  emotionalClosureMessage: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  emotionalSignalTipRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginTop: 4,
+  },
+  emotionalClosureNote: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+    flex: 1,
+  },
+  emotionalToneLine: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.tertiary,
+    marginTop: 6,
+    fontStyle: 'italic',
+    lineHeight: 17,
+  },
+  emotionalMemoryCard: {
+    marginBottom: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.standard,
+    borderWidth: 1,
+    borderColor: THEME.colors.fill[200],
+    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.sm,
+    overflow: 'hidden',
+  },
+  emotionalMemoryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  emotionalMemoryTitle: {
+    fontSize: 12,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.secondary,
+    letterSpacing: 0.2,
+  },
+  emotionalMemoryMessage: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  emotionalMemoryTip: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+    flex: 1,
   },
   categoryLegendWrap: {
     marginBottom: THEME.spacing.sm,
