@@ -44,7 +44,6 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
       const Purchases = (await import('react-native-purchases')).default;
       await Purchases.purchasePackage(pkg);
       onPurchaseCompleted?.();
-      onClose?.();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo completar la compra.';
       Alert.alert('Compra no completada', message);
@@ -60,7 +59,6 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
       if (result.success) {
         Alert.alert('Compras restauradas', 'Tu suscripción premium ya está activa.');
         onPurchaseCompleted?.();
-        onClose?.();
       } else {
         Alert.alert('Sin compras para restaurar', result.error ?? 'No encontramos compras anteriores.');
       }

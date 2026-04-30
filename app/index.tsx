@@ -45,18 +45,6 @@ export default function IndexScreen() {
     return () => clearTimeout(t);
   }, [userId, loading]);
 
-  // Timeout de seguridad: si loading tarda más de 10 segundos, redirigir
-  useEffect(() => {
-    if (loading) {
-      const timeout = setTimeout(() => {
-        logger.error('Timeout en carga de autenticación, redirigiendo a auth');
-        router.replace('/auth/login');
-      }, 10000);
-
-      return () => clearTimeout(timeout);
-    }
-  }, [loading]);
-
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
