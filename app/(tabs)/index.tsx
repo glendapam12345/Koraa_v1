@@ -38,9 +38,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QuickOnboardingModal } from '@/components/onboarding/QuickOnboardingModal';
 import { RedistributeWorkloadModal } from '@/components/tasks/RedistributeWorkloadModal';
-import { MeditationErrorBoundary } from '@/components/MeditationErrorBoundary';
 import { MeditationCircleSimple } from '@/components/MeditationCircleSimple';
-import Constants from 'expo-constants';
 
 // Lazy loading para componentes pesados que no se usan inmediatamente
 const TaskEditModal = lazy(() => 
@@ -49,10 +47,6 @@ const TaskEditModal = lazy(() =>
 );
 const ConfettiCelebration = lazy(() => 
   import('@/components/ConfettiCelebration').then(module => ({ default: module.ConfettiCelebration }))
-    .catch(() => ({ default: () => null as any }))
-);
-const MeditationCircle = lazy(() => 
-  import('@/components/MeditationCircle').then(module => ({ default: module.MeditationCircle }))
     .catch(() => ({ default: () => null as any }))
 );
 const QuickCheckInModal = lazy(() => 
@@ -1815,32 +1809,14 @@ export default function TodayScreen() {
         </Suspense>
       )}
 
-      {/* Modal de meditación: en Expo Go usamos versión simple (sin Reanimated/SVG) para evitar crash */}
+      {/* Modal de meditación: usamos versión simple en todos los entornos para evitar crashes nativos */}
       {showMeditation && (
-        Constants.appOwnership === 'expo' ? (
-          <MeditationCircleSimple
-            visible={showMeditation}
-            onComplete={handleMeditationComplete}
-            onClose={() => setShowMeditation(false)}
-            type={meditationType}
-          />
-        ) : (
-          <MeditationErrorBoundary
-            onError={() => {
-              setShowMeditation(false);
-              showToast('No se pudo abrir la meditación. Intenta de nuevo.', 'error');
-            }}
-          >
-            <Suspense fallback={<ViewRN style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: THEME.colors.overlay, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color={THEME.colors.gradient.blue} /></ViewRN>}>
-              <MeditationCircle
-                visible={showMeditation}
-                onComplete={handleMeditationComplete}
-                onClose={() => setShowMeditation(false)}
-                type={meditationType}
-              />
-            </Suspense>
-          </MeditationErrorBoundary>
-        )
+        <MeditationCircleSimple
+          visible={showMeditation}
+          onComplete={handleMeditationComplete}
+          onClose={() => setShowMeditation(false)}
+          type={meditationType}
+        />
       )}
     </View>
   );
