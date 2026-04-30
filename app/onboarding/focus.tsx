@@ -58,6 +58,9 @@ export default function FocusScreen() {
       }
 
       if (!tasks || tasks.length === 0) return;
+      const previousPriorityTaskIds = tasks
+        .filter((task: { id: string; is_priority: boolean }) => task.is_priority)
+        .map((task: { id: string }) => task.id);
 
       // Organizar tareas con subtareas
       const tasksMap = new Map<string, any>();
@@ -133,6 +136,16 @@ export default function FocusScreen() {
 
         if (prioritizeError) {
           console.error('Error priorizando tareas:', prioritizeError);
+          // Rollback al estado previo para no dejar al usuario sin prioridades.
+          if (previousPriorityTaskIds.length > 0) {
+            const { error: rollbackError } = await supabase
+              .from('tasks')
+              .update({ is_priority: true })
+              .in('id', previousPriorityTaskIds);
+            if (rollbackError) {
+              console.error('Error haciendo rollback de prioridades:', rollbackError);
+            }
+          }
         }
       }
     } catch (error) {

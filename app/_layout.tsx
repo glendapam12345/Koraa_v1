@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Linking, View, StyleSheet, Platform } from 'react-native';
@@ -25,6 +25,8 @@ import { initializeRevenueCat } from '@/lib/revenuecat';
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const processedUrlRef = useRef<string | null>(null);
+  const isApplyingSessionRef = useRef(false);
   const [fontsLoaded, fontError] = useFonts({
     'DMSans-Medium': DMSans_500Medium,
     'DMSans-Bold': DMSans_700Bold,
@@ -65,6 +67,7 @@ export default function RootLayout() {
   useEffect(() => {
     const applySessionFromUrl = async (url: string | null) => {
       if (!url) return;
+      if (processedUrlRef.current === url || isApplyingSessionRef.current) return;
       const hashIndex = url.indexOf('#');
       if (hashIndex === -1) return;
       const params = new URLSearchParams(url.slice(hashIndex + 1));
@@ -72,22 +75,28 @@ export default function RootLayout() {
       const refresh_token = params.get('refresh_token');
       if (!access_token || !refresh_token) return;
 
-      const { error } = await supabase.auth.setSession({ access_token, refresh_token });
-      if (error) {
-        logger.error('No se pudo aplicar sesión desde el enlace del correo:', error.message);
-        return;
-      }
+      isApplyingSessionRef.current = true;
+      try {
+        const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+        if (error) {
+          logger.error('No se pudo aplicar sesión desde el enlace del correo:', error.message);
+          return;
+        }
+        processedUrlRef.current = url;
 
-      // Evitar reprocesar el hash al recargar (web)
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
-      }
+        // Evitar reprocesar el hash al recargar (web)
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+        }
 
-      // Recuperación de contraseña vs confirmación de email (ambos llevan tokens en #)
-      if (url.includes('reset-password')) {
-        router.replace('/reset-password');
-      } else {
-        router.replace('/(tabs)');
+        // Recuperación de contraseña vs confirmación de email (ambos llevan tokens en #)
+        if (url.includes('reset-password')) {
+          router.replace('/reset-password');
+        } else {
+          router.replace('/(tabs)');
+        }
+      } finally {
+        isApplyingSessionRef.current = false;
       }
     };
 
@@ -114,7 +123,6 @@ export default function RootLayout() {
             <View style={styles.root}>
               <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="index" />
-              <Stack.Screen name="auth" />
               <Stack.Screen name="settings" />
               <Stack.Screen name="reset-password" />
               <Stack.Screen name="help" />

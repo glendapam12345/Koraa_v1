@@ -10,8 +10,8 @@ export default function PaywallRoute() {
       router.replace(next as '/');
       return;
     }
-    router.back();
+    router.replace('/(tabs)');
   };
 
-  return <PaywallScreen onClose={goNext} onSkip={goNext} onPurchaseCompleted={goNext} />;
+  return <PaywallScreen onClose={goNext} onPurchaseCompleted={goNext} />;
 }

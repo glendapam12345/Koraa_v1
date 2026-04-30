@@ -17,21 +17,24 @@ export default function IndexScreen() {
 
   useEffect(() => {
     if (loading) return;
+    let cancelled = false;
 
     const run = async () => {
-      if (navigatedRef.current) return;
+      if (navigatedRef.current || cancelled) return;
 
       if (!userId) {
         navigatedRef.current = true;
-        router.replace('/auth/login');
+        if (!cancelled) router.replace('/auth/login');
         return;
       }
 
       try {
         const next = await getPostAuthRoute(userId);
+        if (cancelled) return;
         navigatedRef.current = true;
         router.replace(next);
       } catch (e) {
+        if (cancelled) return;
         logger.debug('Index routing:', e);
         navigatedRef.current = true;
         router.replace('/(tabs)');
@@ -42,7 +45,10 @@ export default function IndexScreen() {
       void run();
     }, 50);
 
-    return () => clearTimeout(t);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, [userId, loading]);
 
   return (

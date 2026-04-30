@@ -80,8 +80,11 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
             activeOpacity={0.75}
             style={styles.closeButton}
             onPress={() => {
+              if (onClose) {
+                onClose();
+                return;
+              }
               onSkip?.();
-              onClose?.();
             }}
           >
             <X size={18} color={THEME.colors.fill[100]} />
@@ -167,8 +170,11 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
             style={styles.ghostButton}
             activeOpacity={0.75}
             onPress={() => {
+              if (onClose) {
+                onClose();
+                return;
+              }
               onSkip?.();
-              onClose?.();
             }}
           >
             <Text style={styles.ghostButtonText}>Ahora no</Text>

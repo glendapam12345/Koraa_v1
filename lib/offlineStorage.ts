@@ -182,6 +182,7 @@ export async function syncPendingTasks(): Promise<void> {
             is_completed: task.is_completed,
             parent_task_id: null,
             project_id: task.project_id || null,
+            scheduled_date: task.scheduled_date ?? null,
           })
           .select('id')
           .single();
@@ -223,6 +224,8 @@ export async function syncPendingTasks(): Promise<void> {
             is_priority: task.is_priority,
             is_completed: task.is_completed,
             parent_task_id: realParentId,
+            project_id: task.project_id || null,
+            scheduled_date: task.scheduled_date ?? null,
           });
 
         if (!error) {

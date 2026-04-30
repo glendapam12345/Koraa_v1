@@ -96,7 +96,6 @@ export default function TodayScreen() {
     message: string;
     tip: string;
   }[]>([]);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backgroundLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoadingTasksRef = useRef<boolean>(false);
@@ -160,13 +159,13 @@ export default function TodayScreen() {
   const {
     toggleTask,
     handleSaveEdit: handleSaveEditAction,
+    clearToggleTimers,
   } = useTaskActions({
     tasks,
     setTasks,
     loadTasks,
     showToast,
     setMenuOpen,
-    timeoutRef,
     backgroundLoadTimeoutRef,
     isLoadingTasksRef,
   });
@@ -504,10 +503,7 @@ export default function TodayScreen() {
 
     // Cleanup: limpiar todos los timeouts si el componente se desmonta
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
+      clearToggleTimers();
       if (confettiTimeoutRef.current) {
         clearTimeout(confettiTimeoutRef.current);
         confettiTimeoutRef.current = null;
@@ -517,7 +513,7 @@ export default function TodayScreen() {
         backgroundLoadTimeoutRef.current = null;
       }
     };
-  }, [loadTasks, loadTodayCheckIn, loadStreak, loadMeditations, loadPrioritizationMetadata, loadEmotionalMemory]);
+  }, [loadTasks, loadTodayCheckIn, loadStreak, loadMeditations, loadPrioritizationMetadata, loadEmotionalMemory, clearToggleTimers]);
 
   // Onboarding rápido se muestra solo la primera vez (ya está en el useEffect principal)
 

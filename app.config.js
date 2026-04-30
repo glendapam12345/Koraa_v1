@@ -13,6 +13,44 @@ function firstTrimmed(...vals) {
   return undefined;
 }
 
+const isProductionRelease =
+  process.env.EAS_BUILD_PROFILE === 'production' || process.env.NODE_ENV === 'production';
+
+function requireForRelease(name, value) {
+  if (isProductionRelease && !value) {
+    throw new Error(`Missing required env var for release: ${name}`);
+  }
+  return value;
+}
+
+const supabaseUrl = firstTrimmed(
+  process.env.EXPO_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_URL,
+  process.env.API_Key,
+);
+const supabaseAnonKey = firstTrimmed(
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  process.env.SUPABASE_ANON_KEY,
+  process.env.anon_key,
+  process.env.ANON_KEY,
+);
+const revenueCatApiKeyIOS = firstTrimmed(
+  process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS,
+  process.env.REVENUECAT_API_KEY_IOS,
+);
+const revenueCatApiKeyAndroid = firstTrimmed(
+  process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID,
+  process.env.REVENUECAT_API_KEY_ANDROID,
+);
+const privacyPolicyUrl = firstTrimmed(process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL);
+const termsOfServiceUrl = firstTrimmed(process.env.EXPO_PUBLIC_TERMS_OF_SERVICE_URL);
+
+requireForRelease('EXPO_PUBLIC_SUPABASE_URL', supabaseUrl);
+requireForRelease('EXPO_PUBLIC_SUPABASE_ANON_KEY', supabaseAnonKey);
+requireForRelease('EXPO_PUBLIC_REVENUECAT_API_KEY_IOS', revenueCatApiKeyIOS);
+requireForRelease('EXPO_PUBLIC_PRIVACY_POLICY_URL', privacyPolicyUrl);
+requireForRelease('EXPO_PUBLIC_TERMS_OF_SERVICE_URL', termsOfServiceUrl);
+
 module.exports = {
   expo: {
     name: 'Koraa',
@@ -36,7 +74,19 @@ module.exports = {
       output: 'single',
       favicon: './assets/images/favicon.png',
     },
-    plugins: ['expo-router', 'expo-font', 'expo-web-browser', 'expo-secure-store'],
+    plugins: [
+      'expo-router',
+      'expo-font',
+      'expo-web-browser',
+      'expo-secure-store',
+      [
+        'expo-notifications',
+        {
+          color: '#6A8DFF',
+          defaultChannel: 'default',
+        },
+      ],
+    ],
     experiments: {
       typedRoutes: true,
     },
@@ -45,25 +95,10 @@ module.exports = {
       eas: {
         projectId: 'ef96554d-08d3-4cb6-a5fe-4217d7295541',
       },
-      supabaseUrl: firstTrimmed(
-        process.env.EXPO_PUBLIC_SUPABASE_URL,
-        process.env.SUPABASE_URL,
-        process.env.API_Key,
-      ),
-      supabaseAnonKey: firstTrimmed(
-        process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-        process.env.SUPABASE_ANON_KEY,
-        process.env.anon_key,
-        process.env.ANON_KEY,
-      ),
-      revenueCatApiKeyIOS: firstTrimmed(
-        process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS,
-        process.env.REVENUECAT_API_KEY_IOS,
-      ),
-      revenueCatApiKeyAndroid: firstTrimmed(
-        process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID,
-        process.env.REVENUECAT_API_KEY_ANDROID,
-      ),
+      supabaseUrl,
+      supabaseAnonKey,
+      revenueCatApiKeyIOS,
+      revenueCatApiKeyAndroid,
     },
     owner: 'pamela.1234',
   },

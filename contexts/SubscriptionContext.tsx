@@ -37,6 +37,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       return info.entitlements.active[ENTITLEMENT_ID] !== undefined;
     } catch (error) {
       logger.warn('No se pudo refrescar estado de suscripción:', error);
+      setCustomerInfo(null);
+      setCurrentOffering(null);
       return false;
     }
   }, []);
@@ -52,6 +54,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       return { success: info.entitlements.active[ENTITLEMENT_ID] !== undefined, error: null };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo restaurar compras.';
+      setCustomerInfo(null);
       return { success: false, error: message };
     }
   }, []);

@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { useCallback, MutableRefObject } from 'react';
+import { useCallback, MutableRefObject, useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 import { supabase, getErrorMessage } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
@@ -11,7 +11,6 @@ interface UseTaskActionsParams {
   loadTasks: () => Promise<void>;
   showToast: (message: string, type: 'success' | 'error' | 'info') => void;
   setMenuOpen: (id: string | null) => void;
-  timeoutRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
   backgroundLoadTimeoutRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
   isLoadingTasksRef: MutableRefObject<boolean>;
 }
@@ -22,10 +21,11 @@ export function useTaskActions({
   loadTasks,
   showToast,
   setMenuOpen,
-  timeoutRef,
   backgroundLoadTimeoutRef,
   isLoadingTasksRef,
 }: UseTaskActionsParams) {
+  const toggleTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
   const toggleTask = useCallback(
     async (taskId: string, isSubtask: boolean = false, parentTaskId?: string) => {
       if (Platform.OS !== 'web') {
@@ -79,11 +79,11 @@ export function useTaskActions({
 
       setMenuOpen(null);
 
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+      if (toggleTimeoutsRef.current[taskId]) {
+        clearTimeout(toggleTimeoutsRef.current[taskId]);
       }
 
-      timeoutRef.current = setTimeout(async () => {
+      toggleTimeoutsRef.current[taskId] = setTimeout(async () => {
         try {
           const { error } = await supabase
             .from('tasks')
@@ -220,7 +220,7 @@ export function useTaskActions({
           });
         }
 
-        timeoutRef.current = null;
+        delete toggleTimeoutsRef.current[taskId];
       }, 500);
     },
     [
@@ -229,11 +229,15 @@ export function useTaskActions({
       loadTasks,
       showToast,
       setMenuOpen,
-      timeoutRef,
       backgroundLoadTimeoutRef,
       isLoadingTasksRef,
     ]
   );
+
+  const clearToggleTimers = useCallback(() => {
+    Object.values(toggleTimeoutsRef.current).forEach((timer) => clearTimeout(timer));
+    toggleTimeoutsRef.current = {};
+  }, []);
 
   const handleSaveEdit = useCallback(
     async (
@@ -282,5 +286,6 @@ export function useTaskActions({
   return {
     toggleTask,
     handleSaveEdit,
+    clearToggleTimers,
   };
 }

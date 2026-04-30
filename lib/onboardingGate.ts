@@ -19,15 +19,15 @@ export async function getPostAuthRoute(userId: string): Promise<PostAuthRoute> {
 
     if (error) {
       logger.debug('onboardingGate: perfil no leído', error.message);
-      return TABS_ROUTE;
+      return WELCOME_ROUTE;
     }
     if (!data) {
-      return TABS_ROUTE;
+      return WELCOME_ROUTE;
     }
     return data.onboarding_completed === true ? TABS_ROUTE : WELCOME_ROUTE;
   } catch (e) {
     logger.debug('onboardingGate', e);
-    return TABS_ROUTE;
+    return WELCOME_ROUTE;
   }
 }
 
