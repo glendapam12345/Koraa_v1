@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
 import { getEmotionTips } from '@/lib/emotionTips';
 import { generatePersonalizedRecommendations } from '@/lib/personalizedRecommendations';
-import { Lightbulb, Moon, Zap, Brain, Sparkles, Heart, Plus, Crown } from 'lucide-react-native';
+import { Lightbulb, Moon, Zap, Brain, Sparkles, Heart, Plus } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 
 const TIPS_TOOLTIP_SEEN_KEY = 'koraa_tips_tooltip_seen';
@@ -50,7 +50,7 @@ const CATEGORY_COLORS = {
 
 export default function TipsScreen() {
   const insets = useSafeAreaInsets();
-  const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
+  const { isSubscribed } = useSubscription();
   const [todayMood, setTodayMood] = useState<string>('');
   const [energyLevel, setEnergyLevel] = useState<number>(0);
   const [availableTime, setAvailableTime] = useState<string>('');
@@ -344,17 +344,6 @@ export default function TipsScreen() {
                     </View>
                   </View>
                 ))}
-                {!subscriptionLoading && !isSubscribed && (
-                  <View style={styles.premiumTeaserCard}>
-                    <View style={styles.premiumTeaserHeader}>
-                      <Crown size={16} color={THEME.colors.gradient.blue} />
-                      <Text style={styles.premiumTeaserTitle}>Desbloquea recomendaciones completas</Text>
-                    </View>
-                    <Text style={styles.premiumTeaserText}>
-                      Estás viendo una vista gratuita. Con Premium obtienes más sugerencias personalizadas y accionables cada día.
-                    </Text>
-                  </View>
-                )}
               </View>
             )}
 
@@ -382,18 +371,6 @@ export default function TipsScreen() {
                 </View>
               );
             })}
-
-            {!subscriptionLoading && !isSubscribed && Object.keys(visibleTipsByCategory).length > 0 && (
-              <View style={styles.premiumTeaserCard}>
-                <View style={styles.premiumTeaserHeader}>
-                  <Crown size={16} color={THEME.colors.gradient.blue} />
-                  <Text style={styles.premiumTeaserTitle}>Más tips en Premium</Text>
-                </View>
-                <Text style={styles.premiumTeaserText}>
-                  Mantén una versión gratuita útil y desbloquea en Premium una guía más profunda para sostener tu progreso.
-                </Text>
-              </View>
-            )}
 
             {/* Mensaje final */}
             <View style={styles.footerMessage}>
@@ -642,30 +619,5 @@ const styles = StyleSheet.create({
     ...THEME.typography.caption,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
-  },
-  premiumTeaserCard: {
-    marginTop: THEME.spacing.sm,
-    backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.rounded,
-    borderWidth: 1,
-    borderColor: THEME.colors.tint.blue.border,
-    padding: THEME.spacing.md,
-    ...THEME.shadows.soft,
-  },
-  premiumTeaserHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.xs,
-    marginBottom: THEME.spacing.xs,
-  },
-  premiumTeaserTitle: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  premiumTeaserText: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    lineHeight: 20,
   },
 });
