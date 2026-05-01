@@ -11,6 +11,7 @@ type PremiumLockProps = {
   title?: string;
   description?: string;
   benefits?: string[];
+  showBanner?: boolean;
 };
 
 export function PremiumLock({
@@ -22,6 +23,7 @@ export function PremiumLock({
     'Historial y patrones para tomar mejores decisiones.',
     'Herramientas premium para sostener tu ritmo semanal.',
   ],
+  showBanner = true,
 }: PremiumLockProps) {
   const { isLoading, isSubscribed, checkSubscription } = useSubscription();
   const [showPaywall, setShowPaywall] = useState(false);
@@ -32,7 +34,7 @@ export function PremiumLock({
 
   return (
     <>
-      {!dismissed ? (
+      {showBanner && !dismissed ? (
         <View style={styles.banner}>
           <LinearGradient
             colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}

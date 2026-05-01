@@ -245,6 +245,7 @@ export default function TipsScreen() {
           'Ideas accionables para tu día, no solo consejos genéricos.',
           'Atajos para convertir sugerencias en tareas en segundos.',
         ]}
+        showBanner={false}
       >
         <ScrollView
           contentContainerStyle={[
