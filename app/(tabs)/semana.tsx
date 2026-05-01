@@ -4,14 +4,16 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useWeekTasks, getWeekOptions } from '@/hooks/useWeekTasks';
 import type { Task } from '@/hooks/useTasks';
 import { getSupabaseEnvStatus } from '@/lib/envCheck';
 import { PremiumLock } from '@/components/PremiumLock';
-import { Calendar, Plus, FolderKanban, FileText, ChevronRight, ChevronLeft } from 'lucide-react-native';
+import { Calendar, Plus, FolderKanban, FileText, ChevronRight, ChevronLeft, Crown } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 const MONTH_NAMES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const FREE_VISIBLE_DAYS = 3;
 
 function formatDayLabel(dateStr: string): string {
   const dayNum = parseInt(dateStr.slice(8, 10), 10);
@@ -22,6 +24,7 @@ function formatDayLabel(dateStr: string): string {
 export default function SemanaScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   void toastMessage; // used by showToast; Toast UI not rendered on this screen
   const [selectedWeekStart, setSelectedWeekStart] = useState<string | null>(null);
@@ -41,8 +44,8 @@ export default function SemanaScreen() {
     return i >= 0 ? i : 1;
   }, [selectedWeekStart, currentWeekStart, weekOptions]);
 
-  const canGoPrev = weekIndex > 0;
-  const canGoNext = weekIndex < weekOptions.length - 1;
+  const canGoPrev = isSubscribed && weekIndex > 0;
+  const canGoNext = isSubscribed && weekIndex < weekOptions.length - 1;
   const displayWeekLabel =
     weekOptions[weekIndex]?.label ?? (weekTasks.length === 7
       ? (() => {
@@ -75,6 +78,11 @@ export default function SemanaScreen() {
       tasks: tasks.filter((t) => t.project_id === selectedProjectId),
     }));
   }, [weekTasks, selectedProjectId]);
+
+  const visibleWeekTasks = useMemo(() => {
+    if (isSubscribed) return filteredWeekTasks;
+    return filteredWeekTasks.slice(0, FREE_VISIBLE_DAYS);
+  }, [isSubscribed, filteredWeekTasks]);
 
   return (
     <View style={styles.container}>
@@ -233,7 +241,7 @@ export default function SemanaScreen() {
           <Text style={styles.loadingWeek}>Cargando días...</Text>
         ) : null}
 
-        {!loading && filteredWeekTasks.map(({ day, tasks }) => (
+        {!loading && visibleWeekTasks.map(({ day, tasks }) => (
           <View key={day.dateStr} style={styles.daySection}>
             {day.isToday ? (
               <LinearGradient
@@ -316,6 +324,18 @@ export default function SemanaScreen() {
             )}
           </View>
         ))}
+
+        {!loading && !subscriptionLoading && !isSubscribed && (
+          <View style={styles.premiumTeaserCard}>
+            <View style={styles.premiumTeaserHeader}>
+              <Crown size={16} color={THEME.colors.gradient.blue} />
+              <Text style={styles.premiumTeaserTitle}>Semana Premium</Text>
+            </View>
+            <Text style={styles.premiumTeaserText}>
+              En la versión gratuita ves una muestra de tu semana. Con Premium desbloqueas los 7 días, filtros avanzados e historial completo.
+            </Text>
+          </View>
+        )}
 
         <View style={styles.bottomSection}>
           <TouchableOpacity
@@ -877,5 +897,31 @@ const styles = StyleSheet.create({
   diagnosticoError: {
     color: THEME.colors.gradient.pink,
     marginTop: THEME.spacing.xs,
+  },
+  premiumTeaserCard: {
+    marginHorizontal: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+    padding: THEME.spacing.md,
+    ...THEME.shadows.soft,
+  },
+  premiumTeaserHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    marginBottom: THEME.spacing.xs,
+  },
+  premiumTeaserTitle: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  premiumTeaserText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 20,
   },
 });

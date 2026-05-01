@@ -6,14 +6,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
 import { PremiumLock } from '@/components/PremiumLock';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { supabase } from '@/lib/supabase';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
 import { getEmotionTips } from '@/lib/emotionTips';
 import { generatePersonalizedRecommendations } from '@/lib/personalizedRecommendations';
-import { Lightbulb, Moon, Zap, Brain, Sparkles, Heart, Plus } from 'lucide-react-native';
+import { Lightbulb, Moon, Zap, Brain, Sparkles, Heart, Plus, Crown } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 
 const TIPS_TOOLTIP_SEEN_KEY = 'koraa_tips_tooltip_seen';
+const FREE_RECOMMENDATIONS_LIMIT = 2;
+const FREE_GENERIC_TIPS_LIMIT = 3;
 
 const EMOTIONS = [
   { id: 'agotada', emoji: '😔', label: 'Agotada', color: ['#667eea', '#764ba2'] },
@@ -47,6 +50,7 @@ const CATEGORY_COLORS = {
 
 export default function TipsScreen() {
   const insets = useSafeAreaInsets();
+  const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
   const [todayMood, setTodayMood] = useState<string>('');
   const [energyLevel, setEnergyLevel] = useState<number>(0);
   const [availableTime, setAvailableTime] = useState<string>('');
@@ -198,6 +202,29 @@ export default function TipsScreen() {
     }
   }, [todayMood, userProfile, energyLevel, availableTime, focusLevel]);
 
+  const visiblePersonalizedRecommendations = useMemo(() => {
+    if (isSubscribed) return personalizedRecommendations;
+    return personalizedRecommendations.slice(0, FREE_RECOMMENDATIONS_LIMIT);
+  }, [isSubscribed, personalizedRecommendations]);
+
+  const visibleTipsByCategory = useMemo(() => {
+    if (isSubscribed) return tipsByCategory;
+
+    let remaining = FREE_GENERIC_TIPS_LIMIT;
+    const limited: Record<string, typeof tips> = {};
+
+    Object.entries(tipsByCategory).forEach(([category, categoryTips]) => {
+      if (remaining <= 0) return;
+      const slice = categoryTips.slice(0, remaining);
+      if (slice.length > 0) {
+        limited[category] = slice;
+        remaining -= slice.length;
+      }
+    });
+
+    return limited;
+  }, [isSubscribed, tipsByCategory]);
+
   if (loading) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -286,13 +313,13 @@ export default function TipsScreen() {
             </View>
 
             {/* Recomendaciones personalizadas */}
-            {personalizedRecommendations.length > 0 && (
+            {visiblePersonalizedRecommendations.length > 0 && (
               <View style={styles.recommendationsSection}>
                 <View style={styles.recommendationsHeader}>
                   <Sparkles size={20} color={THEME.colors.gradient.pink} />
                   <Text style={styles.recommendationsTitle}>Recomendaciones para ti</Text>
                 </View>
-                {personalizedRecommendations.map((rec) => (
+                {visiblePersonalizedRecommendations.map((rec) => (
                   <View key={rec.id} style={styles.recommendationCard}>
                     <Text style={styles.recommendationEmoji}>{rec.emoji}</Text>
                     <View style={styles.recommendationContent}>
@@ -317,11 +344,22 @@ export default function TipsScreen() {
                     </View>
                   </View>
                 ))}
+                {!subscriptionLoading && !isSubscribed && (
+                  <View style={styles.premiumTeaserCard}>
+                    <View style={styles.premiumTeaserHeader}>
+                      <Crown size={16} color={THEME.colors.gradient.blue} />
+                      <Text style={styles.premiumTeaserTitle}>Desbloquea recomendaciones completas</Text>
+                    </View>
+                    <Text style={styles.premiumTeaserText}>
+                      Estás viendo una vista gratuita. Con Premium obtienes más sugerencias personalizadas y accionables cada día.
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
 
             {/* Tips organizados por categoría */}
-            {Object.entries(tipsByCategory).map(([category, categoryTips]) => {
+            {Object.entries(visibleTipsByCategory).map(([category, categoryTips]) => {
               const IconComponent = CATEGORY_ICONS[category as keyof typeof CATEGORY_ICONS];
               const categoryLabel = CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS];
               const categoryColor = CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS];
@@ -344,6 +382,18 @@ export default function TipsScreen() {
                 </View>
               );
             })}
+
+            {!subscriptionLoading && !isSubscribed && Object.keys(visibleTipsByCategory).length > 0 && (
+              <View style={styles.premiumTeaserCard}>
+                <View style={styles.premiumTeaserHeader}>
+                  <Crown size={16} color={THEME.colors.gradient.blue} />
+                  <Text style={styles.premiumTeaserTitle}>Más tips en Premium</Text>
+                </View>
+                <Text style={styles.premiumTeaserText}>
+                  Mantén una versión gratuita útil y desbloquea en Premium una guía más profunda para sostener tu progreso.
+                </Text>
+              </View>
+            )}
 
             {/* Mensaje final */}
             <View style={styles.footerMessage}>
@@ -592,5 +642,30 @@ const styles = StyleSheet.create({
     ...THEME.typography.caption,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
+  },
+  premiumTeaserCard: {
+    marginTop: THEME.spacing.sm,
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+    padding: THEME.spacing.md,
+    ...THEME.shadows.soft,
+  },
+  premiumTeaserHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    marginBottom: THEME.spacing.xs,
+  },
+  premiumTeaserTitle: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  premiumTeaserText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 20,
   },
 });
