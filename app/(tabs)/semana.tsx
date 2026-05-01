@@ -79,8 +79,13 @@ export default function SemanaScreen() {
   return (
     <View style={styles.container}>
       <PremiumLock
-        title="Historial semanal premium"
-        description="Puedes seguir viendo tu semana y activar Premium cuando quieras."
+        title="Desbloquea Semana Premium"
+        description="Ve tu ritmo real de la semana y toma mejores decisiones para priorizar."
+        benefits={[
+          'Vista semanal completa con foco en pendientes y avance real.',
+          'Filtros por proyecto para detectar cargas y cuellos de botella.',
+          'Planeación emocional para repartir mejor tus tareas.',
+        ]}
       >
         <ScrollView
           contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]}

@@ -38,6 +38,12 @@ type Props = {
   onApplied: () => void;
 };
 
+function isMissingDueDateColumnError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const maybeMessage = 'message' in error ? String(error.message || '') : '';
+  return maybeMessage.toLowerCase().includes('column projects.due_date does not exist');
+}
+
 export function RedistributeWorkloadModal({
   visible,
   onClose,
@@ -51,6 +57,7 @@ export function RedistributeWorkloadModal({
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [projectsLoadError, setProjectsLoadError] = useState<string | null>(null);
+  const [supportsProjectDueDate, setSupportsProjectDueDate] = useState(true);
   const [mode, setMode] = useState<'project' | 'loose'>('project');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [dueInput, setDueInput] = useState('');
@@ -77,11 +84,35 @@ export function RedistributeWorkloadModal({
   const loadProjects = useCallback(async () => {
     setLoadingProjects(true);
     setProjectsLoadError(null);
+    setSupportsProjectDueDate(true);
     const { data, error: err } = await supabase
       .from('projects')
       .select('id, name, color, due_date')
       .eq('user_id', userId)
       .order('priority', { ascending: false });
+
+    if (err && isMissingDueDateColumnError(err)) {
+      // Compatibilidad: algunas BDs todavía no tienen projects.due_date.
+      const { data: fallbackData, error: fallbackErr } = await supabase
+        .from('projects')
+        .select('id, name, color')
+        .eq('user_id', userId)
+        .order('priority', { ascending: false });
+      setLoadingProjects(false);
+      if (fallbackErr) {
+        setProjects([]);
+        setProjectsLoadError(getErrorMessage(fallbackErr));
+        return;
+      }
+      setSupportsProjectDueDate(false);
+      const normalized = ((fallbackData as Omit<ProjectRow, 'due_date'>[]) || []).map((p) => ({
+        ...p,
+        due_date: null,
+      }));
+      setProjects(normalized);
+      return;
+    }
+
     setLoadingProjects(false);
     if (err) {
       setProjects([]);
@@ -201,7 +232,7 @@ export function RedistributeWorkloadModal({
         }
       }
 
-      if (mode === 'project' && selectedProjectId && saveDueToProject && appliedDue) {
+      if (mode === 'project' && selectedProjectId && saveDueToProject && appliedDue && supportsProjectDueDate) {
         await supabase
           .from('projects')
           .update({ due_date: appliedDue })
@@ -326,8 +357,17 @@ export function RedistributeWorkloadModal({
 
                     <View style={styles.switchRow}>
                       <Text style={styles.switchLabel}>Guardar esta fecha en el proyecto</Text>
-                      <Switch value={saveDueToProject} onValueChange={setSaveDueToProject} />
+                      <Switch
+                        value={saveDueToProject}
+                        onValueChange={setSaveDueToProject}
+                        disabled={!supportsProjectDueDate}
+                      />
                     </View>
+                    {!supportsProjectDueDate ? (
+                      <Text style={styles.hint}>
+                        Tu base de datos aún no tiene la columna de fecha en proyectos. El reparto sí funciona; solo no se guardará esta fecha en el proyecto.
+                      </Text>
+                    ) : null}
 
                     <Text style={styles.meta}>
                       Tareas a repartir en este proyecto: {projectTaskIds.length}

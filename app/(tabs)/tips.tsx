@@ -211,8 +211,13 @@ export default function TipsScreen() {
   return (
     <View style={styles.container}>
       <PremiumLock
-        title="Consejos premium"
-        description="Abre el paywall para desbloquear recomendaciones completas cuando quieras."
+        title="Desbloquea Consejos Premium"
+        description="Convierte tu estado de hoy en acciones concretas con una guía más profunda."
+        benefits={[
+          'Recomendaciones personalizadas según emoción, energía y tiempo.',
+          'Ideas accionables para tu día, no solo consejos genéricos.',
+          'Atajos para convertir sugerencias en tareas en segundos.',
+        ]}
       >
         <ScrollView
           contentContainerStyle={[

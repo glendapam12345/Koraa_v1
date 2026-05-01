@@ -10,12 +10,18 @@ type PremiumLockProps = {
   children: ReactNode;
   title?: string;
   description?: string;
+  benefits?: string[];
 };
 
 export function PremiumLock({
   children,
   title = 'Funciones premium',
-  description = 'Puedes seguir usando esta sección y abrir el paywall cuando quieras.',
+  description = 'Desbloquea una experiencia completa con recomendaciones y planificación inteligente.',
+  benefits = [
+    'Recomendaciones personalizadas y accionables.',
+    'Historial y patrones para tomar mejores decisiones.',
+    'Herramientas premium para sostener tu ritmo semanal.',
+  ],
 }: PremiumLockProps) {
   const { isLoading, isSubscribed, checkSubscription } = useSubscription();
   const [showPaywall, setShowPaywall] = useState(false);
@@ -28,6 +34,12 @@ export function PremiumLock({
     <>
       {!dismissed ? (
         <View style={styles.banner}>
+          <LinearGradient
+            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.bannerGlow}
+          />
           <View style={styles.bannerTopRow}>
             <View style={styles.iconWrap}>
               <Crown size={18} color={THEME.colors.gradient.blue} />
@@ -39,6 +51,14 @@ export function PremiumLock({
             <TouchableOpacity onPress={() => setDismissed(true)} activeOpacity={0.7} style={styles.dismissBtn}>
               <X size={18} color={THEME.colors.text.secondary} />
             </TouchableOpacity>
+          </View>
+          <View style={styles.benefitsWrap}>
+            {benefits.slice(0, 3).map((benefit) => (
+              <View key={benefit} style={styles.benefitRow}>
+                <View style={styles.benefitDot} />
+                <Text style={styles.benefitText}>{benefit}</Text>
+              </View>
+            ))}
           </View>
           <View style={styles.actionsRow}>
             <TouchableOpacity onPress={() => setDismissed(true)} activeOpacity={0.7}>
@@ -79,12 +99,17 @@ const styles = StyleSheet.create({
     marginHorizontal: THEME.spacing.lg,
     marginTop: THEME.spacing.sm,
     marginBottom: THEME.spacing.sm,
-    padding: THEME.spacing.sm,
+    padding: THEME.spacing.md,
     borderRadius: THEME.borderRadius.rounded,
     backgroundColor: THEME.colors.fill[100],
     borderWidth: 1,
-    borderColor: THEME.colors.fill[200],
+    borderColor: THEME.colors.tint.blue.border,
     ...THEME.shadows.soft,
+  },
+  bannerGlow: {
+    height: 4,
+    borderRadius: THEME.borderRadius.pill,
+    marginBottom: THEME.spacing.sm,
   },
   bannerTopRow: {
     flexDirection: 'row',
@@ -111,12 +136,33 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     marginTop: 2,
+    lineHeight: 20,
+  },
+  benefitsWrap: {
+    marginTop: THEME.spacing.sm,
+    gap: 6,
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+  },
+  benefitDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: THEME.colors.gradient.blue,
+  },
+  benefitText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.main,
+    flex: 1,
   },
   dismissBtn: {
     padding: 4,
   },
   actionsRow: {
-    marginTop: THEME.spacing.xs,
+    marginTop: THEME.spacing.sm,
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',

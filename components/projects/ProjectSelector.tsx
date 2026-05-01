@@ -7,8 +7,8 @@ import { FolderKanban, X, Plus } from 'lucide-react-native';
 const PROJECT_COLORS = [
   THEME.colors.gradient.blue,
   THEME.colors.gradient.pink,
-  THEME.colors.gradient.blue,
-  THEME.colors.gradient.pink,
+  '#8B5CF6',
+  '#14B8A6',
   '#32CD32',
   THEME.colors.category.personal,
   '#FFA500',
@@ -40,6 +40,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
   const [showNewProject, setShowNewProject] = useState(false);
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState(PROJECT_COLORS[0]);
+  const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const newProjectInputRef = useRef<TextInput>(null);
 
@@ -70,7 +71,21 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
 
   const handleCreateProject = async () => {
     const name = newName.trim();
-    if (!name) return;
+    if (!name) {
+      setFormError('Escribe un nombre para el proyecto.');
+      return;
+    }
+    if (name.length < 2) {
+      setFormError('Usa al menos 2 caracteres.');
+      return;
+    }
+    const alreadyExists = projects.some((p) => p.name.trim().toLowerCase() === name.toLowerCase());
+    if (alreadyExists) {
+      setFormError('Ya tienes un proyecto con ese nombre.');
+      return;
+    }
+
+    setFormError(null);
     setSaving(true);
     const { data, error } = await supabase
       .from('projects')
@@ -83,6 +98,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
       const message = schemaType === 'projects_table'
         ? 'No se pudo crear el proyecto. Falta la tabla de proyectos en la base de datos (ejecuta la migración en Supabase).'
         : getErrorMessage(error);
+      setFormError(message);
       onError?.(message);
       return;
     }
@@ -90,6 +106,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
     onSelect(data.id);
     setNewName('');
     setNewColor(PROJECT_COLORS[0]);
+    setFormError(null);
     setShowNewProject(false);
     setShowModal(false);
     onSuccess?.(data.name);
@@ -144,6 +161,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
           Keyboard.dismiss();
           setShowNewProject(false);
           setNewName('');
+          setFormError(null);
         }}
       >
         <TouchableOpacity
@@ -247,13 +265,17 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                           ref={newProjectInputRef}
                           style={styles.newProjectInput}
                           value={newName}
-                          onChangeText={setNewName}
+                          onChangeText={(value) => {
+                            setNewName(value);
+                            if (formError) setFormError(null);
+                          }}
                           placeholder="Ej. Maratón, Mi app, Salud"
                           placeholderTextColor={THEME.colors.text.secondary}
                           onSubmitEditing={handleCreateProject}
                           returnKeyType="done"
                         />
                         <Text style={styles.newProjectLabel}>Color</Text>
+                        <Text style={styles.newProjectColorHint}>Seleccionado: {newColor}</Text>
                         <View style={styles.colorRow}>
                           {PROJECT_COLORS.map((c, i) => (
                             <TouchableOpacity
@@ -264,9 +286,12 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                                 newColor === c && styles.colorOptionSelected,
                               ]}
                               onPress={() => setNewColor(c)}
+                              accessibilityRole="button"
+                              accessibilityLabel={`Color ${i + 1}${newColor === c ? ', seleccionado' : ''}`}
                             />
                           ))}
                         </View>
+                        {formError ? <Text style={styles.newProjectError}>{formError}</Text> : null}
                         <View style={styles.newProjectButtons}>
                           <TouchableOpacity
                             style={styles.newProjectCancel}
@@ -294,7 +319,8 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                         style={styles.addProjectRow}
                         onPress={() => {
                           setShowNewProject(true);
-                          setTimeout(() => newProjectInputRef.current?.focus(), 300);
+                          setFormError(null);
+                          setTimeout(() => newProjectInputRef.current?.focus(), 220);
                         }}
                         accessibilityRole="button"
                         accessibilityLabel="Crear nuevo proyecto"
@@ -380,13 +406,13 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalKeyboardWrap: {
-    maxHeight: '85%',
+    maxHeight: '92%',
   },
   modalContent: {
     backgroundColor: THEME.colors.fill[100],
     borderTopLeftRadius: THEME.borderRadius.rounded * 2,
     borderTopRightRadius: THEME.borderRadius.rounded * 2,
-    maxHeight: '85%',
+    maxHeight: '92%',
   },
   modalSectionHint: {
     ...THEME.typography.small,
@@ -419,7 +445,7 @@ const styles = StyleSheet.create({
   },
   modalList: {
     padding: THEME.spacing.md,
-    maxHeight: 320,
+    maxHeight: 460,
   },
   optionRow: {
     flexDirection: 'row',
@@ -506,6 +532,12 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.sm,
     marginBottom: THEME.spacing.md,
   },
+  newProjectColorHint: {
+    ...THEME.typography.small,
+    fontSize: 12,
+    color: THEME.colors.text.tertiary,
+    marginBottom: THEME.spacing.xs,
+  },
   colorOption: {
     width: 32,
     height: 32,
@@ -515,6 +547,11 @@ const styles = StyleSheet.create({
   },
   colorOptionSelected: {
     borderColor: THEME.colors.text.main,
+  },
+  newProjectError: {
+    ...THEME.typography.small,
+    color: THEME.colors.semantic.danger,
+    marginBottom: THEME.spacing.sm,
   },
   newProjectButtons: {
     flexDirection: 'row',
