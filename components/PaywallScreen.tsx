@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   ActivityIndicator,
   Alert,
   SafeAreaView,
@@ -11,7 +12,7 @@ import {
 } from 'react-native';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Check, Crown, X } from 'lucide-react-native';
+import { Check, Crown, Lock, X } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 
@@ -26,6 +27,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const premiumGlow = useRef(new Animated.Value(0.75)).current;
 
   const packages = useMemo(() => currentOffering?.availablePackages ?? [], [currentOffering?.availablePackages]);
 
@@ -67,6 +69,27 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
     }
   };
 
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(premiumGlow, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(premiumGlow, {
+          toValue: 0.75,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => {
+      loop.stop();
+    };
+  }, [premiumGlow]);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -94,6 +117,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
           </View>
           <Text style={styles.title}>Koraa Premium</Text>
           <Text style={styles.subtitle}>Convierte tu bienestar en un sistema sostenible, no en una lista infinita.</Text>
+          <Text style={styles.heroHint}>Tu plan gratis sigue activo, Premium solo desbloquea extras.</Text>
         </LinearGradient>
 
         <View style={styles.benefitsCard}>
@@ -108,6 +132,46 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
           <View style={styles.benefitRow}>
             <Check size={16} color={THEME.colors.gradient.blue} />
             <Text style={styles.benefitText}>Flujo premium de enfoque y priorización emocional.</Text>
+          </View>
+        </View>
+
+        <View style={styles.comparisonCard}>
+          <Text style={styles.comparisonTitle}>En tu plan gratis hoy</Text>
+          <View style={styles.comparisonRow}>
+            <Check size={15} color={THEME.colors.gradient.blue} />
+            <Text style={styles.comparisonFreeText}>Check-in diario emocional</Text>
+          </View>
+          <View style={styles.comparisonRow}>
+            <Check size={15} color={THEME.colors.gradient.blue} />
+            <Text style={styles.comparisonFreeText}>Captura y gestión base de tareas</Text>
+          </View>
+          <View style={styles.comparisonRow}>
+            <Check size={15} color={THEME.colors.gradient.blue} />
+            <Text style={styles.comparisonFreeText}>Vista semanal limitada</Text>
+          </View>
+
+          <View style={styles.premiumLockedDivider} />
+
+          <View style={[styles.comparisonRow, styles.premiumLockedRow]}>
+            <View style={styles.premiumLockedLeft}>
+              <Lock size={14} color={THEME.colors.text.secondary} />
+              <Text style={styles.comparisonLockedText}>Semana completa (7 días)</Text>
+            </View>
+            <Animated.Text style={[styles.premiumBadge, { opacity: premiumGlow }]}>Premium</Animated.Text>
+          </View>
+          <View style={[styles.comparisonRow, styles.premiumLockedRow]}>
+            <View style={styles.premiumLockedLeft}>
+              <Lock size={14} color={THEME.colors.text.secondary} />
+              <Text style={styles.comparisonLockedText}>Consejos personalizados ilimitados</Text>
+            </View>
+            <Animated.Text style={[styles.premiumBadge, { opacity: premiumGlow }]}>Premium</Animated.Text>
+          </View>
+          <View style={[styles.comparisonRow, styles.premiumLockedRow]}>
+            <View style={styles.premiumLockedLeft}>
+              <Lock size={14} color={THEME.colors.text.secondary} />
+              <Text style={styles.comparisonLockedText}>Priorización emocional avanzada</Text>
+            </View>
+            <Animated.Text style={[styles.premiumBadge, { opacity: premiumGlow }]}>Premium</Animated.Text>
           </View>
         </View>
 
@@ -231,6 +295,12 @@ const styles = StyleSheet.create({
     color: THEME.colors.fill[100],
     opacity: 0.95,
   },
+  heroHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.fill[100],
+    opacity: 0.9,
+    marginTop: THEME.spacing.xs,
+  },
   benefitsCard: {
     backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.rounded,
@@ -258,6 +328,67 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
     gap: THEME.spacing.xs,
     ...THEME.shadows.soft,
+  },
+  comparisonCard: {
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.fill[200],
+    gap: THEME.spacing.xs,
+  },
+  comparisonTitle: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: 2,
+  },
+  comparisonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+  },
+  comparisonFreeText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.main,
+    flex: 1,
+  },
+  premiumLockedDivider: {
+    marginVertical: 2,
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.fill[200],
+  },
+  premiumLockedRow: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.standard,
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: 6,
+    opacity: 0.9,
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: THEME.colors.fill[200],
+  },
+  premiumLockedLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    flex: 1,
+  },
+  comparisonLockedText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    flex: 1,
+  },
+  premiumBadge: {
+    ...THEME.typography.small,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
+    paddingHorizontal: THEME.spacing.xs,
+    paddingVertical: 2,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.fill[200],
   },
   planTitle: {
     ...THEME.typography.caption,
