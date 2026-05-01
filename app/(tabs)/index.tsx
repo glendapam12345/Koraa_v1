@@ -32,7 +32,6 @@ import { GradientButton } from '@/components/GradientButton';
 import { router } from 'expo-router';
 import type { Task } from '@/components/tasks/TaskCard';
 import { RecommendationsSection } from '@/components/recommendations/RecommendationsSection';
-import { KoraaBloomLogo } from '@/components/branding/KoraaBloomLogo';
 import { subscribeCheckInCelebration } from '@/lib/checkInCelebration';
 import { useAuth } from '@/contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -938,7 +937,6 @@ export default function TodayScreen() {
                 {user &&
                   (currentStreak > 0 ? (
                     <View style={styles.streakHeaderCluster}>
-                      <KoraaBloomLogo size={34} active />
                       <TouchableOpacity
                         style={styles.streakBadgeInline}
                         onPress={() => router.push('/(tabs)/yo')}
