@@ -17,6 +17,7 @@ Notifications.setNotificationHandler({
 });
 
 type Subscription = { remove: () => void };
+const DAILY_REMINDER_TYPE = 'daily_checkin_reminder';
 
 export function useNotifications() {
   const notificationListener = useRef<Subscription | null>(null);
@@ -104,8 +105,13 @@ export async function scheduleDailyReminder() {
   }
 
   try {
-    // Cancelar notificaciones anteriores
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    // Cancelar solo recordatorios diarios de check-in, no todas las notificaciones.
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    await Promise.all(
+      scheduled
+        .filter((n) => n.content.data?.type === DAILY_REMINDER_TYPE)
+        .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier))
+    );
 
     // Verificar si ya hay check-in hoy
     const { data: { user } } = await supabase.auth.getUser();
@@ -142,7 +148,7 @@ export async function scheduleDailyReminder() {
         title: '¿Cómo te sientes hoy?',
         body: 'Haz tu check-in diario y Koraa organizará tu día automáticamente 💭',
         sound: true,
-        data: { type: 'daily_checkin_reminder' },
+        data: { type: DAILY_REMINDER_TYPE },
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -163,7 +169,12 @@ export async function cancelAllNotifications() {
     console.log('Las notificaciones no están disponibles en web');
     return;
   }
-  await Notifications.cancelAllScheduledNotificationsAsync();
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  await Promise.all(
+    scheduled
+      .filter((n) => n.content.data?.type === DAILY_REMINDER_TYPE)
+      .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier))
+  );
 }
 
 // Verificar permisos de notificación

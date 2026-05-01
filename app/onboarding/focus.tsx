@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { track } from '@/lib/analytics';
 import { fetchCurrentStreak, isStreakMilestone } from '@/lib/streak';
 import { publishCheckInCelebration } from '@/lib/checkInCelebration';
+import { markOnboardingCompleted } from '@/lib/onboardingGate';
 
 const FOCUS_OPTIONS = [
   { id: 'Muy distraída', label: 'Muy distraída' },
@@ -264,6 +265,11 @@ export default function FocusScreen() {
         if (from === 'sentir') {
           router.replace('/(tabs)');
         } else {
+          const { error: onboardingError } = await markOnboardingCompleted(user.id);
+          if (onboardingError) {
+            showToast('No se pudo cerrar onboarding. Intenta de nuevo.', 'error');
+            return;
+          }
           router.replace({ pathname: '/paywall', params: { next: '/(tabs)' } });
         }
       } catch (navError) {

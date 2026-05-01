@@ -213,8 +213,11 @@ export function RedistributeWorkloadModal({
     if (!preview?.assignments.length) return;
     setSaving(true);
     setError(null);
+    const writtenUpdates: { id: string; previousDate: string | null }[] = [];
     try {
       for (const a of preview.assignments) {
+        const parent = tasks.find((t) => t.id === a.id);
+        writtenUpdates.push({ id: a.id, previousDate: parent?.scheduled_date ?? null });
         const { error: u1 } = await supabase
           .from('tasks')
           .update({ scheduled_date: a.scheduled_date })
@@ -223,6 +226,7 @@ export function RedistributeWorkloadModal({
         if (u1) throw u1;
         const subs = tasks.filter((t) => t.parent_task_id === a.id);
         for (const s of subs) {
+          writtenUpdates.push({ id: s.id, previousDate: s.scheduled_date ?? null });
           const { error: u2 } = await supabase
             .from('tasks')
             .update({ scheduled_date: a.scheduled_date })
@@ -233,11 +237,14 @@ export function RedistributeWorkloadModal({
       }
 
       if (mode === 'project' && selectedProjectId && saveDueToProject && appliedDue && supportsProjectDueDate) {
-        await supabase
+        const { error: projectUpdateError } = await supabase
           .from('projects')
           .update({ due_date: appliedDue })
           .eq('id', selectedProjectId)
           .eq('user_id', userId);
+        if (projectUpdateError) {
+          setError('Las fechas de tareas se guardaron, pero no se pudo guardar la fecha en el proyecto.');
+        }
       }
 
       onApplied();
@@ -245,6 +252,15 @@ export function RedistributeWorkloadModal({
       setStep('form');
       setPreview(null);
     } catch (e) {
+      if (writtenUpdates.length > 0) {
+        for (const item of writtenUpdates) {
+          await supabase
+            .from('tasks')
+            .update({ scheduled_date: item.previousDate })
+            .eq('id', item.id)
+            .eq('user_id', userId);
+        }
+      }
       setError(getErrorMessage(e));
     } finally {
       setSaving(false);

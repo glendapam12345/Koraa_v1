@@ -59,6 +59,12 @@ const NoPendingTasksCelebration = lazy(() =>
 
 const CATEGORY_ORDER = ['Hogar', 'Trabajo', 'Personal', 'Salud', 'Contenido', 'Marca', 'Otros'];
 
+function getLocalDateString(): string {
+  const now = new Date();
+  const offsetMs = now.getTimezoneOffset() * 60 * 1000;
+  return new Date(now.getTime() - offsetMs).toISOString().split('T')[0];
+}
+
 export default function TodayScreen() {
   const insets = useSafeAreaInsets();
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
@@ -351,7 +357,7 @@ export default function TodayScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       const { data: meditations } = await supabase
         .from('meditations')
         .select('type')
@@ -373,14 +379,14 @@ export default function TodayScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       const { error } = await supabase
         .from('meditations')
-        .insert({
+        .upsert({
           user_id: user.id,
           date: today,
           type: meditationType,
-        });
+        }, { onConflict: 'user_id,date,type' });
 
       if (error) {
         logger.error('Error guardando meditación:', error);

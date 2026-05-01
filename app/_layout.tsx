@@ -73,6 +73,7 @@ export default function RootLayout() {
       const params = new URLSearchParams(url.slice(hashIndex + 1));
       const access_token = params.get('access_token');
       const refresh_token = params.get('refresh_token');
+      const authType = params.get('type');
       if (!access_token || !refresh_token) return;
 
       isApplyingSessionRef.current = true;
@@ -90,7 +91,8 @@ export default function RootLayout() {
         }
 
         // Recuperación de contraseña vs confirmación de email (ambos llevan tokens en #)
-        if (url.includes('reset-password')) {
+        const isRecoveryLink = url.includes('reset-password') || authType === 'recovery';
+        if (isRecoveryLink) {
           router.replace('/reset-password');
         } else {
           router.replace('/(tabs)');

@@ -236,6 +236,10 @@ export default function VaciarScreen() {
       showToast('Por favor ingresa una tarea', 'info');
       return;
     }
+    if (assignToProject === true && !selectedProjectId) {
+      showToast('Selecciona un proyecto o créalo antes de guardar.', 'info');
+      return;
+    }
 
     // Validar longitud máxima de la tarea principal
     if (taskInput.trim().length > 300) {
@@ -452,7 +456,6 @@ export default function VaciarScreen() {
       setSelectedProjectId(null);
       setSelectedDate(null);
 
-      await loadRecentTaskSuggestions();
       await loadRecentTaskSuggestions();
       
       // Cerrar tooltip después de agregar primera tarea

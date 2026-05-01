@@ -88,7 +88,7 @@ export default function WelcomeScreen() {
       <View style={styles.footer}>
         <GradientButton
           title="Continuar →"
-          onPress={() => router.push('/onboarding/intro2')}
+          onPress={() => router.push('/onboarding/emotion')}
         />
 
         <TouchableOpacity

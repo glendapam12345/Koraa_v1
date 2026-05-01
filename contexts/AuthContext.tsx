@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
 import { supabase, canReachSupabase, isSupabaseConfigured } from '@/lib/supabase';
 
 /** Mismo criterio que signInWithEmail: evita errores crípticos si no hay red o falta .env */
@@ -249,7 +250,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: authUnreachableMessage(reach.detail), success: false };
       }
 
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase());
+      const redirectTo = Linking.createURL('/reset-password');
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+        redirectTo,
+      });
       if (error) return { error: translateError(error), success: false };
       return { error: null, success: true };
     } catch (e) {
