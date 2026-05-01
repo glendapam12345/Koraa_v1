@@ -94,6 +94,7 @@ export default function SemanaScreen() {
           'Filtros por proyecto para detectar cargas y cuellos de botella.',
           'Planeación emocional para repartir mejor tus tareas.',
         ]}
+        showBanner={false}
       >
         <ScrollView
           contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]}

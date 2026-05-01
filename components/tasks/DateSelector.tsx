@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'rea
 import { useState, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { Calendar, X } from 'lucide-react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 interface DateSelectorProps {
   selectedDate: string | null;
@@ -9,6 +10,11 @@ interface DateSelectorProps {
 }
 
 const MONTH_NAMES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+function toISODateLocal(date: Date): string {
+  const offsetMs = date.getTimezoneOffset() * 60 * 1000;
+  return new Date(date.getTime() - offsetMs).toISOString().split('T')[0];
+}
 
 function getNextDays(count: number): string[] {
   const out: string[] = [];
@@ -34,6 +40,8 @@ function formatDateLabel(dateStr: string): string {
 
 export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
   const [showModal, setShowModal] = useState(false);
+  const [showNativePicker, setShowNativePicker] = useState(false);
+  const [pickerDate, setPickerDate] = useState<Date>(new Date());
 
   const dateOptions = useMemo(() => {
     const options: { label: string; value: string | null }[] = [
@@ -50,12 +58,35 @@ export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
     ? formatDateLabel(selectedDate)
     : 'Sin fecha';
 
+  const openModal = () => {
+    if (selectedDate) {
+      const parsed = new Date(`${selectedDate}T00:00:00`);
+      if (!Number.isNaN(parsed.getTime())) {
+        setPickerDate(parsed);
+      }
+    }
+    setShowNativePicker(false);
+    setShowModal(true);
+  };
+
+  const handleNativeDateChange = (event: DateTimePickerEvent, date?: Date) => {
+    if (event.type === 'dismissed') {
+      setShowNativePicker(false);
+      return;
+    }
+    if (!date) return;
+    setPickerDate(date);
+    onSelect(toISODateLocal(date));
+    setShowNativePicker(false);
+    setShowModal(false);
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Fecha (opcional)</Text>
       <TouchableOpacity
         style={styles.selector}
-        onPress={() => setShowModal(true)}
+        onPress={openModal}
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel="Elegir fecha"
@@ -87,12 +118,46 @@ export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false}>
+              <TouchableOpacity
+                style={[styles.optionRow, styles.calendarOption]}
+                onPress={() => setShowNativePicker(true)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Abrir calendario"
+              >
+                <View style={styles.calendarOptionLeft}>
+                  <Calendar size={18} color={THEME.colors.gradient.blue} />
+                  <Text style={styles.calendarOptionText}>Elegir en calendario</Text>
+                </View>
+                <Text style={styles.calendarOptionSubtext}>
+                  {selectedDate ? formatDateLabel(selectedDate) : 'Sin fecha'}
+                </Text>
+              </TouchableOpacity>
+
+              {showNativePicker && (
+                <View style={styles.nativePickerWrap}>
+                  <DateTimePicker
+                    value={pickerDate}
+                    mode="date"
+                    display="default"
+                    minimumDate={new Date()}
+                    onChange={handleNativeDateChange}
+                  />
+                </View>
+              )}
+
               {dateOptions.map((opt) => (
                 <TouchableOpacity
                   key={opt.value ?? 'null'}
                   style={styles.optionRow}
                   onPress={() => {
                     onSelect(opt.value);
+                    if (opt.value) {
+                      const parsed = new Date(`${opt.value}T00:00:00`);
+                      if (!Number.isNaN(parsed.getTime())) {
+                        setPickerDate(parsed);
+                      }
+                    }
                     setShowModal(false);
                   }}
                   activeOpacity={0.7}
@@ -180,5 +245,31 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.bold,
+  },
+  calendarOption: {
+    marginBottom: THEME.spacing.xs,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+  },
+  calendarOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+  },
+  calendarOptionText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  calendarOptionSubtext: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+  },
+  nativePickerWrap: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.standard,
+    paddingHorizontal: THEME.spacing.sm,
+    marginBottom: THEME.spacing.sm,
   },
 });

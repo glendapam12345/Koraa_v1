@@ -79,6 +79,7 @@ module.exports = {
       'expo-font',
       'expo-web-browser',
       'expo-secure-store',
+      '@react-native-community/datetimepicker',
       [
         'expo-notifications',
         {
