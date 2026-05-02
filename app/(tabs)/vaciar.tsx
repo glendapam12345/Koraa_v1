@@ -681,7 +681,14 @@ export default function VaciarScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="No, solo categoría"
               >
-                <Text style={[styles.assignButtonText, assignToProject === false && styles.assignButtonTextSelected]}>No</Text>
+                <Text
+                  style={[
+                    styles.assignButtonText,
+                    assignToProject === false ? styles.assignButtonTextSelectedYes : null,
+                  ]}
+                >
+                  No
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -929,22 +936,18 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.gradient.blue,
   },
   assignButtonNo: {
-    borderColor: THEME.colors.text.tertiary,
+    borderColor: THEME.colors.stroke[100],
     backgroundColor: THEME.colors.fill[200],
   },
   assignButtonNoSelected: {
-    backgroundColor: THEME.colors.text.tertiary + '20',
-    borderColor: THEME.colors.text.secondary,
+    backgroundColor: THEME.colors.gradient.blue,
+    borderColor: THEME.colors.gradient.blue,
   },
   assignButtonText: {
     ...THEME.typography.body,
     fontSize: 16,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.secondary,
-  },
-  assignButtonTextSelected: {
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
   },
   assignButtonTextSelectedYes: {
     color: THEME.colors.fill[100],
