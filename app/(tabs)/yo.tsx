@@ -1024,7 +1024,7 @@ export default function ProfileScreen() {
                 nestedScrollEnabled
               >
               <Text style={styles.modalIntro}>
-                Tu nombre, actividades e intereses alimentan las recomendaciones en Inicio.
+                Tu nombre, actividades e intereses alimentan las recomendaciones en Hoy.
               </Text>
               {/* Mensaje de error si existe */}
               {profileError && (

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
- * Racha = días consecutivos con fila en daily_check_ins (misma lógica que Inicio / Yo).
+ * Racha = días consecutivos con fila en daily_check_ins (misma lógica que Hoy / Yo).
  */
 export async function fetchCurrentStreak(supabase: SupabaseClient, userId: string): Promise<number> {
   const today = new Date();

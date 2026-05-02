@@ -61,7 +61,7 @@ export function QuickOnboardingModal({ visible, onClose }: QuickOnboardingModalP
             <View style={styles.step}>
               <Text style={styles.stepNumber}>3</Text>
               <View style={styles.stepContent}>
-                <Text style={styles.stepTitle}>Inicio</Text>
+                <Text style={styles.stepTitle}>Hoy</Text>
                 <Text style={styles.stepDescription}>
                   Koraa priorizará tus tareas automáticamente
                 </Text>

@@ -17,7 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic, FolderKanban, ChevronRight } from 'lucide-react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 
-// Categorías cuando el usuario elige "No" a proyecto (mismas que en Inicio)
+// Categorías cuando el usuario elige "No" a proyecto (mismas que en Hoy)
 const CATEGORY_OPTIONS: { key: string; label: string }[] = [
   { key: 'hogar', label: 'Hogar' },
   { key: 'trabajo', label: 'Trabajo' },

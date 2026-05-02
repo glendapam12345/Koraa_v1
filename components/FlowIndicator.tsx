@@ -12,7 +12,7 @@ export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
   const steps: { id: FlowStep; label: string; number: number }[] = [
     { id: 'vaciar', label: 'Tareas', number: 1 },
     { id: 'sentir', label: 'Sentir', number: 2 },
-    { id: 'accionar', label: 'Inicio', number: 3 },
+    { id: 'accionar', label: 'Hoy', number: 3 },
   ];
 
   const getStepStatus = (step: FlowStep) => {

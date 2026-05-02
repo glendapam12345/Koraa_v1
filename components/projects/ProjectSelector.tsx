@@ -139,7 +139,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
             <View style={styles.selectedProjectInfo}>
               <Text style={styles.selectedProjectLabel}>Proyecto</Text>
               <Text style={styles.selectorText}>{selectedProject.name}</Text>
-              <Text style={styles.selectedColorHint}>Color: aplicado en Inicio</Text>
+              <Text style={styles.selectedColorHint}>Color: aplicado en Hoy</Text>
             </View>
           </View>
         ) : (

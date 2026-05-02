@@ -38,11 +38,11 @@ const FAQ_ITEMS: FaqItem[] = [
     id: 'vaciar',
     question: '¿Para qué sirve la pestaña Tareas?',
     answer:
-      'Ahí capturas y organizas lo pendiente (volcar la mente, asignar proyecto o fecha). Lo que guardes se prioriza en Inicio según tu check-in en Sentir.',
+      'Ahí capturas y organizas lo pendiente (volcar la mente, asignar proyecto o fecha). Lo que guardes se prioriza en Hoy según tu check-in en Sentir.',
   },
   {
     id: 'hoy',
-    question: '¿Cómo se ordenan las tareas en Inicio?',
+    question: '¿Cómo se ordenan las tareas en Hoy?',
     answer:
       'Combinamos tu estado del día (Sentir) con lo que tienes pendiente. Puedes filtrar por «Hoy» o ver «Todas» las pendientes.',
   },

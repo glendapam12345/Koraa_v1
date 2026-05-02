@@ -671,8 +671,8 @@ export default function TodayScreen() {
       return {
         title: 'Tu plan de hoy',
         message: 'Sigue estos pasos para organizar tu día:',
-        suggestion: '1. Tareas → 2. Sentir → 3. Inicio',
-        reasoning: 'Primero agrega tus tareas en la pestaña Tareas, luego registra cómo te sientes en Sentir para que Koraa priorice automáticamente aquí en Inicio.',
+        suggestion: '1. Tareas → 2. Sentir → 3. Hoy',
+        reasoning: 'Primero agrega tus tareas en la pestaña Tareas, luego registra cómo te sientes en Sentir para que Koraa priorice automáticamente aquí en Hoy.',
       };
     }
 
@@ -853,7 +853,7 @@ export default function TodayScreen() {
     return sections;
   }, [displayedIncompleteTasks, getCategoryColor]);
 
-  // Agrupar tareas pendientes por proyecto para la sección de resumen en Inicio
+  // Agrupar tareas pendientes por proyecto para la sección de resumen en Hoy
   const projectSectionsForToday = useMemo(() => {
     const byProject = new Map<string, number>();
     let looseCount = 0;

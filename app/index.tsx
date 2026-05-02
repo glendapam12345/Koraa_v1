@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { THEME } from '@/constants/theme';
 import { logger } from '@/lib/logger';
-import { getPostAuthRoute } from '@/lib/onboardingGate';
+import { getPostAuthRoute, WELCOME_ROUTE } from '@/lib/onboardingGate';
 
 export default function IndexScreen() {
   const { user, loading } = useAuth();
@@ -37,7 +37,8 @@ export default function IndexScreen() {
         if (cancelled) return;
         logger.debug('Index routing:', e);
         navigatedRef.current = true;
-        router.replace('/(tabs)');
+        // Fail-closed: no mandar a tabs si hubo error inesperado (evita saltar onboarding)
+        router.replace(WELCOME_ROUTE);
       }
     };
 
