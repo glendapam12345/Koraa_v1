@@ -43,6 +43,18 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const newProjectInputRef = useRef<TextInput>(null);
+  const [keyboardPad, setKeyboardPad] = useState(0);
+
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvt, (e) => setKeyboardPad(e.endCoordinates.height));
+    const hideSub = Keyboard.addListener(hideEvt, () => setKeyboardPad(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const loadProjects = useCallback(async () => {
     const { data, error } = await supabase
@@ -171,6 +183,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
         >
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
             style={styles.modalKeyboardWrap}
           >
             <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
@@ -184,7 +197,19 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                   <X size={24} color={THEME.colors.text.main} />
                 </TouchableOpacity>
               </View>
-              <ScrollView style={styles.modalList} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <ScrollView
+                style={styles.modalListScroll}
+                contentContainerStyle={[
+                  styles.modalListContent,
+                  {
+                    paddingBottom:
+                      keyboardPad > 0 ? keyboardPad + THEME.spacing.md : THEME.spacing.lg,
+                  },
+                ]}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
+              >
                 {!assignMode && (
                   <Text style={styles.modalSectionHint}>
                     Es opcional. Si no eliges proyecto, la tarea queda «suelta». Puedes elegir uno de la lista o crear uno nuevo abajo.
@@ -192,7 +217,11 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                 )}
                 {!assignMode && (
                   <TouchableOpacity
-                    style={[styles.optionRow, styles.optionRowFirst]}
+                    style={[
+                      styles.optionRow,
+                      styles.optionRowFirst,
+                      selectedProjectId == null && styles.optionRowSelected,
+                    ]}
                     onPress={() => {
                       onSelect(null);
                       setShowModal(false);
@@ -200,13 +229,35 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                     activeOpacity={0.7}
                     accessibilityRole="button"
                     accessibilityLabel="Tareas sueltas, sin proyecto"
+                    accessibilityState={{ selected: selectedProjectId == null }}
                   >
-                    <FolderKanban size={22} color={THEME.colors.text.secondary} />
+                    <FolderKanban
+                      size={22}
+                      color={
+                        selectedProjectId == null
+                          ? THEME.colors.gradient.blue
+                          : THEME.colors.text.secondary
+                      }
+                    />
                     <View style={styles.optionTextWrap}>
-                      <Text style={styles.optionText}>Tareas sueltas</Text>
-                      <Text style={styles.optionSubtext}>Sin proyecto</Text>
+                      <Text
+                        style={[
+                          styles.optionText,
+                          selectedProjectId == null && styles.optionTextSelected,
+                        ]}
+                      >
+                        Tareas sueltas
+                      </Text>
+                      <Text
+                        style={[
+                          styles.optionSubtext,
+                          selectedProjectId == null && styles.optionSubtextOnSelected,
+                        ]}
+                      >
+                        Sin proyecto
+                      </Text>
                     </View>
-                    {!selectedProjectId && <Text style={styles.optionCheck}>✓</Text>}
+                    {selectedProjectId == null && <Text style={styles.optionCheck}>✓</Text>}
                   </TouchableOpacity>
                 )}
 
@@ -217,31 +268,43 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                     {projects.length > 0 && (
                       <Text style={styles.modalSectionTitle}>Mis proyectos</Text>
                     )}
-                    {projects.map((p) => (
-                      <TouchableOpacity
-                        key={p.id}
-                        style={styles.optionRow}
-                        onPress={() => {
-                          onSelect(p.id);
-                          setShowModal(false);
-                        }}
-                        activeOpacity={0.7}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Proyecto ${p.name}`}
-                      >
-                        <View
-                          style={[
-                            styles.colorDot,
-                            { backgroundColor: p.color || THEME.colors.gradient.blue },
-                          ]}
-                        />
-                        <Text style={styles.optionText}>{p.name}</Text>
-                        {selectedProjectId === p.id && <Text style={styles.optionCheck}>✓</Text>}
-                      </TouchableOpacity>
-                    ))}
+                    {projects.map((p) => {
+                      const selected = selectedProjectId === p.id;
+                      return (
+                        <TouchableOpacity
+                          key={p.id}
+                          style={[styles.optionRow, selected && styles.optionRowSelected]}
+                          onPress={() => {
+                            onSelect(p.id);
+                            setShowModal(false);
+                          }}
+                          activeOpacity={0.7}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Proyecto ${p.name}`}
+                          accessibilityState={{ selected }}
+                        >
+                          <View
+                            style={[
+                              styles.colorDot,
+                              styles.colorDotRing,
+                              selected && styles.colorDotRingSelected,
+                              { backgroundColor: p.color || THEME.colors.gradient.blue },
+                            ]}
+                          />
+                          <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
+                            {p.name}
+                          </Text>
+                          {selected ? <Text style={styles.optionCheck}>✓</Text> : null}
+                        </TouchableOpacity>
+                      );
+                    })}
                     {assignMode && (
                       <TouchableOpacity
-                        style={[styles.optionRow, styles.optionRowNone]}
+                        style={[
+                          styles.optionRow,
+                          styles.optionRowNone,
+                          selectedProjectId == null && styles.optionRowSelected,
+                        ]}
                         onPress={() => {
                           onSelect(null);
                           setShowModal(false);
@@ -249,12 +312,27 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                         activeOpacity={0.7}
                         accessibilityRole="button"
                         accessibilityLabel="No asignar a proyecto"
+                        accessibilityState={{ selected: selectedProjectId == null }}
                       >
-                        <FolderKanban size={22} color={THEME.colors.text.tertiary} />
+                        <FolderKanban
+                          size={22}
+                          color={
+                            selectedProjectId == null
+                              ? THEME.colors.gradient.blue
+                              : THEME.colors.text.tertiary
+                          }
+                        />
                         <View style={styles.optionTextWrap}>
-                          <Text style={styles.optionSubtext}>No asignar a proyecto</Text>
+                          <Text
+                            style={[
+                              styles.optionText,
+                              selectedProjectId == null && styles.optionTextSelected,
+                            ]}
+                          >
+                            No asignar a proyecto
+                          </Text>
                         </View>
-                        {!selectedProjectId && <Text style={styles.optionCheck}>✓</Text>}
+                        {selectedProjectId == null ? <Text style={styles.optionCheck}>✓</Text> : null}
                       </TouchableOpacity>
                     )}
                     {showNewProject ? (
@@ -443,9 +521,12 @@ const styles = StyleSheet.create({
   modalClose: {
     padding: THEME.spacing.xs,
   },
-  modalList: {
-    padding: THEME.spacing.md,
-    maxHeight: 460,
+  modalListScroll: {
+    maxHeight: 520,
+  },
+  modalListContent: {
+    paddingHorizontal: THEME.spacing.md,
+    paddingTop: THEME.spacing.xs,
   },
   optionRow: {
     flexDirection: 'row',
@@ -454,6 +535,12 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.md,
     paddingHorizontal: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.standard,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  optionRowSelected: {
+    backgroundColor: THEME.colors.tint.blue.veryLight,
+    borderColor: THEME.colors.gradient.blue,
   },
   optionRowFirst: {
     backgroundColor: THEME.colors.fill[200],
@@ -471,10 +558,25 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.text.main,
   },
+  optionTextSelected: {
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
+  },
   optionSubtext: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     marginTop: 2,
+  },
+  optionSubtextOnSelected: {
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  colorDotRing: {
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  colorDotRingSelected: {
+    borderColor: THEME.colors.gradient.blue,
   },
   optionCheck: {
     ...THEME.typography.body,
