@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, RefreshControl, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
@@ -16,6 +17,9 @@ import { DateSelector } from '@/components/tasks/DateSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic, FolderKanban, ChevronRight } from 'lucide-react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+
+const VACIAR_OPTIONAL_HINT_DISMISSED_KEY = (userId: string) =>
+  `koraa_vaciar_optional_hint_dismissed_v1_${userId}`;
 
 // Categorías cuando el usuario elige "No" a proyecto (mismas que en Hoy)
 const CATEGORY_OPTIONS: { key: string; label: string }[] = [
@@ -60,7 +64,9 @@ export default function VaciarScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasCheckInToday, setHasCheckInToday] = useState<boolean | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
-  const [, setHasTasks] = useState<boolean | null>(null);
+  const [hasTasks, setHasTasks] = useState<boolean | null>(null);
+  const [optionalHintDismissed, setOptionalHintDismissed] = useState(false);
+  const [optionalHintExpanded, setOptionalHintExpanded] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
   const [refreshing, setRefreshing] = useState(false);
@@ -166,14 +172,37 @@ export default function VaciarScreen() {
 
       const userHasTasks = (data?.length || 0) > 0;
       setHasTasks(userHasTasks);
-      
-      // Mostrar tooltip solo si no hay tareas (primera vez)
+
+      let hintDismissedInStorage = false;
+      try {
+        hintDismissedInStorage =
+          (await AsyncStorage.getItem(VACIAR_OPTIONAL_HINT_DISMISSED_KEY(user.id))) === '1';
+      } catch {
+        hintDismissedInStorage = false;
+      }
+      setOptionalHintDismissed(hintDismissedInStorage);
+
+      // Tooltip modal: si aún no hay tareas, solo si ya cerraron la tarjeta de "opcional"
+      // (evita solaparse con el hint inline la primera vez).
       if (!userHasTasks) {
-        setShowTooltip(true);
+        setShowTooltip(hintDismissedInStorage);
+      } else {
+        setShowTooltip(false);
       }
     } catch (error) {
       logger.error('Error inesperado:', error);
     }
+  };
+
+  const dismissOptionalHint = async () => {
+    if (user?.id) {
+      try {
+        await AsyncStorage.setItem(VACIAR_OPTIONAL_HINT_DISMISSED_KEY(user.id), '1');
+      } catch {
+        /* no bloquear UI */
+      }
+    }
+    setOptionalHintDismissed(true);
   };
 
   // Cargar sugerencias de tareas recientes para autocompletar
@@ -446,6 +475,8 @@ export default function VaciarScreen() {
         hasSubtasks: hasSubtasks && subtasks.some((st) => st.trim()),
       });
 
+      setHasTasks(true);
+
       setRecentTasks([taskInput.trim(), ...recentTasks.slice(0, 4)]);
       setTaskInput('');
       setIsPriority(false);
@@ -567,6 +598,63 @@ export default function VaciarScreen() {
           Sin estructura. Sin etiquetas.{'\n'}
           Solo escribe lo que necesitas soltar.
         </Text>
+
+        {hasTasks === false && !optionalHintDismissed && (
+          <View style={styles.optionalHintCard}>
+            <TouchableOpacity
+              style={styles.optionalHintHeader}
+              onPress={() => setOptionalHintExpanded((e) => !e)}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel={
+                optionalHintExpanded
+                  ? 'Contraer nota sobre opciones opcionales'
+                  : 'Expandir nota sobre proyecto, fecha y subtareas'
+              }
+            >
+              <Text style={styles.optionalHintTitle}>Todo lo demás es opcional</Text>
+              {optionalHintExpanded ? (
+                <ChevronUp size={20} color={THEME.colors.text.secondary} />
+              ) : (
+                <ChevronDown size={20} color={THEME.colors.text.secondary} />
+              )}
+            </TouchableOpacity>
+            {optionalHintExpanded ? (
+              <View style={styles.optionalHintBodyWrap}>
+                <Text style={styles.optionalHintBody}>
+                  Proyecto, categoría, fecha, subtareas y prioridad puedes elegirlos cuando quieras. Puedes escribir y
+                  pulsar Soltar.
+                </Text>
+                <Text style={[styles.optionalHintBody, styles.optionalHintBodySecond]}>
+                  Para ordenar tu día según tu estado, haz después tu check-in en Sentir.
+                </Text>
+                <TouchableOpacity
+                  onPress={() => void dismissOptionalHint()}
+                  style={styles.optionalHintDismissBtn}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel="Entendido, ocultar esta nota"
+                >
+                  <Text style={styles.optionalHintDismissText}>Entendido</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.optionalHintCollapsedWrap}>
+                <Text style={styles.optionalHintCollapsedLine}>
+                  Proyecto, fecha y más → opcionales
+                </Text>
+                <TouchableOpacity
+                  onPress={() => void dismissOptionalHint()}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel="Entendido, ocultar esta nota"
+                >
+                  <Text style={styles.optionalHintDismissTextCompact}>Entendido</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Banner informativo: después de agregar tareas, ve a Sentir */}
         {hasCheckInToday === false && hasCheckInToday !== null && (
@@ -888,6 +976,66 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     lineHeight: 24,
     marginBottom: THEME.spacing.lg,
+  },
+  optionalHintCard: {
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+    backgroundColor: THEME.colors.fill[100],
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.lg,
+    ...THEME.shadows.soft,
+  },
+  optionalHintHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: THEME.spacing.sm,
+  },
+  optionalHintTitle: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    flex: 1,
+  },
+  optionalHintBodyWrap: {
+    marginTop: THEME.spacing.sm,
+  },
+  optionalHintBody: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 20,
+  },
+  optionalHintBodySecond: {
+    marginTop: THEME.spacing.xs,
+  },
+  optionalHintDismissBtn: {
+    alignSelf: 'flex-end',
+    marginTop: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.sm,
+  },
+  optionalHintDismissText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  optionalHintCollapsedWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: THEME.spacing.xs,
+    gap: THEME.spacing.sm,
+  },
+  optionalHintCollapsedLine: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    flex: 1,
+  },
+  optionalHintDismissTextCompact: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
   },
   sectionLabel: {
     ...THEME.typography.caption,

@@ -12,7 +12,7 @@ import { getEmotionTips } from '@/lib/emotionTips';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { router, useFocusEffect } from 'expo-router';
-import { Plus, Lightbulb, Heart } from 'lucide-react-native';
+import { Plus, Lightbulb, Heart, CircleHelp } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 
 const SENTIR_RITUAL_HINT_KEY = 'koraa_sentir_ritual_intro_v1';
@@ -137,6 +137,18 @@ export default function SentirScreen() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]} showsVerticalScrollIndicator={false}>
+        <View style={styles.helpHeaderRow}>
+          <TouchableOpacity
+            onPress={() => router.push('/help')}
+            style={styles.helpHeaderBtn}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel="Ayuda y preguntas frecuentes"
+            accessibilityHint="Abre la pantalla de ayuda con preguntas sobre Sentir, Tareas y Hoy"
+          >
+            <CircleHelp size={THEME.sizes.iconStandard} color={THEME.colors.text.main} />
+          </TouchableOpacity>
+        </View>
         {/* Indicador de flujo */}
         <FlowIndicator currentStep="sentir" />
 
@@ -256,6 +268,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: THEME.colors.fill[100],
+  },
+  helpHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: THEME.spacing.xs,
+  },
+  helpHeaderBtn: {
+    padding: THEME.spacing.xs,
+    minWidth: THEME.sizes.touchTarget,
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     padding: THEME.spacing.lg,

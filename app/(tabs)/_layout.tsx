@@ -6,12 +6,15 @@ import { THEME } from '@/constants/theme';
 import { Home, Edit3, Heart, User, Calendar, Lightbulb } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { getPostAuthRoute } from '@/lib/onboardingGate';
+import { hasSeenFirstSessionTour } from '@/lib/firstSessionTour';
+import { FirstSessionTourModal } from '@/components/onboarding/FirstSessionTourModal';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const { user, loading } = useAuth();
   const userId = user?.id;
   const [allowed, setAllowed] = useState(false);
+  const [showFirstSessionTour, setShowFirstSessionTour] = useState(false);
 
   useEffect(() => {
     setAllowed(false);
@@ -38,6 +41,23 @@ export default function TabLayout() {
     };
   }, [userId, loading]);
 
+  useEffect(() => {
+    if (!allowed || !userId) {
+      setShowFirstSessionTour(false);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const seen = await hasSeenFirstSessionTour(userId);
+      if (!cancelled && !seen) {
+        setShowFirstSessionTour(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [allowed, userId]);
+
   if (loading || !userId) {
     return (
       <View style={styles.authGate}>
@@ -55,80 +75,87 @@ export default function TabLayout() {
   }
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: THEME.colors.gradient.blue,
-        tabBarInactiveTintColor: THEME.colors.text.secondary,
-        tabBarStyle: {
-          backgroundColor: THEME.colors.fill[100],
-          borderTopWidth: 1,
-          borderTopColor: THEME.colors.stroke[100],
-          height: 60 + insets.bottom,
-          paddingBottom: insets.bottom + 6,
-          paddingTop: 8,
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontFamily: THEME.fonts.heading.medium,
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Hoy',
-          tabBarIcon: ({ size, color }) => (
-            <Home size={size} color={color} />
-          ),
-        }}
+    <>
+      <FirstSessionTourModal
+        visible={showFirstSessionTour}
+        userId={userId}
+        onFinished={() => setShowFirstSessionTour(false)}
       />
-      <Tabs.Screen
-        name="vaciar"
-        options={{
-          title: 'Tareas',
-          tabBarIcon: ({ size, color }) => (
-            <Edit3 size={size} color={color} />
-          ),
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: THEME.colors.gradient.blue,
+          tabBarInactiveTintColor: THEME.colors.text.secondary,
+          tabBarStyle: {
+            backgroundColor: THEME.colors.fill[100],
+            borderTopWidth: 1,
+            borderTopColor: THEME.colors.stroke[100],
+            height: 60 + insets.bottom,
+            paddingBottom: insets.bottom + 6,
+            paddingTop: 8,
+          },
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontFamily: THEME.fonts.heading.medium,
+          },
         }}
-      />
-      <Tabs.Screen
-        name="sentir"
-        options={{
-          title: 'Sentir',
-          tabBarIcon: ({ size, color }) => (
-            <Heart size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="semana"
-        options={{
-          title: 'Semana',
-          tabBarIcon: ({ size, color }) => (
-            <Calendar size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="tips"
-        options={{
-          title: 'Consejos',
-          tabBarIcon: ({ size, color }) => (
-            <Lightbulb size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="yo"
-        options={{
-          title: 'Yo',
-          tabBarIcon: ({ size, color }) => (
-            <User size={size} color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: 'Hoy',
+            tabBarIcon: ({ size, color }) => (
+              <Home size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="vaciar"
+          options={{
+            title: 'Tareas',
+            tabBarIcon: ({ size, color }) => (
+              <Edit3 size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="sentir"
+          options={{
+            title: 'Sentir',
+            tabBarIcon: ({ size, color }) => (
+              <Heart size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="semana"
+          options={{
+            title: 'Semana',
+            tabBarIcon: ({ size, color }) => (
+              <Calendar size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="tips"
+          options={{
+            title: 'Consejos',
+            tabBarIcon: ({ size, color }) => (
+              <Lightbulb size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="yo"
+          options={{
+            title: 'Yo',
+            tabBarIcon: ({ size, color }) => (
+              <User size={size} color={color} />
+            ),
+          }}
+        />
+      </Tabs>
+    </>
   );
 }
 

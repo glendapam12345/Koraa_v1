@@ -97,6 +97,8 @@ The `development_guidelines/` directory organizes extended project context:
 
 See individual README files in each subdirectory for usage guidelines.
 
+**UX / flujo de usuario:** Auditoría planificada (orden de tabs vs `FlowIndicator`, Ayuda, primera experiencia) en [koraa_ux_flow_audit.md](development_guidelines/planned/koraa_ux_flow_audit.md).
+
 ---
 
 ## 🔧 Development Standards
