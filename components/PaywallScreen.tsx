@@ -54,6 +54,14 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
     }
   };
 
+  const handleContinueFree = () => {
+    if (onClose) {
+      onClose();
+      return;
+    }
+    onSkip?.();
+  };
+
   const handleRestore = async () => {
     setIsRestoring(true);
     try {
@@ -205,17 +213,33 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
           ))
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>Aun no hay planes disponibles</Text>
+            <Text style={styles.emptyTitle}>Los planes no cargaron</Text>
             <Text style={styles.emptyText}>
-              Verifica que el offering por defecto en RevenueCat tenga un producto activo de App Store.
+              No pasa nada: puedes seguir usando Koraa gratis con todo lo esencial. Si más tarde quieres Premium,
+              podrás ver precios cuando la tienda esté lista (por ejemplo en TestFlight o App Store).
             </Text>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={handleContinueFree}
+              disabled={isPurchasing || isRestoring || isRefreshing}
+              style={styles.emptyPrimaryWrap}
+            >
+              <LinearGradient
+                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.emptyPrimaryBtn}
+              >
+                <Text style={styles.emptyPrimaryBtnText}>Continuar con versión gratis</Text>
+              </LinearGradient>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.secondaryButton}
               activeOpacity={0.75}
               disabled={isRefreshing}
               onPress={() => void handleRefresh()}
             >
-              <Text style={styles.secondaryButtonText}>{isRefreshing ? 'Actualizando...' : 'Reintentar'}</Text>
+              <Text style={styles.secondaryButtonText}>{isRefreshing ? 'Actualizando...' : 'Reintentar cargar planes'}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -425,7 +449,23 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.fill[200],
     backgroundColor: THEME.colors.fill[100],
     padding: THEME.spacing.md,
-    gap: THEME.spacing.xs,
+    gap: THEME.spacing.sm,
+  },
+  emptyPrimaryWrap: {
+    borderRadius: THEME.borderRadius.pill,
+    overflow: 'hidden',
+    marginTop: THEME.spacing.xs,
+  },
+  emptyPrimaryBtn: {
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: THEME.spacing.md,
+  },
+  emptyPrimaryBtnText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.onGradient,
+    fontFamily: THEME.fonts.heading.bold,
   },
   emptyTitle: {
     ...THEME.typography.caption,

@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { EmotionCard } from '@/components/EmotionCard';
@@ -11,7 +12,10 @@ import { getEmotionTips } from '@/lib/emotionTips';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { router, useFocusEffect } from 'expo-router';
-import { Plus, Lightbulb } from 'lucide-react-native';
+import { Plus, Lightbulb, Heart } from 'lucide-react-native';
+import { useAuth } from '@/contexts/AuthContext';
+
+const SENTIR_RITUAL_HINT_KEY = 'koraa_sentir_ritual_intro_v1';
 
 const EMOTIONS = [
   { id: 'agotada', emoji: '😔', label: 'Agotada' },
@@ -24,10 +28,42 @@ const EMOTIONS = [
 
 export default function SentirScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const [selectedEmotion, setSelectedEmotion] = useState<string>('');
   const [hasTasks, setHasTasks] = useState<boolean | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [, setHasCheckInToday] = useState<boolean | null>(null);
+  const [showRitualHint, setShowRitualHint] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadHint = async () => {
+      if (!user?.id) return;
+      try {
+        const done = await AsyncStorage.getItem(`${SENTIR_RITUAL_HINT_KEY}_${user.id}`);
+        if (!cancelled && done !== '1') {
+          setShowRitualHint(true);
+        }
+      } catch {
+        if (!cancelled) setShowRitualHint(true);
+      }
+    };
+    void loadHint();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const dismissRitualHint = async () => {
+    if (user?.id) {
+      try {
+        await AsyncStorage.setItem(`${SENTIR_RITUAL_HINT_KEY}_${user.id}`, '1');
+      } catch {
+        /* no bloquear UI */
+      }
+    }
+    setShowRitualHint(false);
+  };
 
   const checkTasks = useCallback(async () => {
     try {
@@ -103,6 +139,32 @@ export default function SentirScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]} showsVerticalScrollIndicator={false}>
         {/* Indicador de flujo */}
         <FlowIndicator currentStep="sentir" />
+
+        {showRitualHint ? (
+          <View style={styles.ritualHint}>
+            <View style={styles.ritualHintHeader}>
+              <View style={styles.ritualHintIconWrap}>
+                <Heart size={18} color={THEME.colors.gradient.blue} />
+              </View>
+              <View style={styles.ritualHintTextCol}>
+                <Text style={styles.ritualHintTitle}>Tu ritual diario</Text>
+                <Text style={styles.ritualHintBody}>
+                  Aquí haces el check-in del día (emoción, energía, tiempo y enfoque). Koraa prioriza tus tareas según
+                  cómo te sientes. Es el mismo flujo que al empezar; puedes volver cada día desde esta pestaña.
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              onPress={() => void dismissRitualHint()}
+              style={styles.ritualHintDismiss}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel="Entendido, ocultar esta nota"
+            >
+              <Text style={styles.ritualHintDismissText}>Entendido</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         <Text style={styles.title}>¿Cómo te</Text>
         <Text style={styles.titleAccent}>sientes</Text>
@@ -217,6 +279,53 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     lineHeight: 24,
     marginBottom: THEME.spacing.lg,
+  },
+  ritualHint: {
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+    backgroundColor: THEME.colors.fill[100],
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+    ...THEME.shadows.soft,
+  },
+  ritualHintHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: THEME.spacing.sm,
+  },
+  ritualHintIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: THEME.colors.fill[200],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ritualHintTextCol: {
+    flex: 1,
+  },
+  ritualHintTitle: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: 4,
+  },
+  ritualHintBody: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 20,
+  },
+  ritualHintDismiss: {
+    alignSelf: 'flex-end',
+    marginTop: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.sm,
+  },
+  ritualHintDismissText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
   },
   emotionsGrid: {
     flexDirection: 'row',
