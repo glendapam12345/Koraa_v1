@@ -101,8 +101,6 @@ export default function TodayScreen() {
   const [hoyLiteLayout, setHoyLiteLayout] = useState<boolean | null>(null);
   /** Módulos secundarios colapsables para reducir carga en pantalla. */
   const [showSecondaryModules, setShowSecondaryModules] = useState(false);
-  /** “Modo foco” colapsa categorías de tareas para mostrar menos de golpe. */
-  const [focusMode, setFocusMode] = useState<boolean>(true);
   const [emotionalMemoryInsights, setEmotionalMemoryInsights] = useState<{
     title: string;
     message: string;
@@ -141,7 +139,6 @@ export default function TodayScreen() {
   useEffect(() => {
     if (hoyLiteLayout) {
       setTaskFilter('hoy');
-      setFocusMode(true);
     }
   }, [hoyLiteLayout]);
 
@@ -150,13 +147,9 @@ export default function TodayScreen() {
     let cancelled = false;
     void (async () => {
       try {
-        const [secondaryRaw, focusRaw] = await Promise.all([
-          AsyncStorage.getItem(`hoy_secondary_modules_${user.id}_v1`),
-          AsyncStorage.getItem(`hoy_focus_mode_${user.id}_v1`),
-        ]);
+        const secondaryRaw = await AsyncStorage.getItem(`hoy_secondary_modules_${user.id}_v1`);
         if (cancelled) return;
         setShowSecondaryModules(secondaryRaw === '1');
-        setFocusMode(focusRaw !== '0'); // por defecto: activo
       } catch {
         // no-op: se mantienen valores por defecto
       }
@@ -165,30 +158,6 @@ export default function TodayScreen() {
       cancelled = true;
     };
   }, [user?.id]);
-
-  // Cuando sales de “Hoy lite”, restauramos preferencias desde AsyncStorage
-  // (en lite forzamos modo foco, pero no queremos sobrescribir la preferencia real).
-  useEffect(() => {
-    if (!user?.id) return;
-    if (hoyLiteLayout) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const [secondaryRaw, focusRaw] = await Promise.all([
-          AsyncStorage.getItem(`hoy_secondary_modules_${user.id}_v1`),
-          AsyncStorage.getItem(`hoy_focus_mode_${user.id}_v1`),
-        ]);
-        if (cancelled) return;
-        setShowSecondaryModules(secondaryRaw === '1');
-        setFocusMode(focusRaw !== '0');
-      } catch {
-        // no-op
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id, hoyLiteLayout]);
 
   useEffect(() => {
     // En “hoyLiteLayout” ignoramos persistencia para no pelear con la vista simplificada.
@@ -199,12 +168,6 @@ export default function TodayScreen() {
       showSecondaryModules ? '1' : '0',
     );
   }, [user?.id, showSecondaryModules, hoyLiteLayout]);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    if (hoyLiteLayout) return;
-    void AsyncStorage.setItem(`hoy_focus_mode_${user.id}_v1`, focusMode ? '1' : '0');
-  }, [user?.id, focusMode, hoyLiteLayout]);
 
   const handleOptOutHoyLite = useCallback(async () => {
     if (!user?.id) return;
@@ -261,7 +224,7 @@ export default function TodayScreen() {
   );
 
   const hoyLiteActive = hoyLiteLayout === true;
-  const showSecondaryModulesEffective = showSecondaryModules && !focusMode && !hoyLiteActive;
+  const showSecondaryModulesEffective = showSecondaryModules && !hoyLiteActive;
 
   const {
     toggleTask,
@@ -957,17 +920,8 @@ export default function TodayScreen() {
       setExpandedSections(new Set<string>());
       return;
     }
-    if (!focusMode) {
-      setExpandedSections(null);
-      return;
-    }
-    if (taskSections.length === 0) {
-      setExpandedSections(new Set<string>());
-      return;
-    }
-    // En modo foco dejamos visible solo la categoría más prioritaria.
-    setExpandedSections(new Set<string>([taskSections[0].id]));
-  }, [focusMode, hoyLiteLayout, taskSections]);
+    setExpandedSections(null);
+  }, [hoyLiteLayout]);
 
   // Agrupar tareas pendientes por proyecto para la sección de resumen en Hoy
   const projectSectionsForToday = useMemo(() => {
@@ -1234,35 +1188,7 @@ export default function TodayScreen() {
           </TouchableOpacity>
         )}
 
-        {!loading && !hoyLiteLayout && (
-          <TouchableOpacity
-            style={styles.focusModeToggle}
-            onPress={() => setFocusMode((prev) => !prev)}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={focusMode ? 'Desactivar modo foco en Hoy' : 'Activar modo foco en Hoy'}
-            accessibilityHint="Muestra una sola categoría prioritaria y oculta secciones extra para reducir distracciones"
-            accessibilityState={{ expanded: focusMode }}
-          >
-            <View style={styles.focusModeToggleTextWrap}>
-              <Text style={styles.focusModeToggleText}>
-                {focusMode ? 'Modo foco activo' : 'Activar modo foco'}
-              </Text>
-              <Text style={styles.focusModeToggleSubtext}>
-                {focusMode
-                  ? 'Muestra 1 categoria prioritaria y oculta extras'
-                  : 'Reduce distracciones en Hoy'}
-              </Text>
-            </View>
-            {focusMode ? (
-              <ChevronDown size={18} color={THEME.colors.text.secondary} />
-            ) : (
-              <ChevronRight size={18} color={THEME.colors.text.secondary} />
-            )}
-          </TouchableOpacity>
-        )}
-
-        {!loading && !hoyLiteActive && !focusMode && (
+        {!loading && !hoyLiteActive && (
           <TouchableOpacity
             style={styles.secondaryModulesToggle}
             onPress={() => setShowSecondaryModules((prev) => !prev)}
@@ -1608,11 +1534,6 @@ export default function TodayScreen() {
                     ? `${displayedIncompleteTasks.length} ${displayedIncompleteTasks.length === 1 ? 'tarea' : 'tareas'} para hoy`
                     : `${displayedIncompleteTasks.length} ${displayedIncompleteTasks.length === 1 ? 'tarea' : 'tareas'} pendientes`}
               </Text>
-              {focusMode && taskSections.length > 0 && (
-                <Text style={styles.focusModeHint}>
-                  Hoy vamos paso a paso: 1 categoría clave.
-                </Text>
-              )}
               {taskFilter === 'hoy' && !hoyLiteLayout && (
                 <Text style={styles.taskFilterHint}>Tareas de hoy y sin fecha asignada</Text>
               )}
@@ -1758,11 +1679,6 @@ export default function TodayScreen() {
                 taskSections.map((sec) => {
                   const isSectionExpanded = expandedSections === null || expandedSections.has(sec.id);
                   const toggleSection = () => {
-                    if (focusMode) {
-                      // En modo foco siempre mostramos una sola categoría a la vez.
-                      setExpandedSections(new Set<string>([sec.id]));
-                      return;
-                    }
                     setExpandedSections((prev) => {
                       const expanded = prev === null || prev.has(sec.id);
                       if (expanded) {
@@ -1785,13 +1701,7 @@ export default function TodayScreen() {
                         onPress={toggleSection}
                         activeOpacity={0.7}
                         accessibilityRole="button"
-                        accessibilityLabel={
-                          focusMode
-                            ? `Mostrar solo ${sec.title}`
-                            : isSectionExpanded
-                              ? `Contraer ${sec.title}`
-                              : `Ver ${sec.tasks.length} tareas de ${sec.title}`
-                        }
+                        accessibilityLabel={isSectionExpanded ? `Contraer ${sec.title}` : `Ver ${sec.tasks.length} tareas de ${sec.title}`}
                         accessibilityState={{ expanded: isSectionExpanded }}
                       >
                         <Text style={styles.categoryLabelName}>{sec.title}</Text>
@@ -2434,35 +2344,6 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.medium,
   },
-  focusModeToggle: {
-    marginHorizontal: THEME.spacing.lg,
-    marginTop: -THEME.spacing.xs,
-    marginBottom: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.rounded,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    backgroundColor: THEME.colors.fill[200],
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  focusModeToggleText: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  focusModeToggleTextWrap: {
-    flex: 1,
-    paddingRight: THEME.spacing.sm,
-  },
-  focusModeToggleSubtext: {
-    ...THEME.typography.small,
-    fontSize: 11,
-    color: THEME.colors.text.secondary,
-    marginTop: 2,
-  },
   welcomeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -3014,13 +2895,6 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.tertiary,
     marginTop: 4,
     marginBottom: 0,
-    width: '100%',
-  },
-  focusModeHint: {
-    ...THEME.typography.small,
-    fontSize: 12,
-    color: THEME.colors.gradient.blue,
-    marginTop: 4,
     width: '100%',
   },
   taskCompactHint: {
