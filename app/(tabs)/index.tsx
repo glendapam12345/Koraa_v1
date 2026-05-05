@@ -1758,6 +1758,11 @@ export default function TodayScreen() {
                 taskSections.map((sec) => {
                   const isSectionExpanded = expandedSections === null || expandedSections.has(sec.id);
                   const toggleSection = () => {
+                    if (focusMode) {
+                      // En modo foco siempre mostramos una sola categoría a la vez.
+                      setExpandedSections(new Set<string>([sec.id]));
+                      return;
+                    }
                     setExpandedSections((prev) => {
                       const expanded = prev === null || prev.has(sec.id);
                       if (expanded) {
@@ -1780,7 +1785,13 @@ export default function TodayScreen() {
                         onPress={toggleSection}
                         activeOpacity={0.7}
                         accessibilityRole="button"
-                        accessibilityLabel={isSectionExpanded ? `Contraer ${sec.title}` : `Ver ${sec.tasks.length} tareas de ${sec.title}`}
+                        accessibilityLabel={
+                          focusMode
+                            ? `Mostrar solo ${sec.title}`
+                            : isSectionExpanded
+                              ? `Contraer ${sec.title}`
+                              : `Ver ${sec.tasks.length} tareas de ${sec.title}`
+                        }
                         accessibilityState={{ expanded: isSectionExpanded }}
                       >
                         <Text style={styles.categoryLabelName}>{sec.title}</Text>
