@@ -369,12 +369,12 @@ export default function SemanaScreen() {
               Si luego quieres más detalle, puedes desbloquear los 7 días y filtros por proyecto.
             </Text>
             <TouchableOpacity
-              onPress={() => router.push('/paywall')}
+              onPress={() => router.push('/settings')}
               activeOpacity={0.85}
               style={styles.premiumHintBtn}
               accessibilityRole="button"
               accessibilityLabel="Ver Premium"
-              accessibilityHint="Abre la pantalla de suscripción"
+              accessibilityHint="Abre Ajustes para suscribirte o restaurar compra"
             >
               <Text style={styles.premiumHintBtnText}>Ver Premium</Text>
               <ChevronRight size={16} color={THEME.colors.gradient.blue} />

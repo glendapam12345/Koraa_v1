@@ -16,21 +16,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
-  LogOut,
   Settings,
-  Circle as HelpCircle,
   CreditCard as Edit,
   X,
   Plus,
   Folder,
   RotateCcw,
-  Lock,
-  Bell,
   Flame,
-  Trash2,
-  Crown,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase, getErrorMessage } from '@/lib/supabase';
@@ -45,14 +39,6 @@ import * as Haptics from 'expo-haptics';
 import { generateEmotionalInsights } from '@/lib/emotionalInsights';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
-import {
-  getDailyReminderTime,
-  setDailyReminderTime,
-  DAILY_REMINDER_PRESETS,
-  formatReminderTime,
-} from '@/lib/notificationPreferences';
-import { scheduleDailyReminder, checkNotificationPermissions } from '@/hooks/useNotifications';
-
 const WINDOW_H = Dimensions.get('window').height;
 const PROFILE_MODAL_SCROLL_MAX = Math.min(WINDOW_H * 0.58, 520);
 
@@ -76,7 +62,8 @@ type UserProfile = {
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { user, signOut, deleteAccount } = useAuth();
+  const { editProfile: editProfileParam } = useLocalSearchParams<{ editProfile?: string }>();
+  const { user } = useAuth();
   const [progressData, setProgressData] = useState<DayData[]>([]);
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   const [, setShowConfetti] = useState(false);
@@ -91,15 +78,6 @@ export default function ProfileScreen() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [showProjects, setShowProjects] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showChangePassword, setShowChangePassword] = useState(false);
-  const [deletingAccount, setDeletingAccount] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [changePasswordError, setChangePasswordError] = useState<string | null>(null);
-  const [changingPassword, setChangingPassword] = useState(false);
-  const [notifReminderTime, setNotifReminderTime] = useState({ hour: 9, minute: 0 });
-  const [notifSaving, setNotifSaving] = useState(false);
   /** Clave de día local para rotar mensajes de racha (actualiza al enfocar Yo). */
   const [streakMessageDayKey, setStreakMessageDayKey] = useState(getLocalDateKey);
   const [streakExplainerDismissed, setStreakExplainerDismissed] = useState(false);
@@ -109,6 +87,12 @@ export default function ProfileScreen() {
       if (v === '1') setStreakExplainerDismissed(true);
     });
   }, []);
+
+  useEffect(() => {
+    if (editProfileParam !== '1') return;
+    setShowEditProfile(true);
+    router.setParams({ editProfile: undefined });
+  }, [editProfileParam]);
 
   const dismissStreakExplainer = useCallback(async () => {
     setStreakExplainerDismissed(true);
@@ -291,118 +275,6 @@ export default function ProfileScreen() {
       setPreviousStreak(currentStreak);
     }
   }, [currentStreak, previousStreak]);
-
-  const handleSignOut = async () => {
-    await signOut();
-    router.replace('/auth/login');
-  };
-
-  const handleDeleteAccount = useCallback(() => {
-    if (deletingAccount) return;
-    Alert.alert(
-      'Eliminar cuenta',
-      'Esta acción es permanente y borrará tu cuenta y tus datos en Koraa.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Continuar',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert(
-              'Confirmar eliminación',
-              '¿Seguro? No se puede deshacer.',
-              [
-                { text: 'Cancelar', style: 'cancel' },
-                {
-                  text: 'Sí, eliminar',
-                  style: 'destructive',
-                  onPress: async () => {
-                    setDeletingAccount(true);
-                    try {
-                      const { error } = await deleteAccount();
-                      if (error) {
-                        Alert.alert('No se pudo eliminar', error);
-                        return;
-                      }
-                      Alert.alert('Cuenta eliminada', 'Tu cuenta y tus datos se eliminaron correctamente.');
-                      router.replace('/auth/login');
-                    } finally {
-                      setDeletingAccount(false);
-                    }
-                  },
-                },
-              ],
-            );
-          },
-        },
-      ],
-    );
-  }, [deleteAccount, deletingAccount]);
-
-  const handleChangePassword = async () => {
-    setChangePasswordError(null);
-    if (newPassword.length < 6) {
-      setChangePasswordError('La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setChangePasswordError('Las contraseñas no coinciden');
-      return;
-    }
-    setChangingPassword(true);
-    try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) {
-        setChangePasswordError(getErrorMessage(error));
-        return;
-      }
-      setShowChangePassword(false);
-      setNewPassword('');
-      setConfirmPassword('');
-      if (Platform.OS !== 'web') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-      Alert.alert('Listo', 'Tu contraseña se actualizó. La próxima vez que inicies sesión usa la nueva contraseña.');
-    } catch (err) {
-      setChangePasswordError(err instanceof Error ? err.message : 'Ocurrió un error');
-    } finally {
-      setChangingPassword(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!showSettingsModal || Platform.OS === 'web') return;
-    void getDailyReminderTime().then(setNotifReminderTime);
-  }, [showSettingsModal]);
-
-  const applyNotificationPreset = async (hour: number, minute: number) => {
-    if (Platform.OS === 'web') return;
-    setNotifSaving(true);
-    try {
-      await setDailyReminderTime({ hour, minute });
-      setNotifReminderTime({ hour, minute });
-      const ok = await checkNotificationPermissions();
-      if (!ok) {
-        Alert.alert(
-          'Permisos de notificación',
-          'Activa las notificaciones para Koraa en los ajustes del sistema para recibir el recordatorio de Sentir.',
-        );
-      }
-      await scheduleDailyReminder();
-      if (Platform.OS === 'ios' || Platform.OS === 'android') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-      Alert.alert(
-        'Recordatorio guardado',
-        `Te avisaremos sobre las ${formatReminderTime({ hour, minute })} si aún no hiciste check-in ese día.`,
-      );
-    } catch (e) {
-      logger.error('Error guardando recordatorio:', e);
-      Alert.alert('No se pudo guardar recordatorio', 'Inténtalo de nuevo.');
-    } finally {
-      setNotifSaving(false);
-    }
-  };
 
   const MAX_ITEMS = 25; // Límite máximo de actividades/intereses
 
@@ -844,57 +716,13 @@ export default function ProfileScreen() {
           <TouchableOpacity 
             style={styles.menuItem} 
             activeOpacity={0.7}
-            onPress={() => setShowSettingsModal(true)}
+            onPress={() => router.push('/settings')}
             accessibilityRole="button"
             accessibilityLabel="Ajustes"
-            accessibilityHint="Abre la configuración de la aplicación"
+            accessibilityHint="Abre cuenta, contraseña y preferencias de la aplicación"
           >
             <Settings size={24} color={THEME.colors.text.main} />
             <Text style={styles.menuItemText}>Ajustes</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            activeOpacity={0.7}
-            onPress={() => router.push('/paywall')}
-            accessibilityRole="button"
-            accessibilityLabel="Ver Premium"
-            accessibilityHint="Abre el paywall para suscribirte o restaurar compra"
-          >
-            <Crown size={24} color={THEME.colors.gradient.blue} />
-            <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemText}>Ver Premium</Text>
-              <Text style={styles.menuItemSubtext}>Suscribirte o restaurar compra</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            activeOpacity={0.7}
-            onPress={() => router.push('/help')}
-            accessibilityRole="button"
-            accessibilityLabel="Ayuda"
-            accessibilityHint="Abre la sección de ayuda y soporte"
-          >
-            <HelpCircle size={24} color={THEME.colors.text.main} />
-            <Text style={styles.menuItemText}>Ayuda</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              setShowChangePassword(true);
-              setNewPassword('');
-              setConfirmPassword('');
-              setChangePasswordError(null);
-            }}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Cambiar contraseña"
-            accessibilityHint="Elige una nueva contraseña desde la app"
-          >
-            <Lock size={24} color={THEME.colors.text.main} />
-            <Text style={styles.menuItemText}>Cambiar contraseña</Text>
           </TouchableOpacity>
 
           {/* Botón de desarrollo para resetear onboarding */}
@@ -934,34 +762,6 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleSignOut}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Cerrar sesión"
-            accessibilityHint="Cierra tu sesión y regresa a la pantalla de bienvenida"
-          >
-            <LogOut size={24} color={THEME.colors.gradient.pink} />
-            <Text style={[styles.menuItemText, { color: THEME.colors.gradient.pink }]}>
-              Cerrar sesión
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleDeleteAccount}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Eliminar cuenta"
-            accessibilityHint="Elimina de forma permanente tu cuenta y tus datos"
-            disabled={deletingAccount}
-          >
-            <Trash2 size={24} color={THEME.colors.errorBorder} />
-            <Text style={[styles.menuItemText, styles.deleteAccountText]}>
-              {deletingAccount ? 'Eliminando cuenta…' : 'Eliminar cuenta'}
-            </Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
@@ -1286,238 +1086,6 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
-
-      {/* Modal de ajustes */}
-      <Modal
-        visible={showSettingsModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowSettingsModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Ajustes</Text>
-              <TouchableOpacity
-                onPress={() => setShowSettingsModal(false)}
-                style={styles.modalCloseButton}
-                accessibilityRole="button"
-                accessibilityLabel="Cerrar ajustes"
-              >
-                <X size={24} color={THEME.colors.text.main} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalScrollContent}>
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setShowSettingsModal(false);
-                  setShowEditProfile(true);
-                }}
-                activeOpacity={0.75}
-                accessibilityRole="button"
-                accessibilityLabel="Editar perfil personal"
-              >
-                <Edit size={22} color={THEME.colors.gradient.blue} />
-                <Text style={styles.menuItemText}>Editar perfil personal</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setShowSettingsModal(false);
-                  router.push('/help');
-                }}
-                activeOpacity={0.75}
-                accessibilityRole="button"
-                accessibilityLabel="Ayuda"
-              >
-                <HelpCircle size={22} color={THEME.colors.text.main} />
-                <Text style={styles.menuItemText}>Ayuda</Text>
-              </TouchableOpacity>
-
-              {Platform.OS === 'web' ? (
-                <Text style={styles.notifWebNote}>
-                  En la versión web no hay recordatorios push. Usa la app en el teléfono para programar el aviso de Sentir.
-                </Text>
-              ) : (
-                <View style={styles.notifSection}>
-                  <View style={styles.notifSectionHeader}>
-                    <Bell size={20} color={THEME.colors.gradient.blue} />
-                    <Text style={styles.notifSectionTitle}>Recordatorio Sentir</Text>
-                  </View>
-                  <Text style={styles.notifSectionHint}>
-                    Hora actual: {formatReminderTime(notifReminderTime)}. Te recordamos hacer check-in si ese día aún no lo hiciste.
-                  </Text>
-                  <View style={styles.notifChipsWrap}>
-                    {DAILY_REMINDER_PRESETS.map((p) => (
-                      <TouchableOpacity
-                        key={p.label}
-                        style={[
-                          styles.notifChip,
-                          notifReminderTime.hour === p.hour &&
-                            notifReminderTime.minute === p.minute &&
-                            styles.notifChipActive,
-                        ]}
-                        onPress={() => applyNotificationPreset(p.hour, p.minute)}
-                        disabled={notifSaving}
-                        activeOpacity={0.8}
-                      >
-                        <Text
-                          style={[
-                            styles.notifChipText,
-                            notifReminderTime.hour === p.hour &&
-                              notifReminderTime.minute === p.minute &&
-                              styles.notifChipTextActive,
-                          ]}
-                        >
-                          {p.label}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              )}
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setShowSettingsModal(false);
-                  setShowChangePassword(true);
-                  setNewPassword('');
-                  setConfirmPassword('');
-                  setChangePasswordError(null);
-                }}
-                activeOpacity={0.75}
-                accessibilityRole="button"
-                accessibilityLabel="Cambiar contraseña"
-              >
-                <Lock size={22} color={THEME.colors.text.main} />
-                <Text style={styles.menuItemText}>Cambiar contraseña</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setShowSettingsModal(false);
-                  handleSignOut();
-                }}
-                activeOpacity={0.75}
-                accessibilityRole="button"
-                accessibilityLabel="Cerrar sesión"
-              >
-                <LogOut size={22} color={THEME.colors.gradient.pink} />
-                <Text style={[styles.menuItemText, { color: THEME.colors.gradient.pink }]}>Cerrar sesión</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  setShowSettingsModal(false);
-                  handleDeleteAccount();
-                }}
-                activeOpacity={0.75}
-                accessibilityRole="button"
-                accessibilityLabel="Eliminar cuenta"
-                disabled={deletingAccount}
-              >
-                <Trash2 size={22} color={THEME.colors.errorBorder} />
-                <Text style={[styles.menuItemText, styles.deleteAccountText]}>
-                  {deletingAccount ? 'Eliminando cuenta…' : 'Eliminar cuenta'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Modal cambiar contraseña */}
-      <Modal
-        visible={showChangePassword}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
-          if (!changingPassword) {
-            setShowChangePassword(false);
-            setChangePasswordError(null);
-          }
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.modalKeyboardView}
-          >
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Elegir nueva contraseña</Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    if (!changingPassword) {
-                      setShowChangePassword(false);
-                      setChangePasswordError(null);
-                    }
-                  }}
-                  style={styles.modalCloseButton}
-                  disabled={changingPassword}
-                >
-                  <X size={24} color={THEME.colors.text.main} />
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.changePasswordHint}>
-                Mínimo 6 caracteres. La usarás la próxima vez que inicies sesión.
-              </Text>
-              <View style={styles.formSection}>
-                <Text style={styles.formLabel}>Nueva contraseña</Text>
-                <TextInput
-                  style={styles.formInput}
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                  placeholder="••••••••"
-                  placeholderTextColor={THEME.colors.text.secondary}
-                  secureTextEntry
-                  editable={!changingPassword}
-                />
-              </View>
-              <View style={styles.formSection}>
-                <Text style={styles.formLabel}>Confirmar contraseña</Text>
-                <TextInput
-                  style={styles.formInput}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  placeholder="••••••••"
-                  placeholderTextColor={THEME.colors.text.secondary}
-                  secureTextEntry
-                  editable={!changingPassword}
-                />
-              </View>
-              {changePasswordError ? (
-                <View style={styles.errorContainer}>
-                  <Text style={styles.errorText}>{changePasswordError}</Text>
-                </View>
-              ) : null}
-              <TouchableOpacity
-                style={[styles.changePasswordButton, changingPassword && styles.changePasswordButtonDisabled]}
-                onPress={handleChangePassword}
-                disabled={changingPassword || !newPassword || !confirmPassword}
-                activeOpacity={0.8}
-              >
-                <LinearGradient
-                  colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.changePasswordButtonGradient}
-                >
-                  <Text style={styles.changePasswordButtonText}>
-                    {changingPassword ? 'Guardando…' : 'Guardar'}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </KeyboardAvoidingView>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -1740,64 +1308,6 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.text.main,
   },
-  deleteAccountText: {
-    color: THEME.colors.errorBorder,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  notifWebNote: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.md,
-    lineHeight: 20,
-  },
-  notifSection: {
-    marginBottom: THEME.spacing.md,
-    paddingBottom: THEME.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.stroke[100],
-  },
-  notifSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.sm,
-    marginBottom: THEME.spacing.xs,
-  },
-  notifSectionTitle: {
-    ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-  },
-  notifSectionHint: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.sm,
-    lineHeight: 20,
-  },
-  notifChipsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: THEME.spacing.xs,
-  },
-  notifChip: {
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.xs,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[200],
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-  },
-  notifChipActive: {
-    backgroundColor: THEME.colors.fill[100],
-    borderColor: THEME.colors.gradient.blue,
-  },
-  notifChipText: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.main,
-  },
-  notifChipTextActive: {
-    color: THEME.colors.gradient.blue,
-    fontFamily: THEME.fonts.heading.bold,
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: THEME.colors.overlay,
@@ -1913,32 +1423,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: THEME.spacing.md,
     fontStyle: 'italic',
-  },
-  changePasswordHint: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.sm,
-  },
-  changePasswordButton: {
-    marginTop: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.standard,
-    overflow: 'hidden',
-    minHeight: THEME.sizes.touchTarget,
-    justifyContent: 'center',
-  },
-  changePasswordButtonDisabled: {
-    opacity: 0.6,
-  },
-  changePasswordButtonGradient: {
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  changePasswordButtonText: {
-    ...THEME.typography.body,
-    color: THEME.colors.fill[100],
-    fontWeight: '600',
   },
   modalActions: {
     flexDirection: 'row',

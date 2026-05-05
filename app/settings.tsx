@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,16 +9,26 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, KeyRound, LogOut, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, KeyRound, LogOut, Trash2, Bell, CircleHelp, PenLine, Crown } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { OTPInput } from '@/components/auth/OTPInput';
 import { showAlert, showConfirm } from '@/lib/crossPlatformAlert';
 import { THEME } from '@/constants/theme';
 import { OTP_CODE_LENGTH, emptyOtpSlots } from '@/constants/authOtp';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+import {
+  getDailyReminderTime,
+  setDailyReminderTime,
+  DAILY_REMINDER_PRESETS,
+  formatReminderTime,
+} from '@/lib/notificationPreferences';
+import { scheduleDailyReminder, checkNotificationPermissions } from '@/hooks/useNotifications';
+import { logger } from '@/lib/logger';
 
 type SettingsStep =
   | 'menu'
@@ -44,6 +54,8 @@ export default function SettingsScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const [pendingAction, setPendingAction] = useState<'change-password' | 'delete-account' | null>(null);
+  const [notifReminderTime, setNotifReminderTime] = useState({ hour: 9, minute: 0 });
+  const [notifSaving, setNotifSaving] = useState(false);
 
   useEffect(() => {
     if (resendCooldown > 0) {
@@ -51,6 +63,40 @@ export default function SettingsScreen() {
       return () => clearTimeout(timer);
     }
   }, [resendCooldown]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    void getDailyReminderTime().then(setNotifReminderTime);
+  }, []);
+
+  const applyNotificationPreset = useCallback(async (hour: number, minute: number) => {
+    if (Platform.OS === 'web') return;
+    setNotifSaving(true);
+    try {
+      await setDailyReminderTime({ hour, minute });
+      setNotifReminderTime({ hour, minute });
+      const ok = await checkNotificationPermissions();
+      if (!ok) {
+        Alert.alert(
+          'Permisos de notificación',
+          'Activa las notificaciones para Koraa en los ajustes del sistema para recibir el recordatorio de Sentir.',
+        );
+      }
+      await scheduleDailyReminder();
+      if (Platform.OS === 'ios' || Platform.OS === 'android') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      Alert.alert(
+        'Recordatorio guardado',
+        `Te avisaremos sobre las ${formatReminderTime({ hour, minute })} si aún no hiciste check-in ese día.`,
+      );
+    } catch (e) {
+      logger.error('Error guardando recordatorio:', e);
+      Alert.alert('No se pudo guardar recordatorio', 'Inténtalo de nuevo.');
+    } finally {
+      setNotifSaving(false);
+    }
+  }, []);
 
   const resetState = () => {
     setStep('menu');
@@ -348,6 +394,83 @@ export default function SettingsScreen() {
       <Text style={styles.emailMuted}>{user?.email}</Text>
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
+      <Text style={styles.section}>Preferencias</Text>
+      {Platform.OS === 'web' ? (
+        <Text style={styles.notifWebNote}>
+          En la versión web no hay recordatorios push. Usa la app en el teléfono para programar el aviso de Sentir.
+        </Text>
+      ) : (
+        <View style={styles.notifSection}>
+          <View style={styles.notifSectionHeader}>
+            <Bell size={20} color={THEME.colors.gradient.blue} />
+            <Text style={styles.notifSectionTitle}>Recordatorio Sentir</Text>
+          </View>
+          <Text style={styles.notifSectionHint}>
+            Hora actual: {formatReminderTime(notifReminderTime)}. Te recordamos hacer check-in si ese día aún no lo hiciste.
+          </Text>
+          <View style={styles.notifChipsWrap}>
+            {DAILY_REMINDER_PRESETS.map((p) => (
+              <Pressable
+                key={p.label}
+                style={[
+                  styles.notifChip,
+                  notifReminderTime.hour === p.hour &&
+                    notifReminderTime.minute === p.minute &&
+                    styles.notifChipActive,
+                ]}
+                onPress={() => void applyNotificationPreset(p.hour, p.minute)}
+                disabled={notifSaving}
+              >
+                <Text
+                  style={[
+                    styles.notifChipText,
+                    notifReminderTime.hour === p.hour &&
+                      notifReminderTime.minute === p.minute &&
+                      styles.notifChipTextActive,
+                  ]}
+                >
+                  {p.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
+
+      <Text style={styles.section}>Accesos</Text>
+
+      <Pressable
+        style={styles.row}
+        onPress={() => router.push('/paywall')}
+        accessibilityRole="button"
+        accessibilityLabel="Ver Premium"
+      >
+        <View style={styles.rowLeft}>
+          <Crown size={22} color={THEME.colors.text.main} />
+          <Text style={styles.rowLabel}>Ver Premium</Text>
+        </View>
+        <Text style={styles.chevron}>›</Text>
+      </Pressable>
+
+      <Pressable
+        style={styles.row}
+        onPress={() => router.push('/(tabs)/yo?editProfile=1')}
+      >
+        <View style={styles.rowLeft}>
+          <PenLine size={22} color={THEME.colors.text.main} />
+          <Text style={styles.rowLabel}>Editar perfil personal</Text>
+        </View>
+        <Text style={styles.chevron}>›</Text>
+      </Pressable>
+
+      <Pressable style={styles.row} onPress={() => router.push('/help')}>
+        <View style={styles.rowLeft}>
+          <CircleHelp size={22} color={THEME.colors.text.main} />
+          <Text style={styles.rowLabel}>Ayuda</Text>
+        </View>
+        <Text style={styles.chevron}>›</Text>
+      </Pressable>
+
       <Pressable
         style={styles.row}
         onPress={handleChangePasswordStart}
@@ -613,5 +736,59 @@ const styles = StyleSheet.create({
   linkMuted: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
+  },
+  notifWebNote: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.md,
+    lineHeight: 20,
+  },
+  notifSection: {
+    marginBottom: THEME.spacing.md,
+    paddingBottom: THEME.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: THEME.colors.stroke[100],
+  },
+  notifSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
+  },
+  notifSectionTitle: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+  },
+  notifSectionHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.sm,
+    lineHeight: 20,
+  },
+  notifChipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.xs,
+  },
+  notifChip: {
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[200],
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  notifChipActive: {
+    backgroundColor: THEME.colors.fill[100],
+    borderColor: THEME.colors.gradient.blue,
+  },
+  notifChipText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.main,
+  },
+  notifChipTextActive: {
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
   },
 });

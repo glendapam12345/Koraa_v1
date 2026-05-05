@@ -50,7 +50,7 @@ const FAQ_ITEMS: FaqItem[] = [
     id: 'premium',
     question: '¿Qué es Koraa Premium y dónde está?',
     answer:
-      'El flujo principal (Tareas → Sentir → Hoy) es gratuito. Premium amplía la pestaña Semana: los 7 días completos, filtros avanzados e historial (en gratis ves una muestra). Para suscribirte o restaurar compra: pestaña Yo → Ver Premium.',
+      'El flujo principal (Tareas → Sentir → Hoy) es gratuito. Premium amplía la pestaña Semana: los 7 días completos, filtros avanzados e historial (en gratis ves una muestra). Para suscribirte o restaurar compra: Ajustes → Ver Premium.',
   },
   {
     id: 'datos',
@@ -62,7 +62,7 @@ const FAQ_ITEMS: FaqItem[] = [
     id: 'cuenta',
     question: '¿Cómo cambio mi contraseña o mi nombre?',
     answer:
-      'Ve a la pestaña Yo → puedes editar tu perfil (nombre, edad, intereses) y cambiar la contraseña desde Configuración. El correo de la cuenta se gestiona según tu proveedor de auth.',
+      'Desde Yo puedes editar tu perfil (nombre, edad, intereses). Para contraseña, suscripción y acciones de cuenta, entra a Ajustes. El correo de la cuenta se gestiona según tu proveedor de auth.',
   },
   {
     id: 'tips',

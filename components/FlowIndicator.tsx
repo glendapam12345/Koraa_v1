@@ -73,12 +73,12 @@ export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
 
       {!subscriptionLoading && !isSubscribed ? (
         <TouchableOpacity
-          onPress={() => router.push('/paywall')}
+          onPress={() => router.push('/settings')}
           activeOpacity={0.75}
           style={styles.premiumHintWrap}
           accessibilityRole="button"
           accessibilityLabel="Ver Premium"
-          accessibilityHint="Abre la pantalla de suscripción"
+          accessibilityHint="Abre Ajustes para suscribirte o restaurar compra"
         >
           <Text style={styles.premiumHintText}>
             Más con Koraa Premium: Semana completa e historial.{' '}

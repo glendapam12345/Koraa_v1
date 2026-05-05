@@ -71,7 +71,7 @@ export default function TodayScreen() {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [expandedDetailsTasks, setExpandedDetailsTasks] = useState<Set<string>>(new Set());
   /** Secciones de categoría expandidas (null = todas expandidas) */
-  const [expandedSections, setExpandedSections] = useState<Set<string> | null>(null);
+  const [expandedSections, setExpandedSections] = useState<Set<string> | null>(new Set<string>());
   /** Tareas con "pasos del proyecto" expandidos */
   const [expandedProjectStepsTasks, setExpandedProjectStepsTasks] = useState<Set<string>>(new Set());
   /** Sección "Tareas sueltas" expandida para ver la lista */
@@ -99,6 +99,10 @@ export default function TodayScreen() {
   const [taskFilter, setTaskFilter] = useState<'hoy' | 'todas'>('hoy');
   /** Primer día en Hoy: oculta bloques secundarios hasta mañana o “Mostrar todo”. */
   const [hoyLiteLayout, setHoyLiteLayout] = useState<boolean | null>(null);
+  /** Módulos secundarios colapsables para reducir carga en pantalla. */
+  const [showSecondaryModules, setShowSecondaryModules] = useState(false);
+  /** “Modo foco” colapsa categorías de tareas para mostrar menos de golpe. */
+  const [focusMode, setFocusMode] = useState<boolean>(true);
   const [emotionalMemoryInsights, setEmotionalMemoryInsights] = useState<{
     title: string;
     message: string;
@@ -137,8 +141,70 @@ export default function TodayScreen() {
   useEffect(() => {
     if (hoyLiteLayout) {
       setTaskFilter('hoy');
+      setFocusMode(true);
     }
   }, [hoyLiteLayout]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [secondaryRaw, focusRaw] = await Promise.all([
+          AsyncStorage.getItem(`hoy_secondary_modules_${user.id}_v1`),
+          AsyncStorage.getItem(`hoy_focus_mode_${user.id}_v1`),
+        ]);
+        if (cancelled) return;
+        setShowSecondaryModules(secondaryRaw === '1');
+        setFocusMode(focusRaw !== '0'); // por defecto: activo
+      } catch {
+        // no-op: se mantienen valores por defecto
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  // Cuando sales de “Hoy lite”, restauramos preferencias desde AsyncStorage
+  // (en lite forzamos modo foco, pero no queremos sobrescribir la preferencia real).
+  useEffect(() => {
+    if (!user?.id) return;
+    if (hoyLiteLayout) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [secondaryRaw, focusRaw] = await Promise.all([
+          AsyncStorage.getItem(`hoy_secondary_modules_${user.id}_v1`),
+          AsyncStorage.getItem(`hoy_focus_mode_${user.id}_v1`),
+        ]);
+        if (cancelled) return;
+        setShowSecondaryModules(secondaryRaw === '1');
+        setFocusMode(focusRaw !== '0');
+      } catch {
+        // no-op
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, hoyLiteLayout]);
+
+  useEffect(() => {
+    // En “hoyLiteLayout” ignoramos persistencia para no pelear con la vista simplificada.
+    if (!user?.id) return;
+    if (hoyLiteLayout) return;
+    void AsyncStorage.setItem(
+      `hoy_secondary_modules_${user.id}_v1`,
+      showSecondaryModules ? '1' : '0',
+    );
+  }, [user?.id, showSecondaryModules, hoyLiteLayout]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    if (hoyLiteLayout) return;
+    void AsyncStorage.setItem(`hoy_focus_mode_${user.id}_v1`, focusMode ? '1' : '0');
+  }, [user?.id, focusMode, hoyLiteLayout]);
 
   const handleOptOutHoyLite = useCallback(async () => {
     if (!user?.id) return;
@@ -193,6 +259,9 @@ export default function TodayScreen() {
     () => (taskFilter === 'todas' ? incompleteTasks : incompleteTasksForToday),
     [taskFilter, incompleteTasks, incompleteTasksForToday]
   );
+
+  const hoyLiteActive = hoyLiteLayout === true;
+  const showSecondaryModulesEffective = showSecondaryModules && !focusMode && !hoyLiteActive;
 
   const {
     toggleTask,
@@ -883,6 +952,23 @@ export default function TodayScreen() {
     return sections;
   }, [displayedIncompleteTasks, getCategoryColor]);
 
+  useEffect(() => {
+    if (hoyLiteLayout) {
+      setExpandedSections(new Set<string>());
+      return;
+    }
+    if (!focusMode) {
+      setExpandedSections(null);
+      return;
+    }
+    if (taskSections.length === 0) {
+      setExpandedSections(new Set<string>());
+      return;
+    }
+    // En modo foco dejamos visible solo la categoría más prioritaria.
+    setExpandedSections(new Set<string>([taskSections[0].id]));
+  }, [focusMode, hoyLiteLayout, taskSections]);
+
   // Agrupar tareas pendientes por proyecto para la sección de resumen en Hoy
   const projectSectionsForToday = useMemo(() => {
     const byProject = new Map<string, number>();
@@ -1148,8 +1234,50 @@ export default function TodayScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Una sola card de meditación: Mañana y Noche dentro del mismo bloque */}
         {!loading && !hoyLiteLayout && (
+          <TouchableOpacity
+            style={styles.focusModeToggle}
+            onPress={() => setFocusMode((prev) => !prev)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={focusMode ? 'Desactivar modo foco en Hoy' : 'Activar modo foco en Hoy'}
+            accessibilityHint="Colapsa las categorías de tareas para ver menos de golpe"
+            accessibilityState={{ expanded: focusMode }}
+          >
+            <Text style={styles.focusModeToggleText}>
+              {focusMode ? 'Modo foco activo' : 'Activar modo foco'}
+            </Text>
+            {focusMode ? (
+              <ChevronDown size={18} color={THEME.colors.text.secondary} />
+            ) : (
+              <ChevronRight size={18} color={THEME.colors.text.secondary} />
+            )}
+          </TouchableOpacity>
+        )}
+
+        {!loading && !hoyLiteActive && !focusMode && (
+          <TouchableOpacity
+            style={styles.secondaryModulesToggle}
+            onPress={() => setShowSecondaryModules((prev) => !prev)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={showSecondaryModules ? 'Ocultar secciones extra de Hoy' : 'Mostrar secciones extra de Hoy'}
+            accessibilityHint="Controla módulos secundarios como meditación, resumen por proyecto y recomendaciones"
+            accessibilityState={{ expanded: showSecondaryModules }}
+          >
+            <Text style={styles.secondaryModulesToggleText}>
+              {showSecondaryModules ? 'Ocultar secciones extra' : 'Mostrar secciones extra'}
+            </Text>
+            {showSecondaryModules ? (
+              <ChevronDown size={18} color={THEME.colors.text.secondary} />
+            ) : (
+              <ChevronRight size={18} color={THEME.colors.text.secondary} />
+            )}
+          </TouchableOpacity>
+        )}
+
+        {/* Una sola card de meditación: Mañana y Noche dentro del mismo bloque */}
+        {!loading && showSecondaryModulesEffective && (
           <View style={styles.meditationWrap}>
             <LinearGradient
               colors={[THEME.colors.tint.blue.veryFaint, THEME.colors.tint.pink.soft, THEME.colors.fill[200]]}
@@ -1473,6 +1601,11 @@ export default function TodayScreen() {
                     ? `${displayedIncompleteTasks.length} ${displayedIncompleteTasks.length === 1 ? 'tarea' : 'tareas'} para hoy`
                     : `${displayedIncompleteTasks.length} ${displayedIncompleteTasks.length === 1 ? 'tarea' : 'tareas'} pendientes`}
               </Text>
+              {focusMode && taskSections.length > 0 && (
+                <Text style={styles.focusModeHint}>
+                  Hoy vamos paso a paso: 1 categoría clave.
+                </Text>
+              )}
               {taskFilter === 'hoy' && !hoyLiteLayout && (
                 <Text style={styles.taskFilterHint}>Tareas de hoy y sin fecha asignada</Text>
               )}
@@ -1485,7 +1618,7 @@ export default function TodayScreen() {
                   Orden: prioridad alta → baja · Desliza para completar, editar o eliminar
                 </Text>
               )}
-              {incompleteTasks.length >= 1 && user && todayMood && !hoyLiteLayout && (
+              {incompleteTasks.length >= 1 && user && todayMood && showSecondaryModulesEffective && (
                 <TouchableOpacity
                   style={styles.redistributeCta}
                   onPress={() => setShowRedistribute(true)}
@@ -1507,7 +1640,7 @@ export default function TodayScreen() {
               </View>
 
               {/* Resumen por tipo de tarea: proyectos y tareas sin proyecto (debajo del encabezado para evitar hueco) */}
-              {!hoyLiteLayout && (projectSectionsForToday.projectRows.length > 0) && (
+              {showSecondaryModulesEffective && (projectSectionsForToday.projectRows.length > 0) && (
                 <View style={styles.byProjectSection}>
                   <View style={styles.byProjectHeader}>
                     <View style={styles.byProjectHeaderLeft}>
@@ -1809,7 +1942,7 @@ export default function TodayScreen() {
         )}
 
         {/* Recomendaciones: siempre visibles al final (omitidas en vista simplificada primer día) */}
-        {user && !hoyLiteLayout && (
+        {user && showSecondaryModulesEffective && (
           <View style={styles.recommendationsWrap}>
             <RecommendationsSection userId={user.id} />
           </View>
@@ -2263,6 +2396,44 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.onGradient,
+  },
+  secondaryModulesToggle: {
+    marginHorizontal: THEME.spacing.lg,
+    marginTop: -THEME.spacing.xs,
+    marginBottom: THEME.spacing.md,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.fill[200],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  secondaryModulesToggleText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  focusModeToggle: {
+    marginHorizontal: THEME.spacing.lg,
+    marginTop: -THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.fill[200],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  focusModeToggleText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
   },
   welcomeHeader: {
     flexDirection: 'row',
@@ -2815,6 +2986,13 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.tertiary,
     marginTop: 4,
     marginBottom: 0,
+    width: '100%',
+  },
+  focusModeHint: {
+    ...THEME.typography.small,
+    fontSize: 12,
+    color: THEME.colors.gradient.blue,
+    marginTop: 4,
     width: '100%',
   },
   taskCompactHint: {

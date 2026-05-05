@@ -39,7 +39,7 @@ const STEPS: StepDef[] = [
     tabLabel: 'Premium',
     title: 'Opcional: Koraa Premium',
     body:
-      'El flujo del día es gratis (Tareas → Sentir → Hoy). Premium amplía la pestaña Semana: los 7 días, más filtros e historial completo. Para suscribirte: Yo → Ver Premium.',
+      'El flujo del día es gratis (Tareas → Sentir → Hoy). Premium amplía la pestaña Semana: los 7 días, más filtros e historial completo. Para suscribirte: Ajustes → Ver Premium.',
     Icon: Crown,
   },
 ];
