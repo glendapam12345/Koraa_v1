@@ -56,9 +56,8 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
       await Purchases.purchasePackage(pkg);
       await checkSubscription();
       onPurchaseCompleted?.();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo completar la compra.';
-      Alert.alert('No se completó la compra', message);
+    } catch {
+      Alert.alert('No se completó la compra', 'Inténtalo de nuevo.');
     } finally {
       setIsPurchasing(false);
     }

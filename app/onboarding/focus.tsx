@@ -217,7 +217,7 @@ export default function FocusScreen() {
           console.error('Error guardando check-in:', checkInError);
           clearTimeout(safetyTimeout);
           setIsSaving(false);
-          showToast('No se pudo guardar tu check-in. Por favor intenta de nuevo.', 'error');
+          showToast('No se pudo guardar tu check-in. Inténtalo de nuevo.', 'error');
           return;
         }
       }
@@ -267,7 +267,7 @@ export default function FocusScreen() {
         } else {
           const { error: onboardingError } = await markOnboardingCompleted(user.id);
           if (onboardingError) {
-            showToast('No se pudo cerrar onboarding. Intenta de nuevo.', 'error');
+            showToast('No se pudo cerrar onboarding. Inténtalo de nuevo.', 'error');
             return;
           }
           router.replace({ pathname: '/paywall', params: { next: '/(tabs)' } });
@@ -285,7 +285,7 @@ export default function FocusScreen() {
       console.error('Error:', error);
       clearTimeout(safetyTimeout);
       setIsSaving(false);
-      showToast('Ocurrió un error inesperado. Por favor intenta de nuevo.', 'error');
+      showToast('Ocurrió un error. Inténtalo de nuevo.', 'error');
     }
   };
 
@@ -326,7 +326,7 @@ export default function FocusScreen() {
 
       <View style={styles.footer}>
         <GradientButton
-          title={isSaving ? "Guardando..." : (from === 'sentir' ? "Guardar →" : "Comenzar →")}
+          title={isSaving ? "Guardando..." : (from === 'sentir' ? "Guardar" : "Comenzar")}
           onPress={handleContinue}
           disabled={!selectedFocus || isSaving}
         />

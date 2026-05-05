@@ -99,6 +99,8 @@ See individual README files in each subdirectory for usage guidelines.
 
 **UX / flujo de usuario:** Auditoría y entregables (Ayuda en Hoy/Sentir, `FlowIndicator` sin números + «Orden sugerido», hint opcional en Tareas, tour primera sesión, Hoy lite día 1) en [koraa_ux_flow_audit.md](development_guidelines/delivered/koraa_ux_flow_audit.md). Prueba en Expo Go: sección *Probar en Expo Go* en ese documento.
 
+**Voz y microcopy (estándar UI):** reglas de tono, CTAs, errores y ejemplos “antes/después” en [2026-05-05_koraa_voice_and_microcopy_guide.md](development_guidelines/delivered/2026-05-05_koraa_voice_and_microcopy_guide.md).
+
 ---
 
 ## 🔧 Development Standards

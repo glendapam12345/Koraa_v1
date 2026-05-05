@@ -90,10 +90,7 @@ export default function Intro3Screen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton
-          title="Continuar →"
-          onPress={() => router.push('/onboarding/how-it-works')}
-        />
+        <GradientButton title="Continuar" onPress={() => router.push('/onboarding/how-it-works')} />
       </View>
     </View>
   );

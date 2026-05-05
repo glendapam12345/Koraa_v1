@@ -17,6 +17,10 @@ export function EmotionCard({ emoji, label, selected, onPress }: EmotionCardProp
         selected && styles.selected,
       ]}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}${selected ? ', seleccionada' : ''}`}
+      accessibilityHint="Toca para elegir esta emoción"
+      accessibilityState={{ selected }}
     >
       <Text style={styles.emoji}>{emoji}</Text>
       <Text style={styles.label}>{label}</Text>

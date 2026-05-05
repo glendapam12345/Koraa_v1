@@ -118,12 +118,20 @@ export default function SignupScreen() {
     }
   };
 
-  const primaryCta = (onPress: () => void, label: string) => (
+  const primaryCta = (
+    onPress: () => void,
+    label: string,
+    accessibilityHint?: string,
+  ) => (
     <TouchableOpacity
       onPress={onPress}
       disabled={isLoading}
       style={[styles.ctaOuter, isLoading && styles.ctaDisabled]}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={isLoading ? `${label}, cargando` : label}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: isLoading, busy: isLoading }}
     >
       <LinearGradient
         colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -170,6 +178,8 @@ export default function SignupScreen() {
                 placeholderTextColor={THEME.colors.text.tertiary}
                 autoCapitalize="words"
                 editable={!isLoading}
+                accessibilityLabel="Nombre completo"
+                accessibilityHint="Escribe tu nombre para personalizar tu experiencia"
               />
             </View>
             <View style={styles.field}>
@@ -184,6 +194,8 @@ export default function SignupScreen() {
                 autoCapitalize="none"
                 autoComplete="email"
                 editable={!isLoading}
+                accessibilityLabel="Correo electrónico"
+                accessibilityHint="Escribe el correo con el que crearás tu cuenta"
               />
             </View>
             <View style={styles.field}>
@@ -197,6 +209,8 @@ export default function SignupScreen() {
                 secureTextEntry
                 autoComplete="new-password"
                 editable={!isLoading}
+                accessibilityLabel="Contraseña"
+                accessibilityHint="Crea una contraseña de al menos 8 caracteres"
               />
             </View>
             <View style={styles.field}>
@@ -210,18 +224,30 @@ export default function SignupScreen() {
                 secureTextEntry
                 autoComplete="new-password"
                 editable={!isLoading}
+                accessibilityLabel="Confirmar contraseña"
+                accessibilityHint="Repite la contraseña para confirmar"
               />
             </View>
 
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error ? (
+              <Text style={styles.error} accessibilityRole="alert">
+                {error}
+              </Text>
+            ) : null}
 
-            {primaryCta(handleSignup, 'Crear cuenta')}
+            {primaryCta(handleSignup, 'Crear cuenta', 'Crea tu cuenta y continúa al siguiente paso')}
           </View>
 
           <View style={styles.footer}>
             <Text style={styles.footerMuted}>¿Ya tienes cuenta? </Text>
             <Link href="/auth/login" asChild>
-              <TouchableOpacity disabled={isLoading}>
+              <TouchableOpacity
+                disabled={isLoading}
+                accessibilityRole="button"
+                accessibilityLabel="Iniciar sesión"
+                accessibilityHint="Abre la pantalla de acceso para cuentas existentes"
+                accessibilityState={{ disabled: isLoading }}
+              >
                 <Text style={styles.footerLink}>Iniciar sesión</Text>
               </TouchableOpacity>
             </Link>
@@ -256,14 +282,22 @@ export default function SignupScreen() {
             <OTPInput value={otpCode} onChange={setOtpCode} disabled={isLoading} />
           </View>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? (
+            <Text style={styles.error} accessibilityRole="alert">
+              {error}
+            </Text>
+          ) : null}
 
-          {primaryCta(handleVerifyOtp, 'Verificar')}
+          {primaryCta(handleVerifyOtp, 'Verificar', 'Verifica el código para activar tu cuenta')}
 
           <TouchableOpacity
             style={styles.resendBtn}
             onPress={handleResendOtp}
             disabled={resendCooldown > 0 || isLoading}
+            accessibilityRole="button"
+            accessibilityLabel={resendCooldown > 0 ? `Reenviar en ${resendCooldown} segundos` : 'Reenviar código'}
+            accessibilityHint="Solicita un nuevo código al mismo correo"
+            accessibilityState={{ disabled: resendCooldown > 0 || isLoading }}
           >
             <Text
               style={[
@@ -275,7 +309,15 @@ export default function SignupScreen() {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.backBtn} onPress={() => setStep('signup')} disabled={isLoading}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => setStep('signup')}
+            disabled={isLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Cambiar correo"
+            accessibilityHint="Vuelve al formulario para editar el correo de registro"
+            accessibilityState={{ disabled: isLoading }}
+          >
             <Text style={styles.backText}>← Cambiar correo</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -291,6 +333,9 @@ export default function SignupScreen() {
         onPress={() => router.replace('/')}
         style={styles.ctaOuter}
         activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel="Continuar"
+        accessibilityHint="Entra a Koraa con tu cuenta ya verificada"
       >
         <LinearGradient
           colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}

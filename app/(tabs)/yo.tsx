@@ -226,8 +226,8 @@ export default function ProfileScreen() {
         logger.error('Error cargando perfil:', error);
         const errorMessage = getErrorMessage(error);
         const friendlyMessage = errorMessage.includes('conexión')
-          ? 'No hay conexión a internet. Los datos se cargarán cuando tengas conexión.'
-          : `No se pudo cargar tu perfil: ${errorMessage}`;
+          ? 'No hay conexión a internet. Tus datos se cargarán cuando vuelvas a tener conexión.'
+          : 'No se pudo cargar tu perfil. Inténtalo de nuevo.';
         setProfileError(friendlyMessage);
         return;
       }
@@ -245,8 +245,7 @@ export default function ProfileScreen() {
       }
     } catch (error) {
       logger.error('Error inesperado:', error);
-      const errorMessage = getErrorMessage(error);
-      setProfileError(`Error al cargar perfil: ${errorMessage}. Intenta recargar la página.`);
+      setProfileError('No se pudo cargar tu perfil. Inténtalo de nuevo.');
     }
   }, [user]);
 
@@ -399,7 +398,7 @@ export default function ProfileScreen() {
       );
     } catch (e) {
       logger.error('Error guardando recordatorio:', e);
-      Alert.alert('Error', 'No se pudo guardar la hora del recordatorio.');
+      Alert.alert('No se pudo guardar recordatorio', 'Inténtalo de nuevo.');
     } finally {
       setNotifSaving(false);
     }
@@ -629,15 +628,14 @@ export default function ProfileScreen() {
 
       if (error) {
         logger.error('Error guardando perfil:', error);
-        const errorMessage = getErrorMessage(error);
         const missingCol =
           (error as { code?: string; message?: string }).code === '42703' ||
           (typeof (error as { message?: string }).message === 'string' &&
             (error as { message: string }).message.includes('does not exist'));
         setProfileError(
           missingCol
-            ? 'Faltan columnas en la base de datos. Ejecuta en Supabase el SQL de supabase/migrations/20260321140000_ensure_profiles_personalization_columns.sql'
-            : `No se pudo guardar el perfil: ${errorMessage}`,
+            ? 'No se pudo guardar tu perfil en este momento. Inténtalo de nuevo.'
+            : 'No se pudo guardar tu perfil. Inténtalo de nuevo.',
         );
         setIsSavingProfile(false);
         return;
@@ -653,12 +651,11 @@ export default function ProfileScreen() {
       // Recargar perfil después de guardar
       await loadProfile();
       
-      Alert.alert('Éxito', 'Perfil actualizado correctamente');
+      Alert.alert('Perfil actualizado', 'Tus cambios se guardaron correctamente.');
       setShowEditProfile(false);
     } catch (error) {
       logger.error('Error inesperado:', error);
-      const errorMessage = getErrorMessage(error);
-      setProfileError(`Error inesperado: ${errorMessage}`);
+      setProfileError('Ocurrió un error al guardar tu perfil. Inténtalo de nuevo.');
     } finally {
       setIsSavingProfile(false);
     }
@@ -861,12 +858,12 @@ export default function ProfileScreen() {
             activeOpacity={0.7}
             onPress={() => router.push('/paywall')}
             accessibilityRole="button"
-            accessibilityLabel="Ver planes premium"
+            accessibilityLabel="Ver Premium"
             accessibilityHint="Abre el paywall para suscribirte o restaurar compra"
           >
             <Crown size={24} color={THEME.colors.gradient.blue} />
             <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemText}>Ver planes premium</Text>
+              <Text style={styles.menuItemText}>Ver Premium</Text>
               <Text style={styles.menuItemSubtext}>Suscribirte o restaurar compra</Text>
             </View>
           </TouchableOpacity>
@@ -918,7 +915,7 @@ export default function ProfileScreen() {
                   }
                 } catch (error) {
                   logger.error('Error reseteando onboarding:', error);
-                  Alert.alert('Error', 'No se pudo resetear el onboarding');
+                  Alert.alert('No se pudo reiniciar onboarding', 'Inténtalo de nuevo.');
                 }
               }}
               accessibilityRole="button"
@@ -1513,7 +1510,7 @@ export default function ProfileScreen() {
                   style={styles.changePasswordButtonGradient}
                 >
                   <Text style={styles.changePasswordButtonText}>
-                    {changingPassword ? 'Guardando…' : 'Guardar contraseña'}
+                    {changingPassword ? 'Guardando…' : 'Guardar'}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>

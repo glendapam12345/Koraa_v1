@@ -24,6 +24,9 @@ export function Tooltip({ visible, title, message, onClose }: TooltipProps) {
         style={styles.overlay}
         activeOpacity={1}
         onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="Cerrar ayuda"
+        accessibilityHint="Cierra esta ventana de ayuda"
       >
         <View style={styles.container}>
           <LinearGradient
@@ -35,12 +38,24 @@ export function Tooltip({ visible, title, message, onClose }: TooltipProps) {
             <View style={styles.header}>
               <Info size={20} color={THEME.colors.onGradient} />
               <Text style={styles.title}>{title}</Text>
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <TouchableOpacity
+                onPress={onClose}
+                style={styles.closeButton}
+                accessibilityRole="button"
+                accessibilityLabel="Cerrar ayuda"
+                accessibilityHint="Cierra esta ventana"
+              >
                 <X size={18} color={THEME.colors.onGradient} />
               </TouchableOpacity>
             </View>
             <Text style={styles.message}>{message}</Text>
-            <TouchableOpacity onPress={onClose} style={styles.button}>
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.button}
+              accessibilityRole="button"
+              accessibilityLabel="Entendido"
+              accessibilityHint="Cierra esta ayuda y vuelve a la pantalla"
+            >
               <Text style={styles.buttonText}>Entendido</Text>
             </TouchableOpacity>
           </LinearGradient>

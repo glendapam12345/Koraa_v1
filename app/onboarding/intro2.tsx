@@ -21,8 +21,8 @@ export default function Intro2Screen() {
     setSkipLoading(false);
     if (error) {
       Alert.alert(
-        'No se pudo guardar',
-        'Tu preferencia no se registró. Revisa tu conexión e inténtalo de nuevo.',
+        'No se pudo continuar',
+        'No pudimos guardar tu progreso. Inténtalo de nuevo.',
       );
       return;
     }
@@ -88,10 +88,7 @@ export default function Intro2Screen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton
-          title="Continuar →"
-          onPress={() => router.push('/onboarding/intro3')}
-        />
+        <GradientButton title="Continuar" onPress={() => router.push('/onboarding/intro3')} />
 
         <TouchableOpacity
           onPress={handleSkipIntro}

@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, TextInput, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { THEME } from '@/constants/theme';
-import { supabase, getErrorMessage, getSchemaSetupMessage } from '@/lib/supabase';
+import { supabase, getSchemaSetupMessage } from '@/lib/supabase';
 import { FolderKanban, X, Plus } from 'lucide-react-native';
 
 const PROJECT_COLORS = [
@@ -108,8 +108,8 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
     if (error) {
       const schemaType = getSchemaSetupMessage(error);
       const message = schemaType === 'projects_table'
-        ? 'No se pudo crear el proyecto. Falta la tabla de proyectos en la base de datos (ejecuta la migración en Supabase).'
-        : getErrorMessage(error);
+        ? 'No se pudo crear el proyecto en este momento. Inténtalo de nuevo.'
+        : 'No se pudo crear el proyecto. Inténtalo de nuevo.';
       setFormError(message);
       onError?.(message);
       return;

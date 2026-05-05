@@ -248,7 +248,7 @@ export default function SettingsScreen() {
           {isLoading ? (
             <ActivityIndicator color={THEME.colors.onGradient} />
           ) : (
-            <Text style={styles.ctaText}>Verificar código</Text>
+            <Text style={styles.ctaText}>Verificar</Text>
           )}
         </LinearGradient>
       </Pressable>
@@ -307,7 +307,7 @@ export default function SettingsScreen() {
           {isLoading ? (
             <ActivityIndicator color={THEME.colors.onGradient} />
           ) : (
-            <Text style={styles.ctaText}>Actualizar contraseña</Text>
+            <Text style={styles.ctaText}>Guardar</Text>
           )}
         </LinearGradient>
       </Pressable>

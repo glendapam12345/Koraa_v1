@@ -8,7 +8,7 @@ import { GradientButton } from '@/components/GradientButton';
 import { Tooltip } from '@/components/Tooltip';
 import { Toast } from '@/components/Toast';
 import { FlowIndicator } from '@/components/FlowIndicator';
-import { supabase, getErrorMessage, isNetworkError, getSchemaSetupMessage } from '@/lib/supabase';
+import { supabase, isNetworkError, getSchemaSetupMessage } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { track } from '@/lib/analytics';
 import { detectCategory } from '@/lib/categoryDetection';
@@ -392,7 +392,7 @@ export default function VaciarScreen() {
               .single();
             if (fallbackError) {
               logger.error('Error guardando tarea (fallback):', fallbackError);
-              showToast(`No se pudo guardar la tarea: ${getErrorMessage(fallbackError)}`, 'error');
+              showToast('No se pudo guardar la tarea. Inténtalo de nuevo.', 'error');
               setIsSaving(false);
               return;
             }
@@ -425,13 +425,12 @@ export default function VaciarScreen() {
               hasSubtasks: hasSubtasks && subtasks.some((st) => st.trim()),
             });
 
-            showToast('Tarea guardada. Para proyectos y fechas: ejecuta la migración en Supabase (Dashboard → SQL Editor).', 'success');
+            showToast('Tarea guardada. Algunas opciones avanzadas se activarán cuando completes la configuración.', 'success');
             setIsSaving(false);
             return;
           }
           logger.error('Error guardando tarea principal:', mainTaskError);
-          const errorMessage = getErrorMessage(mainTaskError);
-          showToast(`No se pudo guardar la tarea: ${errorMessage}`, 'error');
+          showToast('No se pudo guardar la tarea. Inténtalo de nuevo.', 'error');
           setIsSaving(false);
           return;
         }
@@ -460,8 +459,7 @@ export default function VaciarScreen() {
             logger.error('Error guardando subtareas:', subtasksError);
             // Intentar eliminar la tarea principal si fallan las subtareas
             await supabase.from('tasks').delete().eq('id', mainTask.id);
-            const errorMessage = getErrorMessage(subtasksError);
-            showToast(`No se pudieron guardar las subtareas: ${errorMessage}`, 'error');
+            showToast('No se pudieron guardar los pasos. Inténtalo de nuevo.', 'error');
             setIsSaving(false);
             return;
           }
@@ -503,8 +501,7 @@ export default function VaciarScreen() {
       showToast(message, 'success');
     } catch (error) {
       logger.error('Error inesperado:', error);
-      const errorMessage = getErrorMessage(error);
-      showToast(errorMessage, 'error');
+      showToast('Ocurrió un error al guardar la tarea. Inténtalo de nuevo.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -523,8 +520,7 @@ export default function VaciarScreen() {
       await syncAll();
     } catch (error) {
       logger.error('Error al refrescar:', error);
-      const errorMessage = getErrorMessage(error);
-      showToast(errorMessage, 'error');
+      showToast('No se pudieron actualizar los datos. Inténtalo de nuevo.', 'error');
     } finally {
       setRefreshing(false);
     }
@@ -623,7 +619,7 @@ export default function VaciarScreen() {
               <View style={styles.optionalHintBodyWrap}>
                 <Text style={styles.optionalHintBody}>
                   Proyecto, categoría, fecha, subtareas y prioridad puedes elegirlos cuando quieras. Puedes escribir y
-                  pulsar Soltar.
+                  pulsar Guardar tarea.
                 </Text>
                 <Text style={[styles.optionalHintBody, styles.optionalHintBodySecond]}>
                   Para ordenar tu día según tu estado, haz después tu check-in en Sentir.
@@ -926,9 +922,10 @@ export default function VaciarScreen() {
         ) : null}
 
         <GradientButton
-          title={isSaving ? "Guardando..." : "Soltar"}
+          title={isSaving ? 'Guardando...' : 'Guardar tarea'}
           onPress={handleAddTask}
           disabled={!taskInput.trim() || isSaving}
+          accessibilityHint="Guarda esta tarea para organizarla después en tu día"
         />
 
         {recentTasks.length > 0 && (

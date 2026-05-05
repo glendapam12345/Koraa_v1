@@ -90,6 +90,7 @@ export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel="Elegir fecha"
+        accessibilityHint="Abre la lista de fechas para esta tarea"
       >
         <Calendar size={20} color={THEME.colors.gradient.blue} />
         <Text style={styles.selectorText}>{displayLabel}</Text>
@@ -105,6 +106,9 @@ export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
           style={styles.modalOverlay}
           activeOpacity={1}
           onPress={() => setShowModal(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar selector de fecha"
+          accessibilityHint="Cierra la ventana de selección de fecha"
         >
           <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
             <View style={styles.modalHeader}>
@@ -112,7 +116,9 @@ export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
               <TouchableOpacity
                 onPress={() => setShowModal(false)}
                 style={styles.modalClose}
+                accessibilityRole="button"
                 accessibilityLabel="Cerrar"
+                accessibilityHint="Cierra la ventana de selección de fecha"
               >
                 <X size={24} color={THEME.colors.text.main} />
               </TouchableOpacity>
@@ -124,6 +130,7 @@ export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
                 activeOpacity={0.7}
                 accessibilityRole="button"
                 accessibilityLabel="Abrir calendario"
+                accessibilityHint="Abre el calendario del sistema para elegir fecha"
               >
                 <View style={styles.calendarOptionLeft}>
                   <Calendar size={18} color={THEME.colors.gradient.blue} />
@@ -161,6 +168,10 @@ export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
                     setShowModal(false);
                   }}
                   activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={opt.value ? `Elegir ${opt.label}` : 'Quitar fecha'}
+                  accessibilityHint="Selecciona esta fecha para la tarea"
+                  accessibilityState={{ selected: selectedDate === opt.value }}
                 >
                   <Text style={styles.optionText}>{opt.label}</Text>
                   {selectedDate === opt.value && (

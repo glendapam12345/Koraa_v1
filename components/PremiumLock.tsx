@@ -64,7 +64,7 @@ export function PremiumLock({
           </View>
           <View style={styles.actionsRow}>
             <TouchableOpacity onPress={() => setDismissed(true)} activeOpacity={0.7}>
-              <Text style={styles.laterText}>Ahora no</Text>
+              <Text style={styles.laterText}>Seguir gratis</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setShowPaywall(true)} activeOpacity={0.85} style={styles.paywallBtnWrap}>
               <LinearGradient
@@ -73,7 +73,7 @@ export function PremiumLock({
                 end={{ x: 1, y: 0 }}
                 style={styles.paywallBtn}
               >
-                <Text style={styles.paywallBtnText}>Ver planes</Text>
+                <Text style={styles.paywallBtnText}>Ver Premium</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>

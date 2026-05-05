@@ -21,8 +21,8 @@ export default function WelcomeScreen() {
     setSkipLoading(false);
     if (error) {
       Alert.alert(
-        'No se pudo guardar',
-        'Tu preferencia no se registró. Revisa tu conexión e inténtalo de nuevo.',
+        'No se pudo continuar',
+        'No pudimos guardar tu progreso. Inténtalo de nuevo.',
       );
       return;
     }
@@ -86,10 +86,7 @@ export default function WelcomeScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton
-          title="Continuar →"
-          onPress={() => router.push('/onboarding/emotion')}
-        />
+        <GradientButton title="Continuar" onPress={() => router.push('/onboarding/emotion')} />
 
         <TouchableOpacity
           onPress={handleSkipIntro}

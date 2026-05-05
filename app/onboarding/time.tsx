@@ -61,11 +61,7 @@ export default function TimeScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton
-          title="Continuar →"
-          onPress={handleContinue}
-          disabled={!selectedTime}
-        />
+        <GradientButton title="Continuar" onPress={handleContinue} disabled={!selectedTime} />
       </View>
     </View>
   );

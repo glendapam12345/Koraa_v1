@@ -74,11 +74,7 @@ export default function EnergyScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton
-          title="Continuar →"
-          onPress={handleContinue}
-          disabled={selectedEnergy === 0}
-        />
+        <GradientButton title="Continuar" onPress={handleContinue} disabled={selectedEnergy === 0} />
       </View>
     </View>
   );

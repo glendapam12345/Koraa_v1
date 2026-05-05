@@ -16,6 +16,7 @@ export type OTPInputProps = {
   length?: number;
   autoFocus?: boolean;
   disabled?: boolean;
+  accessibilityLabel?: string;
 };
 
 export function OTPInput({
@@ -24,6 +25,7 @@ export function OTPInput({
   length = OTP_CODE_LENGTH,
   autoFocus = true,
   disabled = false,
+  accessibilityLabel = 'Código de verificación',
 }: OTPInputProps) {
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
@@ -65,7 +67,11 @@ export function OTPInput({
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      accessibilityRole="none"
+      accessibilityLabel={accessibilityLabel}
+    >
       {Array.from({ length }).map((_, index) => (
         <TextInput
           key={index}
@@ -88,6 +94,9 @@ export function OTPInput({
             Platform.OS === 'web' ? 'one-time-code' : Platform.OS === 'android' ? 'sms-otp' : 'off'
           }
           textContentType="oneTimeCode"
+          accessibilityLabel={`Dígito ${index + 1} de ${length} del código`}
+          accessibilityHint="Introduce un número"
+          accessibilityState={{ disabled }}
         />
       ))}
     </View>

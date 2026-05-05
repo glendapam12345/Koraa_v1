@@ -189,10 +189,7 @@ export default function CheckInSummaryScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton
-          title="Ver mis prioridades →"
-          onPress={handleContinue}
-        />
+        <GradientButton title="Ver prioridades" onPress={handleContinue} />
       </View>
     </View>
   );

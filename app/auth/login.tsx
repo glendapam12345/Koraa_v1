@@ -80,6 +80,8 @@ export default function LoginScreen() {
               autoCapitalize="none"
               autoComplete="email"
               editable={!isLoading}
+              accessibilityLabel="Correo electrónico"
+              accessibilityHint="Escribe el correo de tu cuenta"
             />
           </View>
 
@@ -94,22 +96,39 @@ export default function LoginScreen() {
               secureTextEntry
               autoComplete="password"
               editable={!isLoading}
+              accessibilityLabel="Contraseña"
+              accessibilityHint="Escribe tu contraseña para iniciar sesión"
             />
           </View>
 
           <Link href="/auth/forgot-password" asChild>
-            <TouchableOpacity disabled={isLoading} style={styles.forgotWrap}>
+            <TouchableOpacity
+              disabled={isLoading}
+              style={styles.forgotWrap}
+              accessibilityRole="button"
+              accessibilityLabel="Olvidé mi contraseña"
+              accessibilityHint="Abre el flujo para recuperar tu contraseña"
+              accessibilityState={{ disabled: isLoading }}
+            >
               <Text style={styles.forgot}>¿Olvidaste tu contraseña?</Text>
             </TouchableOpacity>
           </Link>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? (
+            <Text style={styles.error} accessibilityRole="alert">
+              {error}
+            </Text>
+          ) : null}
 
           <TouchableOpacity
             onPress={handleLogin}
             disabled={isLoading}
             style={[styles.ctaOuter, isLoading && styles.ctaDisabled]}
             activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={isLoading ? 'Iniciando sesión' : 'Iniciar sesión'}
+            accessibilityHint="Inicia sesión con tu correo y contraseña"
+            accessibilityState={{ disabled: isLoading, busy: isLoading }}
           >
             <LinearGradient
               colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -120,7 +139,7 @@ export default function LoginScreen() {
               {isLoading ? (
                 <ActivityIndicator color={THEME.colors.onGradient} />
               ) : (
-                <Text style={styles.ctaText}>Entrar</Text>
+                <Text style={styles.ctaText}>Iniciar sesión</Text>
               )}
             </LinearGradient>
           </TouchableOpacity>
@@ -129,7 +148,13 @@ export default function LoginScreen() {
         <View style={styles.footer}>
           <Text style={styles.footerMuted}>¿No tienes cuenta? </Text>
           <Link href="/auth/signup" asChild>
-            <TouchableOpacity disabled={isLoading}>
+            <TouchableOpacity
+              disabled={isLoading}
+              accessibilityRole="button"
+              accessibilityLabel="Crear cuenta"
+              accessibilityHint="Abre la pantalla para registrarte"
+              accessibilityState={{ disabled: isLoading }}
+            >
               <Text style={styles.footerLink}>Crear cuenta</Text>
             </TouchableOpacity>
           </Link>

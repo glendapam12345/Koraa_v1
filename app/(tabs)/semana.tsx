@@ -336,22 +336,21 @@ export default function SemanaScreen() {
 
           {schemaSetupType ? (
             <View style={styles.setupCard}>
-              <Text style={styles.setupCardTitle}>Configuración de la base de datos</Text>
+              <Text style={styles.setupCardTitle}>Configura Semana y proyectos</Text>
               <Text style={styles.setupCardText}>
                 {schemaSetupType === 'scheduled_date'
-                  ? 'Para ver tareas por semana falta la columna scheduled_date en la tabla tasks.'
+                  ? 'Falta activar una parte de Semana para ver tareas por día.'
                   : schemaSetupType === 'projects_table'
-                    ? 'Para usar listas y proyectos falta la tabla projects.'
+                    ? 'Falta activar proyectos para organizar tus tareas.'
                     : schemaSetupType === 'project_id'
-                      ? 'Para asociar tareas a listas falta la columna project_id en la tabla tasks.'
-                      : 'Falta actualizar el esquema de la base de datos para Semana y proyectos.'}
+                      ? 'Falta activar la relación entre tareas y proyectos.'
+                      : 'Semana y proyectos todavía no están activos en este entorno.'}
               </Text>
               <Text style={styles.setupCardSteps}>
-                1. Abre Supabase → SQL Editor{'\n'}
-                2. Ejecuta el archivo: supabase/migrations/20260212000000_add_projects_and_weekly_scheduling.sql
+                Haz la configuración inicial del proyecto para activar estas funciones.
               </Text>
               <Text style={styles.setupCardHint}>
-                Después de ejecutarlo, arrastra hacia abajo aquí para recargar.
+                Después, arrastra hacia abajo para recargar.
               </Text>
             </View>
           ) : null}

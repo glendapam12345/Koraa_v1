@@ -41,6 +41,9 @@ export function TaskEditModal({
           style={styles.modalBackdrop}
           activeOpacity={1}
           onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar editor de tarea"
+          accessibilityHint="Cierra el modal sin guardar cambios"
         />
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
@@ -51,6 +54,7 @@ export function TaskEditModal({
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel="Cerrar"
+              accessibilityHint="Cierra el modal sin guardar"
             >
               <X size={24} color={THEME.colors.text.main} />
             </TouchableOpacity>
@@ -64,6 +68,8 @@ export function TaskEditModal({
             placeholderTextColor={THEME.colors.text.secondary}
             multiline
             autoFocus
+            accessibilityLabel="Editar contenido de la tarea"
+            accessibilityHint="Escribe el nuevo texto de la tarea"
           />
 
           <View style={styles.modalActions}>
@@ -72,6 +78,8 @@ export function TaskEditModal({
               onPress={onClose}
               activeOpacity={0.7}
               accessibilityRole="button"
+              accessibilityLabel="Cancelar edición"
+              accessibilityHint="Cierra el modal y descarta cambios"
             >
               <Text style={styles.modalButtonCancelText}>Cancelar</Text>
             </TouchableOpacity>
@@ -80,6 +88,8 @@ export function TaskEditModal({
               onPress={onSave}
               activeOpacity={0.7}
               accessibilityRole="button"
+              accessibilityLabel="Guardar cambios"
+              accessibilityHint="Guarda los cambios de esta tarea"
             >
               <Text style={styles.modalButtonSaveText}>Guardar</Text>
             </TouchableOpacity>

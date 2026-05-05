@@ -7,15 +7,28 @@ type GradientButtonProps = {
   onPress: () => void;
   style?: ViewStyle;
   disabled?: boolean;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 };
 
-export function GradientButton({ title, onPress, style, disabled }: GradientButtonProps) {
+export function GradientButton({
+  title,
+  onPress,
+  style,
+  disabled,
+  accessibilityLabel,
+  accessibilityHint,
+}: GradientButtonProps) {
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled}
       style={[styles.container, style]}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: Boolean(disabled) }}
     >
       <LinearGradient
         colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}

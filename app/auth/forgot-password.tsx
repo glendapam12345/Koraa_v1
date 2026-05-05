@@ -118,12 +118,20 @@ export default function ForgotPasswordScreen() {
     if (success) setStep('success');
   };
 
-  const primaryCta = (onPress: () => void, label: string) => (
+  const primaryCta = (
+    onPress: () => void,
+    label: string,
+    accessibilityHint?: string,
+  ) => (
     <TouchableOpacity
       onPress={onPress}
       disabled={isLoading}
       style={[styles.ctaOuter, isLoading && styles.ctaDisabled]}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={isLoading ? `${label}, cargando` : label}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: isLoading, busy: isLoading }}
     >
       <LinearGradient
         colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -169,12 +177,26 @@ export default function ForgotPasswordScreen() {
                 autoCapitalize="none"
                 autoComplete="email"
                 editable={!isLoading}
+                accessibilityLabel="Correo electrónico"
+                accessibilityHint="Escribe el correo asociado a tu cuenta"
               />
             </View>
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-            {primaryCta(handleSendCode, 'Enviar código')}
+            {error ? (
+              <Text style={styles.error} accessibilityRole="alert">
+                {error}
+              </Text>
+            ) : null}
+            {primaryCta(handleSendCode, 'Enviar código', 'Envía un código de recuperación a tu correo')}
           </View>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} disabled={isLoading}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+            disabled={isLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Volver al inicio de sesión"
+            accessibilityHint="Regresa a la pantalla anterior"
+            accessibilityState={{ disabled: isLoading }}
+          >
             <Text style={styles.backText}>← Volver al inicio de sesión</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -196,12 +218,20 @@ export default function ForgotPasswordScreen() {
           <View style={styles.otpWrap}>
             <OTPInput value={otpCode} onChange={setOtpCode} disabled={isLoading} />
           </View>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          {primaryCta(handleVerifyOtp, 'Verificar')}
+          {error ? (
+            <Text style={styles.error} accessibilityRole="alert">
+              {error}
+            </Text>
+          ) : null}
+          {primaryCta(handleVerifyOtp, 'Verificar', 'Verifica el código para continuar con el cambio de contraseña')}
           <TouchableOpacity
             style={styles.resendBtn}
             onPress={handleResendOtp}
             disabled={resendCooldown > 0 || isLoading}
+            accessibilityRole="button"
+            accessibilityLabel={resendCooldown > 0 ? `Reenviar en ${resendCooldown} segundos` : 'Reenviar código'}
+            accessibilityHint="Solicita un nuevo código de recuperación"
+            accessibilityState={{ disabled: resendCooldown > 0 || isLoading }}
           >
             <Text
               style={[styles.resendText, (resendCooldown > 0 || isLoading) && styles.resendTextDisabled]}
@@ -209,7 +239,15 @@ export default function ForgotPasswordScreen() {
               {resendCooldown > 0 ? `Reenviar en ${resendCooldown}s` : 'Reenviar código'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.backBtn} onPress={() => setStep('email')} disabled={isLoading}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => setStep('email')}
+            disabled={isLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Cambiar correo"
+            accessibilityHint="Vuelve atrás para escribir otro correo"
+            accessibilityState={{ disabled: isLoading }}
+          >
             <Text style={styles.backText}>← Cambiar correo</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -237,6 +275,8 @@ export default function ForgotPasswordScreen() {
                 secureTextEntry
                 autoComplete="new-password"
                 editable={!isLoading}
+                accessibilityLabel="Nueva contraseña"
+                accessibilityHint="Crea una nueva contraseña de al menos 8 caracteres"
               />
             </View>
             <View style={styles.field}>
@@ -250,10 +290,16 @@ export default function ForgotPasswordScreen() {
                 secureTextEntry
                 autoComplete="new-password"
                 editable={!isLoading}
+                accessibilityLabel="Confirmar contraseña"
+                accessibilityHint="Repite la nueva contraseña para confirmar"
               />
             </View>
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-            {primaryCta(handleUpdatePassword, 'Guardar contraseña')}
+            {error ? (
+              <Text style={styles.error} accessibilityRole="alert">
+                {error}
+              </Text>
+            ) : null}
+            {primaryCta(handleUpdatePassword, 'Guardar', 'Guarda tu nueva contraseña')}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -268,6 +314,9 @@ export default function ForgotPasswordScreen() {
         onPress={() => router.replace('/auth/login')}
         style={styles.ctaOuter}
         activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel="Iniciar sesión"
+        accessibilityHint="Abre la pantalla de acceso con la nueva contraseña"
       >
         <LinearGradient
           colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}

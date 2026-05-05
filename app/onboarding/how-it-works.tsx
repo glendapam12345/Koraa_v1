@@ -19,8 +19,8 @@ export default function HowItWorksScreen() {
       setSaving(false);
       if (error) {
         Alert.alert(
-          'No se pudo guardar',
-          'Tu progreso no se registró. Revisa tu conexión e inténtalo de nuevo.',
+          'No se pudo continuar',
+          'No pudimos guardar tu progreso. Inténtalo de nuevo.',
         );
         return;
       }
@@ -160,10 +160,7 @@ export default function HowItWorksScreen() {
         {saving ? (
           <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
         ) : (
-          <GradientButton
-            title="Entendido, continuar →"
-            onPress={handleContinue}
-          />
+          <GradientButton title="Continuar" onPress={handleContinue} />
         )}
       </View>
     </View>

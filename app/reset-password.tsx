@@ -288,11 +288,7 @@ export default function ResetPasswordScreen() {
           </View>
         ) : null}
 
-        <GradientButton
-          title="Guardar contraseña"
-          onPress={handleSubmit}
-          disabled={loading || !password || !confirmPassword}
-        />
+        <GradientButton title="Guardar" onPress={handleSubmit} disabled={loading || !password || !confirmPassword} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

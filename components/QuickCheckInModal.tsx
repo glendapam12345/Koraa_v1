@@ -79,11 +79,7 @@ export function QuickCheckInModal({ visible, onClose }: QuickCheckInModalProps) 
           </ScrollView>
 
           <View style={styles.footer}>
-            <GradientButton
-              title="Continuar →"
-              onPress={handleContinue}
-              disabled={!selectedEmotion}
-            />
+            <GradientButton title="Continuar" onPress={handleContinue} disabled={!selectedEmotion} />
           </View>
         </View>
       </View>

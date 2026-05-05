@@ -115,6 +115,7 @@ export function TaskCard({
   const scheduledLabel = task.scheduled_date ? formatTaskDate(task.scheduled_date) : '';
   const completedLabel = task.is_completed && task.completed_at ? formatTaskDate(task.completed_at) : '';
   const showDate = scheduledLabel || completedLabel;
+  const taskContentLabel = task.content?.trim() || 'tarea';
 
   const cardLeftBorderColor = !uniformCard && !hideProjectLabel && isProjectTask && projectLabelColor
     ? projectLabelColor
@@ -133,6 +134,8 @@ export function TaskCard({
       <RectButton
         style={[styles.swipeActionBtn, styles.swipeActionBtnWide, styles.swipeActionComplete]}
         onPress={() => handleSwipeAction(onToggle)}
+        accessibilityRole="button"
+        accessibilityLabel={task.is_completed ? `Marcar ${taskContentLabel} como pendiente` : `Completar ${taskContentLabel}`}
       >
         <Check size={22} color={THEME.colors.fill[100]} strokeWidth={2.5} />
         <Text style={styles.swipeActionLabel} numberOfLines={1}>{task.is_completed ? 'Pendiente' : 'Completar'}</Text>
@@ -140,6 +143,8 @@ export function TaskCard({
       <RectButton
         style={[styles.swipeActionBtn, styles.swipeActionEdit]}
         onPress={() => handleSwipeAction(onEditTask)}
+        accessibilityRole="button"
+        accessibilityLabel={`Editar ${taskContentLabel}`}
       >
         <Pencil size={20} color={THEME.colors.fill[100]} strokeWidth={2} />
         <Text style={styles.swipeActionLabel} numberOfLines={1}>Editar</Text>
@@ -147,6 +152,8 @@ export function TaskCard({
       <RectButton
         style={[styles.swipeActionBtn, styles.swipeActionDelete]}
         onPress={() => handleSwipeAction(onDeleteTask)}
+        accessibilityRole="button"
+        accessibilityLabel={`Eliminar ${taskContentLabel}`}
       >
         <Trash2 size={20} color={THEME.colors.fill[100]} strokeWidth={2} />
         <Text style={styles.swipeActionLabel} numberOfLines={1}>Eliminar</Text>
@@ -205,7 +212,11 @@ export function TaskCard({
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: task.is_completed }}
-            accessibilityLabel={task.is_completed ? 'Marcar como pendiente' : 'Marcar como completada'}
+            accessibilityLabel={
+              task.is_completed
+                ? `Marcar ${taskContentLabel} como pendiente`
+                : `Marcar ${taskContentLabel} como completada`
+            }
           >
             {task.is_completed && <View style={styles.taskCheckboxChecked} />}
           </TouchableOpacity>
@@ -219,7 +230,7 @@ export function TaskCard({
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 0, right: 8 }}
               accessibilityRole="button"
-              accessibilityLabel="Editar tarea"
+              accessibilityLabel={`Editar ${taskContentLabel}`}
             >
               <Text
                 style={[styles.taskText, task.is_completed && styles.taskTextCompleted]}
@@ -265,10 +276,10 @@ export function TaskCard({
                   activeOpacity={0.7}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   accessibilityRole="button"
-                  accessibilityLabel={expandedDetails ? 'Cerrar' : 'Ver más'}
+                  accessibilityLabel={expandedDetails ? 'Ocultar detalles' : 'Ver detalles'}
                 >
                   <Text style={styles.verMasText}>
-                    {expandedDetails ? 'Cerrar' : 'Ver más'}
+                    {expandedDetails ? 'Ocultar detalles' : 'Ver detalles'}
                   </Text>
                   {expandedDetails ? (
                     <ChevronDown size={16} color={THEME.colors.text.secondary} />
@@ -341,10 +352,10 @@ export function TaskCard({
                   activeOpacity={0.7}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   accessibilityRole="button"
-                  accessibilityLabel={expandedDetails ? 'Ocultar especificaciones' : 'Ver más especificaciones'}
+                  accessibilityLabel={expandedDetails ? 'Ocultar detalles' : 'Ver detalles'}
                 >
                   <Text style={styles.detailsToggleText} numberOfLines={1}>
-                    Detalles
+                    Ver detalles
                   </Text>
                   {expandedDetails ? (
                     <ChevronDown size={14} color={THEME.colors.text.secondary} />
@@ -446,6 +457,11 @@ export function TaskCard({
                   activeOpacity={0.7}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: subtask.is_completed }}
+                  accessibilityLabel={
+                    subtask.is_completed
+                      ? `Marcar paso ${subtask.content} como pendiente`
+                      : `Marcar paso ${subtask.content} como completado`
+                  }
                 >
                   {subtask.is_completed && <View style={styles.subtaskCheckboxChecked} />}
                 </TouchableOpacity>
@@ -477,6 +493,11 @@ export function TaskCard({
               activeOpacity={0.7}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: step.is_completed }}
+              accessibilityLabel={
+                step.is_completed
+                  ? `Marcar paso ${step.content} como pendiente`
+                  : `Marcar paso ${step.content} como completado`
+              }
             >
               <View style={styles.projectStepCheckbox}>
                 {step.is_completed && <View style={styles.taskCheckboxChecked} />}

@@ -247,11 +247,7 @@ export default function SentirScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton
-          title="Continuar →"
-          onPress={handleContinue}
-          disabled={!selectedEmotion}
-        />
+        <GradientButton title="Continuar" onPress={handleContinue} disabled={!selectedEmotion} />
       </View>
       
       <Tooltip

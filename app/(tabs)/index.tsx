@@ -23,7 +23,7 @@ import { useCheckIn } from '@/hooks/useCheckIn';
 import { useTasks } from '@/hooks/useTasks';
 import { useTaskActions } from '@/hooks/useTaskActions';
 import { useProgress } from '@/hooks/useProgress';
-import { supabase, getErrorMessage } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { generatePrioritizationExplanation, getPrioritizationExplainerBullets } from '@/lib/smartPrioritization';
 import { getEmotionEmoji } from '@/lib/emotionalInsights';
 import { logger } from '@/lib/logger';
@@ -427,13 +427,13 @@ export default function TodayScreen() {
         const msg = (error as { message?: string }).message ?? '';
         if (code === 'PGRST205' || msg.includes('meditations')) {
           Alert.alert(
-            'Base de datos',
-            'Tu proyecto de Supabase aún no tiene la tabla de meditaciones. En Supabase → SQL Editor, ejecuta el archivo del repo: supabase/migrations/20260211215310_add_meditations_table.sql',
+            'Meditación no disponible',
+            'Esta función todavía no está activa en este entorno.',
             [{ text: 'Entendido' }],
           );
           return;
         }
-        showToast(getErrorMessage(error), 'error');
+        showToast('No se pudo guardar la meditación. Inténtalo de nuevo.', 'error');
         return;
       }
 
@@ -655,8 +655,7 @@ export default function TodayScreen() {
 
                 if (subtasksError) {
                   logger.error('Error eliminando subtareas:', subtasksError);
-                  const errorMessage = getErrorMessage(subtasksError);
-                  showToast(`No se pudieron eliminar las subtareas: ${errorMessage}`, 'error');
+                  showToast('No se pudieron eliminar los pasos. Inténtalo de nuevo.', 'error');
                   setMenuOpen(null);
                   return;
                 }
@@ -670,8 +669,7 @@ export default function TodayScreen() {
 
               if (error) {
                 logger.error('Error eliminando tarea:', error);
-                const errorMessage = getErrorMessage(error);
-                showToast(errorMessage, 'error');
+                showToast('No se pudo eliminar la tarea. Inténtalo de nuevo.', 'error');
                 setMenuOpen(null);
                 return;
               }
@@ -685,8 +683,7 @@ export default function TodayScreen() {
               loadTasks();
             } catch (error) {
               logger.error('Error inesperado al eliminar:', error);
-              const errorMessage = getErrorMessage(error);
-              showToast(errorMessage, 'error');
+              showToast('No se pudo eliminar la tarea. Inténtalo de nuevo.', 'error');
               setMenuOpen(null);
             }
           },
@@ -982,6 +979,7 @@ export default function TodayScreen() {
                         activeOpacity={0.75}
                         accessibilityRole="button"
                         accessibilityLabel={`Racha de ${currentStreak} días. Ver en Yo`}
+                        accessibilityHint="Abre tu perfil para ver tu progreso y racha"
                       >
                         <Flame size={14} color={THEME.colors.gradient.pink} />
                         <Text style={styles.streakTextInline}>{currentStreak}</Text>
@@ -995,6 +993,7 @@ export default function TodayScreen() {
                       activeOpacity={0.75}
                       accessibilityRole="button"
                       accessibilityLabel="Sin racha aún. Ir a Sentir para tu check-in"
+                      accessibilityHint="Abre Sentir para registrar cómo te sientes hoy"
                     >
                       <Flame size={14} color={THEME.colors.text.tertiary} />
                       <Text style={styles.streakTextMuted}>Racha</Text>
@@ -1019,6 +1018,7 @@ export default function TodayScreen() {
                       activeOpacity={0.75}
                       accessibilityRole="button"
                       accessibilityLabel="Ajustes de cuenta"
+                      accessibilityHint="Abre ajustes de cuenta y preferencias"
                     >
                       <Settings size={THEME.sizes.iconStandard} color={THEME.colors.text.main} />
                     </TouchableOpacity>
@@ -1042,6 +1042,7 @@ export default function TodayScreen() {
             activeOpacity={0.85}
             accessibilityRole="button"
             accessibilityLabel="Ver y actualizar cómo te sientes hoy"
+            accessibilityHint="Abre Sentir para editar tu check-in del día"
           >
             <View style={[styles.contextPill, { backgroundColor: getEmotionColor(todayMood) }]}>
               <Text style={styles.contextPillEmoji}>{getEmotionEmoji(todayMood)}</Text>
@@ -1059,6 +1060,7 @@ export default function TodayScreen() {
             activeOpacity={0.88}
             accessibilityRole="button"
             accessibilityLabel="Cómo funciona Koraa. Ir a Sentir para indicar cómo te sientes."
+            accessibilityHint="Abre Sentir, el segundo paso del flujo recomendado"
           >
             <LinearGradient
               colors={[THEME.colors.gradient.blue + '12', THEME.colors.gradient.pink + '08']}
@@ -1117,6 +1119,7 @@ export default function TodayScreen() {
               activeOpacity={0.75}
               accessibilityRole="button"
               accessibilityLabel="Mostrar todas las secciones de Hoy ahora"
+              accessibilityHint="Desactiva la vista simplificada y muestra todo en Hoy"
             >
               <Text style={styles.hoyLiteBannerBtnText}>Mostrar todo ahora</Text>
             </TouchableOpacity>
@@ -1131,6 +1134,7 @@ export default function TodayScreen() {
             activeOpacity={0.88}
             accessibilityRole="button"
             accessibilityLabel="Ir a la pestaña Tareas para agregar tareas"
+            accessibilityHint="Abre Tareas para capturar nuevas pendientes"
           >
             <LinearGradient
               colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -1165,6 +1169,8 @@ export default function TodayScreen() {
                   disabled={morningMeditationDone}
                   accessibilityRole="button"
                   accessibilityLabel={morningMeditationDone ? 'Meditación matutina completada' : 'Meditar por la mañana'}
+                  accessibilityHint="Abre una sesión breve para iniciar el día"
+                  accessibilityState={{ disabled: morningMeditationDone }}
                 >
                   <View style={[styles.meditationRowIconWrap, !morningMeditationDone && styles.meditationRowIconMorning]}>
                     <Text style={styles.meditationRowEmoji}>🧘</Text>
@@ -1192,6 +1198,8 @@ export default function TodayScreen() {
                   disabled={eveningMeditationDone}
                   accessibilityRole="button"
                   accessibilityLabel={eveningMeditationDone ? 'Meditación nocturna completada' : 'Meditar por la noche'}
+                  accessibilityHint="Abre una sesión breve para cerrar el día"
+                  accessibilityState={{ disabled: eveningMeditationDone }}
                 >
                   <View style={[styles.meditationRowIconWrap, !eveningMeditationDone && styles.meditationRowIconEvening]}>
                     <Text style={styles.meditationRowEmoji}>🌙</Text>
@@ -1340,6 +1348,7 @@ export default function TodayScreen() {
                   activeOpacity={0.88}
                   accessibilityRole="button"
                   accessibilityLabel="Ir a Sentir para registrar cómo te sientes y priorizar"
+                  accessibilityHint="Haz check-in para que Koraa ordene tus tareas"
                 >
                   <LinearGradient
                     colors={[THEME.colors.tint.pink.soft, THEME.colors.tint.blue.veryFaint]}
@@ -1417,6 +1426,7 @@ export default function TodayScreen() {
                       accessibilityRole="tab"
                       accessibilityState={{ selected: taskFilter === 'hoy' }}
                       accessibilityLabel="Ver solo tareas de hoy"
+                      accessibilityHint="Muestra pendientes de hoy y tareas sin fecha"
                     >
                       {taskFilter === 'hoy' && (
                         <LinearGradient
@@ -1437,6 +1447,7 @@ export default function TodayScreen() {
                       accessibilityRole="tab"
                       accessibilityState={{ selected: taskFilter === 'todas' }}
                       accessibilityLabel="Ver todas las tareas pendientes"
+                      accessibilityHint="Muestra todos los pendientes sin filtrar por fecha"
                     >
                       {taskFilter === 'todas' && (
                         <LinearGradient
@@ -1481,6 +1492,7 @@ export default function TodayScreen() {
                   activeOpacity={0.85}
                   accessibilityRole="button"
                   accessibilityLabel="Aliviar carga, repartir tareas en el calendario"
+                  accessibilityHint="Abre el asistente para redistribuir tareas según tu energía"
                 >
                   <CalendarRange size={20} color={THEME.colors.gradient.blue} />
                   <View style={styles.redistributeCtaTextWrap}>
@@ -1512,6 +1524,7 @@ export default function TodayScreen() {
                       activeOpacity={0.7}
                       accessibilityRole="button"
                       accessibilityLabel="Ver todos los proyectos"
+                      accessibilityHint="Abre la pantalla completa de proyectos"
                     >
                       <Text style={styles.byProjectVerTodosText}>Ver todos</Text>
                       <ChevronRight size={18} color={THEME.colors.gradient.blue} />
@@ -1526,6 +1539,7 @@ export default function TodayScreen() {
                         activeOpacity={0.7}
                         accessibilityRole="button"
                         accessibilityLabel={`${row.name}, ${row.count} tareas pendientes`}
+                        accessibilityHint="Abre el detalle de este proyecto"
                       >
                         <View style={[styles.byProjectColorBar, { backgroundColor: row.color }]} />
                         <View style={styles.byProjectRowContent}>
@@ -1734,6 +1748,7 @@ export default function TodayScreen() {
                           activeOpacity={0.85}
                           accessibilityRole="button"
                           accessibilityLabel="Agregar tarea con fecha de hoy"
+                          accessibilityHint="Abre Tareas y preselecciona la fecha de hoy"
                         >
                           <Text style={styles.emptyTasksLinkPillText}>Agregar para hoy</Text>
                         </TouchableOpacity>
@@ -1759,6 +1774,7 @@ export default function TodayScreen() {
                         activeOpacity={0.85}
                         accessibilityRole="button"
                         accessibilityLabel="Ir a Sentir"
+                        accessibilityHint="Abre Sentir para registrar tu estado emocional"
                       >
                         <Text style={styles.emptyTasksSecondaryCtaText}>Ir a Sentir</Text>
                         <ChevronRight size={18} color={THEME.colors.gradient.blue} />
@@ -1775,6 +1791,7 @@ export default function TodayScreen() {
                   activeOpacity={0.8}
                   accessibilityRole="button"
                   accessibilityLabel="Agregar más tareas"
+                  accessibilityHint="Abre la pestaña Tareas para capturar más pendientes"
                 >
                   <Plus size={16} color={THEME.colors.gradient.blue} />
                   <Text style={styles.agregarMasHint}>Agregar más · pestaña Tareas</Text>
