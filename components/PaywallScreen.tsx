@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { LinearGradient } from 'expo-linear-gradient';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Check, Crown, Lock, X } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useSubscription } from '@/contexts/SubscriptionContext';
@@ -23,13 +24,21 @@ type PaywallScreenProps = {
 };
 
 export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallScreenProps) {
-  const { currentOffering, checkSubscription, restorePurchases } = useSubscription();
+  const { currentOffering, checkSubscription, restorePurchases, isLoading: subscriptionLoading } = useSubscription();
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const premiumGlow = useRef(new Animated.Value(0.75)).current;
 
   const packages = useMemo(() => currentOffering?.availablePackages ?? [], [currentOffering?.availablePackages]);
+
+  /** Expo Go no ejecuta tu binario con IAP como TestFlight; StoreKit suele no devolver productos aquí. */
+  const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
+  /** Evita mostrar “planes no cargaron” mientras RevenueCat aún sincroniza tras abrir el paywall. */
+  useEffect(() => {
+    void checkSubscription();
+  }, [checkSubscription]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -45,10 +54,11 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
     try {
       const Purchases = (await import('react-native-purchases')).default;
       await Purchases.purchasePackage(pkg);
+      await checkSubscription();
       onPurchaseCompleted?.();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo completar la compra.';
-      Alert.alert('Compra no completada', message);
+      Alert.alert('No se completó la compra', message);
     } finally {
       setIsPurchasing(false);
     }
@@ -67,7 +77,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
     try {
       const result = await restorePurchases();
       if (result.success) {
-        Alert.alert('Compras restauradas', 'Tu suscripción premium ya está activa.');
+        Alert.alert('Compras restauradas', 'Tu Premium ya está activo.');
         onPurchaseCompleted?.();
       } else {
         Alert.alert('Sin compras para restaurar', result.error ?? 'No encontramos compras anteriores.');
@@ -117,6 +127,9 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
               }
               onSkip?.();
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Cerrar pantalla de premium"
+            accessibilityHint="Vuelve a la app sin cambiar tu plan"
           >
             <X size={18} color={THEME.colors.fill[100]} />
           </TouchableOpacity>
@@ -139,7 +152,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
           </View>
           <View style={styles.benefitRow}>
             <Check size={16} color={THEME.colors.gradient.blue} />
-            <Text style={styles.benefitText}>Flujo premium de enfoque y priorización emocional.</Text>
+            <Text style={styles.benefitText}>Plan semanal más claro para decidir qué hacer primero.</Text>
           </View>
         </View>
 
@@ -183,7 +196,12 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
           </View>
         </View>
 
-        {packages.length > 0 ? (
+        {subscriptionLoading && packages.length === 0 ? (
+          <View style={styles.loadingPlans}>
+            <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
+            <Text style={styles.loadingPlansText}>Cargando planes…</Text>
+          </View>
+        ) : packages.length > 0 ? (
           packages.map((pkg) => (
             <View key={pkg.identifier} style={styles.planCard}>
               <Text style={styles.planTitle}>{pkg.product.title}</Text>
@@ -193,8 +211,12 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
               <TouchableOpacity
                 activeOpacity={0.85}
                 onPress={() => void handlePurchase(pkg)}
-                disabled={isPurchasing || isRestoring || isRefreshing}
+                disabled={isPurchasing || isRestoring || isRefreshing || subscriptionLoading}
                 style={styles.ctaWrap}
+                accessibilityRole="button"
+                accessibilityLabel={`Elegir plan ${pkg.product.title}`}
+                accessibilityHint="Inicia la compra de este plan premium"
+                accessibilityState={{ disabled: isPurchasing || isRestoring || isRefreshing || subscriptionLoading }}
               >
                 <LinearGradient
                   colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -205,7 +227,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
                   {isPurchasing ? (
                     <ActivityIndicator color={THEME.colors.onGradient} />
                   ) : (
-                    <Text style={styles.ctaText}>Probar Premium</Text>
+                    <Text style={styles.ctaText}>Elegir este plan</Text>
                   )}
                 </LinearGradient>
               </TouchableOpacity>
@@ -213,16 +235,26 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
           ))
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>Los planes no cargaron</Text>
+            <Text style={styles.emptyTitle}>Premium no disponible por ahora</Text>
             <Text style={styles.emptyText}>
-              No pasa nada: puedes seguir usando Koraa gratis con todo lo esencial. Si más tarde quieres Premium,
-              podrás ver precios cuando la tienda esté lista (por ejemplo en TestFlight o App Store).
+              Puedes seguir usando Koraa gratis con todo lo esencial. Cuando la tienda esté lista, aquí verás tus
+              planes y precios.
             </Text>
+            {isExpoGo ? (
+              <Text style={styles.emptyHintExpoGo}>
+                Estás en Expo Go: las compras in-app suelen no cargar aquí. Para ver planes y precios reales, usa un
+                development build (expo-dev-client) o un build de TestFlight / App Store.
+              </Text>
+            ) : null}
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={handleContinueFree}
-              disabled={isPurchasing || isRestoring || isRefreshing}
+              disabled={isPurchasing || isRestoring || isRefreshing || subscriptionLoading}
               style={styles.emptyPrimaryWrap}
+              accessibilityRole="button"
+              accessibilityLabel="Continuar con versión gratis"
+              accessibilityHint="Cierra premium y sigue usando el plan gratuito"
+              accessibilityState={{ disabled: isPurchasing || isRestoring || isRefreshing || subscriptionLoading }}
             >
               <LinearGradient
                 colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -230,7 +262,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
                 end={{ x: 1, y: 0 }}
                 style={styles.emptyPrimaryBtn}
               >
-                <Text style={styles.emptyPrimaryBtnText}>Continuar con versión gratis</Text>
+                <Text style={styles.emptyPrimaryBtnText}>Seguir con versión gratis</Text>
               </LinearGradient>
             </TouchableOpacity>
             <TouchableOpacity
@@ -238,8 +270,12 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
               activeOpacity={0.75}
               disabled={isRefreshing}
               onPress={() => void handleRefresh()}
+              accessibilityRole="button"
+              accessibilityLabel="Reintentar cargar planes"
+              accessibilityHint="Intenta cargar los planes de premium de nuevo"
+              accessibilityState={{ disabled: isRefreshing }}
             >
-              <Text style={styles.secondaryButtonText}>{isRefreshing ? 'Actualizando...' : 'Reintentar cargar planes'}</Text>
+              <Text style={styles.secondaryButtonText}>{isRefreshing ? 'Actualizando...' : 'Reintentar'}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -249,23 +285,13 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
             style={styles.secondaryButton}
             activeOpacity={0.75}
             onPress={() => void handleRestore()}
-            disabled={isPurchasing || isRestoring || isRefreshing}
+            disabled={isPurchasing || isRestoring || isRefreshing || subscriptionLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Restaurar compras"
+            accessibilityHint="Busca compras anteriores de esta cuenta"
+            accessibilityState={{ disabled: isPurchasing || isRestoring || isRefreshing || subscriptionLoading }}
           >
             <Text style={styles.secondaryButtonText}>{isRestoring ? 'Restaurando...' : 'Restaurar compras'}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.ghostButton}
-            activeOpacity={0.75}
-            onPress={() => {
-              if (onClose) {
-                onClose();
-                return;
-              }
-              onSkip?.();
-            }}
-          >
-            <Text style={styles.ghostButtonText}>Ahora no</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -290,9 +316,9 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     alignSelf: 'flex-end',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: THEME.sizes.touchTarget,
+    height: THEME.sizes.touchTarget,
+    borderRadius: THEME.sizes.touchTarget / 2,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: THEME.colors.surfaceOverlay.medium,
@@ -443,6 +469,21 @@ const styles = StyleSheet.create({
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
+  loadingPlans: {
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.fill[100],
+    padding: THEME.spacing.xl,
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    minHeight: 120,
+    justifyContent: 'center',
+  },
+  loadingPlansText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+  },
   emptyState: {
     borderRadius: THEME.borderRadius.rounded,
     borderWidth: 1,
@@ -476,6 +517,13 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
   },
+  emptyHintExpoGo: {
+    ...THEME.typography.small,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
+    marginTop: THEME.spacing.xs,
+    lineHeight: 20,
+  },
   footerActions: {
     marginTop: THEME.spacing.sm,
     gap: THEME.spacing.sm,
@@ -492,16 +540,6 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     ...THEME.typography.caption,
     color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  ghostButton: {
-    minHeight: THEME.sizes.touchTarget,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  ghostButtonText: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
     fontFamily: THEME.fonts.heading.medium,
   },
 });

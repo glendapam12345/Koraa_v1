@@ -75,7 +75,7 @@ export default function Intro2Screen() {
               </View>
             </View>
             <View style={styles.previewFooter}>
-              <Text style={styles.previewFooterText}>Soltar</Text>
+              <Text style={styles.previewFooterText}>Guardar tarea</Text>
             </View>
           </View>
         </View>

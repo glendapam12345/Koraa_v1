@@ -1,6 +1,8 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CheckCircle2 } from 'lucide-react-native';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 type FlowStep = 'vaciar' | 'sentir' | 'accionar';
 
@@ -9,6 +11,9 @@ interface FlowIndicatorProps {
 }
 
 export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
+  const router = useRouter();
+  const { isLoading: subscriptionLoading, isSubscribed } = useSubscription();
+
   const steps: { id: FlowStep; label: string }[] = [
     { id: 'vaciar', label: 'Tareas' },
     { id: 'sentir', label: 'Sentir' },
@@ -65,6 +70,22 @@ export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
           );
         })}
       </View>
+
+      {!subscriptionLoading && !isSubscribed ? (
+        <TouchableOpacity
+          onPress={() => router.push('/paywall')}
+          activeOpacity={0.75}
+          style={styles.premiumHintWrap}
+          accessibilityRole="button"
+          accessibilityLabel="Ver Premium"
+          accessibilityHint="Abre la pantalla de suscripción"
+        >
+          <Text style={styles.premiumHintText}>
+            Más con Koraa Premium: Semana completa e historial.{' '}
+            <Text style={styles.premiumHintLink}>Ver Premium</Text>
+          </Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
@@ -147,5 +168,20 @@ const styles = StyleSheet.create({
   },
   connectorCompleted: {
     backgroundColor: THEME.colors.gradient.blue,
+  },
+  premiumHintWrap: {
+    marginTop: THEME.spacing.sm,
+    alignItems: 'center',
+    paddingHorizontal: THEME.spacing.sm,
+  },
+  premiumHintText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  premiumHintLink: {
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
   },
 });

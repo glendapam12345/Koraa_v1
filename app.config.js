@@ -13,8 +13,8 @@ function firstTrimmed(...vals) {
   return undefined;
 }
 
-const isProductionRelease =
-  process.env.EAS_BUILD_PROFILE === 'production' || process.env.NODE_ENV === 'production';
+/** Solo builds App Store / Play con perfil production (no confundir con export de `eas update`). */
+const isProductionRelease = process.env.EAS_BUILD_PROFILE === 'production';
 
 function requireForRelease(name, value) {
   if (isProductionRelease && !value) {
@@ -60,6 +60,12 @@ module.exports = {
     icon: './assets/images/koraa-logo.png',
     scheme: 'myapp',
     userInterfaceStyle: 'automatic',
+    updates: {
+      url: 'https://u.expo.dev/ef96554d-08d3-4cb6-a5fe-4217d7295541',
+    },
+    runtimeVersion: {
+      policy: 'appVersion',
+    },
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.impermanencecasaartisitca.koraav1',
@@ -68,6 +74,9 @@ module.exports = {
         ITSAppUsesNonExemptEncryption: false,
         CFBundleDisplayName: 'Koraa',
       },
+    },
+    android: {
+      package: 'com.impermanencecasaartisitca.koraav1',
     },
     web: {
       bundler: 'metro',

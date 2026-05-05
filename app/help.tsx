@@ -38,13 +38,19 @@ const FAQ_ITEMS: FaqItem[] = [
     id: 'vaciar',
     question: '¿Para qué sirve la pestaña Tareas?',
     answer:
-      'Ahí capturas y organizas lo pendiente (volcar la mente, asignar proyecto o fecha). Lo que guardes se prioriza en Hoy según tu check-in en Sentir.',
+      'Ahí capturas y organizas lo pendiente (vacía tu mente, asignar proyecto o fecha). Lo que guardes se prioriza en Hoy según tu check-in en Sentir.',
   },
   {
     id: 'hoy',
     question: '¿Cómo se ordenan las tareas en Hoy?',
     answer:
       'Combinamos tu estado del día (Sentir) con lo que tienes pendiente. Puedes filtrar por «Hoy» o ver «Todas» las pendientes.',
+  },
+  {
+    id: 'premium',
+    question: '¿Qué es Koraa Premium y dónde está?',
+    answer:
+      'El flujo principal (Tareas → Sentir → Hoy) es gratuito. Premium amplía la pestaña Semana: los 7 días completos, filtros avanzados e historial (en gratis ves una muestra). Para suscribirte o restaurar compra: pestaña Yo → Ver Premium.',
   },
   {
     id: 'datos',

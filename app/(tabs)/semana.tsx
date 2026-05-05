@@ -8,7 +8,6 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useWeekTasks, getWeekOptions } from '@/hooks/useWeekTasks';
 import type { Task } from '@/hooks/useTasks';
 import { getSupabaseEnvStatus } from '@/lib/envCheck';
-import { PremiumLock } from '@/components/PremiumLock';
 import { Calendar, Plus, FolderKanban, FileText, ChevronRight, ChevronLeft, Crown } from 'lucide-react-native';
 import { router } from 'expo-router';
 
@@ -86,27 +85,17 @@ export default function SemanaScreen() {
 
   return (
     <View style={styles.container}>
-      <PremiumLock
-        title="Desbloquea Semana Premium"
-        description="Ve tu ritmo real de la semana y toma mejores decisiones para priorizar."
-        benefits={[
-          'Vista semanal completa con foco en pendientes y avance real.',
-          'Filtros por proyecto para detectar cargas y cuellos de botella.',
-          'Planeación emocional para repartir mejor tus tareas.',
-        ]}
-        showBanner={false}
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={() => loadWeekTasks(selectedWeekStart || undefined)}
+            tintColor={THEME.colors.gradient.blue}
+          />
+        }
       >
-        <ScrollView
-          contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={loading}
-              onRefresh={() => loadWeekTasks(selectedWeekStart || undefined)}
-              tintColor={THEME.colors.gradient.blue}
-            />
-          }
-        >
         <LinearGradient
           colors={THEME.colors.gradientTint.header}
           style={styles.headerGradient}
@@ -326,18 +315,6 @@ export default function SemanaScreen() {
           </View>
         ))}
 
-        {!loading && !subscriptionLoading && !isSubscribed && (
-          <View style={styles.premiumTeaserCard}>
-            <View style={styles.premiumTeaserHeader}>
-              <Crown size={16} color={THEME.colors.gradient.blue} />
-              <Text style={styles.premiumTeaserTitle}>Semana Premium</Text>
-            </View>
-            <Text style={styles.premiumTeaserText}>
-              En la versión gratuita ves una muestra de tu semana. Con Premium desbloqueas los 7 días, filtros avanzados e historial completo.
-            </Text>
-          </View>
-        )}
-
         <View style={styles.bottomSection}>
           <TouchableOpacity
             style={styles.addButton}
@@ -380,6 +357,32 @@ export default function SemanaScreen() {
           ) : null}
         </View>
 
+        {!loading && !subscriptionLoading && !isSubscribed && (
+          <View style={styles.premiumHintCard}>
+            <View style={styles.premiumHintHeader}>
+              <View style={styles.premiumHintTitleWrap}>
+                <Crown size={14} color={THEME.colors.gradient.blue} />
+                <Text style={styles.premiumHintTitle}>Semana Premium</Text>
+              </View>
+              <Text style={styles.premiumHintLabel}>Opcional</Text>
+            </View>
+            <Text style={styles.premiumHintText}>
+              Si luego quieres más detalle, puedes desbloquear los 7 días y filtros por proyecto.
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.push('/paywall')}
+              activeOpacity={0.85}
+              style={styles.premiumHintBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Ver Premium"
+              accessibilityHint="Abre la pantalla de suscripción"
+            >
+              <Text style={styles.premiumHintBtnText}>Ver Premium</Text>
+              <ChevronRight size={16} color={THEME.colors.gradient.blue} />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {__DEV__ ? (
           <View style={styles.diagnostico}>
             <Text style={styles.diagnosticoTitle}>Diagnóstico (solo desarrollo)</Text>
@@ -396,8 +399,7 @@ export default function SemanaScreen() {
             ) : null}
           </View>
         ) : null}
-        </ScrollView>
-      </PremiumLock>
+      </ScrollView>
     </View>
   );
 }
@@ -899,30 +901,54 @@ const styles = StyleSheet.create({
     color: THEME.colors.gradient.pink,
     marginTop: THEME.spacing.xs,
   },
-  premiumTeaserCard: {
+  premiumHintCard: {
     marginHorizontal: THEME.spacing.lg,
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.lg,
     backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.rounded,
+    borderRadius: THEME.borderRadius.standard,
     borderWidth: 1,
-    borderColor: THEME.colors.tint.blue.border,
-    padding: THEME.spacing.md,
-    ...THEME.shadows.soft,
+    borderColor: THEME.colors.stroke[100],
+    padding: THEME.spacing.sm,
   },
-  premiumTeaserHeader: {
+  premiumHintHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: THEME.spacing.xs,
-    marginBottom: THEME.spacing.xs,
+    justifyContent: 'space-between',
+    marginBottom: 4,
   },
-  premiumTeaserTitle: {
-    ...THEME.typography.caption,
+  premiumHintTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  premiumHintTitle: {
+    ...THEME.typography.small,
     color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
+    fontFamily: THEME.fonts.heading.medium,
   },
-  premiumTeaserText: {
+  premiumHintLabel: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
-    lineHeight: 20,
+    fontSize: 11,
+  },
+  premiumHintText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+  },
+  premiumHintBtn: {
+    marginTop: THEME.spacing.xs,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    minHeight: 36,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+  },
+  premiumHintBtnText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
   },
 });

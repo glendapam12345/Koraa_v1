@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { markFirstSessionTourSeen } from '@/lib/firstSessionTour';
-import { Edit3, Heart, Home } from 'lucide-react-native';
+import { Crown, Edit3, Heart, Home } from 'lucide-react-native';
 
 type StepDef = {
   tabLabel: string;
@@ -16,7 +16,7 @@ type StepDef = {
 const STEPS: StepDef[] = [
   {
     tabLabel: 'Tareas',
-    title: 'Primero, vuelca tu mente',
+    title: 'Primero, vacía tu mente',
     body:
       'En la pestaña Tareas escribe lo pendiente sin forzar orden. Proyecto, fecha y prioridad son opcionales: puedes solo escribir y soltar.',
     Icon: Edit3,
@@ -34,6 +34,13 @@ const STEPS: StepDef[] = [
     body:
       'En Hoy ves qué atender primero según cómo te sientes. Puedes volver a Sentir cuando cambie tu estado.',
     Icon: Home,
+  },
+  {
+    tabLabel: 'Premium',
+    title: 'Opcional: Koraa Premium',
+    body:
+      'El flujo del día es gratis (Tareas → Sentir → Hoy). Premium amplía la pestaña Semana: los 7 días, más filtros e historial completo. Para suscribirte: Yo → Ver Premium.',
+    Icon: Crown,
   },
 ];
 
