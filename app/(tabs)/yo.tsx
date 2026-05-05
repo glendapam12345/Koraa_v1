@@ -719,10 +719,15 @@ export default function ProfileScreen() {
             onPress={() => router.push('/settings')}
             accessibilityRole="button"
             accessibilityLabel="Ajustes"
-            accessibilityHint="Abre cuenta, contraseña y preferencias de la aplicación"
+            accessibilityHint="Abre recordatorios, contraseña, premium y preferencias de la aplicación"
           >
             <Settings size={24} color={THEME.colors.text.main} />
-            <Text style={styles.menuItemText}>Ajustes</Text>
+            <View style={styles.menuItemContent}>
+              <Text style={styles.menuItemText}>Ajustes</Text>
+              <Text style={styles.menuItemSubtext}>
+                Recordatorios, contraseña y Ver Premium
+              </Text>
+            </View>
           </TouchableOpacity>
 
           {/* Botón de desarrollo para resetear onboarding */}

@@ -1241,12 +1241,19 @@ export default function TodayScreen() {
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel={focusMode ? 'Desactivar modo foco en Hoy' : 'Activar modo foco en Hoy'}
-            accessibilityHint="Colapsa las categorías de tareas para ver menos de golpe"
+            accessibilityHint="Muestra una sola categoría prioritaria y oculta secciones extra para reducir distracciones"
             accessibilityState={{ expanded: focusMode }}
           >
-            <Text style={styles.focusModeToggleText}>
-              {focusMode ? 'Modo foco activo' : 'Activar modo foco'}
-            </Text>
+            <View style={styles.focusModeToggleTextWrap}>
+              <Text style={styles.focusModeToggleText}>
+                {focusMode ? 'Modo foco activo' : 'Activar modo foco'}
+              </Text>
+              <Text style={styles.focusModeToggleSubtext}>
+                {focusMode
+                  ? 'Muestra 1 categoria prioritaria y oculta extras'
+                  : 'Reduce distracciones en Hoy'}
+              </Text>
+            </View>
             {focusMode ? (
               <ChevronDown size={18} color={THEME.colors.text.secondary} />
             ) : (
@@ -2434,6 +2441,16 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.medium,
+  },
+  focusModeToggleTextWrap: {
+    flex: 1,
+    paddingRight: THEME.spacing.sm,
+  },
+  focusModeToggleSubtext: {
+    ...THEME.typography.small,
+    fontSize: 11,
+    color: THEME.colors.text.secondary,
+    marginTop: 2,
   },
   welcomeHeader: {
     flexDirection: 'row',
