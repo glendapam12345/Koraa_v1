@@ -1189,24 +1189,29 @@ export default function TodayScreen() {
         )}
 
         {!loading && !hoyLiteActive && (
-          <TouchableOpacity
-            style={styles.secondaryModulesToggle}
-            onPress={() => setShowSecondaryModules((prev) => !prev)}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={showSecondaryModules ? 'Ocultar secciones extra de Hoy' : 'Mostrar secciones extra de Hoy'}
-            accessibilityHint="Controla módulos secundarios como meditación, resumen por proyecto y recomendaciones"
-            accessibilityState={{ expanded: showSecondaryModules }}
-          >
-            <Text style={styles.secondaryModulesToggleText}>
-              {showSecondaryModules ? 'Ocultar secciones extra' : 'Mostrar secciones extra'}
+          <>
+            <TouchableOpacity
+              style={styles.secondaryModulesToggle}
+              onPress={() => setShowSecondaryModules((prev) => !prev)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={showSecondaryModules ? 'Ocultar secciones extra de Hoy' : 'Mostrar secciones extra de Hoy'}
+              accessibilityHint="Controla módulos secundarios como meditación, resumen por proyecto y recomendaciones"
+              accessibilityState={{ expanded: showSecondaryModules }}
+            >
+              <Text style={styles.secondaryModulesToggleText}>
+                {showSecondaryModules ? 'Ocultar secciones extra' : 'Mostrar secciones extra'}
+              </Text>
+              {showSecondaryModules ? (
+                <ChevronDown size={18} color={THEME.colors.text.secondary} />
+              ) : (
+                <ChevronRight size={18} color={THEME.colors.text.secondary} />
+              )}
+            </TouchableOpacity>
+            <Text style={styles.secondaryModulesHint}>
+              Incluye meditación, resumen por proyecto y recomendaciones.
             </Text>
-            {showSecondaryModules ? (
-              <ChevronDown size={18} color={THEME.colors.text.secondary} />
-            ) : (
-              <ChevronRight size={18} color={THEME.colors.text.secondary} />
-            )}
-          </TouchableOpacity>
+          </>
         )}
 
         {/* Una sola card de meditación: Mañana y Noche dentro del mismo bloque */}
@@ -2343,6 +2348,14 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.medium,
+  },
+  secondaryModulesHint: {
+    ...THEME.typography.small,
+    marginHorizontal: THEME.spacing.lg,
+    marginTop: -THEME.spacing.sm,
+    marginBottom: THEME.spacing.md,
+    fontSize: 11,
+    color: THEME.colors.text.secondary,
   },
   welcomeHeader: {
     flexDirection: 'row',
