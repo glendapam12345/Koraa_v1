@@ -19,6 +19,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   Settings,
+  Crown,
   CreditCard as Edit,
   X,
   Plus,
@@ -726,6 +727,23 @@ export default function ProfileScreen() {
               <Text style={styles.menuItemText}>Ajustes</Text>
               <Text style={styles.menuItemSubtext}>
                 Recordatorios, contraseña y Ver Premium
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            activeOpacity={0.7}
+            onPress={() => router.push('/settings')}
+            accessibilityRole="button"
+            accessibilityLabel="Suscripción"
+            accessibilityHint="Abre Ajustes para gestionar Premium o restaurar compra"
+          >
+            <Crown size={24} color={THEME.colors.gradient.blue} />
+            <View style={styles.menuItemContent}>
+              <Text style={styles.menuItemText}>Suscripción</Text>
+              <Text style={styles.menuItemSubtext}>
+                Gestiona Premium y restaurar compra
               </Text>
             </View>
           </TouchableOpacity>
