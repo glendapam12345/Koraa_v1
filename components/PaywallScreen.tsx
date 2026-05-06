@@ -29,6 +29,17 @@ const FALLBACK_MONTHLY_PRICE = '$49 MXN / mes';
 const FALLBACK_ANNUAL_PRICE = '$411.60 MXN / año';
 const FALLBACK_ANNUAL_BADGE = '12 meses con 30% de descuento';
 
+function isPlanPackage(pkg: PurchasesPackage, plan: 'monthly' | 'annual') {
+  const packageType = String(pkg.packageType).toLowerCase();
+  const identifier = pkg.identifier.toLowerCase();
+  const productId = pkg.product.identifier.toLowerCase();
+  const haystack = `${packageType} ${identifier} ${productId}`;
+  if (plan === 'monthly') {
+    return haystack.includes('month') || haystack.includes('monthly') || haystack.includes('mensual');
+  }
+  return haystack.includes('annual') || haystack.includes('year') || haystack.includes('anual');
+}
+
 export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallScreenProps) {
   const { currentOffering, checkSubscription, restorePurchases, isLoading: subscriptionLoading } = useSubscription();
   const [isPurchasing, setIsPurchasing] = useState(false);
@@ -116,12 +127,32 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
     return '';
   };
 
-  const handleFallbackPlanPress = (plan: 'monthly' | 'annual') => {
+  const handleFallbackPlanPress = async (plan: 'monthly' | 'annual') => {
     const planLabel = plan === 'monthly' ? 'mensual' : 'anual';
-    Alert.alert(
-      `Plan ${planLabel} en preparación`,
-      'Estamos conectando este plan con App Store. Toca "Actualizar planes" para cargar precios en vivo.',
-    );
+    setIsRefreshing(true);
+    try {
+      const Purchases = (await import('react-native-purchases')).default;
+      const offerings = await Purchases.getOfferings();
+      const availablePackages = offerings.current?.availablePackages ?? [];
+      const planPackage = availablePackages.find((pkg) => isPlanPackage(pkg, plan));
+
+      if (planPackage) {
+        await handlePurchase(planPackage);
+        return;
+      }
+
+      Alert.alert(
+        `Plan ${planLabel} en preparación`,
+        'Todavía no aparece en App Store para esta build. Inténtalo de nuevo en unos minutos.',
+      );
+    } catch {
+      Alert.alert(
+        `No se pudo abrir el plan ${planLabel}`,
+        'Inténtalo de nuevo en unos minutos.',
+      );
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   useEffect(() => {
@@ -323,7 +354,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
                 <Text style={styles.planDescription}>Ideal para empezar sin compromiso anual.</Text>
                 <TouchableOpacity
                   activeOpacity={0.85}
-                  onPress={() => handleFallbackPlanPress('monthly')}
+                  onPress={() => void handleFallbackPlanPress('monthly')}
                   style={styles.ctaWrap}
                   accessibilityRole="button"
                   accessibilityLabel="Comprar plan mensual"
@@ -351,7 +382,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
                 <Text style={styles.planDescription}>{FALLBACK_ANNUAL_BADGE}</Text>
                 <TouchableOpacity
                   activeOpacity={0.85}
-                  onPress={() => handleFallbackPlanPress('annual')}
+                  onPress={() => void handleFallbackPlanPress('annual')}
                   style={styles.ctaWrap}
                   accessibilityRole="button"
                   accessibilityLabel="Comprar plan anual"
