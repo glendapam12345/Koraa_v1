@@ -25,6 +25,10 @@ type PaywallScreenProps = {
   onSkip?: () => void;
 };
 
+const FALLBACK_MONTHLY_PRICE = '$49 MXN / mes';
+const FALLBACK_ANNUAL_PRICE = '$411.60 MXN / año';
+const FALLBACK_ANNUAL_BADGE = '12 meses con 30% de descuento';
+
 export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallScreenProps) {
   const { currentOffering, checkSubscription, restorePurchases, isLoading: subscriptionLoading } = useSubscription();
   const [isPurchasing, setIsPurchasing] = useState(false);
@@ -110,6 +114,14 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
     if (id.includes('month') || id.includes('monthly') || id.includes('mensual')) return '/ mes';
     if (id.includes('week') || id.includes('weekly')) return '/ semana';
     return '';
+  };
+
+  const handleFallbackPlanPress = (plan: 'monthly' | 'annual') => {
+    const planLabel = plan === 'monthly' ? 'mensual' : 'anual';
+    Alert.alert(
+      `Plan ${planLabel} en preparación`,
+      'Estamos conectando este plan con App Store. Toca "Actualizar planes" para cargar precios en vivo.',
+    );
   };
 
   useEffect(() => {
@@ -298,6 +310,64 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
             <Text style={styles.emptyText}>
               Si aún no ves precios, toca reintentar. Tu suscripción se gestiona de forma segura con App Store.
             </Text>
+            <Text style={styles.fallbackPlansTitle}>Mientras tanto, puedes revisar tus planes:</Text>
+            <View style={styles.fallbackPlansWrap}>
+              <View style={styles.planCard}>
+                <View style={styles.fallbackPlanHeader}>
+                  <Text style={styles.planTitle}>Plan mensual</Text>
+                  <View style={styles.fallbackPlanBadge}>
+                    <Text style={styles.fallbackPlanBadgeText}>Flexible</Text>
+                  </View>
+                </View>
+                <Text style={styles.planPrice}>{FALLBACK_MONTHLY_PRICE}</Text>
+                <Text style={styles.planDescription}>Ideal para empezar sin compromiso anual.</Text>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => handleFallbackPlanPress('monthly')}
+                  style={styles.ctaWrap}
+                  accessibilityRole="button"
+                  accessibilityLabel="Comprar plan mensual"
+                  accessibilityHint="Muestra información temporal del plan mensual"
+                >
+                  <LinearGradient
+                    colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.cta}
+                  >
+                    <Text style={styles.ctaText}>Comprar mensual</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+
+              <LinearGradient
+                colors={['rgba(74, 144, 226, 0.07)', 'rgba(255, 107, 107, 0.06)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.fallbackAnnualCard}
+              >
+                <Text style={styles.planTitle}>Plan anual</Text>
+                <Text style={styles.planPrice}>{FALLBACK_ANNUAL_PRICE}</Text>
+                <Text style={styles.planDescription}>{FALLBACK_ANNUAL_BADGE}</Text>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => handleFallbackPlanPress('annual')}
+                  style={styles.ctaWrap}
+                  accessibilityRole="button"
+                  accessibilityLabel="Comprar plan anual"
+                  accessibilityHint="Muestra información temporal del plan anual"
+                >
+                  <LinearGradient
+                    colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.cta}
+                  >
+                    <Text style={styles.ctaText}>Comprar anual</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </LinearGradient>
+            </View>
             {isExpoGo ? (
               <Text style={styles.emptyHintExpoGo}>
                 Estás en Expo Go: las compras in-app suelen no cargar aquí. Para ver planes y precios reales, usa un
@@ -598,6 +668,41 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.fill[100],
     padding: THEME.spacing.md,
     gap: THEME.spacing.sm,
+  },
+  fallbackPlansWrap: {
+    gap: THEME.spacing.sm,
+  },
+  fallbackPlansTitle: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  fallbackPlanHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: THEME.spacing.xs,
+  },
+  fallbackPlanBadge: {
+    borderRadius: THEME.borderRadius.pill,
+    paddingHorizontal: THEME.spacing.xs,
+    paddingVertical: 4,
+    backgroundColor: THEME.colors.fill[200],
+    borderWidth: 1,
+    borderColor: THEME.colors.fill[200],
+  },
+  fallbackPlanBadgeText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  fallbackAnnualCard: {
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    gap: THEME.spacing.xs,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+    ...THEME.shadows.soft,
   },
   emptyPrimaryWrap: {
     borderRadius: THEME.borderRadius.pill,
