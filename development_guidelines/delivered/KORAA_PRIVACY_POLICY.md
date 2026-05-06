@@ -2,7 +2,7 @@
 
 **Última actualización:** 28 de abril de 2026  
 
-**Contacto:** [soporte.koraa@gmail.com](mailto:soporte.koraa@gmail.com)
+**Contacto:** [koraa.founder@yahoo.com.mx](mailto:koraa.founder@yahoo.com.mx)
 
 ---
 
@@ -92,7 +92,7 @@ Según tu lugar de residencia, puedes tener derecho a:
 - **Oponerte o limitar** ciertos tratamientos, en particular analítica no esencial, cuando la app o la ley lo permitan.
 - **Portabilidad** o reclamación ante una autoridad de protección de datos, según corresponda.
 
-Para ejercer derechos, escríbenos a **soporte.koraa@gmail.com** con el asunto “Privacidad” y describiendo tu solicitud. Podemos pedirte que verifiques tu identidad antes de actuar.
+Para ejercer derechos, escríbenos a **koraa.founder@yahoo.com.mx** con el asunto “Privacidad” y describiendo tu solicitud. Podemos pedirte que verifiques tu identidad antes de actuar.
 
 ---
 
@@ -105,7 +105,7 @@ Koraa **no está dirigida** a niños menores de 13 años (o la edad mínima exig
 ## 8. Información de contacto; cambios a esta política
 
 **Responsable del tratamiento (referencia comercial):** Koraa  
-**Correo electrónico:** soporte.koraa@gmail.com  
+**Correo electrónico:** koraa.founder@yahoo.com.mx  
 **Asunto sugerido:** “Privacidad” o “Datos personales”
 
 Podemos actualizar esta política para reflejar cambios en la app, en la ley o en proveedores. Publicaremos la versión vigente con una nueva “Última actualización” al inicio. Te recomendamos revisarla periódicamente; el uso continuado de la app tras los cambios puede implicar la aceptación de la política revisada, salvo que la ley exija un consentimiento distinto.

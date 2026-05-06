@@ -3,6 +3,7 @@ import {
   Animated,
   ActivityIndicator,
   Alert,
+  Linking,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -14,6 +15,7 @@ import type { PurchasesPackage } from 'react-native-purchases';
 import { LinearGradient } from 'expo-linear-gradient';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Check, Crown, Lock, X } from 'lucide-react-native';
+import { getPrivacyPolicyUrl, getTermsOfServiceUrl } from '@/constants/legalUrls';
 import { THEME } from '@/constants/theme';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 
@@ -31,6 +33,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
   const premiumGlow = useRef(new Animated.Value(0.75)).current;
 
   const packages = useMemo(() => currentOffering?.availablePackages ?? [], [currentOffering?.availablePackages]);
+  const primaryPackage = packages[0] ?? null;
 
   /** Expo Go no ejecuta tu binario con IAP como TestFlight; StoreKit suele no devolver productos aquí. */
   const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
@@ -57,7 +60,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
       await checkSubscription();
       onPurchaseCompleted?.();
     } catch {
-      Alert.alert('No se completó la compra', 'Inténtalo de nuevo.');
+      Alert.alert('No se pudo completar la compra', 'Inténtalo de nuevo.');
     } finally {
       setIsPurchasing(false);
     }
@@ -84,6 +87,29 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
     } finally {
       setIsRestoring(false);
     }
+  };
+
+  const openLegalUrl = async (kind: 'terms' | 'privacy') => {
+    const url = kind === 'terms' ? getTermsOfServiceUrl() : getPrivacyPolicyUrl();
+    if (!url) {
+      const label = kind === 'terms' ? 'Términos' : 'Privacidad';
+      Alert.alert(`${label} no disponible`, 'Configura este enlace en el entorno de producción.');
+      return;
+    }
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('No se pudo abrir el enlace', 'Inténtalo de nuevo en un momento.');
+    }
+  };
+
+  const getPeriodLabel = (pkg: PurchasesPackage | null) => {
+    if (!pkg) return '';
+    const id = `${pkg.identifier} ${pkg.packageType}`.toLowerCase();
+    if (id.includes('annual') || id.includes('year') || id.includes('anual')) return '/ año';
+    if (id.includes('month') || id.includes('monthly') || id.includes('mensual')) return '/ mes';
+    if (id.includes('week') || id.includes('weekly')) return '/ semana';
+    return '';
   };
 
   useEffect(() => {
@@ -195,6 +221,40 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
           </View>
         </View>
 
+        {primaryPackage ? (
+          <View style={styles.priceHighlightCard}>
+            <Text style={styles.priceHighlightLabel}>Precio actual</Text>
+            <Text style={styles.priceHighlightValue}>
+              {primaryPackage.product.priceString}
+              <Text style={styles.priceHighlightPeriod}>{getPeriodLabel(primaryPackage)}</Text>
+            </Text>
+            <Text style={styles.priceHighlightHint}>Suscripción que puedes cancelar cuando quieras.</Text>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => void handlePurchase(primaryPackage)}
+              disabled={isPurchasing || isRestoring || isRefreshing || subscriptionLoading}
+              style={styles.ctaWrap}
+              accessibilityRole="button"
+              accessibilityLabel={`Elegir plan ${primaryPackage.product.title}`}
+              accessibilityHint="Inicia la compra del plan premium"
+              accessibilityState={{ disabled: isPurchasing || isRestoring || isRefreshing || subscriptionLoading }}
+            >
+              <LinearGradient
+                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.cta}
+              >
+                {isPurchasing ? (
+                  <ActivityIndicator color={THEME.colors.onGradient} />
+                ) : (
+                  <Text style={styles.ctaText}>Continuar con Premium</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         {subscriptionLoading && packages.length === 0 ? (
           <View style={styles.loadingPlans}>
             <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
@@ -234,10 +294,9 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
           ))
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>Premium no disponible por ahora</Text>
+            <Text style={styles.emptyTitle}>Estamos cargando tus planes Premium</Text>
             <Text style={styles.emptyText}>
-              Puedes seguir usando Koraa gratis con todo lo esencial. Cuando la tienda esté lista, aquí verás tus
-              planes y precios.
+              Si aún no ves precios, toca reintentar. Tu suscripción se gestiona de forma segura con App Store.
             </Text>
             {isExpoGo ? (
               <Text style={styles.emptyHintExpoGo}>
@@ -270,11 +329,11 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
               disabled={isRefreshing}
               onPress={() => void handleRefresh()}
               accessibilityRole="button"
-              accessibilityLabel="Reintentar cargar planes"
+              accessibilityLabel="Actualizar planes premium"
               accessibilityHint="Intenta cargar los planes de premium de nuevo"
               accessibilityState={{ disabled: isRefreshing }}
             >
-              <Text style={styles.secondaryButtonText}>{isRefreshing ? 'Actualizando...' : 'Reintentar'}</Text>
+              <Text style={styles.secondaryButtonText}>{isRefreshing ? 'Actualizando...' : 'Actualizar planes'}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -292,6 +351,28 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
           >
             <Text style={styles.secondaryButtonText}>{isRestoring ? 'Restaurando...' : 'Restaurar compras'}</Text>
           </TouchableOpacity>
+          <View style={styles.legalActionsRow}>
+            <TouchableOpacity
+              style={styles.legalLinkButton}
+              activeOpacity={0.75}
+              onPress={() => void openLegalUrl('terms')}
+              accessibilityRole="button"
+              accessibilityLabel="Ver términos y condiciones"
+              accessibilityHint="Abre la página de términos de servicio"
+            >
+              <Text style={styles.legalLinkText}>Términos</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.legalLinkButton}
+              activeOpacity={0.75}
+              onPress={() => void openLegalUrl('privacy')}
+              accessibilityRole="button"
+              accessibilityLabel="Ver política de privacidad"
+              accessibilityHint="Abre la página de privacidad"
+            >
+              <Text style={styles.legalLinkText}>Privacidad</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -377,6 +458,33 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
     gap: THEME.spacing.xs,
     ...THEME.shadows.soft,
+  },
+  priceHighlightCard: {
+    backgroundColor: THEME.colors.text.main,
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    gap: THEME.spacing.xs,
+    ...THEME.shadows.soft,
+  },
+  priceHighlightLabel: {
+    ...THEME.typography.small,
+    color: THEME.colors.onGradientFaint,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  priceHighlightValue: {
+    ...THEME.typography.h2,
+    color: THEME.colors.onGradient,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  priceHighlightPeriod: {
+    ...THEME.typography.body,
+    color: THEME.colors.onGradientFaint,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  priceHighlightHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.onGradientSubtle,
   },
   comparisonCard: {
     backgroundColor: THEME.colors.fill[100],
@@ -539,6 +647,23 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     ...THEME.typography.caption,
     color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  legalActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: THEME.spacing.sm,
+  },
+  legalLinkButton: {
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: THEME.spacing.sm,
+  },
+  legalLinkText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    textDecorationLine: 'underline',
     fontFamily: THEME.fonts.heading.medium,
   },
 });

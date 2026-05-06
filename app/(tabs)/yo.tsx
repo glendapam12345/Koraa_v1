@@ -726,7 +726,7 @@ export default function ProfileScreen() {
             <View style={styles.menuItemContent}>
               <Text style={styles.menuItemText}>Ajustes</Text>
               <Text style={styles.menuItemSubtext}>
-                Recordatorios, contraseña y Ver Premium
+                Recordatorios, contraseña y Gestionar Premium
               </Text>
             </View>
           </TouchableOpacity>
@@ -743,7 +743,7 @@ export default function ProfileScreen() {
             <View style={styles.menuItemContent}>
               <Text style={styles.menuItemText}>Suscripción</Text>
               <Text style={styles.menuItemSubtext}>
-                Gestiona Premium y restaurar compra
+                Gestionar Premium y restaurar compra
               </Text>
             </View>
           </TouchableOpacity>

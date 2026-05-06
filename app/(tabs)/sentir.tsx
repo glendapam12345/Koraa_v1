@@ -6,7 +6,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { EmotionCard } from '@/components/EmotionCard';
 import { GradientButton } from '@/components/GradientButton';
-import { Tooltip } from '@/components/Tooltip';
 import { FlowIndicator } from '@/components/FlowIndicator';
 import { getEmotionTips } from '@/lib/emotionTips';
 import { supabase } from '@/lib/supabase';
@@ -31,8 +30,6 @@ export default function SentirScreen() {
   const { user } = useAuth();
   const [selectedEmotion, setSelectedEmotion] = useState<string>('');
   const [hasTasks, setHasTasks] = useState<boolean | null>(null);
-  const [showTooltip, setShowTooltip] = useState(false);
-  const [, setHasCheckInToday] = useState<boolean | null>(null);
   const [showRitualHint, setShowRitualHint] = useState(false);
 
   useEffect(() => {
@@ -88,42 +85,14 @@ export default function SentirScreen() {
     }
   }, []);
 
-  const checkTodayCheckIn = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const today = new Date().toISOString().split('T')[0];
-      const { data, error } = await supabase
-        .from('daily_check_ins')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('date', today)
-        .maybeSingle();
-
-      if (error) {
-        logger.error('Error verificando check-in:', error);
-        return;
-      }
-
-      const hasCheckIn = !!data;
-      setHasCheckInToday(hasCheckIn);
-      setShowTooltip((prev) => (hasTasks && !hasCheckIn ? true : prev));
-    } catch (error) {
-      console.error('Error inesperado:', error);
-    }
-  }, [hasTasks]);
-
   useEffect(() => {
     checkTasks();
-    checkTodayCheckIn();
-  }, [checkTasks, checkTodayCheckIn]);
+  }, [checkTasks]);
 
   useFocusEffect(
     useCallback(() => {
       checkTasks();
-      checkTodayCheckIn();
-    }, [checkTasks, checkTodayCheckIn])
+    }, [checkTasks])
   );
 
   const handleContinue = async () => {
@@ -249,13 +218,6 @@ export default function SentirScreen() {
       <View style={styles.footer}>
         <GradientButton title="Continuar" onPress={handleContinue} disabled={!selectedEmotion} />
       </View>
-      
-      <Tooltip
-        visible={showTooltip}
-        title="Haz tu check-in diario"
-        message="Di cómo te sientes hoy (emoción, energía, tiempo y enfoque) y Koraa priorizará automáticamente tus tareas según tu estado. Hazlo cada día para mejores resultados."
-        onClose={() => setShowTooltip(false)}
-      />
     </View>
   );
 }

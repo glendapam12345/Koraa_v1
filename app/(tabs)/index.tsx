@@ -459,8 +459,8 @@ export default function TodayScreen() {
         const msg = (error as { message?: string }).message ?? '';
         if (code === 'PGRST205' || msg.includes('meditations')) {
           Alert.alert(
-            'Meditación no disponible',
-            'Esta función todavía no está activa en este entorno.',
+            'Meditación en preparación',
+            'Esta función estará activa muy pronto en este entorno.',
             [{ text: 'Entendido' }],
           );
           return;
@@ -494,7 +494,7 @@ export default function TodayScreen() {
       }, 3000);
     } catch (error) {
       logger.error('Error inesperado en meditación:', error);
-      showToast('Ocurrió un error', 'error');
+      showToast('No se pudo completar la acción. Inténtalo de nuevo.', 'error');
     }
   };
 
@@ -962,7 +962,7 @@ export default function TodayScreen() {
       ]);
     } catch (error) {
       logger.error('Error al refrescar:', error);
-      showToast('Error al actualizar los datos', 'error');
+      showToast('No se pudo actualizar. Inténtalo de nuevo.', 'error');
     } finally {
       setRefreshing(false);
     }

@@ -100,6 +100,7 @@ See individual README files in each subdirectory for usage guidelines.
 **UX / flujo de usuario:** Auditoría y entregables (Ayuda en Hoy/Sentir, `FlowIndicator` sin números + «Orden sugerido», hint opcional en Tareas, tour primera sesión, Hoy lite día 1) en [koraa_ux_flow_audit.md](development_guidelines/delivered/koraa_ux_flow_audit.md). Prueba en Expo Go: sección *Probar en Expo Go* en ese documento.
 
 **Voz y microcopy (estándar UI):** reglas de tono, CTAs, errores y ejemplos “antes/después” en [2026-05-05_koraa_voice_and_microcopy_guide.md](development_guidelines/delivered/2026-05-05_koraa_voice_and_microcopy_guide.md).
+Checklist corto de errores/reintentos (patrón `No se pudo... Inténtalo de nuevo.`): [2026-05-06_microcopy_error_retry_checklist.md](development_guidelines/delivered/2026-05-06_microcopy_error_retry_checklist.md).
 
 ---
 
@@ -333,6 +334,7 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 Opcional (pantalla **Ayuda** → enlaces legales): `EXPO_PUBLIC_PRIVACY_POLICY_URL`, `EXPO_PUBLIC_TERMS_OF_SERVICE_URL`. Ver [KORAA_HELP_AND_LEGAL_URLS.md](development_guidelines/learnings/KORAA_HELP_AND_LEGAL_URLS.md).
+Base legal para suscripciones y App Review: [KORAA_TERMS_OF_USE.md](development_guidelines/delivered/KORAA_TERMS_OF_USE.md).
 
 Medición de producto (tabla `app_events`, `lib/analytics.ts`): [KORAA_ANALYTICS_PHASE_D.md](development_guidelines/delivered/KORAA_ANALYTICS_PHASE_D.md). Opcional: `EXPO_PUBLIC_ANALYTICS_ENABLED=false`.
 

@@ -373,10 +373,10 @@ export default function SemanaScreen() {
               activeOpacity={0.85}
               style={styles.premiumHintBtn}
               accessibilityRole="button"
-              accessibilityLabel="Ver Premium"
+              accessibilityLabel="Gestionar Premium"
               accessibilityHint="Abre Ajustes para suscribirte o restaurar compra"
             >
-              <Text style={styles.premiumHintBtnText}>Ver Premium</Text>
+              <Text style={styles.premiumHintBtnText}>Gestionar Premium</Text>
               <ChevronRight size={16} color={THEME.colors.gradient.blue} />
             </TouchableOpacity>
           </View>

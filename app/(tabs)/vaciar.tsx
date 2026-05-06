@@ -501,7 +501,7 @@ export default function VaciarScreen() {
       showToast(message, 'success');
     } catch (error) {
       logger.error('Error inesperado:', error);
-      showToast('Ocurrió un error al guardar la tarea. Inténtalo de nuevo.', 'error');
+      showToast('No se pudo guardar la tarea. Inténtalo de nuevo.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -520,7 +520,7 @@ export default function VaciarScreen() {
       await syncAll();
     } catch (error) {
       logger.error('Error al refrescar:', error);
-      showToast('No se pudieron actualizar los datos. Inténtalo de nuevo.', 'error');
+      showToast('No se pudo actualizar. Inténtalo de nuevo.', 'error');
     } finally {
       setRefreshing(false);
     }

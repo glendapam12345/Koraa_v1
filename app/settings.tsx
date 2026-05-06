@@ -443,11 +443,11 @@ export default function SettingsScreen() {
         style={styles.row}
         onPress={() => router.push('/paywall')}
         accessibilityRole="button"
-        accessibilityLabel="Ver Premium"
+        accessibilityLabel="Gestionar Premium"
       >
         <View style={styles.rowLeft}>
           <Crown size={22} color={THEME.colors.text.main} />
-          <Text style={styles.rowLabel}>Ver Premium</Text>
+          <Text style={styles.rowLabel}>Gestionar Premium</Text>
         </View>
         <Text style={styles.chevron}>›</Text>
       </Pressable>

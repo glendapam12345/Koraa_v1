@@ -77,12 +77,12 @@ export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
           activeOpacity={0.75}
           style={styles.premiumHintWrap}
           accessibilityRole="button"
-          accessibilityLabel="Ver Premium"
+          accessibilityLabel="Gestionar Premium"
           accessibilityHint="Abre Ajustes para suscribirte o restaurar compra"
         >
           <Text style={styles.premiumHintText}>
             Más con Koraa Premium: Semana completa e historial.{' '}
-            <Text style={styles.premiumHintLink}>Ver Premium</Text>
+            <Text style={styles.premiumHintLink}>Gestionar Premium</Text>
           </Text>
         </TouchableOpacity>
       ) : null}

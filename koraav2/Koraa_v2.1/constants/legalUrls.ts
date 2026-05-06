@@ -3,7 +3,7 @@
  * - EXPO_PUBLIC_PRIVACY_POLICY_URL
  * - EXPO_PUBLIC_TERMS_OF_SERVICE_URL
  */
-export const SUPPORT_EMAIL = 'soporte.koraa@gmail.com';
+export const SUPPORT_EMAIL = 'koraa.founder@yahoo.com.mx';
 
 export function getPrivacyPolicyUrl(): string | null {
   const u = process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL?.trim();

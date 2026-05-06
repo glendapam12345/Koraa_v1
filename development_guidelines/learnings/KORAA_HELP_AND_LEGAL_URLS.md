@@ -22,6 +22,15 @@ En `.env` (o secretos EAS para builds):
 
 Si no están definidas, al pulsar el enlace la app indica que aún no hay URL pública y sugiere contacto por correo.
 
+## URLs públicas en producción (referencia Koraa)
+
+| Página | URL |
+|--------|-----|
+| Privacidad | [https://koradelcaosalacalma.lovable.app/privacy](https://koradelcaosalacalma.lovable.app/privacy) |
+| Términos | [https://koradelcaosalacalma.lovable.app/terms](https://koradelcaosalacalma.lovable.app/terms) |
+
+Copia esas URLs en `EXPO_PUBLIC_PRIVACY_POLICY_URL` y `EXPO_PUBLIC_TERMS_OF_SERVICE_URL` (y en secretos EAS del perfil `production`).
+
 ## Código relacionado
 
 - `constants/legalUrls.ts` — lectura de URLs y `SUPPORT_EMAIL`.

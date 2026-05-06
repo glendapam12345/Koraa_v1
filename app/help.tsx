@@ -110,7 +110,7 @@ export default function HelpScreen() {
     const mailto = getSupportMailtoUrl();
     const can = await Linking.canOpenURL(mailto);
     if (!can) {
-      Alert.alert('No disponible', 'No se pudo abrir tu app de correo.');
+      Alert.alert('No se pudo abrir el correo', 'Inténtalo de nuevo.');
       return;
     }
     await Linking.openURL(mailto);
