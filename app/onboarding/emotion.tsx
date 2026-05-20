@@ -5,17 +5,20 @@ import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { EmotionCard } from '@/components/EmotionCard';
 import { Sparkles } from 'lucide-react-native';
+import { useI18n } from '@/contexts/I18nContext';
+import type { TranslationKey } from '@/lib/i18n';
 
 const EMOTIONS = [
-  { id: 'agotada', emoji: '😔', label: 'Agotada' },
-  { id: 'tranquila', emoji: '😌', label: 'Tranquila' },
-  { id: 'ansiosa', emoji: '😰', label: 'Ansiosa' },
-  { id: 'motivada', emoji: '✨', label: 'Motivada' },
-  { id: 'abrumada', emoji: '🥺', label: 'Abrumada' },
-  { id: 'enfocada', emoji: '🎯', label: 'Enfocada' },
-];
+  { id: 'agotada', emoji: '😔' },
+  { id: 'tranquila', emoji: '😌' },
+  { id: 'ansiosa', emoji: '😰' },
+  { id: 'motivada', emoji: '✨' },
+  { id: 'abrumada', emoji: '🥺' },
+  { id: 'enfocada', emoji: '🎯' },
+] as const;
 
 export default function EmotionScreen() {
+  const { t } = useI18n();
   const params = useLocalSearchParams();
   const preSelectedEmotion = params.emotion as string | undefined;
   const [selectedEmotion, setSelectedEmotion] = useState<string>(preSelectedEmotion || '');
@@ -47,16 +50,16 @@ export default function EmotionScreen() {
           </View>
         </View>
 
-        <Text style={styles.title}>¿Cómo te</Text>
-        <Text style={styles.titleAccent}>sientes</Text>
-        <Text style={styles.subtitle}>hoy?</Text>
+        <Text style={styles.title}>{t('onboarding.emotion.title')}</Text>
+        <Text style={styles.titleAccent}>{t('onboarding.emotion.titleAccent')}</Text>
+        <Text style={styles.subtitle}>{t('onboarding.emotion.subtitle')}</Text>
 
         <View style={styles.emotionsGrid}>
           {EMOTIONS.map((emotion) => (
             <View key={emotion.id} style={styles.emotionWrapper}>
               <EmotionCard
                 emoji={emotion.emoji}
-                label={emotion.label}
+                label={t(`sentir.emotions.${emotion.id}` as TranslationKey)}
                 selected={selectedEmotion === emotion.id}
                 onPress={() => setSelectedEmotion(emotion.id)}
               />
@@ -66,7 +69,7 @@ export default function EmotionScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton title="Continuar" onPress={handleContinue} disabled={!selectedEmotion} />
+        <GradientButton title={t('onboarding.emotion.continue')} onPress={handleContinue} disabled={!selectedEmotion} />
       </View>
     </View>
   );

@@ -9,7 +9,8 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useI18n } from '@/contexts/I18nContext';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { THEME } from '@/constants/theme';
@@ -27,54 +28,22 @@ type FaqItem = {
   answer: string;
 };
 
-const FAQ_ITEMS: FaqItem[] = [
-  {
-    id: 'sentir',
-    question: '¿Qué es Sentir?',
-    answer:
-      'Es tu check-in emocional del día: cómo te sientes, energía, tiempo y foco. Koraa usa eso para sugerir prioridades más acordes a tu estado, no solo a una lista rígida.',
-  },
-  {
-    id: 'vaciar',
-    question: '¿Para qué sirve la pestaña Tareas?',
-    answer:
-      'Ahí capturas y organizas lo pendiente (vacía tu mente, asignar proyecto o fecha). Lo que guardes se prioriza en Hoy según tu check-in en Sentir.',
-  },
-  {
-    id: 'hoy',
-    question: '¿Cómo se ordenan las tareas en Hoy?',
-    answer:
-      'Combinamos tu estado del día (Sentir) con lo que tienes pendiente. Puedes filtrar por «Hoy» o ver «Todas» las pendientes.',
-  },
-  {
-    id: 'premium',
-    question: '¿Qué es Koraa Premium y dónde está?',
-    answer:
-      'El flujo principal (Tareas → Sentir → Hoy) es gratuito. Premium amplía la pestaña Semana: los 7 días completos, filtros avanzados e historial (en gratis ves una muestra). Para suscribirte o restaurar compra: Ajustes → Ver Premium.',
-  },
-  {
-    id: 'datos',
-    question: '¿Dónde se guardan mis datos?',
-    answer:
-      'Tu cuenta y datos se almacenan de forma segura en Supabase, con acceso solo para tu usuario (políticas RLS). No compartimos tu contenido con terceros para publicidad.',
-  },
-  {
-    id: 'cuenta',
-    question: '¿Cómo cambio mi contraseña o mi nombre?',
-    answer:
-      'Desde Yo puedes editar tu perfil (nombre, edad, intereses). Para contraseña, suscripción y acciones de cuenta, entra a Ajustes. El correo de la cuenta se gestiona según tu proveedor de auth.',
-  },
-  {
-    id: 'tips',
-    question: '¿Qué es la pestaña Consejos?',
-    answer:
-      'Sugerencias y tips según tu estado del día (Sentir) y tu perfil. Cuanto más completes el check-in y tu perfil, más relevantes serán. La encuentras en la barra inferior junto a Semana y Yo.',
-  },
-];
-
 export default function HelpScreen() {
   const insets = useSafeAreaInsets();
-  const [expandedId, setExpandedId] = useState<string | null>(FAQ_ITEMS[0]?.id ?? null);
+  const { t } = useI18n();
+  const faqItems: FaqItem[] = useMemo(
+    () => [
+      { id: 'sentir', question: t('help.faq.sentir.q'), answer: t('help.faq.sentir.a') },
+      { id: 'tasks', question: t('help.faq.tasks.q'), answer: t('help.faq.tasks.a') },
+      { id: 'today', question: t('help.faq.today.q'), answer: t('help.faq.today.a') },
+      { id: 'premium', question: t('help.faq.premium.q'), answer: t('help.faq.premium.a') },
+      { id: 'data', question: t('help.faq.data.q'), answer: t('help.faq.data.a') },
+      { id: 'account', question: t('help.faq.account.q'), answer: t('help.faq.account.a') },
+      { id: 'tips', question: t('help.faq.tips.q'), answer: t('help.faq.tips.a') },
+    ],
+    [t],
+  );
+  const [expandedId, setExpandedId] = useState<string | null>('sentir');
 
   const openUrl = useCallback(async (url: string, label: string) => {
     try {
@@ -87,30 +56,27 @@ export default function HelpScreen() {
       }
       await WebBrowser.openBrowserAsync(url);
     } catch {
-      Alert.alert('No se pudo abrir', `Intenta abrir el enlace de ${label} desde el navegador.`);
+      Alert.alert(t('help.openLinkError'), t('help.openLinkHint', { label }));
     }
-  }, []);
+  }, [t]);
 
   const openLegalUrl = useCallback(
     (getter: () => string | null, label: string) => {
       const url = getter();
       if (!url) {
-        Alert.alert(
-          label,
-          'Aún no hay enlace público configurado. Puedes escribirnos por correo desde «Contactar soporte» o pide el documento al equipo.',
-        );
+        Alert.alert(label, t('help.linkNotConfigured'));
         return;
       }
       void openUrl(url, label);
     },
-    [openUrl],
+    [openUrl, t],
   );
 
   const openSupportEmail = useCallback(async () => {
     const mailto = getSupportMailtoUrl();
     const can = await Linking.canOpenURL(mailto);
     if (!can) {
-      Alert.alert('No se pudo abrir el correo', 'Inténtalo de nuevo.');
+      Alert.alert(t('help.emailError'), t('common.retry'));
       return;
     }
     await Linking.openURL(mailto);
@@ -128,12 +94,12 @@ export default function HelpScreen() {
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           accessibilityRole="button"
-          accessibilityLabel="Volver"
+          accessibilityLabel={t('common.back')}
         >
           <ChevronLeft size={28} color={THEME.colors.text.main} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
-          Ayuda
+          {t('help.title')}
         </Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -143,12 +109,10 @@ export default function HelpScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + THEME.spacing.xl }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.intro}>
-          Aquí tienes respuestas rápidas y enlaces a políticas. Si no encuentras lo que buscas, escríbenos.
-        </Text>
+        <Text style={styles.intro}>{t('help.intro')}</Text>
 
-        <Text style={styles.sectionTitle}>Preguntas frecuentes</Text>
-        {FAQ_ITEMS.map((item) => {
+        <Text style={styles.sectionTitle}>{t('help.faqTitle')}</Text>
+        {faqItems.map((item) => {
           const open = expandedId === item.id;
           return (
             <View key={item.id} style={styles.faqCard}>
@@ -172,29 +136,25 @@ export default function HelpScreen() {
           );
         })}
 
-        <Text style={styles.sectionTitle}>Legal</Text>
-        <Text style={styles.legalHint}>
-          Puedes definir URLs públicas en tu proyecto con variables{' '}
-          <Text style={styles.legalHintMono}>EXPO_PUBLIC_PRIVACY_POLICY_URL</Text> y{' '}
-          <Text style={styles.legalHintMono}>EXPO_PUBLIC_TERMS_OF_SERVICE_URL</Text>.
-        </Text>
+        <Text style={styles.sectionTitle}>{t('help.legalTitle')}</Text>
+        <Text style={styles.legalHint}>{t('help.legalHint')}</Text>
 
         <TouchableOpacity
           style={styles.linkRow}
-          onPress={() => openLegalUrl(getPrivacyPolicyUrl, 'Política de privacidad')}
+          onPress={() => openLegalUrl(getPrivacyPolicyUrl, t('help.privacy'))}
           activeOpacity={0.75}
         >
           <ExternalLink size={20} color={THEME.colors.gradient.blue} />
-          <Text style={styles.linkRowText}>Política de privacidad</Text>
+          <Text style={styles.linkRowText}>{t('help.privacy')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.linkRow}
-          onPress={() => openLegalUrl(getTermsOfServiceUrl, 'Términos del servicio')}
+          onPress={() => openLegalUrl(getTermsOfServiceUrl, t('help.terms'))}
           activeOpacity={0.75}
         >
           <ExternalLink size={20} color={THEME.colors.gradient.blue} />
-          <Text style={styles.linkRowText}>Términos del servicio</Text>
+          <Text style={styles.linkRowText}>{t('help.terms')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.supportButton} onPress={openSupportEmail} activeOpacity={0.85}>
@@ -205,7 +165,7 @@ export default function HelpScreen() {
             style={styles.supportGradient}
           >
             <Mail size={20} color={THEME.colors.fill[100]} />
-            <Text style={styles.supportButtonText}>Contactar soporte</Text>
+            <Text style={styles.supportButtonText}>{t('help.contactSupport')}</Text>
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>

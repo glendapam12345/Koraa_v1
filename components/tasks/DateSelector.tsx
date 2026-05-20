@@ -3,13 +3,15 @@ import { useState, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { Calendar, X } from 'lucide-react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { useI18n } from '@/contexts/I18nContext';
+
+const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
+const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
 
 interface DateSelectorProps {
   selectedDate: string | null;
   onSelect: (date: string | null) => void;
 }
-
-const MONTH_NAMES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 function toISODateLocal(date: Date): string {
   const offsetMs = date.getTimezoneOffset() * 60 * 1000;
@@ -26,37 +28,41 @@ function getNextDays(count: number): string[] {
   return out;
 }
 
-function formatDateLabel(dateStr: string): string {
+function formatDateLabel(
+  dateStr: string,
+  t: (key: string) => string,
+  monthNames: readonly string[],
+): string {
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
-  if (dateStr === todayStr) return 'Hoy';
+  if (dateStr === todayStr) return t('components.today');
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  if (dateStr === tomorrow.toISOString().split('T')[0]) return 'Mañana';
+  if (dateStr === tomorrow.toISOString().split('T')[0]) return t('components.tomorrow');
   const day = dateStr.slice(8);
-  const month = MONTH_NAMES[parseInt(dateStr.slice(5, 7), 10) - 1];
+  const month = monthNames[parseInt(dateStr.slice(5, 7), 10) - 1];
   return `${day} ${month}`;
 }
 
 export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
+  const { t, locale } = useI18n();
+  const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
   const [showModal, setShowModal] = useState(false);
   const [showNativePicker, setShowNativePicker] = useState(false);
   const [pickerDate, setPickerDate] = useState<Date>(new Date());
 
   const dateOptions = useMemo(() => {
-    const options: { label: string; value: string | null }[] = [
-      { label: 'Sin fecha', value: null },
-    ];
+    const options: { label: string; value: string | null }[] = [{ label: t('components.noDate'), value: null }];
     const nextDays = getNextDays(33);
     nextDays.forEach((dateStr) => {
-      options.push({ label: formatDateLabel(dateStr), value: dateStr });
+      options.push({ label: formatDateLabel(dateStr, t, monthNames), value: dateStr });
     });
     return options;
-  }, []);
+  }, [t, monthNames]);
 
   const displayLabel = selectedDate
-    ? formatDateLabel(selectedDate)
-    : 'Sin fecha';
+    ? formatDateLabel(selectedDate, t, monthNames)
+    : t('components.noDate');
 
   const openModal = () => {
     if (selectedDate) {
@@ -83,14 +89,14 @@ export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Fecha (opcional)</Text>
+      <Text style={styles.label}>{t('components.dateOptional')}</Text>
       <TouchableOpacity
         style={styles.selector}
         onPress={openModal}
         activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel="Elegir fecha"
-        accessibilityHint="Abre la lista de fechas para esta tarea"
+        accessibilityLabel={t('components.pickDateA11y')}
+        accessibilityHint={t('components.pickDateHint')}
       >
         <Calendar size={20} color={THEME.colors.gradient.blue} />
         <Text style={styles.selectorText}>{displayLabel}</Text>
@@ -107,18 +113,18 @@ export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
           activeOpacity={1}
           onPress={() => setShowModal(false)}
           accessibilityRole="button"
-          accessibilityLabel="Cerrar selector de fecha"
-          accessibilityHint="Cierra la ventana de selección de fecha"
+          accessibilityLabel={t('components.closeDatePickerA11y')}
+          accessibilityHint={t('components.closeDatePickerHint')}
         >
           <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Elegir fecha</Text>
+              <Text style={styles.modalTitle}>{t('components.pickDateTitle')}</Text>
               <TouchableOpacity
                 onPress={() => setShowModal(false)}
                 style={styles.modalClose}
                 accessibilityRole="button"
-                accessibilityLabel="Cerrar"
-                accessibilityHint="Cierra la ventana de selección de fecha"
+                accessibilityLabel={t('components.closeA11y')}
+                accessibilityHint={t('components.closeDatePickerHint')}
               >
                 <X size={24} color={THEME.colors.text.main} />
               </TouchableOpacity>
@@ -129,15 +135,15 @@ export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
                 onPress={() => setShowNativePicker(true)}
                 activeOpacity={0.7}
                 accessibilityRole="button"
-                accessibilityLabel="Abrir calendario"
-                accessibilityHint="Abre el calendario del sistema para elegir fecha"
+                accessibilityLabel={t('components.openCalendarA11y')}
+                accessibilityHint={t('components.openCalendarHint')}
               >
                 <View style={styles.calendarOptionLeft}>
                   <Calendar size={18} color={THEME.colors.gradient.blue} />
-                  <Text style={styles.calendarOptionText}>Elegir en calendario</Text>
+                  <Text style={styles.calendarOptionText}>{t('components.openCalendar')}</Text>
                 </View>
                 <Text style={styles.calendarOptionSubtext}>
-                  {selectedDate ? formatDateLabel(selectedDate) : 'Sin fecha'}
+                  {selectedDate ? formatDateLabel(selectedDate, t, monthNames) : t('components.noDate')}
                 </Text>
               </TouchableOpacity>
 
@@ -169,8 +175,10 @@ export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
                   }}
                   activeOpacity={0.7}
                   accessibilityRole="button"
-                  accessibilityLabel={opt.value ? `Elegir ${opt.label}` : 'Quitar fecha'}
-                  accessibilityHint="Selecciona esta fecha para la tarea"
+                  accessibilityLabel={
+                    opt.value ? t('components.chooseDateA11y', { label: opt.label }) : t('components.clearDateA11y')
+                  }
+                  accessibilityHint={t('components.chooseDateHint')}
                   accessibilityState={{ selected: selectedDate === opt.value }}
                 >
                   <Text style={styles.optionText}>{opt.label}</Text>

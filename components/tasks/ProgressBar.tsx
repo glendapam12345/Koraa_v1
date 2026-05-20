@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface ProgressBarProps {
   completedCount: number;
@@ -12,10 +13,11 @@ export function ProgressBar({
   totalCount,
   progressPercentage,
 }: ProgressBarProps) {
+  const { t } = useI18n();
   return (
     <View style={styles.progressIndicator}>
       <View style={styles.progressHeader}>
-        <Text style={styles.progressLabel}>Progreso de hoy</Text>
+        <Text style={styles.progressLabel}>{t('progressUi.todayProgressLabel')}</Text>
         <Text style={styles.progressCount}>
           {completedCount}/{totalCount}
         </Text>

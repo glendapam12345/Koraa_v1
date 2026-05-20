@@ -1,14 +1,21 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Session, User } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
-import { supabase, canReachSupabase, isSupabaseConfigured } from '@/lib/supabase';
+import {
+  supabase,
+  canReachSupabase,
+  isSupabaseConfigured,
+  type SupabaseSession,
+  type SupabaseUser,
+} from '@/lib/supabase';
+import type { AppLocale } from '@/lib/i18n';
+import { translate } from '@/lib/i18n';
 
-/** Mismo criterio que signInWithEmail: evita errores crípticos si no hay red o falta .env */
-function authUnreachableMessage(detail?: string): string {
-  if (detail === 'missing_config') return 'Falta configurar Supabase en la app.';
-  return 'No hay conexión con el servidor. Prueba otra red, desactiva VPN o Private Relay e inténtalo de nuevo.';
+function authUnreachableMessage(locale: AppLocale, detail?: string): string {
+  if (detail === 'missing_config') return translate(locale, 'auth.errors.missingConfig');
+  return translate(locale, 'auth.errors.unreachable');
 }
 import { translateError } from '@/lib/errorMessages';
+import { useI18n } from '@/contexts/I18nContext';
 import { logger } from '@/lib/logger';
 import { track } from '@/lib/analytics';
 
@@ -18,8 +25,8 @@ export type SignUpResult = {
 };
 
 type AuthContextType = {
-  session: Session | null;
-  user: User | null;
+  session: SupabaseSession;
+  user: SupabaseUser | null;
   loading: boolean;
   isRecoveryMode: boolean;
 
@@ -51,8 +58,9 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const { locale, t } = useI18n();
+  const [session, setSession] = useState<SupabaseSession>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
 
@@ -105,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const reach = await canReachSupabase();
       if (!reach.ok) {
-        return { error: authUnreachableMessage(reach.detail) };
+        return { error: authUnreachableMessage(locale, reach.detail) };
       }
 
       const trimmedEmail = email.trim().toLowerCase();
@@ -121,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
           logger.error('Error en signIn:', error.message);
         }
-        return { error: translateError(error) };
+        return { error: translateError(error, locale) };
       }
 
       if (data.session) {
@@ -131,7 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: null };
     } catch (e) {
       logger.error('Error inesperado en signInWithEmail:', e);
-      return { error: translateError(e) };
+      return { error: translateError(e, locale) };
     }
   };
 
@@ -139,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const reach = await canReachSupabase();
       if (!reach.ok) {
-        return { error: authUnreachableMessage(reach.detail), needsConfirmation: false };
+        return { error: authUnreachableMessage(locale, reach.detail), needsConfirmation: false };
       }
 
       const emailNorm = email.trim().toLowerCase();
@@ -159,7 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let needsConfirmation = userExists && !hasSession;
 
       if (userExists && data.user?.identities?.length === 0) {
-        return { error: 'Este correo ya está registrado', needsConfirmation: false };
+        return { error: t('auth.errors.emailAlreadyRegistered'), needsConfirmation: false };
       }
 
       if (error) {
@@ -171,14 +179,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (isRateLimit) {
           needsConfirmation = true;
-          return { error: translateError(error), needsConfirmation: true };
+          return { error: translateError(error, locale), needsConfirmation: true };
         }
 
         if (needsConfirmation) {
-          return { error: translateError(error), needsConfirmation: true };
+          return { error: translateError(error, locale), needsConfirmation: true };
         }
 
-        return { error: translateError(error), needsConfirmation: false };
+        return { error: translateError(error, locale), needsConfirmation: false };
       }
 
       if (!error && data?.session) {
@@ -187,7 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return { error: null, needsConfirmation };
     } catch (e) {
-      return { error: translateError(e), needsConfirmation: false };
+      return { error: translateError(e, locale), needsConfirmation: false };
     }
   };
 
@@ -199,7 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         type: 'signup',
       });
 
-      if (error) return { error: translateError(error), success: false };
+      if (error) return { error: translateError(error, locale), success: false };
 
       if (data.session) {
         setSession(data.session);
@@ -208,9 +216,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: null, success: true };
       }
 
-      return { error: 'No se pudo verificar el código', success: false };
+      return { error: t('auth.errors.verifyCodeFailed'), success: false };
     } catch (e) {
-      return { error: translateError(e), success: false };
+      return { error: translateError(e, locale), success: false };
     }
   };
 
@@ -220,10 +228,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         type: 'signup',
         email: email.trim().toLowerCase(),
       });
-      if (error) return { error: translateError(error), success: false };
+      if (error) return { error: translateError(error, locale), success: false };
       return { error: null, success: true };
     } catch (e) {
-      return { error: translateError(e), success: false };
+      return { error: translateError(e, locale), success: false };
     }
   };
 
@@ -247,17 +255,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const reach = await canReachSupabase();
       if (!reach.ok) {
-        return { error: authUnreachableMessage(reach.detail), success: false };
+        return { error: authUnreachableMessage(locale, reach.detail), success: false };
       }
 
       const redirectTo = Linking.createURL('/reset-password');
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
         redirectTo,
       });
-      if (error) return { error: translateError(error), success: false };
+      if (error) return { error: translateError(error, locale), success: false };
       return { error: null, success: true };
     } catch (e) {
-      return { error: translateError(e), success: false };
+      return { error: translateError(e, locale), success: false };
     }
   };
 
@@ -269,7 +277,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         type: 'recovery',
       });
 
-      if (error) return { error: translateError(error), success: false };
+      if (error) return { error: translateError(error, locale), success: false };
 
       if (data.session) {
         setSession(data.session);
@@ -278,9 +286,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: null, success: true };
       }
 
-      return { error: 'No se pudo verificar el código', success: false };
+      return { error: t('auth.errors.verifyCodeFailed'), success: false };
     } catch (e) {
-      return { error: translateError(e), success: false };
+      return { error: translateError(e, locale), success: false };
     }
   };
 
@@ -289,26 +297,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         return {
-          error: 'Tu sesión de recuperación caducó. Solicita un nuevo código e inténtalo otra vez.',
+          error: t('auth.errors.recoverySessionExpired'),
           success: false,
         };
       }
 
       const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) return { error: translateError(error), success: false };
+      if (error) return { error: translateError(error, locale), success: false };
       setIsRecoveryMode(false);
       return { error: null, success: true };
     } catch (e) {
-      return { error: translateError(e), success: false };
+      return { error: translateError(e, locale), success: false };
     }
   };
 
   const deleteAccount = async () => {
     try {
-      if (!user) return { error: 'No hay sesión activa', success: false };
+      if (!user) return { error: t('auth.errors.noActiveSession'), success: false };
 
       const { error } = await supabase.rpc('delete_user_account');
-      if (error) return { error: translateError(error), success: false };
+      if (error) return { error: translateError(error, locale), success: false };
 
       try {
         await supabase.auth.signOut({ scope: 'global' });
@@ -320,17 +328,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsRecoveryMode(false);
       return { error: null, success: true };
     } catch (e) {
-      return { error: translateError(e), success: false };
+      return { error: translateError(e, locale), success: false };
     }
   };
 
   const sendReauthOtp = async () => {
     try {
-      if (!user?.email) return { error: 'No hay sesión activa', success: false };
+      if (!user?.email) return { error: t('auth.errors.noActiveSession'), success: false };
 
       const reach = await canReachSupabase();
       if (!reach.ok) {
-        return { error: authUnreachableMessage(reach.detail), success: false };
+        return { error: authUnreachableMessage(locale, reach.detail), success: false };
       }
 
       const { error } = await supabase.auth.signInWithOtp({
@@ -338,16 +346,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         options: { shouldCreateUser: false },
       });
 
-      if (error) return { error: translateError(error), success: false };
+      if (error) return { error: translateError(error, locale), success: false };
       return { error: null, success: true };
     } catch (e) {
-      return { error: translateError(e), success: false };
+      return { error: translateError(e, locale), success: false };
     }
   };
 
   const verifyReauthOtp = async (token: string) => {
     try {
-      if (!user?.email) return { error: 'No hay sesión activa', success: false };
+      if (!user?.email) return { error: t('auth.errors.noActiveSession'), success: false };
 
       const { error } = await supabase.auth.verifyOtp({
         email: user.email.trim().toLowerCase(),
@@ -355,22 +363,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         type: 'email',
       });
 
-      if (error) return { error: translateError(error), success: false };
+      if (error) return { error: translateError(error, locale), success: false };
       return { error: null, success: true };
     } catch (e) {
-      return { error: translateError(e), success: false };
+      return { error: translateError(e, locale), success: false };
     }
   };
 
   const changePasswordInApp = async (newPassword: string) => {
     try {
-      if (!user) return { error: 'No hay sesión activa', success: false };
+      if (!user) return { error: t('auth.errors.noActiveSession'), success: false };
 
       const { error } = await supabase.auth.updateUser({ password: newPassword });
-      if (error) return { error: translateError(error), success: false };
+      if (error) return { error: translateError(error, locale), success: false };
       return { error: null, success: true };
     } catch (e) {
-      return { error: translateError(e), success: false };
+      return { error: translateError(e, locale), success: false };
     }
   };
 

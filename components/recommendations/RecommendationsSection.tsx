@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
 import { logger } from '@/lib/logger';
 import { ChevronRight } from 'lucide-react-native';
+import { useI18n } from '@/contexts/I18nContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 /** Mismo valor para: margen izquierdo del carrusel, hueco entre tarjetas y “peek” de la siguiente (ritmo uniforme). */
@@ -60,80 +61,127 @@ function interestsToCategoryOrder(activities: string[] = [], interests: string[]
 }
 
 // Mapeo de categorías a emojis/ilustraciones
-const CATEGORY_ILLUSTRATIONS: Record<string, { emoji: string; gradient: [string, string, ...string[]]; title: string }> = {
+const CATEGORY_ILLUSTRATION_META: Record<
+  string,
+  { emoji: string; gradient: [string, string, ...string[]]; titleKey: string }
+> = {
   'salud mental': {
     emoji: '🧘',
     gradient: [THEME.colors.gradient.blue, THEME.colors.gradient.pink],
-    title: 'Salud Mental',
+    titleKey: 'recommendations.catMentalHealth',
   },
-  'ejercicio': {
+  ejercicio: {
     emoji: '💪',
     gradient: [THEME.colors.gradient.pink, THEME.colors.gradient.pink],
-    title: 'Ejercicio',
+    titleKey: 'recommendations.catExercise',
   },
-  'productividad': {
+  productividad: {
     emoji: '📚',
     gradient: [THEME.colors.gradient.blue, THEME.colors.gradient.blue],
-    title: 'Productividad',
+    titleKey: 'recommendations.catProductivity',
   },
-  'bienestar': {
+  bienestar: {
     emoji: '✨',
     gradient: [THEME.colors.gradient.pink, THEME.colors.accent.yellow],
-    title: 'Bienestar',
+    titleKey: 'recommendations.catWellness',
   },
-  'social': {
+  social: {
     emoji: '👥',
     gradient: [THEME.colors.gradient.blue, THEME.colors.category.personal],
-    title: 'Social',
+    titleKey: 'recommendations.catSocial',
   },
-  'creatividad': {
+  creatividad: {
     emoji: '🎨',
     gradient: [THEME.colors.gradient.pink, THEME.colors.gradient.pink],
-    title: 'Creatividad',
+    titleKey: 'recommendations.catCreativity',
   },
-  'descanso': {
+  descanso: {
     emoji: '😴',
     gradient: [THEME.colors.gradient.blue, THEME.colors.gradient.blue],
-    title: 'Descanso',
+    titleKey: 'recommendations.catRest',
   },
-  'nutrición': {
+  nutrición: {
     emoji: '🥗',
     gradient: [THEME.colors.gradient.pink, THEME.colors.category.hogar],
-    title: 'Nutrición',
+    titleKey: 'recommendations.catNutrition',
   },
 };
 
-// Función para determinar la categoría de una recomendación
+function getCategoryIllustration(
+  cat: string,
+  t: (key: string) => string,
+): { emoji: string; gradient: [string, string, ...string[]]; title: string } {
+  const meta = CATEGORY_ILLUSTRATION_META[cat] || CATEGORY_ILLUSTRATION_META.bienestar;
+  return {
+    emoji: meta.emoji,
+    gradient: meta.gradient,
+    title: t(meta.titleKey),
+  };
+}
+
+function textMatches(text: string, keywords: string[]): boolean {
+  return keywords.some((k) => text.includes(k));
+}
+
+/** Clasifica recomendaciones para el carrusel (keywords ES + EN). */
 const getRecommendationCategory = (recommendation: Recommendation): string => {
   const titleLower = recommendation.title.toLowerCase();
   const messageLower = recommendation.message.toLowerCase();
-  
-  if (titleLower.includes('meditar') || titleLower.includes('mindfulness') || messageLower.includes('salud mental')) {
+  const combined = `${titleLower} ${messageLower}`;
+
+  if (
+    textMatches(combined, [
+      'meditar', 'mindfulness', 'salud mental', 'mental health', 'meditation', 'meditate',
+    ])
+  ) {
     return 'salud mental';
   }
-  if (titleLower.includes('ejercicio') || titleLower.includes('entrenar') || titleLower.includes('correr')) {
+  if (
+    textMatches(combined, [
+      'ejercicio', 'entrenar', 'correr', 'exercise', 'workout', 'train', 'run', 'gym',
+    ])
+  ) {
     return 'ejercicio';
   }
-  if (titleLower.includes('productividad') || titleLower.includes('organizar') || titleLower.includes('tarea')) {
+  if (
+    textMatches(combined, [
+      'productividad', 'organizar', 'tarea', 'productivity', 'organize', 'task', 'focus',
+    ])
+  ) {
     return 'productividad';
   }
-  if (titleLower.includes('bienestar') || titleLower.includes('cuidar')) {
+  if (textMatches(combined, ['bienestar', 'cuidar', 'wellness', 'self-care', 'care'])) {
     return 'bienestar';
   }
-  if (titleLower.includes('social') || titleLower.includes('amigos') || titleLower.includes('conectar')) {
+  if (
+    textMatches(combined, [
+      'social', 'amigos', 'conectar', 'friends', 'connect', 'family',
+    ])
+  ) {
     return 'social';
   }
-  if (titleLower.includes('creatividad') || titleLower.includes('crear') || titleLower.includes('arte')) {
+  if (
+    textMatches(combined, [
+      'creatividad', 'crear', 'arte', 'creativity', 'create', 'art',
+    ])
+  ) {
     return 'creatividad';
   }
-  if (titleLower.includes('descanso') || titleLower.includes('dormir') || titleLower.includes('relajar')) {
+  if (
+    textMatches(combined, [
+      'descanso', 'dormir', 'relajar', 'rest', 'sleep', 'relax',
+    ])
+  ) {
     return 'descanso';
   }
-  if (titleLower.includes('nutrición') || titleLower.includes('comida') || titleLower.includes('aliment')) {
+  if (
+    textMatches(combined, [
+      'nutrición', 'comida', 'aliment', 'nutrition', 'food', 'eat', 'meal',
+    ])
+  ) {
     return 'nutrición';
   }
-  
-  // Default basado en el tipo
+
   if (recommendation.type === 'wellness') return 'bienestar';
   if (recommendation.type === 'productivity') return 'productividad';
   if (recommendation.type === 'social') return 'social';
@@ -146,6 +194,7 @@ interface RecommendationsSectionProps {
 
 export function RecommendationsSection({ userId }: RecommendationsSectionProps) {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [userCategoryOrder, setUserCategoryOrder] = useState<string[]>([]);
@@ -208,14 +257,14 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
           };
 
       // Generar recomendaciones
-      const generatedRecommendations = generatePersonalizedRecommendations(preferences, checkIn);
+      const generatedRecommendations = generatePersonalizedRecommendations(preferences, checkIn, locale);
       setRecommendations(generatedRecommendations);
     } catch (error) {
       logger.error('Error loading recommendations:', error);
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, locale]);
 
   useEffect(() => {
     loadRecommendations();
@@ -230,14 +279,14 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
 
   const sectionHeader = () => (
     <View style={styles.simpleHeader}>
-      <Text style={styles.simpleHeaderTitle}>Recomendaciones</Text>
+      <Text style={styles.simpleHeaderTitle}>{t('recommendations.title')}</Text>
       <LinearGradient
         colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.simpleHeaderAccent}
       />
-      <Text style={styles.simpleHeaderSub}>Para tu día</Text>
+      <Text style={styles.simpleHeaderSub}>{t('recommendations.subtitle')}</Text>
     </View>
   );
 
@@ -283,28 +332,26 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
             end={{ x: 1, y: 1 }}
             style={styles.emptyCard}
           >
-            <Text style={styles.emptyRecommendationsText}>
-              Cuando tengamos datos de tu perfil y tu check-in de hoy, aquí verás ideas para añadir como tareas.
-            </Text>
+            <Text style={styles.emptyRecommendationsText}>{t('recommendationsExtra.emptyBody')}</Text>
             <View style={styles.emptyRecoRow}>
               <TouchableOpacity
                 onPress={() => router.push('/(tabs)/yo')}
                 activeOpacity={0.85}
                 accessibilityRole="button"
-                accessibilityLabel="Ir a perfil Yo"
+                accessibilityLabel={t('recommendationsExtra.goYoProfile')}
                 style={styles.emptyRecoPill}
               >
-                <Text style={styles.emptyRecoPillText}>Ir a Yo</Text>
+                <Text style={styles.emptyRecoPillText}>{t('recommendationsExtra.goYo')}</Text>
                 <ChevronRight size={16} color={THEME.colors.gradient.blue} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => router.push('/(tabs)/sentir')}
                 activeOpacity={0.85}
                 accessibilityRole="button"
-                accessibilityLabel="Ir a Sentir"
+                accessibilityLabel={t('recommendationsExtra.goFeel')}
                 style={styles.emptyRecoPill}
               >
-                <Text style={styles.emptyRecoPillText}>Ir a Sentir</Text>
+                <Text style={styles.emptyRecoPillText}>{t('recommendationsExtra.goFeel')}</Text>
                 <ChevronRight size={16} color={THEME.colors.gradient.blue} />
               </TouchableOpacity>
             </View>
@@ -342,12 +389,12 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
   for (const cat of userCategoryOrder) {
     if (filledEntries.length >= 3) break;
     if (existingCats.has(cat)) continue;
-    const illustration = CATEGORY_ILLUSTRATIONS[cat] || CATEGORY_ILLUSTRATIONS['bienestar'];
+    const illustration = getCategoryIllustration(cat, t);
     const placeholderRec: Recommendation = {
       id: `placeholder-${cat}`,
       type: 'wellness',
-      title: `Recomendaciones de ${illustration.title}`,
-      message: 'Completa tu check-in diario en Sentir para ver sugerencias personalizadas aquí.',
+      title: `${illustration.title}`,
+      message: t('recommendations.empty'),
       emoji: illustration.emoji,
       priority: 0,
     };
@@ -369,7 +416,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
         decelerationRate="fast"
       >
         {categoryEntries.map(([category, categoryRecs], slotIndex) => {
-          const illustration = CATEGORY_ILLUSTRATIONS[category] || CATEGORY_ILLUSTRATIONS['bienestar'];
+          const illustration = getCategoryIllustration(category, t);
           const mainRecommendation = categoryRecs[0];
           const slotGradient =
             CAROUSEL_SLOT_GRADIENTS[slotIndex % CAROUSEL_SLOT_GRADIENTS.length];
@@ -381,7 +428,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
               onPress={() => handleRecommendationPress(mainRecommendation)}
               activeOpacity={0.88}
               accessibilityRole="button"
-              accessibilityLabel={`Agregar como tarea: ${mainRecommendation.title}`}
+              accessibilityLabel={t('recommendations.addAsTaskA11y', { title: mainRecommendation.title })}
             >
               <LinearGradient
                 colors={[...slotGradient]}
@@ -406,7 +453,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
                     </View>
                   </View>
                   <View style={styles.verMasChip}>
-                    <Text style={styles.verMasChipText}>A Tareas</Text>
+                    <Text style={styles.verMasChipText}>{t('recommendationsExtra.goTasks')}</Text>
                     <ChevronRight size={14} color={THEME.colors.onGradientMuted} />
                   </View>
                 </View>
@@ -421,7 +468,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
                 <View style={styles.horizontalCardFooter}>
                   {categoryRecs.length > 1 ? (
                     <Text style={styles.horizontalCardMore} numberOfLines={1}>
-                      +{categoryRecs.length - 1} más en esta categoría
+                      {t('recommendationsExtra.moreInCategory', { count: categoryRecs.length - 1 })}
                     </Text>
                   ) : (
                     <Text style={styles.horizontalCardMorePlaceholder}> </Text>

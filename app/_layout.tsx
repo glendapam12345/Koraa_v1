@@ -14,6 +14,7 @@ import {
 } from '@expo-google-fonts/libre-baskerville';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { I18nProvider } from '@/contexts/I18nContext';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -118,6 +119,7 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.root}>
+      <I18nProvider>
       <AuthProvider>
         <SubscriptionProvider>
           <SafeAreaProvider>
@@ -140,6 +142,7 @@ export default function RootLayout() {
           </SafeAreaProvider>
         </SubscriptionProvider>
       </AuthProvider>
+      </I18nProvider>
     </GestureHandlerRootView>
   );
 }

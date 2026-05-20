@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CheckCircle2 } from 'lucide-react-native';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useI18n } from '@/contexts/I18nContext';
 
 type FlowStep = 'vaciar' | 'sentir' | 'accionar';
 
@@ -13,11 +14,12 @@ interface FlowIndicatorProps {
 export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
   const router = useRouter();
   const { isLoading: subscriptionLoading, isSubscribed } = useSubscription();
+  const { t } = useI18n();
 
   const steps: { id: FlowStep; label: string }[] = [
-    { id: 'vaciar', label: 'Tareas' },
-    { id: 'sentir', label: 'Sentir' },
-    { id: 'accionar', label: 'Hoy' },
+    { id: 'vaciar', label: t('tabs.tasks') },
+    { id: 'sentir', label: t('tabs.feel') },
+    { id: 'accionar', label: t('tabs.today') },
   ];
 
   const getStepStatus = (step: FlowStep) => {
@@ -31,7 +33,7 @@ export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.caption}>Orden sugerido para tu día</Text>
+      <Text style={styles.caption}>{t('flow.caption')}</Text>
       <View style={styles.container}>
         {steps.map((step, index) => {
           const status = getStepStatus(step.id);
@@ -77,12 +79,12 @@ export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
           activeOpacity={0.75}
           style={styles.premiumHintWrap}
           accessibilityRole="button"
-          accessibilityLabel="Gestionar Premium"
-          accessibilityHint="Abre Ajustes para suscribirte o restaurar compra"
+          accessibilityLabel={t('flow.managePremium')}
+          accessibilityHint={t('flowExtra.a11yPremiumHint')}
         >
           <Text style={styles.premiumHintText}>
-            Más con Koraa Premium: Semana completa e historial.{' '}
-            <Text style={styles.premiumHintLink}>Gestionar Premium</Text>
+            {t('flow.premiumHint')}{' '}
+            <Text style={styles.premiumHintLink}>{t('flow.managePremium')}</Text>
           </Text>
         </TouchableOpacity>
       ) : null}

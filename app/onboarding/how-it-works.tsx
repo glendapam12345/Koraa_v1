@@ -7,9 +7,11 @@ import { GradientButton } from '@/components/GradientButton';
 import { ArrowRight, PenTool, Heart, Target } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { markOnboardingCompleted } from '@/lib/onboardingGate';
+import { useI18n } from '@/contexts/I18nContext';
 
 export default function HowItWorksScreen() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [saving, setSaving] = useState(false);
 
   const handleContinue = async () => {
@@ -18,10 +20,7 @@ export default function HowItWorksScreen() {
       const { error } = await markOnboardingCompleted(user.id);
       setSaving(false);
       if (error) {
-        Alert.alert(
-          'No se pudo continuar',
-          'No pudimos guardar tu progreso. Inténtalo de nuevo.',
-        );
+        Alert.alert(t('errors.continueFailed'), t('errors.saveProgressFailed'));
         return;
       }
     }
@@ -34,12 +33,9 @@ export default function HowItWorksScreen() {
         contentContainerStyle={styles.content} 
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>¿Cómo funciona</Text>
-        <Text style={styles.titleAccent}>Koraa?</Text>
-
-        <Text style={styles.subtitle}>
-          Tu rutina diaria en 3 pasos simples
-        </Text>
+        <Text style={styles.title}>{t('onboarding.howItWorks.title')}</Text>
+        <Text style={styles.titleAccent}>{t('onboarding.howItWorks.titleAccent')}</Text>
+        <Text style={styles.subtitle}>{t('onboarding.howItWorks.subtitle')}</Text>
 
         {/* Paso 1 */}
         <View style={styles.stepContainer}>
@@ -49,21 +45,13 @@ export default function HowItWorksScreen() {
           <View style={styles.stepContent}>
             <View style={styles.stepHeader}>
               <PenTool size={24} color={THEME.colors.gradient.blue} />
-              <Text style={styles.stepTitle}>Tareas</Text>
+              <Text style={styles.stepTitle}>{t('onboarding.howItWorks.step1Title')}</Text>
             </View>
-            <Text style={styles.stepDescription}>
-              Escribe todas tus tareas sin pensar en categorías o prioridades. Solo suelta lo que tienes en mente.
-            </Text>
+            <Text style={styles.stepDescription}>{t('onboarding.howItWorks.step1Body')}</Text>
             <View style={styles.exampleCard}>
-              <Text style={styles.exampleText}>
-                &quot;Preparar presentación del proyecto&quot;
-              </Text>
-              <Text style={styles.exampleText}>
-                &quot;Llamar al dentista&quot;
-              </Text>
-              <Text style={styles.exampleText}>
-                &quot;Hacer ejercicio&quot;
-              </Text>
+              <Text style={styles.exampleText}>{t('onboarding.howItWorks.exampleTask1')}</Text>
+              <Text style={styles.exampleText}>{t('onboarding.howItWorks.exampleTask2')}</Text>
+              <Text style={styles.exampleText}>{t('onboarding.howItWorks.exampleTask3')}</Text>
             </View>
           </View>
         </View>
@@ -80,18 +68,16 @@ export default function HowItWorksScreen() {
           <View style={styles.stepContent}>
             <View style={styles.stepHeader}>
               <Heart size={24} color={THEME.colors.gradient.pink} />
-              <Text style={styles.stepTitle}>Sentir</Text>
+              <Text style={styles.stepTitle}>{t('onboarding.howItWorks.step2Title')}</Text>
             </View>
-            <Text style={styles.stepDescription}>
-              Di cómo te sientes hoy: tu emoción, energía, tiempo disponible y nivel de enfoque.
-            </Text>
+            <Text style={styles.stepDescription}>{t('onboarding.howItWorks.step2Body')}</Text>
             <View style={styles.exampleCard}>
               <View style={styles.exampleRow}>
-                <Text style={styles.exampleLabel}>Emoción:</Text>
-                <Text style={styles.exampleValue}>😌 Tranquila</Text>
+                <Text style={styles.exampleLabel}>{t('onboarding.howItWorks.emotionLabel')}</Text>
+                <Text style={styles.exampleValue}>{t('onboarding.howItWorks.emotionExample')}</Text>
               </View>
               <View style={styles.exampleRow}>
-                <Text style={styles.exampleLabel}>Energía:</Text>
+                <Text style={styles.exampleLabel}>{t('onboarding.howItWorks.energyLabel')}</Text>
                 <Text style={styles.exampleValue}>4/5</Text>
               </View>
             </View>
@@ -110,23 +96,21 @@ export default function HowItWorksScreen() {
           <View style={styles.stepContent}>
             <View style={styles.stepHeader}>
               <Target size={24} color={THEME.colors.gradient.blue} />
-              <Text style={styles.stepTitle}>Hoy</Text>
+              <Text style={styles.stepTitle}>{t('onboarding.howItWorks.step3Title')}</Text>
             </View>
-            <Text style={styles.stepDescription}>
-              Koraa prioriza automáticamente tus tareas según cómo te sientes. Solo enfócate en lo que realmente importa hoy.
-            </Text>
+            <Text style={styles.stepDescription}>{t('onboarding.howItWorks.step3Body')}</Text>
             <View style={styles.exampleCard}>
               <View style={styles.priorityExample}>
                 <View style={styles.priorityNumber}>
                   <Text style={styles.priorityNumberText}>1</Text>
                 </View>
-                <Text style={styles.priorityText}>Preparar presentación del proyecto</Text>
+                <Text style={styles.priorityText}>{t('onboarding.howItWorks.priorityTask1')}</Text>
               </View>
               <View style={styles.priorityExample}>
                 <View style={styles.priorityNumber}>
                   <Text style={styles.priorityNumberText}>2</Text>
                 </View>
-                <Text style={styles.priorityText}>Llamar al dentista</Text>
+                <Text style={styles.priorityText}>{t('onboarding.howItWorks.priorityTask2')}</Text>
               </View>
             </View>
           </View>
@@ -140,11 +124,8 @@ export default function HowItWorksScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.adaptationGradient}
           >
-            <Text style={styles.adaptationTitle}>💡 Se adapta a ti</Text>
-            <Text style={styles.adaptationText}>
-              Si te sientes agotada → Prioriza 2 tareas esenciales{'\n'}
-              Si te sientes motivada → Prioriza hasta 5 tareas
-            </Text>
+            <Text style={styles.adaptationTitle}>{t('onboarding.howItWorks.adaptTitle')}</Text>
+            <Text style={styles.adaptationText}>{t('onboarding.howItWorks.adaptBody')}</Text>
           </LinearGradient>
         </View>
 
@@ -160,7 +141,7 @@ export default function HowItWorksScreen() {
         {saving ? (
           <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
         ) : (
-          <GradientButton title="Continuar" onPress={handleContinue} />
+          <GradientButton title={t('onboarding.howItWorks.continue')} onPress={handleContinue} />
         )}
       </View>
     </View>

@@ -6,9 +6,11 @@ import { GradientButton } from '@/components/GradientButton';
 import { Sparkles, ArrowDown } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { markOnboardingCompleted } from '@/lib/onboardingGate';
+import { useI18n } from '@/contexts/I18nContext';
 
 export default function WelcomeScreen() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [skipLoading, setSkipLoading] = useState(false);
 
   const handleSkipIntro = async () => {
@@ -20,10 +22,7 @@ export default function WelcomeScreen() {
     const { error } = await markOnboardingCompleted(user.id);
     setSkipLoading(false);
     if (error) {
-      Alert.alert(
-        'No se pudo continuar',
-        'No pudimos guardar tu progreso. Inténtalo de nuevo.',
-      );
+      Alert.alert(t('errors.continueFailed'), t('errors.saveProgressFailed'));
       return;
     }
     router.replace('/(tabs)');
@@ -38,27 +37,21 @@ export default function WelcomeScreen() {
           </View>
         </View>
 
-        <Text style={styles.title}>Organiza tu día</Text>
-        <Text style={styles.titleAccent}>sintiendo</Text>
-        <Text style={styles.subtitle}>en lugar de estructurando</Text>
+        <Text style={styles.title}>{t('onboarding.welcome.title')}</Text>
+        <Text style={styles.titleAccent}>{t('onboarding.welcome.titleAccent')}</Text>
+        <Text style={styles.subtitle}>{t('onboarding.welcome.subtitle')}</Text>
 
-        <Text style={styles.description}>
-          Deja de perder energía organizándote.{'\n'}
-          Solo di cómo te sientes hoy.
-        </Text>
+        <Text style={styles.description}>{t('onboarding.welcome.description')}</Text>
 
-        {/* Ejemplo visual de priorización */}
         <View style={styles.exampleContainer}>
           <View style={styles.exampleCard}>
             <View style={styles.exampleHeader}>
               <Text style={styles.exampleEmoji}>😔</Text>
-              <Text style={styles.exampleTitle}>Te sientes agotada</Text>
+              <Text style={styles.exampleTitle}>{t('onboarding.welcome.exampleExhausted')}</Text>
             </View>
-            <Text style={styles.exampleSubtitle}>Energía: 2/5</Text>
+            <Text style={styles.exampleSubtitle}>{t('onboarding.welcome.exampleEnergy', { n: 2 })}</Text>
             <View style={styles.exampleDivider} />
-            <Text style={styles.exampleResult}>
-              Koraa prioriza solo 2 tareas esenciales
-            </Text>
+            <Text style={styles.exampleResult}>{t('onboarding.welcome.exampleResultLow')}</Text>
           </View>
 
           <View style={styles.arrowDown}>
@@ -68,38 +61,32 @@ export default function WelcomeScreen() {
           <View style={styles.exampleCard}>
             <View style={styles.exampleHeader}>
               <Text style={styles.exampleEmoji}>✨</Text>
-              <Text style={styles.exampleTitle}>Te sientes motivada</Text>
+              <Text style={styles.exampleTitle}>{t('onboarding.welcome.exampleMotivated')}</Text>
             </View>
-            <Text style={styles.exampleSubtitle}>Energía: 5/5</Text>
+            <Text style={styles.exampleSubtitle}>{t('onboarding.welcome.exampleEnergy', { n: 5 })}</Text>
             <View style={styles.exampleDivider} />
-            <Text style={styles.exampleResult}>
-              Koraa prioriza hasta 5 tareas
-            </Text>
+            <Text style={styles.exampleResult}>{t('onboarding.welcome.exampleResultHigh')}</Text>
           </View>
         </View>
 
-        <View style={styles.dotContainer}>
-          <View style={[styles.dot, styles.dotActive]} />
-          <View style={styles.dot} />
-          <View style={styles.dot} />
-        </View>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <GradientButton title="Continuar" onPress={() => router.push('/onboarding/emotion')} />
+        <GradientButton
+          title={t('onboarding.welcome.continue')}
+          onPress={() => router.push('/onboarding/intro2')}
+        />
 
         <TouchableOpacity
-          onPress={handleSkipIntro}
           style={styles.skipButton}
+          onPress={() => void handleSkipIntro()}
           disabled={skipLoading}
+          accessibilityRole="button"
         >
           {skipLoading ? (
-            <ActivityIndicator size="small" color={THEME.colors.gradient.blue} />
+            <ActivityIndicator color={THEME.colors.text.secondary} />
           ) : (
-            <Text style={styles.skipText}>Saltar introducción</Text>
+            <Text style={styles.skipText}>{t('onboarding.welcome.skip')}</Text>
           )}
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -112,15 +99,16 @@ const styles = StyleSheet.create({
   content: {
     padding: THEME.spacing.lg,
     paddingTop: THEME.spacing.xl * 2,
+    paddingBottom: THEME.spacing.xl,
   },
   iconContainer: {
-    alignItems: 'flex-end',
-    marginBottom: THEME.spacing.xl,
+    alignItems: 'center',
+    marginBottom: THEME.spacing.lg,
   },
   iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: THEME.colors.fill[200],
     alignItems: 'center',
     justifyContent: 'center',
@@ -128,93 +116,74 @@ const styles = StyleSheet.create({
   title: {
     ...THEME.typography.h1,
     color: THEME.colors.text.main,
-    marginBottom: THEME.spacing.xs,
+    textAlign: 'center',
   },
   titleAccent: {
     ...THEME.typography.h1,
     fontFamily: THEME.fonts.accent.italic,
     color: THEME.colors.text.main,
+    textAlign: 'center',
     marginBottom: THEME.spacing.xs,
   },
   subtitle: {
-    ...THEME.typography.h3,
-    color: THEME.colors.text.main,
-    marginBottom: THEME.spacing.lg,
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: THEME.spacing.md,
   },
   description: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
-    lineHeight: 28,
-  },
-  dotContainer: {
-    flexDirection: 'row',
-    gap: THEME.spacing.xs,
-    marginTop: THEME.spacing.xl,
-  },
-  dot: {
-    width: 32,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: THEME.colors.stroke[100],
-  },
-  dotActive: {
-    backgroundColor: THEME.colors.gradient.blue,
-  },
-  footer: {
-    padding: THEME.spacing.lg,
-    paddingBottom: THEME.spacing.xl,
-  },
-  skipButton: {
-    marginTop: THEME.spacing.sm,
-    alignItems: 'center',
-    padding: THEME.spacing.sm,
-  },
-  skipText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: THEME.spacing.lg,
   },
   exampleContainer: {
-    marginTop: THEME.spacing.xl,
     marginBottom: THEME.spacing.lg,
   },
   exampleCard: {
     backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.sm,
-    ...THEME.shadows.soft,
   },
   exampleHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: THEME.spacing.xs,
+    gap: THEME.spacing.sm,
     marginBottom: THEME.spacing.xs,
   },
   exampleEmoji: {
     fontSize: 24,
   },
   exampleTitle: {
-    ...THEME.typography.body,
+    ...THEME.typography.h3,
     color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
   },
   exampleSubtitle: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
   },
   exampleDivider: {
     height: 1,
     backgroundColor: THEME.colors.stroke[100],
-    marginVertical: THEME.spacing.xs,
+    marginVertical: THEME.spacing.sm,
   },
   exampleResult: {
     ...THEME.typography.body,
-    color: THEME.colors.gradient.blue,
-    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
   },
   arrowDown: {
     alignItems: 'center',
-    marginVertical: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.sm,
+  },
+  skipButton: {
+    marginTop: THEME.spacing.md,
+    alignItems: 'center',
+    padding: THEME.spacing.sm,
+  },
+  skipText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
   },
 });

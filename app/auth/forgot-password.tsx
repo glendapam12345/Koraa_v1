@@ -17,10 +17,14 @@ import { OTPInput } from '@/components/auth/OTPInput';
 import { THEME } from '@/constants/theme';
 import { OTP_CODE_LENGTH, emptyOtpSlots } from '@/constants/authOtp';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useI18n } from '@/contexts/I18nContext';
+import { PasswordRequirementsHint } from '@/components/auth/PasswordRequirementsHint';
+import { getPasswordErrorKey } from '@/lib/passwordPolicy';
 
 type Step = 'email' | 'otp' | 'password' | 'success';
 
 export default function ForgotPasswordScreen() {
+  const { t } = useI18n();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { resetPassword, verifyRecoveryOtp, updatePassword } = useAuth();
@@ -43,7 +47,7 @@ export default function ForgotPasswordScreen() {
 
   const handleSendCode = async () => {
     if (!email.trim()) {
-      setError('Introduce tu correo');
+      setError(t('auth.forgot.emailRequired'));
       return;
     }
     setError('');
@@ -63,7 +67,7 @@ export default function ForgotPasswordScreen() {
   const handleVerifyOtp = async () => {
     const code = otpCode.join('');
     if (code.length !== OTP_CODE_LENGTH) {
-      setError(`Introduce el código completo (${OTP_CODE_LENGTH} dígitos)`);
+      setError(t('auth.forgot.otpIncomplete', { length: OTP_CODE_LENGTH }));
       return;
     }
     setError('');
@@ -96,15 +100,16 @@ export default function ForgotPasswordScreen() {
 
   const handleUpdatePassword = async () => {
     if (!newPassword || !confirmPassword) {
-      setError('Completa todos los campos');
+      setError(t('auth.signup.fillAllFields'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
+      setError(t('password.mismatch'));
       return;
     }
-    if (newPassword.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres');
+    const passwordErrorKey = getPasswordErrorKey(newPassword);
+    if (passwordErrorKey) {
+      setError(t(passwordErrorKey));
       return;
     }
     setError('');
@@ -129,7 +134,7 @@ export default function ForgotPasswordScreen() {
       style={[styles.ctaOuter, isLoading && styles.ctaDisabled]}
       activeOpacity={0.85}
       accessibilityRole="button"
-      accessibilityLabel={isLoading ? `${label}, cargando` : label}
+      accessibilityLabel={isLoading ? `${label}${t('commonExtra.loadingSuffix')}` : label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: isLoading, busy: isLoading }}
     >
@@ -161,24 +166,24 @@ export default function ForgotPasswordScreen() {
       <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={scrollPad} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            <Text style={styles.title}>Restablecer contraseña</Text>
-            <Text style={styles.subtitle}>Te enviaremos un código de verificación a tu correo</Text>
+            <Text style={styles.title}>{t('auth.forgot.title')}</Text>
+            <Text style={styles.subtitle}>{t('auth.forgot.emailSubtitle')}</Text>
           </View>
           <View style={styles.form}>
             <View style={styles.field}>
-              <Text style={styles.label}>Correo</Text>
+              <Text style={styles.label}>{t('common.email')}</Text>
               <TextInput
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="tu@correo.com"
+                placeholder={t('auth.login.emailPlaceholder')}
                 placeholderTextColor={THEME.colors.text.tertiary}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
                 editable={!isLoading}
-                accessibilityLabel="Correo electrónico"
-                accessibilityHint="Escribe el correo asociado a tu cuenta"
+                accessibilityLabel={t('authA11y.email')}
+                accessibilityHint={t('authA11y.emailHint')}
               />
             </View>
             {error ? (
@@ -186,18 +191,18 @@ export default function ForgotPasswordScreen() {
                 {error}
               </Text>
             ) : null}
-            {primaryCta(handleSendCode, 'Enviar código', 'Envía un código de recuperación a tu correo')}
+            {primaryCta(handleSendCode, t('auth.forgot.sendCode'))}
           </View>
           <TouchableOpacity
             style={styles.backBtn}
             onPress={() => router.back()}
             disabled={isLoading}
             accessibilityRole="button"
-            accessibilityLabel="Volver al inicio de sesión"
-            accessibilityHint="Regresa a la pantalla anterior"
+            accessibilityLabel={t('authA11y.backToLogin')}
+            accessibilityHint={t('authA11y.backToLoginHint')}
             accessibilityState={{ disabled: isLoading }}
           >
-            <Text style={styles.backText}>← Volver al inicio de sesión</Text>
+            <Text style={styles.backText}>{t('auth.forgot.backToLogin')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -209,9 +214,10 @@ export default function ForgotPasswordScreen() {
       <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={scrollPad} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <Text style={styles.title}>Verifica tu identidad</Text>
+            <Text style={styles.title}>{t('auth.forgot.otpTitle')}</Text>
             <Text style={styles.subtitle}>
-              Código enviado a{'\n'}
+              {t('auth.forgot.otpSubtitlePrefix')}
+              {'\n'}
               <Text style={styles.emailHighlight}>{email}</Text>
             </Text>
           </View>
@@ -223,20 +229,26 @@ export default function ForgotPasswordScreen() {
               {error}
             </Text>
           ) : null}
-          {primaryCta(handleVerifyOtp, 'Verificar', 'Verifica el código para continuar con el cambio de contraseña')}
+          {primaryCta(handleVerifyOtp, t('auth.forgot.verify'))}
           <TouchableOpacity
             style={styles.resendBtn}
             onPress={handleResendOtp}
             disabled={resendCooldown > 0 || isLoading}
             accessibilityRole="button"
-            accessibilityLabel={resendCooldown > 0 ? `Reenviar en ${resendCooldown} segundos` : 'Reenviar código'}
-            accessibilityHint="Solicita un nuevo código de recuperación"
+            accessibilityLabel={
+              resendCooldown > 0
+                ? t('authA11y.resendIn', { seconds: resendCooldown })
+                : t('authA11y.resend')
+            }
+            accessibilityHint={t('authA11y.resendHint')}
             accessibilityState={{ disabled: resendCooldown > 0 || isLoading }}
           >
             <Text
               style={[styles.resendText, (resendCooldown > 0 || isLoading) && styles.resendTextDisabled]}
             >
-              {resendCooldown > 0 ? `Reenviar en ${resendCooldown}s` : 'Reenviar código'}
+              {resendCooldown > 0
+                ? t('auth.forgot.resendIn', { seconds: resendCooldown })
+                : t('auth.forgot.resend')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -244,11 +256,11 @@ export default function ForgotPasswordScreen() {
             onPress={() => setStep('email')}
             disabled={isLoading}
             accessibilityRole="button"
-            accessibilityLabel="Cambiar correo"
-            accessibilityHint="Vuelve atrás para escribir otro correo"
+            accessibilityLabel={t('authA11y.changeEmail')}
+            accessibilityHint={t('authA11y.changeEmailHint')}
             accessibilityState={{ disabled: isLoading }}
           >
-            <Text style={styles.backText}>← Cambiar correo</Text>
+            <Text style={styles.backText}>{t('auth.forgot.changeEmail')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -260,38 +272,37 @@ export default function ForgotPasswordScreen() {
       <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={scrollPad} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <Text style={styles.title}>Nueva contraseña</Text>
-            <Text style={styles.subtitle}>Elige una contraseña segura</Text>
+            <Text style={styles.title}>{t('auth.forgot.passwordTitle')}</Text>
+            <Text style={styles.subtitle}>{t('auth.forgot.passwordSubtitle')}</Text>
           </View>
           <View style={styles.form}>
             <View style={styles.field}>
-              <Text style={styles.label}>Nueva contraseña</Text>
+              <Text style={styles.label}>{t('auth.forgot.newPasswordLabel')}</Text>
               <TextInput
                 style={styles.input}
                 value={newPassword}
                 onChangeText={setNewPassword}
-                placeholder="Mínimo 8 caracteres"
+                placeholder={t('password.placeholder')}
                 placeholderTextColor={THEME.colors.text.tertiary}
                 secureTextEntry
                 autoComplete="new-password"
                 editable={!isLoading}
-                accessibilityLabel="Nueva contraseña"
-                accessibilityHint="Crea una nueva contraseña de al menos 8 caracteres"
+                accessibilityLabel={t('common.password')}
               />
+              <PasswordRequirementsHint />
             </View>
             <View style={styles.field}>
-              <Text style={styles.label}>Confirmar</Text>
+              <Text style={styles.label}>{t('common.confirmPassword')}</Text>
               <TextInput
                 style={styles.input}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                placeholder="Repite la contraseña"
+                placeholder={t('password.confirmPlaceholder')}
                 placeholderTextColor={THEME.colors.text.tertiary}
                 secureTextEntry
                 autoComplete="new-password"
                 editable={!isLoading}
-                accessibilityLabel="Confirmar contraseña"
-                accessibilityHint="Repite la nueva contraseña para confirmar"
+                accessibilityLabel={t('common.confirmPassword')}
               />
             </View>
             {error ? (
@@ -299,7 +310,7 @@ export default function ForgotPasswordScreen() {
                 {error}
               </Text>
             ) : null}
-            {primaryCta(handleUpdatePassword, 'Guardar', 'Guarda tu nueva contraseña')}
+            {primaryCta(handleUpdatePassword, t('common.save'))}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -308,15 +319,15 @@ export default function ForgotPasswordScreen() {
 
   return (
     <View style={[styles.successRoot, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <Text style={styles.successTitle}>Contraseña actualizada</Text>
-      <Text style={styles.successBody}>Ya puedes iniciar sesión con tu nueva contraseña.</Text>
+      <Text style={styles.successTitle}>{t('resetPassword.successTitle')}</Text>
+      <Text style={styles.successBody}>{t('resetPassword.successBody')}</Text>
       <TouchableOpacity
         onPress={() => router.replace('/auth/login')}
         style={styles.ctaOuter}
         activeOpacity={0.85}
         accessibilityRole="button"
-        accessibilityLabel="Iniciar sesión"
-        accessibilityHint="Abre la pantalla de acceso con la nueva contraseña"
+        accessibilityLabel={t('authA11y.signIn')}
+        accessibilityHint={t('authA11y.signInHint')}
       >
         <LinearGradient
           colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -324,7 +335,7 @@ export default function ForgotPasswordScreen() {
           end={{ x: 1, y: 0 }}
           style={styles.ctaGradient}
         >
-          <Text style={styles.ctaText}>Iniciar sesión</Text>
+          <Text style={styles.ctaText}>{t('resetPassword.signIn')}</Text>
         </LinearGradient>
       </TouchableOpacity>
     </View>

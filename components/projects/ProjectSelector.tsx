@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { THEME } from '@/constants/theme';
 import { supabase, getSchemaSetupMessage } from '@/lib/supabase';
 import { FolderKanban, X, Plus } from 'lucide-react-native';
+import { useI18n } from '@/contexts/I18nContext';
 
 const PROJECT_COLORS = [
   THEME.colors.gradient.blue,
@@ -34,6 +35,7 @@ interface ProjectSelectorProps {
 }
 
 export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeOpenModal, showLabel = true, onError, onSuccess, assignMode = false }: ProjectSelectorProps) {
+  const { t } = useI18n();
   const [projects, setProjects] = useState<Project[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -84,16 +86,16 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
   const handleCreateProject = async () => {
     const name = newName.trim();
     if (!name) {
-      setFormError('Escribe un nombre para el proyecto.');
+      setFormError(t('components.projectNameRequired'));
       return;
     }
     if (name.length < 2) {
-      setFormError('Usa al menos 2 caracteres.');
+      setFormError(t('components.projectNameMin'));
       return;
     }
     const alreadyExists = projects.some((p) => p.name.trim().toLowerCase() === name.toLowerCase());
     if (alreadyExists) {
-      setFormError('Ya tienes un proyecto con ese nombre.');
+      setFormError(t('components.projectDuplicate'));
       return;
     }
 
@@ -108,8 +110,8 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
     if (error) {
       const schemaType = getSchemaSetupMessage(error);
       const message = schemaType === 'projects_table'
-        ? 'No se pudo crear el proyecto en este momento. Inténtalo de nuevo.'
-        : 'No se pudo crear el proyecto. Inténtalo de nuevo.';
+        ? t('components.projectCreateSchemaError')
+        : t('components.projectCreateError');
       setFormError(message);
       onError?.(message);
       return;
@@ -128,7 +130,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
 
   return (
     <View style={styles.container}>
-      {showLabel && <Text style={styles.label}>Proyecto (opcional)</Text>}
+      {showLabel && <Text style={styles.label}>{t('projectSelectorExtra.optionalLabel')}</Text>}
       <TouchableOpacity
         style={[styles.selector, selectedProject && styles.selectorWithProject]}
         onPress={() => {
@@ -138,7 +140,13 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
         }}
         activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel={selectedProject ? `Proyecto: ${selectedProject.name}` : assignMode ? 'Elige un proyecto' : 'Tareas sueltas'}
+        accessibilityLabel={
+          selectedProject
+            ? t('projectSelectorExtra.a11ySelector', { name: selectedProject.name })
+            : assignMode
+              ? t('projectSelectorExtra.a11yChoose')
+              : t('projectSelectorExtra.a11yLoose')
+        }
       >
         {selectedProject ? (
           <View style={[styles.selectedRow, styles.selectedRowProject]}>
@@ -149,16 +157,16 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
               ]}
             />
             <View style={styles.selectedProjectInfo}>
-              <Text style={styles.selectedProjectLabel}>Proyecto</Text>
+              <Text style={styles.selectedProjectLabel}>{t('projectSelectorExtra.label')}</Text>
               <Text style={styles.selectorText}>{selectedProject.name}</Text>
-              <Text style={styles.selectedColorHint}>Color: aplicado en Hoy</Text>
+              <Text style={styles.selectedColorHint}>{t('projectSelectorExtra.colorHint')}</Text>
             </View>
           </View>
         ) : (
           <View style={styles.selectedRow}>
             <FolderKanban size={20} color={THEME.colors.gradient.blue} />
             <Text style={[styles.selectorText, styles.placeholderText]}>
-              {assignMode ? 'Elige un proyecto' : 'Tareas sueltas (sin proyecto)'}
+              {assignMode ? t('components.chooseProject') : t('components.projectLooseHint')}
             </Text>
           </View>
         )}
@@ -188,11 +196,11 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
           >
             <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{assignMode ? 'Elige un proyecto' : '¿En qué proyecto va esta tarea?'}</Text>
+                <Text style={styles.modalTitle}>{assignMode ? t('components.chooseProject') : t('components.projectModalAssign')}</Text>
                 <TouchableOpacity
                   onPress={() => { Keyboard.dismiss(); setShowModal(false); }}
                   style={styles.modalClose}
-                  accessibilityLabel="Cerrar"
+                  accessibilityLabel={t('components.closeA11y')}
                 >
                   <X size={24} color={THEME.colors.text.main} />
                 </TouchableOpacity>
@@ -211,9 +219,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                 keyboardDismissMode="on-drag"
               >
                 {!assignMode && (
-                  <Text style={styles.modalSectionHint}>
-                    Es opcional. Si no eliges proyecto, la tarea queda «suelta». Puedes elegir uno de la lista o crear uno nuevo abajo.
-                  </Text>
+                  <Text style={styles.modalSectionHint}>{t('projectSelectorExtra.modalHint')}</Text>
                 )}
                 {!assignMode && (
                   <TouchableOpacity
@@ -228,7 +234,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                     }}
                     activeOpacity={0.7}
                     accessibilityRole="button"
-                    accessibilityLabel="Tareas sueltas, sin proyecto"
+                    accessibilityLabel={t('projectSelectorExtra.a11yLooseOption')}
                     accessibilityState={{ selected: selectedProjectId == null }}
                   >
                     <FolderKanban
@@ -246,7 +252,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                           selectedProjectId == null && styles.optionTextSelected,
                         ]}
                       >
-                        Tareas sueltas
+                        {t('components.looseTasks')}
                       </Text>
                       <Text
                         style={[
@@ -254,7 +260,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                           selectedProjectId == null && styles.optionSubtextOnSelected,
                         ]}
                       >
-                        Sin proyecto
+                        {t('projectSelectorExtra.noProjectShort')}
                       </Text>
                     </View>
                     {selectedProjectId == null && <Text style={styles.optionCheck}>✓</Text>}
@@ -262,11 +268,11 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                 )}
 
                 {loading ? (
-                  <Text style={styles.loadingText}>Cargando proyectos…</Text>
+                  <Text style={styles.loadingText}>{t('components.loadingProjects')}</Text>
                 ) : (
                   <>
                     {projects.length > 0 && (
-                      <Text style={styles.modalSectionTitle}>Mis proyectos</Text>
+                      <Text style={styles.modalSectionTitle}>{t('projectSelectorExtra.myProjects')}</Text>
                     )}
                     {projects.map((p) => {
                       const selected = selectedProjectId === p.id;
@@ -280,7 +286,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                           }}
                           activeOpacity={0.7}
                           accessibilityRole="button"
-                          accessibilityLabel={`Proyecto ${p.name}`}
+                          accessibilityLabel={t('projectSelectorExtra.a11ySelector', { name: p.name })}
                           accessibilityState={{ selected }}
                         >
                           <View
@@ -311,7 +317,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                         }}
                         activeOpacity={0.7}
                         accessibilityRole="button"
-                        accessibilityLabel="No asignar a proyecto"
+                        accessibilityLabel={t('projectSelectorExtra.a11yNone')}
                         accessibilityState={{ selected: selectedProjectId == null }}
                       >
                         <FolderKanban
@@ -329,7 +335,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                               selectedProjectId == null && styles.optionTextSelected,
                             ]}
                           >
-                            No asignar a proyecto
+                            {t('projectSelectorExtra.noneAssign')}
                           </Text>
                         </View>
                         {selectedProjectId == null ? <Text style={styles.optionCheck}>✓</Text> : null}
@@ -337,8 +343,8 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                     )}
                     {showNewProject ? (
                       <View style={styles.newProjectForm}>
-                        <Text style={styles.newProjectFormTitle}>Nuevo proyecto</Text>
-                        <Text style={styles.newProjectLabel}>Nombre</Text>
+                        <Text style={styles.newProjectFormTitle}>{t('projectSelectorExtra.newTitle')}</Text>
+                        <Text style={styles.newProjectLabel}>{t('projectSelectorExtra.nameLabel')}</Text>
                         <TextInput
                           ref={newProjectInputRef}
                           style={styles.newProjectInput}
@@ -347,13 +353,15 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                             setNewName(value);
                             if (formError) setFormError(null);
                           }}
-                          placeholder="Ej. Maratón, Mi app, Salud"
+                          placeholder={t('projectSelectorExtra.namePlaceholder')}
                           placeholderTextColor={THEME.colors.text.secondary}
                           onSubmitEditing={handleCreateProject}
                           returnKeyType="done"
                         />
-                        <Text style={styles.newProjectLabel}>Color</Text>
-                        <Text style={styles.newProjectColorHint}>Seleccionado: {newColor}</Text>
+                        <Text style={styles.newProjectLabel}>{t('projectSelectorExtra.colorLabel')}</Text>
+                        <Text style={styles.newProjectColorHint}>
+                          {t('projectSelectorExtra.colorSelected', { color: newColor })}
+                        </Text>
                         <View style={styles.colorRow}>
                           {PROJECT_COLORS.map((c, i) => (
                             <TouchableOpacity
@@ -365,7 +373,10 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                               ]}
                               onPress={() => setNewColor(c)}
                               accessibilityRole="button"
-                              accessibilityLabel={`Color ${i + 1}${newColor === c ? ', seleccionado' : ''}`}
+                              accessibilityLabel={t('projectSelectorExtra.a11yColor', {
+                                color: String(i + 1),
+                                selected: newColor === c ? t('commonExtra.selectedSuffix') : '',
+                              })}
                             />
                           ))}
                         </View>
@@ -379,7 +390,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                               Keyboard.dismiss();
                             }}
                           >
-                            <Text style={styles.newProjectCancelText}>Cancelar</Text>
+                            <Text style={styles.newProjectCancelText}>{t('common.cancel')}</Text>
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[styles.newProjectSave, saving && styles.newProjectSaveDisabled]}
@@ -387,7 +398,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                             disabled={saving || !newName.trim()}
                           >
                             <Text style={styles.newProjectSaveText}>
-                              {saving ? 'Guardando…' : 'Crear proyecto'}
+                              {saving ? t('components.creatingProject') : t('components.createProject')}
                             </Text>
                           </TouchableOpacity>
                         </View>
@@ -401,10 +412,10 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                           setTimeout(() => newProjectInputRef.current?.focus(), 220);
                         }}
                         accessibilityRole="button"
-                        accessibilityLabel="Crear nuevo proyecto"
+                        accessibilityLabel={t('projectSelectorExtra.createNew')}
                       >
                         <Plus size={20} color={THEME.colors.gradient.blue} />
-                        <Text style={styles.addProjectText}>Crear nuevo proyecto</Text>
+                        <Text style={styles.addProjectText}>{t('projectSelectorExtra.createNew')}</Text>
                       </TouchableOpacity>
                     )}
                   </>

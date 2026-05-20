@@ -13,12 +13,14 @@ import {
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { THEME } from '@/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const { signInWithEmail } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -28,7 +30,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
-      setError('Completa todos los campos');
+      setError(t('auth.login.fillAllFields'));
       return;
     }
 
@@ -63,30 +65,30 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Bienvenida de nuevo</Text>
-          <Text style={styles.subtitle}>Inicia sesión en tu cuenta</Text>
+          <Text style={styles.title}>{t('auth.login.title')}</Text>
+          <Text style={styles.subtitle}>{t('auth.login.subtitle')}</Text>
         </View>
 
         <View style={styles.form}>
           <View style={styles.field}>
-            <Text style={styles.label}>Correo</Text>
+            <Text style={styles.label}>{t('common.email')}</Text>
             <TextInput
               style={styles.input}
               value={email}
               onChangeText={setEmail}
-              placeholder="tu@correo.com"
+              placeholder={t('auth.login.emailPlaceholder')}
               placeholderTextColor={THEME.colors.text.tertiary}
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
               editable={!isLoading}
-              accessibilityLabel="Correo electrónico"
-              accessibilityHint="Escribe el correo de tu cuenta"
+              accessibilityLabel={t('authA11y.email')}
+              accessibilityHint={t('authA11y.emailHint')}
             />
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Contraseña</Text>
+            <Text style={styles.label}>{t('common.password')}</Text>
             <TextInput
               style={styles.input}
               value={password}
@@ -96,8 +98,8 @@ export default function LoginScreen() {
               secureTextEntry
               autoComplete="password"
               editable={!isLoading}
-              accessibilityLabel="Contraseña"
-              accessibilityHint="Escribe tu contraseña para iniciar sesión"
+              accessibilityLabel={t('authA11y.password')}
+              accessibilityHint={t('authA11y.passwordHintLogin')}
             />
           </View>
 
@@ -106,11 +108,11 @@ export default function LoginScreen() {
               disabled={isLoading}
               style={styles.forgotWrap}
               accessibilityRole="button"
-              accessibilityLabel="Olvidé mi contraseña"
-              accessibilityHint="Abre el flujo para recuperar tu contraseña"
+              accessibilityLabel={t('authA11y.forgotPassword')}
+              accessibilityHint={t('authA11y.forgotPasswordHint')}
               accessibilityState={{ disabled: isLoading }}
             >
-              <Text style={styles.forgot}>¿Olvidaste tu contraseña?</Text>
+              <Text style={styles.forgot}>{t('auth.login.forgotPassword')}</Text>
             </TouchableOpacity>
           </Link>
 
@@ -126,8 +128,8 @@ export default function LoginScreen() {
             style={[styles.ctaOuter, isLoading && styles.ctaDisabled]}
             activeOpacity={0.85}
             accessibilityRole="button"
-            accessibilityLabel={isLoading ? 'Iniciando sesión' : 'Iniciar sesión'}
-            accessibilityHint="Inicia sesión con tu correo y contraseña"
+            accessibilityLabel={isLoading ? t('authA11y.signingIn') : t('authA11y.signIn')}
+            accessibilityHint={t('authA11y.signInHint')}
             accessibilityState={{ disabled: isLoading, busy: isLoading }}
           >
             <LinearGradient
@@ -139,23 +141,23 @@ export default function LoginScreen() {
               {isLoading ? (
                 <ActivityIndicator color={THEME.colors.onGradient} />
               ) : (
-                <Text style={styles.ctaText}>Iniciar sesión</Text>
+                <Text style={styles.ctaText}>{t('auth.login.submit')}</Text>
               )}
             </LinearGradient>
           </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerMuted}>¿No tienes cuenta? </Text>
+          <Text style={styles.footerMuted}>{t('auth.login.noAccount')} </Text>
           <Link href="/auth/signup" asChild>
             <TouchableOpacity
               disabled={isLoading}
               accessibilityRole="button"
-              accessibilityLabel="Crear cuenta"
-              accessibilityHint="Abre la pantalla para registrarte"
+              accessibilityLabel={t('authA11y.signUp')}
+              accessibilityHint={t('authA11y.signUpHint')}
               accessibilityState={{ disabled: isLoading }}
             >
-              <Text style={styles.footerLink}>Crear cuenta</Text>
+              <Text style={styles.footerLink}>{t('auth.login.signUp')}</Text>
             </TouchableOpacity>
           </Link>
         </View>

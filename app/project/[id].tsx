@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ChevronLeft, CheckCircle2, Plus } from 'lucide-react-native';
 import type { Task } from '@/components/tasks/TaskCard';
 import { TaskList } from '@/components/tasks/TaskList';
+import { useI18n } from '@/contexts/I18nContext';
 
 export default function ProjectScreen() {
   const params = useLocalSearchParams<{ id: string }>();
@@ -16,6 +17,7 @@ export default function ProjectScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const { t } = useI18n();
   const [project, setProject] = useState<{ name: string; color: string } | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +35,7 @@ export default function ProjectScreen() {
     setLoading(true);
     try {
       if (isLoose) {
-        setProject({ name: 'Tareas sin proyecto', color: THEME.colors.text.tertiary });
+        setProject({ name: t('projectDetail.looseName'), color: THEME.colors.text.tertiary });
 
         const { data: tasksData, error: tasksError } = await supabase
           .from('tasks')
@@ -112,7 +114,7 @@ export default function ProjectScreen() {
     } finally {
       setLoading(false);
     }
-  }, [user, projectId, isLoose]);
+  }, [user, projectId, isLoose, t]);
 
   useEffect(() => {
     loadProjectAndTasks();
@@ -163,13 +165,14 @@ export default function ProjectScreen() {
 
   const handleDeleteTask = useCallback(
     (task: Task) => {
+      const taskLabel = task.content.length > 40 ? `${task.content.slice(0, 40)}…` : task.content;
       Alert.alert(
-        'Eliminar tarea',
-        `¿Eliminar "${task.content.length > 40 ? task.content.slice(0, 40) + '…' : task.content}"?`,
+        t('projectDetail.deleteTitle'),
+        t('projectDetail.deleteBodyNamed', { task: taskLabel }),
         [
-          { text: 'Cancelar', style: 'cancel' },
+          { text: t('errors.cancel'), style: 'cancel' },
           {
-            text: 'Eliminar',
+            text: t('errors.delete'),
             style: 'destructive',
             onPress: async () => {
               if (task.subtasks?.length) {
@@ -183,7 +186,7 @@ export default function ProjectScreen() {
         ]
       );
     },
-    [loadProjectAndTasks]
+    [loadProjectAndTasks, t]
   );
 
   if (!projectId) {
@@ -192,7 +195,7 @@ export default function ProjectScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ChevronLeft size={24} color={THEME.colors.text.main} />
         </TouchableOpacity>
-        <Text style={styles.errorText}>Proyecto no encontrado</Text>
+        <Text style={styles.errorText}>{t('projectDetail.notFound')}</Text>
       </View>
     );
   }
@@ -201,7 +204,7 @@ export default function ProjectScreen() {
     return (
       <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
-        <Text style={styles.loadingText}>Cargando proyecto...</Text>
+        <Text style={styles.loadingText}>{t('projectDetail.loadingProject')}</Text>
       </View>
     );
   }
@@ -212,7 +215,7 @@ export default function ProjectScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ChevronLeft size={24} color={THEME.colors.text.main} />
         </TouchableOpacity>
-        <Text style={styles.errorText}>No se encontró este proyecto</Text>
+        <Text style={styles.errorText}>{t('projectDetail.projectNotFound')}</Text>
       </View>
     );
   }
@@ -220,15 +223,24 @@ export default function ProjectScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={[styles.header, { borderLeftColor: project.color }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} accessibilityLabel="Volver">
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} accessibilityLabel={t('projectDetail.back')}>
           <ChevronLeft size={24} color={THEME.colors.text.main} />
         </TouchableOpacity>
         <View style={styles.headerTextWrap}>
           <Text style={styles.headerTitle} numberOfLines={1}>{project.name}</Text>
           <Text style={styles.headerSubtitle} numberOfLines={1}>
             {allDone
-              ? `Proyecto completado ✓ · ${completedTasks.length} ${completedTasks.length === 1 ? 'tarea' : 'tareas'}`
-              : `${incompleteTasks.length} de ${tasks.length} pendientes`}
+              ? t('projectDetail.completed', {
+                  count: completedTasks.length,
+                  tasks:
+                    completedTasks.length === 1
+                      ? t('projectDetail.taskOne')
+                      : t('projectDetail.taskMany'),
+                })
+              : t('projectDetail.subtitleProgress', {
+                  pending: incompleteTasks.length,
+                  total: tasks.length,
+                })}
           </Text>
         </View>
       </View>
@@ -240,14 +252,14 @@ export default function ProjectScreen() {
         {allDone && (
           <View style={styles.completedBanner}>
             <CheckCircle2 size={28} color={THEME.colors.semantic.success} />
-            <Text style={styles.completedBannerText}>Proyecto completado</Text>
-            <Text style={styles.completedBannerSub}>Todas las tareas con palomita ✓</Text>
+            <Text style={styles.completedBannerText}>{t('projectDetail.completedBanner')}</Text>
+            <Text style={styles.completedBannerSub}>{t('projectDetail.completedBannerSub')}</Text>
           </View>
         )}
 
         {incompleteTasks.length > 0 && (
           <>
-            <Text style={[styles.sectionLabel, styles.sectionLabelFirst]}>Pendientes</Text>
+            <Text style={[styles.sectionLabel, styles.sectionLabelFirst]}>{t('projectDetail.pendingSection')}</Text>
             <TaskList
               tasks={tasks}
               incompleteTasks={incompleteTasks}
@@ -271,7 +283,9 @@ export default function ProjectScreen() {
 
         {completedTasks.length > 0 && (
           <>
-            <Text style={styles.sectionLabel}>Completadas ({completedTasks.length})</Text>
+            <Text style={styles.sectionLabel}>
+              {t('projectDetail.completedSection', { count: completedTasks.length })}
+            </Text>
             <TaskList
               tasks={tasks}
               incompleteTasks={completedTasks}
@@ -296,12 +310,10 @@ export default function ProjectScreen() {
         {tasks.length === 0 && (
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>
-              {isLoose ? 'Sin tareas sueltas' : 'Aún no hay tareas en este proyecto'}
+              {isLoose ? t('projectDetail.noLooseTasks') : t('projectDetail.noProjectTasks')}
             </Text>
             <Text style={styles.emptyText}>
-              {isLoose
-                ? 'Agrega lo que tengas pendiente en la pestaña Tareas, sin asignar a un proyecto.'
-                : 'Agrega una tarea y asígnala a este proyecto desde Tareas.'}
+              {isLoose ? t('projectDetail.emptyLoose') : t('projectDetail.emptyProject')}
             </Text>
             <TouchableOpacity
               style={styles.emptyCta}
@@ -315,7 +327,7 @@ export default function ProjectScreen() {
               }
               activeOpacity={0.88}
               accessibilityRole="button"
-              accessibilityLabel={isLoose ? 'Ir a Tareas' : 'Agregar tarea a este proyecto'}
+              accessibilityLabel={isLoose ? t('projectDetail.goTasksA11y') : t('projectDetail.addTaskA11y')}
             >
               <LinearGradient
                 colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -324,7 +336,7 @@ export default function ProjectScreen() {
                 style={styles.emptyCtaGradient}
               >
                 <Plus size={20} color={THEME.colors.onGradient} />
-                <Text style={styles.emptyCtaText}>{isLoose ? 'Ir a Tareas' : 'Agregar tarea'}</Text>
+                <Text style={styles.emptyCtaText}>{isLoose ? t('projectDetail.goTasks') : t('projectDetail.addTask')}</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>

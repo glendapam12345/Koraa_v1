@@ -11,18 +11,21 @@ import { track } from '@/lib/analytics';
 import { fetchCurrentStreak, isStreakMilestone } from '@/lib/streak';
 import { publishCheckInCelebration } from '@/lib/checkInCelebration';
 import { markOnboardingCompleted } from '@/lib/onboardingGate';
+import { useI18n } from '@/contexts/I18nContext';
+import type { TranslationKey } from '@/lib/i18n';
 
-const FOCUS_OPTIONS = [
-  { id: 'Muy distraída', label: 'Muy distraída' },
-  { id: 'Algo distraída', label: 'Algo distraída' },
-  { id: 'Normal', label: 'Normal' },
-  { id: 'Enfocada', label: 'Enfocada' },
-  { id: 'Súper enfocada', label: 'Súper enfocada' },
+const FOCUS_OPTIONS: { id: string; labelKey: TranslationKey }[] = [
+  { id: 'Muy distraída', labelKey: 'onboarding.focus.scattered' },
+  { id: 'Algo distraída', labelKey: 'onboarding.focus.somewhat' },
+  { id: 'Normal', labelKey: 'onboarding.focus.normal' },
+  { id: 'Enfocada', labelKey: 'onboarding.focus.focused' },
+  { id: 'Súper enfocada', labelKey: 'onboarding.focus.veryFocused' },
 ];
 
 export default function FocusScreen() {
   const { emotion, energy, time, from } = useLocalSearchParams<{ emotion: string; energy: string; time: string; from: string }>();
   const { user } = useAuth();
+  const { t, locale } = useI18n();
   const [selectedFocus, setSelectedFocus] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -108,12 +111,16 @@ export default function FocusScreen() {
       }
 
       // Usar algoritmo de priorización inteligente
-      const prioritizedTasks = prioritizeTasksIntelligently(mainTasks, {
-        energyLevel,
-        emotion: emotionValue,
-        availableTime,
-        focusLevel,
-      });
+      const prioritizedTasks = prioritizeTasksIntelligently(
+        mainTasks,
+        {
+          energyLevel,
+          emotion: emotionValue,
+          availableTime,
+          focusLevel,
+        },
+        locale,
+      );
 
       // Primero, quitar prioridad a todas las tareas
       const { error: unprioritizeError } = await supabase
@@ -160,7 +167,7 @@ export default function FocusScreen() {
     // Validar que energy sea un número válido
     const energyLevel = parseInt(energy);
     if (isNaN(energyLevel) || energyLevel < 1 || energyLevel > 5) {
-      showToast('El nivel de energía no es válido', 'error');
+      showToast(t('onboarding.focus.invalidEnergy'), 'error');
       return;
     }
 
@@ -212,12 +219,12 @@ export default function FocusScreen() {
             focus_level: selectedFocus,
           });
           checkInSavedOffline = true;
-          showToast('Check-in guardado offline. Se sincronizará cuando haya conexión.', 'info');
+          showToast(t('onboarding.focus.savedOffline'), 'info');
         } else {
           console.error('Error guardando check-in:', checkInError);
           clearTimeout(safetyTimeout);
           setIsSaving(false);
-          showToast('No se pudo guardar tu check-in. Inténtalo de nuevo.', 'error');
+          showToast(t('onboarding.focus.saveCheckInError'), 'error');
           return;
         }
       }
@@ -267,7 +274,7 @@ export default function FocusScreen() {
         } else {
           const { error: onboardingError } = await markOnboardingCompleted(user.id);
           if (onboardingError) {
-            showToast('No se pudo cerrar onboarding. Inténtalo de nuevo.', 'error');
+            showToast(t('onboarding.focus.closeOnboardingError'), 'error');
             return;
           }
           router.replace({ pathname: '/paywall', params: { next: '/(tabs)' } });
@@ -285,7 +292,7 @@ export default function FocusScreen() {
       console.error('Error:', error);
       clearTimeout(safetyTimeout);
       setIsSaving(false);
-      showToast('Ocurrió un error. Inténtalo de nuevo.', 'error');
+      showToast(t('onboarding.focus.genericError'), 'error');
     }
   };
 
@@ -298,9 +305,9 @@ export default function FocusScreen() {
           </View>
         </View>
 
-        <Text style={styles.title}>¿Qué tan</Text>
-        <Text style={styles.titleAccent}>enfocada</Text>
-        <Text style={styles.subtitle}>te sientes?</Text>
+        <Text style={styles.title}>{t('onboarding.focus.title')}</Text>
+        <Text style={styles.titleAccent}>{t('onboarding.focus.titleAccent')}</Text>
+        <Text style={styles.subtitle}>{t('onboarding.focus.subtitle')}</Text>
 
         <View style={styles.optionsContainer}>
           {FOCUS_OPTIONS.map((option) => (
@@ -317,7 +324,7 @@ export default function FocusScreen() {
                 styles.optionText,
                 selectedFocus === option.id && styles.optionTextSelected,
               ]}>
-                {option.label}
+                {t(option.labelKey)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -326,7 +333,7 @@ export default function FocusScreen() {
 
       <View style={styles.footer}>
         <GradientButton
-          title={isSaving ? "Guardando..." : (from === 'sentir' ? "Guardar" : "Comenzar")}
+          title={isSaving ? t('onboarding.focus.saving') : from === 'sentir' ? t('onboarding.focus.fromSentirSave') : t('onboarding.focus.start')}
           onPress={handleContinue}
           disabled={!selectedFocus || isSaving}
         />

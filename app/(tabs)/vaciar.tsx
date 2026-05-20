@@ -17,20 +17,13 @@ import { DateSelector } from '@/components/tasks/DateSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic, FolderKanban, ChevronRight } from 'lucide-react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useI18n } from '@/contexts/I18nContext';
+import { categoryKeys, type CategoryKey } from '@/lib/i18n/locales/features/categories';
 
 const VACIAR_OPTIONAL_HINT_DISMISSED_KEY = (userId: string) =>
   `koraa_vaciar_optional_hint_dismissed_v1_${userId}`;
 
-// Categorías cuando el usuario elige "No" a proyecto (mismas que en Hoy)
-const CATEGORY_OPTIONS: { key: string; label: string }[] = [
-  { key: 'hogar', label: 'Hogar' },
-  { key: 'trabajo', label: 'Trabajo' },
-  { key: 'personal', label: 'Personal' },
-  { key: 'salud', label: 'Salud' },
-  { key: 'contenido', label: 'Contenido' },
-  { key: 'marca', label: 'Marca' },
-  { key: 'otros', label: 'Otros' },
-];
+const CATEGORY_OPTIONS: { key: CategoryKey }[] = categoryKeys.map((key) => ({ key }));
 
 function trackTaskCreated(args: {
   priority: boolean;
@@ -50,6 +43,7 @@ function trackTaskCreated(args: {
 
 export default function VaciarScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const { suggestion, date: dateParam, projectId: projectIdParam } = useLocalSearchParams<{
     suggestion?: string;
     date?: string;
@@ -107,7 +101,7 @@ export default function VaciarScreen() {
   const addSubtask = () => {
     // Validar límite máximo de subtareas
     if (subtasks.length >= 20) {
-      showToast('No puedes agregar más de 20 subtareas por tarea', 'error');
+      showToast(t('vaciar.maxSubtasks'), 'error');
       return;
     }
     setSubtasks([...subtasks, '']);
@@ -262,17 +256,17 @@ export default function VaciarScreen() {
   const handleAddTask = async () => {
     // Validar que la tarea principal no esté vacía
     if (!taskInput.trim()) {
-      showToast('Por favor ingresa una tarea', 'info');
+      showToast(t('vaciar.enterTask'), 'info');
       return;
     }
     if (assignToProject === true && !selectedProjectId) {
-      showToast('Selecciona un proyecto o créalo antes de guardar.', 'info');
+      showToast(t('vaciar.selectProject'), 'info');
       return;
     }
 
     // Validar longitud máxima de la tarea principal
     if (taskInput.trim().length > 300) {
-      showToast('La tarea no puede tener más de 300 caracteres', 'error');
+      showToast(t('vaciar.taskTooLong'), 'error');
       return;
     }
 
@@ -280,14 +274,14 @@ export default function VaciarScreen() {
     if (hasSubtasks) {
       const validSubtasks = subtasks.filter(st => st.trim());
       if (validSubtasks.length === 0) {
-        showToast('Agrega al menos una subtarea o desactiva las subtareas', 'info');
+        showToast(t('vaciar.addSubtaskOrDisable'), 'info');
         return;
       }
       
       // Validar longitud de cada subtarea
       for (const subtask of validSubtasks) {
         if (subtask.trim().length > 300) {
-          showToast('Las subtareas no pueden tener más de 300 caracteres', 'error');
+          showToast(t('vaciar.subtaskTooLong'), 'error');
           return;
         }
       }
@@ -298,7 +292,7 @@ export default function VaciarScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        showToast('No estás autenticado', 'error');
+        showToast(t('errors.notAuthenticated'), 'error');
         setIsSaving(false);
         return;
       }
@@ -371,7 +365,7 @@ export default function VaciarScreen() {
             offline: true,
           });
 
-          showToast('Tarea guardada offline. Se sincronizará cuando haya conexión.', 'info');
+          showToast(t('vaciar.savedOffline'), 'info');
           setIsSaving(false);
           return;
         } else {
@@ -392,7 +386,7 @@ export default function VaciarScreen() {
               .single();
             if (fallbackError) {
               logger.error('Error guardando tarea (fallback):', fallbackError);
-              showToast('No se pudo guardar la tarea. Inténtalo de nuevo.', 'error');
+              showToast(t('errors.saveTaskFailed'), 'error');
               setIsSaving(false);
               return;
             }
@@ -425,12 +419,12 @@ export default function VaciarScreen() {
               hasSubtasks: hasSubtasks && subtasks.some((st) => st.trim()),
             });
 
-            showToast('Tarea guardada. Algunas opciones avanzadas se activarán cuando completes la configuración.', 'success');
+            showToast(t('vaciar.savedPartial'), 'success');
             setIsSaving(false);
             return;
           }
           logger.error('Error guardando tarea principal:', mainTaskError);
-          showToast('No se pudo guardar la tarea. Inténtalo de nuevo.', 'error');
+          showToast(t('errors.saveTaskFailed'), 'error');
           setIsSaving(false);
           return;
         }
@@ -459,7 +453,7 @@ export default function VaciarScreen() {
             logger.error('Error guardando subtareas:', subtasksError);
             // Intentar eliminar la tarea principal si fallan las subtareas
             await supabase.from('tasks').delete().eq('id', mainTask.id);
-            showToast('No se pudieron guardar los pasos. Inténtalo de nuevo.', 'error');
+            showToast(t('vaciar.savedSubtasksError'), 'error');
             setIsSaving(false);
             return;
           }
@@ -492,16 +486,22 @@ export default function VaciarScreen() {
         setShowTooltip(false);
       }
 
+      const subtaskCount = subtasks.filter((st) => st.trim()).length;
       const message = hasSubtasks
-        ? `Tarea con ${subtasks.filter(st => st.trim()).length} subtareas agregada ${isPriority ? 'como prioridad' : 'exitosamente'}`
+        ? t('vaciarExtra.toastWithSubtasks', {
+            count: subtaskCount,
+            priority: isPriority
+              ? t('vaciarExtra.toastWithSubtasksPriority')
+              : t('vaciarExtra.toastWithSubtasksSuccess'),
+          })
         : isPriority
-          ? 'Tarea agregada como prioridad y aparecerá en "Hoy"'
-          : 'Tarea agregada exitosamente';
+          ? t('vaciarExtra.toastPriorityAdded')
+          : t('vaciarExtra.toastAdded');
 
       showToast(message, 'success');
     } catch (error) {
       logger.error('Error inesperado:', error);
-      showToast('No se pudo guardar la tarea. Inténtalo de nuevo.', 'error');
+      showToast(t('errors.saveTaskFailed'), 'error');
     } finally {
       setIsSaving(false);
     }
@@ -520,7 +520,7 @@ export default function VaciarScreen() {
       await syncAll();
     } catch (error) {
       logger.error('Error al refrescar:', error);
-      showToast('No se pudo actualizar. Inténtalo de nuevo.', 'error');
+      showToast(t('errors.updateFailed'), 'error');
     } finally {
       setRefreshing(false);
     }
@@ -529,26 +529,24 @@ export default function VaciarScreen() {
   // Función para entrada por voz
   const handleVoiceInput = () => {
     if (Platform.OS === 'web') {
-      showToast('La entrada por voz no está disponible en web', 'info');
+      showToast(t('vaciar.voiceUnavailableWeb'), 'info');
       return;
     }
 
     // Por ahora, mostrar un alert simple
     // TODO: Implementar reconocimiento de voz real con expo-speech o librería nativa
     Alert.prompt(
-      'Entrada por voz',
-      'Por ahora, escribe lo que quieres agregar. El reconocimiento de voz completo estará disponible pronto.',
+      t('vaciarExtra.voiceAlertTitle'),
+      t('vaciarExtra.voiceAlertBody'),
       [
         {
-          text: 'Cancelar',
+          text: t('common.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Usar teclado de voz',
+          text: t('vaciarExtra.voiceUseKeyboard'),
           onPress: () => {
-            // En iOS/Android, esto activará el teclado de voz del sistema
-            // El usuario puede usar el dictado del sistema
-            showToast('Usa el botón de micrófono del teclado para dictar', 'info');
+            showToast(t('vaciarExtra.voiceDictateHint'), 'info');
           },
         },
       ],
@@ -587,13 +585,9 @@ export default function VaciarScreen() {
         {/* Indicador de flujo */}
         <FlowIndicator currentStep="vaciar" />
 
-        <Text style={styles.title}>Vacía tu mente en</Text>
-        <Text style={styles.titleAccent}>un respiro</Text>
-
-        <Text style={styles.subtitle}>
-          Sin estructura. Sin etiquetas.{'\n'}
-          Solo escribe lo que necesitas soltar.
-        </Text>
+        <Text style={styles.title}>{t('vaciar.title')}</Text>
+        <Text style={styles.titleAccent}>{t('vaciar.titleAccent')}</Text>
+        <Text style={styles.subtitle}>{t('vaciar.subtitle')}</Text>
 
         {hasTasks === false && !optionalHintDismissed && (
           <View style={styles.optionalHintCard}>
@@ -604,11 +598,11 @@ export default function VaciarScreen() {
               accessibilityRole="button"
               accessibilityLabel={
                 optionalHintExpanded
-                  ? 'Contraer nota sobre opciones opcionales'
-                  : 'Expandir nota sobre proyecto, fecha y subtareas'
+                  ? t('vaciarExtra.a11yCollapseOptional')
+                  : t('vaciarExtra.a11yExpandOptional')
               }
             >
-              <Text style={styles.optionalHintTitle}>Todo lo demás es opcional</Text>
+              <Text style={styles.optionalHintTitle}>{t('vaciar.optionalTitle')}</Text>
               {optionalHintExpanded ? (
                 <ChevronUp size={20} color={THEME.colors.text.secondary} />
               ) : (
@@ -617,35 +611,30 @@ export default function VaciarScreen() {
             </TouchableOpacity>
             {optionalHintExpanded ? (
               <View style={styles.optionalHintBodyWrap}>
-                <Text style={styles.optionalHintBody}>
-                  Proyecto, categoría, fecha, subtareas y prioridad puedes elegirlos cuando quieras. Puedes escribir y
-                  pulsar Guardar tarea.
-                </Text>
+                <Text style={styles.optionalHintBody}>{t('vaciar.optionalBody')}</Text>
                 <Text style={[styles.optionalHintBody, styles.optionalHintBodySecond]}>
-                  Para ordenar tu día según tu estado, haz después tu check-in en Sentir.
+                  {t('vaciar.optionalBodySecond')}
                 </Text>
                 <TouchableOpacity
                   onPress={() => void dismissOptionalHint()}
                   style={styles.optionalHintDismissBtn}
                   activeOpacity={0.75}
                   accessibilityRole="button"
-                  accessibilityLabel="Entendido, ocultar esta nota"
+                  accessibilityLabel={t('vaciarExtra.a11yDismissOptional')}
                 >
-                  <Text style={styles.optionalHintDismissText}>Entendido</Text>
+                  <Text style={styles.optionalHintDismissText}>{t('vaciar.dismiss')}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <View style={styles.optionalHintCollapsedWrap}>
-                <Text style={styles.optionalHintCollapsedLine}>
-                  Proyecto, fecha y más → opcionales
-                </Text>
+                <Text style={styles.optionalHintCollapsedLine}>{t('vaciar.optionalCollapsed')}</Text>
                 <TouchableOpacity
                   onPress={() => void dismissOptionalHint()}
                   activeOpacity={0.75}
                   accessibilityRole="button"
-                  accessibilityLabel="Entendido, ocultar esta nota"
+                  accessibilityLabel={t('vaciarExtra.a11yDismissOptional')}
                 >
-                  <Text style={styles.optionalHintDismissTextCompact}>Entendido</Text>
+                  <Text style={styles.optionalHintDismissTextCompact}>{t('vaciar.dismiss')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -659,8 +648,8 @@ export default function VaciarScreen() {
             onPress={() => router.push('/(tabs)/sentir')}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel="Siguiente paso: Registra cómo te sientes"
-            accessibilityHint="Abre la pantalla para registrar tu estado emocional del día"
+            accessibilityLabel={t('vaciarExtra.a11yNextStepFeel')}
+            accessibilityHint={t('vaciarExtra.a11yNextStepFeelHint')}
           >
             <LinearGradient
               colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -670,12 +659,8 @@ export default function VaciarScreen() {
             >
               <Sparkles size={20} color={THEME.colors.onGradient} />
               <View style={styles.checkInBannerContent}>
-                <Text style={styles.checkInBannerText}>
-                  Siguiente paso: Registra cómo te sientes
-                </Text>
-                <Text style={styles.checkInBannerSubtext}>
-                  Después de agregar tus tareas, ve a &quot;Sentir&quot; para que Koraa las priorice según tu estado
-                </Text>
+                <Text style={styles.checkInBannerText}>{t('vaciar.nextStepFeel')}</Text>
+                <Text style={styles.checkInBannerSubtext}>{t('vaciar.nextStepFeelSub')}</Text>
               </View>
             </LinearGradient>
           </TouchableOpacity>
@@ -687,14 +672,14 @@ export default function VaciarScreen() {
             style={styles.input}
             value={taskInput}
             onChangeText={setTaskInput}
-            placeholder="Escribe la tarea o idea que quieres soltar..."
+            placeholder={t('vaciar.placeholder')}
             placeholderTextColor={THEME.colors.text.secondary}
             multiline
             numberOfLines={4}
             textAlignVertical="top"
             maxLength={300}
-            accessibilityLabel="Campo de texto para agregar tarea"
-            accessibilityHint="Escribe o dicta la tarea que necesitas hacer hoy"
+            accessibilityLabel={t('vaciarExtra.a11yTaskField')}
+            accessibilityHint={t('vaciarExtra.a11yTaskFieldHint')}
           />
           {/* Botón de entrada por voz */}
           {Platform.OS !== 'web' && (
@@ -703,8 +688,8 @@ export default function VaciarScreen() {
               onPress={handleVoiceInput}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="Entrada por voz"
-              accessibilityHint="Abre información sobre cómo usar el teclado de voz del sistema"
+              accessibilityLabel={t('vaciarExtra.a11yVoiceInput')}
+              accessibilityHint={t('vaciarExtra.a11yVoiceInputHint')}
             >
               <Mic 
                 size={20} 
@@ -717,7 +702,7 @@ export default function VaciarScreen() {
         {/* Sugerencias de tareas recientes */}
         {recentTaskSuggestions.length > 0 && !taskInput.trim() && (
           <View style={styles.suggestionsContainer}>
-            <Text style={styles.suggestionsTitle}>Sugerencias rápidas:</Text>
+            <Text style={styles.suggestionsTitle}>{t('vaciar.suggestionsTitle')}</Text>
             <View style={styles.suggestionsGrid}>
               {recentTaskSuggestions.map((suggestion, index) => (
                 <TouchableOpacity
@@ -726,8 +711,8 @@ export default function VaciarScreen() {
                   onPress={() => setTaskInput(suggestion)}
                   activeOpacity={0.7}
                   accessibilityRole="button"
-                  accessibilityLabel={`Usar sugerencia: ${suggestion}`}
-                  accessibilityHint="Toca para usar esta tarea reciente como sugerencia"
+                  accessibilityLabel={t('vaciarExtra.a11yUseSuggestion', { suggestion })}
+                  accessibilityHint={t('vaciarExtra.a11yUseSuggestionHint')}
                 >
                   <Text style={styles.suggestionText}>{suggestion}</Text>
                 </TouchableOpacity>
@@ -739,7 +724,7 @@ export default function VaciarScreen() {
         {/* ¿Asignar a un proyecto? Sí / No */}
         {taskInput.trim() ? (
           <View style={styles.assignSection}>
-            <Text style={styles.assignQuestion}>¿Asignar esta tarea a un proyecto?</Text>
+            <Text style={styles.assignQuestion}>{t('vaciar.assignQuestion')}</Text>
             <View style={styles.assignButtonsRow}>
               <TouchableOpacity
                 style={[styles.assignButton, styles.assignButtonYes, assignToProject === true && styles.assignButtonYesSelected]}
@@ -749,9 +734,11 @@ export default function VaciarScreen() {
                 }}
                 activeOpacity={0.8}
                 accessibilityRole="button"
-                accessibilityLabel="Sí, asignar a un proyecto"
+                accessibilityLabel={t('vaciarExtra.a11yAssignYes')}
               >
-                <Text style={[styles.assignButtonText, assignToProject === true ? styles.assignButtonTextSelectedYes : null]}>Sí</Text>
+                <Text style={[styles.assignButtonText, assignToProject === true ? styles.assignButtonTextSelectedYes : null]}>
+                  {t('errors.yes')}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.assignButton, styles.assignButtonNo, assignToProject === false && styles.assignButtonNoSelected]}
@@ -763,7 +750,7 @@ export default function VaciarScreen() {
                 }}
                 activeOpacity={0.8}
                 accessibilityRole="button"
-                accessibilityLabel="No, solo categoría"
+                accessibilityLabel={t('vaciarExtra.a11yAssignNo')}
               >
                 <Text
                   style={[
@@ -771,14 +758,14 @@ export default function VaciarScreen() {
                     assignToProject === false ? styles.assignButtonTextSelectedYes : null,
                   ]}
                 >
-                  No
+                  {t('errors.no')}
                 </Text>
               </TouchableOpacity>
             </View>
 
             {assignToProject === false && (
               <View style={styles.categorySection}>
-                <Text style={styles.categorySectionLabel}>Elige categoría</Text>
+                <Text style={styles.categorySectionLabel}>{t('vaciar.chooseCategory')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryChipsWrap}>
                   {CATEGORY_OPTIONS.map((opt) => {
                     const isSelected = selectedCategory === opt.key;
@@ -790,10 +777,10 @@ export default function VaciarScreen() {
                         onPress={() => setSelectedCategory(opt.key)}
                         activeOpacity={0.8}
                         accessibilityRole="button"
-                        accessibilityLabel={`Categoría ${opt.label}${isSelected ? ', seleccionada' : ''}`}
+                        accessibilityLabel={`${t(`categories.${opt.key}`)}${isSelected ? t('vaciarExtra.a11ySelected') : ''}`}
                       >
                         <Text style={[styles.categoryChipText, isSelected && styles.categoryChipTextSelected]}>
-                          {opt.label}
+                          {t(`categories.${opt.key}`)}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -815,7 +802,9 @@ export default function VaciarScreen() {
                     taskInputRef.current?.blur();
                   }}
                   onError={(message) => showToast(message, 'error')}
-                  onSuccess={(projectName) => showToast(`Proyecto «${projectName}» creado`, 'success')}
+                  onSuccess={(projectName) =>
+                    showToast(t('vaciar.projectCreated', { name: projectName }), 'success')
+                  }
                 />
                 <TouchableOpacity
                   style={[styles.subtasksToggle, hasSubtasks && styles.subtasksToggleActive]}
@@ -825,12 +814,12 @@ export default function VaciarScreen() {
                   }}
                   activeOpacity={0.7}
                   accessibilityRole="switch"
-                  accessibilityLabel={hasSubtasks ? 'Pasos activado' : 'Agregar pasos'}
+                  accessibilityLabel={hasSubtasks ? t('vaciarExtra.a11ySubtasksOn') : t('vaciarExtra.a11ySubtasksOff')}
                   accessibilityState={{ checked: hasSubtasks }}
                 >
                   {hasSubtasks ? <ChevronUp size={20} color={THEME.colors.gradient.blue} /> : <ChevronDown size={20} color={THEME.colors.text.secondary} />}
                   <Text style={[styles.subtasksToggleText, hasSubtasks && styles.subtasksToggleTextActive]}>
-                    Agregar pasos (subtareas)
+                    {t('vaciar.subtasksToggle')}
                   </Text>
                 </TouchableOpacity>
                 {hasSubtasks && (
@@ -842,7 +831,7 @@ export default function VaciarScreen() {
                             style={styles.subtaskInput}
                             value={subtask}
                             onChangeText={(value) => updateSubtask(index, value)}
-                            placeholder={`Paso ${index + 1}`}
+                            placeholder={t('vaciar.subtaskPlaceholder', { n: index + 1 })}
                             placeholderTextColor={THEME.colors.text.secondary}
                             maxLength={300}
                           />
@@ -856,7 +845,7 @@ export default function VaciarScreen() {
                     ))}
                     <TouchableOpacity style={styles.addSubtaskButton} onPress={addSubtask} activeOpacity={0.7}>
                       <Plus size={18} color={THEME.colors.gradient.blue} />
-                      <Text style={styles.addSubtaskText}>Agregar otro paso</Text>
+                      <Text style={styles.addSubtaskText}>{t('vaciar.addSubtask')}</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -872,15 +861,15 @@ export default function VaciarScreen() {
             onPress={() => router.push('/proyectos')}
             activeOpacity={0.85}
             accessibilityRole="button"
-            accessibilityLabel="Ver proyectos y tareas sin proyecto"
+            accessibilityLabel={t('vaciar.viewProjects')}
           >
             <View style={styles.verProyectosBoxInner}>
               <View style={styles.verProyectosBoxIconWrap}>
                 <FolderKanban size={22} color={THEME.colors.gradient.blue} strokeWidth={1.8} />
               </View>
               <View style={styles.verProyectosBoxTextWrap}>
-                <Text style={styles.verProyectosBoxTitle}>Ver proyectos y tareas sin proyecto</Text>
-                <Text style={styles.verProyectosBoxHint}>Abre la lista de proyectos y tareas sueltas</Text>
+                <Text style={styles.verProyectosBoxTitle}>{t('vaciar.viewProjects')}</Text>
+                <Text style={styles.verProyectosBoxHint}>{t('vaciar.viewProjectsHint')}</Text>
               </View>
               <ChevronRight size={22} color={THEME.colors.gradient.blue} strokeWidth={2} />
             </View>
@@ -895,11 +884,13 @@ export default function VaciarScreen() {
               onPress={() => setOpcionesExpanded((e) => !e)}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel={opcionesExpanded ? 'Cerrar opciones' : 'Abrir opciones de fecha y prioridad'}
+              accessibilityLabel={
+                opcionesExpanded ? t('vaciarExtra.a11yCloseOptions') : t('vaciarExtra.a11yOpenOptions')
+              }
             >
               <View>
-                <Text style={styles.opcionesHeaderText}>Opciones</Text>
-                <Text style={styles.opcionesHeaderHint}>Fecha, prioridad</Text>
+                <Text style={styles.opcionesHeaderText}>{t('vaciar.options')}</Text>
+                <Text style={styles.opcionesHeaderHint}>{t('vaciar.optionsHint')}</Text>
               </View>
               {opcionesExpanded ? <ChevronUp size={20} color={THEME.colors.text.secondary} /> : <ChevronDown size={20} color={THEME.colors.text.secondary} />}
             </TouchableOpacity>
@@ -914,7 +905,9 @@ export default function VaciarScreen() {
                   accessibilityState={{ checked: isPriority }}
                 >
                   <Star size={20} color={isPriority ? THEME.colors.gradient.pink : THEME.colors.text.secondary} fill={isPriority ? THEME.colors.gradient.pink : 'none'} />
-                  <Text style={[styles.priorityToggleText, isPriority && styles.priorityToggleTextActive]}>Marcar como prioridad</Text>
+                  <Text style={[styles.priorityToggleText, isPriority && styles.priorityToggleTextActive]}>
+                    {t('vaciar.markPriority')}
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -922,15 +915,15 @@ export default function VaciarScreen() {
         ) : null}
 
         <GradientButton
-          title={isSaving ? 'Guardando...' : 'Guardar tarea'}
+          title={isSaving ? t('vaciar.saving') : t('vaciar.saveTask')}
           onPress={handleAddTask}
           disabled={!taskInput.trim() || isSaving}
-          accessibilityHint="Guarda esta tarea para organizarla después en tu día"
+          accessibilityHint={t('vaciarExtra.a11ySaveTaskHint')}
         />
 
         {recentTasks.length > 0 && (
           <View style={styles.recentContainer}>
-            <Text style={styles.recentTitle}>Recién agregado</Text>
+            <Text style={styles.recentTitle}>{t('vaciar.recentTitle')}</Text>
             {recentTasks.map((task, index) => (
               <View key={index} style={styles.recentItem}>
                 <Text style={styles.recentText}>{task}</Text>
@@ -942,8 +935,8 @@ export default function VaciarScreen() {
       
       <Tooltip
         visible={showTooltip}
-        title="Vacía tu mente"
-        message="Aquí puedes escribir todas tus tareas sin pensar en categorías o prioridades. Solo suelta lo que tienes en mente. Después, haz tu check-in diario para que Koraa las priorice automáticamente."
+        title={t('vaciar.brainDumpTooltipTitle')}
+        message={t('vaciar.brainDumpTooltipMessage')}
         onClose={() => setShowTooltip(false)}
       />
     </KeyboardAvoidingView>

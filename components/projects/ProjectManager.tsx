@@ -1,21 +1,21 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { FolderOpen } from 'lucide-react-native';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface ProjectManagerProps {
   userId: string;
   onProjectSelect: () => void;
 }
 
-export function ProjectManager({ userId, onProjectSelect }: ProjectManagerProps) {
+export function ProjectManager({ userId: _userId, onProjectSelect: _onProjectSelect }: ProjectManagerProps) {
+  const { t } = useI18n();
   return (
     <View style={styles.container}>
       <View style={styles.emptyState}>
         <FolderOpen size={48} color={THEME.colors.text.secondary} />
-        <Text style={styles.emptyTitle}>Proyectos</Text>
-        <Text style={styles.emptyText}>
-          Organiza tus tareas por proyectos (próximamente)
-        </Text>
+        <Text style={styles.emptyTitle}>{t('projectManager.emptyTitle')}</Text>
+        <Text style={styles.emptyText}>{t('projectManager.emptyText')}</Text>
       </View>
     </View>
   );
@@ -38,13 +38,11 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     textAlign: 'center',
     marginTop: THEME.spacing.md,
-    marginBottom: THEME.spacing.sm,
-    fontFamily: THEME.fonts.heading.bold,
   },
   emptyText: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
     textAlign: 'center',
-    lineHeight: 22,
+    marginTop: THEME.spacing.sm,
   },
 });

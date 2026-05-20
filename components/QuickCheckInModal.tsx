@@ -5,15 +5,17 @@ import { EmotionCard } from './EmotionCard';
 import { GradientButton } from './GradientButton';
 import { X } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { useI18n } from '@/contexts/I18nContext';
 
-const EMOTIONS = [
-  { id: 'agotada', emoji: '😔', label: 'Agotada' },
-  { id: 'tranquila', emoji: '😌', label: 'Tranquila' },
-  { id: 'ansiosa', emoji: '😰', label: 'Ansiosa' },
-  { id: 'motivada', emoji: '✨', label: 'Motivada' },
-  { id: 'abrumada', emoji: '🥺', label: 'Abrumada' },
-  { id: 'enfocada', emoji: '🎯', label: 'Enfocada' },
-];
+const EMOTION_IDS = ['agotada', 'tranquila', 'ansiosa', 'motivada', 'abrumada', 'enfocada'] as const;
+const EMOTION_EMOJIS: Record<(typeof EMOTION_IDS)[number], string> = {
+  agotada: '😔',
+  tranquila: '😌',
+  ansiosa: '😰',
+  motivada: '✨',
+  abrumada: '🥺',
+  enfocada: '🎯',
+};
 
 interface QuickCheckInModalProps {
   visible: boolean;
@@ -21,6 +23,7 @@ interface QuickCheckInModalProps {
 }
 
 export function QuickCheckInModal({ visible, onClose }: QuickCheckInModalProps) {
+  const { t } = useI18n();
   const [selectedEmotion, setSelectedEmotion] = useState<string>('');
 
   const handleContinue = () => {
@@ -43,9 +46,9 @@ export function QuickCheckInModal({ visible, onClose }: QuickCheckInModalProps) 
         <View style={styles.modalContent}>
           <View style={styles.header}>
             <View style={styles.headerContent}>
-              <Text style={styles.title}>¿Cómo te</Text>
-              <Text style={styles.titleAccent}>sientes</Text>
-              <Text style={styles.title}>hoy?</Text>
+              <Text style={styles.title}>{t('quickCheckIn.title')}</Text>
+              <Text style={styles.titleAccent}>{t('quickCheckIn.titleAccent')}</Text>
+              <Text style={styles.title}>{t('quickCheckIn.titleEnd')}</Text>
             </View>
             <TouchableOpacity
               onPress={onClose}
@@ -60,18 +63,16 @@ export function QuickCheckInModal({ visible, onClose }: QuickCheckInModalProps) 
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.description}>
-              Selecciona cómo te sientes y continúa con tu check-in completo
-            </Text>
+            <Text style={styles.description}>{t('quickCheckIn.body')}</Text>
 
             <View style={styles.emotionsGrid}>
-              {EMOTIONS.map((emotion) => (
-                <View key={emotion.id} style={styles.emotionWrapper}>
+              {EMOTION_IDS.map((id) => (
+                <View key={id} style={styles.emotionWrapper}>
                   <EmotionCard
-                    emoji={emotion.emoji}
-                    label={emotion.label}
-                    selected={selectedEmotion === emotion.id}
-                    onPress={() => setSelectedEmotion(emotion.id)}
+                    emoji={EMOTION_EMOJIS[id]}
+                    label={t(`sentir.emotions.${id}`)}
+                    selected={selectedEmotion === id}
+                    onPress={() => setSelectedEmotion(id)}
                   />
                 </View>
               ))}
@@ -79,7 +80,7 @@ export function QuickCheckInModal({ visible, onClose }: QuickCheckInModalProps) 
           </ScrollView>
 
           <View style={styles.footer}>
-            <GradientButton title="Continuar" onPress={handleContinue} disabled={!selectedEmotion} />
+            <GradientButton title={t('quickCheckIn.continue')} onPress={handleContinue} disabled={!selectedEmotion} />
           </View>
         </View>
       </View>

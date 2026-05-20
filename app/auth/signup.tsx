@@ -13,6 +13,9 @@ import {
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
+import { PasswordRequirementsHint } from '@/components/auth/PasswordRequirementsHint';
+import { getPasswordErrorKey } from '@/lib/passwordPolicy';
 import { OTPInput } from '@/components/auth/OTPInput';
 import { THEME } from '@/constants/theme';
 import { OTP_CODE_LENGTH, emptyOtpSlots } from '@/constants/authOtp';
@@ -23,6 +26,7 @@ type Step = 'signup' | 'otp' | 'success';
 export default function SignupScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const { signUpWithEmail, verifySignupOtp, resendSignupOtp } = useAuth();
 
   const [step, setStep] = useState<Step>('signup');
@@ -44,15 +48,16 @@ export default function SignupScreen() {
 
   const handleSignup = async () => {
     if (!email.trim() || !password || !confirmPassword || !fullName.trim()) {
-      setError('Completa todos los campos');
+      setError(t('auth.signup.fillAllFields'));
       return;
     }
     if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
+      setError(t('password.mismatch'));
       return;
     }
-    if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres');
+    const passwordErrorKey = getPasswordErrorKey(password);
+    if (passwordErrorKey) {
+      setError(t(passwordErrorKey));
       return;
     }
 
@@ -80,7 +85,7 @@ export default function SignupScreen() {
   const handleVerifyOtp = async () => {
     const code = otpCode.join('');
     if (code.length !== OTP_CODE_LENGTH) {
-      setError(`Introduce el código completo (${OTP_CODE_LENGTH} dígitos)`);
+      setError(t('authA11y.otpIncomplete', { length: OTP_CODE_LENGTH }));
       return;
     }
 
@@ -129,7 +134,7 @@ export default function SignupScreen() {
       style={[styles.ctaOuter, isLoading && styles.ctaDisabled]}
       activeOpacity={0.85}
       accessibilityRole="button"
-      accessibilityLabel={isLoading ? `${label}, cargando` : label}
+      accessibilityLabel={isLoading ? `${label}${t('commonExtra.loadingSuffix')}` : label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: isLoading, busy: isLoading }}
     >
@@ -163,69 +168,69 @@ export default function SignupScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Crear cuenta</Text>
-            <Text style={styles.subtitle}>Regístrate para empezar con Koraa</Text>
+            <Text style={styles.title}>{t('auth.signup.title')}</Text>
+            <Text style={styles.subtitle}>{t('auth.signup.subtitle')}</Text>
           </View>
 
           <View style={styles.form}>
             <View style={styles.field}>
-              <Text style={styles.label}>Nombre</Text>
+              <Text style={styles.label}>{t('common.name')}</Text>
               <TextInput
                 style={styles.input}
                 value={fullName}
                 onChangeText={setFullName}
-                placeholder="Tu nombre"
+                placeholder={t('auth.signup.namePlaceholder')}
                 placeholderTextColor={THEME.colors.text.tertiary}
                 autoCapitalize="words"
                 editable={!isLoading}
-                accessibilityLabel="Nombre completo"
-                accessibilityHint="Escribe tu nombre para personalizar tu experiencia"
+                accessibilityLabel={t('authA11y.fullName')}
+                accessibilityHint={t('authA11y.fullNameHint')}
               />
             </View>
             <View style={styles.field}>
-              <Text style={styles.label}>Correo</Text>
+              <Text style={styles.label}>{t('common.email')}</Text>
               <TextInput
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="tu@correo.com"
+                placeholder={t('auth.login.emailPlaceholder')}
                 placeholderTextColor={THEME.colors.text.tertiary}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
                 editable={!isLoading}
-                accessibilityLabel="Correo electrónico"
-                accessibilityHint="Escribe el correo con el que crearás tu cuenta"
+                accessibilityLabel={t('authA11y.email')}
+                accessibilityHint={t('authA11y.emailHintSignup')}
               />
             </View>
             <View style={styles.field}>
-              <Text style={styles.label}>Contraseña</Text>
+              <Text style={styles.label}>{t('common.password')}</Text>
               <TextInput
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Mínimo 8 caracteres"
+                placeholder={t('password.placeholder')}
                 placeholderTextColor={THEME.colors.text.tertiary}
                 secureTextEntry
                 autoComplete="new-password"
                 editable={!isLoading}
-                accessibilityLabel="Contraseña"
-                accessibilityHint="Crea una contraseña de al menos 8 caracteres"
+                accessibilityLabel={t('common.password')}
               />
+              <PasswordRequirementsHint />
             </View>
             <View style={styles.field}>
-              <Text style={styles.label}>Confirmar contraseña</Text>
+              <Text style={styles.label}>{t('common.confirmPassword')}</Text>
               <TextInput
                 style={styles.input}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                placeholder="Repite tu contraseña"
+                placeholder={t('password.confirmPlaceholder')}
                 placeholderTextColor={THEME.colors.text.tertiary}
                 secureTextEntry
                 autoComplete="new-password"
                 editable={!isLoading}
-                accessibilityLabel="Confirmar contraseña"
-                accessibilityHint="Repite la contraseña para confirmar"
+                accessibilityLabel={t('authA11y.confirmPassword')}
+                accessibilityHint={t('authA11y.confirmPasswordHint')}
               />
             </View>
 
@@ -235,20 +240,20 @@ export default function SignupScreen() {
               </Text>
             ) : null}
 
-            {primaryCta(handleSignup, 'Crear cuenta', 'Crea tu cuenta y continúa al siguiente paso')}
+            {primaryCta(handleSignup, t('auth.signup.submit'), t('auth.signup.submit'))}
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerMuted}>¿Ya tienes cuenta? </Text>
+            <Text style={styles.footerMuted}>{t('auth.signup.hasAccount')} </Text>
             <Link href="/auth/login" asChild>
               <TouchableOpacity
                 disabled={isLoading}
                 accessibilityRole="button"
-                accessibilityLabel="Iniciar sesión"
-                accessibilityHint="Abre la pantalla de acceso para cuentas existentes"
+                accessibilityLabel={t('authA11y.signInLink')}
+                accessibilityHint={t('authSignup.signInLinkHint')}
                 accessibilityState={{ disabled: isLoading }}
               >
-                <Text style={styles.footerLink}>Iniciar sesión</Text>
+                <Text style={styles.footerLink}>{t('auth.signup.signIn')}</Text>
               </TouchableOpacity>
             </Link>
           </View>
@@ -271,9 +276,10 @@ export default function SignupScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Verifica tu correo</Text>
+            <Text style={styles.title}>{t('authSignup.verifyTitle')}</Text>
             <Text style={styles.subtitle}>
-              Introduce el código enviado a{'\n'}
+              {t('authSignup.verifySubtitlePrefix')}
+              {'\n'}
               <Text style={styles.emailHighlight}>{email}</Text>
             </Text>
           </View>
@@ -288,15 +294,19 @@ export default function SignupScreen() {
             </Text>
           ) : null}
 
-          {primaryCta(handleVerifyOtp, 'Verificar', 'Verifica el código para activar tu cuenta')}
+          {primaryCta(handleVerifyOtp, t('authA11y.verify'), t('authA11y.verifyHint'))}
 
           <TouchableOpacity
             style={styles.resendBtn}
             onPress={handleResendOtp}
             disabled={resendCooldown > 0 || isLoading}
             accessibilityRole="button"
-            accessibilityLabel={resendCooldown > 0 ? `Reenviar en ${resendCooldown} segundos` : 'Reenviar código'}
-            accessibilityHint="Solicita un nuevo código al mismo correo"
+            accessibilityLabel={
+              resendCooldown > 0
+                ? t('authA11y.resendIn', { seconds: resendCooldown })
+                : t('authA11y.resend')
+            }
+            accessibilityHint={t('authA11y.resendHint')}
             accessibilityState={{ disabled: resendCooldown > 0 || isLoading }}
           >
             <Text
@@ -305,7 +315,9 @@ export default function SignupScreen() {
                 (resendCooldown > 0 || isLoading) && styles.resendTextDisabled,
               ]}
             >
-              {resendCooldown > 0 ? `Reenviar en ${resendCooldown}s` : 'Reenviar código'}
+              {resendCooldown > 0
+                ? t('authSignup.resendIn', { seconds: resendCooldown })
+                : t('authSignup.resend')}
             </Text>
           </TouchableOpacity>
 
@@ -314,11 +326,11 @@ export default function SignupScreen() {
             onPress={() => setStep('signup')}
             disabled={isLoading}
             accessibilityRole="button"
-            accessibilityLabel="Cambiar correo"
-            accessibilityHint="Vuelve al formulario para editar el correo de registro"
+            accessibilityLabel={t('authA11y.changeEmail')}
+            accessibilityHint={t('authSignup.changeEmailHint')}
             accessibilityState={{ disabled: isLoading }}
           >
-            <Text style={styles.backText}>← Cambiar correo</Text>
+            <Text style={styles.backText}>{t('authSignup.changeEmailLink')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -327,15 +339,15 @@ export default function SignupScreen() {
 
   return (
     <View style={[styles.successRoot, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <Text style={styles.successTitle}>¡Listo!</Text>
-      <Text style={styles.successBody}>Tu correo quedó verificado. Ya puedes usar Koraa.</Text>
+      <Text style={styles.successTitle}>{t('authSignup.successTitle')}</Text>
+      <Text style={styles.successBody}>{t('authSignup.successBody')}</Text>
       <TouchableOpacity
         onPress={() => router.replace('/')}
         style={styles.ctaOuter}
         activeOpacity={0.85}
         accessibilityRole="button"
-        accessibilityLabel="Continuar"
-        accessibilityHint="Entra a Koraa con tu cuenta ya verificada"
+        accessibilityLabel={t('authSignup.continue')}
+        accessibilityHint={t('authSignup.continueHint')}
       >
         <LinearGradient
           colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -343,7 +355,7 @@ export default function SignupScreen() {
           end={{ x: 1, y: 0 }}
           style={styles.ctaGradient}
         >
-          <Text style={styles.ctaText}>Continuar</Text>
+          <Text style={styles.ctaText}>{t('authSignup.continue')}</Text>
         </LinearGradient>
       </TouchableOpacity>
     </View>

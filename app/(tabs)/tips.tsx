@@ -13,19 +13,21 @@ import { getEmotionTips } from '@/lib/emotionTips';
 import { generatePersonalizedRecommendations } from '@/lib/personalizedRecommendations';
 import { Lightbulb, Moon, Zap, Brain, Sparkles, Heart, Plus } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
+import { useI18n } from '@/contexts/I18nContext';
+import type { TranslationKey } from '@/lib/i18n';
 
 const TIPS_TOOLTIP_SEEN_KEY = 'koraa_tips_tooltip_seen';
 const FREE_RECOMMENDATIONS_LIMIT = 2;
 const FREE_GENERIC_TIPS_LIMIT = 3;
 
 const EMOTIONS = [
-  { id: 'agotada', emoji: '😔', label: 'Agotada', color: ['#667eea', '#764ba2'] },
-  { id: 'tranquila', emoji: '😌', label: 'Tranquila', color: ['#f093fb', '#f5576c'] },
-  { id: 'ansiosa', emoji: '😰', label: 'Ansiosa', color: ['#fa709a', '#fee140'] },
-  { id: 'motivada', emoji: '✨', label: 'Motivada', color: ['#30cfd0', '#330867'] },
-  { id: 'abrumada', emoji: '🥺', label: 'Abrumada', color: ['#a8edea', '#fed6e3'] },
-  { id: 'enfocada', emoji: '🎯', label: 'Enfocada', color: ['#667eea', '#764ba2'] },
-];
+  { id: 'agotada', emoji: '😔', color: ['#667eea', '#764ba2'] },
+  { id: 'tranquila', emoji: '😌', color: ['#f093fb', '#f5576c'] },
+  { id: 'ansiosa', emoji: '😰', color: ['#fa709a', '#fee140'] },
+  { id: 'motivada', emoji: '✨', color: ['#30cfd0', '#330867'] },
+  { id: 'abrumada', emoji: '🥺', color: ['#a8edea', '#fed6e3'] },
+  { id: 'enfocada', emoji: '🎯', color: ['#667eea', '#764ba2'] },
+] as const;
 
 const CATEGORY_ICONS = {
   rest: Moon,
@@ -34,11 +36,11 @@ const CATEGORY_ICONS = {
   productivity: Sparkles,
 };
 
-const CATEGORY_LABELS = {
-  rest: 'Descanso',
-  action: 'Acción',
-  mindset: 'Mentalidad',
-  productivity: 'Productividad',
+const TIP_CATEGORY_KEYS: Record<string, TranslationKey> = {
+  rest: 'tips.categories.rest',
+  action: 'tips.categories.action',
+  mindset: 'tips.categories.mindset',
+  productivity: 'tips.categories.productivity',
 };
 
 const CATEGORY_COLORS = {
@@ -50,6 +52,7 @@ const CATEGORY_COLORS = {
 
 export default function TipsScreen() {
   const insets = useSafeAreaInsets();
+  const { t, locale } = useI18n();
   const { isSubscribed } = useSubscription();
   const [todayMood, setTodayMood] = useState<string>('');
   const [energyLevel, setEnergyLevel] = useState<number>(0);
@@ -163,7 +166,7 @@ export default function TipsScreen() {
   };
 
   const emotionData = getEmotionData();
-  const tips = todayMood ? getEmotionTips(todayMood) : [];
+  const tips = todayMood ? getEmotionTips(todayMood, locale) : [];
   
   // Agrupar tips por categoría
   const tipsByCategory = tips.reduce((acc, tip) => {
@@ -194,13 +197,14 @@ export default function TipsScreen() {
           energyLevel,
           availableTime,
           focusLevel,
-        }
+        },
+        locale,
       );
     } catch (error) {
       console.error('Error generando recomendaciones:', error);
       return []; // Retornar array vacío en caso de error
     }
-  }, [todayMood, userProfile, energyLevel, availableTime, focusLevel]);
+  }, [todayMood, userProfile, energyLevel, availableTime, focusLevel, locale]);
 
   const visiblePersonalizedRecommendations = useMemo(() => {
     if (isSubscribed) return personalizedRecommendations;
@@ -229,7 +233,7 @@ export default function TipsScreen() {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Cargando...</Text>
+          <Text style={styles.loadingText}>{t('tips.loading')}</Text>
         </View>
       </View>
     );
@@ -238,13 +242,9 @@ export default function TipsScreen() {
   return (
     <View style={styles.container}>
       <PremiumLock
-        title="Desbloquea Consejos Premium"
-        description="Convierte tu estado de hoy en acciones concretas con una guía más profunda."
-        benefits={[
-          'Recomendaciones personalizadas según emoción, energía y tiempo.',
-          'Ideas accionables para tu día, no solo consejos genéricos.',
-          'Atajos para convertir sugerencias en tareas en segundos.',
-        ]}
+        title={t('tips.premiumTitle')}
+        description={t('paywall.subtitle')}
+        benefits={[t('tips.premiumBenefit1'), t('tips.premiumBenefit2'), t('tips.premiumBenefit3')]}
         showBanner={false}
       >
         <ScrollView
@@ -268,16 +268,14 @@ export default function TipsScreen() {
             <View style={styles.emptyIconContainer}>
               <Lightbulb size={64} color={THEME.colors.gradient.blue} />
             </View>
-            <Text style={styles.emptyTitle}>Consejos personalizados</Text>
-            <Text style={styles.emptyMessage}>
-              Haz tu check-in diario en <Text style={styles.emptyAccent}>Sentir</Text> para ver consejos según cómo te sientes hoy
-            </Text>
+            <Text style={styles.emptyTitle}>{t('tips.emptyTitle')}</Text>
+            <Text style={styles.emptyMessage}>{t('tips.emptyBody')}</Text>
             <TouchableOpacity
               style={styles.emptyCta}
               onPress={() => router.push('/(tabs)/sentir')}
               activeOpacity={0.88}
               accessibilityRole="button"
-              accessibilityLabel="Ir a Sentir para hacer check-in"
+              accessibilityLabel={t('tipsExtra.a11yGoFeel')}
             >
               <LinearGradient
                 colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -285,12 +283,14 @@ export default function TipsScreen() {
                 end={{ x: 1, y: 0 }}
                 style={styles.emptyCtaGradient}
               >
-                <Text style={styles.emptyCtaText}>Ir a Sentir</Text>
+                <Text style={styles.emptyCtaText}>{t('tips.goToFeel')}</Text>
               </LinearGradient>
             </TouchableOpacity>
             <View style={styles.emptyActionContainer}>
               <Text style={styles.emptyActionText}>
-                También puedes abrir la pestaña <Text style={styles.emptyAccent}>Sentir</Text> abajo y registrar cómo te sientes
+                {t('tipsExtra.emptySecondaryLead')}
+                <Text style={styles.emptyAccent}>{t('tipsExtra.emptySecondaryTab')}</Text>
+                {t('tipsExtra.emptySecondaryTrail')}
               </Text>
             </View>
           </View>
@@ -307,8 +307,10 @@ export default function TipsScreen() {
               >
                 <Text style={styles.emotionEmoji}>{emotionData.emoji}</Text>
                 <View style={styles.emotionHeaderContent}>
-                  <Text style={styles.emotionLabel}>Te sientes</Text>
-                  <Text style={styles.emotionName}>{emotionData.label}</Text>
+                  <Text style={styles.emotionLabel}>{t('tips.feeling')}</Text>
+                  <Text style={styles.emotionName}>
+                    {t(`sentir.emotions.${emotionData.id}` as TranslationKey)}
+                  </Text>
                 </View>
               </LinearGradient>
             </View>
@@ -318,7 +320,7 @@ export default function TipsScreen() {
               <View style={styles.recommendationsSection}>
                 <View style={styles.recommendationsHeader}>
                   <Sparkles size={20} color={THEME.colors.gradient.pink} />
-                  <Text style={styles.recommendationsTitle}>Recomendaciones para ti</Text>
+                  <Text style={styles.recommendationsTitle}>{t('tips.recommendations')}</Text>
                 </View>
                 {visiblePersonalizedRecommendations.map((rec) => (
                   <View key={rec.id} style={styles.recommendationCard}>
@@ -339,7 +341,7 @@ export default function TipsScreen() {
                           activeOpacity={0.7}
                         >
                           <Plus size={16} color={THEME.colors.gradient.blue} />
-                          <Text style={styles.suggestionButtonText}>Agregar a mis tareas</Text>
+                          <Text style={styles.suggestionButtonText}>{t('tips.addToTasks')}</Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -351,7 +353,7 @@ export default function TipsScreen() {
             {/* Tips organizados por categoría */}
             {Object.entries(visibleTipsByCategory).map(([category, categoryTips]) => {
               const IconComponent = CATEGORY_ICONS[category as keyof typeof CATEGORY_ICONS];
-              const categoryLabel = CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS];
+              const categoryLabel = t(TIP_CATEGORY_KEYS[category] ?? 'tips.categories.productivity');
               const categoryColor = CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS];
 
               return (
@@ -377,7 +379,7 @@ export default function TipsScreen() {
             <View style={styles.footerMessage}>
               <Heart size={20} color={THEME.colors.gradient.pink} />
               <Text style={styles.footerText}>
-                Estos consejos están personalizados para tu estado de hoy. Puedes actualizar cómo te sientes en Sentir cuando quieras.
+                {t('tips.footer')}
               </Text>
             </View>
           </>
@@ -387,8 +389,8 @@ export default function TipsScreen() {
 
       <Tooltip
         visible={showTooltip}
-        title="Consejos"
-        message="Los consejos cambian según tu check-in de hoy. Completa Sentir cada día para ver sugerencias acordes a tu estado."
+        title={t('tips.tooltipTitle')}
+        message={t('tips.tooltipBody')}
         onClose={async () => {
           setShowTooltip(false);
           try {

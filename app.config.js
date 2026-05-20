@@ -55,7 +55,7 @@ module.exports = {
   expo: {
     name: 'Koraa',
     slug: 'koraav1-1',
-    version: '1.0.0',
+    version: '1.0.1',
     orientation: 'portrait',
     icon: './assets/images/koraa-logo.png',
     scheme: 'myapp',
@@ -69,7 +69,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.impermanencecasaartisitca.koraav1',
-      buildNumber: '15',
+      buildNumber: '23',
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         CFBundleDisplayName: 'Koraa',
@@ -84,6 +84,7 @@ module.exports = {
       favicon: './assets/images/favicon.png',
     },
     plugins: [
+      'expo-localization',
       'expo-router',
       'expo-font',
       'expo-web-browser',

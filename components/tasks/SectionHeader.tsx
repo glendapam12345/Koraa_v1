@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { ChevronDown, ChevronUp, FolderKanban, Inbox } from 'lucide-react-native';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface SectionHeaderProps {
   title: string;
@@ -39,7 +40,10 @@ export function SectionHeader({
   expanded = true,
   onToggleExpand,
 }: SectionHeaderProps) {
+  const { t } = useI18n();
   const isCard = variant === 'card';
+  const taskCountLabel =
+    count === 1 ? t('sectionHeader.taskOne', { count }) : t('sectionHeader.taskMany', { count });
   const displayEmoji = emoji ?? (isSuelta ? '📋' : '📁');
   const content = (
     <View style={[styles.content, subtitle && styles.contentWithSubtitle, segmentStyle && styles.contentSegment]}>
@@ -60,7 +64,7 @@ export function SectionHeader({
         </View>
         <View style={[styles.countBadge, isCard && { backgroundColor: color + '20' }, segmentStyle && { backgroundColor: color + '25' }]}>
           <Text style={[styles.count, isCard && styles.countCard, (isCard || segmentStyle) && { color }]} numberOfLines={1}>
-            {count} {count === 1 ? 'tarea' : 'tareas'}
+            {taskCountLabel}
           </Text>
         </View>
         {expandable && (
@@ -83,7 +87,11 @@ export function SectionHeader({
           onPress={onToggleExpand}
           activeOpacity={0.7}
           accessibilityRole="button"
-          accessibilityLabel={expanded ? `Contraer ${title}` : `Ver ${count} tareas de ${title}`}
+          accessibilityLabel={
+            expanded
+              ? t('hoyPlanFallback.collapseSection', { title })
+              : t('hoyPlanFallback.expandSection', { count, title })
+          }
           accessibilityState={{ expanded }}
         >
           {content}

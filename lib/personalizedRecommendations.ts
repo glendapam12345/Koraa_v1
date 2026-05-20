@@ -5,22 +5,8 @@
  * - Contexto (tiempo disponible, energía, enfoque)
  */
 
-// Recomendaciones concretas: podcasts y libros para productividad y bienestar
-const CONCRETE_PODCASTS: { title: string; message: string; suggestion: string }[] = [
-  { title: 'Escuchar: El podcast de Tim Ferriss', message: 'Episodios cortos sobre productividad y hábitos. Ideal para escuchar en movimiento.', suggestion: 'Escuchar podcast de Tim Ferriss' },
-  { title: 'Escuchar: Hábitos con James Clear', message: 'Si te interesa mejorar hábitos, busca episodios de James Clear en español.', suggestion: 'Buscar podcast de James Clear' },
-  { title: 'Escuchar: Radio Ambulante', message: 'Historias en español, perfectas para caminar o viajar. Narrativa y reflexión.', suggestion: 'Escuchar Radio Ambulante' },
-  { title: 'Escuchar: Entiende tu mente', message: 'Psicología y bienestar en español. Episodios de unos 30 min.', suggestion: 'Escuchar Entiende tu mente' },
-  { title: 'Escuchar: Crear es vivir', message: 'Creatividad y proceso creativo. Inspiración para proyectos.', suggestion: 'Escuchar Crear es vivir' },
-];
-
-const CONCRETE_BOOKS: { title: string; message: string; suggestion: string }[] = [
-  { title: 'Leer: Hábitos atómicos (James Clear)', message: 'Pequeños cambios para grandes resultados. Muy práctico para productividad.', suggestion: 'Leer Hábitos atómicos' },
-  { title: 'Leer: El poder del ahora (Eckhart Tolle)', message: 'Sobre presencia y calma. Recomendado cuando te sientes ansiosa.', suggestion: 'Leer El poder del ahora' },
-  { title: 'Leer: Deep Work (Cal Newport)', message: 'Enfocarse sin distracciones. Ideal si tienes tiempo para concentrarte.', suggestion: 'Leer Deep Work' },
-  { title: 'Leer: La semana laboral de 4 horas', message: 'Ideas sobre eficiencia y priorización. Inspira a hacer más con menos.', suggestion: 'Leer La semana laboral de 4 horas' },
-  { title: 'Leer: El monje que vendió su Ferrari', message: 'Fábula sobre prioridades y sentido de vida. Lectura ligera.', suggestion: 'Leer El monje que vendió su Ferrari' },
-];
+import type { AppLocale } from '@/lib/i18n';
+import { getConcreteBooks, getConcretePodcasts, recCopy } from '@/lib/recommendationStrings';
 
 export interface UserPreferences {
   age?: number;
@@ -51,13 +37,13 @@ export interface Recommendation {
  */
 export function generatePersonalizedRecommendations(
   preferences: UserPreferences,
-  checkIn: CheckInContext
+  checkIn: CheckInContext,
+  locale: AppLocale = 'es',
 ): Recommendation[] {
   const recommendations: Recommendation[] = [];
 
   if (!preferences || (!preferences.favorite_activities?.length && !preferences.interests?.length)) {
-    // Si no hay datos personales, retornar recomendaciones genéricas
-    return getGenericRecommendations(checkIn);
+    return getGenericRecommendations(checkIn, locale);
   }
 
   const emotion = checkIn.emotion.toLowerCase();
@@ -70,7 +56,8 @@ export function generatePersonalizedRecommendations(
       preferences.favorite_activities,
       emotion,
       energyLevel,
-      availableTime
+      availableTime,
+      locale,
     );
     recommendations.push(...activityRecommendations);
   }
@@ -80,7 +67,8 @@ export function generatePersonalizedRecommendations(
     const interestRecommendations = getInterestRecommendations(
       preferences.interests,
       emotion,
-      energyLevel
+      energyLevel,
+      locale,
     );
     recommendations.push(...interestRecommendations);
   }
@@ -90,13 +78,14 @@ export function generatePersonalizedRecommendations(
     const wellnessRecommendations = getWellnessRecommendations(
       preferences.age,
       emotion,
-      energyLevel
+      energyLevel,
+      locale,
     );
     recommendations.push(...wellnessRecommendations);
   }
 
   // Añadir recomendaciones concretas (podcasts, libros) para dar opciones específicas
-  const concreteRecs = getConcreteRecommendations(checkIn);
+  const concreteRecs = getConcreteRecommendations(checkIn, locale);
   recommendations.push(...concreteRecs);
 
   // Ordenar por prioridad (mayor a menor)
@@ -109,15 +98,18 @@ export function generatePersonalizedRecommendations(
 /**
  * Recomendaciones concretas: podcasts y libros según contexto
  */
-function getConcreteRecommendations(checkIn: CheckInContext): Recommendation[] {
+function getConcreteRecommendations(checkIn: CheckInContext, locale: AppLocale): Recommendation[] {
   const recs: Recommendation[] = [];
   const { energyLevel, availableTime } = checkIn;
-  const hasShortTime = availableTime?.toLowerCase().includes('poco') || availableTime?.toLowerCase().includes('1');
-  const hasMoreTime = availableTime?.toLowerCase().includes('medio') || availableTime?.toLowerCase().includes('2') || availableTime?.toLowerCase().includes('4');
+  const time = availableTime?.toLowerCase() ?? '';
+  const hasShortTime =
+    time.includes('poco') || time.includes('little') || time.includes('1');
+  const hasMoreTime =
+    time.includes('medio') || time.includes('medium') || time.includes('2') || time.includes('4') || time.includes('plenty') || time.includes('bastante');
 
-  // Si tiene poco tiempo o poca energía → podcast
   if (hasShortTime || energyLevel <= 3) {
-    const pick = CONCRETE_PODCASTS[Math.floor(Math.random() * CONCRETE_PODCASTS.length)];
+    const podcasts = getConcretePodcasts(locale);
+    const pick = podcasts[Math.floor(Math.random() * podcasts.length)];
     recs.push({
       id: `concrete-podcast-${pick.title.slice(0, 15).replace(/\s/g, '-')}`,
       type: 'productivity',
@@ -130,7 +122,8 @@ function getConcreteRecommendations(checkIn: CheckInContext): Recommendation[] {
   }
   // Si tiene más tiempo o buena energía → libro
   if (hasMoreTime || energyLevel >= 3) {
-    const pick = CONCRETE_BOOKS[Math.floor(Math.random() * CONCRETE_BOOKS.length)];
+    const books = getConcreteBooks(locale);
+    const pick = books[Math.floor(Math.random() * books.length)];
     recs.push({
       id: `concrete-book-${pick.title.slice(0, 15).replace(/\s/g, '-')}`,
       type: 'productivity',
@@ -151,9 +144,12 @@ function getActivityRecommendations(
   activities: string[],
   emotion: string,
   energyLevel: number,
-  availableTime: string
+  availableTime: string,
+  locale: AppLocale,
 ): Recommendation[] {
   const recommendations: Recommendation[] = [];
+  const copy = recCopy(locale);
+  void availableTime;
 
   activities.forEach((activity, index) => {
     const activityLower = activity.toLowerCase();
@@ -167,11 +163,11 @@ function getActivityRecommendations(
     if (['yoga', 'ejercicio', 'gym', 'gimnasio', 'correr', 'caminar', 'nadar', 'deporte'].some(a => activityLower.includes(a))) {
       if (energyLevel >= 3 && !['agotada', 'abrumada'].includes(emotion)) {
         isAppropriate = true;
-        message = `Hace tiempo que no haces ${activity}. Tu energía está en ${energyLevel}/5, es buen momento para retomarla.`;
+        message = copy.activityEnergy(activity, energyLevel);
         priority = energyLevel >= 4 ? 5 : 4;
       } else if (energyLevel <= 2 && ['agotada', 'abrumada'].includes(emotion)) {
         isAppropriate = true;
-        message = `Una sesión suave de ${activity} podría ayudarte a recargar energía.`;
+        message = copy.activityGentle(activity);
         priority = 3;
       }
     }
@@ -180,11 +176,11 @@ function getActivityRecommendations(
     if (['leer', 'libro', 'lectura', 'escribir', 'dibujar', 'pintar', 'música', 'cocinar', 'arte'].some(a => activityLower.includes(a))) {
       if (['motivada', 'tranquila', 'enfocada'].includes(emotion)) {
         isAppropriate = true;
-        message = `Tu estado emocional es perfecto para ${activity}. Aprovecha este momento.`;
+        message = copy.activityCreative(activity);
         priority = 4;
       } else if (['ansiosa', 'abrumada'].includes(emotion)) {
         isAppropriate = true;
-        message = `${activity} puede ayudarte a calmar la mente. Es una buena forma de relajarte.`;
+        message = copy.activityCalm(activity);
         priority = 4;
       }
     }
@@ -193,11 +189,11 @@ function getActivityRecommendations(
     if (['amigos', 'familia', 'social', 'reunión', 'cita'].some(a => activityLower.includes(a))) {
       if (['agotada', 'ansiosa', 'abrumada'].includes(emotion)) {
         isAppropriate = true;
-        message = `Conectar con otros puede ayudarte cuando te sientes ${emotion}. Considera ${activity}.`;
+        message = copy.activitySocialLow(activity, emotion);
         priority = 4;
       } else if (['motivada', 'tranquila'].includes(emotion)) {
         isAppropriate = true;
-        message = `Es buen momento para ${activity}. Tu estado emocional es ideal para compartir.`;
+        message = copy.activitySocialGood(activity);
         priority = 3;
       }
     }
@@ -206,7 +202,7 @@ function getActivityRecommendations(
     if (['meditación', 'meditar', 'relajación', 'masaje', 'spa', 'baño'].some(a => activityLower.includes(a))) {
       if (['agotada', 'ansiosa', 'abrumada'].includes(emotion) || energyLevel <= 2) {
         isAppropriate = true;
-        message = `${activity} puede ayudarte a recargar. Es momento de cuidarte.`;
+        message = copy.activityRest(activity);
         priority = 5;
       }
     }
@@ -215,7 +211,7 @@ function getActivityRecommendations(
       recommendations.push({
         id: `activity-${activity}-${index}`,
         type: 'activity',
-        title: `Retoma ${activity}`,
+        title: copy.resumeActivity(activity),
         message,
         suggestion: activity,
         emoji: getActivityEmoji(activity),
@@ -233,9 +229,11 @@ function getActivityRecommendations(
 function getInterestRecommendations(
   interests: string[],
   emotion: string,
-  energyLevel: number
+  energyLevel: number,
+  locale: AppLocale,
 ): Recommendation[] {
   const recommendations: Recommendation[] = [];
+  const copy = recCopy(locale);
 
   interests.forEach((interest, index) => {
     const interestLower = interest.toLowerCase();
@@ -245,7 +243,7 @@ function getInterestRecommendations(
     // Intereses que requieren energía
     if (['viaje', 'viajar', 'aventura', 'deporte', 'actividad física'].some(i => interestLower.includes(i))) {
       if (energyLevel >= 4 && ['motivada', 'enfocada'].includes(emotion)) {
-        message = `Tienes energía alta y estás ${emotion}. Es buen momento para explorar ${interest}.`;
+        message = copy.interestHighEnergy(interest, emotion);
         priority = 4;
       }
     }
@@ -253,10 +251,10 @@ function getInterestRecommendations(
     // Intereses creativos/mentales
     if (['música', 'arte', 'lectura', 'aprender', 'curso', 'estudio'].some(i => interestLower.includes(i))) {
       if (['tranquila', 'enfocada'].includes(emotion)) {
-        message = `Tu estado de calma es perfecto para dedicarte a ${interest}.`;
+        message = copy.interestCalm(interest);
         priority = 4;
       } else if (['ansiosa', 'abrumada'].includes(emotion)) {
-        message = `${interest} puede ser una buena distracción positiva.`;
+        message = copy.interestDistraction(interest);
         priority = 3;
       }
     }
@@ -265,7 +263,7 @@ function getInterestRecommendations(
       recommendations.push({
         id: `interest-${interest}-${index}`,
         type: 'productivity',
-        title: `Explora ${interest}`,
+        title: copy.exploreInterest(interest),
         message,
         emoji: getInterestEmoji(interest),
         priority,
@@ -282,9 +280,11 @@ function getInterestRecommendations(
 function getWellnessRecommendations(
   age: number,
   emotion: string,
-  energyLevel: number
+  energyLevel: number,
+  locale: AppLocale,
 ): Recommendation[] {
   const recommendations: Recommendation[] = [];
+  const copy = recCopy(locale);
 
   // Recomendaciones para diferentes rangos de edad
   if (age >= 18 && age <= 25) {
@@ -292,8 +292,8 @@ function getWellnessRecommendations(
       recommendations.push({
         id: 'wellness-sleep-young',
         type: 'wellness',
-        title: 'Prioriza el descanso',
-        message: 'A tu edad, el descanso es fundamental. Asegúrate de dormir 7-9 horas.',
+        title: copy.wellnessSleepTitle,
+        message: copy.wellnessSleepMsg,
         emoji: '😴',
         priority: 4,
       });
@@ -303,8 +303,8 @@ function getWellnessRecommendations(
       recommendations.push({
         id: 'wellness-exercise-adult',
         type: 'wellness',
-        title: 'Movimiento suave',
-        message: 'Una caminata corta o estiramientos pueden ayudarte a recargar energía.',
+        title: copy.wellnessMoveTitle,
+        message: copy.wellnessMoveMsg,
         emoji: '🚶',
         priority: 3,
       });
@@ -314,8 +314,8 @@ function getWellnessRecommendations(
       recommendations.push({
         id: 'wellness-self-care',
         type: 'wellness',
-        title: 'Autocuidado',
-        message: 'Es importante escuchar a tu cuerpo. Tómate tiempo para descansar.',
+        title: copy.wellnessSelfTitle,
+        message: copy.wellnessSelfMsg,
         emoji: '💆',
         priority: 5,
       });
@@ -328,17 +328,18 @@ function getWellnessRecommendations(
 /**
  * Recomendaciones genéricas cuando no hay datos personales
  */
-function getGenericRecommendations(checkIn: CheckInContext): Recommendation[] {
+function getGenericRecommendations(checkIn: CheckInContext, locale: AppLocale): Recommendation[] {
   const recommendations: Recommendation[] = [];
   const emotion = checkIn.emotion.toLowerCase();
   const energyLevel = checkIn.energyLevel;
+  const copy = recCopy(locale);
 
   if (energyLevel <= 2 || ['agotada', 'abrumada'].includes(emotion)) {
     recommendations.push({
       id: 'generic-rest',
       type: 'wellness',
-      title: 'Momento de descanso',
-      message: 'Tu cuerpo te está pidiendo una pausa. Prioriza el descanso hoy.',
+      title: copy.genericRestTitle,
+      message: copy.genericRestMsg,
       emoji: '😌',
       priority: 5,
     });
@@ -348,15 +349,15 @@ function getGenericRecommendations(checkIn: CheckInContext): Recommendation[] {
     recommendations.push({
       id: 'generic-breathe',
       type: 'wellness',
-      title: 'Respiración consciente',
-      message: 'Tómate 5 minutos para respirar profundamente. Puede ayudarte a calmar la mente.',
+      title: copy.genericBreatheTitle,
+      message: copy.genericBreatheMsg,
       emoji: '🧘',
       priority: 4,
     });
   }
 
   // Siempre incluir al menos una recomendación concreta (podcast o libro)
-  const concrete = getConcreteRecommendations(checkIn);
+  const concrete = getConcreteRecommendations(checkIn, locale);
   recommendations.push(...concrete);
 
   return recommendations;

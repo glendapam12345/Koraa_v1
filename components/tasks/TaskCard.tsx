@@ -1,17 +1,36 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { RectButton, Swipeable } from 'react-native-gesture-handler';
 import { THEME } from '@/constants/theme';
 import { getCategoryEmoji } from '@/constants/emojis';
 import { ChevronDown, ChevronRight, Check, Pencil, Trash2, Calendar } from 'lucide-react-native';
+import { useI18n } from '@/contexts/I18nContext';
+import { categoryLabel } from '@/lib/i18n/categoryLabels';
 
-function formatTaskDate(iso: string | null | undefined): string {
+const MONTH_KEYS = [
+  'taskCard.monthJan',
+  'taskCard.monthFeb',
+  'taskCard.monthMar',
+  'taskCard.monthApr',
+  'taskCard.monthMay',
+  'taskCard.monthJun',
+  'taskCard.monthJul',
+  'taskCard.monthAug',
+  'taskCard.monthSep',
+  'taskCard.monthOct',
+  'taskCard.monthNov',
+  'taskCard.monthDec',
+] as const;
+
+function formatTaskDate(
+  iso: string | null | undefined,
+  t: (key: (typeof MONTH_KEYS)[number]) => string,
+): string {
   if (!iso) return '';
   try {
     const d = new Date(iso);
     const day = d.getDate();
-    const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-    const month = months[d.getMonth()];
+    const month = t(MONTH_KEYS[d.getMonth()]);
     return `${day} ${month}`;
   } catch {
     return '';
@@ -96,6 +115,7 @@ export function TaskCard({
   sectionCategory,
   uniformCard = false,
 }: TaskCardProps) {
+  const { t, locale } = useI18n();
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
   const completedSubtasks = task.subtasks?.filter((st) => st.is_completed).length || 0;
   const totalSubtasks = task.subtasks?.length || 0;
@@ -105,17 +125,36 @@ export function TaskCard({
   /** En modo uniforme: solo mostrar leyenda si pertenece a un proyecto; si no, nada */
   const showProjectLegend = uniformCard && projectName != null && projectName !== '';
   const showLabel = !uniformCard && !hideProjectLabel && projectLabel != null && projectLabel !== '';
-  const isLooseTask = showLabel && (projectLabel === 'Mi lista' || projectLabel === 'Tareas sueltas' || projectLabel === 'Suelta' || projectLabel === 'Independiente');
-  /** Texto claro para el usuario: siempre "Tareas sueltas" o "Proyecto: [nombre]" */
-  const contextDisplayText = isLooseTask ? 'Tareas sueltas' : (projectLabel ?? '');
+  const looseLabels = useMemo(
+    () =>
+      new Set([
+        t('components.looseTasks'),
+        t('components.myList'),
+        'Tareas sueltas',
+        'Mi lista',
+        'Suelta',
+        'Independiente',
+        'Loose tasks',
+        'My list',
+      ]),
+    [t],
+  );
+  const isLooseTask = showLabel && projectLabel != null && looseLabels.has(projectLabel);
+  const contextDisplayText = isLooseTask ? t('components.looseTasks') : (projectLabel ?? '');
   const showVerProyecto = Boolean(projectId && onPressProject);
   const hasDetails = onToggleDetailsExpand && (task.category || task.is_priority || projectLabel);
   const categoryEmoji = getCategoryEmoji(task.category);
   const sectionEmoji = isLooseTask ? '📋' : '📁';
-  const scheduledLabel = task.scheduled_date ? formatTaskDate(task.scheduled_date) : '';
-  const completedLabel = task.is_completed && task.completed_at ? formatTaskDate(task.completed_at) : '';
+  const scheduledLabel = task.scheduled_date ? formatTaskDate(task.scheduled_date, t) : '';
+  const completedLabel = task.is_completed && task.completed_at ? formatTaskDate(task.completed_at, t) : '';
   const showDate = scheduledLabel || completedLabel;
-  const taskContentLabel = task.content?.trim() || 'tarea';
+  const taskContentLabel = task.content?.trim() || t('taskCard.taskFallback');
+  const dateLine =
+    task.is_completed && completedLabel
+      ? t('taskCard.completedOn', { date: completedLabel })
+      : scheduledLabel
+        ? t('taskCard.scheduledFor', { date: scheduledLabel })
+        : '';
 
   const cardLeftBorderColor = !uniformCard && !hideProjectLabel && isProjectTask && projectLabelColor
     ? projectLabelColor
@@ -135,28 +174,34 @@ export function TaskCard({
         style={[styles.swipeActionBtn, styles.swipeActionBtnWide, styles.swipeActionComplete]}
         onPress={() => handleSwipeAction(onToggle)}
         accessibilityRole="button"
-        accessibilityLabel={task.is_completed ? `Marcar ${taskContentLabel} como pendiente` : `Completar ${taskContentLabel}`}
+        accessibilityLabel={
+          task.is_completed
+            ? t('taskCard.markPending', { task: taskContentLabel })
+            : t('taskCard.markComplete', { task: taskContentLabel })
+        }
       >
         <Check size={22} color={THEME.colors.fill[100]} strokeWidth={2.5} />
-        <Text style={styles.swipeActionLabel} numberOfLines={1}>{task.is_completed ? 'Pendiente' : 'Completar'}</Text>
+        <Text style={styles.swipeActionLabel} numberOfLines={1}>
+          {task.is_completed ? t('taskCard.pending') : t('taskCard.complete')}
+        </Text>
       </RectButton>
       <RectButton
         style={[styles.swipeActionBtn, styles.swipeActionEdit]}
         onPress={() => handleSwipeAction(onEditTask)}
         accessibilityRole="button"
-        accessibilityLabel={`Editar ${taskContentLabel}`}
+        accessibilityLabel={t('taskCard.editTask', { task: taskContentLabel })}
       >
         <Pencil size={20} color={THEME.colors.fill[100]} strokeWidth={2} />
-        <Text style={styles.swipeActionLabel} numberOfLines={1}>Editar</Text>
+        <Text style={styles.swipeActionLabel} numberOfLines={1}>{t('taskCard.edit')}</Text>
       </RectButton>
       <RectButton
         style={[styles.swipeActionBtn, styles.swipeActionDelete]}
         onPress={() => handleSwipeAction(onDeleteTask)}
         accessibilityRole="button"
-        accessibilityLabel={`Eliminar ${taskContentLabel}`}
+        accessibilityLabel={t('taskCard.deleteTask', { task: taskContentLabel })}
       >
         <Trash2 size={20} color={THEME.colors.fill[100]} strokeWidth={2} />
-        <Text style={styles.swipeActionLabel} numberOfLines={1}>Eliminar</Text>
+        <Text style={styles.swipeActionLabel} numberOfLines={1}>{t('taskCard.delete')}</Text>
       </RectButton>
     </View>
   );
@@ -194,7 +239,7 @@ export function TaskCard({
               activeOpacity={0.7}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               accessibilityRole="button"
-              accessibilityLabel={expanded ? 'Contraer subtareas' : 'Expandir subtareas'}
+              accessibilityLabel={expanded ? t('taskCard.collapseSubtasks') : t('taskCard.expandSubtasks')}
             >
               {expanded ? (
                 <ChevronDown size={20} color={THEME.colors.text.secondary} />
@@ -214,8 +259,8 @@ export function TaskCard({
             accessibilityState={{ checked: task.is_completed }}
             accessibilityLabel={
               task.is_completed
-                ? `Marcar ${taskContentLabel} como pendiente`
-                : `Marcar ${taskContentLabel} como completada`
+                ? t('taskCard.markPendingA11y', { task: taskContentLabel })
+                : t('taskCard.markCompleted', { task: taskContentLabel })
             }
           >
             {task.is_completed && <View style={styles.taskCheckboxChecked} />}
@@ -230,7 +275,7 @@ export function TaskCard({
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 0, right: 8 }}
               accessibilityRole="button"
-              accessibilityLabel={`Editar ${taskContentLabel}`}
+              accessibilityLabel={t('taskCard.editTask', { task: taskContentLabel })}
             >
               <Text
                 style={[styles.taskText, task.is_completed && styles.taskTextCompleted]}
@@ -244,7 +289,7 @@ export function TaskCard({
               <View style={[styles.categoryChip, { backgroundColor: getCategoryColor(task.category) + '22' }]}>
                 <Text style={styles.categoryChipEmoji}>{categoryEmoji}</Text>
                 <Text style={[styles.categoryChipText, { color: getCategoryColor(task.category) }]} numberOfLines={1}>
-                  {task.category}
+                  {categoryLabel(locale, task.category)}
                 </Text>
               </View>
             )}
@@ -255,7 +300,7 @@ export function TaskCard({
                 <View style={styles.dateChip}>
                   <Calendar size={12} color={THEME.colors.text.secondary} />
                   <Text style={styles.dateChipText} numberOfLines={1}>
-                    {task.is_completed && completedLabel ? `Completada el ${completedLabel}` : scheduledLabel ? `Para el ${scheduledLabel}` : ''}
+                    {dateLine}
                   </Text>
                 </View>
               ) : null}
@@ -266,7 +311,7 @@ export function TaskCard({
               )}
               {hasSubtasks && !showProjectLegend && (
                 <Text style={styles.metaLine} numberOfLines={1}>
-                  {completedSubtasks}/{totalSubtasks} pasos
+                  {t('taskCard.stepsProgress', { done: completedSubtasks, total: totalSubtasks })}
                 </Text>
               )}
               {(showProjectLegend || hasDetails || hasProjectSteps || hasSubtasks) && onToggleDetailsExpand && (
@@ -276,10 +321,10 @@ export function TaskCard({
                   activeOpacity={0.7}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   accessibilityRole="button"
-                  accessibilityLabel={expandedDetails ? 'Ocultar detalles' : 'Ver detalles'}
+                  accessibilityLabel={expandedDetails ? t('taskCard.hideDetails') : t('taskCard.showDetails')}
                 >
                   <Text style={styles.verMasText}>
-                    {expandedDetails ? 'Ocultar detalles' : 'Ver detalles'}
+                    {expandedDetails ? t('taskCard.hideDetails') : t('taskCard.showDetails')}
                   </Text>
                   {expandedDetails ? (
                     <ChevronDown size={16} color={THEME.colors.text.secondary} />
@@ -296,7 +341,7 @@ export function TaskCard({
                   <View style={[styles.contextBadge, styles.contextBadgeSueltas]}>
                     <Text style={styles.contextBadgeEmoji}>{sectionEmoji}</Text>
                     <Text style={styles.contextBadgeTextSueltas} numberOfLines={1}>
-                      Tareas sueltas
+                      {t('components.looseTasks')}
                     </Text>
                   </View>
                 ) : (
@@ -315,7 +360,7 @@ export function TaskCard({
                 <View style={styles.dateChip}>
                   <Calendar size={12} color={THEME.colors.text.secondary} />
                   <Text style={styles.dateChipText} numberOfLines={1}>
-                    {task.is_completed && completedLabel ? `Completada el ${completedLabel}` : scheduledLabel ? `Para el ${scheduledLabel}` : ''}
+                    {dateLine}
                   </Text>
                 </View>
               ) : null}
@@ -333,10 +378,16 @@ export function TaskCard({
                   activeOpacity={0.7}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   accessibilityRole="button"
-                  accessibilityLabel={expandedProjectSteps ? 'Ocultar pasos del proyecto' : `Ver ${projectSteps!.length} pasos del proyecto`}
+                  accessibilityLabel={
+                    expandedProjectSteps
+                      ? t('taskCard.hideSteps')
+                      : t('taskCard.showSteps', { count: projectSteps!.length })
+                  }
                 >
                   <Text style={[styles.verPasosText, { color: projectLabelColor ?? THEME.colors.gradient.blue }]}>
-                    {expandedProjectSteps ? 'Ocultar pasos' : `Ver ${projectSteps!.length} pasos del proyecto`}
+                    {expandedProjectSteps
+                      ? t('taskCard.hideSteps')
+                      : t('taskCard.showSteps', { count: projectSteps!.length })}
                   </Text>
                   {expandedProjectSteps ? (
                     <ChevronDown size={16} color={projectLabelColor ?? THEME.colors.gradient.blue} />
@@ -352,10 +403,10 @@ export function TaskCard({
                   activeOpacity={0.7}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   accessibilityRole="button"
-                  accessibilityLabel={expandedDetails ? 'Ocultar detalles' : 'Ver detalles'}
+                  accessibilityLabel={expandedDetails ? t('taskCard.hideDetails') : t('taskCard.showDetails')}
                 >
                   <Text style={styles.detailsToggleText} numberOfLines={1}>
-                    Ver detalles
+                    {t('taskCard.showDetails')}
                   </Text>
                   {expandedDetails ? (
                     <ChevronDown size={14} color={THEME.colors.text.secondary} />
@@ -371,10 +422,10 @@ export function TaskCard({
                   activeOpacity={0.7}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   accessibilityRole="button"
-                  accessibilityLabel="Ver tareas del proyecto"
+                  accessibilityLabel={t('taskCard.viewProject')}
                 >
                   <Text style={[styles.verProyectoLinkText, projectLabelColor ? { color: projectLabelColor } : undefined]}>
-                    Ver proyecto →
+                    {t('taskCard.viewProjectArrow')}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -398,29 +449,31 @@ export function TaskCard({
 
       {expandedDetails && hasDetails && (
         <View style={styles.detailsPanel}>
-          <Text style={styles.detailsPanelTitle}>Especificaciones</Text>
+          <Text style={styles.detailsPanelTitle}>{t('taskCardExtra.detailsTitle')}</Text>
           {task.category && (!sectionCategory || task.category.toLowerCase().trim() !== sectionCategory.toLowerCase()) ? (
             <View style={styles.detailsRow}>
-              <Text style={styles.detailsLabel}>Categoría</Text>
+              <Text style={styles.detailsLabel}>{t('taskCardExtra.category')}</Text>
               <View style={[styles.detailsChip, { backgroundColor: getCategoryColor(task.category) + '28' }]}>
                 <Text style={styles.detailsChipEmoji}>{getCategoryEmoji(task.category)}</Text>
                 <Text style={[styles.detailsChipText, { color: getCategoryColor(task.category) }]} numberOfLines={1}>
-                  {task.category}
+                  {categoryLabel(locale, task.category)}
                 </Text>
               </View>
             </View>
           ) : null}
           {task.is_priority && !task.is_completed && (
             <View style={styles.detailsRow}>
-              <Text style={styles.detailsLabel}>Prioridad</Text>
+              <Text style={styles.detailsLabel}>{t('taskCardExtra.priority')}</Text>
               <View style={[styles.detailsChip, { backgroundColor: THEME.colors.gradient.blue + '28' }]}>
-                <Text style={[styles.detailsChipText, { color: THEME.colors.gradient.blue }]}>Alta</Text>
+                <Text style={[styles.detailsChipText, { color: THEME.colors.gradient.blue }]}>
+                  {t('taskCardExtra.priorityHigh')}
+                </Text>
               </View>
             </View>
           )}
           {(projectLabel || contextDisplayText) && (
             <View style={styles.detailsRow}>
-              <Text style={styles.detailsLabel}>Contexto</Text>
+              <Text style={styles.detailsLabel}>{t('taskCardExtra.context')}</Text>
               <View
                 style={[
                   styles.detailsChip,
@@ -459,8 +512,8 @@ export function TaskCard({
                   accessibilityState={{ checked: subtask.is_completed }}
                   accessibilityLabel={
                     subtask.is_completed
-                      ? `Marcar paso ${subtask.content} como pendiente`
-                      : `Marcar paso ${subtask.content} como completado`
+                      ? t('taskCardExtra.a11yMarkStepPending', { task: subtask.content })
+                      : t('taskCardExtra.a11yMarkStepComplete', { task: subtask.content })
                   }
                 >
                   {subtask.is_completed && <View style={styles.subtaskCheckboxChecked} />}
@@ -484,7 +537,7 @@ export function TaskCard({
 
       {(expandedProjectSteps || (uniformCard && expandedDetails)) && hasProjectSteps && projectSteps && onToggleTask && (
         <View style={styles.projectStepsContainer}>
-          <Text style={styles.projectStepsTitle}>Siguientes pasos del proyecto</Text>
+          <Text style={styles.projectStepsTitle}>{t('taskCard.projectStepsTitle')}</Text>
           {projectSteps.map((step) => (
             <TouchableOpacity
               key={step.id}
@@ -495,8 +548,8 @@ export function TaskCard({
               accessibilityState={{ checked: step.is_completed }}
               accessibilityLabel={
                 step.is_completed
-                  ? `Marcar paso ${step.content} como pendiente`
-                  : `Marcar paso ${step.content} como completado`
+                  ? t('taskCardExtra.a11yMarkStepPending', { task: step.content })
+                  : t('taskCardExtra.a11yMarkStepComplete', { task: step.content })
               }
             >
               <View style={styles.projectStepCheckbox}>

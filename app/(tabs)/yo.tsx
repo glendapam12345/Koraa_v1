@@ -38,6 +38,7 @@ import { StreakAura } from '@/components/branding/StreakAura';
 import { ProjectManager } from '@/components/projects/ProjectManager';
 import * as Haptics from 'expo-haptics';
 import { generateEmotionalInsights } from '@/lib/emotionalInsights';
+import { useI18n } from '@/contexts/I18nContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 const WINDOW_H = Dimensions.get('window').height;
@@ -63,6 +64,7 @@ type UserProfile = {
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const { t, locale } = useI18n();
   const { editProfile: editProfileParam } = useLocalSearchParams<{ editProfile?: string }>();
   const { user } = useAuth();
   const [progressData, setProgressData] = useState<DayData[]>([]);
@@ -139,8 +141,16 @@ export default function ProfileScreen() {
       date.setDate(today.getDate() - i);
       const dateString = date.toISOString().split('T')[0];
 
-      const dayLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-      const dayLabel = dayLabels[date.getDay()];
+      const dayLabels = [
+        t('yo.dayShortSun'),
+        t('yo.dayShortMon'),
+        t('yo.dayShortTue'),
+        t('yo.dayShortWed'),
+        t('yo.dayShortThu'),
+        t('yo.dayShortFri'),
+        t('yo.dayShortSat'),
+      ];
+      const dayLabel = dayLabels[date.getDay()]!;
 
       const checkInData = checkInMap.get(dateString);
 
@@ -154,7 +164,7 @@ export default function ProfileScreen() {
     }
 
     setProgressData(days);
-  }, [user]);
+  }, [user, t]);
 
   const loadStreak = useCallback(async () => {
     if (!user) return;
@@ -209,10 +219,11 @@ export default function ProfileScreen() {
 
       if (error) {
         logger.error('Error cargando perfil:', error);
-        const errorMessage = getErrorMessage(error);
-        const friendlyMessage = errorMessage.includes('conexión')
-          ? 'No hay conexión a internet. Tus datos se cargarán cuando vuelvas a tener conexión.'
-          : 'No se pudo cargar tu perfil. Inténtalo de nuevo.';
+        const errorMessage = getErrorMessage(error, locale);
+        const friendlyMessage =
+          errorMessage === t('supabaseErrors.noConnection')
+            ? t('yo.profileLoadOffline')
+            : t('yo.profileLoadError');
         setProfileError(friendlyMessage);
         return;
       }
@@ -230,9 +241,9 @@ export default function ProfileScreen() {
       }
     } catch (error) {
       logger.error('Error inesperado:', error);
-      setProfileError('No se pudo cargar tu perfil. Inténtalo de nuevo.');
+      setProfileError(t('yo.profileLoadError'));
     }
-  }, [user]);
+  }, [user, locale, t]);
 
   useEffect(() => {
     loadProgressData();
@@ -287,20 +298,20 @@ export default function ProfileScreen() {
     
     // Validar límite máximo
     if ((profile.favorite_activities || []).length >= MAX_ITEMS) {
-      Alert.alert('Límite alcanzado', `Puedes agregar hasta ${MAX_ITEMS} actividades. Elimina algunas para agregar más.`);
+      Alert.alert(t('yo.limitReachedTitle'), t('yo.limitActivities', { max: MAX_ITEMS }));
       return;
     }
     
     // Validar longitud máxima (50 caracteres)
     if (trimmedActivity.length > 50) {
-      Alert.alert('Muy largo', 'La actividad no puede tener más de 50 caracteres');
+      Alert.alert(t('yo.tooLongTitle'), t('yo.activityTooLong'));
       return;
     }
     
     // Validar que no sea duplicado (case-insensitive)
     const existingActivities = (profile.favorite_activities || []).map(a => a.toLowerCase());
     if (existingActivities.includes(trimmedActivity.toLowerCase())) {
-      Alert.alert('Duplicado', 'Esta actividad ya está en tu lista');
+      Alert.alert(t('yo.duplicateTitle'), t('yo.duplicateActivity'));
       return;
     }
     
@@ -329,20 +340,20 @@ export default function ProfileScreen() {
     
     // Validar límite máximo
     if ((profile.interests || []).length >= MAX_ITEMS) {
-      Alert.alert('Límite alcanzado', `Puedes agregar hasta ${MAX_ITEMS} intereses. Elimina algunos para agregar más.`);
+      Alert.alert(t('yo.limitReachedTitle'), t('yo.limitInterests', { max: MAX_ITEMS }));
       return;
     }
     
     // Validar longitud máxima (50 caracteres)
     if (trimmedInterest.length > 50) {
-      Alert.alert('Muy largo', 'El interés no puede tener más de 50 caracteres');
+      Alert.alert(t('yo.tooLongTitle'), t('yo.interestTooLong'));
       return;
     }
     
     // Validar que no sea duplicado (case-insensitive)
     const existingInterests = (profile.interests || []).map(i => i.toLowerCase());
     if (existingInterests.includes(trimmedInterest.toLowerCase())) {
-      Alert.alert('Duplicado', 'Este interés ya está en tu lista');
+      Alert.alert(t('yo.duplicateTitle'), t('yo.duplicateInterest'));
       return;
     }
     
@@ -369,8 +380,8 @@ export default function ProfileScreen() {
 
   // Generar insights emocionales
   const emotionalInsights = useMemo(() => {
-    return generateEmotionalInsights(progressData, currentStreak);
-  }, [progressData, currentStreak]);
+    return generateEmotionalInsights(progressData, currentStreak, locale);
+  }, [progressData, currentStreak, locale]);
 
   const displayName = useMemo(() => {
     const fromProfile = profile.full_name?.trim();
@@ -379,8 +390,8 @@ export default function ProfileScreen() {
     if (meta && typeof meta.full_name === 'string' && meta.full_name.trim()) {
       return meta.full_name.trim();
     }
-    return 'Bienvenida';
-  }, [profile.full_name, user?.user_metadata]);
+    return t('yo.welcomeName');
+  }, [profile.full_name, user?.user_metadata, t]);
 
   const avatarLetter = useMemo(() => {
     const fromProfile = profile.full_name?.trim();
@@ -400,55 +411,52 @@ export default function ProfileScreen() {
     setFullNameInput(fromProfile || fromMeta);
   }, [showEditProfile, profile.full_name, user?.user_metadata?.full_name]);
 
-  // Nivel de racha: etiqueta, icono y colores (el mensaje largo rota por día en `dailyStreakEncouragement`)
-  const getStreakLevel = (streak: number) => {
-    if (streak >= 90) {
+  const streakLevel = useMemo(() => {
+    if (currentStreak >= 90) {
       return {
-        label: 'Maestra',
+        label: t('yo.streakLevelMaster'),
         icon: '⭐',
         colors: [THEME.colors.gradient.pink, THEME.colors.accent.yellow] as const,
       };
     }
-    if (streak >= 60) {
+    if (currentStreak >= 60) {
       return {
-        label: 'Experta',
+        label: t('yo.streakLevelExpert'),
         icon: '🌟',
         colors: [THEME.colors.gradient.pink, THEME.colors.accent.orange] as const,
       };
     }
-    if (streak >= 30) {
+    if (currentStreak >= 30) {
       return {
-        label: 'Avanzada',
+        label: t('yo.streakLevelAdvanced'),
         icon: '✨',
         colors: [THEME.colors.gradient.blue, THEME.colors.gradient.pink] as const,
       };
     }
-    if (streak >= 14) {
+    if (currentStreak >= 14) {
       return {
-        label: 'Consistente',
+        label: t('yo.streakLevelConsistent'),
         icon: '💫',
         colors: [THEME.colors.gradient.blue, THEME.colors.category.personal] as const,
       };
     }
-    if (streak >= 7) {
+    if (currentStreak >= 7) {
       return {
-        label: 'En camino',
+        label: t('yo.streakLevelOnTrack'),
         icon: '🔥',
         colors: [THEME.colors.gradient.blue, THEME.colors.gradient.pink] as const,
       };
     }
     return {
-      label: 'Comenzando',
+      label: t('yo.streakLevelStarting'),
       icon: '🔥',
       colors: [THEME.colors.gradient.blue, THEME.colors.gradient.pink] as const,
     };
-  };
-
-  const streakLevel = getStreakLevel(currentStreak);
+  }, [currentStreak, t]);
 
   const dailyStreakEncouragement = useMemo(
-    () => pickDailyStreakEncouragement(currentStreak, streakMessageDayKey),
-    [currentStreak, streakMessageDayKey],
+    () => pickDailyStreakEncouragement(currentStreak, streakMessageDayKey, locale),
+    [currentStreak, streakMessageDayKey, locale],
   );
 
   // Función para manejar pull to refresh
@@ -480,7 +488,7 @@ export default function ProfileScreen() {
       if (ageInput.trim()) {
         const parsedAge = parseInt(ageInput.trim());
         if (isNaN(parsedAge) || parsedAge < 13 || parsedAge > 120) {
-          setProfileError('La edad debe ser un número entre 13 y 120 años');
+          setProfileError(t('yo.invalidAgeBody'));
           setIsSavingProfile(false);
           return;
         }
@@ -506,9 +514,7 @@ export default function ProfileScreen() {
           (typeof (error as { message?: string }).message === 'string' &&
             (error as { message: string }).message.includes('does not exist'));
         setProfileError(
-          missingCol
-            ? 'No se pudo guardar tu perfil en este momento. Inténtalo de nuevo.'
-            : 'No se pudo guardar tu perfil. Inténtalo de nuevo.',
+          missingCol ? t('yo.profileSaveSchemaError') : t('yo.profileSaveError'),
         );
         setIsSavingProfile(false);
         return;
@@ -524,11 +530,11 @@ export default function ProfileScreen() {
       // Recargar perfil después de guardar
       await loadProfile();
       
-      Alert.alert('Perfil actualizado', 'Tus cambios se guardaron correctamente.');
+      Alert.alert(t('yo.profileSavedTitle'), t('yo.profileSavedBody'));
       setShowEditProfile(false);
     } catch (error) {
       logger.error('Error inesperado:', error);
-      setProfileError('Ocurrió un error al guardar tu perfil. Inténtalo de nuevo.');
+      setProfileError(t('yo.profileSaveUnexpected'));
     } finally {
       setIsSavingProfile(false);
     }
@@ -556,8 +562,8 @@ export default function ProfileScreen() {
           onPress={() => setShowEditProfile(true)}
           activeOpacity={0.75}
           accessibilityRole="button"
-          accessibilityLabel="Editar perfil personal"
-          accessibilityHint="Abre nombre, edad, actividades e intereses"
+          accessibilityLabel={t('yoExtra.editProfileA11y')}
+          accessibilityHint={t('yoExtra.editProfileHint')}
         >
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{avatarLetter}</Text>
@@ -566,12 +572,12 @@ export default function ProfileScreen() {
           <Text style={styles.email}>{user?.email}</Text>
           <View style={styles.headerEditHint}>
             <Edit size={14} color={THEME.colors.gradient.blue} />
-            <Text style={styles.headerEditHintText}>Toca para editar tu perfil</Text>
+            <Text style={styles.headerEditHintText}>{t('yo.tapToEdit')}</Text>
           </View>
         </TouchableOpacity>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tu progreso</Text>
+          <Text style={styles.sectionTitle}>{t('yo.progressTitle')}</Text>
           
           {/* Streak Section */}
           <LinearGradient
@@ -591,7 +597,7 @@ export default function ProfileScreen() {
               <View style={styles.streakNumberContainer}>
                 <Text style={styles.streakNumber}>{currentStreak}</Text>
                 <Text style={styles.streakLabel}>
-                  {currentStreak === 1 ? 'día' : 'días'}
+                  {currentStreak === 1 ? t('yo.streakDayOne') : t('yo.streakDayMany')}
                 </Text>
               </View>
 
@@ -611,39 +617,34 @@ export default function ProfileScreen() {
                 {dailyStreakEncouragement}
               </Text>
             ) : (
-              <Text style={styles.streakMessage}>
-                Haz tu check-in en Sentir para encender la racha.
-              </Text>
+              <Text style={styles.streakMessage}>{t('yo.streakEmpty')}</Text>
             )}
           </LinearGradient>
           {!streakExplainerDismissed ? (
             <View style={styles.streakExplainerBox}>
-              <Text style={styles.streakExplainer}>
-                Un día cuenta cuando completas Sentir (cómo te sientes y energía). Meditar es un extra y no cambia este
-                número.
-              </Text>
+              <Text style={styles.streakExplainer}>{t('yo.streakExplainer')}</Text>
               <TouchableOpacity
                 onPress={dismissStreakExplainer}
                 style={styles.streakExplainerDismissBtn}
                 hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
                 accessibilityRole="button"
-                accessibilityLabel="Ocultar explicación de la racha"
+                accessibilityLabel={t('yoExtra.hideStreakExplainerA11y')}
               >
-                <Text style={styles.streakExplainerDismissText}>Entendido</Text>
+                <Text style={styles.streakExplainerDismissText}>{t('yo.streakExplainerDismiss')}</Text>
               </TouchableOpacity>
             </View>
           ) : null}
 
           <Text style={styles.sectionSubtitle}>
-            Consistencia de check-ins en las últimas{' '}
-            <Text style={styles.accentText}>2 semanas</Text>
+            {t('yo.consistencyLead')}{' '}
+            <Text style={styles.accentText}>{t('yo.twoWeeks')}</Text>
           </Text>
           
           <View style={styles.progressCard}>
             <View style={styles.progressHeader}>
               <Text style={styles.progressTitle}>{consistencyPercentage}%</Text>
               <Text style={styles.progressSubtitle}>
-                {completedDays}/{totalDays} días
+                {t('yo.daysProgress', { completed: completedDays, total: totalDays })}
               </Text>
             </View>
             <ProgressChart data={progressData} />
@@ -652,7 +653,7 @@ export default function ProfileScreen() {
           {/* Insights emocionales */}
           {emotionalInsights.length > 0 && (
             <View style={styles.insightsCard}>
-              <Text style={styles.insightsTitle}>Tus patrones emocionales</Text>
+              <Text style={styles.insightsTitle}>{t('yo.patternsTitle')}</Text>
               {emotionalInsights.map((insight, index) => (
                 <View key={index} style={styles.insightItem}>
                   {insight.emoji && (
@@ -666,19 +667,22 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Mi perfil</Text>
+          <Text style={styles.sectionTitle}>{t('yo.myProfileSection')}</Text>
 
           <TouchableOpacity 
             style={styles.menuItem} 
             activeOpacity={0.7}
             onPress={() => setShowEditProfile(true)}
             accessibilityRole="button"
-            accessibilityLabel="Editar perfil personal"
-            accessibilityHint={`Abre el modal para editar tu perfil. Tienes ${profile.favorite_activities?.length || 0} actividades y ${profile.interests?.length || 0} intereses`}
+            accessibilityLabel={t('yoExtra.editProfileA11y')}
+            accessibilityHint={t('yoExtra.editProfileMenuHint', {
+              activities: profile.favorite_activities?.length || 0,
+              interests: profile.interests?.length || 0,
+            })}
           >
             <Edit size={24} color={THEME.colors.gradient.blue} />
             <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemText}>Editar perfil personal</Text>
+              <Text style={styles.menuItemText}>{t('yo.editProfile')}</Text>
               <Text style={styles.menuItemSubtext}>
                 {(() => {
                   const n =
@@ -688,7 +692,10 @@ export default function ProfileScreen() {
                       : '');
                   return n ? `${n} · ` : '';
                 })()}
-                {profile.favorite_activities?.length || 0} actividades • {profile.interests?.length || 0} intereses
+                {t('yo.menuActivitiesInterests', {
+                  activities: profile.favorite_activities?.length || 0,
+                  interests: profile.interests?.length || 0,
+                })}
               </Text>
             </View>
           </TouchableOpacity>
@@ -698,53 +705,47 @@ export default function ProfileScreen() {
             activeOpacity={0.7}
             onPress={() => setShowProjects(true)}
             accessibilityRole="button"
-            accessibilityLabel="Gestionar proyectos"
-            accessibilityHint="Abre el gestor de proyectos para crear y organizar tus proyectos"
+            accessibilityLabel={t('yoExtra.manageProjectsA11y')}
+            accessibilityHint={t('yoExtra.manageProjectsHint')}
           >
             <Folder size={24} color={THEME.colors.gradient.blue} />
             <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemText}>Gestionar proyectos</Text>
-              <Text style={styles.menuItemSubtext}>
-                Organiza tus tareas por proyectos
-              </Text>
+              <Text style={styles.menuItemText}>{t('yo.manageProjects')}</Text>
+              <Text style={styles.menuItemSubtext}>{t('yo.manageProjectsSub')}</Text>
             </View>
           </TouchableOpacity>
 
           <View style={styles.sectionDivider} />
 
-          <Text style={styles.sectionTitle}>Configuración</Text>
+          <Text style={styles.sectionTitle}>{t('yo.configSection')}</Text>
 
           <TouchableOpacity 
             style={styles.menuItem} 
             activeOpacity={0.7}
             onPress={() => router.push('/settings')}
             accessibilityRole="button"
-            accessibilityLabel="Ajustes"
-            accessibilityHint="Abre recordatorios, contraseña, premium y preferencias de la aplicación"
+            accessibilityLabel={t('yo.settings')}
+            accessibilityHint={t('yoExtra.settingsHint')}
           >
             <Settings size={24} color={THEME.colors.text.main} />
             <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemText}>Ajustes</Text>
-              <Text style={styles.menuItemSubtext}>
-                Recordatorios, contraseña y Gestionar Premium
-              </Text>
+              <Text style={styles.menuItemText}>{t('yo.settings')}</Text>
+              <Text style={styles.menuItemSubtext}>{t('yo.settingsSub')}</Text>
             </View>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.menuItem}
             activeOpacity={0.7}
-            onPress={() => router.push('/settings')}
+            onPress={() => router.push('/paywall')}
             accessibilityRole="button"
-            accessibilityLabel="Suscripción"
-            accessibilityHint="Abre Ajustes para gestionar Premium o restaurar compra"
+            accessibilityLabel={t('yo.subscription')}
+            accessibilityHint={t('yoExtra2.a11yManagePremium')}
           >
             <Crown size={24} color={THEME.colors.gradient.blue} />
             <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemText}>Suscripción</Text>
-              <Text style={styles.menuItemSubtext}>
-                Gestionar Premium y restaurar compra
-              </Text>
+              <Text style={styles.menuItemText}>{t('yo.subscription')}</Text>
+              <Text style={styles.menuItemSubtext}>{t('yo.subscriptionSub')}</Text>
             </View>
           </TouchableOpacity>
 
@@ -756,31 +757,25 @@ export default function ProfileScreen() {
               onPress={async () => {
                 try {
                   await AsyncStorage.removeItem('hasSeenQuickOnboarding');
-                  Alert.alert(
-                    'Onboarding reseteado',
-                    'El onboarding se mostrará la próxima vez que abras la app. Cierra y vuelve a abrir la app para verlo.',
-                    [{ text: 'OK' }]
-                  );
+                  Alert.alert(t('yo.devResetTitle'), t('yo.devResetBody'), [{ text: t('errors.ok') }]);
                   if (Platform.OS !== 'web') {
                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   }
                 } catch (error) {
                   logger.error('Error reseteando onboarding:', error);
-                  Alert.alert('No se pudo reiniciar onboarding', 'Inténtalo de nuevo.');
+                  Alert.alert(t('yoExtra.resetOnboardingError'), t('yoExtra.resetOnboardingErrorBody'));
                 }
               }}
               accessibilityRole="button"
-              accessibilityLabel="Resetear onboarding (solo desarrollo)"
-              accessibilityHint="Limpia el estado del onboarding para probarlo nuevamente"
+              accessibilityLabel={t('yoExtra.devResetA11y')}
+              accessibilityHint={t('yoExtra.devResetHint')}
             >
               <RotateCcw size={24} color={THEME.colors.text.secondary} />
               <View style={styles.menuItemContent}>
                 <Text style={[styles.menuItemText, { color: THEME.colors.text.secondary }]}>
-                  Resetear onboarding
+                  {t('yo.devResetLabel')}
                 </Text>
-                <Text style={styles.menuItemSubtext}>
-                  Solo desarrollo
-                </Text>
+                <Text style={styles.menuItemSubtext}>{t('yo.devResetSub')}</Text>
               </View>
             </TouchableOpacity>
           )}
@@ -790,9 +785,10 @@ export default function ProfileScreen() {
         <View style={styles.footer}>
           <Text style={styles.footerText}>Koraa v{Constants.expoConfig?.version ?? '1.0.0'}</Text>
           <Text style={styles.footerSubtext}>
-            Organiza tu día{' '}
-            <Text style={styles.footerAccent}>sintiendo</Text>
-            {'\n'}en lugar de estructurando
+            {t('yo.footerTagline')}{' '}
+            <Text style={styles.footerAccent}>{t('yo.footerAccent')}</Text>
+            {'\n'}
+            {t('yo.footerTaglineEnd')}
           </Text>
         </View>
       </ScrollView>
@@ -817,7 +813,7 @@ export default function ProfileScreen() {
           >
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Mi perfil personal</Text>
+                <Text style={styles.modalTitle}>{t('yoExtra.profileModalTitle')}</Text>
                 <TouchableOpacity
                   onPress={() => {
                     if (!isSavingProfile) {
@@ -828,8 +824,8 @@ export default function ProfileScreen() {
                   style={styles.modalCloseButton}
                   disabled={isSavingProfile}
                   accessibilityRole="button"
-                  accessibilityLabel="Cerrar modal"
-                  accessibilityHint="Cierra el modal de edición de perfil"
+                  accessibilityLabel={t('yoExtra.closeModalA11y')}
+                  accessibilityHint={t('yoExtra.closeModalHint')}
                   accessibilityState={{ disabled: isSavingProfile }}
                 >
                   <X size={24} color={THEME.colors.text.main} />
@@ -843,9 +839,7 @@ export default function ProfileScreen() {
                 contentContainerStyle={styles.modalScrollContent}
                 nestedScrollEnabled
               >
-              <Text style={styles.modalIntro}>
-                Tu nombre, actividades e intereses alimentan las recomendaciones en Hoy.
-              </Text>
+              <Text style={styles.modalIntro}>{t('yoExtra.profileModalIntro')}</Text>
               {/* Mensaje de error si existe */}
               {profileError && (
                 <View style={styles.errorContainer}>
@@ -855,28 +849,26 @@ export default function ProfileScreen() {
 
               {/* Nombre para mostrar */}
               <View style={styles.formSection}>
-                <Text style={styles.formLabel}>Tu nombre</Text>
+                <Text style={styles.formLabel}>{t('yoExtra.yourNameLabel')}</Text>
                 <TextInput
                   style={styles.formInput}
                   value={fullNameInput}
                   onChangeText={setFullNameInput}
-                  placeholder="Cómo quieres que te llamemos"
+                  placeholder={t('yoExtra.namePlaceholder')}
                   placeholderTextColor={THEME.colors.text.secondary}
                   autoCapitalize="words"
                   autoCorrect
                   editable={!isSavingProfile}
                   maxLength={80}
-                  accessibilityLabel="Tu nombre o apodo"
-                  accessibilityHint="Se muestra en la cabecera de esta pantalla"
+                  accessibilityLabel={t('yoExtra.yourNameA11y')}
+                  accessibilityHint={t('yoExtra.yourNameHint')}
                 />
-                <Text style={styles.formHelpText}>
-                  Opcional. El correo solo se cambia desde el proveedor de cuenta (no aquí).
-                </Text>
+                <Text style={styles.formHelpText}>{t('yoExtra.nameHelp')}</Text>
               </View>
 
               {/* Edad */}
               <View style={styles.formSection}>
-                <Text style={styles.formLabel}>Edad (opcional)</Text>
+                <Text style={styles.formLabel}>{t('yoExtra.ageLabel')}</Text>
                 <TextInput
                   style={styles.formInput}
                   value={ageInput}
@@ -894,7 +886,7 @@ export default function ProfileScreen() {
                     if (age >= 13 && age <= 120) {
                       setAgeInput(numericText);
                     } else if (age > 120) {
-                      Alert.alert('Edad inválida', 'La edad debe ser entre 13 y 120 años');
+                      Alert.alert(t('yo.invalidAgeTitle'), t('yo.invalidAgeBody'));
                       setAgeInput('120'); // Limitar a máximo
                     } else if (age < 13 && numericText.length > 0) {
                       // No permitir valores menores a 13
@@ -907,29 +899,25 @@ export default function ProfileScreen() {
                         }
                       } else {
                         // Si tiene 2 dígitos y es menor a 13, bloquear
-                        Alert.alert('Edad inválida', 'La edad debe ser entre 13 y 120 años');
+                        Alert.alert(t('yo.invalidAgeTitle'), t('yo.invalidAgeBody'));
                         setAgeInput('13'); // Establecer mínimo
                       }
                     }
                   }}
-                  placeholder="Ej: 28"
+                  placeholder={t('yoExtra.agePlaceholder')}
                   placeholderTextColor={THEME.colors.text.secondary}
                   keyboardType="number-pad"
                   editable={!isSavingProfile}
                   maxLength={3}
                 />
-                <Text style={styles.formHelpText}>
-                  Debe ser un número entre 13 y 120 años
-                </Text>
+                <Text style={styles.formHelpText}>{t('yoExtra.ageHelp')}</Text>
               </View>
 
               {/* Actividades favoritas */}
               <View style={styles.formSection}>
-                <Text style={styles.formLabel}>Actividades favoritas</Text>
+                <Text style={styles.formLabel}>{t('yoExtra.activitiesLabel')}</Text>
                 {(profile.favorite_activities || []).length === 0 ? (
-                  <Text style={styles.emptyListText}>
-                    No has agregado actividades aún. Agrega tus actividades favoritas para recibir recomendaciones personalizadas.
-                  </Text>
+                  <Text style={styles.emptyListText}>{t('yoExtra.activitiesEmpty')}</Text>
                 ) : (
                   <View style={styles.chipContainer}>
                     {(profile.favorite_activities || []).map((activity, index) => (
@@ -939,8 +927,8 @@ export default function ProfileScreen() {
                           onPress={() => removeActivity(index)}
                           style={styles.chipRemove}
                           accessibilityRole="button"
-                          accessibilityLabel={`Eliminar actividad: ${activity}`}
-                          accessibilityHint="Elimina esta actividad de tu lista"
+                          accessibilityLabel={t('yoExtra.removeActivityA11y', { name: activity })}
+                          accessibilityHint={t('yoExtra.removeActivityHint')}
                         >
                           <X size={14} color={THEME.colors.text.secondary} />
                         </TouchableOpacity>
@@ -953,13 +941,13 @@ export default function ProfileScreen() {
                     style={styles.addInput}
                     value={newActivity}
                     onChangeText={setNewActivity}
-                    placeholder="Ej: yoga, leer, cocinar..."
+                    placeholder={t('yoExtra.activitiesPlaceholder')}
                     placeholderTextColor={THEME.colors.text.secondary}
                     onSubmitEditing={addActivity}
                     editable={!isSavingProfile}
                     maxLength={50}
-                    accessibilityLabel="Campo para agregar actividad favorita"
-                    accessibilityHint="Escribe una actividad que te gusta hacer. Máximo 50 caracteres"
+                    accessibilityLabel={t('yoExtra.addActivityFieldA11y')}
+                    accessibilityHint={t('yoExtra.addActivityFieldHint')}
                     accessibilityRole="none"
                   />
                   <TouchableOpacity
@@ -967,8 +955,8 @@ export default function ProfileScreen() {
                     onPress={addActivity}
                     disabled={!newActivity.trim() || isSavingProfile}
                     accessibilityRole="button"
-                    accessibilityLabel="Agregar actividad"
-                    accessibilityHint="Agrega la actividad escrita a tu lista de actividades favoritas"
+                    accessibilityLabel={t('yoExtra.addActivityA11y')}
+                    accessibilityHint={t('yoExtra.addActivityHint')}
                     accessibilityState={{ disabled: !newActivity.trim() || isSavingProfile }}
                   >
                     <Plus size={20} color={THEME.colors.fill[100]} />
@@ -976,18 +964,16 @@ export default function ProfileScreen() {
                 </View>
                 {newActivity.length > 40 && (
                   <Text style={styles.lengthWarning}>
-                    {50 - newActivity.length} caracteres restantes
+                    {t('yoExtra.charsRemaining', { count: 50 - newActivity.length })}
                   </Text>
                 )}
               </View>
 
               {/* Intereses */}
               <View style={styles.formSection}>
-                <Text style={styles.formLabel}>Intereses</Text>
+                <Text style={styles.formLabel}>{t('yoExtra.interestsLabel')}</Text>
                 {(profile.interests || []).length === 0 ? (
-                  <Text style={styles.emptyListText}>
-                    No has agregado intereses aún. Agrega tus intereses para recibir recomendaciones más relevantes.
-                  </Text>
+                  <Text style={styles.emptyListText}>{t('yoExtra.interestsEmpty')}</Text>
                 ) : (
                   <View style={styles.chipContainer}>
                     {(profile.interests || []).map((interest, index) => (
@@ -997,8 +983,8 @@ export default function ProfileScreen() {
                           onPress={() => removeInterest(index)}
                           style={styles.chipRemove}
                           accessibilityRole="button"
-                          accessibilityLabel={`Eliminar interés: ${interest}`}
-                          accessibilityHint="Elimina este interés de tu lista"
+                          accessibilityLabel={t('yoExtra.removeInterestA11y', { name: interest })}
+                          accessibilityHint={t('yoExtra.removeInterestHint')}
                         >
                           <X size={14} color={THEME.colors.text.secondary} />
                         </TouchableOpacity>
@@ -1011,13 +997,13 @@ export default function ProfileScreen() {
                     style={styles.addInput}
                     value={newInterest}
                     onChangeText={setNewInterest}
-                    placeholder="Ej: música, viajes, fotografía..."
+                    placeholder={t('yoExtra.interestsPlaceholder')}
                     placeholderTextColor={THEME.colors.text.secondary}
                     onSubmitEditing={addInterest}
                     editable={!isSavingProfile}
                     maxLength={50}
-                    accessibilityLabel="Campo para agregar interés"
-                    accessibilityHint="Escribe un interés o hobby. Máximo 50 caracteres"
+                    accessibilityLabel={t('yoExtra.addInterestFieldA11y')}
+                    accessibilityHint={t('yoExtra.addInterestFieldHint')}
                     accessibilityRole="none"
                   />
                   <TouchableOpacity
@@ -1025,8 +1011,8 @@ export default function ProfileScreen() {
                     onPress={addInterest}
                     disabled={!newInterest.trim() || isSavingProfile}
                     accessibilityRole="button"
-                    accessibilityLabel="Agregar interés"
-                    accessibilityHint="Agrega el interés escrito a tu lista de intereses"
+                    accessibilityLabel={t('yoExtra.addInterestA11y')}
+                    accessibilityHint={t('yoExtra.addInterestHint')}
                     accessibilityState={{ disabled: !newInterest.trim() || isSavingProfile }}
                   >
                     <Plus size={20} color={THEME.colors.fill[100]} />
@@ -1034,14 +1020,12 @@ export default function ProfileScreen() {
                 </View>
                 {newInterest.length > 40 && (
                   <Text style={styles.lengthWarning}>
-                    {50 - newInterest.length} caracteres restantes
+                    {t('yoExtra.charsRemaining', { count: 50 - newInterest.length })}
                   </Text>
                 )}
               </View>
 
-              <Text style={styles.formHelpText}>
-                Estos datos nos ayudan a darte recomendaciones más personalizadas en Consejos
-              </Text>
+              <Text style={styles.formHelpText}>{t('yoExtra.profileDataHelp')}</Text>
             </ScrollView>
 
             <View style={styles.modalActions}>
@@ -1055,7 +1039,7 @@ export default function ProfileScreen() {
                 }}
                 disabled={isSavingProfile}
               >
-                <Text style={styles.modalButtonCancelText}>Cancelar</Text>
+                <Text style={styles.modalButtonCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -1067,9 +1051,9 @@ export default function ProfileScreen() {
                 disabled={isSavingProfile}
               >
                 {isSavingProfile ? (
-                  <Text style={styles.modalButtonSaveText}>Guardando...</Text>
+                  <Text style={styles.modalButtonSaveText}>{t('yoExtra.saving')}</Text>
                 ) : (
-                  <Text style={styles.modalButtonSaveText}>Guardar</Text>
+                  <Text style={styles.modalButtonSaveText}>{t('common.save')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -1088,12 +1072,12 @@ export default function ProfileScreen() {
         <View style={styles.projectsModalOverlay}>
           <View style={styles.projectsModalContent}>
             <View style={styles.projectsModalHeader}>
-              <Text style={styles.projectsModalTitle}>Mis Proyectos</Text>
+              <Text style={styles.projectsModalTitle}>{t('yoExtra.projectsModalTitle')}</Text>
               <TouchableOpacity
                 onPress={() => setShowProjects(false)}
                 style={styles.projectsModalCloseButton}
                 accessibilityRole="button"
-                accessibilityLabel="Cerrar"
+                accessibilityLabel={t('yoExtra.projectsCloseA11y')}
               >
                 <X size={24} color={THEME.colors.text.main} />
               </TouchableOpacity>

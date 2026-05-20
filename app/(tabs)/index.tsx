@@ -25,6 +25,8 @@ import { useTaskActions } from '@/hooks/useTaskActions';
 import { useProgress } from '@/hooks/useProgress';
 import { supabase } from '@/lib/supabase';
 import { generatePrioritizationExplanation, getPrioritizationExplainerBullets } from '@/lib/smartPrioritization';
+import { CATEGORY_ORDER_KEYS, categoryLabel, normalizeCategoryKey } from '@/lib/i18n/categoryLabels';
+import { getCatalog } from '@/lib/i18n';
 import { getEmotionEmoji } from '@/lib/emotionalInsights';
 import { logger } from '@/lib/logger';
 import { Plus, Flame, PenTool, Heart, Target, ArrowRight, Lightbulb, ChevronDown, ChevronRight, FolderKanban, ClipboardList, CalendarRange, Settings, CircleHelp } from 'lucide-react-native';
@@ -34,6 +36,7 @@ import type { Task } from '@/components/tasks/TaskCard';
 import { RecommendationsSection } from '@/components/recommendations/RecommendationsSection';
 import { subscribeCheckInCelebration } from '@/lib/checkInCelebration';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QuickOnboardingModal } from '@/components/onboarding/QuickOnboardingModal';
 import { RedistributeWorkloadModal } from '@/components/tasks/RedistributeWorkloadModal';
@@ -58,7 +61,6 @@ const NoPendingTasksCelebration = lazy(() =>
     .catch(() => ({ default: () => null as any }))
 );
 
-const CATEGORY_ORDER = ['Hogar', 'Trabajo', 'Personal', 'Salud', 'Contenido', 'Marca', 'Otros'];
 
 function getLocalDateString(): string {
   const now = new Date();
@@ -68,6 +70,7 @@ function getLocalDateString(): string {
 
 export default function TodayScreen() {
   const insets = useSafeAreaInsets();
+  const { t, locale } = useI18n();
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [expandedDetailsTasks, setExpandedDetailsTasks] = useState<Set<string>>(new Set());
   /** Secciones de categoría expandidas (null = todas expandidas) */
@@ -173,8 +176,8 @@ export default function TodayScreen() {
     if (!user?.id) return;
     await optOutHoyLiteLayout(user.id);
     setHoyLiteLayout(false);
-    showToast('Verás todas las secciones en Hoy', 'info');
-  }, [user?.id, showToast]);
+    showToast(t('hoy.showAllSectionsToast'), 'info');
+  }, [user?.id, showToast, t]);
 
   const {
     todayMood,
@@ -184,6 +187,12 @@ export default function TodayScreen() {
     loading,
     loadTodayCheckIn,
   } = useCheckIn(showToast);
+
+  const todayEmotionLabel = useMemo(() => {
+    if (!todayMood) return '';
+    const emotions = getCatalog(locale).sentir.emotions as Record<string, string>;
+    return emotions[todayMood.toLowerCase()] ?? todayMood;
+  }, [locale, todayMood]);
 
   const {
     tasks,
@@ -238,6 +247,7 @@ export default function TodayScreen() {
     setMenuOpen,
     backgroundLoadTimeoutRef,
     isLoadingTasksRef,
+    locale,
   });
 
   const loadStreak = useCallback(async () => {
@@ -310,7 +320,15 @@ export default function TodayScreen() {
         return;
       }
 
-      const dayNames = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+      const dayNames = [
+        t('insights.weekdaySun'),
+        t('insights.weekdayMon'),
+        t('insights.weekdayTue'),
+        t('insights.weekdayWed'),
+        t('insights.weekdayThu'),
+        t('insights.weekdayFri'),
+        t('insights.weekdaySat'),
+      ];
       const byDay = new Map<number, number[]>();
       const emotionCounts = new Map<string, number>();
 
@@ -352,33 +370,37 @@ export default function TodayScreen() {
 
       if (lowestDay !== -1 && lowestAvg <= 3.2) {
         insights.push({
-          title: 'Memoria emocional',
-          message: `En las ultimas semanas, los ${dayNames[lowestDay]} sueles llegar con menos energia.`,
-          tip: `Ese dia deja tareas ligeras y protege recuperacion${topEmotion ? ` cuando te notes ${topEmotion}` : ''}.`,
+          title: t('hoy.emotionalMemory'),
+          message: t('hoyMemory.lowEnergyMessage', { day: dayNames[lowestDay] }),
+          tip: t('hoyMemory.lowEnergyTip', {
+            emotionSuffix: topEmotion
+              ? t('hoyMemory.lowEnergyTipEmotion', { emotion: topEmotion })
+              : '',
+          }),
         });
       }
 
       if (highestDay !== -1 && highestAvg >= 4) {
         insights.push({
-          title: 'Memoria emocional',
-          message: `Tu mejor ventana suele ser los ${dayNames[highestDay]}: ahi te notas con mas energia.`,
-          tip: 'Reserva ese dia para enfoque profundo y mueve lo operativo a bloques mas suaves.',
+          title: t('hoy.emotionalMemory'),
+          message: t('hoyMemory.highEnergyMessage', { day: dayNames[highestDay] }),
+          tip: t('hoy.memoryTipDeep'),
         });
       }
 
       if (insights.length === 0) {
         insights.push({
-          title: 'Memoria emocional',
-          message: 'Tu energia ha estado variable estas semanas, sin un patron rigido por dia.',
-          tip: 'Revisa Sentir al inicio del dia y ajusta tu carga en tiempo real.',
+          title: t('hoy.emotionalMemory'),
+          message: t('hoy.memoryMsgVariable'),
+          tip: t('hoy.memoryTipRealtime'),
         });
       }
 
       if (topEmotion && !insights.some((i) => i.message.includes(topEmotion))) {
         insights.push({
-          title: 'Memoria emocional',
-          message: `Tu estado mas repetido recientemente fue ${topEmotion}.`,
-          tip: 'Cuando aparezca ese estado, reduce friccion y enfocate en una sola tarea clave.',
+          title: t('hoy.emotionalMemory'),
+          message: t('hoyMemory.topEmotionMessage', { emotion: topEmotion }),
+          tip: t('hoy.memoryTipFriction'),
         });
       }
 
@@ -387,7 +409,7 @@ export default function TodayScreen() {
       logger.debug('Error cargando memoria emocional:', error);
       setEmotionalMemoryInsights([]);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const unsub = subscribeCheckInCelebration((p) => {
@@ -396,7 +418,7 @@ export default function TodayScreen() {
       void loadEmotionalMemory();
       if (p.milestone) {
         setShowConfetti(true);
-        showToast(`¡${p.streak} días de racha! ✨`, 'success');
+        showToast(t('hoyPlanFallback.streakToast', { count: p.streak }), 'success');
         if (confettiTimeoutRef.current) {
           clearTimeout(confettiTimeoutRef.current);
         }
@@ -408,7 +430,7 @@ export default function TodayScreen() {
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
       } else {
-        showToast('Listo: prioridades actualizadas según tu check-in ✨', 'success');
+        showToast(t('hoy.prioritiesUpdatedToast'), 'success');
         if (Platform.OS !== 'web') {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
@@ -459,13 +481,13 @@ export default function TodayScreen() {
         const msg = (error as { message?: string }).message ?? '';
         if (code === 'PGRST205' || msg.includes('meditations')) {
           Alert.alert(
-            'Meditación en preparación',
-            'Esta función estará activa muy pronto en este entorno.',
-            [{ text: 'Entendido' }],
+            t('hoy.meditationPrepTitle'),
+            t('hoy.meditationPrepBody'),
+            [{ text: t('errors.understood') }],
           );
           return;
         }
-        showToast('No se pudo guardar la meditación. Inténtalo de nuevo.', 'error');
+        showToast(t('errors.saveMeditationFailed'), 'error');
         return;
       }
 
@@ -478,7 +500,7 @@ export default function TodayScreen() {
 
       setShowMeditation(false);
       setShowConfetti(true);
-      showToast('¡Meditación completada! 🧘', 'success');
+      showToast(t('hoy.meditationDoneToast'), 'success');
 
       if (Platform.OS !== 'web') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -494,7 +516,7 @@ export default function TodayScreen() {
       }, 3000);
     } catch (error) {
       logger.error('Error inesperado en meditación:', error);
-      showToast('No se pudo completar la acción. Inténtalo de nuevo.', 'error');
+      showToast(t('errors.generic'), 'error');
     }
   };
 
@@ -599,7 +621,7 @@ export default function TodayScreen() {
     if (allCompleted && hasTasks && wasNotAllCompleted && !showConfetti) {
       // ¡Todas las tareas completadas!
       setShowConfetti(true);
-      showToast('Hoy está completo. Descansa y disfruta del momento presente ✨', 'success');
+      showToast(t('hoy.dayComplete'), 'success');
       
       // Ocultar confetti después de 4 segundos
       // Limpiar timeout anterior si existe
@@ -668,12 +690,16 @@ export default function TodayScreen() {
 
   const handleDeleteTask = (task: Task) => {
     Alert.alert(
-      'Eliminar tarea',
-      `¿Estás seguro de que quieres eliminar "${task.content}"?${task.subtasks && task.subtasks.length > 0 ? `\n\nSe eliminarán también ${task.subtasks.length} subtareas.` : ''}`,
+      t('hoy.deleteTaskTitle'),
+      `${t('hoy.deleteTaskConfirm', { task: task.content })}${
+        task.subtasks && task.subtasks.length > 0
+          ? `\n\n${t('hoy.deleteSubtasksAlso', { count: task.subtasks.length })}`
+          : ''
+      }`,
       [
-        { text: 'Cancelar', style: 'cancel', onPress: () => setMenuOpen(null) },
+        { text: t('errors.cancel'), style: 'cancel', onPress: () => setMenuOpen(null) },
         {
-          text: 'Eliminar',
+          text: t('errors.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -687,7 +713,7 @@ export default function TodayScreen() {
 
                 if (subtasksError) {
                   logger.error('Error eliminando subtareas:', subtasksError);
-                  showToast('No se pudieron eliminar los pasos. Inténtalo de nuevo.', 'error');
+                  showToast(t('errors.deleteSubtasksFailed'), 'error');
                   setMenuOpen(null);
                   return;
                 }
@@ -701,7 +727,7 @@ export default function TodayScreen() {
 
               if (error) {
                 logger.error('Error eliminando tarea:', error);
-                showToast('No se pudo eliminar la tarea. Inténtalo de nuevo.', 'error');
+                showToast(t('errors.deleteTaskFailed'), 'error');
                 setMenuOpen(null);
                 return;
               }
@@ -711,11 +737,11 @@ export default function TodayScreen() {
                 prevTasks.filter((t: Task) => t.id !== task.id && t.parent_task_id !== task.id)
               );
               setMenuOpen(null);
-              showToast('Tarea eliminada correctamente', 'success');
+              showToast(t('hoy.taskDeleted'), 'success');
               loadTasks();
             } catch (error) {
               logger.error('Error inesperado al eliminar:', error);
-              showToast('No se pudo eliminar la tarea. Inténtalo de nuevo.', 'error');
+              showToast(t('errors.deleteTaskFailed'), 'error');
               setMenuOpen(null);
             }
           },
@@ -731,10 +757,10 @@ export default function TodayScreen() {
     // Si no hay check-in, mostrar mensaje de flujo
     if (!todayMood || energyLevel === 0) {
       return {
-        title: 'Tu plan de hoy',
-        message: 'Sigue estos pasos para organizar tu día:',
-        suggestion: '1. Tareas → 2. Sentir → 3. Hoy',
-        reasoning: 'Primero agrega tus tareas en la pestaña Tareas, luego registra cómo te sientes en Sentir para que Koraa priorice automáticamente aquí en Hoy.',
+        title: t('hoy.planTitle'),
+        message: t('hoy.planSteps'),
+        suggestion: t('hoyPlanFallback.planSteps'),
+        reasoning: t('hoy.planReasoning'),
       };
     }
 
@@ -747,13 +773,14 @@ export default function TodayScreen() {
             energyLevel,
             emotion: todayMood,
             availableTime: time,
-            focusLevel: focusLevel || 'Normal',
+            focusLevel: focusLevel || t('hoy.focusLevelNormal'),
           },
-          tasks
+          tasks,
+          locale,
         );
         
         return {
-          title: 'Tu plan de hoy',
+          title: t('hoy.planTitle'),
           message: explanation.message,
           suggestion: explanation.suggestion,
           reasoning: explanation.reasoning,
@@ -764,36 +791,47 @@ export default function TodayScreen() {
     }
 
     // Fallback simplificado: solo si falta algún dato del check-in
-    const emotionLabel = todayMood.charAt(0).toUpperCase() + todayMood.slice(1);
+    const emotions = getCatalog(locale).sentir.emotions as Record<string, string>;
+    const emotionKey = todayMood.toLowerCase();
+    const emotionLabel = emotions[emotionKey] ?? todayMood;
     const priorityCount = incompleteTasks.length;
     const negativeEmotions = ['agotada', 'ansiosa', 'abrumada'];
-    const isNegativeEmotion = negativeEmotions.includes(todayMood.toLowerCase());
+    const isNegativeEmotion = negativeEmotions.includes(emotionKey);
 
     let message = '';
     let reasoning = '';
     let suggestion = '';
-    
+
     if (energyLevel <= 2 || isNegativeEmotion) {
-      message = `Te sugerimos enfocarte en ${priorityCount} ${priorityCount === 1 ? 'tarea esencial' : 'tareas esenciales'} hoy.`;
-      reasoning = `Con energía ${energyLevel}/5 y sintiéndote ${emotionLabel}, tu cuerpo y mente necesitan menos presión.`;
-      suggestion = 'Menos es más cuando tu energía está baja. Enfócate en lo esencial.';
+      message =
+        priorityCount === 1
+          ? t('hoyPlanFallback.essentialOne', { count: priorityCount })
+          : t('hoyPlanFallback.essentialMany', { count: priorityCount });
+      reasoning = t('hoyPlanFallback.reasoningLow', { energy: energyLevel, emotion: emotionLabel });
+      suggestion = t('hoy.planSuggestLow');
     } else if (energyLevel === 3) {
-      message = `Te sugerimos enfocarte en ${priorityCount} ${priorityCount === 1 ? 'tarea prioritaria' : 'tareas prioritarias'} hoy.`;
-      reasoning = `Con energía moderada y sintiéndote ${emotionLabel}, puedes manejar estas tareas sin sobrecargarte.`;
-      suggestion = 'Tienes energía moderada. Prioriza lo importante.';
+      message =
+        priorityCount === 1
+          ? t('hoyPlanFallback.priorityOne', { count: priorityCount })
+          : t('hoyPlanFallback.priorityMany', { count: priorityCount });
+      reasoning = t('hoyPlanFallback.reasoningMid', { emotion: emotionLabel });
+      suggestion = t('hoy.planSuggestMid');
     } else if (energyLevel >= 4) {
-      message = `Te sugerimos enfocarte en ${priorityCount} ${priorityCount === 1 ? 'tarea' : 'tareas'} hoy.`;
-      reasoning = `¡Tienes energía alta y te sientes ${emotionLabel}! Aprovecha este momento.`;
-      suggestion = '¡Tienes energía para más! Aprovecha este momento.';
+      message =
+        priorityCount === 1
+          ? t('hoyPlanFallback.tasksOne', { count: priorityCount })
+          : t('hoyPlanFallback.tasksMany', { count: priorityCount });
+      reasoning = t('hoyPlanFallback.reasoningHigh', { emotion: emotionLabel });
+      suggestion = t('hoy.planSuggestHigh');
     }
 
     return {
-      title: 'Tu plan de hoy',
+      title: t('hoy.planTitle'),
       message,
       suggestion,
       reasoning,
     };
-  }, [todayMood, energyLevel, incompleteTasks, time, focusLevel, tasks]);
+  }, [todayMood, energyLevel, incompleteTasks, time, focusLevel, tasks, t, locale]);
 
   const explanation = useMemo(
     () => getPriorityExplanation(),
@@ -811,60 +849,62 @@ export default function TodayScreen() {
 
     if (totalCount === 0) {
       return {
-        title: 'Cierre emocional de hoy',
-        message: 'Hoy escuchaste cómo te sentías. Ese ya es un avance real.',
-        note: 'Cuando quieras, agrega una tarea pequeña para seguir el ritmo sin presión.',
+        title: t('hoy.closureTitle'),
+        message: t('hoy.closureListen'),
+        note: t('hoy.closureListenNote'),
       };
     }
 
     if (completionRatio >= 0.8) {
       return {
-        title: 'Cierre emocional de hoy',
-        message: `Hiciste suficiente para hoy: cerraste ${completedCount} de ${totalCount} tareas.`,
-        note: 'Puedes soltar con tranquilidad y retomar mañana con claridad.',
+        title: t('hoy.closureTitle'),
+        message: t('hoy.closureEnough', { completed: completedCount, total: totalCount }),
+        note: t('hoy.closureRestNote'),
       };
     }
 
     if (lowEnergyContext) {
       return {
-        title: 'Cierre emocional de hoy',
+        title: t('hoy.closureTitle'),
         message:
           completedCount > 0
-            ? `Tuviste poca energía y aun así avanzaste ${completedCount} tarea${completedCount === 1 ? '' : 's'}. Eso cuenta.`
-            : 'Hoy no avanzaste tareas, y tiene sentido por cómo te sentías.',
-        note: pendingCount > 0 ? `Quedan ${pendingCount} pendientes; podemos repartirlos sin sobrecargarte.` : 'Mañana puedes retomar desde una tarea liviana.',
+            ? t('hoy.closureLowProgress', { count: completedCount })
+            : t('hoy.closureNoProgress'),
+        note:
+          pendingCount > 0
+            ? t('hoy.closurePendingSplit', { count: pendingCount })
+            : t('hoy.closureResumeLight'),
       };
     }
 
     if (completionRatio >= 0.4) {
       return {
-        title: 'Cierre emocional de hoy',
-        message: `Hoy avanzaste ${completedCount} de ${totalCount}. Es progreso, no perfección.`,
-        note: pendingCount > 0 ? `Te quedan ${pendingCount} tareas; priorizar una mañana será suficiente.` : 'Tu lista quedó limpia hoy. Buen cierre.',
+        title: t('hoy.closureTitle'),
+        message: t('hoy.closureMidProgress', { completed: completedCount, total: totalCount }),
+        note:
+          pendingCount > 0
+            ? t('hoy.closurePendingOne', { count: pendingCount })
+            : t('hoy.closureCleanList'),
       };
     }
 
     return {
-      title: 'Cierre emocional de hoy',
+      title: t('hoy.closureTitle'),
       message:
         completedCount > 0
-          ? `Hoy hiciste ${completedCount} tarea${completedCount === 1 ? '' : 's'}. Parece poco, pero suma.`
-          : 'Hoy no se completaron tareas y también es válido cuando el día se complica.',
-      note: 'Si quieres, mañana arrancamos con la tarea más corta para ganar inercia.',
+          ? t('hoy.closureSmallProgress', { count: completedCount })
+          : t('hoy.closureHardDay'),
+      note: t('hoy.closureTomorrow'),
     };
-  }, [todayMood, energyLevel, tasks]);
+  }, [todayMood, energyLevel, tasks, t]);
 
   const emotionalToneLine = useMemo(() => {
-    if (!todayMood) return 'Tu forma de avanzar no tiene que parecerse a la de nadie mas.';
+    if (!todayMood) return t('hoy.mantraDefault');
     const mood = todayMood.toLowerCase();
-    if (['agotada', 'ansiosa', 'abrumada'].includes(mood)) {
-      return 'Hoy tocaba sostenerte primero. La productividad tambien puede ser compasiva.';
-    }
-    if (['motivada', 'enfocada'].includes(mood)) {
-      return 'Canaliza este impulso con intencion: menos dispersion, mas impacto.';
-    }
-    return 'Ritmo sereno, avance real: asi se construye consistencia durable.';
-  }, [todayMood]);
+    if (['agotada', 'ansiosa', 'abrumada'].includes(mood)) return t('hoy.mantraCompassion');
+    if (['motivada', 'enfocada'].includes(mood)) return t('hoy.mantraImpulse');
+    return t('hoy.mantraSteady');
+  }, [todayMood, t]);
 
   const selectedEmotionalMemoryInsight = useMemo(() => {
     if (emotionalMemoryInsights.length === 0) return null;
@@ -886,9 +926,7 @@ export default function TodayScreen() {
   const taskSections = useMemo(() => {
     const byCategory = new Map<string, Task[]>();
     const normalizeCategory = (cat: string | undefined | null): string => {
-      const key = (cat && cat.trim() !== '' ? cat.trim() : 'Otros').toLowerCase();
-      const known = CATEGORY_ORDER.map((c) => c.toLowerCase()).includes(key);
-      return known ? key : 'otros';
+      return normalizeCategoryKey(cat || 'otros') ?? 'otros';
     };
     displayedIncompleteTasks.forEach((t) => {
       const key = normalizeCategory(t.category);
@@ -898,10 +936,10 @@ export default function TodayScreen() {
     });
     const sortByPriority = (a: Task, b: Task) => (b.is_priority ? 1 : 0) - (a.is_priority ? 1 : 0);
     const sections: TaskSection[] = [];
-    CATEGORY_ORDER.forEach((label) => {
-      const key = label.toLowerCase();
+    CATEGORY_ORDER_KEYS.forEach((key) => {
       const taskList = byCategory.get(key) ?? [];
       if (taskList.length === 0) return;
+      const label = categoryLabel(locale, key);
       const color = getCategoryColor(label);
       sections.push({
         id: `cat-${key}`,
@@ -913,7 +951,7 @@ export default function TodayScreen() {
       });
     });
     return sections;
-  }, [displayedIncompleteTasks, getCategoryColor]);
+  }, [displayedIncompleteTasks, getCategoryColor, locale]);
 
   useEffect(() => {
     if (hoyLiteLayout) {
@@ -962,7 +1000,7 @@ export default function TodayScreen() {
       ]);
     } catch (error) {
       logger.error('Error al refrescar:', error);
-      showToast('No se pudo actualizar. Inténtalo de nuevo.', 'error');
+      showToast(t('errors.refreshFailed'), 'error');
     } finally {
       setRefreshing(false);
     }
@@ -971,10 +1009,10 @@ export default function TodayScreen() {
   // Función para obtener saludo basado en la hora del día
   const getGreeting = useMemo(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Buenos días';
-    if (hour < 18) return 'Buenas tardes';
-    return 'Buenas noches';
-  }, []);
+    if (hour < 12) return t('hoy.greetingMorning');
+    if (hour < 18) return t('hoy.greetingAfternoon');
+    return t('hoy.greetingEvening');
+  }, [t]);
 
   return (
     <View style={styles.container}>
@@ -1000,7 +1038,7 @@ export default function TodayScreen() {
         {loading && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
-            <Text style={styles.loadingText}>Preparando tu día...</Text>
+            <Text style={styles.loadingText}>{t('hoy.loading')}</Text>
           </View>
         )}
 
@@ -1018,12 +1056,12 @@ export default function TodayScreen() {
                         onPress={() => router.push('/(tabs)/yo')}
                         activeOpacity={0.75}
                         accessibilityRole="button"
-                        accessibilityLabel={`Racha de ${currentStreak} días. Ver en Yo`}
-                        accessibilityHint="Abre tu perfil para ver tu progreso y racha"
+                        accessibilityLabel={t('hoyPlanFallback.streakA11y', { count: currentStreak })}
+                        accessibilityHint={t('hoyExtra.profileHint')}
                       >
                         <Flame size={14} color={THEME.colors.gradient.pink} />
                         <Text style={styles.streakTextInline}>{currentStreak}</Text>
-                        <Text style={styles.streakDaysLabel}>días</Text>
+                        <Text style={styles.streakDaysLabel}>{t('hoy.streakDays')}</Text>
                       </TouchableOpacity>
                     </View>
                   ) : (
@@ -1032,11 +1070,11 @@ export default function TodayScreen() {
                       onPress={() => router.push('/(tabs)/sentir')}
                       activeOpacity={0.75}
                       accessibilityRole="button"
-                      accessibilityLabel="Sin racha aún. Ir a Sentir para tu check-in"
-                      accessibilityHint="Abre Sentir para registrar cómo te sientes hoy"
+                      accessibilityLabel={t('hoyExtra.noStreakA11y')}
+                      accessibilityHint={t('hoyExtra.noStreakHint')}
                     >
                       <Flame size={14} color={THEME.colors.text.tertiary} />
-                      <Text style={styles.streakTextMuted}>Racha</Text>
+                      <Text style={styles.streakTextMuted}>{t('hoy.streakLabel')}</Text>
                       <Text style={styles.streakTextMutedBold}>0</Text>
                     </TouchableOpacity>
                   ))}
@@ -1047,8 +1085,8 @@ export default function TodayScreen() {
                       style={styles.settingsHeaderBtn}
                       activeOpacity={0.75}
                       accessibilityRole="button"
-                      accessibilityLabel="Ayuda y preguntas frecuentes"
-                      accessibilityHint="Abre la pantalla de ayuda con preguntas sobre Sentir, Tareas y Hoy"
+                      accessibilityLabel={t('hoyExtra.helpA11y')}
+                      accessibilityHint={t('hoyExtra.helpHint')}
                     >
                       <CircleHelp size={THEME.sizes.iconStandard} color={THEME.colors.text.main} />
                     </TouchableOpacity>
@@ -1057,8 +1095,8 @@ export default function TodayScreen() {
                       style={styles.settingsHeaderBtn}
                       activeOpacity={0.75}
                       accessibilityRole="button"
-                      accessibilityLabel="Ajustes de cuenta"
-                      accessibilityHint="Abre ajustes de cuenta y preferencias"
+                      accessibilityLabel={t('hoyExtra.settingsA11y')}
+                      accessibilityHint={t('hoyExtra.settingsHint')}
                     >
                       <Settings size={THEME.sizes.iconStandard} color={THEME.colors.text.main} />
                     </TouchableOpacity>
@@ -1068,7 +1106,7 @@ export default function TodayScreen() {
             </View>
             {user && (
               <Text style={styles.streakHint} accessibilityRole="text">
-                La racha cuenta los días seguidos con check-in en Sentir. La meditación no suma a la racha.
+                {t('hoy.streakHint')}
               </Text>
             )}
           </View>
@@ -1081,13 +1119,16 @@ export default function TodayScreen() {
             onPress={() => router.push('/(tabs)/sentir')}
             activeOpacity={0.85}
             accessibilityRole="button"
-            accessibilityLabel="Ver y actualizar cómo te sientes hoy"
-            accessibilityHint="Abre Sentir para editar tu check-in del día"
+            accessibilityLabel={t('hoyExtra.feelBannerA11y')}
+            accessibilityHint={t('hoyExtra.feelBannerHint')}
           >
             <View style={[styles.contextPill, { backgroundColor: getEmotionColor(todayMood) }]}>
               <Text style={styles.contextPillEmoji}>{getEmotionEmoji(todayMood)}</Text>
               <Text style={styles.contextPillText}>
-                Sintiéndote {todayMood.charAt(0).toUpperCase() + todayMood.slice(1)} · Energía {energyLevel}/5
+                {t('hoy.feelingLine', {
+                  emotion: todayEmotionLabel,
+                  energy: String(energyLevel),
+                })}
               </Text>
             </View>
           </TouchableOpacity>
@@ -1099,8 +1140,8 @@ export default function TodayScreen() {
             onPress={() => router.push('/(tabs)/sentir')}
             activeOpacity={0.88}
             accessibilityRole="button"
-            accessibilityLabel="Cómo funciona Koraa. Ir a Sentir para indicar cómo te sientes."
-            accessibilityHint="Abre Sentir, el segundo paso del flujo recomendado"
+            accessibilityLabel={t('hoyExtra.howWorksA11y')}
+            accessibilityHint={t('hoyExtra.howWorksHint')}
           >
             <LinearGradient
               colors={[THEME.colors.gradient.blue + '12', THEME.colors.gradient.pink + '08']}
@@ -1108,16 +1149,14 @@ export default function TodayScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.howKoraaCardGradient}
             >
-              <Text style={styles.howKoraaCardTitle}>Cómo funciona Koraa</Text>
-              <Text style={styles.howKoraaCardBody}>
-                Agrega tus tareas en Tareas, indica cómo te sientes en Sentir, y aquí verás solo lo que te conviene hoy.
-              </Text>
+              <Text style={styles.howKoraaCardTitle}>{t('hoy.howItWorksTitle')}</Text>
+              <Text style={styles.howKoraaCardBody}>{t('hoy.howItWorksBody')}</Text>
               <View style={styles.howKoraaCardFlow}>
                 <View style={styles.howKoraaCardStep}>
                   <View style={[styles.howKoraaCardStepDot, styles.howKoraaCardStepDotActive]}>
                     <PenTool size={12} color={THEME.colors.onGradient} />
                   </View>
-                  <Text style={styles.howKoraaCardStepLabel}>Tareas</Text>
+                  <Text style={styles.howKoraaCardStepLabel}>{t('tabs.tasks')}</Text>
                 </View>
                 <View style={styles.howKoraaCardArrow}>
                   <ArrowRight size={14} color={THEME.colors.text.tertiary} />
@@ -1126,7 +1165,7 @@ export default function TodayScreen() {
                   <View style={styles.howKoraaCardStepDot}>
                     <Heart size={12} color={THEME.colors.gradient.blue} />
                   </View>
-                  <Text style={styles.howKoraaCardStepLabel}>Sentir</Text>
+                  <Text style={styles.howKoraaCardStepLabel}>{t('tabs.feel')}</Text>
                 </View>
                 <View style={styles.howKoraaCardArrow}>
                   <ArrowRight size={14} color={THEME.colors.text.tertiary} />
@@ -1135,12 +1174,12 @@ export default function TodayScreen() {
                   <View style={styles.howKoraaCardStepDot}>
                     <Target size={12} color={THEME.colors.text.secondary} />
                   </View>
-                  <Text style={styles.howKoraaCardStepLabel}>Hoy</Text>
+                  <Text style={styles.howKoraaCardStepLabel}>{t('tabs.today')}</Text>
                 </View>
               </View>
               <View style={styles.howKoraaCardCta}>
                 <Text style={styles.howKoraaCardCtaText}>
-                  {todayMood ? 'Actualizar en Sentir' : 'Ir a Sentir'}
+                  {todayMood ? t('hoy.updateFeel') : t('hoy.goToFeel')}
                 </Text>
                 <ChevronRight size={18} color={THEME.colors.gradient.blue} />
               </View>
@@ -1150,18 +1189,16 @@ export default function TodayScreen() {
 
         {hoyLiteLayout && (
           <View style={styles.hoyLiteBanner}>
-            <Text style={styles.hoyLiteBannerText}>
-              Vista simplificada tu primer día en Hoy: mañana verás filtros, proyectos, meditación y más.
-            </Text>
+            <Text style={styles.hoyLiteBannerText}>{t('hoy.hoyLiteBanner')}</Text>
             <TouchableOpacity
               onPress={() => void handleOptOutHoyLite()}
               style={styles.hoyLiteBannerBtn}
               activeOpacity={0.75}
               accessibilityRole="button"
-              accessibilityLabel="Mostrar todas las secciones de Hoy ahora"
-              accessibilityHint="Desactiva la vista simplificada y muestra todo en Hoy"
+              accessibilityLabel={t('hoyExtra.showAllA11y')}
+              accessibilityHint={t('hoyExtra.showAllHint')}
             >
-              <Text style={styles.hoyLiteBannerBtnText}>Mostrar todo ahora</Text>
+              <Text style={styles.hoyLiteBannerBtnText}>{t('hoy.showAllNow')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -1173,8 +1210,8 @@ export default function TodayScreen() {
             onPress={() => router.push('/(tabs)/vaciar')}
             activeOpacity={0.88}
             accessibilityRole="button"
-            accessibilityLabel="Ir a la pestaña Tareas para agregar tareas"
-            accessibilityHint="Abre Tareas para capturar nuevas pendientes"
+            accessibilityLabel={t('hoyExtra.goTasksA11y')}
+            accessibilityHint={t('hoyExtra.goTasksHint')}
           >
             <LinearGradient
               colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -1183,7 +1220,7 @@ export default function TodayScreen() {
               style={styles.addTasksPillGradient}
             >
               <Plus size={20} color={THEME.colors.onGradient} />
-              <Text style={styles.addTasksPillTitle}>Agregar tareas</Text>
+              <Text style={styles.addTasksPillTitle}>{t('hoy.addTasks')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         )}
@@ -1195,12 +1232,12 @@ export default function TodayScreen() {
               onPress={() => setShowSecondaryModules((prev) => !prev)}
               activeOpacity={0.8}
               accessibilityRole="button"
-              accessibilityLabel={showSecondaryModules ? 'Ocultar secciones extra de Hoy' : 'Mostrar secciones extra de Hoy'}
-              accessibilityHint="Controla módulos secundarios como meditación, resumen por proyecto y recomendaciones"
+              accessibilityLabel={showSecondaryModules ? t('hoyExtra.toggleExtraA11yHide') : t('hoyExtra.toggleExtraA11yShow')}
+              accessibilityHint={t('hoyExtra.toggleExtraHint')}
               accessibilityState={{ expanded: showSecondaryModules }}
             >
               <Text style={styles.secondaryModulesToggleText}>
-                {showSecondaryModules ? 'Ocultar secciones extra' : 'Mostrar secciones extra'}
+                {showSecondaryModules ? t('hoy.hideExtra') : t('hoy.showExtra')}
               </Text>
               {showSecondaryModules ? (
                 <ChevronDown size={18} color={THEME.colors.text.secondary} />
@@ -1208,9 +1245,7 @@ export default function TodayScreen() {
                 <ChevronRight size={18} color={THEME.colors.text.secondary} />
               )}
             </TouchableOpacity>
-            <Text style={styles.secondaryModulesHint}>
-              Incluye meditación, resumen por proyecto y recomendaciones.
-            </Text>
+            <Text style={styles.secondaryModulesHint}>{t('hoy.secondaryModulesHint')}</Text>
           </>
         )}
 
@@ -1224,8 +1259,11 @@ export default function TodayScreen() {
               style={styles.meditationCard}
             >
               <View style={styles.meditationHeader}>
-                <Text style={styles.meditationTitle}>Tu momento de <Text style={styles.meditationTitleAccent}>calma</Text></Text>
-                <Text style={styles.meditationSubtitle}>Respira. Escucha.</Text>
+                <Text style={styles.meditationTitle}>
+                  {t('hoy.calmMoment')}{' '}
+                  <Text style={styles.meditationTitleAccent}>{t('hoy.calmMomentAccent')}</Text>
+                </Text>
+                <Text style={styles.meditationSubtitle}>{t('commonExtra.meditationListen')}</Text>
               </View>
               <View style={styles.meditationSingleCardInner}>
                 <TouchableOpacity
@@ -1234,8 +1272,8 @@ export default function TodayScreen() {
                   activeOpacity={0.8}
                   disabled={morningMeditationDone}
                   accessibilityRole="button"
-                  accessibilityLabel={morningMeditationDone ? 'Meditación matutina completada' : 'Meditar por la mañana'}
-                  accessibilityHint="Abre una sesión breve para iniciar el día"
+                  accessibilityLabel={morningMeditationDone ? t('hoy.meditationMorningDoneA11y') : t('hoy.meditationMorningA11y')}
+                  accessibilityHint={t('hoy.meditationMorningHint')}
                   accessibilityState={{ disabled: morningMeditationDone }}
                 >
                   <View style={[styles.meditationRowIconWrap, !morningMeditationDone && styles.meditationRowIconMorning]}>
@@ -1248,10 +1286,10 @@ export default function TodayScreen() {
                   </View>
                   <View style={styles.meditationRowTextWrap}>
                     <Text style={[styles.meditationRowLabel, morningMeditationDone && styles.meditationRowLabelDone]}>
-                      {morningMeditationDone ? 'Mañana — Completada' : 'Mañana'}
+                      {morningMeditationDone ? t('hoy.morningDone') : t('hoy.morning')}
                     </Text>
                     {!morningMeditationDone && (
-                      <Text style={styles.meditationRowHint}>Despierta con claridad</Text>
+                      <Text style={styles.meditationRowHint}>{t('hoy.morningHint')}</Text>
                     )}
                   </View>
                   {!morningMeditationDone && <ChevronRight size={20} color={THEME.colors.text.tertiary} />}
@@ -1263,8 +1301,8 @@ export default function TodayScreen() {
                   activeOpacity={0.8}
                   disabled={eveningMeditationDone}
                   accessibilityRole="button"
-                  accessibilityLabel={eveningMeditationDone ? 'Meditación nocturna completada' : 'Meditar por la noche'}
-                  accessibilityHint="Abre una sesión breve para cerrar el día"
+                  accessibilityLabel={eveningMeditationDone ? t('hoy.meditationEveningDoneA11y') : t('hoy.meditationEveningA11y')}
+                  accessibilityHint={t('hoy.meditationEveningHint')}
                   accessibilityState={{ disabled: eveningMeditationDone }}
                 >
                   <View style={[styles.meditationRowIconWrap, !eveningMeditationDone && styles.meditationRowIconEvening]}>
@@ -1277,10 +1315,10 @@ export default function TodayScreen() {
                   </View>
                   <View style={styles.meditationRowTextWrap}>
                     <Text style={[styles.meditationRowLabel, eveningMeditationDone && styles.meditationRowLabelDone]}>
-                      {eveningMeditationDone ? 'Noche — Completada' : 'Noche'}
+                      {eveningMeditationDone ? t('hoy.eveningDone') : t('hoy.evening')}
                     </Text>
                     {!eveningMeditationDone && (
-                      <Text style={styles.meditationRowHint}>Termina el día en paz</Text>
+                      <Text style={styles.meditationRowHint}>{t('commonExtra.eveningHintPeace')}</Text>
                     )}
                   </View>
                   {!eveningMeditationDone && <ChevronRight size={20} color={THEME.colors.text.tertiary} />}
@@ -1302,16 +1340,20 @@ export default function TodayScreen() {
                     end={{ x: 1, y: 0.5 }}
                     style={styles.heroTodayCard}
                   >
-                    <Text style={styles.heroTodayHeadline}>Esto te conviene hoy</Text>
+                    <Text style={styles.heroTodayHeadline}>{t('hoy.fitsToday')}</Text>
                     <View style={styles.heroTodayStateRow}>
                       <View style={[styles.heroTodayPill, { backgroundColor: getEmotionColor(todayMood) }]}>
                         <Text style={styles.heroTodayPillEmoji}>{getEmotionEmoji(todayMood)}</Text>
                         <Text style={styles.heroTodayPillText}>
-                          Sintiéndote {todayMood.charAt(0).toUpperCase() + todayMood.slice(1)}
+                          {t('commonExtra.feelingPill', {
+                            emotion: todayEmotionLabel,
+                          })}
                         </Text>
                       </View>
                       <View style={styles.heroTodayPillNeutral}>
-                        <Text style={styles.heroTodayPillNeutralText}>Energía {energyLevel}/5</Text>
+                        <Text style={styles.heroTodayPillNeutralText}>
+                          {t('commonExtra.energyPill', { n: energyLevel })}
+                        </Text>
                       </View>
                     </View>
                   </LinearGradient>
@@ -1323,13 +1365,13 @@ export default function TodayScreen() {
                       accessibilityRole="button"
                       accessibilityLabel={
                         heroDetailsExpanded
-                          ? 'Ocultar detalles del orden de tareas'
-                          : 'Ver detalles del orden de tareas'
+                          ? t('hoyExtra.orderHide')
+                          : t('hoyExtra.orderShow')
                       }
                     >
                       <View style={styles.prioritiesContextHeaderRow}>
                         <Text style={styles.heroDetailsToggleTitle} numberOfLines={1}>
-                          Más sobre tu orden de hoy
+                          {t('commonExtra.moreAboutTodayOrder')}
                         </Text>
                         {heroDetailsExpanded ? (
                           <ChevronDown size={16} color={THEME.colors.text.secondary} />
@@ -1341,7 +1383,7 @@ export default function TodayScreen() {
                         <View style={styles.heroDetailsExpandedBody}>
                           {explanation.reasoning ? (
                             <>
-                              <Text style={styles.heroDetailsSectionLabel}>Según tu check-in</Text>
+                              <Text style={styles.heroDetailsSectionLabel}>{t('hoy.perCheckIn')}</Text>
                               <Text style={styles.prioritiesContextText}>{explanation.reasoning}</Text>
                               {explanation.suggestion ? (
                                 <View style={styles.prioritiesSuggestionBox}>
@@ -1351,9 +1393,9 @@ export default function TodayScreen() {
                               ) : null}
                             </>
                           ) : null}
-                          <Text style={styles.heroDetailsSectionLabel}>Cómo prioriza Koraa</Text>
+                          <Text style={styles.heroDetailsSectionLabel}>{t('hoy.howPrioritizes')}</Text>
                           <View style={styles.prioritizeHowList}>
-                            {getPrioritizationExplainerBullets().map((line, i) => (
+                            {getPrioritizationExplainerBullets(locale).map((line, i) => (
                               <Text key={i} style={styles.prioritizeHowBullet}>
                                 • {line}
                               </Text>
@@ -1388,7 +1430,7 @@ export default function TodayScreen() {
                       >
                         <View style={styles.emotionalSignalBadgeRow}>
                           <View style={styles.emotionalSignalBadge}>
-                            <Text style={styles.emotionalSignalBadgeText}>Loop emocional</Text>
+                            <Text style={styles.emotionalSignalBadgeText}>{t('hoy.emotionalLoop')}</Text>
                           </View>
                           <View style={styles.emotionalSignalDot} />
                         </View>
@@ -1413,8 +1455,8 @@ export default function TodayScreen() {
                   onPress={() => router.push('/(tabs)/sentir')}
                   activeOpacity={0.88}
                   accessibilityRole="button"
-                  accessibilityLabel="Ir a Sentir para registrar cómo te sientes y priorizar"
-                  accessibilityHint="Haz check-in para que Koraa ordene tus tareas"
+                  accessibilityLabel={t('hoyExtra.goFeelPrioritize')}
+                  accessibilityHint={t('hoyExtra.goFeelPrioritizeHint')}
                 >
                   <LinearGradient
                     colors={[THEME.colors.tint.pink.soft, THEME.colors.tint.blue.veryFaint]}
@@ -1424,10 +1466,8 @@ export default function TodayScreen() {
                   >
                     <Heart size={22} color={THEME.colors.gradient.blue} />
                     <View style={styles.checkInPromptBannerTextWrap}>
-                      <Text style={styles.checkInPromptBannerTitle}>¿Cómo te sientes hoy?</Text>
-                      <Text style={styles.checkInPromptBannerSub}>
-                        Haz tu check-in en Sentir para que Koraa ordene estas tareas según tu energía.
-                      </Text>
+                      <Text style={styles.checkInPromptBannerTitle}>{t('hoy.howFeelToday')}</Text>
+                      <Text style={styles.checkInPromptBannerSub}>{t('commonExtra.checkInPromptSub')}</Text>
                     </View>
                     <ChevronRight size={22} color={THEME.colors.gradient.blue} />
                   </LinearGradient>
@@ -1458,7 +1498,7 @@ export default function TodayScreen() {
                   >
                     <View style={styles.emotionalSignalBadgeRow}>
                       <View style={[styles.emotionalSignalBadge, styles.emotionalMemoryBadge]}>
-                        <Text style={styles.emotionalSignalBadgeText}>Memoria semanal</Text>
+                        <Text style={styles.emotionalSignalBadgeText}>{t('commonExtra.weeklyMemory')}</Text>
                       </View>
                       <View style={styles.emotionalSignalDot} />
                     </View>
@@ -1476,12 +1516,16 @@ export default function TodayScreen() {
               )}
               <View style={styles.tareasHeaderSection}>
               <Text style={styles.tareasTitle} numberOfLines={1}>
-                Tareas
+                {t('commonExtra.tasksSection')}
               </Text>
               {/* Fecha + filtros en una fila; el estado va debajo a todo el ancho (evita columna estrecha al lado de los pills). */}
               <View style={styles.tareasHeaderMetaRow}>
                 <Text style={styles.tareasDate}>
-                  {new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  {new Date().toLocaleDateString(locale === 'en' ? 'en-US' : 'es-ES', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
                 </Text>
                 {!hoyLiteLayout && (
                   <View style={styles.taskFilterWrap}>
@@ -1491,8 +1535,8 @@ export default function TodayScreen() {
                       activeOpacity={0.8}
                       accessibilityRole="tab"
                       accessibilityState={{ selected: taskFilter === 'hoy' }}
-                      accessibilityLabel="Ver solo tareas de hoy"
-                      accessibilityHint="Muestra pendientes de hoy y tareas sin fecha"
+                      accessibilityLabel={t('hoyExtra.filterTodayA11y')}
+                      accessibilityHint={t('hoyExtra.filterTodayHint')}
                     >
                       {taskFilter === 'hoy' && (
                         <LinearGradient
@@ -1503,7 +1547,7 @@ export default function TodayScreen() {
                         />
                       )}
                       <Text style={[styles.taskFilterLabel, taskFilter === 'hoy' && styles.taskFilterLabelActive]}>
-                        Solo hoy
+                        {t('hoy.filterToday')}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -1512,8 +1556,8 @@ export default function TodayScreen() {
                       activeOpacity={0.8}
                       accessibilityRole="tab"
                       accessibilityState={{ selected: taskFilter === 'todas' }}
-                      accessibilityLabel="Ver todas las tareas pendientes"
-                      accessibilityHint="Muestra todos los pendientes sin filtrar por fecha"
+                      accessibilityLabel={t('hoyExtra.filterAllA11y')}
+                      accessibilityHint={t('hoyExtra.filterAllHint')}
                     >
                       {taskFilter === 'todas' && (
                         <LinearGradient
@@ -1524,7 +1568,7 @@ export default function TodayScreen() {
                         />
                       )}
                       <Text style={[styles.taskFilterLabel, taskFilter === 'todas' && styles.taskFilterLabelActive]}>
-                        Todas
+                        {t('hoy.filterAll')}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -1533,22 +1577,28 @@ export default function TodayScreen() {
               <Text style={styles.tareasSubtitle}>
                 {displayedIncompleteTasks.length === 0
                   ? taskFilter === 'hoy'
-                    ? 'Nada programado para hoy'
-                    : 'No hay tareas pendientes'
+                    ? t('hoy.noTasksToday')
+                    : t('hoy.noTasksPending')
                   : taskFilter === 'hoy'
-                    ? `${displayedIncompleteTasks.length} ${displayedIncompleteTasks.length === 1 ? 'tarea' : 'tareas'} para hoy`
-                    : `${displayedIncompleteTasks.length} ${displayedIncompleteTasks.length === 1 ? 'tarea' : 'tareas'} pendientes`}
+                    ? t(
+                        displayedIncompleteTasks.length === 1
+                          ? 'hoy.taskCountToday'
+                          : 'hoy.taskCountTodayPlural',
+                        { count: displayedIncompleteTasks.length },
+                      )
+                    : t(
+                        displayedIncompleteTasks.length === 1
+                          ? 'hoy.taskCountPending'
+                          : 'hoy.taskCountPendingPlural',
+                        { count: displayedIncompleteTasks.length },
+                      )}
               </Text>
               {taskFilter === 'hoy' && !hoyLiteLayout && (
-                <Text style={styles.taskFilterHint}>Tareas de hoy y sin fecha asignada</Text>
+                <Text style={styles.taskFilterHint}>{t('hoy.filterHint')}</Text>
               )}
               {displayedIncompleteTasks.length > 0 && (
-                <Text
-                  style={styles.taskCompactHint}
-                  accessibilityLabel="Las tareas de mayor prioridad aparecen arriba. Desliza una tarea para completar, editar o eliminar."
-                  accessibilityRole="text"
-                >
-                  Orden: prioridad alta → baja · Desliza para completar, editar o eliminar
+                <Text style={styles.taskCompactHint} accessibilityRole="text">
+                  {t('hoy.sortHint')}
                 </Text>
               )}
               {incompleteTasks.length >= 1 && user && todayMood && showSecondaryModulesEffective && (
@@ -1557,14 +1607,14 @@ export default function TodayScreen() {
                   onPress={() => setShowRedistribute(true)}
                   activeOpacity={0.85}
                   accessibilityRole="button"
-                  accessibilityLabel="Aliviar carga, repartir tareas en el calendario"
-                  accessibilityHint="Abre el asistente para redistribuir tareas según tu energía"
+                  accessibilityLabel={t('hoyExtra.redistributeA11y')}
+                  accessibilityHint={t('hoyExtra.redistributeHint')}
                 >
                   <CalendarRange size={20} color={THEME.colors.gradient.blue} />
                   <View style={styles.redistributeCtaTextWrap}>
-                    <Text style={styles.redistributeCtaTitle}>Aliviar carga</Text>
+                    <Text style={styles.redistributeCtaTitle}>{t('hoy.lightenLoad')}</Text>
                     <Text style={styles.redistributeCtaSub} numberOfLines={2}>
-                      Reparte pendientes por días según tu energía y tiempo de hoy
+                      {t('hoy.lightenLoadSub')}
                     </Text>
                   </View>
                   <ChevronRight size={20} color={THEME.colors.text.tertiary} />
@@ -1589,10 +1639,10 @@ export default function TodayScreen() {
                       onPress={() => router.push('/proyectos')}
                       activeOpacity={0.7}
                       accessibilityRole="button"
-                      accessibilityLabel="Ver todos los proyectos"
-                      accessibilityHint="Abre la pantalla completa de proyectos"
+                      accessibilityLabel={t('hoyExtra.allProjectsA11y')}
+                      accessibilityHint={t('hoyExtra.allProjectsHint')}
                     >
-                      <Text style={styles.byProjectVerTodosText}>Ver todos</Text>
+                      <Text style={styles.byProjectVerTodosText}>{t('hoy.viewAll')}</Text>
                       <ChevronRight size={18} color={THEME.colors.gradient.blue} />
                     </TouchableOpacity>
                   </View>
@@ -1604,14 +1654,14 @@ export default function TodayScreen() {
                         onPress={() => router.push(`/project/${row.id}` as const)}
                         activeOpacity={0.7}
                         accessibilityRole="button"
-                        accessibilityLabel={`${row.name}, ${row.count} tareas pendientes`}
-                        accessibilityHint="Abre el detalle de este proyecto"
+                        accessibilityLabel={t('hoyPlanFallback.projectRowA11y', { name: row.name, count: row.count })}
+                        accessibilityHint={t('hoyExtra.openProjectHint')}
                       >
                         <View style={[styles.byProjectColorBar, { backgroundColor: row.color }]} />
                         <View style={styles.byProjectRowContent}>
                           <Text style={styles.byProjectRowName} numberOfLines={1}>{row.name}</Text>
                           <Text style={styles.byProjectRowCount}>
-                            {row.count === 0 ? 'Sin pendientes' : `${row.count} ${row.count === 1 ? 'pendiente' : 'pendientes'}`}
+                            {row.count === 0 ? t('hoyExtra.noPending') : row.count === 1 ? t('hoyExtra.pendingOne', { count: row.count }) : t('hoyExtra.pendingMany', { count: row.count })}
                           </Text>
                         </View>
                         <ChevronRight size={20} color={THEME.colors.text.tertiary} />
@@ -1624,12 +1674,12 @@ export default function TodayScreen() {
                           onPress={() => setLooseTasksExpanded((e) => !e)}
                           activeOpacity={0.7}
                           accessibilityRole="button"
-                          accessibilityLabel={looseTasksExpanded ? 'Contraer tareas sueltas' : `Ver ${projectSectionsForToday.looseCount} tareas sueltas`}
+                          accessibilityLabel={looseTasksExpanded ? t('hoyExtra.collapseLoose') : t('hoyExtra.expandLoose', { count: projectSectionsForToday.looseCount })}
                           accessibilityState={{ expanded: looseTasksExpanded }}
                         >
                           <View style={[styles.byProjectColorBar, { backgroundColor: THEME.colors.text.tertiary }]} />
                           <View style={styles.byProjectRowContent}>
-                            <Text style={styles.byProjectRowName}>Tareas sin proyecto</Text>
+                            <Text style={styles.byProjectRowName}>{t('hoy.looseTasks')}</Text>
                             <Text style={styles.byProjectRowCount}>
                               {projectSectionsForToday.looseCount} {projectSectionsForToday.looseCount === 1 ? 'tarea' : 'tareas'}
                             </Text>
@@ -1656,7 +1706,7 @@ export default function TodayScreen() {
                               onDeleteTask={handleDeleteTask}
                               getCategoryColor={getCategoryColor}
                               onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
-                              getProjectInfo={() => ({ label: 'Tareas sueltas', color: THEME.colors.text.secondary })}
+                              getProjectInfo={() => ({ label: t('hoyExtra.looseLabel'), color: THEME.colors.text.secondary })}
                               getProjectSteps={(_projectId, _excludeTaskId) => []}
                               expandedProjectSteps={expandedProjectStepsTasks}
                               onToggleProjectSteps={(taskId) => {
@@ -1706,7 +1756,7 @@ export default function TodayScreen() {
                         onPress={toggleSection}
                         activeOpacity={0.7}
                         accessibilityRole="button"
-                        accessibilityLabel={isSectionExpanded ? `Contraer ${sec.title}` : `Ver ${sec.tasks.length} tareas de ${sec.title}`}
+                        accessibilityLabel={isSectionExpanded ? t('hoyPlanFallback.collapseSection', { title: sec.title }) : t('hoyPlanFallback.expandSection', { count: sec.tasks.length, title: sec.title })}
                         accessibilityState={{ expanded: isSectionExpanded }}
                       >
                         <Text style={styles.categoryLabelName}>{sec.title}</Text>
@@ -1746,10 +1796,10 @@ export default function TodayScreen() {
                               }
                               if (task.project_id) {
                                 const p = projectsMap[task.project_id];
-                                const name = p?.name ?? 'Proyecto';
+                                const name = p?.name ?? t('hoyExtra.projectFallback');
                                 return { label: `Proyecto: ${name}`, color: p?.color ?? THEME.colors.gradient.blue, projectId: task.project_id, projectName: name };
                               }
-                              return { label: 'Tareas sueltas', color: THEME.colors.text.secondary };
+                              return { label: t('hoyExtra.looseLabel'), color: THEME.colors.text.secondary };
                             }}
                             getProjectSteps={(projectId, excludeTaskId) =>
                               displayedIncompleteTasks.filter(
@@ -1781,28 +1831,24 @@ export default function TodayScreen() {
                   <ClipboardList size={40} color={THEME.colors.gradient.blue} style={styles.emptyTasksIcon} />
                   {incompleteTasks.length === 0 && tasks.length > 0 ? (
                     <>
-                      <Text style={styles.emptyTasksTitle}>Todo al día</Text>
-                      <Text style={styles.emptyTasksInCardText}>
-                        No tienes tareas pendientes. Si añades algo en Tareas, aparecerá aquí priorizado según cómo te sientas.
-                      </Text>
+                      <Text style={styles.emptyTasksTitle}>{t('hoy.allDone')}</Text>
+                      <Text style={styles.emptyTasksInCardText}>{t('hoy.allDoneSub')}</Text>
                     </>
                   ) : taskFilter === 'hoy' &&
                     incompleteTasks.length > 0 &&
                     incompleteTasksForToday.length === 0 ? (
                     <>
-                      <Text style={styles.emptyTasksTitle}>Nada programado para hoy</Text>
-                      <Text style={styles.emptyTasksInCardText}>
-                        Tienes tareas en otros días. Cambia a «Todas» para verlas o añade algo para hoy desde la pestaña Tareas.
-                      </Text>
+                      <Text style={styles.emptyTasksTitle}>{t('hoy.noTasksToday')}</Text>
+                      <Text style={styles.emptyTasksInCardText}>{t('hoy.noTasksOtherDays')}</Text>
                       <View style={styles.emptyTasksActions}>
                         <TouchableOpacity
                           style={styles.emptyTasksLinkPill}
                           onPress={() => setTaskFilter('todas')}
                           activeOpacity={0.85}
                           accessibilityRole="button"
-                          accessibilityLabel="Ver todas las tareas pendientes"
+                          accessibilityLabel={t('hoyExtra.filterAllA11y')}
                         >
-                          <Text style={styles.emptyTasksLinkPillText}>Ver todas</Text>
+                          <Text style={styles.emptyTasksLinkPillText}>{t('commonExtra.viewAllTasks')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.emptyTasksLinkPill, styles.emptyTasksLinkPillSecond]}
@@ -1813,24 +1859,22 @@ export default function TodayScreen() {
                           }
                           activeOpacity={0.85}
                           accessibilityRole="button"
-                          accessibilityLabel="Agregar tarea con fecha de hoy"
-                          accessibilityHint="Abre Tareas y preselecciona la fecha de hoy"
+                          accessibilityLabel={t('hoyExtra.addTodayA11y')}
+                          accessibilityHint={t('hoyExtra.addTodayHint')}
                         >
-                          <Text style={styles.emptyTasksLinkPillText}>Agregar para hoy</Text>
+                          <Text style={styles.emptyTasksLinkPillText}>{t('commonExtra.addForToday')}</Text>
                         </TouchableOpacity>
                       </View>
                     </>
                   ) : (
                     <>
-                      <Text style={styles.emptyTasksTitle}>Tu lista empieza aquí</Text>
-                      <Text style={styles.emptyTasksInCardText}>
-                        Captura tareas en segundos en la pestaña Tareas. Koraa las ordenará según tu check-in en Sentir.
-                      </Text>
+                      <Text style={styles.emptyTasksTitle}>{t('hoy.listStarts')}</Text>
+                      <Text style={styles.emptyTasksInCardText}>{t('hoy.listStartsSub')}</Text>
                     </>
                   )}
                   <View style={styles.emptyTasksCta}>
                     <GradientButton
-                      title="Ir a Tareas"
+                      title={t('hoy.goToTasks')}
                       onPress={() => router.push('/(tabs)/vaciar')}
                     />
                     {incompleteTasks.length === 0 && tasks.length > 0 ? (
@@ -1839,10 +1883,10 @@ export default function TodayScreen() {
                         onPress={() => router.push('/(tabs)/sentir')}
                         activeOpacity={0.85}
                         accessibilityRole="button"
-                        accessibilityLabel="Ir a Sentir"
-                        accessibilityHint="Abre Sentir para registrar tu estado emocional"
+                        accessibilityLabel={t('hoyExtra.goFeelA11y')}
+                        accessibilityHint={t('hoyExtra.goFeelHint')}
                       >
-                        <Text style={styles.emptyTasksSecondaryCtaText}>Ir a Sentir</Text>
+                        <Text style={styles.emptyTasksSecondaryCtaText}>{t('commonExtra.goToFeelShort')}</Text>
                         <ChevronRight size={18} color={THEME.colors.gradient.blue} />
                       </TouchableOpacity>
                     ) : null}
@@ -1856,11 +1900,11 @@ export default function TodayScreen() {
                   onPress={() => router.push('/(tabs)/vaciar')}
                   activeOpacity={0.8}
                   accessibilityRole="button"
-                  accessibilityLabel="Agregar más tareas"
-                  accessibilityHint="Abre la pestaña Tareas para capturar más pendientes"
+                  accessibilityLabel={t('hoyExtra.addMoreA11y')}
+                  accessibilityHint={t('hoyExtra.addMoreHint')}
                 >
                   <Plus size={16} color={THEME.colors.gradient.blue} />
-                  <Text style={styles.agregarMasHint}>Agregar más · pestaña Tareas</Text>
+                  <Text style={styles.agregarMasHint}>{t('commonExtra.addMoreTasksHint')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -1889,8 +1933,8 @@ export default function TodayScreen() {
           activeOpacity={1}
           onPress={() => setMenuOpen(null)}
           accessibilityRole="button"
-          accessibilityLabel="Cerrar menú"
-          accessibilityHint="Toca fuera del menú para cerrarlo"
+          accessibilityLabel={t('hoyExtra.closeMenuA11y')}
+          accessibilityHint={t('hoyExtra.closeMenuHint')}
         />
       )}
 
@@ -1937,7 +1981,7 @@ export default function TodayScreen() {
           emotion={todayMood || 'tranquila'}
           onApplied={() => {
             void loadTasks();
-            showToast('Fechas actualizadas. Revisa la pestaña Semana o filtra por Hoy.', 'success');
+            showToast(t('hoyExtra.datesUpdated'), 'success');
           }}
         />
       )}

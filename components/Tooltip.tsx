@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { X, Info } from 'lucide-react-native';
+import { useI18n } from '@/contexts/I18nContext';
 
 type TooltipProps = {
   visible: boolean;
@@ -11,6 +12,7 @@ type TooltipProps = {
 };
 
 export function Tooltip({ visible, title, message, onClose }: TooltipProps) {
+  const { t } = useI18n();
   if (!visible) return null;
 
   return (
@@ -25,8 +27,8 @@ export function Tooltip({ visible, title, message, onClose }: TooltipProps) {
         activeOpacity={1}
         onPress={onClose}
         accessibilityRole="button"
-        accessibilityLabel="Cerrar ayuda"
-        accessibilityHint="Cierra esta ventana de ayuda"
+        accessibilityLabel={t('tooltip.close')}
+        accessibilityHint={t('tooltip.closeHint')}
       >
         <View style={styles.container}>
           <LinearGradient
@@ -42,8 +44,8 @@ export function Tooltip({ visible, title, message, onClose }: TooltipProps) {
                 onPress={onClose}
                 style={styles.closeButton}
                 accessibilityRole="button"
-                accessibilityLabel="Cerrar ayuda"
-                accessibilityHint="Cierra esta ventana"
+                accessibilityLabel={t('tooltip.close')}
+                accessibilityHint={t('tooltip.closeShort')}
               >
                 <X size={18} color={THEME.colors.onGradient} />
               </TouchableOpacity>
@@ -53,10 +55,10 @@ export function Tooltip({ visible, title, message, onClose }: TooltipProps) {
               onPress={onClose}
               style={styles.button}
               accessibilityRole="button"
-              accessibilityLabel="Entendido"
-              accessibilityHint="Cierra esta ayuda y vuelve a la pantalla"
+              accessibilityLabel={t('tooltip.understood')}
+              accessibilityHint={t('tooltip.understoodHint')}
             >
-              <Text style={styles.buttonText}>Entendido</Text>
+              <Text style={styles.buttonText}>{t('tooltip.understood')}</Text>
             </TouchableOpacity>
           </LinearGradient>
         </View>

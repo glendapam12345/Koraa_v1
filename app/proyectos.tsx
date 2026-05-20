@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { FolderKanban, ChevronRight, ChevronLeft, Calendar, List, CheckCircle2, Plus } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface Project {
   id: string;
@@ -22,6 +23,7 @@ interface ProjectWithStats extends Project {
 
 export default function ProyectosScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const { user } = useAuth();
   const [projects, setProjects] = useState<ProjectWithStats[]>([]);
   const [looseCount, setLooseCount] = useState<number>(0);
@@ -103,7 +105,7 @@ export default function ProyectosScreen() {
   if (!user) {
     return (
       <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
-        <Text style={styles.emptyText}>Inicia sesión para ver tus proyectos</Text>
+        <Text style={styles.emptyText}>{t('projects.signIn')}</Text>
       </View>
     );
   }
@@ -118,14 +120,14 @@ export default function ProyectosScreen() {
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.backButton}
-            accessibilityLabel="Volver"
+            accessibilityLabel={t('projects.back')}
             activeOpacity={0.7}
           >
             <ChevronLeft size={24} color={THEME.colors.text.main} />
           </TouchableOpacity>
           <View style={styles.headerTextWrap}>
-            <Text style={styles.headerTitle}>Mis proyectos</Text>
-            <Text style={styles.headerSubtitle}>Tareas y proyectos en un solo lugar</Text>
+            <Text style={styles.headerTitle}>{t('projects.title')}</Text>
+            <Text style={styles.headerSubtitle}>{t('projects.subtitle')}</Text>
           </View>
         </View>
       </LinearGradient>
@@ -144,7 +146,7 @@ export default function ProyectosScreen() {
         {loading ? (
           <View style={styles.centered}>
             <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
-            <Text style={styles.loadingText}>Cargando proyectos…</Text>
+            <Text style={styles.loadingText}>{t('projects.loading')}</Text>
           </View>
         ) : projects.length === 0 && looseCount === 0 ? (
           <View style={styles.empty}>
@@ -154,16 +156,14 @@ export default function ProyectosScreen() {
             >
               <FolderKanban size={48} color={THEME.colors.gradient.blue} strokeWidth={1.5} />
             </LinearGradient>
-            <Text style={styles.emptyTitle}>Aún no tienes proyectos</Text>
-            <Text style={styles.emptyText}>
-              Crea proyectos desde Tareas: al agregar una tarea elige «Sí» a asignar a proyecto y crea uno nuevo.
-            </Text>
+            <Text style={styles.emptyTitle}>{t('projects.emptyTitle')}</Text>
+            <Text style={styles.emptyText}>{t('projects.emptyBody')}</Text>
             <TouchableOpacity
               style={styles.addButton}
               onPress={() => router.push('/(tabs)/vaciar')}
               activeOpacity={0.8}
               accessibilityRole="button"
-              accessibilityLabel="Ir a Tareas para agregar"
+              accessibilityLabel={t('projects.goTasksA11y')}
             >
               <LinearGradient
                 colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -171,16 +171,16 @@ export default function ProyectosScreen() {
                 end={{ x: 1, y: 0 }}
                 style={styles.addButtonGradient}
               >
-                <Text style={styles.addButtonText}>Ir a Tareas</Text>
+                <Text style={styles.addButtonText}>{t('projects.goTasks')}</Text>
               </LinearGradient>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.backLink}
               onPress={() => router.back()}
               activeOpacity={0.7}
-              accessibilityLabel="Volver"
+              accessibilityLabel={t('projects.back')}
             >
-              <Text style={styles.backLinkText}>Volver</Text>
+              <Text style={styles.backLinkText}>{t('projects.back')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -190,16 +190,14 @@ export default function ProyectosScreen() {
               onPress={() => router.push('/(tabs)/vaciar')}
               activeOpacity={0.88}
               accessibilityRole="button"
-              accessibilityLabel="Agregar proyecto o tarea, ir a la pestaña Tareas"
+              accessibilityLabel={t('projects.addA11y')}
             >
               <View style={styles.addProjectIconWrap}>
                 <Plus size={22} color={THEME.colors.gradient.blue} strokeWidth={2.2} />
               </View>
               <View style={styles.addProjectTextWrap}>
-                <Text style={styles.addProjectTitle}>Agregar proyectos o tareas</Text>
-                <Text style={styles.addProjectHint}>
-                  En Tareas escribe una tarea y asigna proyecto (o crea uno nuevo) para verlo aquí.
-                </Text>
+                <Text style={styles.addProjectTitle}>{t('projects.addSection')}</Text>
+                <Text style={styles.addProjectHint}>{t('projects.addHint')}</Text>
               </View>
               <ChevronRight size={20} color={THEME.colors.gradient.blue} />
             </TouchableOpacity>
@@ -209,7 +207,7 @@ export default function ProyectosScreen() {
                 {projects.length > 0 && (
                   <View style={styles.sectionLabelRow}>
                     <View style={styles.sectionLabelLine} />
-                    <Text style={styles.sectionLabel}>Tareas sueltas</Text>
+                    <Text style={styles.sectionLabel}>{t('projects.looseSection')}</Text>
                   </View>
                 )}
                 <TouchableOpacity
@@ -217,7 +215,7 @@ export default function ProyectosScreen() {
                   onPress={() => router.push('/project/sin-proyecto')}
                   activeOpacity={0.88}
                   accessibilityRole="button"
-                  accessibilityLabel={`Tareas sin proyecto, ${looseCount} pendientes`}
+                  accessibilityLabel={t('projectsUi.a11yLooseCard', { count: looseCount })}
                 >
                   <LinearGradient
                     colors={[THEME.colors.tint.blue.veryFaint, THEME.colors.tint.pink.soft]}
@@ -231,14 +229,14 @@ export default function ProyectosScreen() {
                   </View>
                   <View style={styles.cardContent}>
                     <Text style={styles.cardLooseTitle} numberOfLines={1}>
-                      Tareas sin proyecto
+                      {t('projectsUi.looseTitle')}
                     </Text>
-                    <Text style={styles.cardLooseHint}>
-                      No asignadas a ningún proyecto
-                    </Text>
+                    <Text style={styles.cardLooseHint}>{t('projectsUi.looseHint')}</Text>
                     <View style={styles.cardMeta}>
                       <Text style={styles.cardLooseMeta}>
-                        {looseCount} {looseCount === 1 ? 'tarea pendiente' : 'tareas pendientes'}
+                        {looseCount === 1
+                          ? t('projectsUi.pendingOne', { count: looseCount })
+                          : t('projectsUi.pendingMany', { count: looseCount })}
                       </Text>
                     </View>
                   </View>
@@ -251,7 +249,7 @@ export default function ProyectosScreen() {
                 {looseCount > 0 && (
                   <View style={styles.sectionLabelRow}>
                     <View style={styles.sectionLabelLine} />
-                    <Text style={styles.sectionLabel}>Proyectos</Text>
+                    <Text style={styles.sectionLabel}>{t('projectsUi.sectionTitle')}</Text>
                   </View>
                 )}
                 {projects.map((project) => (
@@ -261,7 +259,10 @@ export default function ProyectosScreen() {
                     onPress={() => router.push(`/project/${project.id}`)}
                     activeOpacity={0.88}
                     accessibilityRole="button"
-                    accessibilityLabel={`Proyecto ${project.name}, ${project.incompleteCount} tareas pendientes`}
+                    accessibilityLabel={t('projectsUi.a11yProjectCard', {
+                      name: project.name,
+                      count: project.incompleteCount,
+                    })}
                   >
                     <View
                       style={[styles.colorBar, { backgroundColor: project.color || THEME.colors.gradient.blue }]}
@@ -275,21 +276,29 @@ export default function ProyectosScreen() {
                           <View style={styles.cardMetaRow}>
                             <CheckCircle2 size={14} color={THEME.colors.semantic.success} />
                             <Text style={styles.cardMetaTextDone}>
-                              Completado · {project.taskCount} {project.taskCount === 1 ? 'tarea' : 'tareas'}
+                              {t('projectsUi.completed', {
+                                count: project.taskCount,
+                                tasks:
+                                  project.taskCount === 1
+                                    ? t('components.task')
+                                    : t('components.tasks'),
+                              })}
                             </Text>
                           </View>
                         ) : (
                           <Text style={styles.cardMetaText}>
                             {project.taskCount === 0
-                              ? 'Sin tareas'
-                              : `${project.incompleteCount} ${project.incompleteCount === 1 ? 'tarea pendiente' : 'tareas pendientes'}`}
+                              ? t('projectsUi.noTasks')
+                              : project.incompleteCount === 1
+                                ? t('projectsUi.pendingOne', { count: project.incompleteCount })
+                                : t('projectsUi.pendingMany', { count: project.incompleteCount })}
                           </Text>
                         )}
                         {project.withDateCount > 0 && (
                           <View style={styles.dateBadge}>
                             <Calendar size={14} color={THEME.colors.text.secondary} strokeWidth={1.8} />
                             <Text style={styles.dateBadgeText}>
-                              {project.withDateCount} con fecha
+                              {t('projectsUi.withDate', { count: project.withDateCount })}
                             </Text>
                           </View>
                         )}

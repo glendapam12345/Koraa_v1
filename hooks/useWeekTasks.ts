@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase, getErrorMessage, isSchemaError, getSchemaSetupMessage, type SchemaSetupType } from '@/lib/supabase';
+import type { AppLocale } from '@/lib/i18n';
+import { translate } from '@/lib/i18n';
 import { logger } from '@/lib/logger';
 import type { Task } from '@/hooks/useTasks';
 
@@ -66,9 +68,17 @@ export function getWeekOptions(count: number): { start: string; label: string }[
   return options;
 }
 
-function buildWeekDays(start: string): WeekDay[] {
+function buildWeekDays(start: string, locale: AppLocale): WeekDay[] {
   const today = new Date().toISOString().split('T')[0];
-  const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+  const dayNames = [
+    translate(locale, 'semana.weekdayMon'),
+    translate(locale, 'semana.weekdayTue'),
+    translate(locale, 'semana.weekdayWed'),
+    translate(locale, 'semana.weekdayThu'),
+    translate(locale, 'semana.weekdayFri'),
+    translate(locale, 'semana.weekdaySat'),
+    translate(locale, 'semana.weekdaySun'),
+  ];
   const days: WeekDay[] = [];
   const d = new Date(start + 'T12:00:00');
   for (let i = 0; i < 7; i++) {
@@ -86,7 +96,8 @@ function buildWeekDays(start: string): WeekDay[] {
 }
 
 export function useWeekTasks(
-  showToast: (message: string, type: 'success' | 'error' | 'info') => void
+  showToast: (message: string, type: 'success' | 'error' | 'info') => void,
+  locale: AppLocale = 'es',
 ) {
   const [weekTasks, setWeekTasks] = useState<DayTasks[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -104,7 +115,7 @@ export function useWeekTasks(
       const { start, end } = weekStart
         ? getWeekBoundsForStart(weekStart)
         : getWeekBounds();
-      const weekDays = buildWeekDays(start);
+      const weekDays = buildWeekDays(start, locale);
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -113,7 +124,7 @@ export function useWeekTasks(
         const emptyResult: DayTasks[] = weekDays.map((day) => ({ day, tasks: [] }));
         setWeekTasks(emptyResult);
         setProjects([]);
-        showToast('Inicia sesión para ver y agregar tareas en tu semana.', 'info');
+        showToast(translate(locale, 'hooks.weekSignIn'), 'info');
         setLoading(false);
         isLoadingRef.current = false;
         return;
@@ -151,14 +162,14 @@ export function useWeekTasks(
           setLastLoadError(null);
           const emptyResult: DayTasks[] = weekDays.map((day) => ({ day, tasks: [] }));
           setWeekTasks(emptyResult);
-          showToast('Para ver tareas por semana, actualiza la base de datos (ver instrucciones abajo).', 'info');
+          showToast(translate(locale, 'hooks.weekSchema'), 'info');
         } else {
           logger.error('Error cargando tareas de la semana:', tasksError);
           setSchemaSetupType(null);
-          setLastLoadError(getErrorMessage(tasksError));
+          setLastLoadError(getErrorMessage(tasksError, locale));
           const emptyResult: DayTasks[] = weekDays.map((day) => ({ day, tasks: [] }));
           setWeekTasks(emptyResult);
-          showToast('No se pudieron cargar las tareas. Revisa tu conexión o inicia sesión.', 'error');
+          showToast(translate(locale, 'hooks.weekLoadError'), 'error');
         }
         setLoading(false);
         isLoadingRef.current = false;
@@ -202,17 +213,17 @@ export function useWeekTasks(
         showToast('Para ver tareas por semana, actualiza la base de datos (ver instrucciones abajo).', 'info');
       } else {
         setSchemaSetupType(null);
-        setLastLoadError(getErrorMessage(error));
-        showToast('No se pudo cargar la semana. Revisa tu conexión.', 'error');
+        setLastLoadError(getErrorMessage(error, locale));
+        showToast(translate(locale, 'hooks.weekGenericError'), 'error');
       }
       const { start } = getWeekBounds();
-      const fallbackDays = buildWeekDays(start);
+      const fallbackDays = buildWeekDays(start, locale);
       setWeekTasks(fallbackDays.map((day) => ({ day, tasks: [] })));
     } finally {
       setLoading(false);
       isLoadingRef.current = false;
     }
-  }, [showToast]);
+  }, [showToast, locale]);
 
   return {
     weekTasks,

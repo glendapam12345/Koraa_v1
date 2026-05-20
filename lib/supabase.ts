@@ -4,6 +4,8 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { type AppLocale, translate } from '@/lib/i18n';
+import { translateError } from '@/lib/errorMessages';
 
 function trimEnv(s: string | undefined): string {
   return (s ?? '').trim();
@@ -116,6 +118,12 @@ export const supabase = createClient(resolvedUrl, resolvedKey, {
   },
 });
 
+/** Tipos de sesión/usuario inferidos del cliente (evita imports rotos de @supabase/supabase-js). */
+export type SupabaseSession = Awaited<
+  ReturnType<typeof supabase.auth.getSession>
+>['data']['session'];
+export type SupabaseUser = NonNullable<SupabaseSession>['user'];
+
 /** Comprueba si el teléfono puede llegar a Supabase (misma red que el login). */
 export async function canReachSupabase(): Promise<{ ok: boolean; detail?: string }> {
   if (!isSupabaseConfigured) {
@@ -187,17 +195,21 @@ export const getSchemaSetupMessage = (error: unknown): SchemaSetupType | null =>
   return 'schema';
 };
 
-export const getErrorMessage = (error: unknown): string => {
-  if (!error) return 'Ocurrió un error inesperado';
+export const getErrorMessage = (error: unknown, locale: AppLocale = 'es'): string => {
+  if (!error) return translate(locale, 'supabaseErrors.unexpected');
 
   if (isNetworkError(error)) {
-    return 'Sin conexión a internet. Verifica tu conexión e intenta de nuevo.';
+    return translate(locale, 'supabaseErrors.noConnection');
   }
 
   if (typeof error === 'object' && 'message' in error) {
     const err = error as SupabaseError;
-    return err.message || 'Ocurrió un error inesperado. Por favor intenta de nuevo.';
+    if (err.message) return translateError(err.message, locale);
   }
 
-  return 'Ocurrió un error inesperado. Por favor intenta de nuevo.';
+  if (error instanceof Error) {
+    return translateError(error, locale);
+  }
+
+  return translate(locale, 'supabaseErrors.tryAgain');
 };

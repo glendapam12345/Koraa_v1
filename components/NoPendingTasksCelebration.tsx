@@ -2,12 +2,15 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { PartyPopper } from 'lucide-react-native';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface NoPendingTasksCelebrationProps {
   onDismiss: () => void;
 }
 
 export function NoPendingTasksCelebration({ onDismiss }: NoPendingTasksCelebrationProps) {
+  const { t } = useI18n();
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -21,7 +24,7 @@ export function NoPendingTasksCelebration({ onDismiss }: NoPendingTasksCelebrati
           onPress={onDismiss}
           activeOpacity={0.8}
           accessibilityRole="button"
-          accessibilityLabel="De acuerdo"
+          accessibilityLabel={t('celebration.dismiss')}
         >
           <LinearGradient
             colors={[THEME.colors.surfaceOverlay.strong, THEME.colors.surfaceOverlay.light]}
@@ -29,7 +32,7 @@ export function NoPendingTasksCelebration({ onDismiss }: NoPendingTasksCelebrati
             end={{ x: 1, y: 0 }}
             style={styles.dismissButtonGradient}
           >
-            <Text style={styles.dismissButtonText}>De acuerdo</Text>
+            <Text style={styles.dismissButtonText}>{t('celebration.dismiss')}</Text>
           </LinearGradient>
         </TouchableOpacity>
 
@@ -37,10 +40,8 @@ export function NoPendingTasksCelebration({ onDismiss }: NoPendingTasksCelebrati
           <PartyPopper size={48} color={THEME.colors.fill[100]} />
         </View>
 
-        <Text style={styles.title}>¡Increíble trabajo!</Text>
-        <Text style={styles.message}>
-          Has completado todas tus tareas del día. Es momento de descansar y disfrutar.
-        </Text>
+        <Text style={styles.title}>{t('celebration.title')}</Text>
+        <Text style={styles.message}>{t('celebration.message')}</Text>
       </LinearGradient>
     </View>
   );

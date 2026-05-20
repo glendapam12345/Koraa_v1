@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { OTP_CODE_LENGTH } from '@/constants/authOtp';
+import { useI18n } from '@/contexts/I18nContext';
 
 export type OTPInputProps = {
   value: string[];
@@ -25,8 +26,10 @@ export function OTPInput({
   length = OTP_CODE_LENGTH,
   autoFocus = true,
   disabled = false,
-  accessibilityLabel = 'Código de verificación',
+  accessibilityLabel,
 }: OTPInputProps) {
+  const { t } = useI18n();
+  const groupLabel = accessibilityLabel ?? t('authA11y.otpLabel');
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
@@ -70,7 +73,7 @@ export function OTPInput({
     <View
       style={styles.container}
       accessibilityRole="none"
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={groupLabel}
     >
       {Array.from({ length }).map((_, index) => (
         <TextInput
@@ -94,8 +97,8 @@ export function OTPInput({
             Platform.OS === 'web' ? 'one-time-code' : Platform.OS === 'android' ? 'sms-otp' : 'off'
           }
           textContentType="oneTimeCode"
-          accessibilityLabel={`Dígito ${index + 1} de ${length} del código`}
-          accessibilityHint="Introduce un número"
+          accessibilityLabel={t('authA11y.otpDigit', { index: index + 1, total: length })}
+          accessibilityHint={t('authA11y.otpDigitHint')}
           accessibilityState={{ disabled }}
         />
       ))}

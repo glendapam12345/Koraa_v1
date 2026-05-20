@@ -8,9 +8,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getPostAuthRoute } from '@/lib/onboardingGate';
 import { hasSeenFirstSessionTour } from '@/lib/firstSessionTour';
 import { FirstSessionTourModal } from '@/components/onboarding/FirstSessionTourModal';
+import { useI18n } from '@/contexts/I18nContext';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const { user, loading } = useAuth();
   const userId = user?.id;
   const [allowed, setAllowed] = useState(false);
@@ -103,7 +105,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Hoy',
+            title: t('tabs.today'),
             tabBarIcon: ({ size, color }) => (
               <Home size={size} color={color} />
             ),
@@ -112,7 +114,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="vaciar"
           options={{
-            title: 'Tareas',
+            title: t('tabs.tasks'),
             tabBarIcon: ({ size, color }) => (
               <Edit3 size={size} color={color} />
             ),
@@ -121,7 +123,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="sentir"
           options={{
-            title: 'Sentir',
+            title: t('tabs.feel'),
             tabBarIcon: ({ size, color }) => (
               <Heart size={size} color={color} />
             ),
@@ -130,7 +132,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="semana"
           options={{
-            title: 'Semana',
+            title: t('tabs.week'),
             tabBarIcon: ({ size, color }) => (
               <Calendar size={size} color={color} />
             ),
@@ -139,7 +141,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="tips"
           options={{
-            title: 'Consejos',
+            title: t('tabs.tips'),
             tabBarIcon: ({ size, color }) => (
               <Lightbulb size={size} color={color} />
             ),
@@ -148,7 +150,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="yo"
           options={{
-            title: 'Yo',
+            title: t('tabs.profile'),
             tabBarIcon: ({ size, color }) => (
               <User size={size} color={color} />
             ),

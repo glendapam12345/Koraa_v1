@@ -1,244 +1,150 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { memo, useMemo } from 'react';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useMemo } from 'react';
 import { THEME } from '@/constants/theme';
-import { RefreshCw, Zap, Clock, Focus } from 'lucide-react-native';
+import { RefreshCw } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { useI18n } from '@/contexts/I18nContext';
 
-const getMoodEmoji = (mood: string): string => {
-  const moodLower = mood.toLowerCase();
-  switch (moodLower) {
-    case 'tranquila':
-      return '😌';
-    case 'enfocada':
-      return '😊';
-    case 'motivada':
-      return '✨';
-    case 'ansiosa':
-      return '😰';
-    case 'agotada':
-      return '😔';
-    case 'abrumada':
-      return '🥺';
-    default:
-      return '💭';
-  }
+type MoodCardProps = {
+  todayMood: string;
+  energyLevel: number;
+  availableTime?: string | null;
+  focusLevel?: string | null;
+  onRefresh: () => void;
 };
 
-interface MoodCardProps {
-  todayMood: string;
-  energy: string;
-  time: string;
-  focusLevel: string;
-  onRefresh: () => void;
+function getMoodEmoji(mood: string): string {
+  const map: Record<string, string> = {
+    agotada: '😴',
+    tranquila: '😌',
+    ansiosa: '😰',
+    motivada: '💪',
+    abrumada: '😵',
+    enfocada: '🎯',
+  };
+  return map[mood.toLowerCase()] ?? '💭';
 }
 
-export const MoodCard = memo(function MoodCard({ todayMood, energy, time, focusLevel, onRefresh }: MoodCardProps) {
-  const moodTitle = useMemo(
+export function MoodCard({ todayMood, energyLevel, availableTime, focusLevel, onRefresh }: MoodCardProps) {
+  const { t } = useI18n();
+  const moodLabel = useMemo(
     () => todayMood.charAt(0).toUpperCase() + todayMood.slice(1),
-    [todayMood]
+    [todayMood],
   );
-
-  const moodEmoji = useMemo(
-    () => getMoodEmoji(todayMood),
-    [todayMood]
-  );
-
-  const hasStats = useMemo(
-    () => !!(energy || time || focusLevel),
-    [energy, time, focusLevel]
-  );
+  const moodEmoji = useMemo(() => getMoodEmoji(todayMood), [todayMood]);
 
   return (
-    <LinearGradient
-      colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
-      style={styles.moodCard}
-    >
-      <View style={styles.moodHeader}>
+    <View style={styles.card}>
+      <View style={styles.header}>
         <TouchableOpacity
-          style={styles.refreshButton}
           onPress={onRefresh}
+          style={styles.refreshButton}
           accessibilityRole="button"
-          accessibilityLabel="Actualizar información"
-          accessibilityHint="Recarga el check-in y las tareas del día"
+          accessibilityLabel={t('moodCard.a11yRefresh')}
+          accessibilityHint={t('moodCard.a11yRefreshHint')}
         >
-          <RefreshCw size={20} color={THEME.colors.fill[100]} />
+          <RefreshCw size={18} color={THEME.colors.gradient.blue} />
         </TouchableOpacity>
-        <View style={styles.moodTitleCenterContainer}>
-          <Text style={styles.moodLabel}>Hoy te sientes</Text>
-          <Text style={styles.moodTitle}>
-            {moodEmoji} {moodTitle}
-          </Text>
+        <View style={styles.moodMain}>
+          <Text style={styles.moodEmoji}>{moodEmoji}</Text>
+          <Text style={styles.moodLabel}>{t('moodCard.label')}</Text>
+          <Text style={styles.moodValue}>{moodLabel}</Text>
         </View>
-        <View style={styles.refreshButtonPlaceholder} />
       </View>
-      {hasStats ? (
-        <View style={styles.moodStats}>
-          {energy && (
-            <View style={styles.moodStatItem}>
-              <View style={styles.moodStatIconContainer}>
-                <Zap size={14} color={THEME.colors.fill[100]} />
-              </View>
-              <Text style={styles.moodStatLabel}>Energía</Text>
-              <Text style={styles.moodStatValue}>{energy}</Text>
-            </View>
-          )}
-          {time && (
-            <>
-              <View style={styles.moodStatSeparator} />
-              <View style={styles.moodStatItem}>
-                <View style={styles.moodStatIconContainer}>
-                  <Clock size={14} color={THEME.colors.fill[100]} />
-                </View>
-                <Text style={styles.moodStatLabel}>Tiempo</Text>
-                <Text style={styles.moodStatValue}>{time}</Text>
-              </View>
-            </>
-          )}
-          {focusLevel && (
-            <>
-              <View style={styles.moodStatSeparator} />
-              <View style={styles.moodStatItem}>
-                <View style={styles.moodStatIconContainer}>
-                  <Focus size={14} color={THEME.colors.fill[100]} />
-                </View>
-                <Text style={styles.moodStatLabel}>Enfoque</Text>
-                <Text style={styles.moodStatValue}>{focusLevel}</Text>
-              </View>
-            </>
-          )}
+      <View style={styles.statsRow}>
+        <View style={styles.stat}>
+          <Text style={styles.moodStatLabel}>{t('moodCard.energy')}</Text>
+          <Text style={styles.moodStatValue}>{energyLevel}/5</Text>
         </View>
-      ) : null}
-      
-      {/* Botón para actualizar check-in */}
+        {availableTime ? (
+          <View style={styles.stat}>
+            <Text style={styles.moodStatLabel}>{t('moodCard.time')}</Text>
+            <Text style={styles.moodStatValue}>{availableTime}</Text>
+          </View>
+        ) : null}
+        {focusLevel ? (
+          <View style={styles.stat}>
+            <Text style={styles.moodStatLabel}>{t('moodCard.focus')}</Text>
+            <Text style={styles.moodStatValue}>{focusLevel}</Text>
+          </View>
+        ) : null}
+      </View>
       <TouchableOpacity
-        style={styles.updateCheckInButton}
+        style={styles.updateButton}
         onPress={() => router.push('/(tabs)/sentir')}
-        activeOpacity={0.8}
+        activeOpacity={0.85}
         accessibilityRole="button"
-        accessibilityLabel="Actualizar cómo me siento"
-        accessibilityHint="Abre la pantalla para actualizar tu estado emocional del día"
+        accessibilityLabel={t('moodCard.a11yUpdate')}
+        accessibilityHint={t('moodCard.a11yUpdateHint')}
       >
-        <Text style={styles.updateCheckInButtonText}>
-          Actualizar cómo me siento
-        </Text>
+        <Text style={styles.updateButtonText}>{t('moodCard.updateCta')}</Text>
       </TouchableOpacity>
-    </LinearGradient>
+    </View>
   );
-}, (prevProps, nextProps) => {
-  return (
-    prevProps.todayMood === nextProps.todayMood &&
-    prevProps.energy === nextProps.energy &&
-    prevProps.time === nextProps.time &&
-    prevProps.focusLevel === nextProps.focusLevel
-  );
-});
+}
 
 const styles = StyleSheet.create({
-  moodCard: {
+  card: {
+    backgroundColor: THEME.colors.fill[100],
     borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.sm,
+    padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
-    marginHorizontal: THEME.spacing.lg,
+    ...THEME.shadows.soft,
   },
-  moodHeader: {
+  header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: THEME.spacing.md,
+    alignItems: 'flex-start',
+    marginBottom: THEME.spacing.sm,
   },
-  moodTitleCenterContainer: {
+  refreshButton: {
+    padding: THEME.spacing.xs,
+    marginRight: THEME.spacing.xs,
+  },
+  moodMain: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+  },
+  moodEmoji: {
+    fontSize: 32,
+    marginBottom: THEME.spacing.xs,
   },
   moodLabel: {
     ...THEME.typography.caption,
-    color: THEME.colors.fill[100],
-    opacity: 0.9,
-    fontSize: 12,
-    textAlign: 'center',
-    marginBottom: THEME.spacing.xs / 2,
+    color: THEME.colors.text.secondary,
   },
-  moodTitle: {
-    ...THEME.typography.h2,
-    color: THEME.colors.fill[100],
-    fontSize: 24,
-    fontFamily: THEME.fonts.heading.bold,
-    textAlign: 'center',
+  moodValue: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
   },
-  refreshButtonPlaceholder: {
-    width: 32,
-    height: 32,
-  },
-  refreshButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: THEME.colors.surfaceOverlay.medium,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  moodStats: {
+  statsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: THEME.spacing.sm,
-    flexWrap: 'wrap',
-    gap: THEME.spacing.xs,
+    justifyContent: 'space-around',
+    marginBottom: THEME.spacing.md,
+    paddingVertical: THEME.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.stroke[100],
   },
-  moodStatItem: {
-    backgroundColor: THEME.colors.surfaceOverlay.light,
-    borderRadius: THEME.borderRadius.rounded,
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.xs,
-    minWidth: 90,
+  stat: {
     alignItems: 'center',
-    gap: 4,
-  },
-  moodStatIconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: THEME.colors.surfaceOverlay.medium,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
-  },
-  moodStatSeparator: {
-    width: 1,
-    height: 32,
-    backgroundColor: THEME.colors.surfaceOverlay.medium,
-    marginHorizontal: THEME.spacing.xs / 2,
   },
   moodStatLabel: {
-    ...THEME.typography.caption,
-    color: THEME.colors.fill[100],
-    opacity: 0.9,
-    fontSize: 10,
-    textAlign: 'center',
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
   },
   moodStatValue: {
     ...THEME.typography.body,
-    color: THEME.colors.fill[100],
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 12,
-    textAlign: 'center',
+    color: THEME.colors.text.main,
   },
-  updateCheckInButton: {
-    marginTop: THEME.spacing.xs,
-    paddingVertical: 6,
-    paddingHorizontal: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.surfaceOverlay.medium,
-    alignSelf: 'center',
+  updateButton: {
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderRadius: THEME.borderRadius.standard,
+    paddingVertical: THEME.spacing.sm,
+    alignItems: 'center',
   },
-  updateCheckInButtonText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.fill[100],
-    fontFamily: THEME.fonts.heading.medium,
-    fontSize: 11,
+  updateButtonText: {
+    ...THEME.typography.body,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
   },
 });

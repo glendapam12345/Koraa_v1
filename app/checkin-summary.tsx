@@ -1,21 +1,24 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
+import { getEmotionEmoji } from '@/lib/emotionalInsights';
 import { CheckCircle2, Sparkles } from 'lucide-react-native';
 
-const EMOTIONS = [
-  { id: 'agotada', emoji: '😔', label: 'Agotada', color: ['#667eea', '#764ba2'] as const },
-  { id: 'tranquila', emoji: '😌', label: 'Tranquila', color: ['#f093fb', '#f5576c'] as const },
-  { id: 'ansiosa', emoji: '😰', label: 'Ansiosa', color: ['#fa709a', '#fee140'] as const },
-  { id: 'motivada', emoji: '✨', label: 'Motivada', color: ['#30cfd0', '#330867'] as const },
-  { id: 'abrumada', emoji: '🥺', label: 'Abrumada', color: ['#a8edea', '#fed6e3'] as const },
-  { id: 'enfocada', emoji: '🎯', label: 'Enfocada', color: ['#667eea', '#764ba2'] as const },
-];
+const EMOTION_IDS = ['agotada', 'tranquila', 'ansiosa', 'motivada', 'abrumada', 'enfocada'] as const;
+const EMOTION_COLORS: Record<(typeof EMOTION_IDS)[number], readonly [string, string]> = {
+  agotada: ['#667eea', '#764ba2'],
+  tranquila: ['#f093fb', '#f5576c'],
+  ansiosa: ['#fa709a', '#fee140'],
+  motivada: ['#30cfd0', '#330867'],
+  abrumada: ['#a8edea', '#fed6e3'],
+  enfocada: ['#667eea', '#764ba2'],
+};
 
 type Task = {
   id: string;
@@ -32,6 +35,7 @@ export default function CheckInSummaryScreen() {
     focus: string;
   }>();
   const { user } = useAuth();
+  const { t } = useI18n();
   const [prioritizedTasks, setPrioritizedTasks] = useState<Task[]>([]);
   const [, setLoading] = useState(true);
 
@@ -45,7 +49,7 @@ export default function CheckInSummaryScreen() {
         .eq('user_id', user.id)
         .eq('is_priority', true)
         .eq('is_completed', false)
-        .is('parent_task_id', null) // Solo tareas principales
+        .is('parent_task_id', null)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -71,49 +75,51 @@ export default function CheckInSummaryScreen() {
     }
   }, [user, loadPrioritizedTasks]);
 
-  const getEmotionData = () => {
-    return EMOTIONS.find(e => e.id === emotion?.toLowerCase()) || EMOTIONS[0];
-  };
+  const emotionId = (emotion?.toLowerCase() || 'agotada') as (typeof EMOTION_IDS)[number];
+  const emotionData = useMemo(() => {
+    const id = EMOTION_IDS.includes(emotionId) ? emotionId : 'agotada';
+    return {
+      id,
+      emoji: getEmotionEmoji(id),
+      label: t(`sentir.emotions.${id}`),
+      color: EMOTION_COLORS[id],
+    };
+  }, [emotionId, t]);
 
-  const getMotivationalMessage = () => {
-    const emotionData = getEmotionData();
-
+  const motivationalMessage = useMemo(() => {
     if (emotionData.id === 'agotada' || emotionData.id === 'abrumada') {
-      return 'Tómalo con calma. Priorizamos solo lo esencial para hoy.';
-    } else if (emotionData.id === 'ansiosa') {
-      return 'Respira. Enfócate en estas tareas, una a la vez.';
-    } else if (emotionData.id === 'motivada' || emotionData.id === 'enfocada') {
-      return '¡Perfecto! Estás lista para conquistar el día.';
-    } else if (emotionData.id === 'tranquila') {
-      return 'Día tranquilo. Priorizamos tareas que fluyan bien.';
+      return t('checkinSummary.calm');
     }
-    
-    return 'Basado en cómo te sientes, priorizamos tus tareas.';
-  };
+    if (emotionData.id === 'ansiosa') {
+      return t('checkinSummary.anxious');
+    }
+    if (emotionData.id === 'motivada' || emotionData.id === 'enfocada') {
+      return t('checkinSummary.motivated');
+    }
+    if (emotionData.id === 'tranquila') {
+      return t('checkinSummary.tranquil');
+    }
+    return t('checkinSummary.default');
+  }, [emotionData.id, t]);
 
   const handleContinue = () => {
     router.replace('/(tabs)');
   };
 
-  const emotionData = getEmotionData();
-  const energyLevel = parseInt(energy || '3');
+  const energyLevel = parseInt(energy || '3', 10);
+  const notSpecified = t('checkinSummary.notSpecified');
 
   return (
     <View style={styles.container}>
-      <ScrollView 
-        contentContainerStyle={styles.content} 
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header con emoji grande */}
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.emojiContainer}>
             <Text style={styles.emoji}>{emotionData.emoji}</Text>
           </View>
-          <Text style={styles.title}>¡Check-in</Text>
-          <Text style={styles.titleAccent}>completado!</Text>
+          <Text style={styles.title}>{t('checkinSummary.title')}</Text>
+          <Text style={styles.titleAccent}>{t('checkinSummary.titleAccent')}</Text>
         </View>
 
-        {/* Resumen del estado */}
         <View style={styles.summaryCard}>
           <LinearGradient
             colors={emotionData.color as [string, string]}
@@ -122,43 +128,43 @@ export default function CheckInSummaryScreen() {
             style={styles.summaryGradient}
           >
             <View style={styles.summaryContent}>
-              <Text style={styles.summaryLabel}>Te sientes</Text>
+              <Text style={styles.summaryLabel}>{t('checkinSummary.feeling')}</Text>
               <Text style={styles.summaryValue}>{emotionData.label}</Text>
-              
+
               <View style={styles.summaryRow}>
                 <View style={styles.summaryItem}>
-                  <Text style={styles.summaryItemLabel}>Energía</Text>
+                  <Text style={styles.summaryItemLabel}>{t('checkinSummary.energy')}</Text>
                   <Text style={styles.summaryItemValue}>{energyLevel}/5</Text>
                 </View>
                 <View style={styles.summaryItem}>
-                  <Text style={styles.summaryItemLabel}>Tiempo</Text>
-                  <Text style={styles.summaryItemValue}>{time || 'No especificado'}</Text>
+                  <Text style={styles.summaryItemLabel}>{t('checkinSummary.time')}</Text>
+                  <Text style={styles.summaryItemValue}>{time || notSpecified}</Text>
                 </View>
                 <View style={styles.summaryItem}>
-                  <Text style={styles.summaryItemLabel}>Enfoque</Text>
-                  <Text style={styles.summaryItemValue}>{focus || 'No especificado'}</Text>
+                  <Text style={styles.summaryItemLabel}>{t('checkinSummary.focus')}</Text>
+                  <Text style={styles.summaryItemValue}>{focus || notSpecified}</Text>
                 </View>
               </View>
             </View>
           </LinearGradient>
         </View>
 
-        {/* Mensaje motivacional */}
         <View style={styles.messageCard}>
           <Sparkles size={20} color={THEME.colors.gradient.blue} />
-          <Text style={styles.messageText}>{getMotivationalMessage()}</Text>
+          <Text style={styles.messageText}>{motivationalMessage}</Text>
         </View>
 
-        {/* Tareas priorizadas */}
         {prioritizedTasks.length > 0 ? (
           <View style={styles.tasksCard}>
             <View style={styles.tasksHeader}>
               <CheckCircle2 size={24} color={THEME.colors.gradient.blue} />
               <Text style={styles.tasksTitle}>
-                {prioritizedTasks.length} {prioritizedTasks.length === 1 ? 'tarea priorizada' : 'tareas priorizadas'}
+                {prioritizedTasks.length === 1
+                  ? t('checkinSummary.taskPrioritized', { count: prioritizedTasks.length })
+                  : t('checkinSummary.tasksPrioritized', { count: prioritizedTasks.length })}
               </Text>
             </View>
-            
+
             <View style={styles.tasksList}>
               {prioritizedTasks.slice(0, 5).map((task, index) => (
                 <View key={task.id} style={styles.taskItem}>
@@ -171,25 +177,22 @@ export default function CheckInSummaryScreen() {
                 </View>
               ))}
             </View>
-            
+
             {prioritizedTasks.length > 5 && (
               <Text style={styles.moreTasksText}>
-                +{prioritizedTasks.length - 5} más tareas
+                {t('checkinSummary.moreTasks', { count: prioritizedTasks.length - 5 })}
               </Text>
             )}
           </View>
         ) : (
           <View style={styles.noTasksCard}>
-            <Text style={styles.noTasksText}>
-              No hay tareas para priorizar aún.{'\n'}
-              Agrega tareas en la pestaña Tareas para verlas aquí.
-            </Text>
+            <Text style={styles.noTasksText}>{t('checkinSummary.noTasksYet')}</Text>
           </View>
         )}
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton title="Ver prioridades" onPress={handleContinue} />
+        <GradientButton title={t('checkinSummary.viewPriorities')} onPress={handleContinue} />
       </View>
     </View>
   );

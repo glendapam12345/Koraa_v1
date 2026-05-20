@@ -1,3 +1,6 @@
+import type { AppLocale } from '@/lib/i18n';
+import { EMOTION_TIPS_EN } from '@/lib/i18n/locales/emotionTips.en';
+
 export interface EmotionTip {
   id: string;
   tip: string;
@@ -139,13 +142,14 @@ export const EMOTION_TIPS: Record<string, EmotionTip[]> = {
   ],
 };
 
-export function getEmotionTips(emotion: string): EmotionTip[] {
+export function getEmotionTips(emotion: string, locale: AppLocale = 'es'): EmotionTip[] {
   const emotionLower = emotion.toLowerCase();
-  return EMOTION_TIPS[emotionLower] || [];
+  const catalog = locale === 'en' ? EMOTION_TIPS_EN : EMOTION_TIPS;
+  return catalog[emotionLower] || [];
 }
 
-export function getRandomTip(emotion: string): EmotionTip | null {
-  const tips = getEmotionTips(emotion);
+export function getRandomTip(emotion: string, locale: AppLocale = 'es'): EmotionTip | null {
+  const tips = getEmotionTips(emotion, locale);
   if (tips.length === 0) return null;
   return tips[Math.floor(Math.random() * tips.length)];
 }

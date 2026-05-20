@@ -3,6 +3,7 @@ import { useEffect, useCallback } from 'react';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, runOnJS } from 'react-native-reanimated';
 import { CheckCircle2 } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
+import { useI18n } from '@/contexts/I18nContext';
 
 type SuccessModalProps = {
   visible: boolean;
@@ -10,7 +11,9 @@ type SuccessModalProps = {
   onClose: () => void;
 };
 
-export function SuccessModal({ visible, message = 'Guardado', onClose }: SuccessModalProps) {
+export function SuccessModal({ visible, message, onClose }: SuccessModalProps) {
+  const { t } = useI18n();
+  const displayMessage = message ?? t('successModal.defaultTitle');
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(-20);
 
@@ -55,7 +58,7 @@ export function SuccessModal({ visible, message = 'Guardado', onClose }: Success
             color={THEME.colors.semantic.success}
             strokeWidth={2}
           />
-          <Text style={styles.message}>{message}</Text>
+          <Text style={styles.message}>{displayMessage}</Text>
         </Animated.View>
       </View>
     </Modal>

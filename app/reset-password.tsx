@@ -3,6 +3,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
+import { PasswordRequirementsHint } from '@/components/auth/PasswordRequirementsHint';
+import { getPasswordErrorKey } from '@/lib/passwordPolicy';
+import { useI18n } from '@/contexts/I18nContext';
+import { translateError } from '@/lib/errorMessages';
 import { supabase } from '@/lib/supabase';
 import { Sparkles } from 'lucide-react-native';
 
@@ -59,6 +63,7 @@ function parseTokensFromUrl(url: string | null): { access_token?: string; refres
 }
 
 export default function ResetPasswordScreen() {
+  const { t, locale } = useI18n();
   const [status, setStatus] = useState<'loading' | 'form' | 'success' | 'invalid'>('loading');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -156,32 +161,27 @@ export default function ResetPasswordScreen() {
     };
   }, [handleIncomingUrl]);
 
-  const validatePassword = (p: string) => p.length >= 6;
-
   const handleSubmit = async () => {
     setError('');
-    if (!password.trim()) {
-      setError('Escribe tu nueva contraseña');
-      return;
-    }
-    if (!validatePassword(password)) {
-      setError('La contraseña debe tener al menos 6 caracteres');
+    const passwordErrorKey = getPasswordErrorKey(password);
+    if (passwordErrorKey) {
+      setError(t(passwordErrorKey));
       return;
     }
     if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
+      setError(t('password.mismatch'));
       return;
     }
     setLoading(true);
     try {
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) {
-        setError(updateError.message);
+        setError(translateError(updateError, locale));
         return;
       }
       setStatus('success');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Ocurrió un error');
+      setError(translateError(err, locale));
     } finally {
       setLoading(false);
     }
@@ -191,7 +191,7 @@ export default function ResetPasswordScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
-        <Text style={styles.loadingText}>Comprobando enlace…</Text>
+        <Text style={styles.loadingText}>{t('resetPassword.loading')}</Text>
       </View>
     );
   }
@@ -204,14 +204,12 @@ export default function ResetPasswordScreen() {
             <View style={styles.iconCircle}>
               <Sparkles size={32} color={THEME.colors.gradient.blue} />
             </View>
-            <Text style={styles.title}>Enlace no válido</Text>
-            <Text style={styles.subtitle}>
-              Este enlace ha caducado o ya se usó. Pide otro desde &quot;Olvidé mi contraseña&quot; en la pantalla de inicio de sesión.
-            </Text>
+            <Text style={styles.title}>{t('resetPassword.invalidTitle')}</Text>
+            <Text style={styles.subtitle}>{t('resetPassword.invalidBody')}</Text>
           </View>
           {error ? <View style={styles.errorContainer}><Text style={styles.errorText}>{error}</Text></View> : null}
           <TouchableOpacity onPress={() => router.replace('/auth/login')} style={styles.linkButton}>
-            <Text style={styles.linkText}>Ir a iniciar sesión</Text>
+            <Text style={styles.linkText}>{t('resetPassword.goToLogin')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -226,12 +224,10 @@ export default function ResetPasswordScreen() {
             <View style={styles.iconCircle}>
               <Sparkles size={32} color={THEME.colors.gradient.blue} />
             </View>
-            <Text style={styles.title}>Contraseña actualizada</Text>
-            <Text style={styles.subtitle}>
-              Ya puedes iniciar sesión con tu nueva contraseña.
-            </Text>
+            <Text style={styles.title}>{t('resetPassword.successTitle')}</Text>
+            <Text style={styles.subtitle}>{t('resetPassword.successBody')}</Text>
           </View>
-          <GradientButton title="Iniciar sesión" onPress={() => router.replace('/auth/login')} />
+          <GradientButton title={t('resetPassword.signIn')} onPress={() => router.replace('/auth/login')} />
         </ScrollView>
       </View>
     );
@@ -251,26 +247,25 @@ export default function ResetPasswordScreen() {
           <View style={styles.iconCircle}>
             <Sparkles size={32} color={THEME.colors.gradient.blue} />
           </View>
-          <Text style={styles.title}>Nueva contraseña</Text>
-          <Text style={styles.subtitle}>
-            Elige una contraseña de al menos 6 caracteres.
-          </Text>
+          <Text style={styles.title}>{t('resetPassword.title')}</Text>
+          <Text style={styles.subtitle}>{t('password.newPasswordSubtitle')}</Text>
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Nueva contraseña</Text>
+          <Text style={styles.inputLabel}>{t('common.password')}</Text>
           <TextInput
             style={styles.input}
             value={password}
             onChangeText={setPassword}
-            placeholder="••••••••"
+            placeholder={t('password.placeholder')}
             placeholderTextColor={THEME.colors.text.secondary}
             secureTextEntry
             editable={!loading}
           />
+          <PasswordRequirementsHint />
         </View>
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Confirmar contraseña</Text>
+          <Text style={styles.inputLabel}>{t('common.confirmPassword')}</Text>
           <TextInput
             style={styles.input}
             value={confirmPassword}
@@ -288,7 +283,11 @@ export default function ResetPasswordScreen() {
           </View>
         ) : null}
 
-        <GradientButton title="Guardar" onPress={handleSubmit} disabled={loading || !password || !confirmPassword} />
+        <GradientButton
+          title={t('resetPassword.save')}
+          onPress={handleSubmit}
+          disabled={loading || !password || !confirmPassword}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );

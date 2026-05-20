@@ -4,15 +4,18 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { Clock } from 'lucide-react-native';
+import { useI18n } from '@/contexts/I18nContext';
+import type { TranslationKey } from '@/lib/i18n';
 
-const TIME_OPTIONS = [
-  { id: 'Poco (1-2hrs)', label: 'Poco (1-2 hrs)' },
-  { id: 'Medio (2-4hrs)', label: 'Medio (2-4 hrs)' },
-  { id: 'Bastante (4-6hrs)', label: 'Bastante (4-6 hrs)' },
-  { id: 'Todo el día', label: 'Todo el día' },
+const TIME_OPTIONS: { id: string; labelKey: TranslationKey }[] = [
+  { id: 'Poco (1-2hrs)', labelKey: 'onboarding.time.little' },
+  { id: 'Medio (2-4hrs)', labelKey: 'onboarding.time.medium' },
+  { id: 'Bastante (4-6hrs)', labelKey: 'onboarding.time.plenty' },
+  { id: 'Todo el día', labelKey: 'onboarding.time.allDay' },
 ];
 
 export default function TimeScreen() {
+  const { t } = useI18n();
   const { emotion, energy, from } = useLocalSearchParams<{ emotion: string; energy: string; from: string }>();
   const [selectedTime, setSelectedTime] = useState<string>('');
 
@@ -34,9 +37,9 @@ export default function TimeScreen() {
           </View>
         </View>
 
-        <Text style={styles.title}>¿Cuánto</Text>
-        <Text style={styles.titleAccent}>tiempo</Text>
-        <Text style={styles.subtitle}>tienes disponible?</Text>
+        <Text style={styles.title}>{t('onboarding.time.title')}</Text>
+        <Text style={styles.titleAccent}>{t('onboarding.time.titleAccent')}</Text>
+        <Text style={styles.subtitle}>{t('onboarding.time.subtitle')}</Text>
 
         <View style={styles.optionsContainer}>
           {TIME_OPTIONS.map((option) => (
@@ -53,7 +56,7 @@ export default function TimeScreen() {
                 styles.optionText,
                 selectedTime === option.id && styles.optionTextSelected,
               ]}>
-                {option.label}
+                {t(option.labelKey)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -61,7 +64,7 @@ export default function TimeScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton title="Continuar" onPress={handleContinue} disabled={!selectedTime} />
+        <GradientButton title={t('onboarding.time.continue')} onPress={handleContinue} disabled={!selectedTime} />
       </View>
     </View>
   );

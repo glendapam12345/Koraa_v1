@@ -13,7 +13,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, KeyRound, LogOut, Trash2, Bell, CircleHelp, PenLine, Crown } from 'lucide-react-native';
+import { ArrowLeft, KeyRound, LogOut, Trash2, Bell, CircleHelp, PenLine, Crown, Globe } from 'lucide-react-native';
+import { useI18n } from '@/contexts/I18nContext';
+import type { AppLocale } from '@/lib/i18n';
 import { useAuth } from '@/contexts/AuthContext';
 import { OTPInput } from '@/components/auth/OTPInput';
 import { showAlert, showConfirm } from '@/lib/crossPlatformAlert';
@@ -29,6 +31,8 @@ import {
 } from '@/lib/notificationPreferences';
 import { scheduleDailyReminder, checkNotificationPermissions } from '@/hooks/useNotifications';
 import { logger } from '@/lib/logger';
+import { PasswordRequirementsHint } from '@/components/auth/PasswordRequirementsHint';
+import { getPasswordErrorKey } from '@/lib/passwordPolicy';
 
 type SettingsStep =
   | 'menu'
@@ -40,6 +44,7 @@ type SettingsStep =
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t, locale, setLocale } = useI18n();
   const { user, signOut, sendReauthOtp, verifyReauthOtp, changePasswordInApp, deleteAccount } = useAuth();
 
   const [step, setStep] = useState<SettingsStep>('menu');
@@ -77,26 +82,43 @@ export default function SettingsScreen() {
       setNotifReminderTime({ hour, minute });
       const ok = await checkNotificationPermissions();
       if (!ok) {
-        Alert.alert(
-          'Permisos de notificación',
-          'Activa las notificaciones para Koraa en los ajustes del sistema para recibir el recordatorio de Sentir.',
-        );
+        Alert.alert(t('settings.notifPermissionTitle'), t('settings.notifPermissionBody'));
       }
       await scheduleDailyReminder();
       if (Platform.OS === 'ios' || Platform.OS === 'android') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       Alert.alert(
-        'Recordatorio guardado',
-        `Te avisaremos sobre las ${formatReminderTime({ hour, minute })} si aún no hiciste check-in ese día.`,
+        t('settings.reminderSavedTitle'),
+        t('settings.reminderSavedBody', { time: formatReminderTime({ hour, minute }) }),
       );
     } catch (e) {
       logger.error('Error guardando recordatorio:', e);
-      Alert.alert('No se pudo guardar recordatorio', 'Inténtalo de nuevo.');
+      Alert.alert(t('settings.reminderSaveError'), t('common.retry'));
     } finally {
       setNotifSaving(false);
     }
-  }, []);
+  }, [t]);
+
+  const selectLocale = useCallback(
+    async (next: AppLocale) => {
+      if (next === locale) return;
+      await setLocale(next);
+      if (Platform.OS === 'ios' || Platform.OS === 'android') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        try {
+          const ok = await checkNotificationPermissions();
+          if (ok) {
+            await scheduleDailyReminder(next);
+          }
+        } catch (e) {
+          logger.debug('Reprogramar recordatorio tras cambio de idioma:', e);
+        }
+      }
+      Alert.alert(t('language.saved'));
+    },
+    [locale, setLocale, t],
+  );
 
   const resetState = () => {
     setStep('menu');
@@ -129,9 +151,9 @@ export default function SettingsScreen() {
 
   const handleDeleteAccountStart = () => {
     showConfirm(
-      'Eliminar cuenta',
-      'Esta acción no se puede deshacer. Se borrarán tus datos asociados a Koraa. ¿Seguir?',
-      'Sí, continuar',
+      t('settings.deleteAccountTitle'),
+      t('settings.deleteAccountIntro'),
+      t('settings.deleteConfirm'),
       () => {
         void (async () => {
           setError('');
@@ -152,14 +174,14 @@ export default function SettingsScreen() {
           setResendCooldown(60);
         })();
       },
-      { destructive: true, cancelText: 'Cancelar' },
+      { destructive: true, cancelText: t('common.cancel'), locale },
     );
   };
 
   const handleVerifyOtp = async () => {
     const code = otpCode.join('');
     if (code.length !== OTP_CODE_LENGTH) {
-      setError(`Introduce el código completo (${OTP_CODE_LENGTH} dígitos)`);
+      setError(t('settings.otpIncomplete', { length: OTP_CODE_LENGTH }));
       return;
     }
 
@@ -198,21 +220,22 @@ export default function SettingsScreen() {
 
     setResendCooldown(60);
     setOtpCode(emptyOtpSlots());
-    setSuccess('Nuevo código enviado');
+    setSuccess(t('settings.otpResent'));
     setTimeout(() => setSuccess(''), 3000);
   };
 
   const handleChangePassword = async () => {
     if (!newPassword || !confirmPassword) {
-      setError('Completa todos los campos');
+      setError(t('auth.signup.fillAllFields'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
+      setError(t('password.mismatch'));
       return;
     }
-    if (newPassword.length < 8) {
-      setError('Mínimo 8 caracteres');
+    const passwordErrorKey = getPasswordErrorKey(newPassword);
+    if (passwordErrorKey) {
+      setError(t(passwordErrorKey));
       return;
     }
 
@@ -227,14 +250,16 @@ export default function SettingsScreen() {
       return;
     }
 
-    showAlert('Listo', 'Tu contraseña se actualizó correctamente.', [{ text: 'OK', onPress: () => resetState() }]);
+    showAlert(t('settings.passwordUpdatedTitle'), t('settings.passwordUpdatedBody'), [
+      { text: t('errors.ok'), onPress: () => resetState() },
+    ]);
   };
 
   const handleFinalDelete = () => {
     showConfirm(
-      'Confirmar eliminación',
-      '¿Eliminar tu cuenta de forma permanente?',
-      'Eliminar para siempre',
+      t('settings.deleteFinalTitle'),
+      t('settings.deleteFinalBody'),
+      t('settings.deleteForever'),
       () => {
         void (async () => {
           setError('');
@@ -248,22 +273,22 @@ export default function SettingsScreen() {
           router.replace('/auth/login');
         })();
       },
-      { destructive: true, cancelText: 'Cancelar' },
+      { destructive: true, cancelText: t('common.cancel'), locale },
     );
   };
 
   const handleSignOut = () => {
     showConfirm(
-      'Cerrar sesión',
-      '¿Quieres salir de tu cuenta en este dispositivo?',
-      'Cerrar sesión',
+      t('settings.signOutTitle'),
+      t('settings.signOutBody'),
+      t('settings.signOutTitle'),
       () => {
         void (async () => {
           await signOut();
           router.replace('/auth/login');
         })();
       },
-      { cancelText: 'Cancelar' },
+      { cancelText: t('common.cancel'), locale },
     );
   };
 
@@ -294,7 +319,7 @@ export default function SettingsScreen() {
           {isLoading ? (
             <ActivityIndicator color={THEME.colors.onGradient} />
           ) : (
-            <Text style={styles.ctaText}>Verificar</Text>
+            <Text style={styles.ctaText}>{t('settings.verify')}</Text>
           )}
         </LinearGradient>
       </Pressable>
@@ -305,7 +330,9 @@ export default function SettingsScreen() {
         disabled={resendCooldown > 0 || isLoading}
       >
         <Text style={[styles.resendText, (resendCooldown > 0 || isLoading) && styles.resendMuted]}>
-          {resendCooldown > 0 ? `Reenviar en ${resendCooldown}s` : 'Reenviar código'}
+          {resendCooldown > 0
+            ? t('settings.resendIn', { seconds: resendCooldown })
+            : t('settings.resendCode')}
         </Text>
       </Pressable>
     </View>
@@ -313,14 +340,14 @@ export default function SettingsScreen() {
 
   const renderChangeForm = () => (
     <View style={styles.stepBlock}>
-      <Text style={styles.stepTitle}>Nueva contraseña</Text>
-      <Text style={styles.stepSubtitle}>Elige una contraseña que no uses en otros sitios</Text>
+      <Text style={styles.stepTitle}>{t('settings.newPasswordTitle')}</Text>
+      <Text style={styles.stepSubtitle}>{t('password.newPasswordSubtitle')}</Text>
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       <TextInput
         style={styles.input}
-        placeholder="Nueva contraseña"
+        placeholder={t('password.placeholder')}
         placeholderTextColor={THEME.colors.text.tertiary}
         value={newPassword}
         onChangeText={setNewPassword}
@@ -328,9 +355,10 @@ export default function SettingsScreen() {
         autoCapitalize="none"
         editable={!isLoading}
       />
+      <PasswordRequirementsHint />
       <TextInput
         style={styles.input}
-        placeholder="Confirmar contraseña"
+        placeholder={t('password.confirmPlaceholder')}
         placeholderTextColor={THEME.colors.text.tertiary}
         value={confirmPassword}
         onChangeText={setConfirmPassword}
@@ -353,7 +381,7 @@ export default function SettingsScreen() {
           {isLoading ? (
             <ActivityIndicator color={THEME.colors.onGradient} />
           ) : (
-            <Text style={styles.ctaText}>Guardar</Text>
+            <Text style={styles.ctaText}>{t('settingsUi.save')}</Text>
           )}
         </LinearGradient>
       </Pressable>
@@ -363,10 +391,8 @@ export default function SettingsScreen() {
   const renderDeleteConfirm = () => (
     <View style={styles.stepBlock}>
       <Trash2 size={48} color={THEME.colors.semantic.danger} style={styles.centerIcon} />
-      <Text style={styles.stepTitle}>Último paso</Text>
-      <Text style={styles.stepSubtitle}>
-        Tu identidad está verificada. Pulsa el botón para borrar la cuenta de forma permanente.
-      </Text>
+      <Text style={styles.stepTitle}>{t('settingsUi.deleteLastStepTitle')}</Text>
+      <Text style={styles.stepSubtitle}>{t('settingsUi.deleteLastStepBody')}</Text>
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -378,35 +404,63 @@ export default function SettingsScreen() {
         {isLoading ? (
           <ActivityIndicator color={THEME.colors.onGradient} />
         ) : (
-          <Text style={styles.dangerText}>Eliminar mi cuenta</Text>
+          <Text style={styles.dangerText}>{t('settingsUi.deleteConfirmCta')}</Text>
         )}
       </Pressable>
 
       <Pressable style={styles.textOnly} onPress={resetState}>
-        <Text style={styles.linkMuted}>Cancelar</Text>
+        <Text style={styles.linkMuted}>{t('common.cancel')}</Text>
       </Pressable>
     </View>
   );
 
   const renderMenu = () => (
     <View>
-      <Text style={styles.section}>Cuenta</Text>
+      <Text style={styles.section}>{t('settings.account')}</Text>
       <Text style={styles.emailMuted}>{user?.email}</Text>
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-      <Text style={styles.section}>Preferencias</Text>
+      <Text style={styles.section}>{t('settings.preferences')}</Text>
+
+      <View style={styles.languageSection}>
+        <View style={styles.notifSectionHeader}>
+          <Globe size={20} color={THEME.colors.gradient.blue} />
+          <Text style={styles.notifSectionTitle}>{t('language.section')}</Text>
+        </View>
+        <Text style={styles.notifSectionHint}>{t('language.hint')}</Text>
+        <View style={styles.languageChipsWrap}>
+          {(['es', 'en'] as const).map((code) => (
+            <Pressable
+              key={code}
+              style={[styles.languageChip, locale === code && styles.languageChipActive]}
+              onPress={() => void selectLocale(code)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: locale === code }}
+              accessibilityLabel={code === 'es' ? t('language.spanish') : t('language.english')}
+            >
+              <Text
+                style={[
+                  styles.languageChipText,
+                  locale === code && styles.languageChipTextActive,
+                ]}
+              >
+                {code === 'es' ? t('language.spanish') : t('language.english')}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
       {Platform.OS === 'web' ? (
-        <Text style={styles.notifWebNote}>
-          En la versión web no hay recordatorios push. Usa la app en el teléfono para programar el aviso de Sentir.
-        </Text>
+        <Text style={styles.notifWebNote}>{t('settings.reminderWebNote')}</Text>
       ) : (
         <View style={styles.notifSection}>
           <View style={styles.notifSectionHeader}>
             <Bell size={20} color={THEME.colors.gradient.blue} />
-            <Text style={styles.notifSectionTitle}>Recordatorio Sentir</Text>
+            <Text style={styles.notifSectionTitle}>{t('settings.reminderTitle')}</Text>
           </View>
           <Text style={styles.notifSectionHint}>
-            Hora actual: {formatReminderTime(notifReminderTime)}. Te recordamos hacer check-in si ese día aún no lo hiciste.
+            {t('settings.reminderHint', { time: formatReminderTime(notifReminderTime) })}
           </Text>
           <View style={styles.notifChipsWrap}>
             {DAILY_REMINDER_PRESETS.map((p) => (
@@ -437,17 +491,17 @@ export default function SettingsScreen() {
         </View>
       )}
 
-      <Text style={styles.section}>Accesos</Text>
+      <Text style={styles.section}>{t('settings.shortcuts')}</Text>
 
       <Pressable
         style={styles.row}
         onPress={() => router.push('/paywall')}
         accessibilityRole="button"
-        accessibilityLabel="Gestionar Premium"
+        accessibilityLabel={t('settings.managePremium')}
       >
         <View style={styles.rowLeft}>
           <Crown size={22} color={THEME.colors.text.main} />
-          <Text style={styles.rowLabel}>Gestionar Premium</Text>
+          <Text style={styles.rowLabel}>{t('settings.managePremium')}</Text>
         </View>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
@@ -458,7 +512,7 @@ export default function SettingsScreen() {
       >
         <View style={styles.rowLeft}>
           <PenLine size={22} color={THEME.colors.text.main} />
-          <Text style={styles.rowLabel}>Editar perfil personal</Text>
+          <Text style={styles.rowLabel}>{t('settings.editProfile')}</Text>
         </View>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
@@ -466,7 +520,7 @@ export default function SettingsScreen() {
       <Pressable style={styles.row} onPress={() => router.push('/help')}>
         <View style={styles.rowLeft}>
           <CircleHelp size={22} color={THEME.colors.text.main} />
-          <Text style={styles.rowLabel}>Ayuda</Text>
+          <Text style={styles.rowLabel}>{t('settings.help')}</Text>
         </View>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
@@ -478,7 +532,7 @@ export default function SettingsScreen() {
       >
         <View style={styles.rowLeft}>
           <KeyRound size={22} color={THEME.colors.text.main} />
-          <Text style={styles.rowLabel}>Cambiar contraseña</Text>
+          <Text style={styles.rowLabel}>{t('settings.changePassword')}</Text>
         </View>
         {isLoading && pendingAction === 'change-password' ? (
           <ActivityIndicator size="small" color={THEME.colors.gradient.blue} />
@@ -490,13 +544,13 @@ export default function SettingsScreen() {
       <Pressable style={styles.row} onPress={handleSignOut}>
         <View style={styles.rowLeft}>
           <LogOut size={22} color={THEME.colors.text.main} />
-          <Text style={styles.rowLabel}>Cerrar sesión</Text>
+          <Text style={styles.rowLabel}>{t('settings.signOut')}</Text>
         </View>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
 
       <View style={styles.divider} />
-      <Text style={styles.section}>Zona de riesgo</Text>
+      <Text style={styles.section}>{t('settings.riskZone')}</Text>
 
       <Pressable
         style={[styles.row, styles.rowDanger]}
@@ -505,7 +559,7 @@ export default function SettingsScreen() {
       >
         <View style={styles.rowLeft}>
           <Trash2 size={22} color={THEME.colors.semantic.danger} />
-          <Text style={styles.rowLabelDanger}>Eliminar cuenta</Text>
+          <Text style={styles.rowLabelDanger}>{t('settings.deleteAccount')}</Text>
         </View>
         {isLoading && pendingAction === 'delete-account' ? (
           <ActivityIndicator size="small" color={THEME.colors.semantic.danger} />
@@ -529,7 +583,7 @@ export default function SettingsScreen() {
         >
           <ArrowLeft size={24} color={THEME.colors.text.main} />
         </Pressable>
-        <Text style={styles.topTitle}>Ajustes</Text>
+        <Text style={styles.topTitle}>{t('settings.title')}</Text>
         <View style={styles.topRight} />
       </View>
 
@@ -542,10 +596,10 @@ export default function SettingsScreen() {
       >
         {step === 'menu' && renderMenu()}
         {step === 'change-password-otp' &&
-          renderOtp('Verificación', 'Introduce el código que enviamos a:')}
+          renderOtp(t('settingsUi.otpTitle'), t('settingsUi.otpSubtitlePassword'))}
         {step === 'change-password-form' && renderChangeForm()}
         {step === 'delete-account-otp' &&
-          renderOtp('Verificación', 'Por seguridad, introduce el código enviado a:')}
+          renderOtp(t('settingsUi.otpTitle'), t('settingsUi.otpSubtitleDelete'))}
         {step === 'delete-account-confirm' && renderDeleteConfirm()}
       </ScrollView>
     </KeyboardAvoidingView>
@@ -788,6 +842,40 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
   },
   notifChipTextActive: {
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  languageSection: {
+    marginBottom: THEME.spacing.md,
+    padding: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.fill[200],
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  languageChipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.xs,
+    marginTop: THEME.spacing.xs,
+  },
+  languageChip: {
+    paddingHorizontal: THEME.spacing.md,
+    paddingVertical: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  languageChipActive: {
+    borderColor: THEME.colors.gradient.blue,
+    backgroundColor: THEME.colors.fill[100],
+  },
+  languageChipText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.main,
+  },
+  languageChipTextActive: {
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.bold,
   },

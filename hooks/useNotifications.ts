@@ -4,6 +4,19 @@ import { Platform } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { getDailyReminderTime } from '@/lib/notificationPreferences';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { type AppLocale, translate } from '@/lib/i18n';
+
+const LOCALE_STORAGE_KEY = 'koraa_app_locale_v1';
+
+async function getStoredLocale(): Promise<AppLocale> {
+  try {
+    const stored = await AsyncStorage.getItem(LOCALE_STORAGE_KEY);
+    return stored === 'en' ? 'en' : 'es';
+  } catch {
+    return 'es';
+  }
+}
 
 // Configurar cómo se manejan las notificaciones cuando la app está en primer plano
 Notifications.setNotificationHandler({
@@ -97,8 +110,8 @@ async function registerForPushNotificationsAsync() {
   return token;
 }
 
-// Programar recordatorio diario inteligente
-export async function scheduleDailyReminder() {
+/** Reprograma el recordatorio diario (p. ej. tras cambiar idioma en Ajustes). */
+export async function scheduleDailyReminder(localeOverride?: AppLocale) {
   if (Platform.OS === 'web') {
     console.log('Las notificaciones no están disponibles en web');
     return;
@@ -131,6 +144,7 @@ export async function scheduleDailyReminder() {
     }
 
     const { hour: reminderHour, minute: reminderMinute } = await getDailyReminderTime();
+    const locale = localeOverride ?? (await getStoredLocale());
 
     // Programar notificación para hoy si aún no pasó la hora
     const now = new Date();
@@ -145,8 +159,8 @@ export async function scheduleDailyReminder() {
     // Programar notificación diaria recurrente
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: '¿Cómo te sientes hoy?',
-        body: 'Haz tu check-in diario y Koraa organizará tu día automáticamente 💭',
+        title: translate(locale, 'hooks.notifTitle'),
+        body: translate(locale, 'hooks.notifBody'),
         sound: true,
         data: { type: DAILY_REMINDER_TYPE },
       },

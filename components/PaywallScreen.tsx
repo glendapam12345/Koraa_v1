@@ -18,16 +18,13 @@ import { Check, Crown, Lock, X } from 'lucide-react-native';
 import { getPrivacyPolicyUrl, getTermsOfServiceUrl } from '@/constants/legalUrls';
 import { THEME } from '@/constants/theme';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useI18n } from '@/contexts/I18nContext';
 
 type PaywallScreenProps = {
   onClose?: () => void;
   onPurchaseCompleted?: () => void;
   onSkip?: () => void;
 };
-
-const FALLBACK_MONTHLY_PRICE = '$49 MXN / mes';
-const FALLBACK_ANNUAL_PRICE = '$411.60 MXN / año';
-const FALLBACK_ANNUAL_BADGE = '12 meses con 30% de descuento';
 
 function isPlanPackage(pkg: PurchasesPackage, plan: 'monthly' | 'annual') {
   const packageType = String(pkg.packageType).toLowerCase();
@@ -41,6 +38,7 @@ function isPlanPackage(pkg: PurchasesPackage, plan: 'monthly' | 'annual') {
 }
 
 export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallScreenProps) {
+  const { t } = useI18n();
   const { currentOffering, checkSubscription, restorePurchases, isLoading: subscriptionLoading } = useSubscription();
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -75,7 +73,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
       await checkSubscription();
       onPurchaseCompleted?.();
     } catch {
-      Alert.alert('No se pudo completar la compra', 'Inténtalo de nuevo.');
+      Alert.alert(t('paywall.purchaseError'), t('common.retry'));
     } finally {
       setIsPurchasing(false);
     }
@@ -94,10 +92,10 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
     try {
       const result = await restorePurchases();
       if (result.success) {
-        Alert.alert('Compras restauradas', 'Tu Premium ya está activo.');
+        Alert.alert(t('paywall.restoredTitle'), t('paywall.restoredBody'));
         onPurchaseCompleted?.();
       } else {
-        Alert.alert('Sin compras para restaurar', result.error ?? 'No encontramos compras anteriores.');
+        Alert.alert(t('paywall.noRestoreTitle'), result.error ?? t('paywall.noRestoreTitle'));
       }
     } finally {
       setIsRestoring(false);
@@ -107,28 +105,28 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
   const openLegalUrl = async (kind: 'terms' | 'privacy') => {
     const url = kind === 'terms' ? getTermsOfServiceUrl() : getPrivacyPolicyUrl();
     if (!url) {
-      const label = kind === 'terms' ? 'Términos' : 'Privacidad';
-      Alert.alert(`${label} no disponible`, 'Configura este enlace en el entorno de producción.');
+      const label = kind === 'terms' ? t('paywall.terms') : t('paywall.privacy');
+      Alert.alert(t('paywall.linkUnavailable', { label }), t('paywall.linkUnavailableBody'));
       return;
     }
     try {
       await Linking.openURL(url);
     } catch {
-      Alert.alert('No se pudo abrir el enlace', 'Inténtalo de nuevo en un momento.');
+      Alert.alert(t('paywall.openLinkError'), t('paywall.openLinkErrorBody'));
     }
   };
 
   const getPeriodLabel = (pkg: PurchasesPackage | null) => {
     if (!pkg) return '';
     const id = `${pkg.identifier} ${pkg.packageType}`.toLowerCase();
-    if (id.includes('annual') || id.includes('year') || id.includes('anual')) return '/ año';
-    if (id.includes('month') || id.includes('monthly') || id.includes('mensual')) return '/ mes';
-    if (id.includes('week') || id.includes('weekly')) return '/ semana';
+    if (id.includes('annual') || id.includes('year') || id.includes('anual')) return t('paywall.perYear');
+    if (id.includes('month') || id.includes('monthly') || id.includes('mensual')) return t('paywall.perMonth');
+    if (id.includes('week') || id.includes('weekly')) return t('paywall.perWeek');
     return '';
   };
 
   const handleFallbackPlanPress = async (plan: 'monthly' | 'annual') => {
-    const planLabel = plan === 'monthly' ? 'mensual' : 'anual';
+    const planLabel = plan === 'monthly' ? t('paywall.planMonthlyLabel') : t('paywall.planAnnualLabel');
     setIsRefreshing(true);
     try {
       const Purchases = (await import('react-native-purchases')).default;
@@ -141,15 +139,9 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
         return;
       }
 
-      Alert.alert(
-        `Plan ${planLabel} en preparación`,
-        'Todavía no aparece en App Store para esta build. Inténtalo de nuevo en unos minutos.',
-      );
+      Alert.alert(t('paywall.planPreparing', { plan: planLabel }), t('paywall.planPreparingBody'));
     } catch {
-      Alert.alert(
-        `No se pudo abrir el plan ${planLabel}`,
-        'Inténtalo de nuevo en unos minutos.',
-      );
+      Alert.alert(t('paywall.planOpenError', { plan: planLabel }), t('common.retry'));
     } finally {
       setIsRefreshing(false);
     }
@@ -196,47 +188,47 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
               onSkip?.();
             }}
             accessibilityRole="button"
-            accessibilityLabel="Cerrar pantalla de premium"
-            accessibilityHint="Vuelve a la app sin cambiar tu plan"
+            accessibilityLabel={t('paywallExtra.a11yClose')}
+            accessibilityHint={t('paywallExtra.a11yCloseHint')}
           >
             <X size={18} color={THEME.colors.fill[100]} />
           </TouchableOpacity>
           <View style={styles.heroIconWrap}>
             <Crown size={22} color={THEME.colors.fill[100]} />
           </View>
-          <Text style={styles.title}>Koraa Premium</Text>
-          <Text style={styles.subtitle}>Convierte tu bienestar en un sistema sostenible, no en una lista infinita.</Text>
-          <Text style={styles.heroHint}>Tu plan gratis sigue activo, Premium solo desbloquea extras.</Text>
+          <Text style={styles.title}>{t('paywall.title')}</Text>
+          <Text style={styles.subtitle}>{t('paywall.subtitle')}</Text>
+          <Text style={styles.heroHint}>{t('paywall.heroHint')}</Text>
         </LinearGradient>
 
         <View style={styles.benefitsCard}>
           <View style={styles.benefitRow}>
             <Check size={16} color={THEME.colors.gradient.blue} />
-            <Text style={styles.benefitText}>Historial semanal completo para ver progreso real.</Text>
+            <Text style={styles.benefitText}>{t('paywall.benefit1')}</Text>
           </View>
           <View style={styles.benefitRow}>
             <Check size={16} color={THEME.colors.gradient.blue} />
-            <Text style={styles.benefitText}>Consejos personalizados según cómo te sientes.</Text>
+            <Text style={styles.benefitText}>{t('paywall.benefit2')}</Text>
           </View>
           <View style={styles.benefitRow}>
             <Check size={16} color={THEME.colors.gradient.blue} />
-            <Text style={styles.benefitText}>Plan semanal más claro para decidir qué hacer primero.</Text>
+            <Text style={styles.benefitText}>{t('paywall.benefit3')}</Text>
           </View>
         </View>
 
         <View style={styles.comparisonCard}>
-          <Text style={styles.comparisonTitle}>En tu plan gratis hoy</Text>
+          <Text style={styles.comparisonTitle}>{t('paywall.comparisonTitle')}</Text>
           <View style={styles.comparisonRow}>
             <Check size={15} color={THEME.colors.gradient.blue} />
-            <Text style={styles.comparisonFreeText}>Check-in diario emocional</Text>
+            <Text style={styles.comparisonFreeText}>{t('paywall.free1')}</Text>
           </View>
           <View style={styles.comparisonRow}>
             <Check size={15} color={THEME.colors.gradient.blue} />
-            <Text style={styles.comparisonFreeText}>Captura y gestión base de tareas</Text>
+            <Text style={styles.comparisonFreeText}>{t('paywall.free2')}</Text>
           </View>
           <View style={styles.comparisonRow}>
             <Check size={15} color={THEME.colors.gradient.blue} />
-            <Text style={styles.comparisonFreeText}>Vista semanal limitada</Text>
+            <Text style={styles.comparisonFreeText}>{t('paywall.free3')}</Text>
           </View>
 
           <View style={styles.premiumLockedDivider} />
@@ -244,42 +236,48 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
           <View style={[styles.comparisonRow, styles.premiumLockedRow]}>
             <View style={styles.premiumLockedLeft}>
               <Lock size={14} color={THEME.colors.text.secondary} />
-              <Text style={styles.comparisonLockedText}>Semana completa (7 días)</Text>
+              <Text style={styles.comparisonLockedText}>{t('paywall.locked1')}</Text>
             </View>
-            <Animated.Text style={[styles.premiumBadge, { opacity: premiumGlow }]}>Premium</Animated.Text>
+            <Animated.Text style={[styles.premiumBadge, { opacity: premiumGlow }]}>
+              {t('paywall.premiumBadge')}
+            </Animated.Text>
           </View>
           <View style={[styles.comparisonRow, styles.premiumLockedRow]}>
             <View style={styles.premiumLockedLeft}>
               <Lock size={14} color={THEME.colors.text.secondary} />
-              <Text style={styles.comparisonLockedText}>Consejos personalizados ilimitados</Text>
+              <Text style={styles.comparisonLockedText}>{t('paywall.locked2')}</Text>
             </View>
-            <Animated.Text style={[styles.premiumBadge, { opacity: premiumGlow }]}>Premium</Animated.Text>
+            <Animated.Text style={[styles.premiumBadge, { opacity: premiumGlow }]}>
+              {t('paywall.premiumBadge')}
+            </Animated.Text>
           </View>
           <View style={[styles.comparisonRow, styles.premiumLockedRow]}>
             <View style={styles.premiumLockedLeft}>
               <Lock size={14} color={THEME.colors.text.secondary} />
-              <Text style={styles.comparisonLockedText}>Priorización emocional avanzada</Text>
+              <Text style={styles.comparisonLockedText}>{t('paywall.locked3')}</Text>
             </View>
-            <Animated.Text style={[styles.premiumBadge, { opacity: premiumGlow }]}>Premium</Animated.Text>
+            <Animated.Text style={[styles.premiumBadge, { opacity: premiumGlow }]}>
+              {t('paywall.premiumBadge')}
+            </Animated.Text>
           </View>
         </View>
 
         {primaryPackage ? (
           <View style={styles.priceHighlightCard}>
-            <Text style={styles.priceHighlightLabel}>Precio actual</Text>
+            <Text style={styles.priceHighlightLabel}>{t('paywall.currentPrice')}</Text>
             <Text style={styles.priceHighlightValue}>
               {primaryPackage.product.priceString}
               <Text style={styles.priceHighlightPeriod}>{getPeriodLabel(primaryPackage)}</Text>
             </Text>
-            <Text style={styles.priceHighlightHint}>Suscripción que puedes cancelar cuando quieras.</Text>
+            <Text style={styles.priceHighlightHint}>{t('paywall.cancelAnytime')}</Text>
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() => void handlePurchase(primaryPackage)}
               disabled={isPurchasing || isRestoring || isRefreshing || subscriptionLoading}
               style={styles.ctaWrap}
               accessibilityRole="button"
-              accessibilityLabel={`Elegir plan ${primaryPackage.product.title}`}
-              accessibilityHint="Inicia la compra del plan premium"
+              accessibilityLabel={t('paywallExtra.a11yChoosePlan', { title: primaryPackage.product.title })}
+              accessibilityHint={t('paywallExtra.a11yChoosePlanHint')}
               accessibilityState={{ disabled: isPurchasing || isRestoring || isRefreshing || subscriptionLoading }}
             >
               <LinearGradient
@@ -291,7 +289,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
                 {isPurchasing ? (
                   <ActivityIndicator color={THEME.colors.onGradient} />
                 ) : (
-                  <Text style={styles.ctaText}>Continuar con Premium</Text>
+                  <Text style={styles.ctaText}>{t('paywall.continuePremium')}</Text>
                 )}
               </LinearGradient>
             </TouchableOpacity>
@@ -301,14 +299,16 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
         {subscriptionLoading && packages.length === 0 ? (
           <View style={styles.loadingPlans}>
             <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
-            <Text style={styles.loadingPlansText}>Cargando planes…</Text>
+            <Text style={styles.loadingPlansText}>{t('paywallExtra.loadingPlans')}</Text>
           </View>
         ) : packages.length > 0 ? (
           packages.map((pkg) => (
             <View key={pkg.identifier} style={styles.planCard}>
               <Text style={styles.planTitle}>{pkg.product.title}</Text>
               <Text style={styles.planPrice}>{pkg.product.priceString}</Text>
-              <Text style={styles.planDescription}>{pkg.product.description || 'Suscripción premium de Koraa.'}</Text>
+              <Text style={styles.planDescription}>
+                {pkg.product.description || t('paywall.defaultPlanDescription')}
+              </Text>
 
               <TouchableOpacity
                 activeOpacity={0.85}
@@ -316,8 +316,8 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
                 disabled={isPurchasing || isRestoring || isRefreshing || subscriptionLoading}
                 style={styles.ctaWrap}
                 accessibilityRole="button"
-                accessibilityLabel={`Elegir plan ${pkg.product.title}`}
-                accessibilityHint="Inicia la compra de este plan premium"
+                accessibilityLabel={t('paywallExtra.a11yChoosePlan', { title: pkg.product.title })}
+                accessibilityHint={t('paywallExtra.a11yChoosePlanHint')}
                 accessibilityState={{ disabled: isPurchasing || isRestoring || isRefreshing || subscriptionLoading }}
               >
                 <LinearGradient
@@ -329,7 +329,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
                   {isPurchasing ? (
                     <ActivityIndicator color={THEME.colors.onGradient} />
                   ) : (
-                    <Text style={styles.ctaText}>Elegir este plan</Text>
+                    <Text style={styles.ctaText}>{t('paywallExtra.chooseThisPlan')}</Text>
                   )}
                 </LinearGradient>
               </TouchableOpacity>
@@ -337,28 +337,26 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
           ))
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>Estamos cargando tus planes Premium</Text>
-            <Text style={styles.emptyText}>
-              Si aún no ves precios, toca reintentar. Tu suscripción se gestiona de forma segura con App Store.
-            </Text>
-            <Text style={styles.fallbackPlansTitle}>Mientras tanto, puedes revisar tus planes:</Text>
+            <Text style={styles.emptyTitle}>{t('paywallExtra.emptyTitle')}</Text>
+            <Text style={styles.emptyText}>{t('paywallExtra.emptyBody')}</Text>
+            <Text style={styles.fallbackPlansTitle}>{t('paywallExtra.fallbackPlansTitle')}</Text>
             <View style={styles.fallbackPlansWrap}>
               <View style={styles.planCard}>
                 <View style={styles.fallbackPlanHeader}>
-                  <Text style={styles.planTitle}>Plan mensual</Text>
+                  <Text style={styles.planTitle}>{t('paywallExtra.monthlyTitle')}</Text>
                   <View style={styles.fallbackPlanBadge}>
-                    <Text style={styles.fallbackPlanBadgeText}>Flexible</Text>
+                    <Text style={styles.fallbackPlanBadgeText}>{t('paywallExtra.monthlyBadge')}</Text>
                   </View>
                 </View>
-                <Text style={styles.planPrice}>{FALLBACK_MONTHLY_PRICE}</Text>
-                <Text style={styles.planDescription}>Ideal para empezar sin compromiso anual.</Text>
+                <Text style={styles.planPrice}>{t('paywallExtra.fallbackMonthlyPrice')}</Text>
+                <Text style={styles.planDescription}>{t('paywallExtra.monthlyDesc')}</Text>
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={() => void handleFallbackPlanPress('monthly')}
                   style={styles.ctaWrap}
                   accessibilityRole="button"
-                  accessibilityLabel="Comprar plan mensual"
-                  accessibilityHint="Muestra información temporal del plan mensual"
+                  accessibilityLabel={t('paywallExtra.a11yBuyMonthly')}
+                  accessibilityHint={t('paywallExtra.a11yBuyMonthlyHint')}
                 >
                   <LinearGradient
                     colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -366,7 +364,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
                     end={{ x: 1, y: 0 }}
                     style={styles.cta}
                   >
-                    <Text style={styles.ctaText}>Comprar mensual</Text>
+                    <Text style={styles.ctaText}>{t('paywallExtra.monthlyCta')}</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
@@ -377,16 +375,16 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
                 end={{ x: 1, y: 1 }}
                 style={styles.fallbackAnnualCard}
               >
-                <Text style={styles.planTitle}>Plan anual</Text>
-                <Text style={styles.planPrice}>{FALLBACK_ANNUAL_PRICE}</Text>
-                <Text style={styles.planDescription}>{FALLBACK_ANNUAL_BADGE}</Text>
+                <Text style={styles.planTitle}>{t('paywallExtra.annualTitle')}</Text>
+                <Text style={styles.planPrice}>{t('paywallExtra.fallbackAnnualPrice')}</Text>
+                <Text style={styles.planDescription}>{t('paywallExtra.fallbackAnnualBadge')}</Text>
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={() => void handleFallbackPlanPress('annual')}
                   style={styles.ctaWrap}
                   accessibilityRole="button"
-                  accessibilityLabel="Comprar plan anual"
-                  accessibilityHint="Muestra información temporal del plan anual"
+                  accessibilityLabel={t('paywallExtra.a11yBuyAnnual')}
+                  accessibilityHint={t('paywallExtra.a11yBuyAnnualHint')}
                 >
                   <LinearGradient
                     colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -394,16 +392,13 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
                     end={{ x: 1, y: 0 }}
                     style={styles.cta}
                   >
-                    <Text style={styles.ctaText}>Comprar anual</Text>
+                    <Text style={styles.ctaText}>{t('paywallExtra.annualCta')}</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </LinearGradient>
             </View>
             {isExpoGo ? (
-              <Text style={styles.emptyHintExpoGo}>
-                Estás en Expo Go: las compras in-app suelen no cargar aquí. Para ver planes y precios reales, usa un
-                development build (expo-dev-client) o un build de TestFlight / App Store.
-              </Text>
+              <Text style={styles.emptyHintExpoGo}>{t('paywallExtra.expoGoHint')}</Text>
             ) : null}
             <TouchableOpacity
               activeOpacity={0.85}
@@ -411,8 +406,8 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
               disabled={isPurchasing || isRestoring || isRefreshing || subscriptionLoading}
               style={styles.emptyPrimaryWrap}
               accessibilityRole="button"
-              accessibilityLabel="Continuar con versión gratis"
-              accessibilityHint="Cierra premium y sigue usando el plan gratuito"
+              accessibilityLabel={t('paywallExtra.a11yContinueFree')}
+              accessibilityHint={t('paywallExtra.a11yContinueFreeHint')}
               accessibilityState={{ disabled: isPurchasing || isRestoring || isRefreshing || subscriptionLoading }}
             >
               <LinearGradient
@@ -421,7 +416,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
                 end={{ x: 1, y: 0 }}
                 style={styles.emptyPrimaryBtn}
               >
-                <Text style={styles.emptyPrimaryBtnText}>Seguir con versión gratis</Text>
+                <Text style={styles.emptyPrimaryBtnText}>{t('paywallExtra.continueFree')}</Text>
               </LinearGradient>
             </TouchableOpacity>
             <TouchableOpacity
@@ -430,11 +425,13 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
               disabled={isRefreshing}
               onPress={() => void handleRefresh()}
               accessibilityRole="button"
-              accessibilityLabel="Actualizar planes premium"
-              accessibilityHint="Intenta cargar los planes de premium de nuevo"
+              accessibilityLabel={t('paywallExtra.a11yRefresh')}
+              accessibilityHint={t('paywallExtra.a11yRefreshHint')}
               accessibilityState={{ disabled: isRefreshing }}
             >
-              <Text style={styles.secondaryButtonText}>{isRefreshing ? 'Actualizando...' : 'Actualizar planes'}</Text>
+              <Text style={styles.secondaryButtonText}>
+                {isRefreshing ? t('paywall.refreshing') : t('paywall.refreshPlans')}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -446,11 +443,13 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
             onPress={() => void handleRestore()}
             disabled={isPurchasing || isRestoring || isRefreshing || subscriptionLoading}
             accessibilityRole="button"
-            accessibilityLabel="Restaurar compras"
-            accessibilityHint="Busca compras anteriores de esta cuenta"
+            accessibilityLabel={t('paywallExtra.a11yRestore')}
+            accessibilityHint={t('paywallExtra.a11yRestoreHint')}
             accessibilityState={{ disabled: isPurchasing || isRestoring || isRefreshing || subscriptionLoading }}
           >
-            <Text style={styles.secondaryButtonText}>{isRestoring ? 'Restaurando...' : 'Restaurar compras'}</Text>
+            <Text style={styles.secondaryButtonText}>
+              {isRestoring ? t('paywall.restoring') : t('paywall.restore')}
+            </Text>
           </TouchableOpacity>
           <View style={styles.legalActionsRow}>
             <TouchableOpacity
@@ -458,20 +457,20 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
               activeOpacity={0.75}
               onPress={() => void openLegalUrl('terms')}
               accessibilityRole="button"
-              accessibilityLabel="Ver términos y condiciones"
-              accessibilityHint="Abre la página de términos de servicio"
+              accessibilityLabel={t('paywallExtra.a11yTerms')}
+              accessibilityHint={t('paywallExtra.a11yTermsHint')}
             >
-              <Text style={styles.legalLinkText}>Términos</Text>
+              <Text style={styles.legalLinkText}>{t('paywall.terms')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.legalLinkButton}
               activeOpacity={0.75}
               onPress={() => void openLegalUrl('privacy')}
               accessibilityRole="button"
-              accessibilityLabel="Ver política de privacidad"
-              accessibilityHint="Abre la página de privacidad"
+              accessibilityLabel={t('paywallExtra.a11yPrivacy')}
+              accessibilityHint={t('paywallExtra.a11yPrivacyHint')}
             >
-              <Text style={styles.legalLinkText}>Privacidad</Text>
+              <Text style={styles.legalLinkText}>{t('paywall.privacy')}</Text>
             </TouchableOpacity>
           </View>
         </View>

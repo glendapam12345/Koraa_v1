@@ -5,6 +5,7 @@ import { Crown, X } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { PaywallScreen } from '@/components/PaywallScreen';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useI18n } from '@/contexts/I18nContext';
 
 type PremiumLockProps = {
   children: ReactNode;
@@ -16,18 +17,21 @@ type PremiumLockProps = {
 
 export function PremiumLock({
   children,
-  title = 'Funciones premium',
-  description = 'Desbloquea una experiencia completa con recomendaciones y planificación inteligente.',
-  benefits = [
-    'Recomendaciones personalizadas y accionables.',
-    'Historial y patrones para tomar mejores decisiones.',
-    'Herramientas premium para sostener tu ritmo semanal.',
-  ],
+  title,
+  description,
+  benefits,
   showBanner = true,
 }: PremiumLockProps) {
+  const { t } = useI18n();
   const { isLoading, isSubscribed, checkSubscription } = useSubscription();
   const [showPaywall, setShowPaywall] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+
+  const resolvedTitle = title ?? t('premiumLock.title');
+  const resolvedDescription = description ?? t('premiumLock.description');
+  const resolvedBenefits =
+    benefits ??
+    [t('premiumLock.benefit1'), t('premiumLock.benefit2'), t('premiumLock.benefit3')];
 
   if (isLoading) return <>{children}</>;
   if (isSubscribed) return <>{children}</>;
@@ -47,15 +51,15 @@ export function PremiumLock({
               <Crown size={18} color={THEME.colors.gradient.blue} />
             </View>
             <View style={styles.bannerTextWrap}>
-              <Text style={styles.bannerTitle}>{title}</Text>
-              <Text style={styles.bannerDescription}>{description}</Text>
+              <Text style={styles.bannerTitle}>{resolvedTitle}</Text>
+              <Text style={styles.bannerDescription}>{resolvedDescription}</Text>
             </View>
             <TouchableOpacity onPress={() => setDismissed(true)} activeOpacity={0.7} style={styles.dismissBtn}>
               <X size={18} color={THEME.colors.text.secondary} />
             </TouchableOpacity>
           </View>
           <View style={styles.benefitsWrap}>
-            {benefits.slice(0, 3).map((benefit) => (
+            {resolvedBenefits.slice(0, 3).map((benefit) => (
               <View key={benefit} style={styles.benefitRow}>
                 <View style={styles.benefitDot} />
                 <Text style={styles.benefitText}>{benefit}</Text>
@@ -64,7 +68,7 @@ export function PremiumLock({
           </View>
           <View style={styles.actionsRow}>
             <TouchableOpacity onPress={() => setDismissed(true)} activeOpacity={0.7}>
-              <Text style={styles.laterText}>Seguir gratis</Text>
+              <Text style={styles.laterText}>{t('premiumLock.continueFree')}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setShowPaywall(true)} activeOpacity={0.85} style={styles.paywallBtnWrap}>
               <LinearGradient
@@ -73,7 +77,7 @@ export function PremiumLock({
                 end={{ x: 1, y: 0 }}
                 style={styles.paywallBtn}
               >
-                <Text style={styles.paywallBtnText}>Ver Premium</Text>
+                <Text style={styles.paywallBtnText}>{t('premiumLock.viewPremium')}</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>

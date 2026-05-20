@@ -1,3 +1,5 @@
+import { type AppLocale, getCatalog, translate } from '@/lib/i18n';
+
 /**
  * Algoritmo de priorización inteligente que considera:
  * - Energía: Número de tareas
@@ -30,21 +32,86 @@ export interface TaskScore {
   reasons: string[];
 }
 
+const QUICK_KEYWORDS = [
+  'llamar', 'enviar', 'revisar', 'confirmar', 'responder', 'agendar',
+  'call', 'phone', 'send', 'email', 'reply', 'schedule', 'book', 'confirm', 'review',
+  'text', 'message',
+];
+
+const MEDIUM_KEYWORDS = [
+  'escribir', 'preparar', 'organizar', 'planear', 'revisar documento',
+  'write', 'draft', 'prepare', 'organize', 'plan', 'document',
+];
+
+const LONG_KEYWORDS = [
+  'crear', 'desarrollar', 'diseñar', 'proyecto', 'presentación', 'reporte',
+  'create', 'develop', 'design', 'project', 'presentation', 'report', 'build',
+];
+
+const SIMPLE_KEYWORDS = [
+  'llamar', 'enviar', 'confirmar', 'revisar email',
+  'call', 'send', 'confirm', 'check email', 'reply',
+];
+
+const COMPLEX_KEYWORDS = [
+  'crear', 'desarrollar', 'diseñar', 'proyecto', 'estrategia', 'plan',
+  'create', 'develop', 'design', 'project', 'strategy', 'roadmap',
+];
+
+const CREATIVE_KEYWORDS = [
+  'crear', 'diseñar', 'escribir', 'idear', 'brainstorm', 'proyecto creativo',
+  'create', 'design', 'write', 'brainstorm', 'creative', 'sketch', 'draft',
+];
+
+const ADMIN_KEYWORDS = [
+  'llamar', 'enviar', 'confirmar', 'revisar', 'organizar', 'agendar', 'pagar', 'factura',
+  'call', 'send', 'confirm', 'review', 'organize', 'schedule', 'pay', 'invoice', 'bill',
+];
+
+function includesAny(text: string, keywords: string[]): boolean {
+  return keywords.some((keyword) => text.includes(keyword));
+}
+
+function isLowFocus(focusLevel: string): boolean {
+  const f = focusLevel.toLowerCase();
+  return (
+    f.includes('muy distraída') ||
+    f.includes('algo distraída') ||
+    f.includes('very scattered') ||
+    f.includes('somewhat scattered')
+  );
+}
+
+function isHighFocus(focusLevel: string): boolean {
+  const f = focusLevel.toLowerCase();
+  return (
+    f.includes('enfocada') ||
+    f.includes('súper enfocada') ||
+    f.includes('super enfocada') ||
+    f.includes('very focused') ||
+    (f.includes('focused') && !f.includes('scattered'))
+  );
+}
+
 /**
  * Convierte tiempo disponible a minutos estimados
  */
 function getTimeInMinutes(availableTime: string): number {
   switch (availableTime) {
     case 'Poco (1-2hrs)':
-      return 90; // 1.5 horas promedio
+    case 'Little (1-2hrs)':
+      return 90;
     case 'Medio (2-4hrs)':
-      return 180; // 3 horas promedio
+    case 'Medium (2-4hrs)':
+      return 180;
     case 'Bastante (4-6hrs)':
-      return 300; // 5 horas promedio
+    case 'Plenty (4-6hrs)':
+      return 300;
     case 'Todo el día':
-      return 480; // 8 horas
+    case 'All day':
+      return 480;
     default:
-      return 180; // Default: 3 horas
+      return 180;
   }
 }
 
@@ -61,22 +128,16 @@ function estimateTaskDuration(task: Task): number {
     return 60 + (task.subtasks.length * 15); // Base 60min + 15min por subtarea
   }
   
-  // Palabras clave que indican tareas rápidas (< 30 min)
-  const quickKeywords = ['llamar', 'enviar', 'revisar', 'confirmar', 'responder', 'agendar'];
-  if (quickKeywords.some(keyword => content.includes(keyword)) || wordCount < 5) {
-    return 15; // 15 minutos
+  if (includesAny(content, QUICK_KEYWORDS) || wordCount < 5) {
+    return 15;
   }
-  
-  // Palabras clave que indican tareas medianas (30-60 min)
-  const mediumKeywords = ['escribir', 'preparar', 'organizar', 'planear', 'revisar documento'];
-  if (mediumKeywords.some(keyword => content.includes(keyword)) || (wordCount >= 5 && wordCount < 15)) {
-    return 45; // 45 minutos
+
+  if (includesAny(content, MEDIUM_KEYWORDS) || (wordCount >= 5 && wordCount < 15)) {
+    return 45;
   }
-  
-  // Palabras clave que indican tareas largas (> 60 min)
-  const longKeywords = ['crear', 'desarrollar', 'diseñar', 'proyecto', 'presentación', 'reporte'];
-  if (longKeywords.some(keyword => content.includes(keyword)) || wordCount >= 15) {
-    return 90; // 90 minutos
+
+  if (includesAny(content, LONG_KEYWORDS) || wordCount >= 15) {
+    return 90;
   }
   
   // Default: tarea mediana
@@ -95,15 +156,11 @@ function getTaskComplexity(task: Task): 'simple' | 'medium' | 'complex' {
     return task.subtasks.length > 3 ? 'complex' : 'medium';
   }
   
-  // Palabras clave simples
-  const simpleKeywords = ['llamar', 'enviar', 'confirmar', 'revisar email'];
-  if (simpleKeywords.some(keyword => content.includes(keyword)) || wordCount < 5) {
+  if (includesAny(content, SIMPLE_KEYWORDS) || wordCount < 5) {
     return 'simple';
   }
-  
-  // Palabras clave complejas
-  const complexKeywords = ['crear', 'desarrollar', 'diseñar', 'proyecto', 'estrategia', 'plan'];
-  if (complexKeywords.some(keyword => content.includes(keyword)) || wordCount >= 15) {
+
+  if (includesAny(content, COMPLEX_KEYWORDS) || wordCount >= 15) {
     return 'complex';
   }
   
@@ -116,15 +173,11 @@ function getTaskComplexity(task: Task): 'simple' | 'medium' | 'complex' {
 function getTaskType(task: Task): 'creative' | 'administrative' | 'neutral' {
   const content = task.content.toLowerCase();
   
-  // Tareas creativas
-  const creativeKeywords = ['crear', 'diseñar', 'escribir', 'idear', 'brainstorm', 'proyecto creativo'];
-  if (creativeKeywords.some(keyword => content.includes(keyword))) {
+  if (includesAny(content, CREATIVE_KEYWORDS)) {
     return 'creative';
   }
-  
-  // Tareas administrativas
-  const adminKeywords = ['llamar', 'enviar', 'confirmar', 'revisar', 'organizar', 'agendar', 'pagar', 'factura'];
-  if (adminKeywords.some(keyword => content.includes(keyword))) {
+
+  if (includesAny(content, ADMIN_KEYWORDS)) {
     return 'administrative';
   }
   
@@ -137,7 +190,8 @@ function getTaskType(task: Task): 'creative' | 'administrative' | 'neutral' {
 function calculateTaskScore(
   task: Task,
   checkIn: CheckInData,
-  categoryCounts: Map<string, number>
+  categoryCounts: Map<string, number>,
+  locale: AppLocale,
 ): TaskScore {
   let score = 0;
   const reasons: string[] = [];
@@ -149,7 +203,7 @@ function calculateTaskScore(
   );
   if (daysSinceCreation <= 1) {
     score += 10;
-    reasons.push('Tarea reciente');
+    reasons.push(translate(locale, 'smart.reasonRecent'));
   }
   
   // Factor 2: Tiempo disponible → Duración estimada
@@ -158,43 +212,38 @@ function calculateTaskScore(
   
   // Priorizar tareas que caben en el tiempo disponible
   if (taskDuration <= availableMinutes * 0.3) {
-    score += 20; // Tareas rápidas que caben fácilmente
-    reasons.push('Tarea rápida que cabe en tu tiempo');
+    score += 20;
+    reasons.push(translate(locale, 'smart.reasonFitsTime'));
   } else if (taskDuration <= availableMinutes * 0.6) {
-    score += 10; // Tareas medianas
-    reasons.push('Tarea que cabe en tu tiempo');
+    score += 10;
+    reasons.push(translate(locale, 'smart.reasonFitsTimeMed'));
   } else if (taskDuration > availableMinutes) {
-    score -= 15; // Tareas que no caben
-    reasons.push('Tarea muy larga para tu tiempo disponible');
+    score -= 15;
+    reasons.push(translate(locale, 'smart.reasonTooLong'));
   }
   
   // Factor 3: Enfoque → Complejidad
   const complexity = getTaskComplexity(task);
-  const focusLevel = checkIn.focusLevel.toLowerCase();
-  
-  if (focusLevel.includes('muy distraída') || focusLevel.includes('algo distraída')) {
-    // Bajo enfoque: priorizar tareas simples
+  const focusLevel = checkIn.focusLevel;
+
+  if (isLowFocus(focusLevel)) {
     if (complexity === 'simple') {
       score += 25;
-      reasons.push('Tarea simple para tu nivel de enfoque');
+      reasons.push(translate(locale, 'smart.reasonSimpleFocus'));
     } else if (complexity === 'complex') {
       score -= 20;
-      reasons.push('Tarea compleja para tu nivel de enfoque actual');
+      reasons.push(translate(locale, 'smart.reasonComplexFocus'));
     }
-  } else if (focusLevel.includes('enfocada') || focusLevel.includes('súper enfocada')) {
-    // Alto enfoque: priorizar tareas complejas
+  } else if (isHighFocus(focusLevel)) {
     if (complexity === 'complex') {
       score += 25;
-      reasons.push('Tarea compleja ideal para tu nivel de enfoque');
+      reasons.push(translate(locale, 'smart.reasonComplexIdeal'));
     } else if (complexity === 'simple') {
-      score += 5; // Tareas simples también funcionan
+      score += 5;
     }
-  } else {
-    // Enfoque normal: balance
-    if (complexity === 'medium') {
-      score += 15;
-      reasons.push('Tarea de complejidad media ideal');
-    }
+  } else if (complexity === 'medium') {
+    score += 15;
+    reasons.push(translate(locale, 'smart.reasonMediumIdeal'));
   }
   
   // Factor 4: Emoción → Tipo de tarea
@@ -205,18 +254,17 @@ function calculateTaskScore(
   if (['motivada', 'enfocada', 'tranquila'].includes(emotion)) {
     if (taskType === 'creative') {
       score += 20;
-      reasons.push('Tarea creativa ideal para tu estado emocional');
+      reasons.push(translate(locale, 'smart.reasonCreative'));
     }
   }
-  
-  // Emociones que favorecen tareas administrativas simples
+
   if (['agotada', 'ansiosa', 'abrumada'].includes(emotion)) {
     if (taskType === 'administrative' && complexity === 'simple') {
       score += 20;
-      reasons.push('Tarea administrativa simple ideal para tu estado');
+      reasons.push(translate(locale, 'smart.reasonAdmin'));
     } else if (taskType === 'creative' && complexity === 'complex') {
       score -= 15;
-      reasons.push('Tarea creativa compleja no ideal para tu estado');
+      reasons.push(translate(locale, 'smart.reasonCreativeBad'));
     }
   }
   
@@ -229,8 +277,8 @@ function calculateTaskScore(
   if (totalTasks > 0) {
     const categoryRatio = currentCategoryCount / totalTasks;
     if (categoryRatio < 0.3) {
-      score += 15; // Categoría poco representada
-      reasons.push('Balance de categorías');
+      score += 15;
+      reasons.push(translate(locale, 'smart.reasonBalance'));
     } else if (categoryRatio > 0.6) {
       score -= 10; // Categoría sobre-representada
     }
@@ -244,7 +292,8 @@ function calculateTaskScore(
  */
 export function prioritizeTasksIntelligently(
   tasks: Task[],
-  checkIn: CheckInData
+  checkIn: CheckInData,
+  locale: AppLocale = 'es',
 ): Task[] {
   if (tasks.length === 0) return [];
   
@@ -261,8 +310,8 @@ export function prioritizeTasksIntelligently(
   });
   
   // Calcular scores para cada tarea
-  const taskScores: TaskScore[] = mainTasks.map(task =>
-    calculateTaskScore(task, checkIn, categoryCounts)
+  const taskScores: TaskScore[] = mainTasks.map((task) =>
+    calculateTaskScore(task, checkIn, categoryCounts, locale),
   );
   
   // Ordenar por score (mayor a menor)
@@ -318,73 +367,77 @@ export function prioritizeTasksIntelligently(
 export function generatePrioritizationExplanation(
   prioritizedTasks: Task[],
   checkIn: CheckInData,
-  allTasks: Task[]
+  _allTasks: Task[],
+  locale: AppLocale = 'es',
+  emotionDisplayLabel?: string,
 ): {
   message: string;
   reasoning: string;
   suggestion: string;
 } {
-  const emotionLabel = checkIn.emotion.charAt(0).toUpperCase() + checkIn.emotion.slice(1);
+  const emotionKey = checkIn.emotion.toLowerCase();
+  const emotions = getCatalog(locale).sentir.emotions as Record<string, string>;
+  const emotionLabel = emotionDisplayLabel ?? emotions[emotionKey] ?? checkIn.emotion;
   const priorityCount = prioritizedTasks.length;
-  
-  let message = `Te sugerimos enfocarte en ${priorityCount} ${priorityCount === 1 ? 'tarea esencial' : 'tareas esenciales'} hoy.`;
-  
+
+  const message = translate(locale, 'smart.messageEssential', {
+    count: priorityCount,
+    tasks:
+      priorityCount === 1
+        ? translate(locale, 'smart.taskEssential')
+        : translate(locale, 'smart.tasksEssential'),
+  });
+
   const reasons: string[] = [];
-  
-  // Razones basadas en energía
+
   if (checkIn.energyLevel <= 2) {
-    reasons.push(`Con energía ${checkIn.energyLevel}/5`);
+    reasons.push(translate(locale, 'smart.energyLow', { n: checkIn.energyLevel }));
   } else if (checkIn.energyLevel >= 4) {
-    reasons.push(`Con energía alta (${checkIn.energyLevel}/5)`);
+    reasons.push(translate(locale, 'smart.energyHigh', { n: checkIn.energyLevel }));
   } else {
-    reasons.push(`Con energía moderada (${checkIn.energyLevel}/5)`);
+    reasons.push(translate(locale, 'smart.energyMid', { n: checkIn.energyLevel }));
   }
-  
-  // Razones basadas en emoción
-  reasons.push(`sintiéndote ${emotionLabel.toLowerCase()}`);
-  
-  // Razones basadas en tiempo (si está disponible)
+
+  reasons.push(translate(locale, 'smart.feeling', { emotion: emotionLabel.toLowerCase() }));
+
   if (checkIn.availableTime) {
     const availableMinutes = getTimeInMinutes(checkIn.availableTime);
     if (availableMinutes < 120) {
-      reasons.push('y poco tiempo disponible');
+      reasons.push(translate(locale, 'smart.littleTime'));
     } else if (availableMinutes >= 300) {
-      reasons.push('y bastante tiempo disponible');
+      reasons.push(translate(locale, 'smart.plentyTime'));
     }
   }
-  
-  // Razones basadas en enfoque (si está disponible)
+
   if (checkIn.focusLevel) {
-    const focusLevel = checkIn.focusLevel.toLowerCase();
-    if (focusLevel.includes('muy distraída') || focusLevel.includes('algo distraída')) {
-      reasons.push('con bajo nivel de enfoque');
-    } else if (focusLevel.includes('enfocada') || focusLevel.includes('súper enfocada')) {
-      reasons.push('con alto nivel de enfoque');
+    if (isLowFocus(checkIn.focusLevel)) {
+      reasons.push(translate(locale, 'smart.lowFocus'));
+    } else if (isHighFocus(checkIn.focusLevel)) {
+      reasons.push(translate(locale, 'smart.highFocus'));
     }
   }
-  
-  const reasoning = reasons.join(', ') + ', priorizamos estas tareas.';
-  
-  // Suggestion
+
+  const reasoning = reasons.join(', ') + translate(locale, 'smart.reasoningSuffix');
+
   let suggestion = '';
-  if (checkIn.energyLevel <= 2 || ['agotada', 'ansiosa', 'abrumada'].includes(checkIn.emotion.toLowerCase())) {
-    suggestion = 'Menos es más cuando tu energía está baja. Enfócate en lo esencial.';
+  if (checkIn.energyLevel <= 2 || ['agotada', 'ansiosa', 'abrumada'].includes(emotionKey)) {
+    suggestion = translate(locale, 'smart.suggestLow');
   } else if (checkIn.energyLevel >= 4) {
-    suggestion = '¡Tienes energía para más! Aprovecha este momento.';
+    suggestion = translate(locale, 'smart.suggestHigh');
   } else {
-    suggestion = 'Tienes energía moderada. Prioriza lo importante.';
+    suggestion = translate(locale, 'smart.suggestMid');
   }
-  
+
   return { message, reasoning, suggestion };
 }
 
 /** Textos cortos para la UI “cómo prioriza Koraa”. */
-export function getPrioritizationExplainerBullets(): string[] {
+export function getPrioritizationExplainerBullets(locale: AppLocale = 'es'): string[] {
   return [
-    'Tu energía (1–5) limita cuántas tareas te mostramos como foco del día: menos energía, menos carga visible.',
-    'El tiempo que marcaste en Sentir evita llenarte de tareas que no caben en tu día.',
-    'Tu enfoque hoy favorece tareas simples o más profundas, según cómo te concentras.',
-    'Tu emoción inclina el plan hacia cosas administrativas rápidas o creativas, según el momento.',
-    'El orden de la lista y las prioridades ordenan qué atacar primero; el resto sigue en la app (pestaña Todas o Semana).',
+    translate(locale, 'smart.bullet1'),
+    translate(locale, 'smart.bullet2'),
+    translate(locale, 'smart.bullet3'),
+    translate(locale, 'smart.bullet4'),
+    translate(locale, 'smart.bullet5'),
   ];
 }

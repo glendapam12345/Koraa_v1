@@ -23,6 +23,7 @@ import {
   toISODateLocal,
   type RedistributionResult,
 } from '@/lib/redistributeWorkload';
+import { useI18n } from '@/contexts/I18nContext';
 
 type ProjectRow = { id: string; name: string; color: string; due_date: string | null };
 
@@ -54,6 +55,7 @@ export function RedistributeWorkloadModal({
   emotion,
   onApplied,
 }: Props) {
+  const { t, locale } = useI18n();
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [projectsLoadError, setProjectsLoadError] = useState<string | null>(null);
@@ -101,7 +103,7 @@ export function RedistributeWorkloadModal({
       setLoadingProjects(false);
       if (fallbackErr) {
         setProjects([]);
-        setProjectsLoadError(getErrorMessage(fallbackErr));
+        setProjectsLoadError(getErrorMessage(fallbackErr, locale));
         return;
       }
       setSupportsProjectDueDate(false);
@@ -116,7 +118,7 @@ export function RedistributeWorkloadModal({
     setLoadingProjects(false);
     if (err) {
       setProjects([]);
-      setProjectsLoadError(getErrorMessage(err));
+      setProjectsLoadError(getErrorMessage(err, locale));
       return;
     }
     setProjects((data as ProjectRow[]) || []);
@@ -165,7 +167,7 @@ export function RedistributeWorkloadModal({
     setError(null);
     if (mode === 'project') {
       if (!selectedProjectId) {
-        setError('Elige un proyecto.');
+        setError(t('redistribute.pickProject'));
         return;
       }
       if (projectTaskIds.length === 0) {
@@ -176,7 +178,7 @@ export function RedistributeWorkloadModal({
         selectedProject?.due_date?.trim() ||
         dueInput.trim();
       if (!due) {
-        setError('Indica la fecha de entrega (AAAA-MM-DD) o asígnala al proyecto en la base de datos.');
+        setError(t('redistribute.pickDue'));
         return;
       }
       const result = redistributeTaskDates(projectTaskIds, due, todayStr, maxPerDay);
@@ -261,7 +263,7 @@ export function RedistributeWorkloadModal({
             .eq('user_id', userId);
         }
       }
-      setError(getErrorMessage(e));
+      setError(getErrorMessage(e, locale));
     } finally {
       setSaving(false);
     }
@@ -280,8 +282,8 @@ export function RedistributeWorkloadModal({
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <View style={styles.header}>
-            <Text style={styles.title}>Aliviar carga</Text>
-            <TouchableOpacity onPress={close} style={styles.closeBtn} accessibilityLabel="Cerrar">
+            <Text style={styles.title}>{t('redistribute.title')}</Text>
+            <TouchableOpacity onPress={close} style={styles.closeBtn} accessibilityLabel={t('redistribute.close')}>
               <X size={24} color={THEME.colors.text.main} />
             </TouchableOpacity>
           </View>
@@ -293,10 +295,7 @@ export function RedistributeWorkloadModal({
           >
             {step === 'form' ? (
               <>
-                <Text style={styles.lead}>
-                  Koraa reparte tus pendientes en el calendario según un ritmo acorde a tu energía y tiempo de hoy
-                  (~{maxPerDay} tareas/día como guía). El último día concentra lo que falte para llegar a la entrega.
-                </Text>
+                <Text style={styles.lead}>{t('redistribute.lead', { max: maxPerDay })}</Text>
 
                 <View style={styles.segment}>
                   <TouchableOpacity
@@ -304,36 +303,32 @@ export function RedistributeWorkloadModal({
                     onPress={() => setMode('project')}
                   >
                     <FolderKanban size={18} color={mode === 'project' ? THEME.colors.fill[100] : THEME.colors.text.secondary} />
-                    <Text style={[styles.segText, mode === 'project' && styles.segTextOn]}>Por proyecto</Text>
+                    <Text style={[styles.segText, mode === 'project' && styles.segTextOn]}>{t('redistribute.byProject')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.segBtn, mode === 'loose' && styles.segBtnOn]}
                     onPress={() => setMode('loose')}
                   >
                     <Layers size={18} color={mode === 'loose' ? THEME.colors.fill[100] : THEME.colors.text.secondary} />
-                    <Text style={[styles.segText, mode === 'loose' && styles.segTextOn]}>Sin proyecto</Text>
+                    <Text style={[styles.segText, mode === 'loose' && styles.segTextOn]}>{t('redistribute.loose')}</Text>
                   </TouchableOpacity>
                 </View>
 
                 {mode === 'project' ? (
                   <>
-                    <Text style={styles.label}>Proyecto</Text>
-                    <Text style={styles.modeExplain}>
-                      Elige un proyecto: Koraa repartirá solo sus tareas pendientes entre hoy y la fecha de entrega.
-                    </Text>
+                    <Text style={styles.label}>{t('redistribute.projectLabel')}</Text>
+                    <Text style={styles.modeExplain}>{t('redistribute.projectExplain')}</Text>
                     {loadingProjects ? (
                       <ActivityIndicator color={THEME.colors.gradient.blue} style={styles.projectsSpinner} />
                     ) : projectsLoadError ? (
                       <View style={styles.projectsErrorBox}>
                         <Text style={styles.projectsErrorText}>{projectsLoadError}</Text>
                         <TouchableOpacity onPress={() => void loadProjects()} style={styles.retryBtn} accessibilityRole="button">
-                          <Text style={styles.retryBtnText}>Reintentar</Text>
+                          <Text style={styles.retryBtnText}>{t('redistribute.retry')}</Text>
                         </TouchableOpacity>
                       </View>
                     ) : projects.length === 0 ? (
-                      <Text style={styles.hint}>
-                        Aún no tienes proyectos en la lista. Crea uno al guardar una tarea desde la pestaña Tareas (asigna nombre y color) y vuelve aquí para repartir sus tareas.
-                      </Text>
+                      <Text style={styles.hint}>{t('redistribute.noProjects')}</Text>
                     ) : (
                       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
                         {projects.map((p) => (
@@ -360,19 +355,19 @@ export function RedistributeWorkloadModal({
                       </ScrollView>
                     )}
 
-                    <Text style={styles.label}>Fecha de entrega (AAAA-MM-DD)</Text>
+                    <Text style={styles.label}>{t('redistribute.dueLabel')}</Text>
                     <TextInput
                       style={styles.input}
                       value={dueInput}
                       onChangeText={setDueInput}
-                      placeholder="2026-04-20"
+                      placeholder={t('redistribute.duePlaceholder')}
                       placeholderTextColor={THEME.colors.text.secondary}
                       autoCapitalize="none"
                       autoCorrect={false}
                     />
 
                     <View style={styles.switchRow}>
-                      <Text style={styles.switchLabel}>Guardar esta fecha en el proyecto</Text>
+                      <Text style={styles.switchLabel}>{t('redistribute.saveDue')}</Text>
                       <Switch
                         value={saveDueToProject}
                         onValueChange={setSaveDueToProject}
@@ -380,18 +375,16 @@ export function RedistributeWorkloadModal({
                       />
                     </View>
                     {!supportsProjectDueDate ? (
-                      <Text style={styles.hint}>
-                        Tu base de datos aún no tiene la columna de fecha en proyectos. El reparto sí funciona; solo no se guardará esta fecha en el proyecto.
-                      </Text>
+                      <Text style={styles.hint}>{t('redistribute.noDueColumn')}</Text>
                     ) : null}
 
                     <Text style={styles.meta}>
-                      Tareas a repartir en este proyecto: {projectTaskIds.length}
+                      {t('redistribute.tasksInProject', { count: projectTaskIds.length })}
                     </Text>
                   </>
                 ) : (
                   <>
-                    <Text style={styles.label}>Distribuir en los próximos días</Text>
+                    <Text style={styles.label}>{t('redistribute.distributeDays')}</Text>
                     <View style={styles.horizonRow}>
                       {([7, 14, 21] as const).map((d) => (
                         <TouchableOpacity
@@ -399,11 +392,13 @@ export function RedistributeWorkloadModal({
                           style={[styles.horizonChip, horizonDays === d && styles.horizonChipOn]}
                           onPress={() => setHorizonDays(d)}
                         >
-                          <Text style={[styles.horizonText, horizonDays === d && styles.horizonTextOn]}>{d} días</Text>
+                          <Text style={[styles.horizonText, horizonDays === d && styles.horizonTextOn]}>
+                            {t('redistribute.daysCount', { count: d })}
+                          </Text>
                         </TouchableOpacity>
                       ))}
                     </View>
-                    <Text style={styles.meta}>Tareas sueltas: {looseTaskIds.length}</Text>
+                    <Text style={styles.meta}>{t('redistribute.looseCount', { count: looseTaskIds.length })}</Text>
                   </>
                 )}
 
@@ -415,7 +410,7 @@ export function RedistributeWorkloadModal({
               </>
             ) : (
               <>
-                <Text style={styles.previewTitle}>Vista previa</Text>
+                <Text style={styles.previewTitle}>{t('redistribute.previewTitle')}</Text>
                 {preview?.warning ? <Text style={styles.warnText}>{preview.warning}</Text> : null}
                 <View style={styles.previewList}>
                   {previewSummary.map(([date, count]) => (
@@ -423,7 +418,7 @@ export function RedistributeWorkloadModal({
                       <CalendarRange size={18} color={THEME.colors.gradient.blue} />
                       <Text style={styles.previewDate}>{date}</Text>
                       <Text style={styles.previewCount}>
-                        {count} {count === 1 ? 'tarea' : 'tareas'}
+                        {count} {count === 1 ? t('redistribute.taskOne') : t('redistribute.taskMany')}
                       </Text>
                     </View>
                   ))}
@@ -441,7 +436,7 @@ export function RedistributeWorkloadModal({
             {step === 'preview' ? (
               <>
                 <TouchableOpacity style={styles.btnSecondary} onPress={() => setStep('form')} disabled={saving}>
-                  <Text style={styles.btnSecondaryText}>Atrás</Text>
+                  <Text style={styles.btnSecondaryText}>{t('redistribute.back')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.btnPrimaryWrap} onPress={handleApply} disabled={saving}>
                   <LinearGradient
@@ -453,7 +448,7 @@ export function RedistributeWorkloadModal({
                     {saving ? (
                       <ActivityIndicator color={THEME.colors.fill[100]} />
                     ) : (
-                      <Text style={styles.btnPrimaryText}>Aplicar fechas</Text>
+                      <Text style={styles.btnPrimaryText}>{t('redistribute.apply')}</Text>
                     )}
                   </LinearGradient>
                 </TouchableOpacity>
@@ -466,7 +461,7 @@ export function RedistributeWorkloadModal({
                   end={{ x: 1, y: 0 }}
                   style={styles.btnPrimary}
                 >
-                  <Text style={styles.btnPrimaryText}>Calcular reparto</Text>
+                  <Text style={styles.btnPrimaryText}>{t('redistribute.calculate')}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             )}

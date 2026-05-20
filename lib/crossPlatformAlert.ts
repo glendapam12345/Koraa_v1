@@ -1,4 +1,5 @@
 import { Alert, Platform } from 'react-native';
+import { type AppLocale, translate } from '@/lib/i18n';
 
 export type AlertButtonStyle = 'cancel' | 'destructive' | 'default';
 
@@ -8,24 +9,30 @@ export interface AlertButton {
   onPress?: () => void;
 }
 
-export function showAlert(title: string, message: string, buttons: AlertButton[] = [{ text: 'OK' }]): void {
+export function showAlert(
+  title: string,
+  message: string,
+  buttons?: AlertButton[],
+  locale: AppLocale = 'es',
+): void {
+  const resolvedButtons = buttons ?? [{ text: translate(locale, 'errors.ok') }];
   if (Platform.OS === 'web') {
-    if (buttons.length === 1) {
+    if (resolvedButtons.length === 1) {
       window.alert(`${title}\n\n${message}`);
-      buttons[0].onPress?.();
+      resolvedButtons[0].onPress?.();
       return;
     }
     const confirmed = window.confirm(`${title}\n\n${message}`);
     if (confirmed) {
-      const confirmButton = buttons.find((b) => b.style !== 'cancel');
+      const confirmButton = resolvedButtons.find((b) => b.style !== 'cancel');
       confirmButton?.onPress?.();
     } else {
-      const cancelButton = buttons.find((b) => b.style === 'cancel');
+      const cancelButton = resolvedButtons.find((b) => b.style === 'cancel');
       cancelButton?.onPress?.();
     }
     return;
   }
-  Alert.alert(title, message, buttons);
+  Alert.alert(title, message, resolvedButtons);
 }
 
 /**
@@ -36,9 +43,10 @@ export function showConfirm(
   message: string,
   confirmText: string,
   onConfirm: () => void,
-  options?: { cancelText?: string; destructive?: boolean },
+  options?: { cancelText?: string; destructive?: boolean; locale?: AppLocale },
 ): void {
-  const cancelText = options?.cancelText ?? 'Cancelar';
+  const cancelText =
+    options?.cancelText ?? translate(options?.locale ?? 'es', 'common.cancel');
   const destructive = options?.destructive ?? false;
 
   if (Platform.OS === 'web') {

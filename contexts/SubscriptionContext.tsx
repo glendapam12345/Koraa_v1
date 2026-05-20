@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { Platform } from 'react-native';
 import type { CustomerInfo, PurchasesOffering } from 'react-native-purchases';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { ENTITLEMENT_ID } from '@/config/revenuecat';
 import { initializeRevenueCat } from '@/lib/revenuecat';
 import { logger } from '@/lib/logger';
@@ -19,6 +20,7 @@ const SubscriptionContext = createContext<SubscriptionContextType | undefined>(u
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(true);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [currentOffering, setCurrentOffering] = useState<PurchasesOffering | null>(null);
@@ -45,7 +47,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const restorePurchases = useCallback(async () => {
     if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
-      return { success: false, error: 'Las compras no están disponibles en esta plataforma.' };
+      return { success: false, error: t('subscription.unavailablePlatform') };
     }
     try {
       const Purchases = (await import('react-native-purchases')).default;
@@ -53,11 +55,11 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       setCustomerInfo(info);
       return { success: info.entitlements.active[ENTITLEMENT_ID] !== undefined, error: null };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo restaurar compras.';
+      const message = error instanceof Error ? error.message : t('subscription.restoreFailed');
       setCustomerInfo(null);
       return { success: false, error: message };
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     let cancelled = false;

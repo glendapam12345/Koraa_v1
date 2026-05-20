@@ -10,18 +10,22 @@ import type { Task } from '@/hooks/useTasks';
 import { getSupabaseEnvStatus } from '@/lib/envCheck';
 import { Calendar, Plus, FolderKanban, FileText, ChevronRight, ChevronLeft, Crown } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { useI18n } from '@/contexts/I18nContext';
 
-const MONTH_NAMES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
+const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
 const FREE_VISIBLE_DAYS = 3;
 
-function formatDayLabel(dateStr: string): string {
+function formatDayLabel(dateStr: string, months: readonly string[]): string {
   const dayNum = parseInt(dateStr.slice(8, 10), 10);
-  const month = MONTH_NAMES[parseInt(dateStr.slice(5, 7), 10) - 1];
-  return `Día ${dayNum} de ${month}`;
+  const month = months[parseInt(dateStr.slice(5, 7), 10) - 1];
+  return `${dayNum} ${month}`;
 }
 
 export default function SemanaScreen() {
   const insets = useSafeAreaInsets();
+  const { t, locale } = useI18n();
+  const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
   const { user } = useAuth();
   const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -30,12 +34,23 @@ export default function SemanaScreen() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const showToast = useCallback((msg: string) => setToastMessage(msg), []);
 
-  const { weekTasks, projects, loading, loadWeekTasks, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast);
+  const { weekTasks, projects, loading, loadWeekTasks, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast, locale);
   const envStatus = getSupabaseEnvStatus();
   const supabaseEnvOk = envStatus.url && envStatus.key;
 
   const currentWeekStart = getWeekBounds().start;
-  const weekOptions = useMemo(() => getWeekOptions(6), []);
+  const weekOptions = useMemo(() => {
+    const opts = getWeekOptions(6);
+    return opts.map((o, i) => ({
+      ...o,
+      label:
+        i === 0
+          ? t('semana.weekPrev')
+          : i === 1
+            ? t('semana.weekCurrent')
+            : `${o.start.slice(8)} ${monthNames[parseInt(o.start.slice(5, 7), 10) - 1]}`,
+    }));
+  }, [t, monthNames]);
 
   const weekIndex = useMemo(() => {
     const start = selectedWeekStart ?? currentWeekStart;
@@ -50,9 +65,9 @@ export default function SemanaScreen() {
       ? (() => {
           const d0 = weekTasks[0].day.dateStr;
           const d6 = weekTasks[6].day.dateStr;
-          return `${d0.slice(8)} – ${d6.slice(8)} ${MONTH_NAMES[parseInt(d0.slice(5, 7), 10) - 1]}`;
+          return `${d0.slice(8)} – ${d6.slice(8)} ${monthNames[parseInt(d0.slice(5, 7), 10) - 1]}`;
         })()
-      : 'Semana');
+      : t('semanaExtra.weekFallback'));
 
   useEffect(() => {
     loadWeekTasks(selectedWeekStart || undefined);
@@ -105,7 +120,7 @@ export default function SemanaScreen() {
               onPress={() => router.push('/(tabs)/vaciar')}
               activeOpacity={0.85}
               accessibilityRole="button"
-              accessibilityLabel="Abrir y agregar tareas"
+              accessibilityLabel={t('semanaExtra.a11yOpenAddTasks')}
               style={styles.headerCalendarButtonWrap}
             >
               <LinearGradient
@@ -118,10 +133,8 @@ export default function SemanaScreen() {
               </LinearGradient>
             </TouchableOpacity>
             <View style={styles.headerTextWrap}>
-              <Text style={styles.title}>Tu semana</Text>
-              <Text style={styles.subtitle}>
-                Elige una semana y ve tus tareas por día
-              </Text>
+              <Text style={styles.title}>{t('semana.title')}</Text>
+              <Text style={styles.subtitle}>{t('semana.subtitle')}</Text>
             </View>
           </View>
         </LinearGradient>
@@ -133,11 +146,11 @@ export default function SemanaScreen() {
             disabled={!canGoPrev}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel="Semana anterior"
+            accessibilityLabel={t('semanaExtra.a11yPrevWeek')}
           >
             <ChevronLeft size={22} color={canGoPrev ? THEME.colors.gradient.blue : THEME.colors.text.secondary} />
             <Text style={[styles.weekNavButtonText, !canGoPrev && styles.weekNavButtonTextDisabled]}>
-              Anterior
+              {t('semana.prev')}
             </Text>
           </TouchableOpacity>
           <View style={styles.weekNavCenterWrap}>
@@ -158,10 +171,10 @@ export default function SemanaScreen() {
             disabled={!canGoNext}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel="Semana siguiente"
+            accessibilityLabel={t('semanaExtra.a11yNextWeek')}
           >
             <Text style={[styles.weekNavButtonText, !canGoNext && styles.weekNavButtonTextDisabled]}>
-              Siguiente
+              {t('semana.next')}
             </Text>
             <ChevronRight size={22} color={canGoNext ? THEME.colors.gradient.blue : THEME.colors.text.secondary} />
           </TouchableOpacity>
@@ -177,7 +190,7 @@ export default function SemanaScreen() {
               onPress={() => setSelectedProjectId(null)}
               activeOpacity={0.85}
               accessibilityRole="button"
-              accessibilityLabel="Ver todas las tareas"
+              accessibilityLabel={t('semanaExtra.a11yViewAllTasks')}
               style={styles.filterChipTouchable}
             >
               {!selectedProjectId ? (
@@ -187,11 +200,11 @@ export default function SemanaScreen() {
                   end={{ x: 1, y: 0 }}
                   style={styles.filterChipGradient}
                 >
-                  <Text style={styles.filterChipTextSelected}>Todos</Text>
+                  <Text style={styles.filterChipTextSelected}>{t('semana.all')}</Text>
                 </LinearGradient>
               ) : (
                 <View style={styles.filterChip}>
-                  <Text style={styles.filterChipText}>Todos</Text>
+                  <Text style={styles.filterChipText}>{t('semana.all')}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -204,7 +217,7 @@ export default function SemanaScreen() {
                   onPress={() => setSelectedProjectId(p.id)}
                   activeOpacity={0.85}
                   accessibilityRole="button"
-                  accessibilityLabel={`Filtrar por ${p.name}`}
+                  accessibilityLabel={t('semanaExtra.a11yFilterProject', { name: p.name })}
                   style={styles.filterChipTouchable}
                 >
                   {isSelected ? (
@@ -228,7 +241,7 @@ export default function SemanaScreen() {
         </View>
 
         {loading ? (
-          <Text style={styles.loadingWeek}>Cargando días...</Text>
+          <Text style={styles.loadingWeek}>{t('semana.loadingDays')}</Text>
         ) : null}
 
         {!loading && visibleWeekTasks.map(({ day, tasks }) => (
@@ -241,16 +254,16 @@ export default function SemanaScreen() {
                 style={[styles.dayHeader, styles.dayHeaderToday]}
               >
                 <Text style={[styles.dayLabel, styles.dayLabelToday]} numberOfLines={1}>
-                  {formatDayLabel(day.dateStr)}
+                  {formatDayLabel(day.dateStr, monthNames)}
                 </Text>
                 <View style={styles.todayBadge}>
-                  <Text style={styles.todayBadgeText}>Hoy</Text>
+                  <Text style={styles.todayBadgeText}>{t('semana.today')}</Text>
                 </View>
               </LinearGradient>
             ) : (
               <View style={styles.dayHeader}>
                 <Text style={styles.dayLabel} numberOfLines={1}>
-                  {formatDayLabel(day.dateStr)}
+                  {formatDayLabel(day.dateStr, monthNames)}
                 </Text>
               </View>
             )}
@@ -259,14 +272,14 @@ export default function SemanaScreen() {
               <View style={styles.dayBody}>
                 <View style={styles.emptyDay}>
                   <Text style={styles.emptyDayEmoji}>📅</Text>
-                  <Text style={styles.emptyDayText}>Nada programado este día</Text>
-                  <Text style={styles.emptyDayHint}>Agrega tareas y verás tu plan aquí</Text>
+                  <Text style={styles.emptyDayText}>{t('semana.emptyDay')}</Text>
+                  <Text style={styles.emptyDayHint}>{t('semana.emptyHint')}</Text>
                   <TouchableOpacity
                     style={styles.addDayButtonWrap}
                     onPress={() => router.push(`/(tabs)/vaciar?date=${day.dateStr}`)}
                     activeOpacity={0.85}
                     accessibilityRole="button"
-                    accessibilityLabel={`Agregar tareas para ${formatDayLabel(day.dateStr)}`}
+                    accessibilityLabel={`${t('semana.addTasks')} ${formatDayLabel(day.dateStr, monthNames)}`}
                   >
                     <LinearGradient
                       colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -275,7 +288,7 @@ export default function SemanaScreen() {
                       style={styles.addDayButton}
                     >
                       <Plus size={18} color={THEME.colors.onGradient} />
-                      <Text style={styles.addDayButtonText}>Agregar tareas</Text>
+                      <Text style={styles.addDayButtonText}>{t('semana.addTasks')}</Text>
                     </LinearGradient>
                   </TouchableOpacity>
                 </View>
@@ -289,7 +302,7 @@ export default function SemanaScreen() {
                       task={task}
                       projectName={
                         task.project_id
-                          ? projectsMap[task.project_id]?.name || 'Proyecto'
+                          ? projectsMap[task.project_id]?.name || t('semana.projectFallback')
                           : null
                       }
                       projectColor={
@@ -305,10 +318,10 @@ export default function SemanaScreen() {
                   onPress={() => router.push(`/(tabs)/vaciar?date=${day.dateStr}`)}
                   activeOpacity={0.8}
                   accessibilityRole="button"
-                  accessibilityLabel={`Agregar más tareas para ${formatDayLabel(day.dateStr)}`}
+                  accessibilityLabel={`${t('semana.addMore')} ${formatDayLabel(day.dateStr, monthNames)}`}
                 >
                   <Plus size={16} color={THEME.colors.gradient.blue} />
-                  <Text style={styles.addDayButtonTextOutlined}>Agregar más</Text>
+                  <Text style={styles.addDayButtonTextOutlined}>{t('semana.addMore')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -321,7 +334,7 @@ export default function SemanaScreen() {
             onPress={() => router.push('/(tabs)/vaciar')}
             activeOpacity={0.88}
             accessibilityRole="button"
-            accessibilityLabel="Agregar tareas o proyectos"
+            accessibilityLabel={t('semana.addTasksOrProjects')}
           >
             <LinearGradient
               colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -330,28 +343,24 @@ export default function SemanaScreen() {
               style={styles.addButtonGradient}
             >
               <Plus size={22} color={THEME.colors.onGradient} />
-              <Text style={styles.addButtonText}>Agregar tareas o proyectos</Text>
+              <Text style={styles.addButtonText}>{t('semana.addTasksOrProjects')}</Text>
             </LinearGradient>
           </TouchableOpacity>
 
           {schemaSetupType ? (
             <View style={styles.setupCard}>
-              <Text style={styles.setupCardTitle}>Configura Semana y proyectos</Text>
+              <Text style={styles.setupCardTitle}>{t('semanaExtra.setupTitle')}</Text>
               <Text style={styles.setupCardText}>
                 {schemaSetupType === 'scheduled_date'
-                  ? 'Falta activar una parte de Semana para ver tareas por día.'
+                  ? t('semanaExtra.setupScheduledDate')
                   : schemaSetupType === 'projects_table'
-                    ? 'Falta activar proyectos para organizar tus tareas.'
+                    ? t('semanaExtra.setupProjectsTable')
                     : schemaSetupType === 'project_id'
-                      ? 'Falta activar la relación entre tareas y proyectos.'
-                      : 'Semana y proyectos todavía no están activos en este entorno.'}
+                      ? t('semanaExtra.setupProjectId')
+                      : t('semanaExtra.setupGeneric')}
               </Text>
-              <Text style={styles.setupCardSteps}>
-                Haz la configuración inicial del proyecto para activar estas funciones.
-              </Text>
-              <Text style={styles.setupCardHint}>
-                Después, arrastra hacia abajo para recargar.
-              </Text>
+              <Text style={styles.setupCardSteps}>{t('semanaExtra.setupSteps')}</Text>
+              <Text style={styles.setupCardHint}>{t('semanaExtra.setupPullRefresh')}</Text>
             </View>
           ) : null}
         </View>
@@ -361,22 +370,20 @@ export default function SemanaScreen() {
             <View style={styles.premiumHintHeader}>
               <View style={styles.premiumHintTitleWrap}>
                 <Crown size={14} color={THEME.colors.gradient.blue} />
-                <Text style={styles.premiumHintTitle}>Semana Premium</Text>
+                <Text style={styles.premiumHintTitle}>{t('semana.premiumTitle')}</Text>
               </View>
-              <Text style={styles.premiumHintLabel}>Opcional</Text>
+              <Text style={styles.premiumHintLabel}>{t('semanaExtra.premiumOptional')}</Text>
             </View>
-            <Text style={styles.premiumHintText}>
-              Si luego quieres más detalle, puedes desbloquear los 7 días y filtros por proyecto.
-            </Text>
+            <Text style={styles.premiumHintText}>{t('semanaExtra.premiumBody')}</Text>
             <TouchableOpacity
               onPress={() => router.push('/settings')}
               activeOpacity={0.85}
               style={styles.premiumHintBtn}
               accessibilityRole="button"
-              accessibilityLabel="Gestionar Premium"
-              accessibilityHint="Abre Ajustes para suscribirte o restaurar compra"
+              accessibilityLabel={t('semanaExtra.a11yManagePremium')}
+              accessibilityHint={t('semanaExtra.a11yManagePremiumHint')}
             >
-              <Text style={styles.premiumHintBtnText}>Gestionar Premium</Text>
+              <Text style={styles.premiumHintBtnText}>{t('semanaExtra.premiumCta')}</Text>
               <ChevronRight size={16} color={THEME.colors.gradient.blue} />
             </TouchableOpacity>
           </View>
@@ -384,16 +391,22 @@ export default function SemanaScreen() {
 
         {__DEV__ ? (
           <View style={styles.diagnostico}>
-            <Text style={styles.diagnosticoTitle}>Diagnóstico (solo desarrollo)</Text>
+            <Text style={styles.diagnosticoTitle}>{t('semanaExtra.devTitle')}</Text>
             <Text style={styles.diagnosticoLine}>
-              Sesión: {user?.email ?? 'No iniciada'}
+              {t('semanaExtra.devSession', {
+                email: user?.email ?? t('semanaExtra.devSessionNone'),
+              })}
             </Text>
             <Text style={styles.diagnosticoLine}>
-              Supabase (.env): {supabaseEnvOk ? 'OK' : 'Faltante (URL o Key)'}
+              {t('semanaExtra.devSupabase', {
+                status: supabaseEnvOk
+                  ? t('semanaExtra.devSupabaseOk')
+                  : t('semanaExtra.devSupabaseMissing'),
+              })}
             </Text>
             {lastLoadError ? (
               <Text style={[styles.diagnosticoLine, styles.diagnosticoError]} numberOfLines={3}>
-                Último error: {lastLoadError}
+                {t('semanaExtra.devLastError', { error: lastLoadError })}
               </Text>
             ) : null}
           </View>
@@ -412,6 +425,7 @@ function WeekTaskItem({
   projectName: string | null;
   projectColor?: string;
 }) {
+  const { t } = useI18n();
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
   const accentColor = projectColor || THEME.colors.gradient.blue;
 
@@ -433,7 +447,7 @@ function WeekTaskItem({
           ) : (
             <View style={styles.standaloneBadge}>
               <FileText size={12} color={THEME.colors.text.secondary} />
-              <Text style={styles.standaloneBadgeText}>Tareas sueltas</Text>
+              <Text style={styles.standaloneBadgeText}>{t('semana.looseTasks')}</Text>
             </View>
           )}
           <Text

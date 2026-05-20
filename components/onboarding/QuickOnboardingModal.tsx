@@ -2,6 +2,7 @@ import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { X, Sparkles } from 'lucide-react-native';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface QuickOnboardingModalProps {
   visible: boolean;
@@ -9,13 +10,9 @@ interface QuickOnboardingModalProps {
 }
 
 export function QuickOnboardingModal({ visible, onClose }: QuickOnboardingModalProps) {
+  const { t } = useI18n();
   return (
-    <Modal
-      visible={visible}
-      animationType="fade"
-      transparent
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <TouchableOpacity
@@ -23,7 +20,7 @@ export function QuickOnboardingModal({ visible, onClose }: QuickOnboardingModalP
             onPress={onClose}
             activeOpacity={0.7}
             accessibilityRole="button"
-            accessibilityLabel="Cerrar"
+            accessibilityLabel={t('quickOnboarding.a11yClose')}
           >
             <X size={24} color={THEME.colors.text.main} />
           </TouchableOpacity>
@@ -32,56 +29,41 @@ export function QuickOnboardingModal({ visible, onClose }: QuickOnboardingModalP
             <Sparkles size={48} color={THEME.colors.gradient.blue} />
           </View>
 
-          <Text style={styles.title}>¡Bienvenida a Koraa!</Text>
-          <Text style={styles.subtitle}>
-            Tu asistente inteligente para organizar tu día según cómo te sientes
-          </Text>
+          <Text style={styles.title}>{t('quickOnboarding.title')}</Text>
+          <Text style={styles.subtitle}>{t('quickOnboarding.subtitle')}</Text>
 
           <View style={styles.stepsContainer}>
             <View style={styles.step}>
               <Text style={styles.stepNumber}>1</Text>
               <View style={styles.stepContent}>
-                <Text style={styles.stepTitle}>Tareas</Text>
-                <Text style={styles.stepDescription}>
-                  Agrega todas tus tareas sin pensar en el orden
-                </Text>
+                <Text style={styles.stepTitle}>{t('quickOnboarding.step1Title')}</Text>
+                <Text style={styles.stepDescription}>{t('quickOnboarding.step1Body')}</Text>
               </View>
             </View>
-
             <View style={styles.step}>
               <Text style={styles.stepNumber}>2</Text>
               <View style={styles.stepContent}>
-                <Text style={styles.stepTitle}>Sentir</Text>
-                <Text style={styles.stepDescription}>
-                  Registra cómo te sientes hoy
-                </Text>
+                <Text style={styles.stepTitle}>{t('quickOnboarding.step2Title')}</Text>
+                <Text style={styles.stepDescription}>{t('quickOnboarding.step2Body')}</Text>
               </View>
             </View>
-
             <View style={styles.step}>
               <Text style={styles.stepNumber}>3</Text>
               <View style={styles.stepContent}>
-                <Text style={styles.stepTitle}>Hoy</Text>
-                <Text style={styles.stepDescription}>
-                  Koraa priorizará tus tareas automáticamente
-                </Text>
+                <Text style={styles.stepTitle}>{t('quickOnboarding.step3Title')}</Text>
+                <Text style={styles.stepDescription}>{t('quickOnboarding.step3Body')}</Text>
               </View>
             </View>
           </View>
 
-          <TouchableOpacity
-            style={styles.startButton}
-            onPress={onClose}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-          >
+          <TouchableOpacity style={styles.startButton} onPress={onClose} activeOpacity={0.8} accessibilityRole="button">
             <LinearGradient
               colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.startButtonGradient}
             >
-              <Text style={styles.startButtonText}>Comenzar</Text>
+              <Text style={styles.startButtonText}>{t('quickOnboarding.cta')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>

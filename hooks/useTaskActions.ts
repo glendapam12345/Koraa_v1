@@ -2,6 +2,8 @@ import { Platform } from 'react-native';
 import { useCallback, MutableRefObject, useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 import { supabase, getErrorMessage } from '@/lib/supabase';
+import type { AppLocale } from '@/lib/i18n';
+import { translate } from '@/lib/i18n';
 import { logger } from '@/lib/logger';
 import { Task } from './useTasks';
 
@@ -13,6 +15,7 @@ interface UseTaskActionsParams {
   setMenuOpen: (id: string | null) => void;
   backgroundLoadTimeoutRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
   isLoadingTasksRef: MutableRefObject<boolean>;
+  locale?: AppLocale;
 }
 
 export function useTaskActions({
@@ -23,6 +26,7 @@ export function useTaskActions({
   setMenuOpen,
   backgroundLoadTimeoutRef,
   isLoadingTasksRef,
+  locale = 'es',
 }: UseTaskActionsParams) {
   const toggleTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
@@ -95,7 +99,7 @@ export function useTaskActions({
 
           if (error) {
             logger.error('Error actualizando tarea:', error);
-            const errorMessage = getErrorMessage(error);
+            const errorMessage = getErrorMessage(error, locale);
             showToast(errorMessage, 'error');
 
             setTasks((prevTasks: Task[]) => {
@@ -161,7 +165,7 @@ export function useTaskActions({
                         : t
                     )
                   );
-                  showToast('¡Todos los pasos completados!', 'success');
+                  showToast(translate(locale, 'hooks.allStepsDone'), 'success');
                   if (Platform.OS !== 'web') {
                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   }
@@ -183,7 +187,7 @@ export function useTaskActions({
           }
         } catch (error) {
           logger.error('Error inesperado al actualizar:', error);
-          const errorMessage = getErrorMessage(error);
+          const errorMessage = getErrorMessage(error, locale);
           showToast(errorMessage, 'error');
 
           setTasks((prevTasks: Task[]) => {
@@ -231,6 +235,7 @@ export function useTaskActions({
       setMenuOpen,
       backgroundLoadTimeoutRef,
       isLoadingTasksRef,
+      locale,
     ]
   );
 
@@ -256,7 +261,7 @@ export function useTaskActions({
 
         if (error) {
           logger.error('Error actualizando tarea:', error);
-          const errorMessage = getErrorMessage(error);
+          const errorMessage = getErrorMessage(error, locale);
           showToast(errorMessage, 'error');
           return;
         }
@@ -269,18 +274,18 @@ export function useTaskActions({
 
         setEditingTask(null);
         setEditContent('');
-        showToast('Tarea actualizada', 'success');
+        showToast(translate(locale, 'hooks.taskUpdated'), 'success');
 
         if (Platform.OS !== 'web') {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
       } catch (error) {
         logger.error('Error inesperado al editar:', error);
-        const errorMessage = getErrorMessage(error);
+        const errorMessage = getErrorMessage(error, locale);
         showToast(errorMessage, 'error');
       }
     },
-    [setTasks, showToast]
+    [setTasks, showToast, locale]
   );
 
   return {

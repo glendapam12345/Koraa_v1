@@ -1,5 +1,6 @@
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
+import { useI18n } from '@/contexts/I18nContext';
 
 type EmotionCardProps = {
   emoji: string;
@@ -9,17 +10,15 @@ type EmotionCardProps = {
 };
 
 export function EmotionCard({ emoji, label, selected, onPress }: EmotionCardProps) {
+  const { t } = useI18n();
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={[
-        styles.container,
-        selected && styles.selected,
-      ]}
+      style={[styles.container, selected && styles.selected]}
       activeOpacity={0.7}
       accessibilityRole="button"
-      accessibilityLabel={`${label}${selected ? ', seleccionada' : ''}`}
-      accessibilityHint="Toca para elegir esta emoción"
+      accessibilityLabel={`${label}${selected ? t('commonExtra.selected') : ''}`}
+      accessibilityHint={t('emotionCard.a11yHint')}
       accessibilityState={{ selected }}
     >
       <Text style={styles.emoji}>{emoji}</Text>

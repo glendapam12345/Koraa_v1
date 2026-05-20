@@ -1,27 +1,29 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
+import { useI18n } from '@/contexts/I18nContext';
 
 export function FlowGuideCard() {
+  const { t } = useI18n();
   return (
     <View style={styles.flowGuideCard}>
-      <Text style={styles.flowGuideCardTitle}>Flujo de Koraa</Text>
+      <Text style={styles.flowGuideCardTitle}>{t('flowGuide.title')}</Text>
       <View style={styles.flowSteps}>
         <View style={styles.flowStep}>
           <Text style={styles.flowStepNumber}>1</Text>
-          <Text style={styles.flowStepText}>Tareas</Text>
-          <Text style={styles.flowStepDesc}>Agrega tus tareas</Text>
+          <Text style={styles.flowStepText}>{t('flowGuide.step1Title')}</Text>
+          <Text style={styles.flowStepDesc}>{t('flowGuide.step1Body')}</Text>
         </View>
         <Text style={styles.flowArrowText}>→</Text>
         <View style={styles.flowStep}>
           <Text style={styles.flowStepNumber}>2</Text>
-          <Text style={styles.flowStepText}>Sentir</Text>
-          <Text style={styles.flowStepDesc}>Di cómo te sientes</Text>
+          <Text style={styles.flowStepText}>{t('flowGuide.step2Title')}</Text>
+          <Text style={styles.flowStepDesc}>{t('flowGuide.step2Body')}</Text>
         </View>
         <Text style={styles.flowArrowText}>→</Text>
         <View style={styles.flowStep}>
           <Text style={styles.flowStepNumber}>3</Text>
-          <Text style={styles.flowStepText}>Hoy</Text>
-          <Text style={styles.flowStepDesc}>Ve tus prioridades</Text>
+          <Text style={styles.flowStepText}>{t('flowGuide.step3Title')}</Text>
+          <Text style={styles.flowStepDesc}>{t('flowGuide.step3Body')}</Text>
         </View>
       </View>
     </View>

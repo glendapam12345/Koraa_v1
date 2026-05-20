@@ -13,21 +13,27 @@ import { logger } from '@/lib/logger';
 import { router, useFocusEffect } from 'expo-router';
 import { Plus, Lightbulb, Heart, CircleHelp } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 
 const SENTIR_RITUAL_HINT_KEY = 'koraa_sentir_ritual_intro_v1';
 
-const EMOTIONS = [
-  { id: 'agotada', emoji: '😔', label: 'Agotada' },
-  { id: 'tranquila', emoji: '😌', label: 'Tranquila' },
-  { id: 'ansiosa', emoji: '😰', label: 'Ansiosa' },
-  { id: 'motivada', emoji: '✨', label: 'Motivada' },
-  { id: 'abrumada', emoji: '🥺', label: 'Abrumada' },
-  { id: 'enfocada', emoji: '🎯', label: 'Enfocada' },
-];
+const EMOTION_IDS = [
+  { id: 'agotada', emoji: '😔' },
+  { id: 'tranquila', emoji: '😌' },
+  { id: 'ansiosa', emoji: '😰' },
+  { id: 'motivada', emoji: '✨' },
+  { id: 'abrumada', emoji: '🥺' },
+  { id: 'enfocada', emoji: '🎯' },
+] as const;
 
 export default function SentirScreen() {
   const insets = useSafeAreaInsets();
+  const { t, locale } = useI18n();
   const { user } = useAuth();
+  const emotions = EMOTION_IDS.map((e) => ({
+    ...e,
+    label: t(`sentir.emotions.${e.id}` as 'sentir.emotions.agotada'),
+  }));
   const [selectedEmotion, setSelectedEmotion] = useState<string>('');
   const [hasTasks, setHasTasks] = useState<boolean | null>(null);
   const [showRitualHint, setShowRitualHint] = useState(false);
@@ -112,8 +118,8 @@ export default function SentirScreen() {
             style={styles.helpHeaderBtn}
             activeOpacity={0.75}
             accessibilityRole="button"
-            accessibilityLabel="Ayuda y preguntas frecuentes"
-            accessibilityHint="Abre la pantalla de ayuda con preguntas sobre Sentir, Tareas y Hoy"
+            accessibilityLabel={t('sentirExtra.a11yHelp')}
+            accessibilityHint={t('sentirExtra.a11yHelpHint')}
           >
             <CircleHelp size={THEME.sizes.iconStandard} color={THEME.colors.text.main} />
           </TouchableOpacity>
@@ -128,11 +134,8 @@ export default function SentirScreen() {
                 <Heart size={18} color={THEME.colors.gradient.blue} />
               </View>
               <View style={styles.ritualHintTextCol}>
-                <Text style={styles.ritualHintTitle}>Tu ritual diario</Text>
-                <Text style={styles.ritualHintBody}>
-                  Aquí haces el check-in del día (emoción, energía, tiempo y enfoque). Koraa prioriza tus tareas según
-                  cómo te sientes. Es el mismo flujo que al empezar; puedes volver cada día desde esta pestaña.
-                </Text>
+                <Text style={styles.ritualHintTitle}>{t('sentir.ritualTitle')}</Text>
+                <Text style={styles.ritualHintBody}>{t('sentir.ritualBody')}</Text>
               </View>
             </View>
             <TouchableOpacity
@@ -140,20 +143,18 @@ export default function SentirScreen() {
               style={styles.ritualHintDismiss}
               activeOpacity={0.75}
               accessibilityRole="button"
-              accessibilityLabel="Entendido, ocultar esta nota"
+              accessibilityLabel={t('sentirExtra.a11yDismissRitual')}
             >
-              <Text style={styles.ritualHintDismissText}>Entendido</Text>
+              <Text style={styles.ritualHintDismissText}>{t('sentir.ritualDismiss')}</Text>
             </TouchableOpacity>
           </View>
         ) : null}
 
-        <Text style={styles.title}>¿Cómo te</Text>
-        <Text style={styles.titleAccent}>sientes</Text>
-        <Text style={styles.subtitle}>hoy?</Text>
+        <Text style={styles.title}>{t('sentir.title')}</Text>
+        <Text style={styles.titleAccent}>{t('sentir.titleAccent')}</Text>
+        <Text style={styles.subtitle}>{t('sentir.subtitle')}</Text>
 
-        <Text style={styles.description}>
-          Koraa prioriza por ti. Solo enfócate en lo que realmente importa hoy.
-        </Text>
+        <Text style={styles.description}>{t('sentir.description')}</Text>
 
         {/* Banner si no hay tareas - Paso 1 del flujo */}
         {hasTasks === false && (
@@ -162,8 +163,8 @@ export default function SentirScreen() {
             onPress={() => router.push('/(tabs)/vaciar')}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel="Paso 1: Agrega tus tareas primero"
-            accessibilityHint="Abre la pestaña Tareas para agregar lo pendiente antes del check-in"
+            accessibilityLabel={t('sentirExtra.a11yNoTasks')}
+            accessibilityHint={t('sentirExtra.a11yNoTasksHint')}
           >
             <LinearGradient
               colors={[THEME.colors.gradient.pink, THEME.colors.gradient.blue]}
@@ -173,19 +174,15 @@ export default function SentirScreen() {
             >
               <Plus size={20} color={THEME.colors.onGradient} />
               <View style={styles.noTasksBannerContent}>
-                <Text style={styles.noTasksBannerText}>
-                  Paso 1: Agrega tus tareas primero
-                </Text>
-                <Text style={styles.noTasksBannerSubtext}>
-                  Ve a la pestaña Tareas para agregar lo que necesitas hacer hoy, luego regresa aquí
-                </Text>
+                <Text style={styles.noTasksBannerText}>{t('sentir.noTasksTitle')}</Text>
+                <Text style={styles.noTasksBannerSubtext}>{t('sentir.noTasksSub')}</Text>
               </View>
             </LinearGradient>
           </TouchableOpacity>
         )}
 
         <View style={styles.emotionsGrid}>
-          {EMOTIONS.map((emotion) => (
+          {emotions.map((emotion) => (
             <View key={emotion.id} style={styles.emotionWrapper}>
               <EmotionCard
                 emoji={emotion.emoji}
@@ -203,10 +200,12 @@ export default function SentirScreen() {
             <View style={styles.tipsHeader}>
               <Lightbulb size={20} color={THEME.colors.gradient.blue} />
               <Text style={styles.tipsTitle}>
-                Tips para {EMOTIONS.find(e => e.id === selectedEmotion)?.label}
+                {t('sentir.tipsFor', {
+                  emotion: emotions.find((e) => e.id === selectedEmotion)?.label ?? '',
+                })}
               </Text>
             </View>
-            {getEmotionTips(selectedEmotion).slice(0, 3).map((tip, index) => (
+            {getEmotionTips(selectedEmotion, locale).slice(0, 3).map((tip, index) => (
               <View key={tip.id} style={styles.tipCard}>
                 <Text style={styles.tipText}>{tip.tip}</Text>
               </View>
@@ -216,7 +215,7 @@ export default function SentirScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton title="Continuar" onPress={handleContinue} disabled={!selectedEmotion} />
+        <GradientButton title={t('sentir.continue')} onPress={handleContinue} disabled={!selectedEmotion} />
       </View>
     </View>
   );

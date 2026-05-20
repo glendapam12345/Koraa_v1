@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { X } from 'lucide-react-native';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface TaskEditModalProps {
   visible: boolean;
@@ -26,6 +27,7 @@ export function TaskEditModal({
   onSave,
   onClose,
 }: TaskEditModalProps) {
+  const { t } = useI18n();
   return (
     <Modal
       visible={visible}
@@ -42,19 +44,19 @@ export function TaskEditModal({
           activeOpacity={1}
           onPress={onClose}
           accessibilityRole="button"
-          accessibilityLabel="Cerrar editor de tarea"
-          accessibilityHint="Cierra el modal sin guardar cambios"
+          accessibilityLabel={t('components.editTaskModalCloseA11y')}
+          accessibilityHint={t('components.editTaskModalCloseHint')}
         />
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Editar tarea</Text>
+            <Text style={styles.modalTitle}>{t('components.editTask')}</Text>
             <TouchableOpacity
               style={styles.modalCloseButton}
               onPress={onClose}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="Cerrar"
-              accessibilityHint="Cierra el modal sin guardar"
+              accessibilityLabel={t('components.editTaskModalCloseShortA11y')}
+              accessibilityHint={t('components.editTaskModalCloseShortHint')}
             >
               <X size={24} color={THEME.colors.text.main} />
             </TouchableOpacity>
@@ -64,12 +66,12 @@ export function TaskEditModal({
             style={styles.editInput}
             value={content}
             onChangeText={onContentChange}
-            placeholder="Edita tu tarea..."
+            placeholder={t('components.editTaskPlaceholder')}
             placeholderTextColor={THEME.colors.text.secondary}
             multiline
             autoFocus
-            accessibilityLabel="Editar contenido de la tarea"
-            accessibilityHint="Escribe el nuevo texto de la tarea"
+            accessibilityLabel={t('components.editTaskContentA11y')}
+            accessibilityHint={t('components.editTaskContentHint')}
           />
 
           <View style={styles.modalActions}>
@@ -78,20 +80,20 @@ export function TaskEditModal({
               onPress={onClose}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="Cancelar edición"
-              accessibilityHint="Cierra el modal y descarta cambios"
+              accessibilityLabel={t('components.cancelEditA11y')}
+              accessibilityHint={t('components.cancelEditHint')}
             >
-              <Text style={styles.modalButtonCancelText}>Cancelar</Text>
+              <Text style={styles.modalButtonCancelText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.modalButton, styles.modalButtonSave]}
               onPress={onSave}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="Guardar cambios"
-              accessibilityHint="Guarda los cambios de esta tarea"
+              accessibilityLabel={t('components.saveChangesA11y')}
+              accessibilityHint={t('components.saveChangesHint')}
             >
-              <Text style={styles.modalButtonSaveText}>Guardar</Text>
+              <Text style={styles.modalButtonSaveText}>{t('common.save')}</Text>
             </TouchableOpacity>
           </View>
         </View>

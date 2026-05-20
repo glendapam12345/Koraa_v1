@@ -13,6 +13,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { X, Sparkles, CheckCircle } from 'lucide-react-native';
+import { useI18n } from '@/contexts/I18nContext';
 
 type MeditationCircleSimpleProps = {
   visible: boolean;
@@ -32,6 +33,7 @@ const CIRCLE_SIZE = 260;
  * Círculo grande que se llena con los segundos; 3 ciclos inhala/aguanta/exhala; pantalla de completado.
  */
 export function MeditationCircleSimple({ visible, onComplete, onClose, type }: MeditationCircleSimpleProps) {
+  const { t } = useI18n();
   const [isActive, setIsActive] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [breathPhase, setBreathPhase] = useState<'inhale' | 'hold' | 'exhale'>('inhale');
@@ -176,9 +178,20 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
     return 1 - t; // exhale: 1 -> 0
   })();
 
-  const message = type === 'morning'
-    ? { title: 'Meditar para iniciar el día', subtitle: 'Respira profundo y conecta con tu intención', emoji: '🌅', completed: 'Meditación de la mañana completada' }
-    : { title: 'Meditar para terminar el día', subtitle: 'Suelta el día y descansa tu mente', emoji: '🌙', completed: 'Meditación de la noche completada' };
+  const message =
+    type === 'morning'
+      ? {
+          title: t('meditation.morningTitle'),
+          subtitle: t('meditation.morningSubtitle'),
+          emoji: '🌅',
+          completed: t('meditation.morningCompleted'),
+        }
+      : {
+          title: t('meditation.eveningTitle'),
+          subtitle: t('meditation.eveningSubtitle'),
+          emoji: '🌙',
+          completed: t('meditation.eveningCompleted'),
+        };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -201,7 +214,7 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
                   <CheckCircle size={100} color={THEME.colors.fill[100]} strokeWidth={2.5} />
                 </View>
                 <Text style={styles.completedTitle}>{message.completed}</Text>
-                <Text style={styles.completedSubtitle}>¡Bien hecho! 🧘</Text>
+                <Text style={styles.completedSubtitle}>{t('meditation.wellDone')}</Text>
               </>
             ) : (
               <>
@@ -244,7 +257,7 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
                         ) : (
                           <View style={styles.timerBlock}>
                             <Text style={styles.timerText} numberOfLines={1}>{secondsRemaining}</Text>
-                            <Text style={styles.timerLabel}>seg</Text>
+                            <Text style={styles.timerLabel}>{t('meditation.sec')}</Text>
                           </View>
                         )}
                       </View>
@@ -254,35 +267,37 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
 
                 {!isActive ? (
                   <TouchableOpacity style={styles.startButton} onPress={startMeditation} activeOpacity={0.8}>
-                    <Text style={styles.startButtonText}>Comenzar</Text>
+                    <Text style={styles.startButtonText}>{t('meditation.start')}</Text>
                   </TouchableOpacity>
                 ) : (
                   <View style={styles.instructionContainer}>
                     <View style={styles.cycleBadge}>
-                      <Text style={styles.cycleCounter}>Ciclo {cycleCount + 1} de {TOTAL_CYCLES}</Text>
+                      <Text style={styles.cycleCounter}>
+                        {t('meditation.cycle', { current: cycleCount + 1, total: TOTAL_CYCLES })}
+                      </Text>
                     </View>
                     {breathPhase === 'inhale' && (
                       <>
-                        <Text style={styles.instructionText}>Inhala</Text>
-                        <Text style={styles.instructionSubtext}>Respira profundo por la nariz</Text>
+                        <Text style={styles.instructionText}>{t('meditation.inhale')}</Text>
+                        <Text style={styles.instructionSubtext}>{t('meditation.inhaleSub')}</Text>
                       </>
                     )}
                     {breathPhase === 'hold' && (
                       <>
-                        <Text style={styles.instructionText}>Aguanta</Text>
-                        <Text style={styles.instructionSubtext}>Mantén el aire en tus pulmones</Text>
+                        <Text style={styles.instructionText}>{t('meditation.hold')}</Text>
+                        <Text style={styles.instructionSubtext}>{t('meditation.holdSub')}</Text>
                       </>
                     )}
                     {breathPhase === 'exhale' && (
                       <>
-                        <Text style={styles.instructionText}>Exhala</Text>
-                        <Text style={styles.instructionSubtext}>Suelta el aire lentamente</Text>
+                        <Text style={styles.instructionText}>{t('meditation.exhale')}</Text>
+                        <Text style={styles.instructionSubtext}>{t('meditation.exhaleSub')}</Text>
                       </>
                     )}
                   </View>
                 )}
                 {!isActive && (
-                  <Text style={styles.hint}>3 ciclos · Inhala, aguanta, exhala</Text>
+                  <Text style={styles.hint}>{t('meditation.hint3cycles')}</Text>
                 )}
               </>
             )}

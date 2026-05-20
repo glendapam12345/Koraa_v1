@@ -8,6 +8,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
+import { useI18n } from '@/contexts/I18nContext';
+import { getCatalog } from '@/lib/i18n';
 
 export type DayData = {
   date: string;
@@ -114,10 +116,11 @@ function AnimatedBar({
 }
 
 export function ProgressChart({ data }: ProgressChartProps) {
+  const { t, locale } = useI18n();
   const maxBarHeight = CHART_HEIGHT - 32;
   const minBarHeight = 20;
+  const emotionLabels = getCatalog(locale).sentir.emotions as Record<string, string>;
 
-  // Extraer emociones únicas de los datos
   const emotionsInData = Array.from(
     new Set(data.filter(d => d.emotion).map(d => d.emotion))
   );
@@ -153,15 +156,15 @@ export function ProgressChart({ data }: ProgressChartProps) {
                       end={{ x: 1, y: 0 }}
                       style={styles.legendColor}
                     />
-                    <Text style={styles.legendText}>{emotion}</Text>
+                    <Text style={styles.legendText}>
+                      {emotionLabels[emotion?.toLowerCase() ?? ''] ?? emotion}
+                    </Text>
                   </View>
                 );
               })}
             </View>
           </View>
-          <Text style={styles.legendNote}>
-            Altura = energía (1-5) • Color = emoción
-          </Text>
+          <Text style={styles.legendNote}>{t('progressUi.chartLegendNote')}</Text>
         </View>
       )}
     </View>

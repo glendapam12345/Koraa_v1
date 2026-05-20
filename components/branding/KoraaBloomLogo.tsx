@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { subscribeCheckInCelebration } from '@/lib/checkInCelebration';
 import { THEME } from '@/constants/theme';
+import { useI18n } from '@/contexts/I18nContext';
 
 const LOGO = require('../../assets/images/koraa-logo.png');
 
@@ -29,6 +30,7 @@ const AnimatedImage = Animated.createAnimatedComponent(Image);
  * Logo Koraa: entrada “florecer”, pulso opcional, y burst + halo al publicar check-in (Sentir).
  */
 export function KoraaBloomLogo({ size = 56, active = true, style }: KoraaBloomLogoProps) {
+  const { t } = useI18n();
   const entrance = useSharedValue(0.82);
   const pulse = useSharedValue(1);
   const burst = useSharedValue(1);
@@ -103,7 +105,7 @@ export function KoraaBloomLogo({ size = 56, active = true, style }: KoraaBloomLo
         source={LOGO}
         style={[styles.img, { width: size, height: size }, animatedImageStyle, style]}
         accessibilityIgnoresInvertColors
-        accessibilityLabel="Logo Koraa"
+        accessibilityLabel={t('branding.logoA11y')}
       />
     </View>
   );
