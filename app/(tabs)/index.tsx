@@ -74,7 +74,8 @@ export default function TodayScreen() {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [expandedDetailsTasks, setExpandedDetailsTasks] = useState<Set<string>>(new Set());
   /** Secciones de categoría expandidas (null = todas expandidas) */
-  const [expandedSections, setExpandedSections] = useState<Set<string> | null>(new Set<string>());
+  /** null = todas las secciones expandidas (estado por defecto). */
+  const [expandedSections, setExpandedSections] = useState<Set<string> | null>(null);
   /** Tareas con "pasos del proyecto" expandidos */
   const [expandedProjectStepsTasks, setExpandedProjectStepsTasks] = useState<Set<string>>(new Set());
   /** Sección "Tareas sueltas" expandida para ver la lista */
@@ -122,23 +123,6 @@ export default function TodayScreen() {
   // Hooks personalizados
   const { user } = useAuth();
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!user?.id) {
-        setHoyLiteLayout(null);
-        return;
-      }
-      let cancelled = false;
-      void (async () => {
-        const lite = await resolveHoyLiteLayout(user.id);
-        if (!cancelled) setHoyLiteLayout(lite);
-      })();
-      return () => {
-        cancelled = true;
-      };
-    }, [user?.id]),
-  );
-
   useEffect(() => {
     if (hoyLiteLayout) {
       setTaskFilter('hoy');
@@ -184,7 +168,7 @@ export default function TodayScreen() {
     energyLevel,
     time,
     focusLevel,
-    loading,
+    loading: checkInLoading,
     loadTodayCheckIn,
   } = useCheckIn(showToast);
 
@@ -196,9 +180,39 @@ export default function TodayScreen() {
 
   const {
     tasks,
+    loadingTasks,
     loadTasks,
     setTasks,
   } = useTasks(todayMood, showToast);
+
+  const loading = checkInLoading || loadingTasks;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?.id) {
+        setHoyLiteLayout(null);
+        return;
+      }
+      let cancelled = false;
+      void (async () => {
+        const lite = await resolveHoyLiteLayout(user.id);
+        if (!cancelled) setHoyLiteLayout(lite);
+      })();
+      void (async () => {
+        try {
+          const { syncAll } = await import('@/lib/offlineStorage');
+          await syncAll();
+        } catch {
+          // no crítico
+        }
+        if (cancelled) return;
+        await Promise.all([loadTodayCheckIn(), loadTasks()]);
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [user?.id, loadTodayCheckIn, loadTasks]),
+  );
 
   const [projectsMap, setProjectsMap] = useState<Record<string, { name: string; color: string }>>({});
 
@@ -667,7 +681,9 @@ export default function TodayScreen() {
   };
 
   const getCategoryColor = useCallback((category: string) => {
-    const key = category.toLowerCase();
+    const key =
+      normalizeCategoryKey(category) ??
+      category.trim().toLowerCase();
     return THEME.colors.category[key as keyof typeof THEME.colors.category] ?? THEME.colors.text.secondary;
   }, []);
 
@@ -940,7 +956,7 @@ export default function TodayScreen() {
       const taskList = byCategory.get(key) ?? [];
       if (taskList.length === 0) return;
       const label = categoryLabel(locale, key);
-      const color = getCategoryColor(label);
+      const color = getCategoryColor(key);
       sections.push({
         id: `cat-${key}`,
         title: label,
@@ -954,10 +970,7 @@ export default function TodayScreen() {
   }, [displayedIncompleteTasks, getCategoryColor, locale]);
 
   useEffect(() => {
-    if (hoyLiteLayout) {
-      setExpandedSections(new Set<string>());
-      return;
-    }
+    // Vista lite simplifica módulos secundarios, no oculta las tareas del día.
     setExpandedSections(null);
   }, [hoyLiteLayout]);
 
