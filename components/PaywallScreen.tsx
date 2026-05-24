@@ -24,6 +24,8 @@ type PaywallScreenProps = {
   onClose?: () => void;
   onPurchaseCompleted?: () => void;
   onSkip?: () => void;
+  /** Tras completar onboarding: mensaje más claro de que Premium es opcional. */
+  context?: 'onboarding' | 'default';
 };
 
 function isPlanPackage(pkg: PurchasesPackage, plan: 'monthly' | 'annual') {
@@ -37,7 +39,7 @@ function isPlanPackage(pkg: PurchasesPackage, plan: 'monthly' | 'annual') {
   return haystack.includes('annual') || haystack.includes('year') || haystack.includes('anual');
 }
 
-export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallScreenProps) {
+export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 'default' }: PaywallScreenProps) {
   const { t } = useI18n();
   const { currentOffering, checkSubscription, restorePurchases, isLoading: subscriptionLoading } = useSubscription();
   const [isPurchasing, setIsPurchasing] = useState(false);
@@ -168,6 +170,8 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
     };
   }, [premiumGlow]);
 
+  const isOnboardingContext = context === 'onboarding';
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -189,7 +193,9 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
             }}
             accessibilityRole="button"
             accessibilityLabel={t('paywallExtra.a11yClose')}
-            accessibilityHint={t('paywallExtra.a11yCloseHint')}
+            accessibilityHint={
+              isOnboardingContext ? t('paywallExtra.a11yCloseOnboardingHint') : t('paywallExtra.a11yCloseHint')
+            }
           >
             <X size={18} color={THEME.colors.fill[100]} />
           </TouchableOpacity>
@@ -197,9 +203,32 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
             <Crown size={22} color={THEME.colors.fill[100]} />
           </View>
           <Text style={styles.title}>{t('paywall.title')}</Text>
-          <Text style={styles.subtitle}>{t('paywall.subtitle')}</Text>
+          <Text style={styles.subtitle}>
+            {isOnboardingContext ? t('paywallExtra.onboardingSubtitle') : t('paywall.subtitle')}
+          </Text>
           <Text style={styles.heroHint}>{t('paywall.heroHint')}</Text>
         </LinearGradient>
+
+        {isOnboardingContext ? (
+          <View style={styles.onboardingBanner}>
+            <Text style={styles.onboardingBannerTitle}>{t('paywallExtra.onboardingBannerTitle')}</Text>
+            <Text style={styles.onboardingBannerBody}>{t('paywallExtra.onboardingBannerBody')}</Text>
+            <TouchableOpacity
+              onPress={handleContinueFree}
+              activeOpacity={0.85}
+              disabled={isPurchasing || isRestoring || isRefreshing || subscriptionLoading}
+              style={styles.exploreFreeButton}
+              accessibilityRole="button"
+              accessibilityLabel={t('paywallExtra.exploreFreeCta')}
+              accessibilityHint={t('paywallExtra.exploreFreeHint')}
+              accessibilityState={{
+                disabled: isPurchasing || isRestoring || isRefreshing || subscriptionLoading,
+              }}
+            >
+              <Text style={styles.exploreFreeButtonText}>{t('paywallExtra.exploreFreeCta')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         <View style={styles.benefitsCard}>
           <View style={styles.benefitRow}>
@@ -525,6 +554,39 @@ const styles = StyleSheet.create({
     color: THEME.colors.fill[100],
     opacity: 0.9,
     marginTop: THEME.spacing.xs,
+  },
+  onboardingBanner: {
+    backgroundColor: THEME.colors.fill[100],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+    gap: THEME.spacing.xs,
+    ...THEME.shadows.soft,
+  },
+  onboardingBannerTitle: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  onboardingBannerBody: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.secondary,
+  },
+  exploreFreeButton: {
+    marginTop: THEME.spacing.xs,
+    minHeight: THEME.sizes.touchTarget,
+    borderRadius: THEME.borderRadius.pill,
+    borderWidth: 1.5,
+    borderColor: THEME.colors.gradient.blue,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: THEME.spacing.md,
+  },
+  exploreFreeButtonText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
   },
   benefitsCard: {
     backgroundColor: THEME.colors.fill[100],

@@ -3,7 +3,7 @@ import { PaywallScreen } from '@/components/PaywallScreen';
 
 export default function PaywallRoute() {
   const router = useRouter();
-  const { next } = useLocalSearchParams<{ next?: string }>();
+  const { next, source } = useLocalSearchParams<{ next?: string; source?: string }>();
 
   const goNext = () => {
     if (next && typeof next === 'string' && next.startsWith('/')) {
@@ -13,5 +13,14 @@ export default function PaywallRoute() {
     router.replace('/(tabs)');
   };
 
-  return <PaywallScreen onClose={goNext} onPurchaseCompleted={goNext} />;
+  const context = source === 'onboarding' ? 'onboarding' : 'default';
+
+  return (
+    <PaywallScreen
+      context={context}
+      onClose={goNext}
+      onPurchaseCompleted={goNext}
+      onSkip={goNext}
+    />
+  );
 }

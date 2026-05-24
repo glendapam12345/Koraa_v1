@@ -731,10 +731,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   expandHintText: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.onGradient,
-    opacity: 0.8,
-    fontSize: 10,
+    opacity: 0.85,
   },
   emoji: {
     fontSize: 22,

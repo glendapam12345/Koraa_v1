@@ -74,8 +74,20 @@ export default function Intro2Screen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton title={t('onboarding.intro2.continue')} onPress={() => router.push('/onboarding/intro3')} />
-        <TouchableOpacity onPress={handleSkipIntro} style={styles.skipButton} disabled={skipLoading}>
+        <GradientButton
+          title={t('onboarding.intro2.continue')}
+          onPress={() => router.push('/onboarding/intro3')}
+          accessibilityHint={t('onboardingA11y.intro2ContinueHint')}
+        />
+        <TouchableOpacity
+          onPress={handleSkipIntro}
+          style={styles.skipButton}
+          disabled={skipLoading}
+          accessibilityRole="button"
+          accessibilityLabel={t('onboarding.intro2.skip')}
+          accessibilityHint={t('onboardingA11y.skipIntroHint')}
+          accessibilityState={{ disabled: skipLoading, busy: skipLoading }}
+        >
           {skipLoading ? (
             <ActivityIndicator size="small" color={THEME.colors.gradient.blue} />
           ) : (

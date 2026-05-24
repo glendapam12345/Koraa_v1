@@ -2097,10 +2097,9 @@ const styles = StyleSheet.create({
     minWidth: 100,
   },
   moodStatLabel: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     color: THEME.colors.fill[100],
-    opacity: 0.8,
-    fontSize: 10,
+    opacity: 0.85,
     marginBottom: 2,
   },
   moodStatValue: {
@@ -3068,8 +3067,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.tint.pink.soft,
   },
   emotionalSignalBadgeText: {
-    ...THEME.typography.small,
-    fontSize: 10,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
     fontFamily: THEME.fonts.heading.bold,
     letterSpacing: 0.3,
@@ -3618,8 +3616,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   taskTypeText: {
-    ...THEME.typography.caption,
-    fontSize: 10,
+    ...THEME.typography.meta,
     fontFamily: THEME.fonts.heading.medium,
   },
   taskText: {

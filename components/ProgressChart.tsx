@@ -241,9 +241,8 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
   },
   legendNote: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-    fontSize: 10,
     textAlign: 'center',
   },
 });

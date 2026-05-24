@@ -34,7 +34,12 @@ export function MoodCard({ todayMood, energyLevel, availableTime, focusLevel, on
   const moodEmoji = useMemo(() => getMoodEmoji(todayMood), [todayMood]);
 
   return (
-    <View style={styles.card}>
+    <View
+      style={styles.card}
+      accessible
+      accessibilityRole="summary"
+      accessibilityLabel={t('moodCard.a11ySummary', { mood: moodLabel, energy: energyLevel })}
+    >
       <View style={styles.header}>
         <TouchableOpacity
           onPress={onRefresh}
@@ -128,7 +133,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   moodStatLabel: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
   },
   moodStatValue: {

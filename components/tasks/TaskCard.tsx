@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.semantic.danger,
   },
   swipeActionLabel: {
-    fontSize: 12,
+    ...THEME.typography.meta,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.fill[100],
     textAlign: 'center',
@@ -666,20 +666,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   contextBadgeText: {
-    ...THEME.typography.small,
-    fontSize: 12,
+    ...THEME.typography.meta,
     fontFamily: THEME.fonts.heading.medium,
     maxWidth: 140,
   },
   contextBadgeTextSueltas: {
-    ...THEME.typography.small,
-    fontSize: 12,
+    ...THEME.typography.meta,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.secondary,
   },
   perteneceLabel: {
-    ...THEME.typography.small,
-    fontSize: 12,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
   },
   verPasosRow: {
@@ -688,8 +685,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   verPasosText: {
-    ...THEME.typography.small,
-    fontSize: 12,
+    ...THEME.typography.meta,
     fontFamily: THEME.fonts.heading.medium,
   },
   projectStepsContainer: {
@@ -786,8 +782,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   metaLine: {
-    ...THEME.typography.small,
-    fontSize: 12,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
     flex: 1,
     minWidth: 0,
@@ -1000,8 +995,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   verProyectoLinkText: {
-    ...THEME.typography.small,
-    fontSize: 12,
+    ...THEME.typography.meta,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.gradient.blue,
   },
@@ -1029,9 +1023,8 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.sm,
   },
   detailsLabel: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-    fontSize: 12,
     minWidth: 72,
   },
   detailsChip: {
@@ -1047,8 +1040,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   detailsChipText: {
-    ...THEME.typography.small,
-    fontSize: 12,
+    ...THEME.typography.meta,
     fontFamily: THEME.fonts.heading.medium,
   },
 });

@@ -72,6 +72,7 @@ export default function WelcomeScreen() {
         <GradientButton
           title={t('onboarding.welcome.continue')}
           onPress={() => router.push('/onboarding/intro2')}
+          accessibilityHint={t('onboardingA11y.welcomeContinueHint')}
         />
 
         <TouchableOpacity
@@ -79,6 +80,9 @@ export default function WelcomeScreen() {
           onPress={() => void handleSkipIntro()}
           disabled={skipLoading}
           accessibilityRole="button"
+          accessibilityLabel={t('onboarding.welcome.skip')}
+          accessibilityHint={t('onboardingA11y.skipIntroHint')}
+          accessibilityState={{ disabled: skipLoading, busy: skipLoading }}
         >
           {skipLoading ? (
             <ActivityIndicator color={THEME.colors.text.secondary} />

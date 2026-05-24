@@ -124,8 +124,15 @@ export const uiEs = {
     expoGoHint:
       'Estás en Expo Go: las compras in-app suelen no cargar aquí. Para ver planes y precios reales, usa un development build (expo-dev-client) o un build de TestFlight / App Store.',
     continueFree: 'Seguir con versión gratis',
+    onboardingSubtitle: 'Ya guardamos tu check-in. Premium es opcional — explora Koraa gratis cuando quieras.',
+    onboardingBannerTitle: 'Tu check-in ya está listo',
+    onboardingBannerBody:
+      'Premium desbloquea Semana completa, consejos ilimitados y más. Tu plan gratis incluye check-in, tareas y vista de Hoy.',
+    exploreFreeCta: 'Explorar Koraa gratis',
+    exploreFreeHint: 'Entra a la app sin suscribirte ahora',
     a11yClose: 'Cerrar pantalla de premium',
     a11yCloseHint: 'Vuelve a la app sin cambiar tu plan',
+    a11yCloseOnboardingHint: 'Cierra premium y explora la app gratis',
     a11yChoosePlan: 'Elegir plan {{title}}',
     a11yChoosePlanHint: 'Inicia la compra del plan premium',
     a11yContinueFree: 'Continuar con versión gratis',
@@ -183,6 +190,7 @@ export const uiEs = {
     a11yRefreshHint: 'Recarga el check-in y las tareas del día',
     a11yUpdate: 'Actualizar cómo me siento',
     a11yUpdateHint: 'Abre la pantalla para actualizar tu estado emocional del día',
+    a11ySummary: 'Check-in de hoy. Te sientes {{mood}}. Energía {{energy}} de 5.',
   },
   authSignup: {
     verifyTitle: 'Verifica tu correo',
@@ -296,6 +304,9 @@ export const uiEs = {
     continueEnergyHint: 'Siguiente paso: indica cuánto tiempo tienes',
     continueTimeHint: 'Siguiente paso: indica tu nivel de enfoque',
     continueFocusHint: 'Guarda tu check-in y continúa',
+    skipIntroHint: 'Salta la introducción y entra directo a la app',
+    welcomeContinueHint: 'Siguiente pantalla de la introducción',
+    intro2ContinueHint: 'Siguiente pantalla de la introducción',
   },
   sentirExtra: {
     a11yHelp: 'Ayuda y preguntas frecuentes',
