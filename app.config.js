@@ -69,7 +69,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.impermanencecasaartisitca.koraav1',
-      buildNumber: '24',
+      buildNumber: '25',
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         CFBundleDisplayName: 'Koraa',
