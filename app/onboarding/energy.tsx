@@ -42,7 +42,7 @@ export default function EnergyScreen() {
         <Text style={styles.titleAccent}>{t('onboarding.energy.titleAccent')}</Text>
         <Text style={styles.subtitle}>{t('onboarding.energy.subtitle')}</Text>
 
-        <View style={styles.optionsContainer}>
+        <View style={styles.optionsContainer} accessibilityRole="radiogroup">
           {ENERGY_LEVELS.map((level) => (
             <TouchableOpacity
               key={level.id}
@@ -52,6 +52,10 @@ export default function EnergyScreen() {
                 selectedEnergy === level.id && styles.optionSelected,
               ]}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={t('onboardingA11y.selectEnergy', { label: t(level.key) })}
+              accessibilityHint={t('onboardingA11y.selectOptionHint')}
+              accessibilityState={{ selected: selectedEnergy === level.id }}
             >
               <View style={styles.barsContainer}>
                 {Array.from({ length: 5 }).map((_, index) => (
@@ -77,7 +81,13 @@ export default function EnergyScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton title={t('onboarding.energy.continue')} onPress={handleContinue} disabled={selectedEnergy === 0} />
+        <GradientButton
+          title={t('onboarding.energy.continue')}
+          onPress={handleContinue}
+          disabled={selectedEnergy === 0}
+          accessibilityLabel={t('onboarding.energy.continue')}
+          accessibilityHint={t('onboardingA11y.continueEnergyHint')}
+        />
       </View>
     </View>
   );

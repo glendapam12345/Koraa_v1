@@ -237,9 +237,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   legendText: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.text.main,
-    fontSize: 11,
   },
   legendNote: {
     ...THEME.typography.small,

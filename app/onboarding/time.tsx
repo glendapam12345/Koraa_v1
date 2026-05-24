@@ -41,7 +41,7 @@ export default function TimeScreen() {
         <Text style={styles.titleAccent}>{t('onboarding.time.titleAccent')}</Text>
         <Text style={styles.subtitle}>{t('onboarding.time.subtitle')}</Text>
 
-        <View style={styles.optionsContainer}>
+        <View style={styles.optionsContainer} accessibilityRole="radiogroup">
           {TIME_OPTIONS.map((option) => (
             <TouchableOpacity
               key={option.id}
@@ -51,6 +51,10 @@ export default function TimeScreen() {
                 selectedTime === option.id && styles.optionSelected,
               ]}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={t('onboardingA11y.selectTime', { label: t(option.labelKey) })}
+              accessibilityHint={t('onboardingA11y.selectOptionHint')}
+              accessibilityState={{ selected: selectedTime === option.id }}
             >
               <Text style={[
                 styles.optionText,
@@ -64,7 +68,13 @@ export default function TimeScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton title={t('onboarding.time.continue')} onPress={handleContinue} disabled={!selectedTime} />
+        <GradientButton
+          title={t('onboarding.time.continue')}
+          onPress={handleContinue}
+          disabled={!selectedTime}
+          accessibilityLabel={t('onboarding.time.continue')}
+          accessibilityHint={t('onboardingA11y.continueTimeHint')}
+        />
       </View>
     </View>
   );

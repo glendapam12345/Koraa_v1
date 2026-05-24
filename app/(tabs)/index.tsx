@@ -2471,9 +2471,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   streakDaysLabel: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-    fontSize: 11,
     marginLeft: 2,
   },
   streakBadgeMuted: {
@@ -2591,7 +2590,7 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.xs,
   },
   heroDetailsSectionLabel: {
-    fontSize: 11,
+    ...THEME.typography.meta,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.tertiary,
     letterSpacing: 0.3,
@@ -2978,8 +2977,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   taskCompactHint: {
-    ...THEME.typography.small,
-    fontSize: 11,
+    ...THEME.typography.meta,
     lineHeight: 16,
     color: THEME.colors.text.tertiary,
     marginTop: 6,
@@ -3166,8 +3164,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   categoryLegendText: {
-    ...THEME.typography.small,
-    fontSize: 11,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
     letterSpacing: 0.2,
   },
@@ -3727,9 +3724,8 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   subtasksProgressText: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-    fontSize: 11,
   },
   menuButton: {
     padding: THEME.spacing.sm,
@@ -4243,9 +4239,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   meditationCheckText: {
+    ...THEME.typography.meta,
     color: THEME.colors.fill[100],
-    fontSize: 11,
-    fontWeight: 'bold',
+    fontFamily: THEME.fonts.heading.bold,
   },
   recommendationsWrap: {
     marginTop: THEME.spacing.xs,

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, AccessibilityInfo } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -101,6 +101,16 @@ export default function SentirScreen() {
     }, [checkTasks])
   );
 
+  const handleEmotionSelect = (emotionId: string) => {
+    setSelectedEmotion(emotionId);
+    const label = emotions.find((e) => e.id === emotionId)?.label;
+    if (label && Platform.OS !== 'web') {
+      AccessibilityInfo.announceForAccessibility(
+        t('sentirExtra.emotionSelectedAnnounce', { emotion: label }),
+      );
+    }
+  };
+
   const handleContinue = async () => {
     if (!selectedEmotion) return;
     router.push({
@@ -181,14 +191,18 @@ export default function SentirScreen() {
           </TouchableOpacity>
         )}
 
-        <View style={styles.emotionsGrid}>
+        <View
+          style={styles.emotionsGrid}
+          accessibilityRole="radiogroup"
+          accessibilityLabel={t('sentirExtra.emotionGroupA11y')}
+        >
           {emotions.map((emotion) => (
             <View key={emotion.id} style={styles.emotionWrapper}>
               <EmotionCard
                 emoji={emotion.emoji}
                 label={emotion.label}
                 selected={selectedEmotion === emotion.id}
-                onPress={() => setSelectedEmotion(emotion.id)}
+                onPress={() => handleEmotionSelect(emotion.id)}
               />
             </View>
           ))}
@@ -215,7 +229,13 @@ export default function SentirScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton title={t('sentir.continue')} onPress={handleContinue} disabled={!selectedEmotion} />
+        <GradientButton
+          title={t('sentir.continue')}
+          onPress={handleContinue}
+          disabled={!selectedEmotion}
+          accessibilityLabel={t('sentir.continue')}
+          accessibilityHint={t('sentirExtra.continueA11yHint')}
+        />
       </View>
     </View>
   );

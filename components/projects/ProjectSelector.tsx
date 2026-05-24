@@ -472,8 +472,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   selectedColorHint: {
-    ...THEME.typography.small,
-    fontSize: 11,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
     marginTop: 2,
   },

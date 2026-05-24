@@ -54,7 +54,11 @@ export default function EmotionScreen() {
         <Text style={styles.titleAccent}>{t('onboarding.emotion.titleAccent')}</Text>
         <Text style={styles.subtitle}>{t('onboarding.emotion.subtitle')}</Text>
 
-        <View style={styles.emotionsGrid}>
+        <View
+          style={styles.emotionsGrid}
+          accessibilityRole="radiogroup"
+          accessibilityLabel={t('sentirExtra.emotionGroupA11y')}
+        >
           {EMOTIONS.map((emotion) => (
             <View key={emotion.id} style={styles.emotionWrapper}>
               <EmotionCard
@@ -69,7 +73,13 @@ export default function EmotionScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton title={t('onboarding.emotion.continue')} onPress={handleContinue} disabled={!selectedEmotion} />
+        <GradientButton
+          title={t('onboarding.emotion.continue')}
+          onPress={handleContinue}
+          disabled={!selectedEmotion}
+          accessibilityLabel={t('onboarding.emotion.continue')}
+          accessibilityHint={t('onboardingA11y.continueEmotionHint')}
+        />
       </View>
     </View>
   );

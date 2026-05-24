@@ -1215,19 +1215,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   streakLevelLabel: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.fill[100],
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 11,
   },
   streakMessage: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     color: THEME.colors.fill[100],
     opacity: 0.9,
-    fontSize: 11,
     width: '100%',
     textAlign: 'left',
-    lineHeight: 16,
   },
   streakExplainerBox: {
     marginBottom: THEME.spacing.md,
@@ -1276,9 +1273,8 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
   },
   progressSubtitle: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-    fontSize: 11,
   },
   menuItem: {
     flexDirection: 'row',

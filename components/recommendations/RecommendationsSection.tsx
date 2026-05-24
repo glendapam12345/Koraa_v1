@@ -600,8 +600,7 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.surfaceOverlay.borderMedium,
   },
   verMasChipText: {
-    ...THEME.typography.small,
-    fontSize: 11,
+    ...THEME.typography.meta,
     color: THEME.colors.onGradientMuted,
   },
   cardShine: {
@@ -655,13 +654,12 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   horizontalCardMore: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.onGradient,
     opacity: 0.75,
-    fontSize: 11,
   },
   horizontalCardMorePlaceholder: {
-    fontSize: 11,
+    ...THEME.typography.meta,
     opacity: 0,
   },
   verMasRecommendations: {
@@ -757,11 +755,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   recommendationPreview: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.onGradient,
     opacity: 0.85,
-    fontSize: 11,
-    lineHeight: 16,
     marginTop: 2,
   },
   expandedContent: {

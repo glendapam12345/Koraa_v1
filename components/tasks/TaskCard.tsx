@@ -646,8 +646,7 @@ const styles = StyleSheet.create({
     /* Texto alineado con el título de sección (# Tareas) */
   },
   sueltaLabel: {
-    ...THEME.typography.small,
-    fontSize: 11,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
   },
   contextBadge: {
@@ -759,8 +758,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   categoryChipText: {
-    ...THEME.typography.small,
-    fontSize: 11,
+    ...THEME.typography.meta,
     fontFamily: THEME.fonts.heading.medium,
     maxWidth: 80,
   },
@@ -770,8 +768,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   dateChipText: {
-    ...THEME.typography.small,
-    fontSize: 11,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
   },
   metaRow: {
@@ -823,11 +820,10 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
   },
   projectBadgeEmoji: {
-    fontSize: 11,
+    fontSize: 12,
   },
   projectBadgeText: {
-    ...THEME.typography.small,
-    fontSize: 11,
+    ...THEME.typography.meta,
     fontFamily: THEME.fonts.heading.medium,
     maxWidth: 140,
   },
@@ -844,8 +840,7 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.pill,
   },
   subtasksPillText: {
-    ...THEME.typography.small,
-    fontSize: 11,
+    ...THEME.typography.meta,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
   },
@@ -986,9 +981,8 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   subtasksProgressText: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-    fontSize: 11,
     flexShrink: 0,
   },
   detailsToggleRow: {
@@ -998,9 +992,8 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   detailsToggleText: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-    fontSize: 11,
   },
   verProyectoLink: {
     paddingVertical: 2,
@@ -1022,11 +1015,10 @@ const styles = StyleSheet.create({
     borderLeftColor: THEME.colors.gradient.blue,
   },
   detailsPanelTitle: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.secondary,
     marginBottom: THEME.spacing.sm,
-    fontSize: 11,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },

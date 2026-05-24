@@ -9,6 +9,7 @@ type GradientButtonProps = {
   disabled?: boolean;
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  accessibilityState?: { disabled?: boolean; busy?: boolean; selected?: boolean };
 };
 
 export function GradientButton({
@@ -18,6 +19,7 @@ export function GradientButton({
   disabled,
   accessibilityLabel,
   accessibilityHint,
+  accessibilityState,
 }: GradientButtonProps) {
   return (
     <TouchableOpacity
@@ -28,7 +30,10 @@ export function GradientButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: Boolean(disabled) }}
+      accessibilityState={{
+        disabled: Boolean(disabled),
+        ...accessibilityState,
+      }}
     >
       <LinearGradient
         colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}

@@ -238,7 +238,10 @@ export const uiEs = {
     otpIncomplete: 'Introduce el código completo ({{length}} dígitos)',
   },
   emotionCard: {
+    a11yOption: '{{label}}',
+    a11ySelected: '{{label}}, seleccionada',
     a11yHint: 'Toca para elegir esta emoción',
+    a11ySelectedHint: 'Emoción elegida para tu check-in de hoy',
   },
   quickOnboarding: {
     a11yClose: 'Cerrar',
@@ -284,12 +287,25 @@ export const uiEs = {
     message: 'Esta pantalla no existe.',
     goHome: 'Ir al inicio',
   },
+  onboardingA11y: {
+    selectEnergy: 'Nivel de energía: {{label}}',
+    selectTime: 'Tiempo disponible: {{label}}',
+    selectFocus: 'Nivel de enfoque: {{label}}',
+    selectOptionHint: 'Toca para elegir esta opción',
+    continueEmotionHint: 'Siguiente paso: indica tu nivel de energía',
+    continueEnergyHint: 'Siguiente paso: indica cuánto tiempo tienes',
+    continueTimeHint: 'Siguiente paso: indica tu nivel de enfoque',
+    continueFocusHint: 'Guarda tu check-in y continúa',
+  },
   sentirExtra: {
     a11yHelp: 'Ayuda y preguntas frecuentes',
     a11yHelpHint: 'Abre la pantalla de ayuda con preguntas sobre Sentir, Tareas y Hoy',
     a11yDismissRitual: 'Entendido, ocultar explicación del ritual',
     a11yNoTasks: 'Paso 1: Agrega tus tareas primero',
     a11yNoTasksHint: 'Abre la pestaña Tareas para agregar lo pendiente antes del check-in',
+    emotionGroupA11y: 'Elige cómo te sientes hoy',
+    emotionSelectedAnnounce: 'Seleccionaste {{emotion}}',
+    continueA11yHint: 'Continúa con energía, tiempo y enfoque del día',
   },
   tipsExtra: {
     a11yGoFeel: 'Ir a Sentir para hacer check-in',

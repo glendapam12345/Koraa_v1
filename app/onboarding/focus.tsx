@@ -309,7 +309,7 @@ export default function FocusScreen() {
         <Text style={styles.titleAccent}>{t('onboarding.focus.titleAccent')}</Text>
         <Text style={styles.subtitle}>{t('onboarding.focus.subtitle')}</Text>
 
-        <View style={styles.optionsContainer}>
+        <View style={styles.optionsContainer} accessibilityRole="radiogroup">
           {FOCUS_OPTIONS.map((option) => (
             <TouchableOpacity
               key={option.id}
@@ -319,6 +319,10 @@ export default function FocusScreen() {
                 selectedFocus === option.id && styles.optionSelected,
               ]}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={t('onboardingA11y.selectFocus', { label: t(option.labelKey) })}
+              accessibilityHint={t('onboardingA11y.selectOptionHint')}
+              accessibilityState={{ selected: selectedFocus === option.id }}
             >
               <Text style={[
                 styles.optionText,
@@ -336,6 +340,15 @@ export default function FocusScreen() {
           title={isSaving ? t('onboarding.focus.saving') : from === 'sentir' ? t('onboarding.focus.fromSentirSave') : t('onboarding.focus.start')}
           onPress={handleContinue}
           disabled={!selectedFocus || isSaving}
+          accessibilityLabel={
+            isSaving
+              ? t('onboarding.focus.saving')
+              : from === 'sentir'
+                ? t('onboarding.focus.fromSentirSave')
+                : t('onboarding.focus.start')
+          }
+          accessibilityHint={t('onboardingA11y.continueFocusHint')}
+          accessibilityState={{ disabled: !selectedFocus || isSaving, busy: isSaving }}
         />
       </View>
       

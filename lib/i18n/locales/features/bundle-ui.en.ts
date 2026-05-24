@@ -235,7 +235,10 @@ export const uiEn = {
     otpIncomplete: 'Enter the full code ({{length}} digits)',
   },
   emotionCard: {
+    a11yOption: '{{label}}',
+    a11ySelected: '{{label}}, selected',
     a11yHint: 'Tap to choose this emotion',
+    a11ySelectedHint: 'Emotion chosen for today’s check-in',
   },
   quickOnboarding: {
     a11yClose: 'Close',
@@ -281,12 +284,25 @@ export const uiEn = {
     message: 'This screen doesn’t exist.',
     goHome: 'Go to home',
   },
+  onboardingA11y: {
+    selectEnergy: 'Energy level: {{label}}',
+    selectTime: 'Available time: {{label}}',
+    selectFocus: 'Focus level: {{label}}',
+    selectOptionHint: 'Tap to choose this option',
+    continueEmotionHint: 'Next step: set your energy level',
+    continueEnergyHint: 'Next step: set how much time you have',
+    continueTimeHint: 'Next step: set your focus level',
+    continueFocusHint: 'Save your check-in and continue',
+  },
   sentirExtra: {
     a11yHelp: 'Help and FAQ',
     a11yHelpHint: 'Opens help about Feel, Tasks, and Today',
     a11yDismissRitual: 'Got it, hide ritual explanation',
     a11yNoTasks: 'Step 1: Add your tasks first',
     a11yNoTasksHint: 'Opens Tasks to add pending items before check-in',
+    emotionGroupA11y: 'Choose how you feel today',
+    emotionSelectedAnnounce: 'You selected {{emotion}}',
+    continueA11yHint: 'Continue with energy, time, and focus for the day',
   },
   tipsExtra: {
     a11yGoFeel: 'Go to Feel to check in',
