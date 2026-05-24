@@ -77,7 +77,7 @@ export const uiEs = {
       'Si luego quieres más detalle, puedes desbloquear la vista completa de la semana con Koraa Premium.',
     premiumCta: 'Gestionar Premium',
     a11yManagePremium: 'Gestionar Premium',
-    a11yManagePremiumHint: 'Abre Ajustes para suscribirte o restaurar compra',
+    a11yManagePremiumHint: 'Abre Premium para suscribirte o restaurar compra',
     devTitle: 'Diagnóstico (solo desarrollo)',
     devSession: 'Sesión: {{email}}',
     devSessionNone: 'No iniciada',
@@ -97,6 +97,14 @@ export const uiEs = {
     completed: 'Completado · {{count}} {{tasks}}',
     noTasks: 'Sin tareas',
     withDate: '{{count}} con fecha',
+  },
+  premiumTeaser: {
+    optional: 'Opcional',
+    cta: 'Ver Premium',
+    a11yHint: 'Abre la pantalla de suscripción Premium',
+    tipsBody: 'Premium desbloquea consejos y recomendaciones ilimitados según cómo te sientes.',
+    tipsFreeLimit: 'Gratis: {{recommendations}} recomendaciones y hasta {{tips}} consejos.',
+    yoBody: 'Gestiona tu suscripción o desbloquea la experiencia completa cuando quieras.',
   },
   paywallExtra: {
     fallbackMonthlyPrice: '$49 MXN / mes',
@@ -291,10 +299,10 @@ export const uiEs = {
     emptySecondaryTrail: ' abajo y registrar cómo te sientes',
   },
   yoExtra2: {
-    a11yManagePremium: 'Gestionar Premium y restaurar compra',
+    a11yManagePremium: 'Ver opciones Premium y restaurar compra',
   },
   flowExtra: {
-    a11yPremiumHint: 'Abre Ajustes para gestionar Premium',
+    a11yPremiumHint: 'Abre Premium para gestionar tu suscripción',
   },
   branding: {
     logoA11y: 'Logo de Koraa',

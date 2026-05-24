@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
-import { PremiumLock } from '@/components/PremiumLock';
+import { PremiumTeaserCard } from '@/components/PremiumTeaserCard';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { supabase } from '@/lib/supabase';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
@@ -53,7 +53,7 @@ const CATEGORY_COLORS = {
 export default function TipsScreen() {
   const insets = useSafeAreaInsets();
   const { t, locale } = useI18n();
-  const { isSubscribed } = useSubscription();
+  const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
   const [todayMood, setTodayMood] = useState<string>('');
   const [energyLevel, setEnergyLevel] = useState<number>(0);
   const [availableTime, setAvailableTime] = useState<string>('');
@@ -229,7 +229,7 @@ export default function TipsScreen() {
     return limited;
   }, [isSubscribed, tipsByCategory]);
 
-  if (loading) {
+  if (loading || subscriptionLoading) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.loadingContainer}>
@@ -241,13 +241,7 @@ export default function TipsScreen() {
 
   return (
     <View style={styles.container}>
-      <PremiumLock
-        title={t('tips.premiumTitle')}
-        description={t('paywall.subtitle')}
-        benefits={[t('tips.premiumBenefit1'), t('tips.premiumBenefit2'), t('tips.premiumBenefit3')]}
-        showBanner={false}
-      >
-        <ScrollView
+      <ScrollView
           contentContainerStyle={[
             styles.content,
             { paddingTop: insets.top + THEME.spacing.md, paddingBottom: insets.bottom + THEME.spacing.xl },
@@ -382,10 +376,20 @@ export default function TipsScreen() {
                 {t('tips.footer')}
               </Text>
             </View>
+
+            {!isSubscribed && todayMood ? (
+              <PremiumTeaserCard
+                title={t('tips.premiumTitle')}
+                body={t('premiumTeaser.tipsBody')}
+                freeLimitNote={t('premiumTeaser.tipsFreeLimit', {
+                  recommendations: FREE_RECOMMENDATIONS_LIMIT,
+                  tips: FREE_GENERIC_TIPS_LIMIT,
+                })}
+              />
+            ) : null}
           </>
         ) : null}
-        </ScrollView>
-      </PremiumLock>
+      </ScrollView>
 
       <Tooltip
         visible={showTooltip}

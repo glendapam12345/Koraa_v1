@@ -1142,7 +1142,7 @@ export default function TodayScreen() {
           </TouchableOpacity>
         )}
         {/* Una sola tarjeta: cómo funciona Koraa (reemplaza CTA Sentir + guía colapsable) */}
-        {!loading && (
+        {!loading && showSecondaryModulesEffective && (
           <TouchableOpacity
             style={styles.howKoraaCard}
             onPress={() => router.push('/(tabs)/sentir')}
@@ -1413,7 +1413,7 @@ export default function TodayScreen() {
                       )}
                     </TouchableOpacity>
                   )}
-                  {emotionalClosure && !hoyLiteLayout && (
+                  {emotionalClosure && !hoyLiteLayout && showSecondaryModulesEffective && (
                     <Animated.View
                       style={[
                         styles.emotionalCardAnimatedWrap,
@@ -1481,7 +1481,7 @@ export default function TodayScreen() {
                   </LinearGradient>
                 </TouchableOpacity>
               )}
-              {selectedEmotionalMemoryInsight && !hoyLiteLayout && (
+              {selectedEmotionalMemoryInsight && !hoyLiteLayout && showSecondaryModulesEffective && (
                 <Animated.View
                   style={[
                     styles.emotionalCardAnimatedWrap,

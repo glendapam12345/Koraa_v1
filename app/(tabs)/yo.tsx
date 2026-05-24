@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   Settings,
@@ -34,6 +35,7 @@ import { logger } from '@/lib/logger';
 import { subscribeCheckInCelebration } from '@/lib/checkInCelebration';
 import { pickDailyStreakEncouragement, getLocalDateKey } from '@/lib/streakDailyMessages';
 import { ProgressChart } from '@/components/ProgressChart';
+import { PremiumTeaserCard } from '@/components/PremiumTeaserCard';
 import { StreakAura } from '@/components/branding/StreakAura';
 import { ProjectManager } from '@/components/projects/ProjectManager';
 import * as Haptics from 'expo-haptics';
@@ -67,6 +69,7 @@ export default function ProfileScreen() {
   const { t, locale } = useI18n();
   const { editProfile: editProfileParam } = useLocalSearchParams<{ editProfile?: string }>();
   const { user } = useAuth();
+  const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
   const [progressData, setProgressData] = useState<DayData[]>([]);
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   const [, setShowConfetti] = useState(false);
@@ -781,6 +784,10 @@ export default function ProfileScreen() {
           )}
 
         </View>
+
+        {!subscriptionLoading && !isSubscribed ? (
+          <PremiumTeaserCard title={t('yo.subscription')} body={t('premiumTeaser.yoBody')} />
+        ) : null}
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Koraa v{Constants.expoConfig?.version ?? '1.0.0'}</Text>

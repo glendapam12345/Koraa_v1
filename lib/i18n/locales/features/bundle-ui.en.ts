@@ -74,7 +74,7 @@ export const uiEn = {
     premiumBody: 'If you want more detail later, unlock the full week view with Koraa Premium.',
     premiumCta: 'Manage Premium',
     a11yManagePremium: 'Manage Premium',
-    a11yManagePremiumHint: 'Opens Settings to subscribe or restore purchase',
+    a11yManagePremiumHint: 'Opens Premium to subscribe or restore purchase',
     devTitle: 'Diagnostics (development only)',
     devSession: 'Session: {{email}}',
     devSessionNone: 'Not signed in',
@@ -94,6 +94,14 @@ export const uiEn = {
     completed: 'Completed · {{count}} {{tasks}}',
     noTasks: 'No tasks',
     withDate: '{{count}} with date',
+  },
+  premiumTeaser: {
+    optional: 'Optional',
+    cta: 'View Premium',
+    a11yHint: 'Opens the Premium subscription screen',
+    tipsBody: 'Premium unlocks unlimited tips and recommendations based on how you feel.',
+    tipsFreeLimit: 'Free: {{recommendations}} recommendations and up to {{tips}} tips.',
+    yoBody: 'Manage your subscription or unlock the full experience whenever you want.',
   },
   paywallExtra: {
     fallbackMonthlyPrice: '$49 MXN / month',
@@ -288,10 +296,10 @@ export const uiEn = {
     emptySecondaryTrail: ' tab below and log how you feel',
   },
   yoExtra2: {
-    a11yManagePremium: 'Manage Premium and restore purchase',
+    a11yManagePremium: 'View Premium options and restore purchase',
   },
   flowExtra: {
-    a11yPremiumHint: 'Opens Settings to manage Premium',
+    a11yPremiumHint: 'Opens Premium to manage your subscription',
   },
   branding: {
     logoA11y: 'Koraa logo',

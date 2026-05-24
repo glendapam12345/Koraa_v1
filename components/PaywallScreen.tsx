@@ -401,25 +401,6 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
               <Text style={styles.emptyHintExpoGo}>{t('paywallExtra.expoGoHint')}</Text>
             ) : null}
             <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={handleContinueFree}
-              disabled={isPurchasing || isRestoring || isRefreshing || subscriptionLoading}
-              style={styles.emptyPrimaryWrap}
-              accessibilityRole="button"
-              accessibilityLabel={t('paywallExtra.a11yContinueFree')}
-              accessibilityHint={t('paywallExtra.a11yContinueFreeHint')}
-              accessibilityState={{ disabled: isPurchasing || isRestoring || isRefreshing || subscriptionLoading }}
-            >
-              <LinearGradient
-                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.emptyPrimaryBtn}
-              >
-                <Text style={styles.emptyPrimaryBtnText}>{t('paywallExtra.continueFree')}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-            <TouchableOpacity
               style={styles.secondaryButton}
               activeOpacity={0.75}
               disabled={isRefreshing}
@@ -436,41 +417,55 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip }: PaywallS
           </View>
         )}
 
-        <View style={styles.footerActions}>
+        {(onClose || onSkip) && !subscriptionLoading ? (
           <TouchableOpacity
-            style={styles.secondaryButton}
+            onPress={handleContinueFree}
             activeOpacity={0.75}
-            onPress={() => void handleRestore()}
-            disabled={isPurchasing || isRestoring || isRefreshing || subscriptionLoading}
+            disabled={isPurchasing || isRestoring || isRefreshing}
+            style={styles.dismissLinkWrap}
             accessibilityRole="button"
-            accessibilityLabel={t('paywallExtra.a11yRestore')}
-            accessibilityHint={t('paywallExtra.a11yRestoreHint')}
-            accessibilityState={{ disabled: isPurchasing || isRestoring || isRefreshing || subscriptionLoading }}
+            accessibilityLabel={t('paywallExtra.a11yContinueFree')}
+            accessibilityHint={t('paywallExtra.a11yContinueFreeHint')}
+            accessibilityState={{ disabled: isPurchasing || isRestoring || isRefreshing }}
           >
-            <Text style={styles.secondaryButtonText}>
-              {isRestoring ? t('paywall.restoring') : t('paywall.restore')}
-            </Text>
+            <Text style={styles.dismissLinkText}>{t('paywall.continueFree')}</Text>
           </TouchableOpacity>
-          <View style={styles.legalActionsRow}>
+        ) : null}
+
+        <View style={styles.footerActions}>
+          <View style={styles.footerLinksRow}>
             <TouchableOpacity
-              style={styles.legalLinkButton}
+              activeOpacity={0.75}
+              onPress={() => void handleRestore()}
+              disabled={isPurchasing || isRestoring || isRefreshing || subscriptionLoading}
+              accessibilityRole="button"
+              accessibilityLabel={t('paywallExtra.a11yRestore')}
+              accessibilityHint={t('paywallExtra.a11yRestoreHint')}
+              accessibilityState={{ disabled: isPurchasing || isRestoring || isRefreshing || subscriptionLoading }}
+            >
+              <Text style={styles.footerLinkText}>
+                {isRestoring ? t('paywall.restoring') : t('paywall.restore')}
+              </Text>
+            </TouchableOpacity>
+            <Text style={styles.footerLinkSeparator}>·</Text>
+            <TouchableOpacity
               activeOpacity={0.75}
               onPress={() => void openLegalUrl('terms')}
               accessibilityRole="button"
               accessibilityLabel={t('paywallExtra.a11yTerms')}
               accessibilityHint={t('paywallExtra.a11yTermsHint')}
             >
-              <Text style={styles.legalLinkText}>{t('paywall.terms')}</Text>
+              <Text style={styles.footerLinkText}>{t('paywall.terms')}</Text>
             </TouchableOpacity>
+            <Text style={styles.footerLinkSeparator}>·</Text>
             <TouchableOpacity
-              style={styles.legalLinkButton}
               activeOpacity={0.75}
               onPress={() => void openLegalUrl('privacy')}
               accessibilityRole="button"
               accessibilityLabel={t('paywallExtra.a11yPrivacy')}
               accessibilityHint={t('paywallExtra.a11yPrivacyHint')}
             >
-              <Text style={styles.legalLinkText}>{t('paywall.privacy')}</Text>
+              <Text style={styles.footerLinkText}>{t('paywall.privacy')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -734,21 +729,17 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.tint.blue.border,
     ...THEME.shadows.soft,
   },
-  emptyPrimaryWrap: {
-    borderRadius: THEME.borderRadius.pill,
-    overflow: 'hidden',
-    marginTop: THEME.spacing.xs,
-  },
-  emptyPrimaryBtn: {
+  dismissLinkWrap: {
+    alignItems: 'center',
+    paddingVertical: THEME.spacing.xs,
     minHeight: THEME.sizes.touchTarget,
     justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: THEME.spacing.md,
   },
-  emptyPrimaryBtnText: {
+  dismissLinkText: {
     ...THEME.typography.caption,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
+    textDecorationLine: 'underline',
   },
   emptyTitle: {
     ...THEME.typography.caption,
@@ -767,8 +758,25 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   footerActions: {
-    marginTop: THEME.spacing.sm,
-    gap: THEME.spacing.sm,
+    marginTop: THEME.spacing.xs,
+  },
+  footerLinksRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.xs,
+  },
+  footerLinkText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    textDecorationLine: 'underline',
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  footerLinkSeparator: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
   },
   secondaryButton: {
     minHeight: THEME.sizes.touchTarget,
@@ -782,23 +790,6 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     ...THEME.typography.caption,
     color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  legalActionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: THEME.spacing.sm,
-  },
-  legalLinkButton: {
-    minHeight: THEME.sizes.touchTarget,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: THEME.spacing.sm,
-  },
-  legalLinkText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    textDecorationLine: 'underline',
     fontFamily: THEME.fonts.heading.medium,
   },
 });

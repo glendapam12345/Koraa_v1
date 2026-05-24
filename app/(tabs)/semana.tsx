@@ -8,9 +8,10 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useWeekTasks, getWeekOptions } from '@/hooks/useWeekTasks';
 import type { Task } from '@/hooks/useTasks';
 import { getSupabaseEnvStatus } from '@/lib/envCheck';
-import { Calendar, Plus, FolderKanban, FileText, ChevronRight, ChevronLeft, Crown } from 'lucide-react-native';
+import { Calendar, Plus, FolderKanban, FileText, ChevronRight, ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
+import { PremiumTeaserCard } from '@/components/PremiumTeaserCard';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
 const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
@@ -366,27 +367,10 @@ export default function SemanaScreen() {
         </View>
 
         {!loading && !subscriptionLoading && !isSubscribed && (
-          <View style={styles.premiumHintCard}>
-            <View style={styles.premiumHintHeader}>
-              <View style={styles.premiumHintTitleWrap}>
-                <Crown size={14} color={THEME.colors.gradient.blue} />
-                <Text style={styles.premiumHintTitle}>{t('semana.premiumTitle')}</Text>
-              </View>
-              <Text style={styles.premiumHintLabel}>{t('semanaExtra.premiumOptional')}</Text>
-            </View>
-            <Text style={styles.premiumHintText}>{t('semanaExtra.premiumBody')}</Text>
-            <TouchableOpacity
-              onPress={() => router.push('/settings')}
-              activeOpacity={0.85}
-              style={styles.premiumHintBtn}
-              accessibilityRole="button"
-              accessibilityLabel={t('semanaExtra.a11yManagePremium')}
-              accessibilityHint={t('semanaExtra.a11yManagePremiumHint')}
-            >
-              <Text style={styles.premiumHintBtnText}>{t('semanaExtra.premiumCta')}</Text>
-              <ChevronRight size={16} color={THEME.colors.gradient.blue} />
-            </TouchableOpacity>
-          </View>
+          <PremiumTeaserCard
+            title={t('semana.premiumTitle')}
+            body={t('semanaExtra.premiumBody')}
+          />
         )}
 
         {__DEV__ ? (
@@ -913,55 +897,5 @@ const styles = StyleSheet.create({
   diagnosticoError: {
     color: THEME.colors.gradient.pink,
     marginTop: THEME.spacing.xs,
-  },
-  premiumHintCard: {
-    marginHorizontal: THEME.spacing.lg,
-    marginBottom: THEME.spacing.lg,
-    backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.standard,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    padding: THEME.spacing.sm,
-  },
-  premiumHintHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  premiumHintTitleWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  premiumHintTitle: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  premiumHintLabel: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    fontSize: 11,
-  },
-  premiumHintText: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    lineHeight: 18,
-  },
-  premiumHintBtn: {
-    marginTop: THEME.spacing.xs,
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    minHeight: 36,
-    paddingVertical: 4,
-    paddingHorizontal: 2,
-  },
-  premiumHintBtnText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.gradient.blue,
-    fontFamily: THEME.fonts.heading.medium,
   },
 });

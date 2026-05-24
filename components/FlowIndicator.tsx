@@ -75,7 +75,7 @@ export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
 
       {!subscriptionLoading && !isSubscribed ? (
         <TouchableOpacity
-          onPress={() => router.push('/settings')}
+          onPress={() => router.push('/paywall')}
           activeOpacity={0.75}
           style={styles.premiumHintWrap}
           accessibilityRole="button"
