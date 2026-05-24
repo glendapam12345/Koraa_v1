@@ -163,6 +163,7 @@ export const extEs = {
     benefit3: 'Herramientas premium para sostener tu ritmo semanal.',
     continueFree: 'Seguir gratis',
     viewPremium: 'Ver Premium',
+    checking: 'Comprobando tu suscripción…',
   },
   quickCheckIn: {
     title: '¿Cómo te',

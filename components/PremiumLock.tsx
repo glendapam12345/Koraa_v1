@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Crown, X } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
@@ -33,7 +33,19 @@ export function PremiumLock({
     benefits ??
     [t('premiumLock.benefit1'), t('premiumLock.benefit2'), t('premiumLock.benefit3')];
 
-  if (isLoading) return <>{children}</>;
+  if (isLoading) {
+    return (
+      <View
+        style={styles.loadingWrap}
+        accessibilityRole="progressbar"
+        accessibilityLabel={t('premiumLock.checking')}
+      >
+        <ActivityIndicator size="small" color={THEME.colors.gradient.blue} />
+        <Text style={styles.loadingText}>{t('premiumLock.checking')}</Text>
+      </View>
+    );
+  }
+
   if (isSubscribed) return <>{children}</>;
 
   return (
@@ -101,6 +113,18 @@ export function PremiumLock({
 }
 
 const styles = StyleSheet.create({
+  loadingWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: THEME.spacing.lg,
+    gap: THEME.spacing.xs,
+  },
+  loadingText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+  },
   banner: {
     marginHorizontal: THEME.spacing.lg,
     marginTop: THEME.spacing.sm,

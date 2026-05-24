@@ -162,6 +162,7 @@ export const extEn = {
     benefit3: 'Premium tools to sustain your weekly rhythm.',
     continueFree: 'Continue free',
     viewPremium: 'View Premium',
+    checking: 'Checking your subscription…',
   },
   quickCheckIn: {
     title: 'How do you',
