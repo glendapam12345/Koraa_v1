@@ -9,6 +9,7 @@ expo-env.d.ts
 
 # native
 *.orig.*
+*.ipa
 *.jks
 *.p8
 *.p12

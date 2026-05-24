@@ -4,6 +4,7 @@ import { THEME } from '@/constants/theme';
 import { Calendar, X } from 'lucide-react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useI18n } from '@/contexts/I18nContext';
+import { getLocalDateString } from '@/lib/dateLocal';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
 const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
@@ -13,16 +14,11 @@ interface DateSelectorProps {
   onSelect: (date: string | null) => void;
 }
 
-function toISODateLocal(date: Date): string {
-  const offsetMs = date.getTimezoneOffset() * 60 * 1000;
-  return new Date(date.getTime() - offsetMs).toISOString().split('T')[0];
-}
-
 function getNextDays(count: number): string[] {
   const out: string[] = [];
   const d = new Date();
   for (let i = 0; i < count; i++) {
-    out.push(d.toISOString().split('T')[0]);
+    out.push(getLocalDateString(d));
     d.setDate(d.getDate() + 1);
   }
   return out;
@@ -33,12 +29,11 @@ function formatDateLabel(
   t: (key: string) => string,
   monthNames: readonly string[],
 ): string {
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
   if (dateStr === todayStr) return t('components.today');
-  const tomorrow = new Date(today);
+  const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  if (dateStr === tomorrow.toISOString().split('T')[0]) return t('components.tomorrow');
+  if (dateStr === getLocalDateString(tomorrow)) return t('components.tomorrow');
   const day = dateStr.slice(8);
   const month = monthNames[parseInt(dateStr.slice(5, 7), 10) - 1];
   return `${day} ${month}`;
@@ -82,7 +77,7 @@ export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
     }
     if (!date) return;
     setPickerDate(date);
-    onSelect(toISODateLocal(date));
+    onSelect(getLocalDateString(date));
     setShowNativePicker(false);
     setShowModal(false);
   };

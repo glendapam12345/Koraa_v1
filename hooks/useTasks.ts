@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { supabase, getErrorMessage } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getLocalDateString } from '@/lib/dateLocal';
 
 export interface Task {
   id: string;
@@ -131,7 +132,7 @@ export function useTasks(
       setTasks(tasksWithSubtasks);
 
       if (todayMood && tasksWithSubtasks.length > 0) {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateString();
         const storageKey = `prioritization_${user.id}_${today}`;
         const stored = await AsyncStorage.getItem(storageKey);
 

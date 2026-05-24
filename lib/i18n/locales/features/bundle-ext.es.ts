@@ -69,6 +69,15 @@ export const extEs = {
     calculate: 'Calcular reparto',
     chooseProjectError: 'Elige un proyecto.',
     chooseDueError: 'Indica la fecha de entrega (AAAA-MM-DD) o asígnala al proyecto en la base de datos.',
+    noPendingInProject: 'No hay tareas pendientes en ese proyecto.',
+    noLoosePending: 'No tienes tareas sueltas pendientes.',
+    partialDueSave:
+      'Las fechas de tareas se guardaron, pero no se pudo guardar la fecha en el proyecto.',
+    warningInvalidDate: 'Usa la fecha como AAAA-MM-DD (ej. 2026-04-15).',
+    warningDueBeforeToday: 'La fecha de entrega no puede ser antes de hoy.',
+    warningInvalidToday: 'Fecha de hoy inválida.',
+    warningOverload:
+      'Hay {{count}} tareas y un ritmo de ~{{maxPerDay}} por día: en {{dayCount}} día(s) el último día quedará cargado. Considera mover la entrega o dividir el trabajo.',
   },
   projects: {
     signIn: 'Inicia sesión para ver tus proyectos',
@@ -383,6 +392,9 @@ export const extEs = {
     datesUpdated: 'Fechas actualizadas. Revisa la pestaña Semana o filtra por Hoy.',
     showSecondary: 'Mostrar secciones extra',
     hideSecondary: 'Ocultar secciones extra',
+    tasksSummaryTitle: 'Resumen de tareas',
+    partOf: 'Parte de {{name}}',
+    projectColon: 'Proyecto: {{name}}',
   },
   sectionHeader: {
     taskOne: '{{count}} tarea',

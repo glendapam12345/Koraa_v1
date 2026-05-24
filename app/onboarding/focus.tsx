@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { track } from '@/lib/analytics';
 import { fetchCurrentStreak, isStreakMilestone } from '@/lib/streak';
 import { publishCheckInCelebration } from '@/lib/checkInCelebration';
+import { getLocalDateString } from '@/lib/dateLocal';
 import { markOnboardingCompleted } from '@/lib/onboardingGate';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
@@ -98,7 +99,7 @@ export default function FocusScreen() {
       const totalTasksBefore = mainTasks.length;
       try {
         const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateString();
         await AsyncStorage.setItem(
           `prioritization_${user.id}_${today}`,
           JSON.stringify({
@@ -180,7 +181,7 @@ export default function FocusScreen() {
     }, 10000);
 
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
 
       // Guardar check-in
       // Misma clave que Sentir (agotada, tranquila, …) para priorización y UI en Hoy

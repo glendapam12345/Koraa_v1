@@ -210,7 +210,7 @@ export function useWeekTasks(
       if (isSchemaError(error)) {
         setSchemaSetupType(getSchemaSetupMessage(error) || 'schema');
         setLastLoadError(null);
-        showToast('Para ver tareas por semana, actualiza la base de datos (ver instrucciones abajo).', 'info');
+        showToast(translate(locale, 'hooks.weekSchema'), 'info');
       } else {
         setSchemaSetupType(null);
         setLastLoadError(getErrorMessage(error, locale));

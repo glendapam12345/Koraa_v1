@@ -3,6 +3,12 @@
  * respetando un máximo aproximado de tareas por día (energía / tiempo / emoción).
  */
 
+import type { AppLocale } from '@/lib/i18n';
+import { translate } from '@/lib/i18n';
+import { getLocalDateString, toISODateLocal } from '@/lib/dateLocal';
+
+export { getLocalDateString, toISODateLocal };
+
 export function computeMaxTasksPerDay(
   energyLevel: number,
   availableTime: string,
@@ -14,8 +20,13 @@ export function computeMaxTasksPerDay(
   else if (energyLevel === 3) base = 3;
   else if (energyLevel >= 4) base = 6;
 
-  if (availableTime.includes('Poco')) base = Math.max(1, Math.floor(base * 0.75));
-  if (availableTime.includes('Todo el día')) base = Math.min(10, base + 2);
+  const time = availableTime.toLowerCase();
+  if (availableTime.includes('Poco') || time.includes('little')) {
+    base = Math.max(1, Math.floor(base * 0.75));
+  }
+  if (availableTime.includes('Todo el día') || time.includes('all day')) {
+    base = Math.min(10, base + 2);
+  }
   return base;
 }
 
@@ -24,13 +35,6 @@ export function parseISODateOnly(s: string): Date | null {
   if (!m) return null;
   const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   return Number.isNaN(d.getTime()) ? null : d;
-}
-
-export function toISODateLocal(d: Date): string {
-  const y = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, '0');
-  const da = String(d.getDate()).padStart(2, '0');
-  return `${y}-${mo}-${da}`;
 }
 
 export function enumerateDaysInclusive(start: Date, end: Date): string[] {
@@ -57,15 +61,22 @@ export function redistributeTaskDates(
   taskIds: string[],
   dueDateStr: string,
   todayStr: string,
-  maxPerDay: number
+  maxPerDay: number,
+  locale: AppLocale = 'es',
 ): RedistributionResult {
   const due = parseISODateOnly(dueDateStr);
   const today = parseISODateOnly(todayStr);
   if (!due || !today) {
-    return { assignments: [], warning: 'Usa la fecha como AAAA-MM-DD (ej. 2026-04-15).' };
+    return {
+      assignments: [],
+      warning: translate(locale, 'redistribute.warningInvalidDate'),
+    };
   }
   if (due < today) {
-    return { assignments: [], warning: 'La fecha de entrega no puede ser antes de hoy.' };
+    return {
+      assignments: [],
+      warning: translate(locale, 'redistribute.warningDueBeforeToday'),
+    };
   }
 
   const days = enumerateDaysInclusive(today, due);
@@ -76,7 +87,11 @@ export function redistributeTaskDates(
   const minDaysNeeded = Math.ceil(n / Math.max(1, maxPerDay));
   let warning: string | undefined;
   if (minDaysNeeded > dCount) {
-    warning = `Hay ${n} tareas y un ritmo de ~${maxPerDay} por día: en ${dCount} día(s) el último día quedará cargado. Considera mover la entrega o dividir el trabajo.`;
+    warning = translate(locale, 'redistribute.warningOverload', {
+      count: n,
+      maxPerDay,
+      dayCount: dCount,
+    });
   }
 
   const assignments: { id: string; scheduled_date: string }[] = [];
@@ -97,14 +112,18 @@ export function redistributeLooseTasks(
   taskIds: string[],
   horizonDays: number,
   todayStr: string,
-  maxPerDay: number
+  maxPerDay: number,
+  locale: AppLocale = 'es',
 ): RedistributionResult {
   const today = parseISODateOnly(todayStr);
   if (!today) {
-    return { assignments: [], warning: 'Fecha de hoy inválida.' };
+    return {
+      assignments: [],
+      warning: translate(locale, 'redistribute.warningInvalidToday'),
+    };
   }
   const end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   end.setDate(end.getDate() + Math.max(1, horizonDays) - 1);
   const dueStr = toISODateLocal(end);
-  return redistributeTaskDates(taskIds, dueStr, todayStr, maxPerDay);
+  return redistributeTaskDates(taskIds, dueStr, todayStr, maxPerDay, locale);
 }

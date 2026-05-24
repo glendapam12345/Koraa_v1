@@ -42,6 +42,7 @@ import { QuickOnboardingModal } from '@/components/onboarding/QuickOnboardingMod
 import { RedistributeWorkloadModal } from '@/components/tasks/RedistributeWorkloadModal';
 import { MeditationCircleSimple } from '@/components/MeditationCircleSimple';
 import { resolveHoyLiteLayout, optOutHoyLiteLayout } from '@/lib/hoyLiteDay';
+import { getLocalDateString } from '@/lib/dateLocal';
 
 // Lazy loading para componentes pesados que no se usan inmediatamente
 const TaskEditModal = lazy(() => 
@@ -61,12 +62,6 @@ const NoPendingTasksCelebration = lazy(() =>
     .catch(() => ({ default: () => null as any }))
 );
 
-
-function getLocalDateString(): string {
-  const now = new Date();
-  const offsetMs = now.getTimezoneOffset() * 60 * 1000;
-  return new Date(now.getTime() - offsetMs).toISOString().split('T')[0];
-}
 
 export default function TodayScreen() {
   const insets = useSafeAreaInsets();
@@ -233,7 +228,7 @@ export default function TodayScreen() {
 
   // En "Hoy" solo mostramos tareas sin fecha o programadas para hoy
   const incompleteTasksForToday = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     return incompleteTasks.filter((t) => {
       const date = (t as Task).scheduled_date;
       return !date || date === today;
@@ -547,7 +542,7 @@ export default function TodayScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       const stored = await AsyncStorage.getItem(`prioritization_${user.id}_${today}`);
       
       if (stored) {
@@ -1644,7 +1639,7 @@ export default function TodayScreen() {
                         <FolderKanban size={20} color={THEME.colors.gradient.blue} />
                       </View>
                       <Text style={styles.byProjectTitle} numberOfLines={1}>
-                        Resumen de tareas
+                        {t('hoyExtra.tasksSummaryTitle')}
                       </Text>
                     </View>
                     <TouchableOpacity
@@ -1694,7 +1689,12 @@ export default function TodayScreen() {
                           <View style={styles.byProjectRowContent}>
                             <Text style={styles.byProjectRowName}>{t('hoy.looseTasks')}</Text>
                             <Text style={styles.byProjectRowCount}>
-                              {projectSectionsForToday.looseCount} {projectSectionsForToday.looseCount === 1 ? 'tarea' : 'tareas'}
+                              {t(
+                                projectSectionsForToday.looseCount === 1
+                                  ? 'sectionHeader.taskOne'
+                                  : 'sectionHeader.taskMany',
+                                { count: projectSectionsForToday.looseCount },
+                              )}
                             </Text>
                           </View>
                           {looseTasksExpanded ? (
@@ -1774,7 +1774,12 @@ export default function TodayScreen() {
                       >
                         <Text style={styles.categoryLabelName}>{sec.title}</Text>
                         <View style={styles.categoryLabelRight}>
-                          <Text style={styles.categoryLabelCount}>{sec.tasks.length} {sec.tasks.length === 1 ? 'tarea' : 'tareas'}</Text>
+                          <Text style={styles.categoryLabelCount}>
+                            {t(
+                              sec.tasks.length === 1 ? 'sectionHeader.taskOne' : 'sectionHeader.taskMany',
+                              { count: sec.tasks.length },
+                            )}
+                          </Text>
                           {isSectionExpanded ? (
                             <ChevronDown size={20} color={sec.color} style={styles.categoryLabelChevron} />
                           ) : (
@@ -1804,13 +1809,19 @@ export default function TodayScreen() {
                                 : task.project_id;
                               if (task.parent_task_id && projectId) {
                                 const p = projectsMap[projectId];
-                                const name = p?.name ?? 'proyecto';
-                                return { label: `Parte de ${name}`, color: p?.color ?? THEME.colors.gradient.blue, projectId, projectName: name };
+                                const name = p?.name ?? t('hoyExtra.projectFallback');
+                                return {
+                                  label: t('hoyExtra.partOf', { name }),
+                                  color: p?.color ?? THEME.colors.gradient.blue,
+                                  projectId,
+                                  projectName: name,
+                                };
                               }
                               if (task.project_id) {
                                 const p = projectsMap[task.project_id];
                                 const name = p?.name ?? t('hoyExtra.projectFallback');
-                                return { label: `Proyecto: ${name}`, color: p?.color ?? THEME.colors.gradient.blue, projectId: task.project_id, projectName: name };
+                                return {
+                                  label: t('hoyExtra.projectColon', { name }), color: p?.color ?? THEME.colors.gradient.blue, projectId: task.project_id, projectName: name };
                               }
                               return { label: t('hoyExtra.looseLabel'), color: THEME.colors.text.secondary };
                             }}
@@ -1867,7 +1878,7 @@ export default function TodayScreen() {
                           style={[styles.emptyTasksLinkPill, styles.emptyTasksLinkPillSecond]}
                           onPress={() =>
                             router.push(
-                              `/(tabs)/vaciar?date=${new Date().toISOString().split('T')[0]}`,
+                              `/(tabs)/vaciar?date=${getLocalDateString()}`,
                             )
                           }
                           activeOpacity={0.85}

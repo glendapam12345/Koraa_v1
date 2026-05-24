@@ -69,6 +69,14 @@ export const extEn = {
     calculate: 'Calculate spread',
     chooseProjectError: 'Choose a project.',
     chooseDueError: 'Enter the due date (YYYY-MM-DD) or set it on the project in the database.',
+    noPendingInProject: 'No pending tasks in that project.',
+    noLoosePending: 'You have no pending loose tasks.',
+    partialDueSave: 'Task dates were saved, but the project due date could not be saved.',
+    warningInvalidDate: 'Use the date as YYYY-MM-DD (e.g. 2026-04-15).',
+    warningDueBeforeToday: 'The due date cannot be before today.',
+    warningInvalidToday: 'Invalid today date.',
+    warningOverload:
+      'There are {{count}} tasks at ~{{maxPerDay}} per day: over {{dayCount}} day(s) the last day will be heavy. Consider moving the due date or splitting the work.',
   },
   projects: {
     signIn: 'Sign in to see your projects',
@@ -383,6 +391,9 @@ export const extEn = {
     datesUpdated: 'Dates updated. Check the Week tab or filter by Today.',
     showSecondary: 'Show extra sections',
     hideSecondary: 'Hide extra sections',
+    tasksSummaryTitle: 'Tasks summary',
+    partOf: 'Part of {{name}}',
+    projectColon: 'Project: {{name}}',
   },
   sectionHeader: {
     taskOne: '{{count}} task',

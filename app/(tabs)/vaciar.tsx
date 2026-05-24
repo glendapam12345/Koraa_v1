@@ -11,6 +11,7 @@ import { FlowIndicator } from '@/components/FlowIndicator';
 import { supabase, isNetworkError, getSchemaSetupMessage } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { track } from '@/lib/analytics';
+import { getLocalDateString } from '@/lib/dateLocal';
 import { detectCategory } from '@/lib/categoryDetection';
 import { ProjectSelector } from '@/components/projects/ProjectSelector';
 import { DateSelector } from '@/components/tasks/DateSelector';
@@ -233,7 +234,7 @@ export default function VaciarScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       const { data, error } = await supabase
         .from('daily_check_ins')
         .select('id')

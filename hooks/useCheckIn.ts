@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase, getErrorMessage } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
+import { getLocalDateString } from '@/lib/dateLocal';
 
 export function useCheckIn(showToast: (message: string, type: 'success' | 'error' | 'info') => void) {
   const [todayMood, setTodayMood] = useState<string | null>(null);
@@ -18,7 +19,7 @@ export function useCheckIn(showToast: (message: string, type: 'success' | 'error
         return;
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       const { data, error } = await supabase
         .from('daily_check_ins')
         .select('*')

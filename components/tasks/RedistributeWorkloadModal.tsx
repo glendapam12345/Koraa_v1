@@ -171,7 +171,7 @@ export function RedistributeWorkloadModal({
         return;
       }
       if (projectTaskIds.length === 0) {
-        setError('No hay tareas pendientes en ese proyecto.');
+        setError(t('redistribute.noPendingInProject'));
         return;
       }
       const due =
@@ -181,7 +181,7 @@ export function RedistributeWorkloadModal({
         setError(t('redistribute.pickDue'));
         return;
       }
-      const result = redistributeTaskDates(projectTaskIds, due, todayStr, maxPerDay);
+      const result = redistributeTaskDates(projectTaskIds, due, todayStr, maxPerDay, locale);
       if (result.assignments.length === 0 && result.warning) {
         setError(result.warning);
         return;
@@ -193,10 +193,10 @@ export function RedistributeWorkloadModal({
     }
 
     if (looseTaskIds.length === 0) {
-      setError('No tienes tareas sueltas pendientes.');
+      setError(t('redistribute.noLoosePending'));
       return;
     }
-    const result = redistributeLooseTasks(looseTaskIds, horizonDays, todayStr, maxPerDay);
+    const result = redistributeLooseTasks(looseTaskIds, horizonDays, todayStr, maxPerDay, locale);
     setAppliedDue('');
     setPreview(result);
     setStep('preview');
@@ -245,7 +245,7 @@ export function RedistributeWorkloadModal({
           .eq('id', selectedProjectId)
           .eq('user_id', userId);
         if (projectUpdateError) {
-          setError('Las fechas de tareas se guardaron, pero no se pudo guardar la fecha en el proyecto.');
+          setError(t('redistribute.partialDueSave'));
         }
       }
 
