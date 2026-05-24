@@ -175,7 +175,7 @@ export const en: DeepStrings<typeof es> = {
   yo: {
     configSection: 'Settings',
     settings: 'Settings',
-    settingsSub: 'Reminders, password, and Manage Premium',
+    settingsSub: 'Language, reminders, password, and Premium',
     subscription: 'Subscription',
     subscriptionSub: 'Manage Premium and restore purchase',
     editProfile: 'Edit personal profile',

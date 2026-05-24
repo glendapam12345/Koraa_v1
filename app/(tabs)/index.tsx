@@ -2418,11 +2418,10 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.medium,
   },
   secondaryModulesHint: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     marginHorizontal: THEME.spacing.lg,
     marginTop: -THEME.spacing.sm,
     marginBottom: THEME.spacing.md,
-    fontSize: 11,
     color: THEME.colors.text.secondary,
   },
   welcomeHeader: {

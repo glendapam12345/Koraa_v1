@@ -87,9 +87,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   optionalLabel: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-    fontSize: 11,
   },
   freeLimitNote: {
     ...THEME.typography.small,

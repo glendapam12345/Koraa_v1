@@ -261,7 +261,7 @@ export const featuresEs = {
       'Tienes tareas en otros días. Cambia a «Todas» para verlas o añade algo para hoy desde la pestaña Tareas.',
     listStartsSub:
       'Captura tareas en segundos en la pestaña Tareas. Koraa las ordenará según tu check-in en Sentir.',
-    viewAll: 'Ver todos',
+    viewAll: 'Ver todas las tareas',
     looseTasks: 'Tareas sin proyecto',
     allDone: 'Todo al día',
     listStarts: 'Tu lista empieza aquí',

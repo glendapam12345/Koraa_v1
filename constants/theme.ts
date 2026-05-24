@@ -158,6 +158,12 @@ export const THEME = {
       lineHeight: 16,
       fontFamily: 'DMSans-Medium',
     } as TextStyle,
+    /** Metadata and secondary hints (replaces ad-hoc 11px overrides). */
+    meta: {
+      fontSize: 13,
+      lineHeight: 18,
+      fontFamily: 'DMSans-Medium',
+    } as TextStyle,
   },
 
   spacing: {

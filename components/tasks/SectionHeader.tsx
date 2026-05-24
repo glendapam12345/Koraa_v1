@@ -136,8 +136,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   subtitle: {
-    ...THEME.typography.small,
-    fontSize: 12,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
     marginTop: 1,
   },
@@ -196,12 +195,11 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   countCard: {
-    fontSize: 12,
+    ...THEME.typography.meta,
     fontFamily: THEME.fonts.heading.medium,
   },
   count: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-    fontSize: 12,
   },
 });

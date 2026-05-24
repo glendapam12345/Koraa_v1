@@ -7,7 +7,7 @@ export const uiEs = {
     loadingSuffix: ', cargando',
     saved: 'Guardado',
     tasksSection: 'Tareas',
-    viewAllTasks: 'Ver todas',
+    viewAllTasks: 'Ver todas las tareas',
     addForToday: 'Agregar para hoy',
     addMoreTasksHint: 'Agregar más · pestaña Tareas',
     moreAboutTodayOrder: 'Más sobre tu orden de hoy',
@@ -144,7 +144,7 @@ export const uiEs = {
     a11yPrivacyHint: 'Abre la página de privacidad',
   },
   taskCardExtra: {
-    detailsTitle: 'Especificaciones',
+    detailsTitle: 'Detalles de la tarea',
     category: 'Categoría',
     priority: 'Prioridad',
     priorityHigh: 'Alta',

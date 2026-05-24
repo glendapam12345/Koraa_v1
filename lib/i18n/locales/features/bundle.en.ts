@@ -259,7 +259,7 @@ export const featuresEn = {
       'You have tasks on other days. Switch to «All» to see them or add something for today from the Tasks tab.',
     listStartsSub:
       'Capture tasks in seconds on the Tasks tab. Koraa will order them based on your check-in in Feel.',
-    viewAll: 'View all',
+    viewAll: 'View all tasks',
     looseTasks: 'Loose tasks',
     allDone: 'All caught up',
     listStarts: 'Your list starts here',

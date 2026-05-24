@@ -151,9 +151,8 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.xs,
   },
   stepLabel: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-    fontSize: 11,
   },
   stepLabelCurrent: {
     color: THEME.colors.gradient.blue,

@@ -7,7 +7,7 @@ export const uiEn = {
     loadingSuffix: ', loading',
     saved: 'Saved',
     tasksSection: 'Tasks',
-    viewAllTasks: 'View all',
+    viewAllTasks: 'View all tasks',
     addForToday: 'Add for today',
     addMoreTasksHint: 'Add more · Tasks tab',
     moreAboutTodayOrder: 'More about today’s order',
@@ -141,7 +141,7 @@ export const uiEn = {
     a11yPrivacyHint: 'Opens the privacy page',
   },
   taskCardExtra: {
-    detailsTitle: 'Details',
+    detailsTitle: 'Task details',
     category: 'Category',
     priority: 'Priority',
     priorityHigh: 'High',

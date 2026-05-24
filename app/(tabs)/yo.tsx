@@ -20,7 +20,6 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   Settings,
-  Crown,
   CreditCard as Edit,
   X,
   Plus,
@@ -737,21 +736,6 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.menuItem}
-            activeOpacity={0.7}
-            onPress={() => router.push('/paywall')}
-            accessibilityRole="button"
-            accessibilityLabel={t('yo.subscription')}
-            accessibilityHint={t('yoExtra2.a11yManagePremium')}
-          >
-            <Crown size={24} color={THEME.colors.gradient.blue} />
-            <View style={styles.menuItemContent}>
-              <Text style={styles.menuItemText}>{t('yo.subscription')}</Text>
-              <Text style={styles.menuItemSubtext}>{t('yo.subscriptionSub')}</Text>
-            </View>
-          </TouchableOpacity>
-
           {/* Botón de desarrollo para resetear onboarding */}
           {__DEV__ && (
             <TouchableOpacity 
@@ -1212,11 +1196,10 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
   },
   streakLabel: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     color: THEME.colors.fill[100],
     opacity: 0.9,
     fontFamily: THEME.fonts.heading.medium,
-    fontSize: 11,
   },
   streakLevelContainer: {
     flexDirection: 'row',
@@ -1309,7 +1292,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   menuItemSubtext: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
     marginTop: 2,
   },

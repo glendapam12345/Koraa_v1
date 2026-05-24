@@ -406,7 +406,7 @@ export function TaskCard({
                   accessibilityLabel={expandedDetails ? t('taskCard.hideDetails') : t('taskCard.showDetails')}
                 >
                   <Text style={styles.detailsToggleText} numberOfLines={1}>
-                    {t('taskCard.showDetails')}
+                    {expandedDetails ? t('taskCard.hideDetails') : t('taskCard.showDetails')}
                   </Text>
                   {expandedDetails ? (
                     <ChevronDown size={14} color={THEME.colors.text.secondary} />

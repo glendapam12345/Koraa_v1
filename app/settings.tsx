@@ -815,10 +815,9 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
   },
   notifSectionHint: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
     marginBottom: THEME.spacing.sm,
-    lineHeight: 20,
   },
   notifChipsWrap: {
     flexDirection: 'row',

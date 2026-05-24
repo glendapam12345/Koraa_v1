@@ -173,7 +173,7 @@ export const es = {
   yo: {
     configSection: 'Configuración',
     settings: 'Ajustes',
-    settingsSub: 'Recordatorios, contraseña y Gestionar Premium',
+    settingsSub: 'Idioma, recordatorios, contraseña y Premium',
     subscription: 'Suscripción',
     subscriptionSub: 'Gestionar Premium y restaurar compra',
     editProfile: 'Editar perfil personal',
