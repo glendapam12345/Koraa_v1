@@ -306,8 +306,8 @@ export const en: DeepStrings<typeof es> = {
   },
   paywall: {
     title: 'Koraa Premium',
-    subtitle: 'Turn your wellbeing into a sustainable system, not an endless list.',
-    heroHint: 'Your free plan stays active; Premium only unlocks extras.',
+    subtitle: 'Full week view, unlimited tips, and more clarity for your day.',
+    heroHint: 'Premium is optional. Your free plan stays active.',
     benefit1: 'Full weekly history to see real progress.',
     benefit2: 'Personalized tips based on how you feel.',
     benefit3: 'A clearer weekly plan to decide what to do first.',

@@ -85,6 +85,10 @@ interface TaskCardProps {
   sectionCategory?: string;
   /** Tarjeta uniforme: leyenda solo si proyecto "Pertenece a X"; si no, nada */
   uniformCard?: boolean;
+  /** Por qué Koraa subió esta tarea en prioridad (check-in del día). */
+  priorityWhyUp?: string[];
+  /** Por qué quedó más abajo (tareas cercanas al foco del día). */
+  priorityWhyDown?: string[];
 }
 
 export function TaskCard({
@@ -114,6 +118,8 @@ export function TaskCard({
   sectionAccentColor,
   sectionCategory,
   uniformCard = false,
+  priorityWhyUp,
+  priorityWhyDown,
 }: TaskCardProps) {
   const { t, locale } = useI18n();
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
@@ -142,7 +148,9 @@ export function TaskCard({
   const isLooseTask = showLabel && projectLabel != null && looseLabels.has(projectLabel);
   const contextDisplayText = isLooseTask ? t('components.looseTasks') : (projectLabel ?? '');
   const showVerProyecto = Boolean(projectId && onPressProject);
-  const hasDetails = onToggleDetailsExpand && (task.category || task.is_priority || projectLabel);
+  const hasPriorityWhyDown = (priorityWhyDown?.length ?? 0) > 0;
+  const hasDetails =
+    onToggleDetailsExpand && (task.category || task.is_priority || projectLabel || hasPriorityWhyDown);
   const categoryEmoji = getCategoryEmoji(task.category);
   const sectionEmoji = isLooseTask ? '📋' : '📁';
   const scheduledLabel = task.scheduled_date ? formatTaskDate(task.scheduled_date, t) : '';
@@ -294,6 +302,20 @@ export function TaskCard({
               </View>
             )}
           </View>
+          {(priorityWhyUp?.length ?? 0) > 0 && (
+            <View
+              style={styles.priorityWhyBlock}
+              accessibilityRole="text"
+              accessibilityLabel={`${t('hoy.taskWhyUp')}: ${priorityWhyUp!.join('. ')}`}
+            >
+              <Text style={styles.priorityWhyLabel}>{t('hoy.taskWhyUp')}</Text>
+              {priorityWhyUp!.map((line, i) => (
+                <Text key={`up-${i}`} style={styles.priorityWhyLine}>
+                  • {line}
+                </Text>
+              ))}
+            </View>
+          )}
           {uniformCard ? (
             <View style={styles.metaRowSimple}>
               {showDate ? (
@@ -487,6 +509,20 @@ export function TaskCard({
                   {contextDisplayText}
                 </Text>
               </View>
+            </View>
+          )}
+          {hasPriorityWhyDown && (
+            <View
+              style={styles.priorityWhyBlockDown}
+              accessibilityRole="text"
+              accessibilityLabel={`${t('hoy.taskWhyDown')}: ${priorityWhyDown!.join('. ')}`}
+            >
+              <Text style={styles.priorityWhyLabelDown}>{t('hoy.taskWhyDown')}</Text>
+              {priorityWhyDown!.map((line, i) => (
+                <Text key={`down-${i}`} style={styles.priorityWhyLineDown}>
+                  • {line}
+                </Text>
+              ))}
             </View>
           )}
         </View>
@@ -786,6 +822,42 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     flex: 1,
     minWidth: 0,
+  },
+  priorityWhyBlock: {
+    marginTop: THEME.spacing.xs,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: THEME.borderRadius.standard,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    gap: 4,
+  },
+  priorityWhyLabel: {
+    ...THEME.typography.meta,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.gradient.blue,
+  },
+  priorityWhyLine: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+  },
+  priorityWhyBlockDown: {
+    marginTop: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: THEME.borderRadius.standard,
+    backgroundColor: THEME.colors.fill[200],
+    gap: 4,
+  },
+  priorityWhyLabelDown: {
+    ...THEME.typography.meta,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.secondary,
+  },
+  priorityWhyLineDown: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.tertiary,
+    lineHeight: 18,
   },
   verMasRow: {
     flexDirection: 'row',

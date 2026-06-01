@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  Animated,
   ActivityIndicator,
   Alert,
   Linking,
@@ -14,11 +13,12 @@ import {
 import type { PurchasesPackage } from 'react-native-purchases';
 import { LinearGradient } from 'expo-linear-gradient';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { Check, Crown, Lock, X } from 'lucide-react-native';
+import { Check, Crown, X } from 'lucide-react-native';
 import { getPrivacyPolicyUrl, getTermsOfServiceUrl } from '@/constants/legalUrls';
 import { THEME } from '@/constants/theme';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { formatPackagePrice, packageUsesNonMxnCurrency } from '@/lib/formatSubscriptionPrice';
 
 type PaywallScreenProps = {
   onClose?: () => void;
@@ -39,21 +39,34 @@ function isPlanPackage(pkg: PurchasesPackage, plan: 'monthly' | 'annual') {
   return haystack.includes('annual') || haystack.includes('year') || haystack.includes('anual');
 }
 
+function sortPackagesForDisplay(packages: PurchasesPackage[]) {
+  const annual = packages.find((pkg) => isPlanPackage(pkg, 'annual'));
+  const monthly = packages.find((pkg) => isPlanPackage(pkg, 'monthly'));
+  const rest = packages.filter((pkg) => pkg !== annual && pkg !== monthly);
+  return [annual, monthly, ...rest].filter((pkg): pkg is PurchasesPackage => Boolean(pkg));
+}
+
 export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 'default' }: PaywallScreenProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { currentOffering, checkSubscription, restorePurchases, isLoading: subscriptionLoading } = useSubscription();
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const premiumGlow = useRef(new Animated.Value(0.75)).current;
 
   const packages = useMemo(() => currentOffering?.availablePackages ?? [], [currentOffering?.availablePackages]);
-  const primaryPackage = packages[0] ?? null;
+  const sortedPackages = useMemo(() => sortPackagesForDisplay(packages), [packages]);
+  const showForeignCurrencyHint = useMemo(
+    () => locale === 'es' && sortedPackages.some(packageUsesNonMxnCurrency),
+    [locale, sortedPackages],
+  );
+  const showMxnHint = useMemo(
+    () => sortedPackages.some((pkg) => pkg.product.currencyCode?.toUpperCase() === 'MXN'),
+    [sortedPackages],
+  );
 
-  /** Expo Go no ejecuta tu binario con IAP como TestFlight; StoreKit suele no devolver productos aquí. */
   const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+  const isOnboardingContext = context === 'onboarding';
 
-  /** Evita mostrar “planes no cargaron” mientras RevenueCat aún sincroniza tras abrir el paywall. */
   useEffect(() => {
     void checkSubscription();
   }, [checkSubscription]);
@@ -127,6 +140,15 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
     return '';
   };
 
+  const getPlanTitle = (pkg: PurchasesPackage) =>
+    isPlanPackage(pkg, 'annual') ? t('paywallExtra.annualTitle') : t('paywallExtra.monthlyTitle');
+
+  const getPlanDescription = (pkg: PurchasesPackage) =>
+    isPlanPackage(pkg, 'annual') ? t('paywallExtra.fallbackAnnualBadge') : t('paywallExtra.monthlyDesc');
+
+  const getPlanCta = (pkg: PurchasesPackage) =>
+    isPlanPackage(pkg, 'annual') ? t('paywallExtra.annualCta') : t('paywallExtra.monthlyCta');
+
   const handleFallbackPlanPress = async (plan: 'monthly' | 'annual') => {
     const planLabel = plan === 'monthly' ? t('paywall.planMonthlyLabel') : t('paywall.planAnnualLabel');
     setIsRefreshing(true);
@@ -149,28 +171,95 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
     }
   };
 
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(premiumGlow, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(premiumGlow, {
-          toValue: 0.75,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    loop.start();
-    return () => {
-      loop.stop();
-    };
-  }, [premiumGlow]);
+  const renderPlanCard = (pkg: PurchasesPackage) => {
+    const isAnnual = isPlanPackage(pkg, 'annual');
+    const period = getPeriodLabel(pkg);
+    const priceLabel = formatPackagePrice(pkg, locale, period);
+    const disabled = isPurchasing || isRestoring || isRefreshing || subscriptionLoading;
 
-  const isOnboardingContext = context === 'onboarding';
+    return (
+      <View key={pkg.identifier} style={[styles.planCard, isAnnual && styles.planCardRecommended]}>
+        {isAnnual ? (
+          <View style={styles.recommendedBadge}>
+            <Text style={styles.recommendedBadgeText}>{t('paywallExtra.annualRecommended')}</Text>
+          </View>
+        ) : null}
+        <Text style={styles.planTitle}>{getPlanTitle(pkg)}</Text>
+        <Text style={styles.planPrice}>{priceLabel}</Text>
+        <Text style={styles.planDescription}>{getPlanDescription(pkg)}</Text>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => void handlePurchase(pkg)}
+          disabled={disabled}
+          style={styles.ctaWrap}
+          accessibilityRole="button"
+          accessibilityLabel={t('paywallExtra.a11yChoosePlan', { title: getPlanTitle(pkg) })}
+          accessibilityHint={t('paywallExtra.a11yChoosePlanHint')}
+          accessibilityState={{ disabled }}
+        >
+          <LinearGradient
+            colors={
+              isAnnual
+                ? [THEME.colors.gradient.blue, THEME.colors.gradient.pink]
+                : [THEME.colors.fill[100], THEME.colors.fill[100]]
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.cta, !isAnnual && styles.ctaOutline]}
+          >
+            {isPurchasing ? (
+              <ActivityIndicator color={isAnnual ? THEME.colors.onGradient : THEME.colors.gradient.blue} />
+            ) : (
+              <Text style={[styles.ctaText, !isAnnual && styles.ctaTextOutline]}>{getPlanCta(pkg)}</Text>
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const renderFallbackPlanCard = (plan: 'monthly' | 'annual') => {
+    const isAnnual = plan === 'annual';
+    const priceLabel = isAnnual ? t('paywallExtra.fallbackAnnualPrice') : t('paywallExtra.fallbackMonthlyPrice');
+    const title = isAnnual ? t('paywallExtra.annualTitle') : t('paywallExtra.monthlyTitle');
+    const description = isAnnual ? t('paywallExtra.fallbackAnnualBadge') : t('paywallExtra.monthlyDesc');
+    const cta = isAnnual ? t('paywallExtra.annualCta') : t('paywallExtra.monthlyCta');
+
+    return (
+      <View key={`fallback-${plan}`} style={[styles.planCard, isAnnual && styles.planCardRecommended]}>
+        {isAnnual ? (
+          <View style={styles.recommendedBadge}>
+            <Text style={styles.recommendedBadgeText}>{t('paywallExtra.annualRecommended')}</Text>
+          </View>
+        ) : null}
+        <Text style={styles.planTitle}>{title}</Text>
+        <Text style={styles.planPrice}>{priceLabel}</Text>
+        <Text style={styles.planDescription}>{description}</Text>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => void handleFallbackPlanPress(plan)}
+          disabled={isPurchasing || isRestoring || isRefreshing}
+          style={styles.ctaWrap}
+          accessibilityRole="button"
+          accessibilityLabel={t('paywallExtra.a11yChoosePlan', { title })}
+          accessibilityHint={t('paywallExtra.a11yChoosePlanHint')}
+        >
+          <LinearGradient
+            colors={
+              isAnnual
+                ? [THEME.colors.gradient.blue, THEME.colors.gradient.pink]
+                : [THEME.colors.fill[100], THEME.colors.fill[100]]
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.cta, !isAnnual && styles.ctaOutline]}
+          >
+            <Text style={[styles.ctaText, !isAnnual && styles.ctaTextOutline]}>{cta}</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -184,13 +273,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
           <TouchableOpacity
             activeOpacity={0.75}
             style={styles.closeButton}
-            onPress={() => {
-              if (onClose) {
-                onClose();
-                return;
-              }
-              onSkip?.();
-            }}
+            onPress={handleContinueFree}
             accessibilityRole="button"
             accessibilityLabel={t('paywallExtra.a11yClose')}
             accessibilityHint={
@@ -210,24 +293,20 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
         </LinearGradient>
 
         {isOnboardingContext ? (
-          <View style={styles.onboardingBanner}>
-            <Text style={styles.onboardingBannerTitle}>{t('paywallExtra.onboardingBannerTitle')}</Text>
-            <Text style={styles.onboardingBannerBody}>{t('paywallExtra.onboardingBannerBody')}</Text>
-            <TouchableOpacity
-              onPress={handleContinueFree}
-              activeOpacity={0.85}
-              disabled={isPurchasing || isRestoring || isRefreshing || subscriptionLoading}
-              style={styles.exploreFreeButton}
-              accessibilityRole="button"
-              accessibilityLabel={t('paywallExtra.exploreFreeCta')}
-              accessibilityHint={t('paywallExtra.exploreFreeHint')}
-              accessibilityState={{
-                disabled: isPurchasing || isRestoring || isRefreshing || subscriptionLoading,
-              }}
-            >
-              <Text style={styles.exploreFreeButtonText}>{t('paywallExtra.exploreFreeCta')}</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            onPress={handleContinueFree}
+            activeOpacity={0.85}
+            disabled={isPurchasing || isRestoring || isRefreshing || subscriptionLoading}
+            style={styles.exploreFreeButton}
+            accessibilityRole="button"
+            accessibilityLabel={t('paywallExtra.exploreFreeCta')}
+            accessibilityHint={t('paywallExtra.exploreFreeHint')}
+            accessibilityState={{
+              disabled: isPurchasing || isRestoring || isRefreshing || subscriptionLoading,
+            }}
+          >
+            <Text style={styles.exploreFreeButtonText}>{t('paywallExtra.exploreFreeCta')}</Text>
+          </TouchableOpacity>
         ) : null}
 
         <View style={styles.benefitsCard}>
@@ -245,84 +324,10 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
           </View>
         </View>
 
-        <View style={styles.comparisonCard}>
-          <Text style={styles.comparisonTitle}>{t('paywall.comparisonTitle')}</Text>
-          <View style={styles.comparisonRow}>
-            <Check size={15} color={THEME.colors.gradient.blue} />
-            <Text style={styles.comparisonFreeText}>{t('paywall.free1')}</Text>
-          </View>
-          <View style={styles.comparisonRow}>
-            <Check size={15} color={THEME.colors.gradient.blue} />
-            <Text style={styles.comparisonFreeText}>{t('paywall.free2')}</Text>
-          </View>
-          <View style={styles.comparisonRow}>
-            <Check size={15} color={THEME.colors.gradient.blue} />
-            <Text style={styles.comparisonFreeText}>{t('paywall.free3')}</Text>
-          </View>
-
-          <View style={styles.premiumLockedDivider} />
-
-          <View style={[styles.comparisonRow, styles.premiumLockedRow]}>
-            <View style={styles.premiumLockedLeft}>
-              <Lock size={14} color={THEME.colors.text.secondary} />
-              <Text style={styles.comparisonLockedText}>{t('paywall.locked1')}</Text>
-            </View>
-            <Animated.Text style={[styles.premiumBadge, { opacity: premiumGlow }]}>
-              {t('paywall.premiumBadge')}
-            </Animated.Text>
-          </View>
-          <View style={[styles.comparisonRow, styles.premiumLockedRow]}>
-            <View style={styles.premiumLockedLeft}>
-              <Lock size={14} color={THEME.colors.text.secondary} />
-              <Text style={styles.comparisonLockedText}>{t('paywall.locked2')}</Text>
-            </View>
-            <Animated.Text style={[styles.premiumBadge, { opacity: premiumGlow }]}>
-              {t('paywall.premiumBadge')}
-            </Animated.Text>
-          </View>
-          <View style={[styles.comparisonRow, styles.premiumLockedRow]}>
-            <View style={styles.premiumLockedLeft}>
-              <Lock size={14} color={THEME.colors.text.secondary} />
-              <Text style={styles.comparisonLockedText}>{t('paywall.locked3')}</Text>
-            </View>
-            <Animated.Text style={[styles.premiumBadge, { opacity: premiumGlow }]}>
-              {t('paywall.premiumBadge')}
-            </Animated.Text>
-          </View>
-        </View>
-
-        {primaryPackage ? (
-          <View style={styles.priceHighlightCard}>
-            <Text style={styles.priceHighlightLabel}>{t('paywall.currentPrice')}</Text>
-            <Text style={styles.priceHighlightValue}>
-              {primaryPackage.product.priceString}
-              <Text style={styles.priceHighlightPeriod}>{getPeriodLabel(primaryPackage)}</Text>
-            </Text>
-            <Text style={styles.priceHighlightHint}>{t('paywall.cancelAnytime')}</Text>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => void handlePurchase(primaryPackage)}
-              disabled={isPurchasing || isRestoring || isRefreshing || subscriptionLoading}
-              style={styles.ctaWrap}
-              accessibilityRole="button"
-              accessibilityLabel={t('paywallExtra.a11yChoosePlan', { title: primaryPackage.product.title })}
-              accessibilityHint={t('paywallExtra.a11yChoosePlanHint')}
-              accessibilityState={{ disabled: isPurchasing || isRestoring || isRefreshing || subscriptionLoading }}
-            >
-              <LinearGradient
-                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.cta}
-              >
-                {isPurchasing ? (
-                  <ActivityIndicator color={THEME.colors.onGradient} />
-                ) : (
-                  <Text style={styles.ctaText}>{t('paywall.continuePremium')}</Text>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+        <Text style={styles.sectionTitle}>{t('paywallExtra.choosePlanTitle')}</Text>
+        {showMxnHint ? <Text style={styles.priceHint}>{t('paywallExtra.pricesInMxn')}</Text> : null}
+        {showForeignCurrencyHint ? (
+          <Text style={styles.priceHintWarning}>{t('paywallExtra.foreignCurrencyHint')}</Text>
         ) : null}
 
         {subscriptionLoading && packages.length === 0 ? (
@@ -330,105 +335,17 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
             <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
             <Text style={styles.loadingPlansText}>{t('paywallExtra.loadingPlans')}</Text>
           </View>
-        ) : packages.length > 0 ? (
-          packages.map((pkg) => (
-            <View key={pkg.identifier} style={styles.planCard}>
-              <Text style={styles.planTitle}>{pkg.product.title}</Text>
-              <Text style={styles.planPrice}>{pkg.product.priceString}</Text>
-              <Text style={styles.planDescription}>
-                {pkg.product.description || t('paywall.defaultPlanDescription')}
-              </Text>
-
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => void handlePurchase(pkg)}
-                disabled={isPurchasing || isRestoring || isRefreshing || subscriptionLoading}
-                style={styles.ctaWrap}
-                accessibilityRole="button"
-                accessibilityLabel={t('paywallExtra.a11yChoosePlan', { title: pkg.product.title })}
-                accessibilityHint={t('paywallExtra.a11yChoosePlanHint')}
-                accessibilityState={{ disabled: isPurchasing || isRestoring || isRefreshing || subscriptionLoading }}
-              >
-                <LinearGradient
-                  colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.cta}
-                >
-                  {isPurchasing ? (
-                    <ActivityIndicator color={THEME.colors.onGradient} />
-                  ) : (
-                    <Text style={styles.ctaText}>{t('paywallExtra.chooseThisPlan')}</Text>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          ))
+        ) : sortedPackages.length > 0 ? (
+          <View style={styles.plansStack}>{sortedPackages.map((pkg) => renderPlanCard(pkg))}</View>
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>{t('paywallExtra.emptyTitle')}</Text>
             <Text style={styles.emptyText}>{t('paywallExtra.emptyBody')}</Text>
-            <Text style={styles.fallbackPlansTitle}>{t('paywallExtra.fallbackPlansTitle')}</Text>
-            <View style={styles.fallbackPlansWrap}>
-              <View style={styles.planCard}>
-                <View style={styles.fallbackPlanHeader}>
-                  <Text style={styles.planTitle}>{t('paywallExtra.monthlyTitle')}</Text>
-                  <View style={styles.fallbackPlanBadge}>
-                    <Text style={styles.fallbackPlanBadgeText}>{t('paywallExtra.monthlyBadge')}</Text>
-                  </View>
-                </View>
-                <Text style={styles.planPrice}>{t('paywallExtra.fallbackMonthlyPrice')}</Text>
-                <Text style={styles.planDescription}>{t('paywallExtra.monthlyDesc')}</Text>
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() => void handleFallbackPlanPress('monthly')}
-                  style={styles.ctaWrap}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('paywallExtra.a11yBuyMonthly')}
-                  accessibilityHint={t('paywallExtra.a11yBuyMonthlyHint')}
-                >
-                  <LinearGradient
-                    colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.cta}
-                  >
-                    <Text style={styles.ctaText}>{t('paywallExtra.monthlyCta')}</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-
-              <LinearGradient
-                colors={['rgba(74, 144, 226, 0.07)', 'rgba(255, 107, 107, 0.06)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.fallbackAnnualCard}
-              >
-                <Text style={styles.planTitle}>{t('paywallExtra.annualTitle')}</Text>
-                <Text style={styles.planPrice}>{t('paywallExtra.fallbackAnnualPrice')}</Text>
-                <Text style={styles.planDescription}>{t('paywallExtra.fallbackAnnualBadge')}</Text>
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() => void handleFallbackPlanPress('annual')}
-                  style={styles.ctaWrap}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('paywallExtra.a11yBuyAnnual')}
-                  accessibilityHint={t('paywallExtra.a11yBuyAnnualHint')}
-                >
-                  <LinearGradient
-                    colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.cta}
-                  >
-                    <Text style={styles.ctaText}>{t('paywallExtra.annualCta')}</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </LinearGradient>
+            <View style={styles.plansStack}>
+              {renderFallbackPlanCard('annual')}
+              {renderFallbackPlanCard('monthly')}
             </View>
-            {isExpoGo ? (
-              <Text style={styles.emptyHintExpoGo}>{t('paywallExtra.expoGoHint')}</Text>
-            ) : null}
+            {isExpoGo ? <Text style={styles.emptyHintExpoGo}>{t('paywallExtra.expoGoHint')}</Text> : null}
             <TouchableOpacity
               style={styles.secondaryButton}
               activeOpacity={0.75}
@@ -445,6 +362,8 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
             </TouchableOpacity>
           </View>
         )}
+
+        <Text style={styles.cancelNote}>{t('paywall.cancelAnytime')}</Text>
 
         {(onClose || onSkip) && !subscriptionLoading ? (
           <TouchableOpacity
@@ -555,26 +474,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     marginTop: THEME.spacing.xs,
   },
-  onboardingBanner: {
-    backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    borderWidth: 1,
-    borderColor: THEME.colors.tint.blue.border,
-    gap: THEME.spacing.xs,
-    ...THEME.shadows.soft,
-  },
-  onboardingBannerTitle: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  onboardingBannerBody: {
-    ...THEME.typography.meta,
-    color: THEME.colors.text.secondary,
-  },
   exploreFreeButton: {
-    marginTop: THEME.spacing.xs,
     minHeight: THEME.sizes.touchTarget,
     borderRadius: THEME.borderRadius.pill,
     borderWidth: 1.5,
@@ -582,6 +482,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: THEME.spacing.md,
+    backgroundColor: THEME.colors.fill[100],
   },
   exploreFreeButtonText: {
     ...THEME.typography.caption,
@@ -607,6 +508,24 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     flex: 1,
   },
+  sectionTitle: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  priceHint: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.secondary,
+    marginTop: -THEME.spacing.xs,
+  },
+  priceHintWarning: {
+    ...THEME.typography.meta,
+    color: THEME.colors.gradient.blue,
+    marginTop: -THEME.spacing.xs,
+  },
+  plansStack: {
+    gap: THEME.spacing.sm,
+  },
   planCard: {
     backgroundColor: THEME.colors.fill[100],
     borderWidth: 1,
@@ -616,93 +535,21 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.xs,
     ...THEME.shadows.soft,
   },
-  priceHighlightCard: {
-    backgroundColor: THEME.colors.text.main,
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    gap: THEME.spacing.xs,
-    ...THEME.shadows.soft,
+  planCardRecommended: {
+    borderColor: THEME.colors.tint.blue.border,
+    borderWidth: 1.5,
   },
-  priceHighlightLabel: {
-    ...THEME.typography.small,
-    color: THEME.colors.onGradientFaint,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  priceHighlightValue: {
-    ...THEME.typography.h2,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  priceHighlightPeriod: {
-    ...THEME.typography.body,
-    color: THEME.colors.onGradientFaint,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  priceHighlightHint: {
-    ...THEME.typography.small,
-    color: THEME.colors.onGradientSubtle,
-  },
-  comparisonCard: {
-    backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    borderWidth: 1,
-    borderColor: THEME.colors.fill[200],
-    gap: THEME.spacing.xs,
-  },
-  comparisonTitle: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-    marginBottom: 2,
-  },
-  comparisonRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.xs,
-  },
-  comparisonFreeText: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.main,
-    flex: 1,
-  },
-  premiumLockedDivider: {
-    marginVertical: 2,
-    borderTopWidth: 1,
-    borderTopColor: THEME.colors.fill[200],
-  },
-  premiumLockedRow: {
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.standard,
+  recommendedBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: THEME.borderRadius.pill,
     paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: 6,
-    opacity: 0.9,
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: THEME.colors.fill[200],
+    paddingVertical: 4,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
   },
-  premiumLockedLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.xs,
-    flex: 1,
-  },
-  comparisonLockedText: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    flex: 1,
-  },
-  premiumBadge: {
-    ...THEME.typography.small,
+  recommendedBadgeText: {
+    ...THEME.typography.meta,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.bold,
-    paddingHorizontal: THEME.spacing.xs,
-    paddingVertical: 2,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[100],
-    borderWidth: 1,
-    borderColor: THEME.colors.fill[200],
   },
   planTitle: {
     ...THEME.typography.caption,
@@ -710,12 +557,12 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
   },
   planPrice: {
-    ...THEME.typography.h3,
+    ...THEME.typography.h2,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
   },
   planDescription: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
   },
   ctaWrap: {
@@ -728,10 +575,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  ctaOutline: {
+    borderWidth: 1.5,
+    borderColor: THEME.colors.gradient.blue,
+  },
   ctaText: {
     ...THEME.typography.caption,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
+  },
+  ctaTextOutline: {
+    color: THEME.colors.gradient.blue,
+  },
+  cancelNote: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
   },
   loadingPlans: {
     borderRadius: THEME.borderRadius.rounded,
@@ -755,41 +614,6 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.fill[100],
     padding: THEME.spacing.md,
     gap: THEME.spacing.sm,
-  },
-  fallbackPlansWrap: {
-    gap: THEME.spacing.sm,
-  },
-  fallbackPlansTitle: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  fallbackPlanHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: THEME.spacing.xs,
-  },
-  fallbackPlanBadge: {
-    borderRadius: THEME.borderRadius.pill,
-    paddingHorizontal: THEME.spacing.xs,
-    paddingVertical: 4,
-    backgroundColor: THEME.colors.fill[200],
-    borderWidth: 1,
-    borderColor: THEME.colors.fill[200],
-  },
-  fallbackPlanBadgeText: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  fallbackAnnualCard: {
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    gap: THEME.spacing.xs,
-    borderWidth: 1,
-    borderColor: THEME.colors.tint.blue.border,
-    ...THEME.shadows.soft,
   },
   dismissLinkWrap: {
     alignItems: 'center',

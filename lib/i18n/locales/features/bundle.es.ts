@@ -246,6 +246,13 @@ export const featuresEs = {
     morningHint: 'Despierta con claridad',
     eveningHint: 'Cierra el día con calma',
     fitsToday: 'Esto te conviene hoy',
+    organizeByYou: 'Koraa ordenó tu día según cómo te encuentras, tu energía, tu tiempo y tu enfoque.',
+    focusSummaryLine:
+      'Hoy te sugerimos {{count}} {{focos}} · energía {{n}}/5 · {{emotion}} · {{time}} · {{focus}}',
+    focusOne: 'foco',
+    focusMany: 'focos',
+    taskWhyUp: 'Por qué está arriba',
+    taskWhyDown: 'Más abajo porque',
     energyLine: 'Energía {{n}}/5',
     perCheckIn: 'Según tu check-in',
     howPrioritizes: 'Cómo prioriza Koraa',

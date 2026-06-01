@@ -32,6 +32,8 @@ interface TaskListProps {
   sectionCategory?: string;
   /** Tarjetas uniformes: leyenda solo "Pertenece a X", sin "Suelta" */
   uniformCard?: boolean;
+  /** Insight de priorización por id de tarea (Hoy + check-in). */
+  getTaskPriorityInsight?: (taskId: string) => { whyUp: string[]; whyDown: string[] } | undefined;
 }
 
 export function TaskList({
@@ -57,6 +59,7 @@ export function TaskList({
   sectionAccentColor,
   sectionCategory,
   uniformCard,
+  getTaskPriorityInsight,
 }: TaskListProps) {
   return (
     <View style={styles.container}>
@@ -64,6 +67,7 @@ export function TaskList({
         const projectInfo = getProjectInfo?.(task) ?? null;
         const projectId = projectInfo?.projectId;
         const projectSteps = projectId && getProjectSteps ? getProjectSteps(projectId, task.id) : undefined;
+        const priorityInsight = getTaskPriorityInsight?.(task.id);
         return (
           <TaskCard
             key={task.id}
@@ -93,6 +97,8 @@ export function TaskList({
             sectionAccentColor={sectionAccentColor}
             sectionCategory={sectionCategory}
             uniformCard={uniformCard}
+            priorityWhyUp={priorityInsight?.whyUp}
+            priorityWhyDown={priorityInsight?.whyDown}
           />
         );
       })}

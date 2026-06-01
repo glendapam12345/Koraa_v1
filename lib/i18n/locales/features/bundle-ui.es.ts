@@ -107,8 +107,13 @@ export const uiEs = {
     yoBody: 'Gestiona tu suscripción o desbloquea la experiencia completa cuando quieras.',
   },
   paywallExtra: {
-    fallbackMonthlyPrice: '$49 MXN / mes',
-    fallbackAnnualPrice: '$411.60 MXN / año',
+    fallbackMonthlyPrice: 'MX$49 / mes',
+    fallbackAnnualPrice: 'MX$411 / año',
+    choosePlanTitle: 'Elige tu plan',
+    annualRecommended: 'Mejor valor',
+    pricesInMxn: 'Precios en pesos mexicanos (MXN).',
+    foreignCurrencyHint:
+      'Si ves otra moneda, Apple usa la región de tu cuenta de App Store. En México deberías ver MXN.',
     fallbackAnnualBadge: '12 meses con 30% de descuento',
     loadingPlans: 'Cargando planes…',
     chooseThisPlan: 'Elegir este plan',

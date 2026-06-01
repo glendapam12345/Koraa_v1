@@ -31,6 +31,9 @@ Notifications.setNotificationHandler({
 
 type Subscription = { remove: () => void };
 const DAILY_REMINDER_TYPE = 'daily_checkin_reminder';
+const RECHECK_REMINDER_TYPE = 'recheck_reminder';
+
+const RECHECK_HOURS_AFTER_CHECKIN = 3;
 
 export function useNotifications() {
   const notificationListener = useRef<Subscription | null>(null);
@@ -57,9 +60,13 @@ export function useNotifications() {
       
       // Navegar a la pantalla correspondiente según el tipo de notificación
       if (notificationData?.type === 'daily_checkin_reminder') {
-        // Importar router dinámicamente para evitar problemas de inicialización
         import('expo-router').then(({ router }) => {
           router.push('/(tabs)/sentir');
+        });
+      }
+      if (notificationData?.type === RECHECK_REMINDER_TYPE) {
+        import('expo-router').then(({ router }) => {
+          router.push({ pathname: '/(tabs)', params: { openRecheck: '1' } });
         });
       }
     });
@@ -77,9 +84,60 @@ export function useNotifications() {
 
   return {
     scheduleDailyReminder,
+    scheduleRecheckReminder,
     cancelAllNotifications,
     checkNotificationPermissions,
   };
+}
+
+async function cancelNotificationsByType(type: string) {
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  await Promise.all(
+    scheduled
+      .filter((n) => n.content.data?.type === type)
+      .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
+  );
+}
+
+/** Recordatorio ~3 h después del check-in: «¿Cambió tu día?» */
+export async function scheduleRecheckReminder(localeOverride?: AppLocale) {
+  if (Platform.OS === 'web') return;
+
+  try {
+    await cancelNotificationsByType(RECHECK_REMINDER_TYPE);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const { data: checkIn } = await supabase
+      .from('daily_check_ins')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('date', today)
+      .maybeSingle();
+
+    if (!checkIn) return;
+
+    const locale = localeOverride ?? (await getStoredLocale());
+    const triggerDate = new Date();
+    triggerDate.setHours(triggerDate.getHours() + RECHECK_HOURS_AFTER_CHECKIN);
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: translate(locale, 'hooks.recheckNotifTitle'),
+        body: translate(locale, 'hooks.recheckNotifBody'),
+        sound: true,
+        data: { type: RECHECK_REMINDER_TYPE },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: triggerDate,
+      },
+    });
+  } catch (error) {
+    console.error('Error programando recordatorio de re-check:', error);
+  }
 }
 
 async function registerForPushNotificationsAsync() {
@@ -119,12 +177,7 @@ export async function scheduleDailyReminder(localeOverride?: AppLocale) {
 
   try {
     // Cancelar solo recordatorios diarios de check-in, no todas las notificaciones.
-    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    await Promise.all(
-      scheduled
-        .filter((n) => n.content.data?.type === DAILY_REMINDER_TYPE)
-        .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier))
-    );
+    await cancelNotificationsByType(DAILY_REMINDER_TYPE);
 
     // Verificar si ya hay check-in hoy
     const { data: { user } } = await supabase.auth.getUser();
@@ -183,12 +236,8 @@ export async function cancelAllNotifications() {
     console.log('Las notificaciones no están disponibles en web');
     return;
   }
-  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  await Promise.all(
-    scheduled
-      .filter((n) => n.content.data?.type === DAILY_REMINDER_TYPE)
-      .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier))
-  );
+  await cancelNotificationsByType(DAILY_REMINDER_TYPE);
+  await cancelNotificationsByType(RECHECK_REMINDER_TYPE);
 }
 
 // Verificar permisos de notificación

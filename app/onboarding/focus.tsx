@@ -246,8 +246,9 @@ export default function FocusScreen() {
 
       // Programar notificaciones diarias después del check-in
       try {
-        const { scheduleDailyReminder } = await import('@/hooks/useNotifications');
+        const { scheduleDailyReminder, scheduleRecheckReminder } = await import('@/hooks/useNotifications');
         await scheduleDailyReminder();
+        await scheduleRecheckReminder(locale);
       } catch (err) {
         console.log('Error programando notificaciones (no crítico):', err);
       }
@@ -269,7 +270,7 @@ export default function FocusScreen() {
 
       // En onboarding, mostrar paywall suave antes de tabs.
       try {
-        if (from === 'sentir') {
+        if (from === 'sentir' || from === 'quick') {
           router.replace('/(tabs)');
         } else {
           const { error: onboardingError } = await markOnboardingCompleted(user.id);

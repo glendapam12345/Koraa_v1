@@ -24,14 +24,20 @@ import { useTasks } from '@/hooks/useTasks';
 import { useTaskActions } from '@/hooks/useTaskActions';
 import { useProgress } from '@/hooks/useProgress';
 import { supabase } from '@/lib/supabase';
-import { generatePrioritizationExplanation, getPrioritizationExplainerBullets } from '@/lib/smartPrioritization';
+import {
+  buildHoyFocusSummaryLine,
+  computePrioritizationPlan,
+  generatePrioritizationExplanation,
+  getPrioritizationExplainerBullets,
+  getTaskPriorityInsight,
+} from '@/lib/smartPrioritization';
 import { CATEGORY_ORDER_KEYS, categoryLabel, normalizeCategoryKey } from '@/lib/i18n/categoryLabels';
 import { getCatalog } from '@/lib/i18n';
 import { getEmotionEmoji } from '@/lib/emotionalInsights';
 import { logger } from '@/lib/logger';
-import { Plus, Flame, PenTool, Heart, Target, ArrowRight, Lightbulb, ChevronDown, ChevronRight, FolderKanban, ClipboardList, CalendarRange, Settings, CircleHelp } from 'lucide-react-native';
+import { Plus, Flame, PenTool, Heart, Target, ArrowRight, Lightbulb, ChevronDown, ChevronRight, FolderKanban, ClipboardList, CalendarRange, Settings, CircleHelp, RefreshCw } from 'lucide-react-native';
 import { GradientButton } from '@/components/GradientButton';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import type { Task } from '@/components/tasks/TaskCard';
 import { RecommendationsSection } from '@/components/recommendations/RecommendationsSection';
 import { subscribeCheckInCelebration } from '@/lib/checkInCelebration';
@@ -53,9 +59,9 @@ const ConfettiCelebration = lazy(() =>
   import('@/components/ConfettiCelebration').then(module => ({ default: module.ConfettiCelebration }))
     .catch(() => ({ default: () => null as any }))
 );
-const QuickCheckInModal = lazy(() => 
-  import('@/components/QuickCheckInModal').then(module => ({ default: module.QuickCheckInModal }))
-    .catch(() => ({ default: () => null as any }))
+const QuickRecheckInModal = lazy(() =>
+  import('@/components/QuickRecheckInModal').then((module) => ({ default: module.QuickRecheckInModal }))
+    .catch(() => ({ default: () => null as any })),
 );
 const NoPendingTasksCelebration = lazy(() => 
   import('@/components/NoPendingTasksCelebration').then(module => ({ default: module.NoPendingTasksCelebration }))
@@ -84,7 +90,8 @@ export default function TodayScreen() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [previousCompletedCount, setPreviousCompletedCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  const [showQuickCheckIn, setShowQuickCheckIn] = useState(false);
+  const [showQuickRecheck, setShowQuickRecheck] = useState(false);
+  const { openRecheck } = useLocalSearchParams<{ openRecheck?: string }>();
   const [, setTotalTasksBefore] = useState<number | null>(null);
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   const [showMeditation, setShowMeditation] = useState(false);
@@ -225,6 +232,37 @@ export default function TodayScreen() {
   }, [user]);
 
   const { incompleteTasks } = useProgress(tasks, loading);
+
+  const priorityIncomplete = useMemo(
+    () => incompleteTasks.filter((task) => task.is_priority),
+    [incompleteTasks],
+  );
+
+  const completedPriorityToday = useMemo(() => {
+    const today = getLocalDateString();
+    return tasks.filter((task) => {
+      if (!task.is_priority || !task.is_completed) return false;
+      if (!task.completed_at) return false;
+      return String(task.completed_at).slice(0, 10) === today;
+    });
+  }, [tasks]);
+
+  const showNothingDoneCard =
+    Boolean(todayMood) &&
+    priorityIncomplete.length > 0 &&
+    completedPriorityToday.length === 0 &&
+    !loading;
+
+  const openQuickRecheck = useCallback(() => {
+    setShowQuickRecheck(true);
+  }, []);
+
+  useEffect(() => {
+    if (openRecheck === '1') {
+      setShowQuickRecheck(true);
+      router.setParams({ openRecheck: undefined });
+    }
+  }, [openRecheck]);
 
   // En "Hoy" solo mostramos tareas sin fecha o programadas para hoy
   const incompleteTasksForToday = useMemo(() => {
@@ -849,6 +887,53 @@ export default function TodayScreen() {
     [getPriorityExplanation]
   );
 
+  const prioritizationPlan = useMemo(() => {
+    if (!todayMood || energyLevel <= 0 || !time || !focusLevel) return null;
+    return computePrioritizationPlan(
+      tasks,
+      {
+        energyLevel,
+        emotion: todayMood,
+        availableTime: time,
+        focusLevel,
+      },
+      locale,
+    );
+  }, [tasks, todayMood, energyLevel, time, focusLevel, locale]);
+
+  const focusSummaryLine = useMemo(() => {
+    if (!prioritizationPlan || !todayMood || !time || !focusLevel) return null;
+    return buildHoyFocusSummaryLine(
+      prioritizationPlan,
+      {
+        energyLevel,
+        emotion: todayMood,
+        availableTime: time,
+        focusLevel,
+      },
+      locale,
+      todayEmotionLabel,
+    );
+  }, [
+    prioritizationPlan,
+    todayMood,
+    energyLevel,
+    time,
+    focusLevel,
+    locale,
+    todayEmotionLabel,
+  ]);
+
+  const getTaskPriorityInsightForList = useCallback(
+    (taskId: string) => {
+      if (!todayMood || !prioritizationPlan) return undefined;
+      const insight = getTaskPriorityInsight(taskId, prioritizationPlan, locale);
+      if (insight.whyUp.length === 0 && insight.whyDown.length === 0) return undefined;
+      return insight;
+    },
+    [todayMood, prioritizationPlan, locale],
+  );
+
   const emotionalClosure = useMemo(() => {
     if (!todayMood || energyLevel === 0) return null;
 
@@ -1122,24 +1207,68 @@ export default function TodayScreen() {
 
         {/* Contexto del día: una línea (estado de ánimo + energía) o CTA a Sentir */}
         {!loading && todayMood && (
-          <TouchableOpacity
-            style={styles.contextPillWrap}
-            onPress={() => router.push('/(tabs)/sentir')}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityLabel={t('hoyExtra.feelBannerA11y')}
-            accessibilityHint={t('hoyExtra.feelBannerHint')}
-          >
-            <View style={[styles.contextPill, { backgroundColor: getEmotionColor(todayMood) }]}>
-              <Text style={styles.contextPillEmoji}>{getEmotionEmoji(todayMood)}</Text>
-              <Text style={styles.contextPillText}>
-                {t('hoy.feelingLine', {
-                  emotion: todayEmotionLabel,
-                  energy: String(energyLevel),
-                })}
-              </Text>
+          <>
+            <TouchableOpacity
+              style={styles.contextPillWrap}
+              onPress={() => router.push('/(tabs)/sentir')}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={t('hoyExtra.feelBannerA11y')}
+              accessibilityHint={t('hoyExtra.feelBannerHint')}
+            >
+              <View style={[styles.contextPill, { backgroundColor: getEmotionColor(todayMood) }]}>
+                <Text style={styles.contextPillEmoji}>{getEmotionEmoji(todayMood)}</Text>
+                <Text style={styles.contextPillText}>
+                  {t('hoy.feelingLine', {
+                    emotion: todayEmotionLabel,
+                    energy: String(energyLevel),
+                  })}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.dayFlowCard}>
+              <Text style={styles.dayFlowTitle}>{t('hoyDayFlow.dayChangedTitle')}</Text>
+              <Text style={styles.dayFlowBody}>{t('hoyDayFlow.dayChangedBody')}</Text>
+              <TouchableOpacity
+                style={styles.dayFlowPrimaryBtn}
+                onPress={openQuickRecheck}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={t('hoyDayFlow.dayChangedCta')}
+              >
+                <RefreshCw size={18} color={THEME.colors.gradient.blue} />
+                <Text style={styles.dayFlowPrimaryBtnText}>{t('hoyDayFlow.dayChangedCta')}</Text>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+
+            {showNothingDoneCard ? (
+              <View style={[styles.dayFlowCard, styles.dayFlowCardMuted]}>
+                <Text style={styles.dayFlowTitle}>{t('hoyDayFlow.nothingDoneTitle')}</Text>
+                <Text style={styles.dayFlowBody}>{t('hoyDayFlow.nothingDoneBody')}</Text>
+                <View style={styles.dayFlowActions}>
+                  <TouchableOpacity
+                    style={styles.dayFlowPrimaryBtn}
+                    onPress={openQuickRecheck}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('hoyDayFlow.nothingDoneReorganize')}
+                  >
+                    <Text style={styles.dayFlowPrimaryBtnText}>{t('hoyDayFlow.nothingDoneReorganize')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.dayFlowSecondaryBtn}
+                    onPress={() => setShowRedistribute(true)}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('hoyDayFlow.nothingDoneLighten')}
+                  >
+                    <Text style={styles.dayFlowSecondaryBtnText}>{t('hoyDayFlow.nothingDoneLighten')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : null}
+          </>
         )}
         {/* Una sola tarjeta: cómo funciona Koraa (reemplaza CTA Sentir + guía colapsable) */}
         {!loading && showSecondaryModulesEffective && (
@@ -1349,6 +1478,9 @@ export default function TodayScreen() {
                     style={styles.heroTodayCard}
                   >
                     <Text style={styles.heroTodayHeadline}>{t('hoy.fitsToday')}</Text>
+                    <Text style={styles.heroTodaySubtitle}>
+                      {focusSummaryLine ?? t('hoy.organizeByYou')}
+                    </Text>
                     <View style={styles.heroTodayStateRow}>
                       <View style={[styles.heroTodayPill, { backgroundColor: getEmotionColor(todayMood) }]}>
                         <Text style={styles.heroTodayPillEmoji}>{getEmotionEmoji(todayMood)}</Text>
@@ -1363,6 +1495,20 @@ export default function TodayScreen() {
                           {t('commonExtra.energyPill', { n: energyLevel })}
                         </Text>
                       </View>
+                      {time ? (
+                        <View style={styles.heroTodayPillNeutral}>
+                          <Text style={styles.heroTodayPillNeutralText} numberOfLines={1}>
+                            {time}
+                          </Text>
+                        </View>
+                      ) : null}
+                      {focusLevel ? (
+                        <View style={styles.heroTodayPillNeutral}>
+                          <Text style={styles.heroTodayPillNeutralText} numberOfLines={1}>
+                            {focusLevel}
+                          </Text>
+                        </View>
+                      ) : null}
                     </View>
                   </LinearGradient>
                   {!hoyLiteLayout && (
@@ -1735,6 +1881,7 @@ export default function TodayScreen() {
                               sectionAccentColor={THEME.colors.text.secondary}
                               sectionCategory="otros"
                               uniformCard
+                              getTaskPriorityInsight={getTaskPriorityInsightForList}
                             />
                           </View>
                         )}
@@ -1844,6 +1991,7 @@ export default function TodayScreen() {
                             sectionAccentColor={sec.color}
                             sectionCategory={sec.categoryKey}
                             uniformCard
+                            getTaskPriorityInsight={getTaskPriorityInsightForList}
                           />
                         </View>
                       )}
@@ -2017,11 +2165,17 @@ export default function TodayScreen() {
       />
       
       {/* Modal de check-in rápido - Lazy loaded */}
-      {showQuickCheckIn && (
+      {showQuickRecheck && (
         <Suspense fallback={null}>
-          <QuickCheckInModal
-            visible={showQuickCheckIn}
-            onClose={() => setShowQuickCheckIn(false)}
+          <QuickRecheckInModal
+            visible={showQuickRecheck}
+            initialEmotion={todayMood || ''}
+            initialEnergy={energyLevel || 0}
+            onClose={() => setShowQuickRecheck(false)}
+            onComplete={() => {
+              void loadTodayCheckIn();
+              void loadTasks();
+            }}
           />
         </Suspense>
       )}
@@ -2274,6 +2428,65 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
+  },
+  dayFlowCard: {
+    marginHorizontal: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+    gap: THEME.spacing.xs,
+    ...THEME.shadows.soft,
+  },
+  dayFlowCardMuted: {
+    borderColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.fill[200],
+  },
+  dayFlowTitle: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  dayFlowBody: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+  },
+  dayFlowActions: {
+    gap: THEME.spacing.xs,
+    marginTop: THEME.spacing.xs,
+  },
+  dayFlowPrimaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
+    minHeight: THEME.sizes.touchTarget,
+    borderRadius: THEME.borderRadius.pill,
+    borderWidth: 1.5,
+    borderColor: THEME.colors.gradient.blue,
+    paddingHorizontal: THEME.spacing.md,
+    marginTop: THEME.spacing.xs,
+  },
+  dayFlowPrimaryBtnText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  dayFlowSecondaryBtn: {
+    minHeight: THEME.sizes.touchTarget,
+    borderRadius: THEME.borderRadius.pill,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: THEME.spacing.md,
+  },
+  dayFlowSecondaryBtnText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
+    textDecorationLine: 'underline',
   },
   howKoraaCard: {
     marginHorizontal: THEME.spacing.lg,
@@ -3001,8 +3214,15 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
-    marginBottom: 6,
+    marginBottom: 4,
     letterSpacing: 0.2,
+  },
+  heroTodaySubtitle: {
+    ...THEME.typography.meta,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
+    marginBottom: THEME.spacing.xs,
+    lineHeight: 18,
   },
   heroTodayStateRow: {
     flexDirection: 'row',

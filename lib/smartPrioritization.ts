@@ -26,10 +26,52 @@ export interface CheckInData {
   focusLevel: string; // 'Muy distraída', 'Algo distraída', 'Normal', 'Enfocada', 'Súper enfocada'
 }
 
+export type SmartReasonKey =
+  | 'reasonRecent'
+  | 'reasonFitsTime'
+  | 'reasonFitsTimeMed'
+  | 'reasonTooLong'
+  | 'reasonSimpleFocus'
+  | 'reasonComplexFocus'
+  | 'reasonComplexIdeal'
+  | 'reasonMediumIdeal'
+  | 'reasonCreative'
+  | 'reasonAdmin'
+  | 'reasonCreativeBad'
+  | 'reasonBalance'
+  | 'reasonNotInFocus';
+
+const POSITIVE_REASON_KEYS: SmartReasonKey[] = [
+  'reasonRecent',
+  'reasonFitsTime',
+  'reasonFitsTimeMed',
+  'reasonSimpleFocus',
+  'reasonComplexIdeal',
+  'reasonMediumIdeal',
+  'reasonCreative',
+  'reasonAdmin',
+  'reasonBalance',
+];
+
+const NEGATIVE_REASON_KEYS: SmartReasonKey[] = [
+  'reasonTooLong',
+  'reasonComplexFocus',
+  'reasonCreativeBad',
+];
+
 export interface TaskScore {
   task: Task;
   score: number;
   reasons: string[];
+  reasonKeys: SmartReasonKey[];
+}
+
+export interface PrioritizationPlan {
+  prioritizedTasks: Task[];
+  prioritizedIds: Set<string>;
+  scoresById: Map<string, TaskScore>;
+  orderedScores: TaskScore[];
+  maxPriorityTasks: number;
 }
 
 const QUICK_KEYWORDS = [
@@ -195,6 +237,12 @@ function calculateTaskScore(
 ): TaskScore {
   let score = 0;
   const reasons: string[] = [];
+  const reasonKeys: SmartReasonKey[] = [];
+
+  const addReason = (key: SmartReasonKey) => {
+    reasonKeys.push(key);
+    reasons.push(translate(locale, `smart.${key}`));
+  };
   
   // Factor 1: Energía → Número de tareas (ya se maneja en el límite)
   // Las tareas más recientes tienen un pequeño boost
@@ -203,7 +251,7 @@ function calculateTaskScore(
   );
   if (daysSinceCreation <= 1) {
     score += 10;
-    reasons.push(translate(locale, 'smart.reasonRecent'));
+    addReason('reasonRecent');
   }
   
   // Factor 2: Tiempo disponible → Duración estimada
@@ -213,13 +261,13 @@ function calculateTaskScore(
   // Priorizar tareas que caben en el tiempo disponible
   if (taskDuration <= availableMinutes * 0.3) {
     score += 20;
-    reasons.push(translate(locale, 'smart.reasonFitsTime'));
+    addReason('reasonFitsTime');
   } else if (taskDuration <= availableMinutes * 0.6) {
     score += 10;
-    reasons.push(translate(locale, 'smart.reasonFitsTimeMed'));
+    addReason('reasonFitsTimeMed');
   } else if (taskDuration > availableMinutes) {
     score -= 15;
-    reasons.push(translate(locale, 'smart.reasonTooLong'));
+    addReason('reasonTooLong');
   }
   
   // Factor 3: Enfoque → Complejidad
@@ -229,21 +277,21 @@ function calculateTaskScore(
   if (isLowFocus(focusLevel)) {
     if (complexity === 'simple') {
       score += 25;
-      reasons.push(translate(locale, 'smart.reasonSimpleFocus'));
+      addReason('reasonSimpleFocus');
     } else if (complexity === 'complex') {
       score -= 20;
-      reasons.push(translate(locale, 'smart.reasonComplexFocus'));
+      addReason('reasonComplexFocus');
     }
   } else if (isHighFocus(focusLevel)) {
     if (complexity === 'complex') {
       score += 25;
-      reasons.push(translate(locale, 'smart.reasonComplexIdeal'));
+      addReason('reasonComplexIdeal');
     } else if (complexity === 'simple') {
       score += 5;
     }
   } else if (complexity === 'medium') {
     score += 15;
-    reasons.push(translate(locale, 'smart.reasonMediumIdeal'));
+    addReason('reasonMediumIdeal');
   }
   
   // Factor 4: Emoción → Tipo de tarea
@@ -254,17 +302,17 @@ function calculateTaskScore(
   if (['motivada', 'enfocada', 'tranquila'].includes(emotion)) {
     if (taskType === 'creative') {
       score += 20;
-      reasons.push(translate(locale, 'smart.reasonCreative'));
+      addReason('reasonCreative');
     }
   }
 
   if (['agotada', 'ansiosa', 'abrumada'].includes(emotion)) {
     if (taskType === 'administrative' && complexity === 'simple') {
       score += 20;
-      reasons.push(translate(locale, 'smart.reasonAdmin'));
+      addReason('reasonAdmin');
     } else if (taskType === 'creative' && complexity === 'complex') {
       score -= 15;
-      reasons.push(translate(locale, 'smart.reasonCreativeBad'));
+      addReason('reasonCreativeBad');
     }
   }
   
@@ -278,13 +326,127 @@ function calculateTaskScore(
     const categoryRatio = currentCategoryCount / totalTasks;
     if (categoryRatio < 0.3) {
       score += 15;
-      reasons.push(translate(locale, 'smart.reasonBalance'));
+      addReason('reasonBalance');
     } else if (categoryRatio > 0.6) {
       score -= 10; // Categoría sobre-representada
     }
   }
-  
-  return { task, score, reasons };
+
+  return { task, score, reasons, reasonKeys };
+}
+
+/**
+ * Plan completo de priorización (tareas + scores + razones por tarea).
+ */
+export function computePrioritizationPlan(
+  tasks: Task[],
+  checkIn: CheckInData,
+  locale: AppLocale = 'es',
+): PrioritizationPlan | null {
+  const mainTasks = tasks.filter((t) => !t.is_completed && !t.parent_task_id);
+  if (mainTasks.length === 0) return null;
+
+  const categoryCounts = new Map<string, number>();
+  mainTasks.forEach((task) => {
+    const category = task.category || 'sin categoría';
+    categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
+  });
+
+  const taskScores: TaskScore[] = mainTasks.map((task) =>
+    calculateTaskScore(task, checkIn, categoryCounts, locale),
+  );
+  taskScores.sort((a, b) => b.score - a.score);
+
+  const negativeEmotions = ['agotada', 'ansiosa', 'abrumada'];
+  const isNegativeEmotion = negativeEmotions.includes(checkIn.emotion.toLowerCase());
+
+  let maxPriorityTasks = 4;
+  if (checkIn.energyLevel <= 2 || isNegativeEmotion) {
+    maxPriorityTasks = 2;
+  } else if (checkIn.energyLevel === 3) {
+    maxPriorityTasks = 3;
+  } else if (checkIn.energyLevel >= 4) {
+    maxPriorityTasks = 5;
+  }
+
+  const availableMinutes = getTimeInMinutes(checkIn.availableTime);
+  const totalEstimatedTime = taskScores
+    .slice(0, maxPriorityTasks)
+    .reduce((sum, ts) => sum + estimateTaskDuration(ts.task), 0);
+
+  if (totalEstimatedTime > availableMinutes && maxPriorityTasks > 1) {
+    let adjustedCount = maxPriorityTasks;
+    let cumulativeTime = 0;
+
+    for (let i = 0; i < taskScores.length && i < maxPriorityTasks; i++) {
+      cumulativeTime += estimateTaskDuration(taskScores[i].task);
+      if (cumulativeTime > availableMinutes) {
+        adjustedCount = Math.max(1, i);
+        break;
+      }
+    }
+
+    maxPriorityTasks = adjustedCount;
+  }
+
+  const prioritizedTasks = taskScores.slice(0, maxPriorityTasks).map((ts) => ts.task);
+  const prioritizedIds = new Set(prioritizedTasks.map((t) => t.id));
+  const scoresById = new Map(taskScores.map((ts) => [ts.task.id, ts]));
+
+  return {
+    prioritizedTasks,
+    prioritizedIds,
+    scoresById,
+    orderedScores: taskScores,
+    maxPriorityTasks,
+  };
+}
+
+export interface TaskPriorityInsight {
+  whyUp: string[];
+  whyDown: string[];
+}
+
+function linesForKeys(keys: SmartReasonKey[], locale: AppLocale, max: number): string[] {
+  return keys.slice(0, max).map((key) => translate(locale, `smart.${key}`));
+}
+
+/** Razones legibles para mostrar en la tarjeta de una tarea. */
+export function getTaskPriorityInsight(
+  taskId: string,
+  plan: PrioritizationPlan | null,
+  locale: AppLocale = 'es',
+): TaskPriorityInsight {
+  if (!plan) return { whyUp: [], whyDown: [] };
+
+  const score = plan.scoresById.get(taskId);
+  if (!score) return { whyUp: [], whyDown: [] };
+
+  const isPriority = plan.prioritizedIds.has(taskId);
+  const rank = plan.orderedScores.findIndex((ts) => ts.task.id === taskId);
+
+  if (isPriority) {
+    const positiveKeys = score.reasonKeys.filter((k) => POSITIVE_REASON_KEYS.includes(k));
+    const whyUp =
+      positiveKeys.length > 0
+        ? linesForKeys(positiveKeys, locale, 2)
+        : score.reasons.slice(0, 2);
+    return { whyUp, whyDown: [] };
+  }
+
+  const negativeKeys = score.reasonKeys.filter((k) => NEGATIVE_REASON_KEYS.includes(k));
+  if (negativeKeys.length > 0) {
+    return { whyUp: [], whyDown: linesForKeys(negativeKeys, locale, 1) };
+  }
+
+  if (rank >= plan.maxPriorityTasks && rank < plan.maxPriorityTasks + 6) {
+    return {
+      whyUp: [],
+      whyDown: [translate(locale, 'smart.reasonNotInFocus')],
+    };
+  }
+
+  return { whyUp: [], whyDown: [] };
 }
 
 /**
@@ -296,69 +458,8 @@ export function prioritizeTasksIntelligently(
   locale: AppLocale = 'es',
 ): Task[] {
   if (tasks.length === 0) return [];
-  
-  // Filtrar solo tareas no completadas y principales (sin parent_task_id)
-  const mainTasks = tasks.filter(t => !t.is_completed && !t.parent_task_id);
-  
-  if (mainTasks.length === 0) return [];
-  
-  // Contar tareas por categoría para balance
-  const categoryCounts = new Map<string, number>();
-  mainTasks.forEach(task => {
-    const category = task.category || 'sin categoría';
-    categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
-  });
-  
-  // Calcular scores para cada tarea
-  const taskScores: TaskScore[] = mainTasks.map((task) =>
-    calculateTaskScore(task, checkIn, categoryCounts, locale),
-  );
-  
-  // Ordenar por score (mayor a menor)
-  taskScores.sort((a, b) => b.score - a.score);
-  
-  // Determinar número máximo de tareas según energía y emoción
-  const negativeEmotions = ['agotada', 'ansiosa', 'abrumada'];
-  const isNegativeEmotion = negativeEmotions.includes(checkIn.emotion.toLowerCase());
-  
-  let maxPriorityTasks = 4;
-  if (checkIn.energyLevel <= 2 || isNegativeEmotion) {
-    maxPriorityTasks = 2;
-  } else if (checkIn.energyLevel === 3) {
-    maxPriorityTasks = 3;
-  } else if (checkIn.energyLevel >= 4) {
-    maxPriorityTasks = 5;
-  }
-  
-  // Ajustar según tiempo disponible
-  const availableMinutes = getTimeInMinutes(checkIn.availableTime);
-  const totalEstimatedTime = taskScores
-    .slice(0, maxPriorityTasks)
-    .reduce((sum, ts) => sum + estimateTaskDuration(ts.task), 0);
-  
-  // Si las tareas seleccionadas exceden el tiempo, reducir cantidad
-  if (totalEstimatedTime > availableMinutes && maxPriorityTasks > 1) {
-    // Reducir hasta que quepan en el tiempo disponible
-    let adjustedCount = maxPriorityTasks;
-    let cumulativeTime = 0;
-    
-    for (let i = 0; i < taskScores.length && i < maxPriorityTasks; i++) {
-      cumulativeTime += estimateTaskDuration(taskScores[i].task);
-      if (cumulativeTime > availableMinutes) {
-        adjustedCount = Math.max(1, i); // Al menos 1 tarea
-        break;
-      }
-    }
-    
-    maxPriorityTasks = adjustedCount;
-  }
-  
-  // Seleccionar las mejores tareas
-  const prioritizedTasks = taskScores
-    .slice(0, maxPriorityTasks)
-    .map(ts => ts.task);
-  
-  return prioritizedTasks;
+  const plan = computePrioritizationPlan(tasks, checkIn, locale);
+  return plan?.prioritizedTasks ?? [];
 }
 
 /**
@@ -440,4 +541,41 @@ export function getPrioritizationExplainerBullets(locale: AppLocale = 'es'): str
     translate(locale, 'smart.bullet4'),
     translate(locale, 'smart.bullet5'),
   ];
+}
+
+function getTimeShortLabel(availableTime: string, locale: AppLocale): string {
+  const minutes = getTimeInMinutes(availableTime);
+  if (minutes < 120) return translate(locale, 'smart.timeShortLittle');
+  if (minutes >= 300) return translate(locale, 'smart.timeShortPlenty');
+  return translate(locale, 'smart.timeShortMedium');
+}
+
+function getFocusShortLabel(focusLevel: string, locale: AppLocale): string {
+  if (isLowFocus(focusLevel)) return translate(locale, 'smart.focusShortLow');
+  if (isHighFocus(focusLevel)) return translate(locale, 'smart.focusShortHigh');
+  return translate(locale, 'smart.focusShortNormal');
+}
+
+/** Una línea compacta bajo el hero de Hoy (focos del día según check-in). */
+export function buildHoyFocusSummaryLine(
+  plan: PrioritizationPlan | null,
+  checkIn: CheckInData,
+  locale: AppLocale = 'es',
+  emotionDisplayLabel?: string,
+): string | null {
+  if (!plan || plan.prioritizedIds.size === 0) return null;
+
+  const count = plan.prioritizedIds.size;
+  const emotions = getCatalog(locale).sentir.emotions as Record<string, string>;
+  const emotionKey = checkIn.emotion.toLowerCase();
+  const emotionLabel = emotionDisplayLabel ?? emotions[emotionKey] ?? checkIn.emotion;
+
+  return translate(locale, 'hoy.focusSummaryLine', {
+    count,
+    focos: count === 1 ? translate(locale, 'hoy.focusOne') : translate(locale, 'hoy.focusMany'),
+    n: checkIn.energyLevel,
+    emotion: emotionLabel.toLowerCase(),
+    time: getTimeShortLabel(checkIn.availableTime, locale),
+    focus: getFocusShortLabel(checkIn.focusLevel, locale),
+  });
 }
