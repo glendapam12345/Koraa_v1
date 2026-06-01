@@ -185,10 +185,28 @@ export const extEs = {
     submitHint: 'Guarda tu check-in y reorganiza las tareas de Hoy',
     error: 'No se pudo actualizar. Inténtalo de nuevo.',
   },
+  sentirToday: {
+    checkedInTitle: 'Ya registraste cómo estás hoy',
+    checkedInSummary: '{{emotion}} · Energía {{energy}}/5',
+    checkedInBody:
+      'Si tu tarde cambió, reorganiza en un minuto. Si prefieres empezar de cero, haz un check-in completo abajo.',
+    quickRecheck: 'Reorganizar rápido',
+    quickRecheckA11y: 'Abrir reorganización rápida según cómo te sientes ahora',
+    fullCheckIn: 'Check-in completo abajo',
+    fullCheckInA11y: 'Ir a elegir emoción para un check-in completo',
+  },
+  boot: {
+    loadingDay: 'Preparando tu día…',
+    loadingProfile: 'Cargando tu perfil…',
+    profileError: 'No pudimos cargar tu perfil. Revisa tu conexión e inténtalo de nuevo.',
+    retry: 'Reintentar',
+  },
   hoyDayFlow: {
     dayChangedTitle: '¿Cambió algo desde tu check-in?',
     dayChangedBody: 'En ~1 minuto puedes actualizar cómo te sientes y ver un Hoy que encaje con tu tarde.',
     dayChangedCta: 'Reorganizar rápido',
+    dismissToday: 'Ahora no',
+    dismissTodayA11y: 'Ocultar por hoy la sugerencia de reorganizar',
     nothingDoneTitle: '¿No avanzaste con lo prioritario?',
     nothingDoneBody: 'No pasa nada. Puedes reorganizar según cómo estás ahora o aliviar carga para otro día.',
     nothingDoneReorganize: 'Reorganizar en 1 min',

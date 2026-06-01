@@ -35,9 +35,10 @@ import { CATEGORY_ORDER_KEYS, categoryLabel, normalizeCategoryKey } from '@/lib/
 import { getCatalog } from '@/lib/i18n';
 import { getEmotionEmoji } from '@/lib/emotionalInsights';
 import { logger } from '@/lib/logger';
-import { Plus, Flame, PenTool, Heart, Target, ArrowRight, Lightbulb, ChevronDown, ChevronRight, FolderKanban, ClipboardList, CalendarRange, Settings, CircleHelp, RefreshCw } from 'lucide-react-native';
+import { Plus, Flame, PenTool, Heart, Target, ArrowRight, Lightbulb, ChevronDown, ChevronRight, FolderKanban, ClipboardList, CalendarRange, Settings, CircleHelp } from 'lucide-react-native';
 import { GradientButton } from '@/components/GradientButton';
 import { FocusProgressBar } from '@/components/FocusProgressBar';
+import { HoyDayFlowSection } from '@/components/hoy/HoyDayFlowSection';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import type { Task } from '@/components/tasks/TaskCard';
 import { RecommendationsSection } from '@/components/recommendations/RecommendationsSection';
@@ -49,6 +50,11 @@ import { QuickOnboardingModal } from '@/components/onboarding/QuickOnboardingMod
 import { RedistributeWorkloadModal } from '@/components/tasks/RedistributeWorkloadModal';
 import { MeditationCircleSimple } from '@/components/MeditationCircleSimple';
 import { resolveHoyLiteLayout, optOutHoyLiteLayout } from '@/lib/hoyLiteDay';
+import {
+  dismissDayChangedCard,
+  shouldShowDayChangedCard,
+} from '@/lib/hoyDayFlowDismiss';
+import { FlowIndicator } from '@/components/FlowIndicator';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { getTodayPriorityStats } from '@/lib/priorityProgress';
 import type { TaskCompletedPayload } from '@/hooks/useTaskActions';
@@ -110,6 +116,7 @@ export default function TodayScreen() {
   const [hoyLiteLayout, setHoyLiteLayout] = useState<boolean | null>(null);
   /** Módulos secundarios colapsables para reducir carga en pantalla. */
   const [showSecondaryModules, setShowSecondaryModules] = useState(false);
+  const [showDayChangedCard, setShowDayChangedCard] = useState(false);
   const [emotionalMemoryInsights, setEmotionalMemoryInsights] = useState<{
     title: string;
     message: string;
@@ -255,6 +262,27 @@ export default function TodayScreen() {
     priorityIncomplete.length > 0 &&
     completedPriorityToday.length === 0 &&
     !loading;
+
+  useEffect(() => {
+    if (!user?.id || !todayMood) {
+      setShowDayChangedCard(false);
+      return;
+    }
+    let cancelled = false;
+    void shouldShowDayChangedCard(user.id).then((show) => {
+      if (!cancelled) setShowDayChangedCard(show);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, todayMood]);
+
+  const handleDismissDayChangedCard = useCallback(() => {
+    if (user?.id) {
+      void dismissDayChangedCard(user.id);
+    }
+    setShowDayChangedCard(false);
+  }, [user?.id]);
 
   const openQuickRecheck = useCallback(() => {
     setShowQuickRecheck(true);
@@ -1256,71 +1284,17 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {/* Contexto del día: una línea (estado de ánimo + energía) o CTA a Sentir */}
-        {!loading && todayMood && (
-          <>
-            <TouchableOpacity
-              style={styles.contextPillWrap}
-              onPress={() => router.push('/(tabs)/sentir')}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel={t('hoyExtra.feelBannerA11y')}
-              accessibilityHint={t('hoyExtra.feelBannerHint')}
-            >
-              <View style={[styles.contextPill, { backgroundColor: getEmotionColor(todayMood) }]}>
-                <Text style={styles.contextPillEmoji}>{getEmotionEmoji(todayMood)}</Text>
-                <Text style={styles.contextPillText}>
-                  {t('hoy.feelingLine', {
-                    emotion: todayEmotionLabel,
-                    energy: String(energyLevel),
-                  })}
-                </Text>
-              </View>
-            </TouchableOpacity>
+        {!loading && <FlowIndicator currentStep="accionar" />}
 
-            <View style={styles.dayFlowCard}>
-              <Text style={styles.dayFlowTitle}>{t('hoyDayFlow.dayChangedTitle')}</Text>
-              <Text style={styles.dayFlowBody}>{t('hoyDayFlow.dayChangedBody')}</Text>
-              <TouchableOpacity
-                style={styles.dayFlowPrimaryBtn}
-                onPress={openQuickRecheck}
-                activeOpacity={0.85}
-                accessibilityRole="button"
-                accessibilityLabel={t('hoyDayFlow.dayChangedCta')}
-              >
-                <RefreshCw size={18} color={THEME.colors.gradient.blue} />
-                <Text style={styles.dayFlowPrimaryBtnText}>{t('hoyDayFlow.dayChangedCta')}</Text>
-              </TouchableOpacity>
-            </View>
-
-            {showNothingDoneCard ? (
-              <View style={[styles.dayFlowCard, styles.dayFlowCardMuted]}>
-                <Text style={styles.dayFlowTitle}>{t('hoyDayFlow.nothingDoneTitle')}</Text>
-                <Text style={styles.dayFlowBody}>{t('hoyDayFlow.nothingDoneBody')}</Text>
-                <View style={styles.dayFlowActions}>
-                  <TouchableOpacity
-                    style={styles.dayFlowPrimaryBtn}
-                    onPress={openQuickRecheck}
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('hoyDayFlow.nothingDoneReorganize')}
-                  >
-                    <Text style={styles.dayFlowPrimaryBtnText}>{t('hoyDayFlow.nothingDoneReorganize')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.dayFlowSecondaryBtn}
-                    onPress={() => setShowRedistribute(true)}
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('hoyDayFlow.nothingDoneLighten')}
-                  >
-                    <Text style={styles.dayFlowSecondaryBtnText}>{t('hoyDayFlow.nothingDoneLighten')}</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : null}
-          </>
-        )}
+        {!loading && todayMood ? (
+          <HoyDayFlowSection
+            showDayChangedCard={showDayChangedCard}
+            showNothingDoneCard={showNothingDoneCard}
+            onQuickRecheck={openQuickRecheck}
+            onDismissDayChanged={handleDismissDayChangedCard}
+            onLightenLoad={() => setShowRedistribute(true)}
+          />
+        ) : null}
         {/* Una sola tarjeta: cómo funciona Koraa (reemplaza CTA Sentir + guía colapsable) */}
         {!loading && showSecondaryModulesEffective && (
           <TouchableOpacity
@@ -2484,6 +2458,13 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
   },
+  dayFlowCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
+  },
   dayFlowCard: {
     marginHorizontal: THEME.spacing.lg,
     marginBottom: THEME.spacing.md,
@@ -2503,6 +2484,7 @@ const styles = StyleSheet.create({
     ...THEME.typography.caption,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
+    flex: 1,
   },
   dayFlowBody: {
     ...THEME.typography.meta,

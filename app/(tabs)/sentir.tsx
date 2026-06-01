@@ -1,6 +1,14 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, AccessibilityInfo } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Platform,
+  AccessibilityInfo,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
@@ -14,6 +22,14 @@ import { router, useFocusEffect } from 'expo-router';
 import { Plus, Lightbulb, Heart, CircleHelp } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { getLocalDateString } from '@/lib/dateLocal';
+import { SentirTodayCheckInCard } from '@/components/sentir/SentirTodayCheckInCard';
+
+const QuickRecheckInModal = lazy(() =>
+  import('@/components/QuickRecheckInModal').then((module) => ({
+    default: module.QuickRecheckInModal,
+  })),
+);
 
 const SENTIR_RITUAL_HINT_KEY = 'koraa_sentir_ritual_intro_v1';
 
@@ -37,6 +53,13 @@ export default function SentirScreen() {
   const [selectedEmotion, setSelectedEmotion] = useState<string>('');
   const [hasTasks, setHasTasks] = useState<boolean | null>(null);
   const [showRitualHint, setShowRitualHint] = useState(false);
+  const [todayCheckIn, setTodayCheckIn] = useState<{
+    emotion: string;
+    energy_level: number;
+  } | null>(null);
+  const [showQuickRecheck, setShowQuickRecheck] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const emotionsSectionY = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,6 +91,40 @@ export default function SentirScreen() {
     setShowRitualHint(false);
   };
 
+  const loadTodayCheckIn = useCallback(async () => {
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        setTodayCheckIn(null);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('daily_check_ins')
+        .select('emotion, energy_level')
+        .eq('user_id', authUser.id)
+        .eq('date', getLocalDateString())
+        .maybeSingle();
+
+      if (error) {
+        logger.error('Error cargando check-in de hoy:', error);
+        setTodayCheckIn(null);
+        return;
+      }
+
+      if (data?.emotion) {
+        setTodayCheckIn({
+          emotion: data.emotion,
+          energy_level: data.energy_level || 0,
+        });
+      } else {
+        setTodayCheckIn(null);
+      }
+    } catch (error) {
+      logger.error('Error inesperado cargando check-in:', error);
+      setTodayCheckIn(null);
+    }
+  }, []);
+
   const checkTasks = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -93,13 +150,27 @@ export default function SentirScreen() {
 
   useEffect(() => {
     checkTasks();
-  }, [checkTasks]);
+    void loadTodayCheckIn();
+  }, [checkTasks, loadTodayCheckIn]);
 
   useFocusEffect(
     useCallback(() => {
       checkTasks();
-    }, [checkTasks])
+      void loadTodayCheckIn();
+    }, [checkTasks, loadTodayCheckIn]),
   );
+
+  const todayEmotionLabel = todayCheckIn
+    ? emotions.find((e) => e.id === todayCheckIn.emotion.toLowerCase())?.label ??
+      todayCheckIn.emotion
+    : '';
+
+  const scrollToFullCheckIn = useCallback(() => {
+    scrollRef.current?.scrollTo({
+      y: Math.max(emotionsSectionY.current - THEME.spacing.md, 0),
+      animated: true,
+    });
+  }, []);
 
   const handleEmotionSelect = (emotionId: string) => {
     setSelectedEmotion(emotionId);
@@ -121,7 +192,11 @@ export default function SentirScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.helpHeaderRow}>
           <TouchableOpacity
             onPress={() => router.push('/help')}
@@ -165,6 +240,17 @@ export default function SentirScreen() {
         <Text style={styles.subtitle}>{t('sentir.subtitle')}</Text>
 
         <Text style={styles.description}>{t('sentir.description')}</Text>
+        <Text style={styles.inclusiveNote}>{t('sentir.inclusiveNote')}</Text>
+
+        {todayCheckIn ? (
+          <SentirTodayCheckInCard
+            emotion={todayCheckIn.emotion}
+            emotionLabel={todayEmotionLabel}
+            energyLevel={todayCheckIn.energy_level}
+            onQuickRecheck={() => setShowQuickRecheck(true)}
+            onFullCheckIn={scrollToFullCheckIn}
+          />
+        ) : null}
 
         {/* Banner si no hay tareas - Paso 1 del flujo */}
         {hasTasks === false && (
@@ -192,6 +278,9 @@ export default function SentirScreen() {
         )}
 
         <View
+          onLayout={(e) => {
+            emotionsSectionY.current = e.nativeEvent.layout.y;
+          }}
           style={styles.emotionsGrid}
           accessibilityRole="radiogroup"
           accessibilityLabel={t('sentirExtra.emotionGroupA11y')}
@@ -237,6 +326,20 @@ export default function SentirScreen() {
           accessibilityHint={t('sentirExtra.continueA11yHint')}
         />
       </View>
+
+      <Suspense fallback={null}>
+        <QuickRecheckInModal
+          visible={showQuickRecheck}
+          onClose={() => setShowQuickRecheck(false)}
+          onComplete={() => {
+            setShowQuickRecheck(false);
+            void loadTodayCheckIn();
+            router.push('/(tabs)');
+          }}
+          initialEmotion={todayCheckIn?.emotion ?? ''}
+          initialEnergy={todayCheckIn?.energy_level ?? 0}
+        />
+      </Suspense>
     </View>
   );
 }
@@ -279,6 +382,12 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
     lineHeight: 24,
+    marginBottom: THEME.spacing.sm,
+  },
+  inclusiveNote: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.tertiary,
+    lineHeight: 18,
     marginBottom: THEME.spacing.lg,
   },
   ritualHint: {

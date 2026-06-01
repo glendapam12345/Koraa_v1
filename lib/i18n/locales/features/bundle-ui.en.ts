@@ -71,7 +71,8 @@ export const uiEn = {
     setupSteps: 'Complete the initial project setup to enable these features.',
     setupPullRefresh: 'Then pull down to refresh.',
     premiumOptional: 'Optional',
-    premiumBody: 'If you want more detail later, unlock the full week view with Koraa Premium.',
+    premiumBody:
+      'On the free plan you see {{days}} days of the week. Premium unlocks all 7 days, more filters, and full history.',
     premiumCta: 'Manage Premium',
     a11yManagePremium: 'Manage Premium',
     a11yManagePremiumHint: 'Opens Premium to subscribe or restore purchase',

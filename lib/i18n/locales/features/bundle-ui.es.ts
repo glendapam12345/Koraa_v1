@@ -74,7 +74,7 @@ export const uiEs = {
     setupPullRefresh: 'Después, arrastra hacia abajo para recargar.',
     premiumOptional: 'Opcional',
     premiumBody:
-      'Si luego quieres más detalle, puedes desbloquear la vista completa de la semana con Koraa Premium.',
+      'En la versión gratis ves {{days}} días de la semana. Premium desbloquea los 7 días, más filtros e historial completo.',
     premiumCta: 'Gestionar Premium',
     a11yManagePremium: 'Gestionar Premium',
     a11yManagePremiumHint: 'Abre Premium para suscribirte o restaurar compra',

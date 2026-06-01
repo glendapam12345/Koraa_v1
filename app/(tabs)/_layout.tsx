@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
 import { Tabs, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/constants/theme';
 import { Home, Edit3, Heart, User, Calendar, Lightbulb } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
-import { getPostAuthRoute } from '@/lib/onboardingGate';
+import { resolvePostAuthGate } from '@/lib/onboardingGate';
+import { AppLoadingGate } from '@/components/AppLoadingGate';
 import { hasSeenFirstSessionTour } from '@/lib/firstSessionTour';
 import { FirstSessionTourModal } from '@/components/onboarding/FirstSessionTourModal';
 import { useI18n } from '@/contexts/I18nContext';
@@ -16,10 +16,31 @@ export default function TabLayout() {
   const { user, loading } = useAuth();
   const userId = user?.id;
   const [allowed, setAllowed] = useState(false);
+  const [profileGateError, setProfileGateError] = useState(false);
   const [showFirstSessionTour, setShowFirstSessionTour] = useState(false);
 
   useEffect(() => {
     setAllowed(false);
+    setProfileGateError(false);
+  }, [userId]);
+
+  const verifyAccess = useCallback(async () => {
+    if (!userId) {
+      router.replace('/auth/login');
+      return;
+    }
+    setProfileGateError(false);
+    const result = await resolvePostAuthGate(userId);
+    if (result.status === 'error') {
+      setProfileGateError(true);
+      setAllowed(false);
+      return;
+    }
+    if (result.route === '/onboarding/welcome') {
+      router.replace('/onboarding/welcome');
+      return;
+    }
+    setAllowed(true);
   }, [userId]);
 
   useEffect(() => {
@@ -28,20 +49,8 @@ export default function TabLayout() {
       router.replace('/auth/login');
       return;
     }
-    let cancelled = false;
-    void (async () => {
-      const next = await getPostAuthRoute(userId);
-      if (cancelled) return;
-      if (next === '/onboarding/welcome') {
-        router.replace('/onboarding/welcome');
-        return;
-      }
-      setAllowed(true);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [userId, loading]);
+    void verifyAccess();
+  }, [userId, loading, verifyAccess]);
 
   useEffect(() => {
     if (!allowed || !userId) {
@@ -61,19 +70,22 @@ export default function TabLayout() {
   }, [allowed, userId]);
 
   if (loading || !userId) {
+    return <AppLoadingGate message={t('boot.loadingProfile')} />;
+  }
+
+  if (profileGateError) {
     return (
-      <View style={styles.authGate}>
-        <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
-      </View>
+      <AppLoadingGate
+        message={t('boot.loadingProfile')}
+        errorMessage={t('boot.profileError')}
+        retryLabel={t('boot.retry')}
+        onRetry={() => void verifyAccess()}
+      />
     );
   }
 
   if (!allowed) {
-    return (
-      <View style={styles.authGate}>
-        <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
-      </View>
-    );
+    return <AppLoadingGate message={t('boot.loadingProfile')} />;
   }
 
   return (
@@ -161,11 +173,3 @@ export default function TabLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  authGate: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: THEME.colors.fill[100],
-  },
-});

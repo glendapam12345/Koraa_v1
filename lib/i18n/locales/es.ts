@@ -246,6 +246,7 @@ export const es = {
     titleAccent: 'sientes',
     subtitle: 'hoy?',
     description: 'Koraa prioriza por ti. Solo enfócate en lo que realmente importa hoy.',
+    inclusiveNote: 'Elige la opción que más se acerque a cómo te sientes ahora.',
     noTasksTitle: 'Paso 1: Agrega tus tareas primero',
     noTasksSub:
       'Ve a la pestaña Tareas para agregar lo que necesitas hacer hoy, luego regresa aquí',

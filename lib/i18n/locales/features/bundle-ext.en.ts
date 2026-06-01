@@ -184,10 +184,28 @@ export const extEn = {
     submitHint: 'Saves your check-in and reorganizes Today’s tasks',
     error: 'Couldn’t update. Please try again.',
   },
+  sentirToday: {
+    checkedInTitle: 'You already checked in today',
+    checkedInSummary: '{{emotion}} · Energy {{energy}}/5',
+    checkedInBody:
+      'If your afternoon changed, reorganize in a minute. Or do a full check-in below from scratch.',
+    quickRecheck: 'Quick reorganize',
+    quickRecheckA11y: 'Open quick reorganize based on how you feel now',
+    fullCheckIn: 'Full check-in below',
+    fullCheckInA11y: 'Go to emotion picker for a full check-in',
+  },
+  boot: {
+    loadingDay: 'Getting your day ready…',
+    loadingProfile: 'Loading your profile…',
+    profileError: 'We couldn’t load your profile. Check your connection and try again.',
+    retry: 'Try again',
+  },
   hoyDayFlow: {
     dayChangedTitle: 'Did something change since your check-in?',
     dayChangedBody: 'In about a minute, update how you feel and get a Today view that fits your afternoon.',
     dayChangedCta: 'Quick reorganize',
+    dismissToday: 'Not now',
+    dismissTodayA11y: 'Hide reorganize suggestion for today',
     nothingDoneTitle: 'Haven’t moved on priorities yet?',
     nothingDoneBody: 'That’s okay. Reorganize based on how you feel now, or lighten your load for another day.',
     nothingDoneReorganize: 'Reorganize in 1 min',

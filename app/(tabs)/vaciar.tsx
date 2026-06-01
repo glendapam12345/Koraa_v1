@@ -77,7 +77,7 @@ export default function VaciarScreen() {
   void setShowDatePicker;
   void showDatePicker;
   const [, setProjectCount] = useState<number | null>(null);
-  const [opcionesExpanded, setOpcionesExpanded] = useState(false);
+  const [moreOptionsExpanded, setMoreOptionsExpanded] = useState(false);
   const { user } = useAuth();
 
   // Pre-llenar input si hay sugerencia desde Tips; fecha desde Semana; proyecto desde detalle de proyecto
@@ -357,6 +357,7 @@ export default function VaciarScreen() {
           setSelectedCategory('otros');
           setSelectedProjectId(null);
           setSelectedDate(null);
+          setMoreOptionsExpanded(false);
 
           trackTaskCreated({
             priority: isPriority,
@@ -412,6 +413,7 @@ export default function VaciarScreen() {
             setSelectedCategory('otros');
             setSelectedProjectId(null);
             setSelectedDate(null);
+            setMoreOptionsExpanded(false);
 
             trackTaskCreated({
               priority: isPriority,
@@ -479,6 +481,7 @@ export default function VaciarScreen() {
       setSelectedCategory('otros');
       setSelectedProjectId(null);
       setSelectedDate(null);
+      setMoreOptionsExpanded(false);
 
       await loadRecentTaskSuggestions();
       
@@ -722,8 +725,52 @@ export default function VaciarScreen() {
           </View>
         )}
 
-        {/* ¿Asignar a un proyecto? Sí / No */}
         {taskInput.trim() ? (
+          <View style={styles.quickCaptureRow}>
+            <TouchableOpacity
+              style={[styles.priorityChip, isPriority && styles.priorityChipActive]}
+              onPress={() => setIsPriority(!isPriority)}
+              activeOpacity={0.8}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: isPriority }}
+              accessibilityLabel={t('vaciar.markPriority')}
+            >
+              <Star
+                size={18}
+                color={isPriority ? THEME.colors.gradient.pink : THEME.colors.text.secondary}
+                fill={isPriority ? THEME.colors.gradient.pink : 'none'}
+              />
+              <Text style={[styles.priorityChipText, isPriority && styles.priorityChipTextActive]}>
+                {t('vaciar.markPriority')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.moreOptionsToggle}
+              onPress={() => setMoreOptionsExpanded((e) => !e)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={
+                moreOptionsExpanded ? t('vaciar.lessOptions') : t('vaciar.moreOptions')
+              }
+            >
+              <Text style={styles.moreOptionsToggleText}>
+                {moreOptionsExpanded ? t('vaciar.lessOptions') : t('vaciar.moreOptions')}
+              </Text>
+              {moreOptionsExpanded ? (
+                <ChevronUp size={18} color={THEME.colors.text.secondary} />
+              ) : (
+                <ChevronDown size={18} color={THEME.colors.text.secondary} />
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {taskInput.trim() && !moreOptionsExpanded ? (
+          <Text style={styles.quickCaptureHint}>{t('vaciar.quickCaptureHint')}</Text>
+        ) : null}
+
+        {/* ¿Asignar a un proyecto? Sí / No */}
+        {taskInput.trim() && moreOptionsExpanded ? (
           <View style={styles.assignSection}>
             <Text style={styles.assignQuestion}>{t('vaciar.assignQuestion')}</Text>
             <View style={styles.assignButtonsRow}>
@@ -856,7 +903,7 @@ export default function VaciarScreen() {
         ) : null}
 
         {/* Box aparte: Ver proyectos y tareas sin proyecto */}
-        {taskInput.trim() && user ? (
+        {taskInput.trim() && moreOptionsExpanded && user ? (
           <TouchableOpacity
             style={styles.verProyectosBox}
             onPress={() => router.push('/proyectos')}
@@ -877,41 +924,13 @@ export default function VaciarScreen() {
           </TouchableOpacity>
         ) : null}
 
-        {/* Opciones: fecha y prioridad (colapsable) */}
-        {taskInput.trim() ? (
+        {taskInput.trim() && moreOptionsExpanded ? (
           <View style={styles.opcionesSection}>
-            <TouchableOpacity
-              style={styles.opcionesHeader}
-              onPress={() => setOpcionesExpanded((e) => !e)}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={
-                opcionesExpanded ? t('vaciarExtra.a11yCloseOptions') : t('vaciarExtra.a11yOpenOptions')
-              }
-            >
-              <View>
-                <Text style={styles.opcionesHeaderText}>{t('vaciar.options')}</Text>
-                <Text style={styles.opcionesHeaderHint}>{t('vaciar.optionsHint')}</Text>
-              </View>
-              {opcionesExpanded ? <ChevronUp size={20} color={THEME.colors.text.secondary} /> : <ChevronDown size={20} color={THEME.colors.text.secondary} />}
-            </TouchableOpacity>
-            {opcionesExpanded && (
-              <View style={styles.opcionesContent}>
-                <DateSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
-                <TouchableOpacity
-                  style={[styles.priorityToggle, isPriority && styles.priorityToggleActive]}
-                  onPress={() => setIsPriority(!isPriority)}
-                  activeOpacity={0.7}
-                  accessibilityRole="switch"
-                  accessibilityState={{ checked: isPriority }}
-                >
-                  <Star size={20} color={isPriority ? THEME.colors.gradient.pink : THEME.colors.text.secondary} fill={isPriority ? THEME.colors.gradient.pink : 'none'} />
-                  <Text style={[styles.priorityToggleText, isPriority && styles.priorityToggleTextActive]}>
-                    {t('vaciar.markPriority')}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            <Text style={styles.opcionesHeaderText}>{t('vaciar.options')}</Text>
+            <Text style={styles.opcionesHeaderHint}>{t('vaciar.optionsHint')}</Text>
+            <View style={styles.opcionesContent}>
+              <DateSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
+            </View>
           </View>
         ) : null}
 
@@ -1038,6 +1057,55 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     marginBottom: THEME.spacing.sm,
+  },
+  quickCaptureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
+  },
+  priorityChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.pill,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.fill[200],
+    flexShrink: 1,
+  },
+  priorityChipActive: {
+    borderColor: THEME.colors.gradient.pink,
+    backgroundColor: THEME.colors.tint.pink.soft,
+  },
+  priorityChipText: {
+    ...THEME.typography.meta,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.secondary,
+  },
+  priorityChipTextActive: {
+    color: THEME.colors.gradient.pink,
+  },
+  moreOptionsToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.sm,
+    minHeight: THEME.sizes.touchTarget,
+  },
+  moreOptionsToggleText: {
+    ...THEME.typography.meta,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.secondary,
+  },
+  quickCaptureHint: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.tertiary,
+    marginBottom: THEME.spacing.md,
   },
   assignSection: {
     marginBottom: THEME.spacing.md,

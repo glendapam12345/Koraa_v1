@@ -7,10 +7,15 @@ const TABS_ROUTE = '/(tabs)' as const;
 
 export type PostAuthRoute = typeof WELCOME_ROUTE | typeof TABS_ROUTE;
 
+export type PostAuthGateResult =
+  | { status: 'ok'; route: PostAuthRoute }
+  | { status: 'error'; reason: 'profile_read_failed' };
+
 /**
- * Devuelve la ruta tras login/sesión: welcome si el perfil no marcó onboarding, tabs si ya.
+ * Resuelve ruta post-auth. Si falla la lectura del perfil (red/servidor), devuelve error
+ * para mostrar reintento — no enviar a onboarding por fail-closed.
  */
-export async function getPostAuthRoute(userId: string): Promise<PostAuthRoute> {
+export async function resolvePostAuthGate(userId: string): Promise<PostAuthGateResult> {
   try {
     const { data, error } = await supabase
       .from('profiles')
@@ -20,16 +25,31 @@ export async function getPostAuthRoute(userId: string): Promise<PostAuthRoute> {
 
     if (error) {
       logger.debug('onboardingGate: perfil no leído', error.message);
-      return WELCOME_ROUTE;
+      return { status: 'error', reason: 'profile_read_failed' };
     }
     if (!data) {
-      return WELCOME_ROUTE;
+      return { status: 'ok', route: WELCOME_ROUTE };
     }
-    return data.onboarding_completed === true ? TABS_ROUTE : WELCOME_ROUTE;
+    return {
+      status: 'ok',
+      route: data.onboarding_completed === true ? TABS_ROUTE : WELCOME_ROUTE,
+    };
   } catch (e) {
     logger.debug('onboardingGate', e);
+    return { status: 'error', reason: 'profile_read_failed' };
+  }
+}
+
+/**
+ * Devuelve la ruta tras login/sesión: welcome si el perfil no marcó onboarding, tabs si ya.
+ * En error de lectura, fail-closed a welcome (usar resolvePostAuthGate en gates con retry).
+ */
+export async function getPostAuthRoute(userId: string): Promise<PostAuthRoute> {
+  const result = await resolvePostAuthGate(userId);
+  if (result.status === 'error') {
     return WELCOME_ROUTE;
   }
+  return result.route;
 }
 
 export async function markOnboardingCompleted(userId: string): Promise<{ error: Error | null }> {

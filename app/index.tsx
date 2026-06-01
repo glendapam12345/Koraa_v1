@@ -1,69 +1,80 @@
-import { useEffect, useRef } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { THEME } from '@/constants/theme';
+import { useI18n } from '@/contexts/I18nContext';
 import { logger } from '@/lib/logger';
-import { getPostAuthRoute, WELCOME_ROUTE } from '@/lib/onboardingGate';
+import { resolvePostAuthGate } from '@/lib/onboardingGate';
+import { AppLoadingGate } from '@/components/AppLoadingGate';
 
 export default function IndexScreen() {
   const { user, loading } = useAuth();
+  const { t } = useI18n();
   const userId = user?.id;
   const navigatedRef = useRef(false);
+  const [profileGateError, setProfileGateError] = useState(false);
 
   useEffect(() => {
     navigatedRef.current = false;
+    setProfileGateError(false);
+  }, [userId]);
+
+  const runRouting = useCallback(async () => {
+    if (navigatedRef.current) return;
+
+    if (!userId) {
+      navigatedRef.current = true;
+      router.replace('/auth/login');
+      return;
+    }
+
+    setProfileGateError(false);
+    try {
+      const result = await resolvePostAuthGate(userId);
+      if (navigatedRef.current) return;
+
+      if (result.status === 'error') {
+        setProfileGateError(true);
+        return;
+      }
+
+      navigatedRef.current = true;
+      router.replace(result.route);
+    } catch (e) {
+      if (navigatedRef.current) return;
+      logger.debug('Index routing:', e);
+      setProfileGateError(true);
+    }
   }, [userId]);
 
   useEffect(() => {
     if (loading) return;
-    let cancelled = false;
-
-    const run = async () => {
-      if (navigatedRef.current || cancelled) return;
-
-      if (!userId) {
-        navigatedRef.current = true;
-        if (!cancelled) router.replace('/auth/login');
-        return;
-      }
-
-      try {
-        const next = await getPostAuthRoute(userId);
-        if (cancelled) return;
-        navigatedRef.current = true;
-        router.replace(next);
-      } catch (e) {
-        if (cancelled) return;
-        logger.debug('Index routing:', e);
-        navigatedRef.current = true;
-        // Fail-closed: no mandar a tabs si hubo error inesperado (evita saltar onboarding)
-        router.replace(WELCOME_ROUTE);
-      }
-    };
-
-    const t = setTimeout(() => {
-      void run();
+    const timer = setTimeout(() => {
+      void runRouting();
     }, 50);
+    return () => clearTimeout(timer);
+  }, [loading, runRouting]);
 
-    return () => {
-      cancelled = true;
-      clearTimeout(t);
-    };
-  }, [userId, loading]);
+  if (loading) {
+    return <AppLoadingGate message={t('boot.loadingDay')} />;
+  }
 
-  return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
-    </View>
-  );
+  if (!userId) {
+    return <AppLoadingGate message={t('boot.loadingDay')} />;
+  }
+
+  if (profileGateError) {
+    return (
+      <AppLoadingGate
+        message={t('boot.loadingProfile')}
+        errorMessage={t('boot.profileError')}
+        retryLabel={t('boot.retry')}
+        onRetry={() => {
+          navigatedRef.current = false;
+          void runRouting();
+        }}
+      />
+    );
+  }
+
+  return <AppLoadingGate message={t('boot.loadingDay')} />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: THEME.colors.fill[100],
-  },
-});

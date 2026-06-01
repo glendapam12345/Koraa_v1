@@ -247,6 +247,7 @@ export const en: DeepStrings<typeof es> = {
     titleAccent: 'feeling',
     subtitle: 'today?',
     description: 'Koraa prioritizes for you. Focus only on what matters today.',
+    inclusiveNote: 'Pick the option that best matches how you feel right now.',
     noTasksTitle: 'Step 1: Add your tasks first',
     noTasksSub: 'Go to Tasks to add what you need to do today, then come back here',
     tipsFor: 'Tips for {{emotion}}',
