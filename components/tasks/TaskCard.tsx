@@ -1,5 +1,5 @@
-import { useMemo, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useEffect, useMemo, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { RectButton, Swipeable } from 'react-native-gesture-handler';
 import { THEME } from '@/constants/theme';
 import { getCategoryEmoji } from '@/constants/emojis';
@@ -123,6 +123,39 @@ export function TaskCard({
 }: TaskCardProps) {
   const { t, locale } = useI18n();
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+  const wasCompletedRef = useRef(task.is_completed);
+  const checkboxScale = useRef(new Animated.Value(1)).current;
+  const focusFlashOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const justCompleted = !wasCompletedRef.current && task.is_completed;
+    wasCompletedRef.current = task.is_completed;
+
+    if (!justCompleted || !task.is_priority) return;
+
+    checkboxScale.setValue(0.72);
+    Animated.spring(checkboxScale, {
+      toValue: 1,
+      friction: 5,
+      tension: 220,
+      useNativeDriver: true,
+    }).start();
+
+    focusFlashOpacity.setValue(0);
+    Animated.sequence([
+      Animated.timing(focusFlashOpacity, {
+        toValue: 1,
+        duration: 140,
+        useNativeDriver: true,
+      }),
+      Animated.timing(focusFlashOpacity, {
+        toValue: 0,
+        duration: 420,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [task.is_completed, task.is_priority, checkboxScale, focusFlashOpacity]);
+
   const completedSubtasks = task.subtasks?.filter((st) => st.is_completed).length || 0;
   const totalSubtasks = task.subtasks?.length || 0;
 
@@ -231,6 +264,12 @@ export function TaskCard({
           uniformCard && styles.taskCardAligned,
         ]}
       >
+        {task.is_priority && (
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.focusCompleteFlash, { opacity: focusFlashOpacity }]}
+          />
+        )}
         {task.is_priority && !task.is_completed && !uniformCard && (
           <View style={styles.priorityNumberContainer}>
             <View style={styles.priorityNumber}>
@@ -258,21 +297,27 @@ export function TaskCard({
           ) : (
             !uniformCard && <View style={styles.expandPlaceholder} />
           )}
-          <TouchableOpacity
-            style={[styles.taskCheckbox, uniformCard && styles.taskCheckboxAligned]}
-            onPress={onToggle}
-            activeOpacity={0.7}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: task.is_completed }}
-            accessibilityLabel={
-              task.is_completed
-                ? t('taskCard.markPendingA11y', { task: taskContentLabel })
-                : t('taskCard.markCompleted', { task: taskContentLabel })
-            }
-          >
-            {task.is_completed && <View style={styles.taskCheckboxChecked} />}
-          </TouchableOpacity>
+          <Animated.View style={{ transform: [{ scale: checkboxScale }] }}>
+            <TouchableOpacity
+              style={[
+                styles.taskCheckbox,
+                uniformCard && styles.taskCheckboxAligned,
+                task.is_priority && !task.is_completed && styles.taskCheckboxFocus,
+              ]}
+              onPress={onToggle}
+              activeOpacity={0.7}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: task.is_completed }}
+              accessibilityLabel={
+                task.is_completed
+                  ? t('taskCard.markPendingA11y', { task: taskContentLabel })
+                  : t('taskCard.markCompleted', { task: taskContentLabel })
+              }
+            >
+              {task.is_completed && <View style={styles.taskCheckboxChecked} />}
+            </TouchableOpacity>
+          </Animated.View>
         </View>
 
         <View style={[styles.taskContent, uniformCard && styles.taskContentAligned]}>
@@ -932,6 +977,12 @@ const styles = StyleSheet.create({
   taskCardCompleted: {
     opacity: 0.6,
   },
+  focusCompleteFlash: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 2,
+    borderColor: THEME.colors.gradient.pink,
+  },
   taskCheckbox: {
     width: 24,
     height: 24,
@@ -940,6 +991,9 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.gradient.blue,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  taskCheckboxFocus: {
+    borderColor: THEME.colors.gradient.pink,
   },
   taskCheckboxChecked: {
     width: 14,

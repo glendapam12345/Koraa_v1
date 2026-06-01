@@ -81,7 +81,22 @@ Build de desarrollo / TestFlight no incluye el bundle de Metro; para el commit e
 | `npm run dev:phone:tunnel` | Solo túnel (con `npm run dev` ya corriendo) |
 | `npm run dev:tunnel` | Túnel Expo/ngrok (puede fallar con error `body`) |
 
-### `dev:phone` (recomendado si nada más funciona)
+### Error: bundle pide `http://….trycloudflare.com:8081`
+
+El túnel Cloudflare **no usa el puerto 8081** en el celular (solo HTTPS en 443). Suele pasar si:
+
+- Metro quedó en **8082** y cloudflared apunta a **8081**.
+- Había **dos** `npm run dev` abiertos.
+
+**Arreglo:** un solo comando que alinea todo:
+
+```bash
+npm run dev:cf
+```
+
+Escanea el QR (debe decir `trycloudflare.com` **sin** `:8081`). En Expo Go: **Reload JS** si viste el error rojo antes.
+
+### `dev:phone` (alternativa)
 
 1. Para el servidor anterior (Ctrl+C).
 2. `npm run dev:phone`

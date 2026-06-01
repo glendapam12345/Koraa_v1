@@ -12,6 +12,9 @@ import { Calendar, Plus, FolderKanban, FileText, ChevronRight, ChevronLeft } fro
 import { router } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
 import { PremiumTeaserCard } from '@/components/PremiumTeaserCard';
+import { FocusProgressBar } from '@/components/FocusProgressBar';
+import { getTodayPriorityStats } from '@/lib/priorityProgress';
+import { getLocalDateString } from '@/lib/dateLocal';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
 const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
@@ -99,6 +102,19 @@ export default function SemanaScreen() {
     return filteredWeekTasks.slice(0, FREE_VISIBLE_DAYS);
   }, [isSubscribed, filteredWeekTasks]);
 
+  const todayStr = getLocalDateString();
+  const todayWeekTasks = useMemo(() => {
+    const todayDay = filteredWeekTasks.find(({ day }) => day.dateStr === todayStr);
+    return todayDay?.tasks ?? [];
+  }, [filteredWeekTasks, todayStr]);
+
+  const todayPriorityStats = useMemo(
+    () => getTodayPriorityStats(todayWeekTasks),
+    [todayWeekTasks],
+  );
+
+  const weekIncludesToday = filteredWeekTasks.some(({ day }) => day.dateStr === todayStr);
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -136,6 +152,9 @@ export default function SemanaScreen() {
             <View style={styles.headerTextWrap}>
               <Text style={styles.title}>{t('semana.title')}</Text>
               <Text style={styles.subtitle}>{t('semana.subtitle')}</Text>
+              {weekIncludesToday && (
+                <FocusProgressBar stats={todayPriorityStats} style={styles.focusProgress} />
+              )}
             </View>
           </View>
         </LinearGradient>
@@ -513,6 +532,9 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     fontSize: 14,
     color: THEME.colors.text.secondary,
+  },
+  focusProgress: {
+    marginTop: THEME.spacing.sm,
   },
   weekNav: {
     flexDirection: 'row',

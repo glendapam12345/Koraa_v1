@@ -37,6 +37,7 @@ import { getEmotionEmoji } from '@/lib/emotionalInsights';
 import { logger } from '@/lib/logger';
 import { Plus, Flame, PenTool, Heart, Target, ArrowRight, Lightbulb, ChevronDown, ChevronRight, FolderKanban, ClipboardList, CalendarRange, Settings, CircleHelp, RefreshCw } from 'lucide-react-native';
 import { GradientButton } from '@/components/GradientButton';
+import { FocusProgressBar } from '@/components/FocusProgressBar';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import type { Task } from '@/components/tasks/TaskCard';
 import { RecommendationsSection } from '@/components/recommendations/RecommendationsSection';
@@ -49,6 +50,8 @@ import { RedistributeWorkloadModal } from '@/components/tasks/RedistributeWorklo
 import { MeditationCircleSimple } from '@/components/MeditationCircleSimple';
 import { resolveHoyLiteLayout, optOutHoyLiteLayout } from '@/lib/hoyLiteDay';
 import { getLocalDateString } from '@/lib/dateLocal';
+import { getTodayPriorityStats } from '@/lib/priorityProgress';
+import type { TaskCompletedPayload } from '@/hooks/useTaskActions';
 
 // Lazy loading para componentes pesados que no se usan inmediatamente
 const TaskEditModal = lazy(() => 
@@ -282,6 +285,53 @@ export default function TodayScreen() {
   const hoyLiteActive = hoyLiteLayout === true;
   const showSecondaryModulesEffective = showSecondaryModules && !hoyLiteActive;
 
+  const todayPriorityStats = useMemo(
+    () => getTodayPriorityStats(tasks),
+    [tasks],
+  );
+
+  const handleTaskCompleted = useCallback(
+    (payload: TaskCompletedPayload) => {
+      const mood = todayMood?.toLowerCase() ?? '';
+      const lowEnergy =
+        energyLevel <= 2 || ['agotada', 'ansiosa', 'abrumada'].includes(mood);
+      const allTasksComplete =
+        tasks.length > 0 && tasks.every((task) => task.is_completed);
+
+      if (payload.allPrioritiesDoneToday) {
+        if (!allTasksComplete) {
+          setShowConfetti(true);
+          showToast(t('hoy.allPrioritiesDone'), 'success');
+          if (confettiTimeoutRef.current) {
+            clearTimeout(confettiTimeoutRef.current);
+          }
+          confettiTimeoutRef.current = setTimeout(() => {
+            setShowConfetti(false);
+            confettiTimeoutRef.current = null;
+          }, 3500);
+          if (Platform.OS !== 'web') {
+            void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }
+        }
+        return;
+      }
+
+      if (payload.isFirstPriorityToday) {
+        showToast(
+          lowEnergy ? t('hoy.firstPriorityDoneLow') : t('hoy.firstPriorityDone'),
+          'success',
+        );
+      } else {
+        showToast(t('hoy.priorityDone'), 'success');
+      }
+
+      if (Platform.OS !== 'web') {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    },
+    [todayMood, energyLevel, showToast, t, tasks],
+  );
+
   const {
     toggleTask,
     handleSaveEdit: handleSaveEditAction,
@@ -295,6 +345,7 @@ export default function TodayScreen() {
     backgroundLoadTimeoutRef,
     isLoadingTasksRef,
     locale,
+    onTaskCompleted: handleTaskCompleted,
   });
 
   const loadStreak = useCallback(async () => {
@@ -1481,6 +1532,10 @@ export default function TodayScreen() {
                     <Text style={styles.heroTodaySubtitle}>
                       {focusSummaryLine ?? t('hoy.organizeByYou')}
                     </Text>
+                    <FocusProgressBar
+                      stats={todayPriorityStats}
+                      style={styles.focusProgressBlock}
+                    />
                     <View style={styles.heroTodayStateRow}>
                       <View style={[styles.heroTodayPill, { backgroundColor: getEmotionColor(todayMood) }]}>
                         <Text style={styles.heroTodayPillEmoji}>{getEmotionEmoji(todayMood)}</Text>
@@ -3223,6 +3278,9 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     marginBottom: THEME.spacing.xs,
     lineHeight: 18,
+  },
+  focusProgressBlock: {
+    marginBottom: THEME.spacing.xs,
   },
   heroTodayStateRow: {
     flexDirection: 'row',

@@ -6,6 +6,15 @@ import type { AppLocale } from '@/lib/i18n';
 import { translate } from '@/lib/i18n';
 import { logger } from '@/lib/logger';
 import { Task } from './useTasks';
+import { countPriorityCompletedBefore } from '@/lib/priorityProgress';
+import { getLocalDateString } from '@/lib/dateLocal';
+
+export type TaskCompletedPayload = {
+  task: Task;
+  isSubtask: boolean;
+  isFirstPriorityToday: boolean;
+  allPrioritiesDoneToday: boolean;
+};
 
 interface UseTaskActionsParams {
   tasks: Task[];
@@ -16,6 +25,7 @@ interface UseTaskActionsParams {
   backgroundLoadTimeoutRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
   isLoadingTasksRef: MutableRefObject<boolean>;
   locale?: AppLocale;
+  onTaskCompleted?: (payload: TaskCompletedPayload) => void;
 }
 
 export function useTaskActions({
@@ -27,6 +37,7 @@ export function useTaskActions({
   backgroundLoadTimeoutRef,
   isLoadingTasksRef,
   locale = 'es',
+  onTaskCompleted,
 }: UseTaskActionsParams) {
   const toggleTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
@@ -45,6 +56,15 @@ export function useTaskActions({
       if (!task) return;
 
       const newCompletedState = !task.is_completed;
+      const today = getLocalDateString();
+      const isCompletingMainPriority =
+        !isSubtask && task.is_priority && !task.is_completed && newCompletedState;
+      const priorPriorityDone = isCompletingMainPriority
+        ? countPriorityCompletedBefore(tasks, task.id, today)
+        : 0;
+      const pendingPriorityBefore = isCompletingMainPriority
+        ? tasks.filter((t) => t.is_priority && !t.parent_task_id && !t.is_completed).length
+        : 0;
 
       setTasks((prevTasks: Task[]) => {
         if (isSubtask && parentTaskId) {
@@ -136,8 +156,19 @@ export function useTaskActions({
             });
           } else {
             if (newCompletedState) {
-              if (Platform.OS !== 'web') {
+              const notifyPriorityComplete = isCompletingMainPriority && onTaskCompleted;
+              if (Platform.OS !== 'web' && !notifyPriorityComplete) {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              }
+
+              if (notifyPriorityComplete) {
+                const doneAfter = priorPriorityDone + 1;
+                onTaskCompleted({
+                  task,
+                  isSubtask: false,
+                  isFirstPriorityToday: priorPriorityDone === 0,
+                  allPrioritiesDoneToday: pendingPriorityBefore <= 1,
+                });
               }
             }
 
@@ -236,6 +267,7 @@ export function useTaskActions({
       backgroundLoadTimeoutRef,
       isLoadingTasksRef,
       locale,
+      onTaskCompleted,
     ]
   );
 
