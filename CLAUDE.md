@@ -99,6 +99,8 @@ See individual README files in each subdirectory for usage guidelines.
 
 **UX / flujo de usuario:** Auditoría y entregables en [koraa_ux_flow_audit.md](development_guidelines/delivered/koraa_ux_flow_audit.md) (actualizada 2026-05-19: focos, recheck en Sentir, captura rápida en Tareas, gates de carga, `components/hoy/`). Expo Go en dispositivo: `npm run dev:cf` — ver *Probar en Expo Go* en ese documento.
 
+**TestFlight iOS:** Build **26** (`app.config.js` → `ios.buildNumber`). Guía de release y checklist testers: [2026-05-19_testflight_build_26.md](development_guidelines/delivered/2026-05-19_testflight_build_26.md). Comando: `eas build --platform ios --profile production`.
+
 **Voz y microcopy (estándar UI):** reglas de tono, CTAs, errores y ejemplos “antes/después” en [2026-05-05_koraa_voice_and_microcopy_guide.md](development_guidelines/delivered/2026-05-05_koraa_voice_and_microcopy_guide.md).
 Checklist corto de errores/reintentos (patrón `No se pudo... Inténtalo de nuevo.`): [2026-05-06_microcopy_error_retry_checklist.md](development_guidelines/delivered/2026-05-06_microcopy_error_retry_checklist.md).
 

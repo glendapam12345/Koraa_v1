@@ -30,7 +30,7 @@ Auditoría basada en revisión del código y copys (rutas, tabs, mensajes). No s
 
 | Área | Cambio |
 |------|--------|
-| **Hoy** | Progreso de focos, toasts al completar, `FlowIndicator`, tarjeta «¿Cambió tu día?» dismissible 1×/día, hero sin píldora duplicada, componentes en `components/hoy/` |
+| **Hoy** | Progreso de focos, toasts al completar, `FlowIndicator`, tarjeta «¿Cambió tu día?» dismissible 1×/día, hero sin píldora duplicada; UI en `components/hoy/` (`HoyTasksSection`, `HoyScreenOverlays`, …) — ver [TestFlight build 26](2026-05-19_testflight_build_26.md) |
 | **Sentir** | Si ya hay check-in: tarjeta **Reorganizar rápido** (`QuickRecheckInModal`) + check-in completo abajo |
 | **Semana** | Barra de focos del día + copy free «ves 3 días» en teaser Premium |
 | **Boot** | `AppLoadingGate` + reintento si falla lectura de perfil (`resolvePostAuthGate`) |
@@ -108,7 +108,7 @@ Sin Sentir, Hoy puede mostrar mensajes que guían al check-in; sin capturar en T
 
 6. **Tests de usuario** (5 personas): tarea tipo “primer día estresado…” — pendiente fuera de código.
 
-7. **Refactor Hoy (resto):** lista de tareas, tarjetas emocionales y modales siguen en `app/(tabs)/index.tsx` (~4k líneas); extraer en fases siguientes.
+7. ~~**Refactor Hoy**~~ → **Hecho (2026-05-19):** lista de tareas, tarjetas emocionales y modales extraídos a `components/hoy/` (`HoyTasksSection`, `HoyScreenOverlays`, cards); `app/(tabs)/index.tsx` ~1.3k líneas (orquestación + estado). Binario iOS: **build 26** — [guía TestFlight](2026-05-19_testflight_build_26.md).
 
 ---
 
@@ -131,6 +131,7 @@ Sin Sentir, Hoy puede mostrar mensajes que guían al check-in; sin capturar en T
 ### Validación
 
 - [ ] Probar flujo completo en **Expo Go** (iOS/Android): login → Tareas → Sentir → Hoy (ver sección abajo).
+- [ ] **TestFlight build 26** en iPhone físico: checklist en [2026-05-19_testflight_build_26.md](2026-05-19_testflight_build_26.md).
 - [ ] Revisar accesibilidad (VoiceOver / TalkBack) en Ayuda, tour, «Mostrar todo», hint Tareas.
 
 ### Documentación
@@ -150,6 +151,7 @@ Sin Sentir, Hoy puede mostrar mensajes que guían al check-in; sin capturar en T
    ```bash
    npm run dev
    ```
+   Alternativa estable en iPhone (sin depender de LAN): `npm run dev:cf` (Metro + túnel Cloudflare).
 4. En la terminal aparece un **QR**. En **iPhone**, Cámara o app Expo Go → *Scan QR code*. En **Android**, Expo Go → *Enter URL* o escanear QR.
 5. Si el teléfono no ve el PC (red corporativa, etc.):
    ```bash
@@ -172,7 +174,7 @@ Sin Sentir, Hoy puede mostrar mensajes que guían al check-in; sin capturar en T
 | Indicador de flujo | `components/FlowIndicator.tsx` |
 | Tareas | `app/(tabs)/vaciar.tsx`, `components/projects/ProjectSelector.tsx` |
 | Sentir | `app/(tabs)/sentir.tsx`, `app/onboarding/energy.tsx`, … |
-| Hoy | `app/(tabs)/index.tsx` |
+| Hoy | `app/(tabs)/index.tsx`, `components/hoy/*` |
 | FAQ | `app/help.tsx` |
 | Ayuda desde perfil | `app/(tabs)/yo.tsx` |
 | Ayuda desde flujo principal | Cabecera **Hoy** y **Sentir** → `router.push('/help')` |

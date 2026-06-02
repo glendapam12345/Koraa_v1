@@ -158,4 +158,4 @@ Prueba manual recomendada: recorrer cada tab en **ES**, cambiar a **EN**, repeti
 
 ## Entrega TestFlight
 
-El build iOS en curso **no incluye** cambios posteriores hasta que se lance un **nuevo EAS build** con este código. Tras instalar: **Ajustes → Idioma → English**.
+Usar **iOS build 26** (`ios.buildNumber` en `app.config.js`). Guía completa: [2026-05-19_testflight_build_26.md](2026-05-19_testflight_build_26.md). Tras instalar: **Ajustes → Idioma → English** para validar i18n.

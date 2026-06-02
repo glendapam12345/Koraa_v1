@@ -21,7 +21,7 @@ Los **ID de producto** deben coincidir **carácter a carácter** con App Store C
 | Archivo de configuración | `app.config.js` (no hay `app.json` duplicado) |
 | Nombre de la app (`expo.name`) | `Koraa` |
 | Versión (`expo.version`) | `1.0.0` |
-| Build iOS (`ios.buildNumber`) | `7` (revisar al subir nuevo binario) |
+| Build iOS (`ios.buildNumber`) | `26` (ver [2026-05-19_testflight_build_26.md](2026-05-19_testflight_build_26.md)) |
 | Bundle identifier (`ios.bundleIdentifier`) | `com.impermanencecasaartisitca.koraav1` |
 | Nombre mostrado iOS | `Koraa` (`CFBundleDisplayName`) |
 | Archivos StoreKit (`.storekit`) | Ninguno en el repositorio |
