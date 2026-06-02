@@ -1,8 +1,8 @@
 # Auditoría de flujo UX — Koraa (claridad y facilidad de uso)
 
 **Fecha:** 2026-05-02  
-**Última actualización:** 2026-05-02  
-**Estado:** Done (implementación UX entregada en código; validación en dispositivo pendiente del equipo)  
+**Última actualización:** 2026-05-19  
+**Estado:** Done (implementación UX en código; validación en dispositivo pendiente del equipo)  
 **Prioridad:** Alta (impacto en primera experiencia y retención)  
 **Relacionado con:** Navegación por pestañas, `FlowIndicator`, pantallas `vaciar`, `sentir`, `(tabs)/index` (Hoy), `help.tsx`, onboarding.
 
@@ -24,7 +24,18 @@ Auditoría basada en revisión del código y copys (rutas, tabs, mensajes). No s
 - **Seis pestañas** sigue siendo denso para usuarios nuevos; mitigado en parte con **tour de primera sesión**, **Hoy lite** el primer día calendario en Hoy, y **hint opcional** en Tareas.
 - ~~Desajuste número de pasos vs pestañas~~ → **Mitigado:** leyenda «Orden sugerido para tu día» y sin dígitos 1–3 en `FlowIndicator`.
 - ~~Ayuda solo desde Yo~~ → **Mitigado:** icono Ayuda en cabeceras de **Hoy** y **Sentir** (además de **Yo**).
-- Flujo de **Tareas** sigue siendo rico en opciones; mitigado con tarjeta colapsable «Todo lo demás es opcional» hasta dismiss / primera tarea.
+- Flujo de **Tareas** sigue siendo rico en opciones; mitigado con tarjeta «Todo lo demás es opcional» + **captura rápida** (foco del día + «Más opciones» colapsado por defecto).
+
+### Mejoras 2026-05-19 (auditoría de seguimiento)
+
+| Área | Cambio |
+|------|--------|
+| **Hoy** | Progreso de focos, toasts al completar, `FlowIndicator`, tarjeta «¿Cambió tu día?» dismissible 1×/día, hero sin píldora duplicada, componentes en `components/hoy/` |
+| **Sentir** | Si ya hay check-in: tarjeta **Reorganizar rápido** (`QuickRecheckInModal`) + check-in completo abajo |
+| **Semana** | Barra de focos del día + copy free «ves 3 días» en teaser Premium |
+| **Boot** | `AppLoadingGate` + reintento si falla lectura de perfil (`resolvePostAuthGate`) |
+| **Tareas** | Captura rápida: escribir → foco opcional → guardar; proyecto/fecha bajo «Más opciones» |
+| **Tests** | `__tests__/lib/` para `priorityProgress`, `hoyDayFlowDismiss`, `onboardingGate` |
 
 ---
 
@@ -96,6 +107,8 @@ Sin Sentir, Hoy puede mostrar mensajes que guían al check-in; sin capturar en T
 ### Baja prioridad / validación
 
 6. **Tests de usuario** (5 personas): tarea tipo “primer día estresado…” — pendiente fuera de código.
+
+7. **Refactor Hoy (resto):** lista de tareas, tarjetas emocionales y modales siguen en `app/(tabs)/index.tsx` (~4k líneas); extraer en fases siguientes.
 
 ---
 

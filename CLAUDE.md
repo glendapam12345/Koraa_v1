@@ -97,7 +97,7 @@ The `development_guidelines/` directory organizes extended project context:
 
 See individual README files in each subdirectory for usage guidelines.
 
-**UX / flujo de usuario:** Auditoría y entregables (Ayuda en Hoy/Sentir, `FlowIndicator` sin números + «Orden sugerido», hint opcional en Tareas, tour primera sesión, Hoy lite día 1) en [koraa_ux_flow_audit.md](development_guidelines/delivered/koraa_ux_flow_audit.md). Prueba en Expo Go: sección *Probar en Expo Go* en ese documento.
+**UX / flujo de usuario:** Auditoría y entregables en [koraa_ux_flow_audit.md](development_guidelines/delivered/koraa_ux_flow_audit.md) (actualizada 2026-05-19: focos, recheck en Sentir, captura rápida en Tareas, gates de carga, `components/hoy/`). Expo Go en dispositivo: `npm run dev:cf` — ver *Probar en Expo Go* en ese documento.
 
 **Voz y microcopy (estándar UI):** reglas de tono, CTAs, errores y ejemplos “antes/después” en [2026-05-05_koraa_voice_and_microcopy_guide.md](development_guidelines/delivered/2026-05-05_koraa_voice_and_microcopy_guide.md).
 Checklist corto de errores/reintentos (patrón `No se pudo... Inténtalo de nuevo.`): [2026-05-06_microcopy_error_retry_checklist.md](development_guidelines/delivered/2026-05-06_microcopy_error_retry_checklist.md).
