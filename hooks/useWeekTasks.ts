@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase, getErrorMessage, isSchemaError, getSchemaSetupMessage, type SchemaSetupType } from '@/lib/supabase';
-import type { AppLocale } from '@/lib/i18n';
-import { translate } from '@/lib/i18n';
+import { getLocalDateString, parseLocalDateString } from '@/lib/dateLocal';
+import { translate, type AppLocale } from '@/lib/i18n';
 import { logger } from '@/lib/logger';
 import type { Task } from '@/hooks/useTasks';
 
@@ -32,19 +32,19 @@ function getWeekBounds(): { start: string; end: string } {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   return {
-    start: monday.toISOString().split('T')[0],
-    end: sunday.toISOString().split('T')[0],
+    start: getLocalDateString(monday),
+    end: getLocalDateString(sunday),
   };
 }
 
 /** Get week bounds for a Monday date string (YYYY-MM-DD) or offset in weeks from current. */
 export function getWeekBoundsForStart(startDate: string): { start: string; end: string } {
-  const monday = new Date(startDate + 'T12:00:00');
+  const monday = parseLocalDateString(startDate);
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   return {
-    start: monday.toISOString().split('T')[0],
-    end: sunday.toISOString().split('T')[0],
+    start: getLocalDateString(monday),
+    end: getLocalDateString(sunday),
   };
 }
 
@@ -53,14 +53,14 @@ export function getWeekOptions(count: number): { start: string; label: string }[
   const monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
   const { start: thisStart } = getWeekBounds();
   const options: { start: string; label: string }[] = [];
-  const d = new Date(thisStart + 'T12:00:00');
+  const d = parseLocalDateString(thisStart);
   d.setDate(d.getDate() - 7);
-  options.push({ start: d.toISOString().split('T')[0], label: 'Semana ant.' });
+  options.push({ start: getLocalDateString(d), label: 'Semana ant.' });
   options.push({ start: thisStart, label: 'Esta semana' });
-  d.setTime(new Date(thisStart + 'T12:00:00').getTime());
+  d.setTime(parseLocalDateString(thisStart).getTime());
   for (let i = 1; i < count; i++) {
     d.setDate(d.getDate() + 7);
-    const start = d.toISOString().split('T')[0];
+    const start = getLocalDateString(d);
     const dayNum = start.slice(8);
     const month = monthNames[parseInt(start.slice(5, 7), 10) - 1];
     options.push({ start, label: `${dayNum} ${month}` });
@@ -69,7 +69,7 @@ export function getWeekOptions(count: number): { start: string; label: string }[
 }
 
 function buildWeekDays(start: string, locale: AppLocale): WeekDay[] {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   const dayNames = [
     translate(locale, 'semana.weekdayMon'),
     translate(locale, 'semana.weekdayTue'),
@@ -80,9 +80,9 @@ function buildWeekDays(start: string, locale: AppLocale): WeekDay[] {
     translate(locale, 'semana.weekdaySun'),
   ];
   const days: WeekDay[] = [];
-  const d = new Date(start + 'T12:00:00');
+  const d = parseLocalDateString(start);
   for (let i = 0; i < 7; i++) {
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(d);
     const dayNum = d.getDate();
     days.push({
       dateStr,

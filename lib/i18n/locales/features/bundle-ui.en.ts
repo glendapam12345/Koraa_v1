@@ -11,7 +11,8 @@ export const uiEn = {
     addForToday: 'Add for today',
     addMoreTasksHint: 'Add more · Tasks tab',
     moreAboutTodayOrder: 'More about today’s order',
-    checkInPromptSub: 'Check in on Feel so Koraa can order these tasks based on your energy.',
+    checkInPromptSub:
+      'Without a check-in in Feel, Koraa can’t mark your 2–5 focus tasks. Tap to open Feel.',
     feelingPill: 'Feeling {{emotion}}',
     energyPill: 'Energy {{n}}/5',
     meditationListen: 'Breathe. Listen.',
@@ -31,11 +32,12 @@ export const uiEn = {
     toastWithSubtasksPriority: 'as priority',
     toastWithSubtasksSuccess: 'successfully',
     toastPriorityAdded: 'Task added as priority and will appear in Today',
-    toastAdded: 'Task added successfully',
-    voiceAlertTitle: 'Voice input',
-    voiceAlertBody: 'For now, type what you want to add. Full voice recognition is coming soon.',
-    voiceUseKeyboard: 'Use keyboard dictation',
-    voiceDictateHint: 'Use the keyboard microphone button to dictate',
+    toastAdded: 'Task saved',
+    toastAddedGoFeel:
+      'Saved to your list. Next: Feel — Koraa picks what goes to Today (2–5 focus tasks).',
+    dictateHint:
+      'To dictate: tap the field above and use your system keyboard microphone (Koraa does not record in-app audio yet).',
+    a11yDismissDictateHint: 'Hide keyboard dictation tip',
     a11yCollapseOptional: 'Collapse note about optional fields',
     a11yExpandOptional: 'Expand note about project, date, and subtasks',
     a11yDismissOptional: 'Got it, hide this note',
@@ -43,8 +45,6 @@ export const uiEn = {
     a11yNextStepFeelHint: 'Opens the screen to log your emotional state for the day',
     a11yTaskField: 'Text field to add a task',
     a11yTaskFieldHint: 'Type or dictate the task you need to do today',
-    a11yVoiceInput: 'Voice input',
-    a11yVoiceInputHint: 'Opens info about using system voice keyboard',
     a11yUseSuggestion: 'Use suggestion: {{suggestion}}',
     a11yUseSuggestionHint: 'Tap to use this recent task as a suggestion',
     a11yAssignYes: 'Yes, assign to a project',
@@ -54,7 +54,8 @@ export const uiEn = {
     a11ySubtasksOff: 'Add steps',
     a11ySaveTaskHint: 'Saves this task to organize it later in your day',
     a11yCloseOptions: 'Close options',
-    a11yOpenOptions: 'Open date and priority options',
+    a11yOpenOptions: 'Open project, category, or date',
+    a11yOpenOptionsHint: 'Show or hide project, category, and task date',
   },
   semanaExtra: {
     weekFallback: 'Week',
@@ -100,6 +101,8 @@ export const uiEn = {
     optional: 'Optional',
     cta: 'View Premium',
     a11yHint: 'Opens the Premium subscription screen',
+    semanaBody:
+      'On the free plan you see {{days}} days of the week. Premium unlocks all 7 days, more filters, and full history.',
     tipsBody: 'Premium unlocks unlimited tips and recommendations based on how you feel.',
     tipsFreeLimit: 'Free: {{recommendations}} recommendations and up to {{tips}} tips.',
     yoBody: 'Manage your subscription or unlock the full experience whenever you want.',
@@ -126,7 +129,22 @@ export const uiEn = {
     annualCta: 'Buy annual',
     expoGoHint:
       'You’re on Expo Go: in-app purchases often don’t load here. Use a development build (expo-dev-client) or a TestFlight / App Store build for real prices.',
+    expoGoBannerTitle: 'Preview — purchases not available here',
+    expoGoBannerBody:
+      'You can’t subscribe or restore purchases in Expo Go. Prices below are indicative. To try Premium for real, open Koraa from TestFlight or the App Store.',
+    expoGoEmptyTitle: 'Premium plans (preview)',
+    expoGoEmptyBody:
+      'Apple/Google stores don’t connect in Expo Go. This shows how plans will look; purchasing works in the app installed from TestFlight.',
+    expoGoPreviewPriceLabel: 'Indicative price',
+    expoGoCtaDisabled: 'Available on TestFlight / App Store',
+    expoGoPurchaseBlockedTitle: 'Purchase unavailable in Expo Go',
+    expoGoPurchaseBlockedBody:
+      'To subscribe, use Koraa installed from TestFlight or the App Store, not Expo Go.',
+    expoGoRestoreBlockedTitle: 'Restore purchases',
+    expoGoRestoreBlockedBody:
+      'Restoring subscriptions only works in the published app (TestFlight or App Store), not in Expo Go.',
     continueFree: 'Continue with free version',
+    continueFreePrimary: 'Continue free',
     onboardingSubtitle: 'We saved your check-in. Premium is optional — explore Koraa for free anytime.',
     onboardingBannerTitle: 'Your check-in is ready',
     onboardingBannerBody:
@@ -138,6 +156,7 @@ export const uiEn = {
     a11yCloseOnboardingHint: 'Close premium and explore the app for free',
     a11yChoosePlan: 'Choose plan {{title}}',
     a11yChoosePlanHint: 'Starts the premium plan purchase',
+    a11yChoosePlanHintPreview: 'Explains that purchasing is only on TestFlight or the App Store',
     a11yContinueFree: 'Continue with free version',
     a11yContinueFreeHint: 'Closes premium and keeps using the free plan',
     a11yBuyMonthly: 'Buy monthly plan',
@@ -213,6 +232,8 @@ export const uiEn = {
     email: 'Email',
     emailHint: 'Enter your account email',
     emailHintSignup: 'Enter the email you’ll use for your account',
+    confirmEmail: 'Confirm email',
+    confirmEmailHint: 'Repeat the same email to avoid typos',
     password: 'Password',
     passwordHintLogin: 'Enter your password to sign in',
     forgotPassword: 'Forgot my password',

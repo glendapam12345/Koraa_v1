@@ -23,7 +23,14 @@ export const featuresEn = {
     no: 'No',
   },
   flow: {
-    caption: 'Suggested order for your day',
+    caption: '3 steps — Koraa picks your focus',
+    captionSub: 'Tasks → Feel → Today. Tap a step to go. No manual ordering.',
+    stepTasksHint: 'Capture tasks',
+    stepFeelHint: 'Pick 2–5 focus',
+    stepTodayHint: 'Do those first',
+    stepTasksA11y: 'Go to Tasks to capture what’s pending',
+    stepFeelA11y: 'Go to Feel so Koraa can pick today’s focus tasks',
+    stepTodayA11y: 'Go to Today to see your priority focus tasks',
     premiumHint: 'More with Koraa Premium: full Week view and history.',
     managePremium: 'Manage Premium',
   },
@@ -32,13 +39,20 @@ export const featuresEn = {
     titleAccent: 'one breath',
     subtitle: 'No structure. No labels. Just write what you need to release.',
     optionalTitle: 'Everything else is optional',
-    optionalBody: 'Project, category, date, subtasks, and priority can wait.',
-    optionalBodySecond: 'Start with text only; Koraa supports you without pressure.',
+    optionalBody: 'Project, category, date, and subtasks are optional. Just write and save.',
+    optionalBodySecond: 'Koraa picks your daily focus in Feel — no need to order tasks here.',
     dismiss: 'Got it',
-    nextStepFeel: 'Next step: Log how you feel',
+    flowCardTitle: 'How prioritization works',
+    flowCardBody:
+      '1) Write what’s pending. 2) In Feel, log how you are. 3) In Today, Koraa marks 2–5 focus tasks on top — you don’t order or drag.',
+    flowCardNote:
+      'Focus changes when you update Feel. Project and date in Tasks are optional.',
+    flowCardDismissA11y: 'Hide tasks guide',
+    reprioritizedToast: 'Today’s focus updated from your check-in.',
+    nextStepFeel: 'Key step: How are you feeling today?',
     nextStepFeelSub:
-      'After adding tasks, go to Feel so Koraa can prioritize them based on your state',
-    optionalCollapsed: 'Project, date, and more → optional',
+      'Without Feel, Koraa can’t pick your 2–5 focus tasks in Today. Tap here — under a minute.',
+    optionalCollapsed: 'Project & date → optional',
     placeholder: 'Write the task or idea you want to release...',
     suggestionsTitle: 'Quick suggestions:',
     assignQuestion: 'Assign this task to a project?',
@@ -48,12 +62,15 @@ export const featuresEn = {
     addSubtask: 'Add another step',
     viewProjects: 'View projects and loose tasks',
     viewProjectsHint: 'Open the list of projects and loose tasks',
-    options: 'Options',
-    optionsHint: 'Date, priority',
-    moreOptions: 'More options',
-    lessOptions: 'Fewer options',
-    quickCaptureHint: 'Project, category, and date are optional.',
-    markPriority: 'Today’s focus',
+    options: 'Task details',
+    optionsHint: 'Project, category, and date — all optional',
+    moreOptions: 'Organize (optional)',
+    moreOptionsSub: 'Optional · Feel picks your focus, not here',
+    lessOptions: 'Hide organization',
+    organizePanelTitle: 'Organize (optional)',
+    organizePanelHide: 'Hide guides and extras',
+    organizePanelHint: 'Flow, projects, suggestions, and tips',
+    quickCaptureHint: 'Just write and save. Feel picks your focus tasks.',
     saving: 'Saving...',
     saveTask: 'Save task',
     recentTitle: 'Recently added',
@@ -113,6 +130,10 @@ export const featuresEn = {
     emptyBody: 'Do your daily check-in in Feel to see recommendations based on how you feel.',
     goToFeel: 'Go to Feel',
     feeling: 'You feel',
+    updatedFromCheckIn: 'Updated from today’s check-in in Feel',
+    profileHint:
+      'For more personalized tips, add your activities and interests in your profile.',
+    goToProfile: 'Go to Me → Profile',
     recommendations: 'Recommendations for you',
     addToTasks: 'Add to my tasks',
     footer:
@@ -139,6 +160,8 @@ export const featuresEn = {
       exampleResultHigh: 'Koraa prioritizes up to 5 tasks',
       continue: 'Continue',
       skip: 'Skip intro',
+      quickStart: 'Start now',
+      quickStartHint: 'Go straight to the emotional check-in, skipping intro screens',
     },
     intro2: {
       title: 'Empty your mind in',
@@ -211,7 +234,8 @@ export const featuresEn = {
       saveCheckInError: 'Could not save your check-in. Try again.',
       closeOnboardingError: 'Could not finish onboarding. Try again.',
       genericError: 'Something went wrong. Try again.',
-      fromSentirSave: 'Save',
+      fromSentirSave: 'See my focus in Today',
+      seeFocusInHoy: 'See my focus in Today',
     },
     howItWorks: {
       title: 'How does',
@@ -269,7 +293,8 @@ export const featuresEn = {
     emotionalLoop: 'Emotional loop',
     lightenLoad: 'Lighten load',
     lightenLoadSub: 'Spread pending tasks across days based on your energy and time today',
-    secondaryModulesHint: 'Includes meditation, project summary, and recommendations.',
+    secondaryModulesHint:
+      'Meditation, projects, recommendations, and more detail on task order.',
     allDoneSub:
       'You have no pending tasks. If you add something in Tasks, it will appear here prioritized by how you feel.',
     noTasksOtherDays:
@@ -294,6 +319,8 @@ export const featuresEn = {
     datesUpdated: 'Dates updated. Check the Week tab for your plan.',
     showExtra: 'Show extra sections',
     hideExtra: 'Hide extra sections',
+    showMoreForToday: 'More for today',
+    hideMoreForToday: 'Hide extras',
     meditationPrepTitle: 'Meditation coming soon',
     meditationPrepBody: 'This feature will be available soon in this environment.',
     meditationMorningA11y: 'Meditate in the morning',
@@ -301,6 +328,8 @@ export const featuresEn = {
     meditationEveningA11y: 'Meditate in the evening',
     meditationEveningDoneA11y: 'Evening meditation completed',
     meditationDoneToast: 'Meditation completed! 🧘',
+    meditationExpoGoNote:
+      'In Expo Go, meditation uses a simplified view (no animated ring). Audio and logging work the same; TestFlight shows the full experience.',
     memoryTipDeep: 'Reserve that day for deep focus and move operational work to lighter blocks.',
     memoryMsgVariable: 'Your energy has been variable these weeks, without a rigid daily pattern.',
     memoryTipRealtime: 'Check Feel at the start of the day and adjust your load in real time.',
@@ -327,6 +356,10 @@ export const featuresEn = {
     mantraCompassion: 'Today was about holding yourself first. Productivity can be compassionate too.',
     mantraImpulse: 'Channel this drive with intention: less scatter, more impact.',
     mantraSteady: 'Steady pace, real progress: that is how durable consistency is built.',
+    focusSectionTitle: '{{count}} focus tasks for today (Koraa picked these)',
+    focusSectionSub: 'Start at the top. The rest can wait.',
+    noFeelSortHint:
+      'No focus yet: go to Feel so Koraa can order these tasks based on how you feel.',
     focusLevelNormal: 'Normal',
   },
   settingsExtra: {
@@ -406,7 +439,7 @@ export const featuresEn = {
   tour: {
     step1Title: 'First, empty your mind',
     step1Body:
-      'In Tasks, write what is pending without forcing order. Project, date, and priority are optional—you can just write and release.',
+      'In Tasks, write what is pending without forcing order. Project and date are optional. Koraa picks focus in Feel—not here.',
     step2Title: 'Then, log how you are',
     step2Body:
       'In Feel you do your daily check-in: emotion, energy, time, and focus. Koraa uses that to order what matters, not just the list.',
@@ -415,7 +448,7 @@ export const featuresEn = {
       'In Today you see what to tackle first based on how you feel. You can return to Feel when your state changes.',
     step4Title: 'Optional: Koraa Premium',
     step4Body:
-      'The daily flow is free (Tasks → Feel → Today). Premium expands the Week tab: all 7 days, more filters, and full history. Subscribe in Settings → View Premium.',
+      'The daily flow is free (Tasks → Feel → Today). Week and Tips are optional. Premium expands Week (7 days and history) and unlimited Tips. Settings → View Premium.',
     step4TabLabel: 'Premium',
     next: 'Next',
     start: 'Get started',

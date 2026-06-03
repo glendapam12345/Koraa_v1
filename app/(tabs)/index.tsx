@@ -44,13 +44,14 @@ import { useI18n } from '@/contexts/I18nContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { HoyScreenOverlays } from '@/components/hoy/HoyScreenOverlays';
 import { resolveHoyLiteLayout, optOutHoyLiteLayout } from '@/lib/hoyLiteDay';
+import { consumePrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
 import {
   dismissDayChangedCard,
   shouldShowDayChangedCard,
 } from '@/lib/hoyDayFlowDismiss';
 import { FlowIndicator } from '@/components/FlowIndicator';
 import { getLocalDateString } from '@/lib/dateLocal';
-import { getTodayPriorityStats } from '@/lib/priorityProgress';
+import { getTodayPriorityStats, isPriorityCompletedToday } from '@/lib/priorityProgress';
 import type { TaskCompletedPayload } from '@/hooks/useTaskActions';
 
 // Lazy loading para componentes pesados que no se usan inmediatamente
@@ -140,16 +141,6 @@ export default function TodayScreen() {
     };
   }, [user?.id]);
 
-  useEffect(() => {
-    // En “hoyLiteLayout” ignoramos persistencia para no pelear con la vista simplificada.
-    if (!user?.id) return;
-    if (hoyLiteLayout) return;
-    void AsyncStorage.setItem(
-      `hoy_secondary_modules_${user.id}_v1`,
-      showSecondaryModules ? '1' : '0',
-    );
-  }, [user?.id, showSecondaryModules, hoyLiteLayout]);
-
   const handleOptOutHoyLite = useCallback(async () => {
     if (!user?.id) return;
     await optOutHoyLiteLayout(user.id);
@@ -201,11 +192,16 @@ export default function TodayScreen() {
         }
         if (cancelled) return;
         await Promise.all([loadTodayCheckIn(), loadTasks()]);
+        if (cancelled) return;
+        const showPrioritiesReady = await consumePrioritiesReadyToast();
+        if (showPrioritiesReady && !cancelled) {
+          showToast(t('hoy.prioritiesUpdatedToast'), 'success');
+        }
       })();
       return () => {
         cancelled = true;
       };
-    }, [user?.id, loadTodayCheckIn, loadTasks]),
+    }, [user?.id, loadTodayCheckIn, loadTasks, showToast, t]),
   );
 
   const [projectsMap, setProjectsMap] = useState<Record<string, { name: string; color: string }>>({});
@@ -232,11 +228,9 @@ export default function TodayScreen() {
 
   const completedPriorityToday = useMemo(() => {
     const today = getLocalDateString();
-    return tasks.filter((task) => {
-      if (!task.is_priority || !task.is_completed) return false;
-      if (!task.completed_at) return false;
-      return String(task.completed_at).slice(0, 10) === today;
-    });
+    return tasks.filter(
+      (task) => task.is_priority && !task.parent_task_id && isPriorityCompletedToday(task, today),
+    );
   }, [tasks]);
 
   const showNothingDoneCard =
@@ -293,7 +287,24 @@ export default function TodayScreen() {
   );
 
   const hoyLiteActive = hoyLiteLayout === true;
-  const showSecondaryModulesEffective = showSecondaryModules && !hoyLiteActive;
+  const hoyPreFlowActive = !loading && !todayMood;
+  const hoySetupMode = hoyPreFlowActive || hoyLiteActive;
+  const showSecondaryModulesEffective = showSecondaryModules && !hoySetupMode;
+
+  const flowStepOnHoy = useMemo(() => {
+    if (todayMood) return 'accionar' as const;
+    if (tasks.length > 0) return 'sentir' as const;
+    return 'vaciar' as const;
+  }, [todayMood, tasks.length]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    if (hoyLiteLayout || hoyPreFlowActive) return;
+    void AsyncStorage.setItem(
+      `hoy_secondary_modules_${user.id}_v1`,
+      showSecondaryModules ? '1' : '0',
+    );
+  }, [user?.id, showSecondaryModules, hoyLiteLayout, hoyPreFlowActive]);
 
   const todayPriorityStats = useMemo(
     () => getTodayPriorityStats(tasks),
@@ -374,8 +385,8 @@ export default function TodayScreen() {
         .from('daily_check_ins')
         .select('date')
         .eq('user_id', user.id)
-        .gte('date', oneYearAgo.toISOString().split('T')[0])
-        .lte('date', today.toISOString().split('T')[0])
+        .gte('date', getLocalDateString(oneYearAgo))
+        .lte('date', getLocalDateString(today))
         .order('date', { ascending: false });
 
       if (checkIns) {
@@ -389,7 +400,7 @@ export default function TodayScreen() {
       for (let i = 0; i < 365; i++) {
         const checkDate = new Date(today);
         checkDate.setDate(today.getDate() - i);
-        const dateString = checkDate.toISOString().split('T')[0];
+        const dateString = getLocalDateString(checkDate);
 
         if (checkInDates.has(dateString)) {
           streak++;
@@ -420,7 +431,7 @@ export default function TodayScreen() {
         .from('daily_check_ins')
         .select('date, energy_level, emotion')
         .eq('user_id', authUser.id)
-        .gte('date', fromDate.toISOString().split('T')[0])
+        .gte('date', getLocalDateString(fromDate))
         .order('date', { ascending: false });
 
       if (error || !data || data.length < 4) {
@@ -1143,7 +1154,7 @@ export default function TodayScreen() {
           />
         )}
 
-        {!loading && <FlowIndicator currentStep="accionar" />}
+        {!loading && <FlowIndicator currentStep={flowStepOnHoy} />}
 
         {!loading && todayMood ? (
           <HoyDayFlowSection
@@ -1154,15 +1165,19 @@ export default function TodayScreen() {
             onLightenLoad={() => setShowRedistribute(true)}
           />
         ) : null}
-        {!loading && showSecondaryModulesEffective ? (
-          <HoyHowItWorksCard hasCheckInToday={Boolean(todayMood)} />
+        {!loading && (!todayMood || showSecondaryModulesEffective) ? (
+          <HoyHowItWorksCard
+            hasCheckInToday={Boolean(todayMood)}
+            hasTasks={tasks.length > 0}
+          />
         ) : null}
 
         {hoyLiteLayout ? <HoyLiteBanner onShowAll={() => void handleOptOutHoyLite()} /> : null}
 
-        {!loading ? (
+        {!loading && !hoySetupMode ? (
           <HoyQuickActions
-            showSecondaryToggle={!hoyLiteActive}
+            showAddTasksPill={!todayMood || showSecondaryModules}
+            showSecondaryToggle={Boolean(todayMood) || !hoyLiteActive}
             showSecondaryModules={showSecondaryModules}
             onToggleSecondaryModules={() => setShowSecondaryModules((prev) => !prev)}
           />

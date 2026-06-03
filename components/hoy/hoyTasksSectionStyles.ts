@@ -187,6 +187,33 @@ export const hoyTasksSectionStyles = StyleSheet.create({
     color: THEME.colors.text.main,
     marginBottom: 4,
   },
+  focusSectionBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: THEME.spacing.sm,
+    marginTop: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
+    padding: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.standard,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+  },
+  focusSectionBannerText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  focusSectionTitle: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    marginBottom: 2,
+  },
+  focusSectionSub: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+  },
   emotionalCardAnimatedWrap: {
     marginTop: THEME.spacing.xs,
   },
@@ -295,7 +322,7 @@ export const hoyTasksSectionStyles = StyleSheet.create({
   },
   emotionalToneLine: {
     ...THEME.typography.small,
-    color: THEME.colors.text.tertiary,
+    color: THEME.colors.text.metaOnFill,
     marginTop: 6,
     fontStyle: 'italic',
     lineHeight: 17,
@@ -370,7 +397,7 @@ export const hoyTasksSectionStyles = StyleSheet.create({
   heroDetailsSectionLabel: {
     ...THEME.typography.meta,
     fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.tertiary,
+    color: THEME.colors.text.metaOnFill,
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
@@ -506,14 +533,14 @@ export const hoyTasksSectionStyles = StyleSheet.create({
   taskCompactHint: {
     ...THEME.typography.meta,
     lineHeight: 16,
-    color: THEME.colors.text.tertiary,
+    color: THEME.colors.text.metaOnFill,
     marginTop: 6,
     width: '100%',
   },
   taskFilterHint: {
     ...THEME.typography.small,
     fontSize: 12,
-    color: THEME.colors.text.tertiary,
+    color: THEME.colors.text.metaOnFill,
     marginTop: 4,
     marginBottom: 0,
     width: '100%',

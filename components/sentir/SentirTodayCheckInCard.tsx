@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { RefreshCw, ChevronRight } from 'lucide-react-native';
+import { RefreshCw, ChevronRight, Target } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { getEmotionEmoji } from '@/lib/emotionalInsights';
@@ -43,6 +44,17 @@ export function SentirTodayCheckInCard({
           </View>
         </View>
         <Text style={styles.body}>{t('sentirToday.checkedInBody')}</Text>
+        <TouchableOpacity
+          style={styles.hoyBtn}
+          onPress={() => router.push('/(tabs)')}
+          activeOpacity={0.88}
+          accessibilityRole="button"
+          accessibilityLabel={t('sentirToday.viewFocusInHoyA11y')}
+        >
+          <Target size={18} color={THEME.colors.onGradient} />
+          <Text style={styles.hoyBtnText}>{t('sentirToday.viewFocusInHoy')}</Text>
+          <ChevronRight size={18} color={THEME.colors.onGradient} />
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.primaryBtn}
           onPress={onQuickRecheck}
@@ -106,6 +118,23 @@ const styles = StyleSheet.create({
     ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
     lineHeight: 18,
+  },
+  hoyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
+    minHeight: THEME.sizes.touchTarget,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.gradient.blue,
+    paddingHorizontal: THEME.spacing.md,
+  },
+  hoyBtnText: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.onGradient,
+    flex: 1,
+    textAlign: 'center',
   },
   primaryBtn: {
     flexDirection: 'row',

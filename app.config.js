@@ -69,7 +69,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.impermanencecasaartisitca.koraav1',
-      buildNumber: '26',
+      buildNumber: '27',
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         CFBundleDisplayName: 'Koraa',
@@ -90,6 +90,13 @@ module.exports = {
       'expo-web-browser',
       'expo-secure-store',
       '@react-native-community/datetimepicker',
+      [
+        'expo-calendar',
+        {
+          calendarPermission:
+            'Koraa usa tu calendario para agregar tareas con fecha como eventos.',
+        },
+      ],
       [
         'expo-notifications',
         {

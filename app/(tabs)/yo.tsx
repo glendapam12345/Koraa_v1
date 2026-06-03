@@ -16,7 +16,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSubscription } from '@/contexts/SubscriptionContext';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   Settings,
@@ -34,11 +33,10 @@ import { logger } from '@/lib/logger';
 import { subscribeCheckInCelebration } from '@/lib/checkInCelebration';
 import { pickDailyStreakEncouragement, getLocalDateKey } from '@/lib/streakDailyMessages';
 import { ProgressChart } from '@/components/ProgressChart';
-import { PremiumTeaserCard } from '@/components/PremiumTeaserCard';
 import { StreakAura } from '@/components/branding/StreakAura';
-import { ProjectManager } from '@/components/projects/ProjectManager';
 import * as Haptics from 'expo-haptics';
 import { generateEmotionalInsights } from '@/lib/emotionalInsights';
+import { getLocalDateString } from '@/lib/dateLocal';
 import { useI18n } from '@/contexts/I18nContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
@@ -68,7 +66,6 @@ export default function ProfileScreen() {
   const { t, locale } = useI18n();
   const { editProfile: editProfileParam } = useLocalSearchParams<{ editProfile?: string }>();
   const { user } = useAuth();
-  const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
   const [progressData, setProgressData] = useState<DayData[]>([]);
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   const [, setShowConfetti] = useState(false);
@@ -82,7 +79,6 @@ export default function ProfileScreen() {
   const [newInterest, setNewInterest] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
-  const [showProjects, setShowProjects] = useState(false);
   /** Clave de día local para rotar mensajes de racha (actualiza al enfocar Yo). */
   const [streakMessageDayKey, setStreakMessageDayKey] = useState(getLocalDateKey);
   const [streakExplainerDismissed, setStreakExplainerDismissed] = useState(false);
@@ -124,8 +120,8 @@ export default function ProfileScreen() {
       .from('daily_check_ins')
       .select('date, emotion, energy_level')
       .eq('user_id', user.id)
-      .gte('date', fourteenDaysAgo.toISOString().split('T')[0])
-      .lte('date', today.toISOString().split('T')[0])
+      .gte('date', getLocalDateString(fourteenDaysAgo))
+      .lte('date', getLocalDateString(today))
       .order('date', { ascending: true });
 
     if (checkIns) {
@@ -141,7 +137,7 @@ export default function ProfileScreen() {
     for (let i = 13; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(today.getDate() - i);
-      const dateString = date.toISOString().split('T')[0];
+      const dateString = getLocalDateString(date);
 
       const dayLabels = [
         t('yo.dayShortSun'),
@@ -182,8 +178,8 @@ export default function ProfileScreen() {
       .from('daily_check_ins')
       .select('date')
       .eq('user_id', user.id)
-      .gte('date', oneYearAgo.toISOString().split('T')[0])
-      .lte('date', today.toISOString().split('T')[0])
+      .gte('date', getLocalDateString(oneYearAgo))
+      .lte('date', getLocalDateString(today))
       .order('date', { ascending: false });
 
     if (checkIns) {
@@ -197,7 +193,7 @@ export default function ProfileScreen() {
     for (let i = 0; i < 365; i++) {
       const checkDate = new Date(today);
       checkDate.setDate(today.getDate() - i);
-      const dateString = checkDate.toISOString().split('T')[0];
+      const dateString = getLocalDateString(checkDate);
 
       if (checkInDates.has(dateString)) {
         streak++;
@@ -705,7 +701,7 @@ export default function ProfileScreen() {
           <TouchableOpacity 
             style={styles.menuItem} 
             activeOpacity={0.7}
-            onPress={() => setShowProjects(true)}
+            onPress={() => router.push('/proyectos')}
             accessibilityRole="button"
             accessibilityLabel={t('yoExtra.manageProjectsA11y')}
             accessibilityHint={t('yoExtra.manageProjectsHint')}
@@ -768,10 +764,6 @@ export default function ProfileScreen() {
           )}
 
         </View>
-
-        {!subscriptionLoading && !isSubscribed ? (
-          <PremiumTeaserCard title={t('yo.subscription')} body={t('premiumTeaser.yoBody')} />
-        ) : null}
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Koraa v{Constants.expoConfig?.version ?? '1.0.0'}</Text>
@@ -1050,38 +1042,6 @@ export default function ProfileScreen() {
             </View>
           </View>
         </KeyboardAvoidingView>
-        </View>
-      </Modal>
-
-      {/* Modal de gestión de proyectos */}
-      <Modal
-        visible={showProjects}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowProjects(false)}
-      >
-        <View style={styles.projectsModalOverlay}>
-          <View style={styles.projectsModalContent}>
-            <View style={styles.projectsModalHeader}>
-              <Text style={styles.projectsModalTitle}>{t('yoExtra.projectsModalTitle')}</Text>
-              <TouchableOpacity
-                onPress={() => setShowProjects(false)}
-                style={styles.projectsModalCloseButton}
-                accessibilityRole="button"
-                accessibilityLabel={t('yoExtra.projectsCloseA11y')}
-              >
-                <X size={24} color={THEME.colors.text.main} />
-              </TouchableOpacity>
-            </View>
-            {user && (
-              <ProjectManager
-                userId={user.id}
-                onProjectSelect={() => {
-                  // Opcional: hacer algo cuando se selecciona un proyecto
-                }}
-              />
-            )}
-          </View>
         </View>
       </Modal>
     </View>
@@ -1519,33 +1479,5 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: THEME.spacing.md,
-  },
-  projectsModalOverlay: {
-    flex: 1,
-    backgroundColor: THEME.colors.overlay,
-    justifyContent: 'flex-end',
-  },
-  projectsModalContent: {
-    backgroundColor: THEME.colors.fill[100],
-    borderTopLeftRadius: THEME.borderRadius.rounded,
-    borderTopRightRadius: THEME.borderRadius.rounded,
-    maxHeight: '90%',
-    flex: 1,
-  },
-  projectsModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: THEME.spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.fill[200],
-  },
-  projectsModalTitle: {
-    ...THEME.typography.h2,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  projectsModalCloseButton: {
-    padding: THEME.spacing.xs,
   },
 });

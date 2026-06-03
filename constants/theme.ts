@@ -12,7 +12,10 @@ export const THEME = {
     text: {
       main: '#121212',
       secondary: '#595959',
-      tertiary: '#999999',
+      /** Iconos y decoración. En párrafos largos preferir `secondary` o `metaOnFill`. */
+      tertiary: '#707070',
+      /** Meta legible sobre fill[200] (~4.5:1 WCAG AA a 13px). */
+      metaOnFill: '#595959',
     },
     gradient: {
       blue: '#4A90E2',
@@ -163,6 +166,7 @@ export const THEME = {
       fontSize: 13,
       lineHeight: 18,
       fontFamily: 'DMSans-Medium',
+      color: '#595959',
     } as TextStyle,
   },
 

@@ -4,8 +4,10 @@ import { RectButton, Swipeable } from 'react-native-gesture-handler';
 import { THEME } from '@/constants/theme';
 import { getCategoryEmoji } from '@/constants/emojis';
 import { ChevronDown, ChevronRight, Check, Pencil, Trash2, Calendar } from 'lucide-react-native';
+import { AddToDeviceCalendarButton } from '@/components/tasks/AddToDeviceCalendarButton';
 import { useI18n } from '@/contexts/I18nContext';
 import { categoryLabel } from '@/lib/i18n/categoryLabels';
+import { parseLocalDateString } from '@/lib/dateLocal';
 
 const MONTH_KEYS = [
   'taskCard.monthJan',
@@ -28,7 +30,7 @@ function formatTaskDate(
 ): string {
   if (!iso) return '';
   try {
-    const d = new Date(iso);
+    const d = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? parseLocalDateString(iso) : new Date(iso);
     const day = d.getDate();
     const month = t(MONTH_KEYS[d.getMonth()]);
     return `${day} ${month}`;
@@ -364,11 +366,20 @@ export function TaskCard({
           {uniformCard ? (
             <View style={styles.metaRowSimple}>
               {showDate ? (
-                <View style={styles.dateChip}>
-                  <Calendar size={12} color={THEME.colors.text.secondary} />
-                  <Text style={styles.dateChipText} numberOfLines={1}>
-                    {dateLine}
-                  </Text>
+                <View style={styles.dateRow}>
+                  <View style={styles.dateChip}>
+                    <Calendar size={12} color={THEME.colors.text.secondary} />
+                    <Text style={styles.dateChipText} numberOfLines={1}>
+                      {dateLine}
+                    </Text>
+                  </View>
+                  {!task.is_completed && task.scheduled_date ? (
+                    <AddToDeviceCalendarButton
+                      taskId={task.id}
+                      title={task.content}
+                      scheduledDate={task.scheduled_date}
+                    />
+                  ) : null}
                 </View>
               ) : null}
               {showProjectLegend && (
@@ -424,11 +435,20 @@ export function TaskCard({
                 )
               )}
               {showDate ? (
-                <View style={styles.dateChip}>
-                  <Calendar size={12} color={THEME.colors.text.secondary} />
-                  <Text style={styles.dateChipText} numberOfLines={1}>
-                    {dateLine}
-                  </Text>
+                <View style={styles.dateRow}>
+                  <View style={styles.dateChip}>
+                    <Calendar size={12} color={THEME.colors.text.secondary} />
+                    <Text style={styles.dateChipText} numberOfLines={1}>
+                      {dateLine}
+                    </Text>
+                  </View>
+                  {!task.is_completed && task.scheduled_date ? (
+                    <AddToDeviceCalendarButton
+                      taskId={task.id}
+                      title={task.content}
+                      scheduledDate={task.scheduled_date}
+                    />
+                  ) : null}
                 </View>
               ) : null}
               {hasSubtasks && (
@@ -843,6 +863,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   dateChipText: {
     ...THEME.typography.meta,

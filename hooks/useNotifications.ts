@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { getDailyReminderTime } from '@/lib/notificationPreferences';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { type AppLocale, translate } from '@/lib/i18n';
+import { getLocalDateString } from '@/lib/dateLocal';
 
 const LOCALE_STORAGE_KEY = 'koraa_app_locale_v1';
 
@@ -109,7 +110,7 @@ export async function scheduleRecheckReminder(localeOverride?: AppLocale) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const { data: checkIn } = await supabase
       .from('daily_check_ins')
       .select('id')
@@ -183,7 +184,7 @@ export async function scheduleDailyReminder(localeOverride?: AppLocale) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const { data: checkIn } = await supabase
       .from('daily_check_ins')
       .select('id')

@@ -18,6 +18,7 @@ import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { TaskList } from '@/components/tasks/TaskList';
 import { HoyTasksHero } from '@/components/hoy/HoyTasksHero';
+import { HoyFocusScopeBanner } from '@/components/hoy/HoyFocusScopeBanner';
 import { hoyTasksSectionStyles as styles } from '@/components/hoy/hoyTasksSectionStyles';
 import { CATEGORY_ORDER_KEYS, categoryLabel, normalizeCategoryKey } from '@/lib/i18n/categoryLabels';
 import { getPrioritizationExplainerBullets } from '@/lib/smartPrioritization';
@@ -141,6 +142,11 @@ export function HoyTasksSection({
   getTaskPriorityInsightForList,
 }: HoyTasksSectionProps) {
   const { t, locale } = useI18n();
+
+  const focusTaskCount = useMemo(
+    () => displayedIncompleteTasks.filter((task) => task.is_priority).length,
+    [displayedIncompleteTasks],
+  );
 
   const taskSections = useMemo(() => {
     const byCategory = new Map<string, Task[]>();
@@ -373,6 +379,12 @@ export function HoyTasksSection({
                   </LinearGradient>
                 </Animated.View>
               )}
+              {todayMood ? (
+                <HoyFocusScopeBanner
+                  totalPending={incompleteTasks.length}
+                  focusCount={todayPriorityStats.total}
+                />
+              ) : null}
               <View style={styles.tareasHeaderSection}>
               <Text style={styles.tareasTitle} numberOfLines={1}>
                 {t('commonExtra.tasksSection')}
@@ -457,8 +469,19 @@ export function HoyTasksSection({
               )}
               {displayedIncompleteTasks.length > 0 && (
                 <Text style={styles.taskCompactHint} accessibilityRole="text">
-                  {t('hoy.sortHint')}
+                  {todayMood ? t('hoy.sortHint') : t('hoy.noFeelSortHint')}
                 </Text>
+              )}
+              {todayMood && focusTaskCount > 0 && (
+                <View style={styles.focusSectionBanner}>
+                  <Target size={18} color={THEME.colors.gradient.blue} />
+                  <View style={styles.focusSectionBannerText}>
+                    <Text style={styles.focusSectionTitle}>
+                      {t('hoy.focusSectionTitle', { count: focusTaskCount })}
+                    </Text>
+                    <Text style={styles.focusSectionSub}>{t('hoy.focusSectionSub')}</Text>
+                  </View>
+                </View>
               )}
               {incompleteTasks.length >= 1 && user && todayMood && showSecondaryModulesEffective && (
                 <TouchableOpacity

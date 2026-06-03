@@ -2,8 +2,10 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { markFirstSessionTourSeen } from '@/lib/firstSessionTour';
+import { markFirstFlowLandingComplete } from '@/lib/firstSessionFlow';
 import { Crown, Edit3, Heart, Home } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
 
@@ -34,7 +36,9 @@ export function FirstSessionTourModal({ visible, userId, onFinished }: Props) {
 
   const finish = useCallback(async () => {
     await markFirstSessionTourSeen(userId);
+    await markFirstFlowLandingComplete(userId);
     onFinished();
+    router.replace('/(tabs)/vaciar');
   }, [userId, onFinished]);
 
   const handleNext = () => {

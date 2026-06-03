@@ -9,6 +9,7 @@ export const es = {
     cancel: 'Cancelar',
     save: 'Guardar',
     email: 'Correo',
+    confirmEmail: 'Confirmar correo',
     password: 'Contraseña',
     confirmPassword: 'Confirmar contraseña',
     loading: 'Cargando…',
@@ -23,6 +24,15 @@ export const es = {
     week: 'Semana',
     tips: 'Consejos',
     profile: 'Yo',
+    a11yToday: 'Hoy, tus focos del día',
+    a11yTasks: 'Tareas, captura de pendientes',
+    a11yFeel: 'Sentir, check-in emocional',
+    a11yTasksFlowStep: 'Tareas, paso 1 de 3: anotar pendientes',
+    a11yFeelFlowStep: 'Sentir, paso 2 de 3: check-in emocional',
+    a11yTodayFlowStep: 'Hoy, paso 3 de 3: ver focos del día',
+    a11yWeekOptional: 'Semana, opcional, planificación semanal',
+    a11yTipsOptional: 'Consejos, opcional, según tu estado',
+    a11yProfile: 'Yo, perfil y ajustes',
   },
   language: {
     section: 'Idioma',
@@ -111,6 +121,8 @@ export const es = {
       hasAccount: '¿Ya tienes cuenta?',
       signIn: 'Iniciar sesión',
       fillAllFields: 'Completa todos los campos',
+      confirmEmailPlaceholder: 'Repite tu correo',
+      emailMismatch: 'Los correos no coinciden. Revísalos e inténtalo de nuevo.',
       passwordMismatch: 'Las contraseñas no coinciden',
     },
     errors: {
@@ -129,6 +141,13 @@ export const es = {
     intro:
       'Aquí tienes respuestas rápidas y enlaces a políticas. Si no encuentras lo que buscas, escríbenos.',
     faqTitle: 'Preguntas frecuentes',
+    plansTitle: 'Gratis vs Premium',
+    plansFreeTitle: 'Incluido gratis',
+    plansFreeBullets:
+      '• Tareas, Sentir y Hoy (captura, check-in y 2–5 focos del día)\n• Consejos con límite diario\n• Semana: vista de muestra (primeros días)',
+    plansPremiumTitle: 'Con Koraa Premium',
+    plansPremiumBullets:
+      '• Semana completa (7 días, filtros e historial)\n• Consejos y recomendaciones ilimitados\n• Misma experiencia en todos los dispositivos con tu cuenta',
     legalTitle: 'Legal',
     legalHint:
       'Puedes definir URLs públicas en tu proyecto con variables EXPO_PUBLIC_PRIVACY_POLICY_URL y EXPO_PUBLIC_TERMS_OF_SERVICE_URL.',
@@ -154,7 +173,7 @@ export const es = {
       },
       premium: {
         q: '¿Qué es Koraa Premium y dónde está?',
-        a: 'El flujo principal (Tareas → Sentir → Hoy) es gratuito. Premium amplía la pestaña Semana: los 7 días completos, filtros avanzados e historial (en gratis ves una muestra). Para suscribirte o restaurar compra: Ajustes → Ver Premium.',
+        a: 'El flujo del día (Tareas → Sentir → Hoy) es gratuito. Semana y Consejos son opcionales. Premium amplía Semana (7 días e historial) y Consejos ilimitados. Suscripción y restaurar compra: Ajustes → Ver Premium. Detalle en «Gratis vs Premium» más abajo.',
       },
       data: {
         q: '¿Dónde se guardan mis datos?',
@@ -173,12 +192,12 @@ export const es = {
   yo: {
     configSection: 'Configuración',
     settings: 'Ajustes',
-    settingsSub: 'Idioma, recordatorios, contraseña y Premium',
+    settingsSub: 'Idioma, recordatorios, contraseña, Premium y ayuda',
     subscription: 'Suscripción',
     subscriptionSub: 'Gestionar Premium y restaurar compra',
     editProfile: 'Editar perfil personal',
-    manageProjects: 'Gestionar proyectos',
-    manageProjectsSub: 'Organiza tus tareas por proyectos',
+    manageProjects: 'Mis proyectos y tareas',
+    manageProjectsSub: 'Ver todo lo que has agregado',
     activitiesCount: '{{count}} actividades',
     interestsCount: '{{count}} intereses',
     limitReachedTitle: 'Límite alcanzado',
@@ -194,7 +213,7 @@ export const es = {
     profileSavedBody: 'Tus cambios se guardaron correctamente.',
     invalidAgeTitle: 'Edad inválida',
     invalidAgeBody: 'La edad debe ser entre 13 y 120 años',
-    welcomeName: 'Bienvenida',
+    welcomeName: 'Hola',
     profileLoadOffline:
       'No hay conexión a internet. Tus datos se cargarán cuando vuelvas a tener conexión.',
     profileLoadError: 'No se pudo cargar tu perfil. Inténtalo de nuevo.',
@@ -246,19 +265,19 @@ export const es = {
     titleAccent: 'sientes',
     subtitle: 'hoy?',
     description: 'Koraa prioriza por ti. Solo enfócate en lo que realmente importa hoy.',
-    inclusiveNote: 'Elige la opción que más se acerque a cómo te sientes ahora.',
+    inclusiveNote: 'Elige la que más se acerque a cómo te sientes. No tiene que ser perfecta.',
     noTasksTitle: 'Paso 1: Agrega tus tareas primero',
     noTasksSub:
       'Ve a la pestaña Tareas para agregar lo que necesitas hacer hoy, luego regresa aquí',
     tipsFor: 'Tips para {{emotion}}',
     continue: 'Continuar',
     emotions: {
-      agotada: 'Agotada',
-      tranquila: 'Tranquila',
-      ansiosa: 'Ansiosa',
-      motivada: 'Motivada',
-      abrumada: 'Abrumada',
-      enfocada: 'Enfocada',
+      agotada: 'Sin energía',
+      tranquila: 'En calma',
+      ansiosa: 'Con ansiedad',
+      motivada: 'Con ganas',
+      abrumada: 'Mucho encima',
+      enfocada: 'En foco',
     },
   },
   hoy: {
@@ -272,9 +291,20 @@ export const es = {
     feelingLine: 'Sintiéndote {{emotion}} · Energía {{energy}}/5',
     howItWorksTitle: 'Cómo funciona Koraa',
     howItWorksBody:
-      'Agrega tus tareas en Tareas, indica cómo te sientes en Sentir, y aquí verás solo lo que te conviene hoy.',
+      'Tareas: anota pendientes. Sentir: Koraa elige 2–5 focos según tu ánimo. Hoy: haz solo esos — arriba en la lista.',
+    howItWorksBodyNoTasks:
+      'Empieza en Tareas: escribe lo que tienes en mente. Después Sentir elige tus focos y aquí los verás.',
     goToFeel: 'Ir a Sentir',
     updateFeel: 'Actualizar en Sentir',
+    howItWorksBodyCheckedIn:
+      'Tus focos del día están en la lista de abajo (2–5 tareas). Si cambia tu ánimo, actualiza en Sentir.',
+    focusCtaBelow: '↓ Tus focos están abajo en la lista',
+    focusScopeTitle: 'Solo tus focos de hoy',
+    focusScopeBody:
+      'El resto de tus pendientes vive en Tareas y en Proyectos — sin presión para terminarlo todo hoy.',
+    focusScopeStats: '{{total}} pendientes en total · hoy enfócate en {{focus}} focos',
+    focusScopeGoTasks: 'Tareas',
+    focusScopeGoProjects: 'Proyectos',
     hoyLiteBanner:
       'Vista simplificada tu primer día en Hoy: mañana verás filtros, proyectos, meditación y más.',
     showAllNow: 'Mostrar todo ahora',
@@ -288,7 +318,8 @@ export const es = {
     taskCountPending: '{{count}} tarea pendiente',
     taskCountPendingPlural: '{{count}} tareas pendientes',
     filterHint: 'Tareas de hoy y sin fecha asignada',
-    sortHint: 'Orden: prioridad alta → baja · Desliza para completar, editar o eliminar',
+    sortHint:
+      'Con check-in: focos arriba (números 1–5) · Sin Sentir aún: lista sin orden de foco · Desliza para completar',
     showAllSectionsToast: 'Verás todas las secciones en Hoy',
     prioritiesUpdatedToast: 'Listo: prioridades actualizadas según tu check-in ✨',
     ...hoyExtra,

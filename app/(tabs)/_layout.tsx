@@ -7,7 +7,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { resolvePostAuthGate } from '@/lib/onboardingGate';
 import { AppLoadingGate } from '@/components/AppLoadingGate';
 import { hasSeenFirstSessionTour } from '@/lib/firstSessionTour';
+import {
+  markFirstFlowLandingComplete,
+  shouldLandOnTasksFirst,
+} from '@/lib/firstSessionFlow';
 import { FirstSessionTourModal } from '@/components/onboarding/FirstSessionTourModal';
+import { SupabaseHealthBanner } from '@/components/SupabaseHealthBanner';
+import { useSupabaseHealth } from '@/hooks/useSupabaseHealth';
+import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
 import { useI18n } from '@/contexts/I18nContext';
 
 export default function TabLayout() {
@@ -18,6 +25,19 @@ export default function TabLayout() {
   const [allowed, setAllowed] = useState(false);
   const [profileGateError, setProfileGateError] = useState(false);
   const [showFirstSessionTour, setShowFirstSessionTour] = useState(false);
+  const {
+    status: supabaseHealthStatus,
+    primarySchemaIssue,
+    connectionDetail,
+    refresh: refreshSupabaseHealth,
+  } = useSupabaseHealth(userId);
+  const { hasCheckInToday } = useHasCheckInToday(userId);
+
+  const flowTabLabels = {
+    tasks: hasCheckInToday ? t('tabs.a11yTasks') : t('tabs.a11yTasksFlowStep'),
+    feel: hasCheckInToday ? t('tabs.a11yFeel') : t('tabs.a11yFeelFlowStep'),
+    today: hasCheckInToday ? t('tabs.a11yToday') : t('tabs.a11yTodayFlowStep'),
+  };
 
   useEffect(() => {
     setAllowed(false);
@@ -69,6 +89,24 @@ export default function TabLayout() {
     };
   }, [allowed, userId]);
 
+  useEffect(() => {
+    if (!allowed || !userId) return;
+    let cancelled = false;
+    void (async () => {
+      const needsLanding = await shouldLandOnTasksFirst(userId);
+      if (cancelled || !needsLanding) return;
+
+      const tourSeen = await hasSeenFirstSessionTour(userId);
+      await markFirstFlowLandingComplete(userId);
+      if (cancelled || tourSeen) return;
+
+      router.replace('/(tabs)/vaciar');
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [allowed, userId]);
+
   if (loading || !userId) {
     return <AppLoadingGate message={t('boot.loadingProfile')} />;
   }
@@ -90,6 +128,12 @@ export default function TabLayout() {
 
   return (
     <>
+      <SupabaseHealthBanner
+        status={supabaseHealthStatus}
+        primarySchemaIssue={primarySchemaIssue}
+        connectionDetail={connectionDetail}
+        onRefresh={refreshSupabaseHealth}
+      />
       <FirstSessionTourModal
         visible={showFirstSessionTour}
         userId={userId}
@@ -118,6 +162,7 @@ export default function TabLayout() {
           name="index"
           options={{
             title: t('tabs.today'),
+            tabBarAccessibilityLabel: flowTabLabels.today,
             tabBarIcon: ({ size, color }) => (
               <Home size={size} color={color} />
             ),
@@ -127,6 +172,7 @@ export default function TabLayout() {
           name="vaciar"
           options={{
             title: t('tabs.tasks'),
+            tabBarAccessibilityLabel: flowTabLabels.tasks,
             tabBarIcon: ({ size, color }) => (
               <Edit3 size={size} color={color} />
             ),
@@ -136,6 +182,7 @@ export default function TabLayout() {
           name="sentir"
           options={{
             title: t('tabs.feel'),
+            tabBarAccessibilityLabel: flowTabLabels.feel,
             tabBarIcon: ({ size, color }) => (
               <Heart size={size} color={color} />
             ),
@@ -145,6 +192,7 @@ export default function TabLayout() {
           name="semana"
           options={{
             title: t('tabs.week'),
+            tabBarAccessibilityLabel: t('tabs.a11yWeekOptional'),
             tabBarIcon: ({ size, color }) => (
               <Calendar size={size} color={color} />
             ),
@@ -154,6 +202,7 @@ export default function TabLayout() {
           name="tips"
           options={{
             title: t('tabs.tips'),
+            tabBarAccessibilityLabel: t('tabs.a11yTipsOptional'),
             tabBarIcon: ({ size, color }) => (
               <Lightbulb size={size} color={color} />
             ),
@@ -163,6 +212,7 @@ export default function TabLayout() {
           name="yo"
           options={{
             title: t('tabs.profile'),
+            tabBarAccessibilityLabel: t('tabs.a11yProfile'),
             tabBarIcon: ({ size, color }) => (
               <User size={size} color={color} />
             ),

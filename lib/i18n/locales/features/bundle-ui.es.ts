@@ -12,7 +12,7 @@ export const uiEs = {
     addMoreTasksHint: 'Agregar más · pestaña Tareas',
     moreAboutTodayOrder: 'Más sobre tu orden de hoy',
     checkInPromptSub:
-      'Haz tu check-in en Sentir para que Koraa ordene estas tareas según tu energía.',
+      'Sin check-in en Sentir, Koraa no puede marcar tus 2–5 focos. Toca para ir a Sentir.',
     feelingPill: 'Sintiéndote {{emotion}}',
     energyPill: 'Energía {{n}}/5',
     meditationListen: 'Respira. Escucha.',
@@ -32,12 +32,12 @@ export const uiEs = {
     toastWithSubtasksPriority: 'como prioridad',
     toastWithSubtasksSuccess: 'exitosamente',
     toastPriorityAdded: 'Tarea agregada como prioridad y aparecerá en "Hoy"',
-    toastAdded: 'Tarea agregada exitosamente',
-    voiceAlertTitle: 'Entrada por voz',
-    voiceAlertBody:
-      'Por ahora, escribe lo que quieres agregar. El reconocimiento de voz completo estará disponible pronto.',
-    voiceUseKeyboard: 'Usar teclado de voz',
-    voiceDictateHint: 'Usa el botón de micrófono del teclado para dictar',
+    toastAdded: 'Tarea guardada',
+    toastAddedGoFeel:
+      'Guardada en tu lista. Siguiente: Sentir — ahí Koraa elige qué va a Hoy (2–5 focos).',
+    dictateHint:
+      'Para dictar: toca el campo de arriba y usa el micrófono del teclado del sistema (Koraa aún no graba audio dentro de la app).',
+    a11yDismissDictateHint: 'Ocultar consejo de dictado por teclado',
     a11yCollapseOptional: 'Contraer nota sobre opciones opcionales',
     a11yExpandOptional: 'Expandir nota sobre proyecto, fecha y subtareas',
     a11yDismissOptional: 'Entendido, ocultar esta nota',
@@ -45,8 +45,6 @@ export const uiEs = {
     a11yNextStepFeelHint: 'Abre la pantalla para registrar tu estado emocional del día',
     a11yTaskField: 'Campo de texto para agregar tarea',
     a11yTaskFieldHint: 'Escribe o dicta la tarea que necesitas hacer hoy',
-    a11yVoiceInput: 'Entrada por voz',
-    a11yVoiceInputHint: 'Abre información sobre cómo usar el teclado de voz del sistema',
     a11yUseSuggestion: 'Usar sugerencia: {{suggestion}}',
     a11yUseSuggestionHint: 'Toca para usar esta tarea reciente como sugerencia',
     a11yAssignYes: 'Sí, asignar a un proyecto',
@@ -56,7 +54,8 @@ export const uiEs = {
     a11ySubtasksOff: 'Agregar pasos',
     a11ySaveTaskHint: 'Guarda esta tarea para organizarla después en tu día',
     a11yCloseOptions: 'Cerrar opciones',
-    a11yOpenOptions: 'Abrir opciones de fecha y prioridad',
+    a11yOpenOptions: 'Abrir proyecto, categoría o fecha',
+    a11yOpenOptionsHint: 'Muestra u oculta proyecto, categoría y fecha de la tarea',
   },
   semanaExtra: {
     weekFallback: 'Semana',
@@ -102,6 +101,8 @@ export const uiEs = {
     optional: 'Opcional',
     cta: 'Ver Premium',
     a11yHint: 'Abre la pantalla de suscripción Premium',
+    semanaBody:
+      'En gratis ves {{days}} días de la semana. Premium desbloquea los 7 días, más filtros e historial completo.',
     tipsBody: 'Premium desbloquea consejos y recomendaciones ilimitados según cómo te sientes.',
     tipsFreeLimit: 'Gratis: {{recommendations}} recomendaciones y hasta {{tips}} consejos.',
     yoBody: 'Gestiona tu suscripción o desbloquea la experiencia completa cuando quieras.',
@@ -128,7 +129,22 @@ export const uiEs = {
     annualCta: 'Comprar anual',
     expoGoHint:
       'Estás en Expo Go: las compras in-app suelen no cargar aquí. Para ver planes y precios reales, usa un development build (expo-dev-client) o un build de TestFlight / App Store.',
+    expoGoBannerTitle: 'Vista previa — compras no disponibles aquí',
+    expoGoBannerBody:
+      'En Expo Go no puedes suscribirte ni restaurar compras. Los precios abajo son orientativos. Para probar Premium de verdad, abre Koraa desde TestFlight o la App Store.',
+    expoGoEmptyTitle: 'Planes Premium (vista previa)',
+    expoGoEmptyBody:
+      'Las tiendas de Apple/Google no conectan en Expo Go. Aquí ves cómo se verán los planes; la compra funciona en la app instalada desde TestFlight.',
+    expoGoPreviewPriceLabel: 'Precio orientativo',
+    expoGoCtaDisabled: 'Disponible en TestFlight / App Store',
+    expoGoPurchaseBlockedTitle: 'Compra no disponible en Expo Go',
+    expoGoPurchaseBlockedBody:
+      'Para suscribirte necesitas la app Koraa instalada desde TestFlight o la App Store, no Expo Go.',
+    expoGoRestoreBlockedTitle: 'Restaurar compras',
+    expoGoRestoreBlockedBody:
+      'Restaurar suscripciones solo funciona en la app publicada (TestFlight o App Store), no en Expo Go.',
     continueFree: 'Seguir con versión gratis',
+    continueFreePrimary: 'Seguir gratis',
     onboardingSubtitle: 'Ya guardamos tu check-in. Premium es opcional — explora Koraa gratis cuando quieras.',
     onboardingBannerTitle: 'Tu check-in ya está listo',
     onboardingBannerBody:
@@ -140,6 +156,7 @@ export const uiEs = {
     a11yCloseOnboardingHint: 'Cierra premium y explora la app gratis',
     a11yChoosePlan: 'Elegir plan {{title}}',
     a11yChoosePlanHint: 'Inicia la compra del plan premium',
+    a11yChoosePlanHintPreview: 'Explica que la compra solo está en TestFlight o App Store',
     a11yContinueFree: 'Continuar con versión gratis',
     a11yContinueFreeHint: 'Cierra premium y sigue usando el plan gratuito',
     a11yBuyMonthly: 'Comprar plan mensual',
@@ -215,6 +232,8 @@ export const uiEs = {
     email: 'Correo electrónico',
     emailHint: 'Escribe el correo de tu cuenta',
     emailHintSignup: 'Escribe el correo con el que crearás tu cuenta',
+    confirmEmail: 'Confirmar correo',
+    confirmEmailHint: 'Repite el mismo correo para evitar errores al escribir',
     password: 'Contraseña',
     passwordHintLogin: 'Escribe tu contraseña para iniciar sesión',
     forgotPassword: 'Olvidé mi contraseña',
@@ -258,7 +277,7 @@ export const uiEs = {
   },
   quickOnboarding: {
     a11yClose: 'Cerrar',
-    title: '¡Bienvenida a Koraa!',
+    title: '¡Te damos la bienvenida a Koraa!',
     subtitle: 'Tu asistente inteligente para organizar tu día según cómo te sientes.',
     step1Title: 'Tareas',
     step1Body: 'Agrega todas tus tareas sin presión. Proyecto y fecha son opcionales.',

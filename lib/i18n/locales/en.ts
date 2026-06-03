@@ -10,6 +10,7 @@ export const en: DeepStrings<typeof es> = {
     cancel: 'Cancel',
     save: 'Save',
     email: 'Email',
+    confirmEmail: 'Confirm email',
     password: 'Password',
     confirmPassword: 'Confirm password',
     loading: 'Loading…',
@@ -24,6 +25,15 @@ export const en: DeepStrings<typeof es> = {
     week: 'Week',
     tips: 'Tips',
     profile: 'Me',
+    a11yToday: 'Today, your focus tasks for the day',
+    a11yTasks: 'Tasks, capture pending items',
+    a11yFeel: 'Feel, emotional check-in',
+    a11yTasksFlowStep: 'Tasks, step 1 of 3: capture what’s pending',
+    a11yFeelFlowStep: 'Feel, step 2 of 3: emotional check-in',
+    a11yTodayFlowStep: 'Today, step 3 of 3: see your focus tasks',
+    a11yWeekOptional: 'Week, optional weekly planning',
+    a11yTipsOptional: 'Tips, optional, based on how you feel',
+    a11yProfile: 'Me, profile and settings',
   },
   language: {
     section: 'Language',
@@ -112,6 +122,8 @@ export const en: DeepStrings<typeof es> = {
       hasAccount: 'Already have an account?',
       signIn: 'Sign in',
       fillAllFields: 'Please fill in all fields',
+      confirmEmailPlaceholder: 'Repeat your email',
+      emailMismatch: 'Emails do not match. Check them and try again.',
       passwordMismatch: 'Passwords do not match',
     },
     errors: {
@@ -130,6 +142,13 @@ export const en: DeepStrings<typeof es> = {
     intro:
       'Quick answers and policy links. If you cannot find what you need, contact us.',
     faqTitle: 'Frequently asked questions',
+    plansTitle: 'Free vs Premium',
+    plansFreeTitle: 'Included free',
+    plansFreeBullets:
+      '• Tasks, Feel, and Today (capture, check-in, and 2–5 daily focus tasks)\n• Tips with a daily limit\n• Week: sample view (first days only)',
+    plansPremiumTitle: 'With Koraa Premium',
+    plansPremiumBullets:
+      '• Full Week (7 days, filters, and history)\n• Unlimited tips and recommendations\n• Same experience on all devices with your account',
     legalTitle: 'Legal',
     legalHint:
       'You can set public URLs in your project with EXPO_PUBLIC_PRIVACY_POLICY_URL and EXPO_PUBLIC_TERMS_OF_SERVICE_URL.',
@@ -156,7 +175,7 @@ export const en: DeepStrings<typeof es> = {
       },
       premium: {
         q: 'What is Koraa Premium and where is it?',
-        a: 'The main flow (Tasks → Feel → Today) is free. Premium expands the Week tab: all 7 days, advanced filters, and history (free shows a sample). To subscribe or restore: Settings → Manage Premium.',
+        a: 'The daily flow (Tasks → Feel → Today) is free. Week and Tips are optional. Premium expands Week (7 days and history) and unlimited Tips. Subscribe or restore in Settings → View Premium. See «Free vs Premium» below.',
       },
       data: {
         q: 'Where is my data stored?',
@@ -175,12 +194,12 @@ export const en: DeepStrings<typeof es> = {
   yo: {
     configSection: 'Settings',
     settings: 'Settings',
-    settingsSub: 'Language, reminders, password, and Premium',
+    settingsSub: 'Language, reminders, password, Premium, and help',
     subscription: 'Subscription',
     subscriptionSub: 'Manage Premium and restore purchase',
     editProfile: 'Edit personal profile',
-    manageProjects: 'Manage projects',
-    manageProjectsSub: 'Organize your tasks by project',
+    manageProjects: 'My projects & tasks',
+    manageProjectsSub: 'See everything you’ve added',
     activitiesCount: '{{count}} activities',
     interestsCount: '{{count}} interests',
     limitReachedTitle: 'Limit reached',
@@ -272,9 +291,20 @@ export const en: DeepStrings<typeof es> = {
     feelingLine: 'Feeling {{emotion}} · Energy {{energy}}/5',
     howItWorksTitle: 'How Koraa works',
     howItWorksBody:
-      'Add tasks in Tasks, check in how you feel in Feel, and here you will see only what fits today.',
+      'Tasks: capture what’s pending. Feel: Koraa picks 2–5 focus tasks from your mood. Today: do those first — at the top of the list.',
+    howItWorksBodyNoTasks:
+      'Start in Tasks: write what’s on your mind. Then Feel picks your focus tasks and you’ll see them here.',
     goToFeel: 'Go to Feel',
     updateFeel: 'Update in Feel',
+    howItWorksBodyCheckedIn:
+      'Your focus tasks are in the list below (2–5 tasks). If your mood shifts, update in Feel.',
+    focusCtaBelow: '↓ Your focus tasks are below in the list',
+    focusScopeTitle: 'Today’s focus only',
+    focusScopeBody:
+      'Everything else lives in Tasks and Projects — no pressure to finish it all today.',
+    focusScopeStats: '{{total}} pending in total · focus on {{focus}} in Hoy today',
+    focusScopeGoTasks: 'Tasks',
+    focusScopeGoProjects: 'Projects',
     hoyLiteBanner:
       'Simplified view for your first day on Today: tomorrow you will see filters, projects, meditation, and more.',
     showAllNow: 'Show everything now',
@@ -288,7 +318,8 @@ export const en: DeepStrings<typeof es> = {
     taskCountPending: '{{count}} pending task',
     taskCountPendingPlural: '{{count}} pending tasks',
     filterHint: 'Tasks for today and without a scheduled date',
-    sortHint: 'Order: high → low priority · Swipe to complete, edit, or delete',
+    sortHint:
+      'With check-in: focus tasks on top (1–5) · No Feel yet: flat list · Swipe to complete',
     showAllSectionsToast: 'You will see all sections in Today',
     prioritiesUpdatedToast: 'Done: priorities updated based on your check-in ✨',
     ...hoyExtraEn,

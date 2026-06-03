@@ -6,38 +6,47 @@ import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 
 type HoyQuickActionsProps = {
+  /** Pill de captura; en vista con check-in va dentro de «Más para hoy». */
+  showAddTasksPill: boolean;
   showSecondaryToggle: boolean;
   showSecondaryModules: boolean;
   onToggleSecondaryModules: () => void;
 };
 
 export function HoyQuickActions({
+  showAddTasksPill,
   showSecondaryToggle,
   showSecondaryModules,
   onToggleSecondaryModules,
 }: HoyQuickActionsProps) {
   const { t } = useI18n();
 
+  if (!showAddTasksPill && !showSecondaryToggle) {
+    return null;
+  }
+
   return (
     <>
-      <TouchableOpacity
-        style={styles.addTasksPill}
-        onPress={() => router.push('/(tabs)/vaciar')}
-        activeOpacity={0.88}
-        accessibilityRole="button"
-        accessibilityLabel={t('hoyExtra.goTasksA11y')}
-        accessibilityHint={t('hoyExtra.goTasksHint')}
-      >
-        <LinearGradient
-          colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.addTasksPillGradient}
+      {showAddTasksPill ? (
+        <TouchableOpacity
+          style={styles.addTasksPill}
+          onPress={() => router.push('/(tabs)/vaciar')}
+          activeOpacity={0.88}
+          accessibilityRole="button"
+          accessibilityLabel={t('hoyExtra.goTasksA11y')}
+          accessibilityHint={t('hoyExtra.goTasksHint')}
         >
-          <Plus size={20} color={THEME.colors.onGradient} />
-          <Text style={styles.addTasksPillTitle}>{t('hoy.addTasks')}</Text>
-        </LinearGradient>
-      </TouchableOpacity>
+          <LinearGradient
+            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.addTasksPillGradient}
+          >
+            <Plus size={20} color={THEME.colors.onGradient} />
+            <Text style={styles.addTasksPillTitle}>{t('hoy.addTasks')}</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      ) : null}
 
       {showSecondaryToggle ? (
         <>
@@ -55,7 +64,7 @@ export function HoyQuickActions({
             accessibilityState={{ expanded: showSecondaryModules }}
           >
             <Text style={styles.secondaryModulesToggleText}>
-              {showSecondaryModules ? t('hoy.hideExtra') : t('hoy.showExtra')}
+              {showSecondaryModules ? t('hoy.hideMoreForToday') : t('hoy.showMoreForToday')}
             </Text>
             {showSecondaryModules ? (
               <ChevronDown size={18} color={THEME.colors.text.secondary} />

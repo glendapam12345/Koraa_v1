@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
+import { getLocalDateString } from '@/lib/dateLocal';
 
 export function useStreak() {
   const [currentStreak, setCurrentStreak] = useState<number>(0);
@@ -13,7 +14,6 @@ export function useStreak() {
       const today = new Date();
       const checkInDates = new Set<string>();
 
-      // Fetch check-ins from last 365 days
       const oneYearAgo = new Date(today);
       oneYearAgo.setDate(today.getDate() - 365);
 
@@ -21,8 +21,8 @@ export function useStreak() {
         .from('daily_check_ins')
         .select('date')
         .eq('user_id', user.id)
-        .gte('date', oneYearAgo.toISOString().split('T')[0])
-        .lte('date', today.toISOString().split('T')[0])
+        .gte('date', getLocalDateString(oneYearAgo))
+        .lte('date', getLocalDateString(today))
         .order('date', { ascending: false });
 
       if (checkIns) {
@@ -31,12 +31,11 @@ export function useStreak() {
         });
       }
 
-      // Calculate streak from today backwards
       let streak = 0;
       for (let i = 0; i < 365; i++) {
         const checkDate = new Date(today);
         checkDate.setDate(today.getDate() - i);
-        const dateString = checkDate.toISOString().split('T')[0];
+        const dateString = getLocalDateString(checkDate);
 
         if (checkInDates.has(dateString)) {
           streak++;
@@ -50,7 +49,6 @@ export function useStreak() {
       setCurrentStreak(streak);
     } catch (error) {
       logger.debug('Error cargando racha:', error);
-      // No mostrar toast para errores de racha (no crítico)
     }
   }, []);
 

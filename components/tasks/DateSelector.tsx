@@ -4,7 +4,8 @@ import { THEME } from '@/constants/theme';
 import { Calendar, X } from 'lucide-react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useI18n } from '@/contexts/I18nContext';
-import { getLocalDateString } from '@/lib/dateLocal';
+import { getLocalDateString, parseLocalDateString } from '@/lib/dateLocal';
+import { AddToDeviceCalendarButton } from '@/components/tasks/AddToDeviceCalendarButton';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
 const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
@@ -12,6 +13,10 @@ const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 
 interface DateSelectorProps {
   selectedDate: string | null;
   onSelect: (date: string | null) => void;
+  /** Título de la tarea en edición (para agregar al Calendario del dispositivo). */
+  calendarTaskTitle?: string;
+  /** Id estable para evitar duplicados al agregar desde el formulario. */
+  calendarTaskId?: string;
 }
 
 function getNextDays(count: number): string[] {
@@ -39,7 +44,12 @@ function formatDateLabel(
   return `${day} ${month}`;
 }
 
-export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
+export function DateSelector({
+  selectedDate,
+  onSelect,
+  calendarTaskTitle,
+  calendarTaskId = 'draft-task',
+}: DateSelectorProps) {
   const { t, locale } = useI18n();
   const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
   const [showModal, setShowModal] = useState(false);
@@ -61,10 +71,7 @@ export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
 
   const openModal = () => {
     if (selectedDate) {
-      const parsed = new Date(`${selectedDate}T00:00:00`);
-      if (!Number.isNaN(parsed.getTime())) {
-        setPickerDate(parsed);
-      }
+      setPickerDate(parseLocalDateString(selectedDate));
     }
     setShowNativePicker(false);
     setShowModal(true);
@@ -96,6 +103,15 @@ export function DateSelector({ selectedDate, onSelect }: DateSelectorProps) {
         <Calendar size={20} color={THEME.colors.gradient.blue} />
         <Text style={styles.selectorText}>{displayLabel}</Text>
       </TouchableOpacity>
+
+      {selectedDate && calendarTaskTitle?.trim() ? (
+        <AddToDeviceCalendarButton
+          taskId={calendarTaskId}
+          title={calendarTaskTitle}
+          scheduledDate={selectedDate}
+          variant="row"
+        />
+      ) : null}
 
       <Modal
         visible={showModal}

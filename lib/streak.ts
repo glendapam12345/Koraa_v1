@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { getLocalDateString } from '@/lib/dateLocal';
 
 /**
  * Racha = días consecutivos con fila en daily_check_ins (misma lógica que Hoy / Yo).
@@ -9,8 +10,8 @@ export async function fetchCurrentStreak(supabase: SupabaseClient, userId: strin
   const oneYearAgo = new Date(today);
   oneYearAgo.setDate(today.getDate() - 365);
 
-  const start = oneYearAgo.toISOString().split('T')[0];
-  const end = today.toISOString().split('T')[0];
+  const start = getLocalDateString(oneYearAgo);
+  const end = getLocalDateString(today);
 
   const { data: checkIns } = await supabase
     .from('daily_check_ins')
@@ -27,7 +28,7 @@ export async function fetchCurrentStreak(supabase: SupabaseClient, userId: strin
   for (let i = 0; i < 365; i++) {
     const checkDate = new Date(today);
     checkDate.setDate(today.getDate() - i);
-    const dateString = checkDate.toISOString().split('T')[0];
+    const dateString = getLocalDateString(checkDate);
 
     if (checkInDates.has(dateString)) {
       streak++;

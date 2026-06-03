@@ -32,6 +32,7 @@ export default function SignupScreen() {
   const [step, setStep] = useState<Step>('signup');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [confirmEmail, setConfirmEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [otpCode, setOtpCode] = useState(() => emptyOtpSlots());
@@ -47,8 +48,20 @@ export default function SignupScreen() {
   }, [resendCooldown]);
 
   const handleSignup = async () => {
-    if (!email.trim() || !password || !confirmPassword || !fullName.trim()) {
+    if (
+      !email.trim() ||
+      !confirmEmail.trim() ||
+      !password ||
+      !confirmPassword ||
+      !fullName.trim()
+    ) {
       setError(t('auth.signup.fillAllFields'));
+      return;
+    }
+    const emailNorm = email.trim().toLowerCase();
+    const confirmEmailNorm = confirmEmail.trim().toLowerCase();
+    if (emailNorm !== confirmEmailNorm) {
+      setError(t('auth.signup.emailMismatch'));
       return;
     }
     if (password !== confirmPassword) {
@@ -201,6 +214,23 @@ export default function SignupScreen() {
                 editable={!isLoading}
                 accessibilityLabel={t('authA11y.email')}
                 accessibilityHint={t('authA11y.emailHintSignup')}
+              />
+            </View>
+            <View style={styles.field}>
+              <Text style={styles.label}>{t('common.confirmEmail')}</Text>
+              <TextInput
+                style={styles.input}
+                value={confirmEmail}
+                onChangeText={setConfirmEmail}
+                placeholder={t('auth.signup.confirmEmailPlaceholder')}
+                placeholderTextColor={THEME.colors.text.tertiary}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                textContentType="emailAddress"
+                editable={!isLoading}
+                accessibilityLabel={t('authA11y.confirmEmail')}
+                accessibilityHint={t('authA11y.confirmEmailHint')}
               />
             </View>
             <View style={styles.field}>

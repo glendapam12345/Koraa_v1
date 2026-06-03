@@ -2,10 +2,12 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from
 import { useState, useEffect, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { subscribeCheckInCelebration } from '@/lib/checkInCelebration';
 import { THEME } from '@/constants/theme';
 import { generatePersonalizedRecommendations, type Recommendation, type UserPreferences, type CheckInContext } from '@/lib/personalizedRecommendations';
 import { supabase } from '@/lib/supabase';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
+import { getLocalDateString } from '@/lib/dateLocal';
 import { logger } from '@/lib/logger';
 import { ChevronRight } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
@@ -217,7 +219,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
       const profileData = prefs;
 
       // Cargar check-in de hoy
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       const { data: checkInData, error: checkInError } = await supabase
         .from('daily_check_ins')
         .select('emotion, energy_level, available_time, focus_level')
@@ -268,6 +270,12 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
 
   useEffect(() => {
     loadRecommendations();
+  }, [loadRecommendations]);
+
+  useEffect(() => {
+    return subscribeCheckInCelebration(() => {
+      loadRecommendations();
+    });
   }, [loadRecommendations]);
 
   const handleRecommendationPress = (recommendation: Recommendation) => {

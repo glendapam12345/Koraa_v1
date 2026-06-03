@@ -1,9 +1,9 @@
 import type { Task } from '@/hooks/useTasks';
-import { getLocalDateString } from '@/lib/dateLocal';
+import { getLocalDateFromISO, getLocalDateString } from '@/lib/dateLocal';
 
 export function isPriorityCompletedToday(task: Task, today: string = getLocalDateString()): boolean {
   if (!task.is_priority || !task.is_completed || !task.completed_at) return false;
-  return String(task.completed_at).slice(0, 10) === today;
+  return getLocalDateFromISO(String(task.completed_at)) === today;
 }
 
 /** Tareas marcadas como foco del día (pendientes o completadas hoy). */

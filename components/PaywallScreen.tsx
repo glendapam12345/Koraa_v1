@@ -12,13 +12,13 @@ import {
 } from 'react-native';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { LinearGradient } from 'expo-linear-gradient';
-import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { Check, Crown, X } from 'lucide-react-native';
+import { Check, Crown, Info, X } from 'lucide-react-native';
 import { getPrivacyPolicyUrl, getTermsOfServiceUrl } from '@/constants/legalUrls';
 import { THEME } from '@/constants/theme';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { formatPackagePrice, packageUsesNonMxnCurrency } from '@/lib/formatSubscriptionPrice';
+import { canProcessInAppPurchases, isExpoGoClient } from '@/lib/subscriptionEnvironment';
 
 type PaywallScreenProps = {
   onClose?: () => void;
@@ -64,8 +64,13 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
     [sortedPackages],
   );
 
-  const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+  const isExpoGo = isExpoGoClient();
+  const purchasesEnabled = canProcessInAppPurchases();
   const isOnboardingContext = context === 'onboarding';
+
+  const alertPurchaseBlocked = () => {
+    Alert.alert(t('paywallExtra.expoGoPurchaseBlockedTitle'), t('paywallExtra.expoGoPurchaseBlockedBody'));
+  };
 
   useEffect(() => {
     void checkSubscription();
@@ -81,6 +86,10 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
   };
 
   const handlePurchase = async (pkg: PurchasesPackage) => {
+    if (!purchasesEnabled) {
+      alertPurchaseBlocked();
+      return;
+    }
     setIsPurchasing(true);
     try {
       const Purchases = (await import('react-native-purchases')).default;
@@ -103,6 +112,10 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
   };
 
   const handleRestore = async () => {
+    if (!purchasesEnabled) {
+      Alert.alert(t('paywallExtra.expoGoRestoreBlockedTitle'), t('paywallExtra.expoGoRestoreBlockedBody'));
+      return;
+    }
     setIsRestoring(true);
     try {
       const result = await restorePurchases();
@@ -150,6 +163,10 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
     isPlanPackage(pkg, 'annual') ? t('paywallExtra.annualCta') : t('paywallExtra.monthlyCta');
 
   const handleFallbackPlanPress = async (plan: 'monthly' | 'annual') => {
+    if (!purchasesEnabled) {
+      alertPurchaseBlocked();
+      return;
+    }
     const planLabel = plan === 'monthly' ? t('paywall.planMonthlyLabel') : t('paywall.planAnnualLabel');
     setIsRefreshing(true);
     try {
@@ -171,11 +188,69 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
     }
   };
 
+  const renderPlanCta = (opts: {
+    title: string;
+    onPress: () => void;
+    purchaseLabel: string;
+    disabled: boolean;
+    loading?: boolean;
+  }) => {
+    const { title, onPress, purchaseLabel, disabled, loading } = opts;
+    const label = purchasesEnabled ? purchaseLabel : t('paywallExtra.expoGoCtaDisabled');
+    const hint = purchasesEnabled
+      ? t('paywallExtra.a11yChoosePlanHint')
+      : t('paywallExtra.a11yChoosePlanHintPreview');
+
+    if (!purchasesEnabled) {
+      return (
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={onPress}
+          disabled={disabled}
+          style={[styles.ctaWrap, styles.ctaPreview]}
+          accessibilityRole="button"
+          accessibilityLabel={t('paywallExtra.a11yChoosePlan', { title })}
+          accessibilityHint={hint}
+          accessibilityState={{ disabled }}
+        >
+          <Text style={styles.ctaPreviewText}>{label}</Text>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={onPress}
+        disabled={disabled}
+        style={styles.ctaWrap}
+        accessibilityRole="button"
+        accessibilityLabel={t('paywallExtra.a11yChoosePlan', { title })}
+        accessibilityHint={hint}
+        accessibilityState={{ disabled }}
+      >
+        <LinearGradient
+          colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.cta}
+        >
+          {loading ? (
+            <ActivityIndicator color={THEME.colors.onGradient} />
+          ) : (
+            <Text style={styles.ctaText}>{label}</Text>
+          )}
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  };
+
   const renderPlanCard = (pkg: PurchasesPackage) => {
     const isAnnual = isPlanPackage(pkg, 'annual');
     const period = getPeriodLabel(pkg);
     const priceLabel = formatPackagePrice(pkg, locale, period);
     const disabled = isPurchasing || isRestoring || isRefreshing || subscriptionLoading;
+    const planTitle = getPlanTitle(pkg);
 
     return (
       <View key={pkg.identifier} style={[styles.planCard, isAnnual && styles.planCardRecommended]}>
@@ -184,36 +259,19 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
             <Text style={styles.recommendedBadgeText}>{t('paywallExtra.annualRecommended')}</Text>
           </View>
         ) : null}
-        <Text style={styles.planTitle}>{getPlanTitle(pkg)}</Text>
+        <Text style={styles.planTitle}>{planTitle}</Text>
         <Text style={styles.planPrice}>{priceLabel}</Text>
+        {!purchasesEnabled ? (
+          <Text style={styles.previewPriceLabel}>{t('paywallExtra.expoGoPreviewPriceLabel')}</Text>
+        ) : null}
         <Text style={styles.planDescription}>{getPlanDescription(pkg)}</Text>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => void handlePurchase(pkg)}
-          disabled={disabled}
-          style={styles.ctaWrap}
-          accessibilityRole="button"
-          accessibilityLabel={t('paywallExtra.a11yChoosePlan', { title: getPlanTitle(pkg) })}
-          accessibilityHint={t('paywallExtra.a11yChoosePlanHint')}
-          accessibilityState={{ disabled }}
-        >
-          <LinearGradient
-            colors={
-              isAnnual
-                ? [THEME.colors.gradient.blue, THEME.colors.gradient.pink]
-                : [THEME.colors.fill[100], THEME.colors.fill[100]]
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[styles.cta, !isAnnual && styles.ctaOutline]}
-          >
-            {isPurchasing ? (
-              <ActivityIndicator color={isAnnual ? THEME.colors.onGradient : THEME.colors.gradient.blue} />
-            ) : (
-              <Text style={[styles.ctaText, !isAnnual && styles.ctaTextOutline]}>{getPlanCta(pkg)}</Text>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
+        {renderPlanCta({
+          title: planTitle,
+          onPress: () => void handlePurchase(pkg),
+          purchaseLabel: getPlanCta(pkg),
+          disabled,
+          loading: isPurchasing,
+        })}
       </View>
     );
   };
@@ -234,29 +292,29 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
         ) : null}
         <Text style={styles.planTitle}>{title}</Text>
         <Text style={styles.planPrice}>{priceLabel}</Text>
+        {!purchasesEnabled ? (
+          <Text style={styles.previewPriceLabel}>{t('paywallExtra.expoGoPreviewPriceLabel')}</Text>
+        ) : null}
         <Text style={styles.planDescription}>{description}</Text>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => void handleFallbackPlanPress(plan)}
-          disabled={isPurchasing || isRestoring || isRefreshing}
-          style={styles.ctaWrap}
-          accessibilityRole="button"
-          accessibilityLabel={t('paywallExtra.a11yChoosePlan', { title })}
-          accessibilityHint={t('paywallExtra.a11yChoosePlanHint')}
-        >
-          <LinearGradient
-            colors={
-              isAnnual
-                ? [THEME.colors.gradient.blue, THEME.colors.gradient.pink]
-                : [THEME.colors.fill[100], THEME.colors.fill[100]]
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[styles.cta, !isAnnual && styles.ctaOutline]}
-          >
-            <Text style={[styles.ctaText, !isAnnual && styles.ctaTextOutline]}>{cta}</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+        {renderPlanCta({
+          title,
+          onPress: () => void handleFallbackPlanPress(plan),
+          purchaseLabel: cta,
+          disabled: isPurchasing || isRestoring || isRefreshing,
+        })}
+      </View>
+    );
+  };
+
+  const renderExpoGoBanner = () => {
+    if (!isExpoGo) return null;
+    return (
+      <View style={styles.expoGoBanner} accessibilityRole="alert">
+        <Info size={20} color={THEME.colors.gradient.blue} />
+        <View style={styles.expoGoBannerTextCol}>
+          <Text style={styles.expoGoBannerTitle}>{t('paywallExtra.expoGoBannerTitle')}</Text>
+          <Text style={styles.expoGoBannerBody}>{t('paywallExtra.expoGoBannerBody')}</Text>
+        </View>
       </View>
     );
   };
@@ -291,6 +349,8 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
           </Text>
           <Text style={styles.heroHint}>{t('paywall.heroHint')}</Text>
         </LinearGradient>
+
+        {renderExpoGoBanner()}
 
         {isOnboardingContext ? (
           <TouchableOpacity
@@ -339,44 +399,49 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
           <View style={styles.plansStack}>{sortedPackages.map((pkg) => renderPlanCard(pkg))}</View>
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>{t('paywallExtra.emptyTitle')}</Text>
-            <Text style={styles.emptyText}>{t('paywallExtra.emptyBody')}</Text>
+            <Text style={styles.emptyTitle}>
+              {isExpoGo ? t('paywallExtra.expoGoEmptyTitle') : t('paywallExtra.emptyTitle')}
+            </Text>
+            <Text style={styles.emptyText}>
+              {isExpoGo ? t('paywallExtra.expoGoEmptyBody') : t('paywallExtra.emptyBody')}
+            </Text>
             <View style={styles.plansStack}>
               {renderFallbackPlanCard('annual')}
               {renderFallbackPlanCard('monthly')}
             </View>
-            {isExpoGo ? <Text style={styles.emptyHintExpoGo}>{t('paywallExtra.expoGoHint')}</Text> : null}
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              activeOpacity={0.75}
-              disabled={isRefreshing}
-              onPress={() => void handleRefresh()}
-              accessibilityRole="button"
-              accessibilityLabel={t('paywallExtra.a11yRefresh')}
-              accessibilityHint={t('paywallExtra.a11yRefreshHint')}
-              accessibilityState={{ disabled: isRefreshing }}
-            >
-              <Text style={styles.secondaryButtonText}>
-                {isRefreshing ? t('paywall.refreshing') : t('paywall.refreshPlans')}
-              </Text>
-            </TouchableOpacity>
+            {!isExpoGo ? (
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                activeOpacity={0.75}
+                disabled={isRefreshing}
+                onPress={() => void handleRefresh()}
+                accessibilityRole="button"
+                accessibilityLabel={t('paywallExtra.a11yRefresh')}
+                accessibilityHint={t('paywallExtra.a11yRefreshHint')}
+                accessibilityState={{ disabled: isRefreshing }}
+              >
+                <Text style={styles.secondaryButtonText}>
+                  {isRefreshing ? t('paywall.refreshing') : t('paywall.refreshPlans')}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         )}
 
         <Text style={styles.cancelNote}>{t('paywall.cancelAnytime')}</Text>
 
-        {(onClose || onSkip) && !subscriptionLoading ? (
+        {(onClose || onSkip) && !subscriptionLoading && !isOnboardingContext ? (
           <TouchableOpacity
             onPress={handleContinueFree}
-            activeOpacity={0.75}
+            activeOpacity={0.85}
             disabled={isPurchasing || isRestoring || isRefreshing}
-            style={styles.dismissLinkWrap}
+            style={styles.continueFreeButton}
             accessibilityRole="button"
             accessibilityLabel={t('paywallExtra.a11yContinueFree')}
             accessibilityHint={t('paywallExtra.a11yContinueFreeHint')}
             accessibilityState={{ disabled: isPurchasing || isRestoring || isRefreshing }}
           >
-            <Text style={styles.dismissLinkText}>{t('paywall.continueFree')}</Text>
+            <Text style={styles.continueFreeButtonText}>{t('paywallExtra.continueFreePrimary')}</Text>
           </TouchableOpacity>
         ) : null}
 
@@ -575,17 +640,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  ctaOutline: {
-    borderWidth: 1.5,
-    borderColor: THEME.colors.gradient.blue,
-  },
   ctaText: {
     ...THEME.typography.caption,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
-  },
-  ctaTextOutline: {
-    color: THEME.colors.gradient.blue,
   },
   cancelNote: {
     ...THEME.typography.meta,
@@ -615,17 +673,20 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
     gap: THEME.spacing.sm,
   },
-  dismissLinkWrap: {
-    alignItems: 'center',
-    paddingVertical: THEME.spacing.xs,
+  continueFreeButton: {
     minHeight: THEME.sizes.touchTarget,
+    borderRadius: THEME.borderRadius.pill,
+    borderWidth: 1.5,
+    borderColor: THEME.colors.stroke[100],
     justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: THEME.spacing.md,
+    backgroundColor: THEME.colors.fill[200],
   },
-  dismissLinkText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    fontFamily: THEME.fonts.heading.medium,
-    textDecorationLine: 'underline',
+  continueFreeButtonText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
   },
   emptyTitle: {
     ...THEME.typography.caption,
@@ -636,12 +697,50 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
   },
-  emptyHintExpoGo: {
+  expoGoBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: THEME.spacing.sm,
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+  },
+  expoGoBannerTextCol: {
+    flex: 1,
+    gap: 4,
+  },
+  expoGoBannerTitle: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  expoGoBannerBody: {
     ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 20,
+  },
+  previewPriceLabel: {
+    ...THEME.typography.meta,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
-    marginTop: THEME.spacing.xs,
-    lineHeight: 20,
+  },
+  ctaPreview: {
+    minHeight: THEME.sizes.touchTarget,
+    borderRadius: THEME.borderRadius.pill,
+    borderWidth: 1,
+    borderColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.fill[200],
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: THEME.spacing.md,
+  },
+  ctaPreviewText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
+    textAlign: 'center',
   },
   footerActions: {
     marginTop: THEME.spacing.xs,

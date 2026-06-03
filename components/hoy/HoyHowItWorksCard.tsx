@@ -5,21 +5,71 @@ import { PenTool, Heart, Target, ArrowRight, ChevronRight } from 'lucide-react-n
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 
+type FlowPhase = 'tasks' | 'feel' | 'today';
+
 type HoyHowItWorksCardProps = {
   hasCheckInToday: boolean;
+  hasTasks: boolean;
 };
 
-export function HoyHowItWorksCard({ hasCheckInToday }: HoyHowItWorksCardProps) {
+function resolveFlowPhase(hasCheckInToday: boolean, hasTasks: boolean): FlowPhase {
+  if (hasCheckInToday) return 'today';
+  if (hasTasks) return 'feel';
+  return 'tasks';
+}
+
+export function HoyHowItWorksCard({ hasCheckInToday, hasTasks }: HoyHowItWorksCardProps) {
   const { t } = useI18n();
+  const phase = resolveFlowPhase(hasCheckInToday, hasTasks);
+  const isActionable = phase !== 'today';
+
+  const handlePress = () => {
+    if (phase === 'tasks') {
+      router.push('/(tabs)/vaciar');
+      return;
+    }
+    if (phase === 'feel') {
+      router.push('/(tabs)/sentir');
+    }
+  };
+
+  const bodyCopy =
+    phase === 'today'
+      ? t('hoy.howItWorksBodyCheckedIn')
+      : phase === 'feel'
+        ? t('hoy.howItWorksBody')
+        : t('hoy.howItWorksBodyNoTasks');
+
+  const ctaCopy =
+    phase === 'today'
+      ? t('hoy.focusCtaBelow')
+      : phase === 'feel'
+        ? t('hoy.goToFeel')
+        : t('hoy.goToTasks');
+
+  const a11yLabel =
+    phase === 'tasks'
+      ? t('hoyExtra.howWorksA11yNoTasks')
+      : phase === 'feel'
+        ? t('hoyExtra.howWorksA11y')
+        : t('hoyExtra.howWorksA11y');
+
+  const a11yHint =
+    phase === 'tasks'
+      ? t('hoyExtra.howWorksHintNoTasks')
+      : phase === 'feel'
+        ? t('hoyExtra.howWorksHint')
+        : undefined;
 
   return (
     <TouchableOpacity
       style={styles.howKoraaCard}
-      onPress={() => router.push('/(tabs)/sentir')}
-      activeOpacity={0.88}
-      accessibilityRole="button"
-      accessibilityLabel={t('hoyExtra.howWorksA11y')}
-      accessibilityHint={t('hoyExtra.howWorksHint')}
+      onPress={handlePress}
+      activeOpacity={isActionable ? 0.88 : 1}
+      disabled={!isActionable}
+      accessibilityRole={isActionable ? 'button' : 'text'}
+      accessibilityLabel={a11yLabel}
+      accessibilityHint={a11yHint}
     >
       <LinearGradient
         colors={[THEME.colors.gradient.blue + '12', THEME.colors.gradient.pink + '08']}
@@ -28,38 +78,81 @@ export function HoyHowItWorksCard({ hasCheckInToday }: HoyHowItWorksCardProps) {
         style={styles.howKoraaCardGradient}
       >
         <Text style={styles.howKoraaCardTitle}>{t('hoy.howItWorksTitle')}</Text>
-        <Text style={styles.howKoraaCardBody}>{t('hoy.howItWorksBody')}</Text>
+        <Text style={styles.howKoraaCardBody}>{bodyCopy}</Text>
         <View style={styles.howKoraaCardFlow}>
           <View style={styles.howKoraaCardStep}>
-            <View style={[styles.howKoraaCardStepDot, styles.howKoraaCardStepDotActive]}>
-              <PenTool size={12} color={THEME.colors.onGradient} />
+            <View
+              style={[
+                styles.howKoraaCardStepDot,
+                phase === 'tasks' && styles.howKoraaCardStepDotActive,
+              ]}
+            >
+              <PenTool
+                size={12}
+                color={phase === 'tasks' ? THEME.colors.onGradient : THEME.colors.gradient.blue}
+              />
             </View>
-            <Text style={styles.howKoraaCardStepLabel}>{t('tabs.tasks')}</Text>
+            <Text
+              style={[
+                styles.howKoraaCardStepLabel,
+                phase === 'tasks' && styles.howKoraaCardStepLabelActive,
+              ]}
+            >
+              {t('tabs.tasks')}
+            </Text>
           </View>
           <View style={styles.howKoraaCardArrow}>
             <ArrowRight size={14} color={THEME.colors.text.tertiary} />
           </View>
           <View style={styles.howKoraaCardStep}>
-            <View style={styles.howKoraaCardStepDot}>
-              <Heart size={12} color={THEME.colors.gradient.blue} />
+            <View
+              style={[
+                styles.howKoraaCardStepDot,
+                phase === 'feel' && styles.howKoraaCardStepDotActive,
+              ]}
+            >
+              <Heart
+                size={12}
+                color={phase === 'feel' ? THEME.colors.onGradient : THEME.colors.gradient.blue}
+              />
             </View>
-            <Text style={styles.howKoraaCardStepLabel}>{t('tabs.feel')}</Text>
+            <Text
+              style={[
+                styles.howKoraaCardStepLabel,
+                phase === 'feel' && styles.howKoraaCardStepLabelActive,
+              ]}
+            >
+              {t('tabs.feel')}
+            </Text>
           </View>
           <View style={styles.howKoraaCardArrow}>
             <ArrowRight size={14} color={THEME.colors.text.tertiary} />
           </View>
           <View style={styles.howKoraaCardStep}>
-            <View style={styles.howKoraaCardStepDot}>
-              <Target size={12} color={THEME.colors.text.secondary} />
+            <View
+              style={[
+                styles.howKoraaCardStepDot,
+                phase === 'today' && styles.howKoraaCardStepDotActive,
+              ]}
+            >
+              <Target
+                size={12}
+                color={phase === 'today' ? THEME.colors.onGradient : THEME.colors.text.secondary}
+              />
             </View>
-            <Text style={styles.howKoraaCardStepLabel}>{t('tabs.today')}</Text>
+            <Text
+              style={[
+                styles.howKoraaCardStepLabel,
+                phase === 'today' && styles.howKoraaCardStepLabelActive,
+              ]}
+            >
+              {t('tabs.today')}
+            </Text>
           </View>
         </View>
         <View style={styles.howKoraaCardCta}>
-          <Text style={styles.howKoraaCardCtaText}>
-            {hasCheckInToday ? t('hoy.updateFeel') : t('hoy.goToFeel')}
-          </Text>
-          <ChevronRight size={18} color={THEME.colors.gradient.blue} />
+          <Text style={styles.howKoraaCardCtaText}>{ctaCopy}</Text>
+          {isActionable ? <ChevronRight size={18} color={THEME.colors.gradient.blue} /> : null}
         </View>
       </LinearGradient>
     </TouchableOpacity>
@@ -127,6 +220,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: THEME.colors.text.secondary,
     fontFamily: THEME.fonts.heading.medium,
+  },
+  howKoraaCardStepLabelActive: {
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
   },
   howKoraaCardArrow: {
     marginHorizontal: 2,

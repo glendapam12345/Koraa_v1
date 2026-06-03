@@ -1,8 +1,9 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight, Info } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
+import { showsSimplifiedMeditationNotice } from '@/lib/meditationEnvironment';
 
 type HoyMeditationCardProps = {
   morningDone: boolean;
@@ -18,6 +19,7 @@ export function HoyMeditationCard({
   onStartEvening,
 }: HoyMeditationCardProps) {
   const { t } = useI18n();
+  const showExpoGoNote = showsSimplifiedMeditationNotice();
 
   return (
     <View style={styles.meditationWrap}>
@@ -34,6 +36,12 @@ export function HoyMeditationCard({
           </Text>
           <Text style={styles.meditationSubtitle}>{t('commonExtra.meditationListen')}</Text>
         </View>
+        {showExpoGoNote ? (
+          <View style={styles.expoGoNote} accessibilityRole="text">
+            <Info size={16} color={THEME.colors.gradient.blue} />
+            <Text style={styles.expoGoNoteText}>{t('hoy.meditationExpoGoNote')}</Text>
+          </View>
+        ) : null}
         <View style={styles.meditationSingleCardInner}>
           <TouchableOpacity
             style={[styles.meditationRow, morningDone && styles.meditationRowDone]}
@@ -138,6 +146,19 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontStyle: 'italic',
     letterSpacing: 0.3,
+  },
+  expoGoNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.xs,
+  },
+  expoGoNoteText: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.metaOnFill,
+    flex: 1,
+    lineHeight: 18,
   },
   meditationSingleCardInner: {
     backgroundColor: THEME.colors.fill[100],

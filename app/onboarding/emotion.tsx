@@ -53,6 +53,7 @@ export default function EmotionScreen() {
         <Text style={styles.title}>{t('onboarding.emotion.title')}</Text>
         <Text style={styles.titleAccent}>{t('onboarding.emotion.titleAccent')}</Text>
         <Text style={styles.subtitle}>{t('onboarding.emotion.subtitle')}</Text>
+        <Text style={styles.inclusiveNote}>{t('sentir.inclusiveNote')}</Text>
 
         <View
           style={styles.emotionsGrid}
@@ -118,6 +119,12 @@ const styles = StyleSheet.create({
   subtitle: {
     ...THEME.typography.h1,
     color: THEME.colors.text.main,
+    marginBottom: THEME.spacing.sm,
+  },
+  inclusiveNote: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.metaOnFill,
+    lineHeight: 18,
     marginBottom: THEME.spacing.lg,
   },
   emotionsGrid: {

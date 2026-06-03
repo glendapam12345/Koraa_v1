@@ -388,7 +388,7 @@ export default function SemanaScreen() {
         {!loading && !subscriptionLoading && !isSubscribed && (
           <PremiumTeaserCard
             title={t('semana.premiumTitle')}
-            body={t('semanaExtra.premiumBody', { days: FREE_VISIBLE_DAYS })}
+            body={t('premiumTeaser.semanaBody', { days: FREE_VISIBLE_DAYS })}
           />
         )}
 

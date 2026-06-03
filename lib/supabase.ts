@@ -3,41 +3,39 @@ import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
 import { type AppLocale, translate } from '@/lib/i18n';
 import { translateError } from '@/lib/errorMessages';
+import {
+  getSupabaseConfigMismatch,
+  isSupabaseConfiguredFromConfig,
+  resolveSupabaseConfig,
+} from '@/lib/supabaseConfig';
 
-function trimEnv(s: string | undefined): string {
-  return (s ?? '').trim();
-}
+const { url: supabaseUrl, anonKey: supabaseAnonKey, source: configSource, host: configHost } =
+  resolveSupabaseConfig();
 
-const supabaseUrl =
-  trimEnv(process.env.EXPO_PUBLIC_SUPABASE_URL) ||
-  trimEnv(
-    (Constants.expoConfig?.extra?.supabaseUrl as string | undefined) ||
-      (Constants.manifest2 as { extra?: { supabaseUrl?: string } } | undefined)?.extra
-        ?.supabaseUrl ||
-      (Constants.manifest as { extra?: { supabaseUrl?: string } } | undefined)?.extra?.supabaseUrl,
-  );
-const supabaseAnonKey =
-  trimEnv(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY) ||
-  trimEnv(
-    (Constants.expoConfig?.extra?.supabaseAnonKey as string | undefined) ||
-      (Constants.manifest2 as { extra?: { supabaseAnonKey?: string } } | undefined)?.extra
-        ?.supabaseAnonKey ||
-      (Constants.manifest as { extra?: { supabaseAnonKey?: string } } | undefined)?.extra
-        ?.supabaseAnonKey,
-  );
+export const isSupabaseConfigured = isSupabaseConfiguredFromConfig({
+  url: supabaseUrl,
+  anonKey: supabaseAnonKey,
+  source: configSource,
+  host: configHost,
+});
 
-export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
+export { getSupabaseConfigMismatch } from '@/lib/supabaseConfig';
 
 if (__DEV__) {
-  const host = supabaseUrl ? new URL(supabaseUrl).host : '—';
+  const mismatch = getSupabaseConfigMismatch();
   console.log('🔍 Supabase:', {
-    host,
-    fromEnvUrl: !!trimEnv(process.env.EXPO_PUBLIC_SUPABASE_URL),
-    fromExtraUrl: !!trimEnv(Constants.expoConfig?.extra?.supabaseUrl as string | undefined),
+    host: configHost || '—',
+    source: configSource,
+    fromEnv: !!process.env.EXPO_PUBLIC_SUPABASE_URL?.trim(),
   });
+  if (mismatch?.mismatched) {
+    console.warn(
+      `[Koraa] EXPO_PUBLIC_SUPABASE_URL (.env → ${mismatch.envHost}) no coincide con extra en app.config (${mismatch.extraHost}). ` +
+        'La app usa .env primero. Reinicia Metro con: npm run dev:clear',
+    );
+  }
 }
 
 if (!isSupabaseConfigured) {
@@ -189,8 +187,11 @@ export const getSchemaSetupMessage = (error: unknown): SchemaSetupType | null =>
   if (!isSchemaError(error)) return null;
   const err = error as SupabaseError & { message?: string };
   const msg = (err.message || '').toLowerCase();
+  if (msg.includes('parent_task_id')) return 'schema';
   if (msg.includes('scheduled_date')) return 'scheduled_date';
-  if ((msg.includes('does not exist') || msg.includes('no existe')) && msg.includes('projects')) return 'projects_table';
+  if ((msg.includes('does not exist') || msg.includes('no existe')) && msg.includes('projects')) {
+    return 'projects_table';
+  }
   if (msg.includes('project_id')) return 'project_id';
   return 'schema';
 };

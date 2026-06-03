@@ -65,6 +65,8 @@ Koraa is a mobile-first wellness productivity app that prioritizes tasks based o
 └── assets/                 # Images, fonts, etc.
 ```
 
+**⚠️ No editar `koraav2/`** — copia legacy archivada (~1.2 GB); la app activa es la raíz anterior. Ver [2026-05-19_koraav2_legacy_folder.md](development_guidelines/learnings/2026-05-19_koraav2_legacy_folder.md).
+
 ### Key Directories
 
 - `app/` - Expo Router file-based routing. Each file becomes a route. Groups in parentheses `(tabs)` create layout groups

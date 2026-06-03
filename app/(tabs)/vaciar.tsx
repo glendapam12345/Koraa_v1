@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, RefreshControl, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, RefreshControl, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
@@ -15,14 +15,23 @@ import { getLocalDateString } from '@/lib/dateLocal';
 import { detectCategory } from '@/lib/categoryDetection';
 import { ProjectSelector } from '@/components/projects/ProjectSelector';
 import { DateSelector } from '@/components/tasks/DateSelector';
+import { TasksFlowCard } from '@/components/tasks/TasksFlowCard';
+import { prioritizeTasksForCheckIn } from '@/lib/checkInService';
 import { useAuth } from '@/contexts/AuthContext';
-import { X, Star, Plus, ChevronDown, ChevronUp, Sparkles, Mic, FolderKanban, ChevronRight } from 'lucide-react-native';
+import { ProjectsLibraryLink } from '@/components/projects/ProjectsLibraryLink';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
 import { categoryKeys, type CategoryKey } from '@/lib/i18n/locales/features/categories';
+import { X, Plus, ChevronDown, ChevronUp, Sparkles, FolderKanban, Calendar } from 'lucide-react-native';
 
 const VACIAR_OPTIONAL_HINT_DISMISSED_KEY = (userId: string) =>
   `koraa_vaciar_optional_hint_dismissed_v1_${userId}`;
+
+const VACIAR_FLOW_CARD_DISMISSED_KEY = (userId: string) =>
+  `koraa_vaciar_flow_card_dismissed_v1_${userId}`;
+
+const VACIAR_DICTATE_HINT_DISMISSED_KEY = (userId: string) =>
+  `koraa_vaciar_dictate_hint_dismissed_v1_${userId}`;
 
 const CATEGORY_OPTIONS: { key: CategoryKey }[] = categoryKeys.map((key) => ({ key }));
 
@@ -44,7 +53,7 @@ function trackTaskCreated(args: {
 
 export default function VaciarScreen() {
   const insets = useSafeAreaInsets();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { suggestion, date: dateParam, projectId: projectIdParam } = useLocalSearchParams<{
     suggestion?: string;
     date?: string;
@@ -52,7 +61,6 @@ export default function VaciarScreen() {
   }>();
   const [taskInput, setTaskInput] = useState('');
   const taskInputRef = useRef<TextInput>(null);
-  const [isPriority, setIsPriority] = useState(false);
   const [hasSubtasks, setHasSubtasks] = useState(false);
   const [subtasks, setSubtasks] = useState<string[]>(['']);
   const [recentTasks, setRecentTasks] = useState<string[]>([]);
@@ -61,11 +69,13 @@ export default function VaciarScreen() {
   const [showTooltip, setShowTooltip] = useState(false);
   const [hasTasks, setHasTasks] = useState<boolean | null>(null);
   const [optionalHintDismissed, setOptionalHintDismissed] = useState(false);
-  const [optionalHintExpanded, setOptionalHintExpanded] = useState(true);
+  const [flowCardDismissed, setFlowCardDismissed] = useState(false);
+  const [optionalHintExpanded, setOptionalHintExpanded] = useState(false);
+  const [organizePanelExpanded, setOrganizePanelExpanded] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
   const [refreshing, setRefreshing] = useState(false);
-  const [isListening, setIsListening] = useState(false);
+  const [dictateHintDismissed, setDictateHintDismissed] = useState(false);
   const [recentTaskSuggestions, setRecentTaskSuggestions] = useState<string[]>([]);
   /** true = asignar a proyecto, false = solo categoría, null = no ha elegido */
   const [assignToProject, setAssignToProject] = useState<boolean | null>(null);
@@ -73,7 +83,6 @@ export default function VaciarScreen() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  void setIsListening;
   void setShowDatePicker;
   void showDatePicker;
   const [, setProjectCount] = useState<number | null>(null);
@@ -177,6 +186,24 @@ export default function VaciarScreen() {
       }
       setOptionalHintDismissed(hintDismissedInStorage);
 
+      let flowCardDismissedInStorage = false;
+      try {
+        flowCardDismissedInStorage =
+          (await AsyncStorage.getItem(VACIAR_FLOW_CARD_DISMISSED_KEY(user.id))) === '1';
+      } catch {
+        flowCardDismissedInStorage = false;
+      }
+      setFlowCardDismissed(flowCardDismissedInStorage);
+
+      let dictateHintDismissedInStorage = false;
+      try {
+        dictateHintDismissedInStorage =
+          (await AsyncStorage.getItem(VACIAR_DICTATE_HINT_DISMISSED_KEY(user.id))) === '1';
+      } catch {
+        dictateHintDismissedInStorage = false;
+      }
+      setDictateHintDismissed(dictateHintDismissedInStorage);
+
       // Tooltip modal: si aún no hay tareas, solo si ya cerraron la tarjeta de "opcional"
       // (evita solaparse con el hint inline la primera vez).
       if (!userHasTasks) {
@@ -187,6 +214,48 @@ export default function VaciarScreen() {
     } catch (error) {
       logger.error('Error inesperado:', error);
     }
+  };
+
+  const dismissFlowCard = async () => {
+    if (user?.id) {
+      try {
+        await AsyncStorage.setItem(VACIAR_FLOW_CARD_DISMISSED_KEY(user.id), '1');
+      } catch {
+        /* no bloquear UI */
+      }
+    }
+    setFlowCardDismissed(true);
+  };
+
+  const reprioritizeAfterTaskSave = async (userId: string) => {
+    const today = getLocalDateString();
+    const { data: checkIn, error } = await supabase
+      .from('daily_check_ins')
+      .select('emotion, energy_level, available_time, focus_level')
+      .eq('user_id', userId)
+      .eq('date', today)
+      .maybeSingle();
+
+    if (error || !checkIn) return;
+
+    await prioritizeTasksForCheckIn(userId, {
+      energyLevel: checkIn.energy_level,
+      emotion: checkIn.emotion,
+      availableTime: checkIn.available_time,
+      focusLevel: checkIn.focus_level,
+      locale,
+    });
+  };
+
+  const dismissDictateHint = async () => {
+    if (user?.id) {
+      try {
+        await AsyncStorage.setItem(VACIAR_DICTATE_HINT_DISMISSED_KEY(user.id), '1');
+      } catch {
+        /* no bloquear UI */
+      }
+    }
+    setDictateHintDismissed(true);
   };
 
   const dismissOptionalHint = async () => {
@@ -308,7 +377,7 @@ export default function VaciarScreen() {
           user_id: user.id,
           content: taskInput.trim(),
           category: categoryToSave,
-          is_priority: isPriority,
+          is_priority: false,
           is_completed: false,
           parent_task_id: null,
           project_id: projectIdToSave,
@@ -326,7 +395,7 @@ export default function VaciarScreen() {
           const mainTaskId = await saveTaskOffline({
             content: taskInput.trim(),
             category: categoryToSave,
-            is_priority: isPriority,
+            is_priority: false,
             is_completed: false,
             parent_task_id: null,
             project_id: projectIdToSave,
@@ -350,7 +419,6 @@ export default function VaciarScreen() {
 
           setRecentTasks([taskInput.trim(), ...recentTasks.slice(0, 4)]);
           setTaskInput('');
-          setIsPriority(false);
           setHasSubtasks(false);
           setSubtasks(['']);
           setAssignToProject(null);
@@ -360,7 +428,7 @@ export default function VaciarScreen() {
           setMoreOptionsExpanded(false);
 
           trackTaskCreated({
-            priority: isPriority,
+            priority: false,
             projectId: projectIdToSave,
             scheduledDate: selectedDate,
             hasSubtasks: hasSubtasks && subtasks.some((st) => st.trim()),
@@ -380,7 +448,7 @@ export default function VaciarScreen() {
                 user_id: user.id,
                 content: taskInput.trim(),
                 category: categoryToSave,
-                is_priority: isPriority,
+                is_priority: false,
                 is_completed: false,
                 parent_task_id: null,
               })
@@ -406,7 +474,6 @@ export default function VaciarScreen() {
             }
             setRecentTasks([taskInput.trim(), ...recentTasks.slice(0, 4)]);
             setTaskInput('');
-            setIsPriority(false);
             setHasSubtasks(false);
             setSubtasks(['']);
             setAssignToProject(null);
@@ -416,7 +483,7 @@ export default function VaciarScreen() {
             setMoreOptionsExpanded(false);
 
             trackTaskCreated({
-              priority: isPriority,
+              priority: false,
               projectId: projectIdToSave,
               scheduledDate: selectedDate,
               hasSubtasks: hasSubtasks && subtasks.some((st) => st.trim()),
@@ -464,7 +531,7 @@ export default function VaciarScreen() {
       }
 
       trackTaskCreated({
-        priority: isPriority,
+        priority: false,
         projectId: projectIdToSave,
         scheduledDate: selectedDate,
         hasSubtasks: hasSubtasks && subtasks.some((st) => st.trim()),
@@ -474,7 +541,6 @@ export default function VaciarScreen() {
 
       setRecentTasks([taskInput.trim(), ...recentTasks.slice(0, 4)]);
       setTaskInput('');
-      setIsPriority(false);
       setHasSubtasks(false);
       setSubtasks(['']);
       setAssignToProject(null);
@@ -494,15 +560,28 @@ export default function VaciarScreen() {
       const message = hasSubtasks
         ? t('vaciarExtra.toastWithSubtasks', {
             count: subtaskCount,
-            priority: isPriority
-              ? t('vaciarExtra.toastWithSubtasksPriority')
-              : t('vaciarExtra.toastWithSubtasksSuccess'),
+            priority: t('vaciarExtra.toastWithSubtasksSuccess'),
           })
-        : isPriority
-          ? t('vaciarExtra.toastPriorityAdded')
-          : t('vaciarExtra.toastAdded');
+        : t('vaciarExtra.toastAdded');
 
-      showToast(message, 'success');
+      let reprioritized = false;
+      if (hasCheckInToday) {
+        try {
+          await reprioritizeAfterTaskSave(user.id);
+          reprioritized = true;
+        } catch (reprioritizeError) {
+          logger.error('Error repriorizando tras guardar tarea:', reprioritizeError);
+        }
+      }
+
+      showToast(
+        reprioritized
+          ? t('vaciar.reprioritizedToast')
+          : hasCheckInToday
+            ? message
+            : t('vaciarExtra.toastAddedGoFeel'),
+        reprioritized || !hasCheckInToday ? 'info' : 'success',
+      );
     } catch (error) {
       logger.error('Error inesperado:', error);
       showToast(t('errors.saveTaskFailed'), 'error');
@@ -530,33 +609,21 @@ export default function VaciarScreen() {
     }
   };
 
-  // Función para entrada por voz
-  const handleVoiceInput = () => {
-    if (Platform.OS === 'web') {
-      showToast(t('vaciar.voiceUnavailableWeb'), 'info');
-      return;
-    }
-
-    // Por ahora, mostrar un alert simple
-    // TODO: Implementar reconocimiento de voz real con expo-speech o librería nativa
-    Alert.prompt(
-      t('vaciarExtra.voiceAlertTitle'),
-      t('vaciarExtra.voiceAlertBody'),
-      [
-        {
-          text: t('common.cancel'),
-          style: 'cancel',
-        },
-        {
-          text: t('vaciarExtra.voiceUseKeyboard'),
-          onPress: () => {
-            showToast(t('vaciarExtra.voiceDictateHint'), 'info');
-          },
-        },
-      ],
-      'plain-text'
-    );
-  };
+  const showOrganizePanel = useMemo(
+    () =>
+      !flowCardDismissed ||
+      Boolean(user) ||
+      (hasTasks === false && !optionalHintDismissed) ||
+      (recentTaskSuggestions.length > 0 && !taskInput.trim()),
+    [
+      flowCardDismissed,
+      user,
+      hasTasks,
+      optionalHintDismissed,
+      recentTaskSuggestions.length,
+      taskInput,
+    ],
+  );
 
   return (
     <KeyboardAvoidingView
@@ -593,60 +660,115 @@ export default function VaciarScreen() {
         <Text style={styles.titleAccent}>{t('vaciar.titleAccent')}</Text>
         <Text style={styles.subtitle}>{t('vaciar.subtitle')}</Text>
 
-        {hasTasks === false && !optionalHintDismissed && (
-          <View style={styles.optionalHintCard}>
+        {showOrganizePanel ? (
+          <View style={styles.organizePanelWrap}>
             <TouchableOpacity
-              style={styles.optionalHintHeader}
-              onPress={() => setOptionalHintExpanded((e) => !e)}
-              activeOpacity={0.75}
+              style={styles.organizePanelToggle}
+              onPress={() => setOrganizePanelExpanded((e) => !e)}
+              activeOpacity={0.85}
               accessibilityRole="button"
               accessibilityLabel={
-                optionalHintExpanded
-                  ? t('vaciarExtra.a11yCollapseOptional')
-                  : t('vaciarExtra.a11yExpandOptional')
+                organizePanelExpanded ? t('vaciar.organizePanelHide') : t('vaciar.organizePanelTitle')
               }
+              accessibilityHint={t('vaciar.organizePanelHint')}
+              accessibilityState={{ expanded: organizePanelExpanded }}
             >
-              <Text style={styles.optionalHintTitle}>{t('vaciar.optionalTitle')}</Text>
-              {optionalHintExpanded ? (
-                <ChevronUp size={20} color={THEME.colors.text.secondary} />
+              <Text style={styles.organizePanelToggleText}>
+                {organizePanelExpanded ? t('vaciar.organizePanelHide') : t('vaciar.organizePanelTitle')}
+              </Text>
+              {organizePanelExpanded ? (
+                <ChevronUp size={20} color={THEME.colors.gradient.blue} />
               ) : (
-                <ChevronDown size={20} color={THEME.colors.text.secondary} />
+                <ChevronDown size={20} color={THEME.colors.gradient.blue} />
               )}
             </TouchableOpacity>
-            {optionalHintExpanded ? (
-              <View style={styles.optionalHintBodyWrap}>
-                <Text style={styles.optionalHintBody}>{t('vaciar.optionalBody')}</Text>
-                <Text style={[styles.optionalHintBody, styles.optionalHintBodySecond]}>
-                  {t('vaciar.optionalBodySecond')}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => void dismissOptionalHint()}
-                  style={styles.optionalHintDismissBtn}
-                  activeOpacity={0.75}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('vaciarExtra.a11yDismissOptional')}
-                >
-                  <Text style={styles.optionalHintDismissText}>{t('vaciar.dismiss')}</Text>
-                </TouchableOpacity>
+            {!organizePanelExpanded ? (
+              <Text style={styles.organizePanelCollapsedHint}>{t('vaciar.organizePanelHint')}</Text>
+            ) : null}
+            {organizePanelExpanded ? (
+              <View style={styles.organizePanelContent}>
+                {!flowCardDismissed ? (
+                  <TasksFlowCard onDismiss={() => void dismissFlowCard()} />
+                ) : null}
+                {user ? <ProjectsLibraryLink /> : null}
+                {hasTasks === false && !optionalHintDismissed ? (
+                  <View style={styles.optionalHintCard}>
+                    <TouchableOpacity
+                      style={styles.optionalHintHeader}
+                      onPress={() => setOptionalHintExpanded((e) => !e)}
+                      activeOpacity={0.75}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        optionalHintExpanded
+                          ? t('vaciarExtra.a11yCollapseOptional')
+                          : t('vaciarExtra.a11yExpandOptional')
+                      }
+                    >
+                      <Text style={styles.optionalHintTitle}>{t('vaciar.optionalTitle')}</Text>
+                      {optionalHintExpanded ? (
+                        <ChevronUp size={20} color={THEME.colors.text.secondary} />
+                      ) : (
+                        <ChevronDown size={20} color={THEME.colors.text.secondary} />
+                      )}
+                    </TouchableOpacity>
+                    {optionalHintExpanded ? (
+                      <View style={styles.optionalHintBodyWrap}>
+                        <Text style={styles.optionalHintBody}>{t('vaciar.optionalBody')}</Text>
+                        <Text style={[styles.optionalHintBody, styles.optionalHintBodySecond]}>
+                          {t('vaciar.optionalBodySecond')}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => void dismissOptionalHint()}
+                          style={styles.optionalHintDismissBtn}
+                          activeOpacity={0.75}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('vaciarExtra.a11yDismissOptional')}
+                        >
+                          <Text style={styles.optionalHintDismissText}>{t('vaciar.dismiss')}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <View style={styles.optionalHintCollapsedWrap}>
+                        <Text style={styles.optionalHintCollapsedLine}>{t('vaciar.optionalCollapsed')}</Text>
+                        <TouchableOpacity
+                          onPress={() => void dismissOptionalHint()}
+                          activeOpacity={0.75}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('vaciarExtra.a11yDismissOptional')}
+                        >
+                          <Text style={styles.optionalHintDismissTextCompact}>{t('vaciar.dismiss')}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                ) : null}
+                {recentTaskSuggestions.length > 0 && !taskInput.trim() ? (
+                  <View style={styles.suggestionsContainer}>
+                    <Text style={styles.suggestionsTitle}>{t('vaciar.suggestionsTitle')}</Text>
+                    <View style={styles.suggestionsGrid}>
+                      {recentTaskSuggestions.map((suggestion, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          style={styles.suggestionChip}
+                          onPress={() => setTaskInput(suggestion)}
+                          activeOpacity={0.7}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('vaciarExtra.a11yUseSuggestion', { suggestion })}
+                          accessibilityHint={t('vaciarExtra.a11yUseSuggestionHint')}
+                        >
+                          <Text style={styles.suggestionText}>{suggestion}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                ) : null}
               </View>
-            ) : (
-              <View style={styles.optionalHintCollapsedWrap}>
-                <Text style={styles.optionalHintCollapsedLine}>{t('vaciar.optionalCollapsed')}</Text>
-                <TouchableOpacity
-                  onPress={() => void dismissOptionalHint()}
-                  activeOpacity={0.75}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('vaciarExtra.a11yDismissOptional')}
-                >
-                  <Text style={styles.optionalHintDismissTextCompact}>{t('vaciar.dismiss')}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            ) : null}
           </View>
-        )}
+        ) : null}
 
-        {/* Banner informativo: después de agregar tareas, ve a Sentir */}
-        {hasCheckInToday === false && hasCheckInToday !== null && (
+        {/* Banner: con tareas guardadas, el siguiente paso es Sentir */}
+        {hasTasks === true && hasCheckInToday === false && hasCheckInToday !== null && (
           <TouchableOpacity
             style={styles.checkInBanner}
             onPress={() => router.push('/(tabs)/sentir')}
@@ -685,81 +807,60 @@ export default function VaciarScreen() {
             accessibilityLabel={t('vaciarExtra.a11yTaskField')}
             accessibilityHint={t('vaciarExtra.a11yTaskFieldHint')}
           />
-          {/* Botón de entrada por voz */}
-          {Platform.OS !== 'web' && (
-            <TouchableOpacity
-              style={styles.voiceButton}
-              onPress={handleVoiceInput}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={t('vaciarExtra.a11yVoiceInput')}
-              accessibilityHint={t('vaciarExtra.a11yVoiceInputHint')}
-            >
-              <Mic 
-                size={20} 
-                color={isListening ? THEME.colors.gradient.pink : THEME.colors.text.secondary} 
-              />
-            </TouchableOpacity>
-          )}
         </View>
 
-        {/* Sugerencias de tareas recientes */}
-        {recentTaskSuggestions.length > 0 && !taskInput.trim() && (
-          <View style={styles.suggestionsContainer}>
-            <Text style={styles.suggestionsTitle}>{t('vaciar.suggestionsTitle')}</Text>
-            <View style={styles.suggestionsGrid}>
-              {recentTaskSuggestions.map((suggestion, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.suggestionChip}
-                  onPress={() => setTaskInput(suggestion)}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('vaciarExtra.a11yUseSuggestion', { suggestion })}
-                  accessibilityHint={t('vaciarExtra.a11yUseSuggestionHint')}
-                >
-                  <Text style={styles.suggestionText}>{suggestion}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+        {Platform.OS !== 'web' && !dictateHintDismissed ? (
+          <View style={styles.dictateHintRow}>
+            <Text style={styles.dictateHintText}>{t('vaciarExtra.dictateHint')}</Text>
+            <TouchableOpacity
+              onPress={() => void dismissDictateHint()}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={t('vaciarExtra.a11yDismissDictateHint')}
+            >
+              <X size={16} color={THEME.colors.text.secondary} />
+            </TouchableOpacity>
           </View>
-        )}
+        ) : null}
+
+        {/* Sugerencias movidas al panel Organizar (opcional) */}
 
         {taskInput.trim() ? (
           <View style={styles.quickCaptureRow}>
             <TouchableOpacity
-              style={[styles.priorityChip, isPriority && styles.priorityChipActive]}
-              onPress={() => setIsPriority(!isPriority)}
-              activeOpacity={0.8}
-              accessibilityRole="switch"
-              accessibilityState={{ checked: isPriority }}
-              accessibilityLabel={t('vaciar.markPriority')}
-            >
-              <Star
-                size={18}
-                color={isPriority ? THEME.colors.gradient.pink : THEME.colors.text.secondary}
-                fill={isPriority ? THEME.colors.gradient.pink : 'none'}
-              />
-              <Text style={[styles.priorityChipText, isPriority && styles.priorityChipTextActive]}>
-                {t('vaciar.markPriority')}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.moreOptionsToggle}
+              style={[
+                styles.optionalExtrasCard,
+                moreOptionsExpanded && styles.optionalExtrasCardExpanded,
+              ]}
               onPress={() => setMoreOptionsExpanded((e) => !e)}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               accessibilityRole="button"
               accessibilityLabel={
                 moreOptionsExpanded ? t('vaciar.lessOptions') : t('vaciar.moreOptions')
               }
+              accessibilityHint={t('vaciarExtra.a11yOpenOptionsHint')}
             >
-              <Text style={styles.moreOptionsToggleText}>
-                {moreOptionsExpanded ? t('vaciar.lessOptions') : t('vaciar.moreOptions')}
-              </Text>
+              <View style={styles.optionalExtrasIcons}>
+                <View style={styles.optionalExtrasIconBubble}>
+                  <FolderKanban size={16} color={THEME.colors.gradient.blue} />
+                </View>
+                <View style={styles.optionalExtrasIconBubble}>
+                  <Calendar size={16} color={THEME.colors.gradient.pink} />
+                </View>
+              </View>
+              <View style={styles.optionalExtrasTextWrap}>
+                <Text style={styles.optionalExtrasTitle}>
+                  {moreOptionsExpanded ? t('vaciar.lessOptions') : t('vaciar.moreOptions')}
+                </Text>
+                {!moreOptionsExpanded ? (
+                  <Text style={styles.optionalExtrasSub}>{t('vaciar.moreOptionsSub')}</Text>
+                ) : null}
+              </View>
               {moreOptionsExpanded ? (
-                <ChevronUp size={18} color={THEME.colors.text.secondary} />
+                <ChevronUp size={20} color={THEME.colors.gradient.blue} />
               ) : (
-                <ChevronDown size={18} color={THEME.colors.text.secondary} />
+                <ChevronDown size={20} color={THEME.colors.gradient.blue} />
               )}
             </TouchableOpacity>
           </View>
@@ -902,34 +1003,17 @@ export default function VaciarScreen() {
           </View>
         ) : null}
 
-        {/* Box aparte: Ver proyectos y tareas sin proyecto */}
-        {taskInput.trim() && moreOptionsExpanded && user ? (
-          <TouchableOpacity
-            style={styles.verProyectosBox}
-            onPress={() => router.push('/proyectos')}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityLabel={t('vaciar.viewProjects')}
-          >
-            <View style={styles.verProyectosBoxInner}>
-              <View style={styles.verProyectosBoxIconWrap}>
-                <FolderKanban size={22} color={THEME.colors.gradient.blue} strokeWidth={1.8} />
-              </View>
-              <View style={styles.verProyectosBoxTextWrap}>
-                <Text style={styles.verProyectosBoxTitle}>{t('vaciar.viewProjects')}</Text>
-                <Text style={styles.verProyectosBoxHint}>{t('vaciar.viewProjectsHint')}</Text>
-              </View>
-              <ChevronRight size={22} color={THEME.colors.gradient.blue} strokeWidth={2} />
-            </View>
-          </TouchableOpacity>
-        ) : null}
-
         {taskInput.trim() && moreOptionsExpanded ? (
           <View style={styles.opcionesSection}>
             <Text style={styles.opcionesHeaderText}>{t('vaciar.options')}</Text>
             <Text style={styles.opcionesHeaderHint}>{t('vaciar.optionsHint')}</Text>
             <View style={styles.opcionesContent}>
-              <DateSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
+              <DateSelector
+                selectedDate={selectedDate}
+                onSelect={setSelectedDate}
+                calendarTaskTitle={taskInput}
+                calendarTaskId={`vaciar-draft-${selectedDate ?? 'none'}`}
+              />
             </View>
           </View>
         ) : null}
@@ -986,6 +1070,37 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     lineHeight: 24,
     marginBottom: THEME.spacing.lg,
+  },
+  organizePanelWrap: {
+    marginBottom: THEME.spacing.md,
+  },
+  organizePanelToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.fill[200],
+  },
+  organizePanelToggleText: {
+    ...THEME.typography.small,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    flex: 1,
+  },
+  organizePanelCollapsedHint: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.secondary,
+    marginTop: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.xs,
+    lineHeight: 18,
+  },
+  organizePanelContent: {
+    marginTop: THEME.spacing.sm,
+    gap: THEME.spacing.sm,
   },
   optionalHintCard: {
     borderRadius: THEME.borderRadius.rounded,
@@ -1089,18 +1204,49 @@ const styles = StyleSheet.create({
   priorityChipTextActive: {
     color: THEME.colors.gradient.pink,
   },
-  moreOptionsToggle: {
+  optionalExtrasCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: THEME.spacing.xs,
-    paddingHorizontal: THEME.spacing.sm,
+    gap: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
     minHeight: THEME.sizes.touchTarget,
   },
-  moreOptionsToggleText: {
+  optionalExtrasCardExpanded: {
+    backgroundColor: THEME.colors.fill[200],
+    borderColor: THEME.colors.stroke[100],
+  },
+  optionalExtrasIcons: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  optionalExtrasIconBubble: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: THEME.colors.fill[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionalExtrasTextWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  optionalExtrasTitle: {
+    ...THEME.typography.body,
+    fontSize: 15,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+  },
+  optionalExtrasSub: {
     ...THEME.typography.meta,
-    fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.secondary,
+    marginTop: 2,
+    lineHeight: 17,
   },
   quickCaptureHint: {
     ...THEME.typography.meta,
@@ -1192,46 +1338,6 @@ const styles = StyleSheet.create({
   projectBlock: {
     marginTop: THEME.spacing.xs,
     marginBottom: THEME.spacing.sm,
-  },
-  verProyectosBox: {
-    marginBottom: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.rounded,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    backgroundColor: THEME.colors.fill[100],
-    ...THEME.shadows.card,
-    overflow: 'hidden',
-  },
-  verProyectosBoxInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: THEME.spacing.sm + 2,
-    paddingHorizontal: THEME.spacing.md,
-  },
-  verProyectosBoxIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: THEME.borderRadius.standard + 2,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: THEME.spacing.sm,
-  },
-  verProyectosBoxTextWrap: {
-    flex: 1,
-    minWidth: 0,
-  },
-  verProyectosBoxTitle: {
-    ...THEME.typography.body,
-    fontSize: 16,
-    fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.text.main,
-  },
-  verProyectosBoxHint: {
-    ...THEME.typography.small,
-    fontSize: 12,
-    color: THEME.colors.text.secondary,
-    marginTop: 2,
   },
   opcionesSection: {
     marginBottom: THEME.spacing.md,
@@ -1416,17 +1522,19 @@ const styles = StyleSheet.create({
     ...THEME.typography.caption,
     color: THEME.colors.onGradientMuted,
   },
-  voiceButton: {
-    position: 'absolute',
-    right: THEME.spacing.md,
-    bottom: THEME.spacing.md,
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 20,
-    backgroundColor: THEME.colors.fill[100],
-    ...THEME.shadows.soft,
+  dictateHintRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: THEME.spacing.sm,
+    marginTop: -THEME.spacing.sm,
+    marginBottom: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.xs,
+  },
+  dictateHintText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    flex: 1,
+    lineHeight: 20,
   },
   suggestionsContainer: {
     marginTop: THEME.spacing.sm,

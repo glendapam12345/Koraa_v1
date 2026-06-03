@@ -9,6 +9,7 @@ import { PremiumTeaserCard } from '@/components/PremiumTeaserCard';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { supabase } from '@/lib/supabase';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
+import { getLocalDateString } from '@/lib/dateLocal';
 import { getEmotionTips } from '@/lib/emotionTips';
 import { generatePersonalizedRecommendations } from '@/lib/personalizedRecommendations';
 import { Lightbulb, Moon, Zap, Brain, Sparkles, Heart, Plus } from 'lucide-react-native';
@@ -78,7 +79,7 @@ export default function TipsScreen() {
         return;
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       const { data: checkIn, error } = await supabase
         .from('daily_check_ins')
         .select('emotion, energy_level, available_time, focus_level')
@@ -178,19 +179,21 @@ export default function TipsScreen() {
   }, {} as Record<string, typeof tips>);
 
   // Generar recomendaciones personalizadas
+  const hasPersonalizationProfile = Boolean(
+    (userProfile?.favorite_activities?.length ?? 0) > 0 ||
+      (userProfile?.interests?.length ?? 0) > 0,
+  );
+
   const personalizedRecommendations = useMemo(() => {
     if (!todayMood) return [];
-    
-    // Si no hay perfil, retornar array vacío (se mostrarán solo tips genéricos)
-    if (!userProfile) return [];
-    
+
     try {
       return generatePersonalizedRecommendations(
         {
-          age: userProfile.age,
-          favorite_activities: userProfile.favorite_activities || [],
-          interests: userProfile.interests || [],
-          other_preferences: userProfile.other_preferences || {},
+          age: userProfile?.age,
+          favorite_activities: userProfile?.favorite_activities ?? [],
+          interests: userProfile?.interests ?? [],
+          other_preferences: userProfile?.other_preferences ?? {},
         },
         {
           emotion: todayMood,
@@ -307,7 +310,21 @@ export default function TipsScreen() {
                   </Text>
                 </View>
               </LinearGradient>
+              <Text style={styles.updatedSubtitle}>{t('tips.updatedFromCheckIn')}</Text>
             </View>
+
+            {!hasPersonalizationProfile ? (
+              <TouchableOpacity
+                style={styles.profileHintCard}
+                onPress={() => router.push('/(tabs)/yo')}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={t('tips.goToProfile')}
+              >
+                <Text style={styles.profileHintText}>{t('tips.profileHint')}</Text>
+                <Text style={styles.profileHintLink}>{t('tips.goToProfile')}</Text>
+              </TouchableOpacity>
+            ) : null}
 
             {/* Recomendaciones personalizadas */}
             {visiblePersonalizedRecommendations.length > 0 && (
@@ -491,6 +508,28 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: THEME.spacing.lg,
+  },
+  updatedSubtitle: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginTop: THEME.spacing.sm,
+    textAlign: 'center',
+  },
+  profileHintCard: {
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.lg,
+  },
+  profileHintText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    marginBottom: THEME.spacing.xs,
+  },
+  profileHintLink: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
   },
   emotionHeader: {
     flexDirection: 'row',

@@ -1,50 +1,21 @@
-# Welcome to your Expo app 👋
+# ⚠️ Carpeta legacy — no editar
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**Esta carpeta NO es la app Koraa activa.**
 
-## Get started
+| | App activa (TestFlight / desarrollo) | Esta carpeta (`koraav2/`) |
+|---|--------------------------------------|---------------------------|
+| Código | Raíz del repo: `app/`, `components/`, `lib/` | Copia antigua (~1.2 GB) |
+| Build EAS | `app.config.js` en la raíz | No se usa |
+| Bugs corregidos | Sí (UTC local, paywall, calendario, etc.) | Muchos fixes **no** aplicados aquí |
 
-1. Install dependencies
+## Qué hacer
 
-   ```bash
-   npm install
-   ```
+- **Editar solo** archivos en la raíz del monorepo (`/app`, `/components`, `/lib`, …).
+- **No** ejecutar `npm install` ni `expo start` dentro de `koraav2/`.
+- Si necesitas comparar algo viejo, copia el fragmento a la app activa — no desarrolles aquí.
 
-2. Start the app
+## Eliminar en el futuro
 
-   ```bash
-   npx expo start
-   ```
+Cuando ya no necesites referencia histórica, puedes borrar toda la carpeta `koraav2/` del disco (no afecta builds si solo trabajas en la raíz).
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Documentación: [2026-05-19_koraav2_legacy_folder.md](../development_guidelines/learnings/2026-05-19_koraav2_legacy_folder.md)

@@ -72,8 +72,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     supabase.auth
       .getSession()
-      .then(({ data: { session: s }, error }) => {
-        if (error) logger.error('Error obteniendo sesión:', error);
+      .then(async ({ data: { session: s }, error }) => {
+        if (error) {
+          const msg = error.message?.toLowerCase() ?? '';
+          if (msg.includes('refresh token')) {
+            await supabase.auth.signOut({ scope: 'local' });
+            setSession(null);
+            setUser(null);
+            setLoading(false);
+            return;
+          }
+          logger.error('Error obteniendo sesión:', error);
+        }
         setSession(s);
         setUser(s?.user ?? null);
         setLoading(false);

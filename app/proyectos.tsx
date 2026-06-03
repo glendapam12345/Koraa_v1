@@ -5,9 +5,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { FolderKanban, ChevronRight, ChevronLeft, Calendar, List, CheckCircle2, Plus } from 'lucide-react-native';
+import { FolderKanban, ChevronRight, ChevronLeft, Calendar, List, CheckCircle2, Plus, Heart } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
+import { getLocalDateString } from '@/lib/dateLocal';
 
 interface Project {
   id: string;
@@ -27,6 +28,9 @@ export default function ProyectosScreen() {
   const { user } = useAuth();
   const [projects, setProjects] = useState<ProjectWithStats[]>([]);
   const [looseCount, setLooseCount] = useState<number>(0);
+  const [totalIncomplete, setTotalIncomplete] = useState(0);
+  const [focusIncomplete, setFocusIncomplete] = useState(0);
+  const [hasCheckInToday, setHasCheckInToday] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -34,11 +38,23 @@ export default function ProyectosScreen() {
     if (!user) {
       setProjects([]);
       setLooseCount(0);
+      setTotalIncomplete(0);
+      setFocusIncomplete(0);
+      setHasCheckInToday(null);
       setLoading(false);
       return;
     }
     setLoading(true);
     try {
+      const today = getLocalDateString();
+      const { data: checkInData } = await supabase
+        .from('daily_check_ins')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .maybeSingle();
+      setHasCheckInToday(!!checkInData);
+
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('id, name, color')
@@ -58,25 +74,33 @@ export default function ProyectosScreen() {
 
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
-        .select('project_id, is_completed, scheduled_date')
+        .select('project_id, is_completed, scheduled_date, is_priority')
         .eq('user_id', user.id)
         .is('parent_task_id', null);
 
       let loose = 0;
+      let totalInc = 0;
+      let focusInc = 0;
       if (!tasksError && tasksData) {
-        for (const t of tasksData) {
-          const pid = t.project_id as string | null;
+        for (const task of tasksData) {
+          const pid = task.project_id as string | null;
+          if (!task.is_completed) {
+            totalInc += 1;
+            if (task.is_priority) focusInc += 1;
+          }
           if (pid == null) {
-            if (!t.is_completed) loose += 1;
+            if (!task.is_completed) loose += 1;
             continue;
           }
           if (!byProject[pid]) continue;
           byProject[pid].total += 1;
-          if (!t.is_completed) byProject[pid].incomplete += 1;
-          if (t.scheduled_date) byProject[pid].withDate += 1;
+          if (!task.is_completed) byProject[pid].incomplete += 1;
+          if (task.scheduled_date) byProject[pid].withDate += 1;
         }
       }
       setLooseCount(loose);
+      setTotalIncomplete(totalInc);
+      setFocusIncomplete(focusInc);
 
       const withStats: ProjectWithStats[] = list.map((p) => ({
         ...p,
@@ -185,6 +209,31 @@ export default function ProyectosScreen() {
           </View>
         ) : (
           <>
+            {!loading && totalIncomplete > 0 ? (
+              <View style={styles.inventoryBanner}>
+                <Text style={styles.inventorySummary}>
+                  {hasCheckInToday
+                    ? focusIncomplete > 0
+                      ? t('projects.inventorySummary', { total: totalIncomplete, focus: focusIncomplete })
+                      : t('projects.inventoryCheckInNoFocus', { total: totalIncomplete })
+                    : t('projects.inventoryNoFocus', { total: totalIncomplete })}
+                </Text>
+                <Text style={styles.inventorySub}>{t('projects.inventorySub')}</Text>
+                {!hasCheckInToday ? (
+                  <TouchableOpacity
+                    style={styles.inventoryFeelBtn}
+                    onPress={() => router.push('/(tabs)/sentir')}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('projects.inventoryGoFeelA11y')}
+                  >
+                    <Heart size={16} color={THEME.colors.gradient.pink} />
+                    <Text style={styles.inventoryFeelText}>{t('projects.inventoryGoFeel')}</Text>
+                    <ChevronRight size={16} color={THEME.colors.gradient.blue} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ) : null}
             <TouchableOpacity
               style={styles.addProjectSection}
               onPress={() => router.push('/(tabs)/vaciar')}
@@ -364,6 +413,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.md,
     paddingTop: THEME.spacing.md + 4,
     paddingBottom: THEME.spacing.xl + THEME.spacing.sm,
+  },
+  inventoryBanner: {
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+  },
+  inventorySummary: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    lineHeight: 22,
+  },
+  inventorySub: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    marginTop: THEME.spacing.xs,
+    lineHeight: 20,
+  },
+  inventoryFeelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: THEME.spacing.sm,
+    paddingTop: THEME.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.tint.blue.border,
+    minHeight: THEME.sizes.touchTarget,
+  },
+  inventoryFeelText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
+    flex: 1,
   },
   addProjectSection: {
     flexDirection: 'row',

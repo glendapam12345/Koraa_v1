@@ -136,6 +136,14 @@ export default function HelpScreen() {
           );
         })}
 
+        <View style={styles.plansCard}>
+          <Text style={styles.sectionTitle}>{t('help.plansTitle')}</Text>
+          <Text style={styles.plansSubtitle}>{t('help.plansFreeTitle')}</Text>
+          <Text style={styles.plansBullets}>{t('help.plansFreeBullets')}</Text>
+          <Text style={[styles.plansSubtitle, styles.plansSubtitleSpaced]}>{t('help.plansPremiumTitle')}</Text>
+          <Text style={styles.plansBullets}>{t('help.plansPremiumBullets')}</Text>
+        </View>
+
         <Text style={styles.sectionTitle}>{t('help.legalTitle')}</Text>
         <Text style={styles.legalHint}>{t('help.legalHint')}</Text>
 
@@ -248,6 +256,29 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     paddingHorizontal: THEME.spacing.md,
     paddingBottom: THEME.spacing.md,
+    lineHeight: 22,
+  },
+  plansCard: {
+    marginBottom: THEME.spacing.lg,
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.fill[200],
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+  },
+  plansSubtitle: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    marginTop: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
+  },
+  plansSubtitleSpaced: {
+    marginTop: THEME.spacing.md,
+  },
+  plansBullets: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
     lineHeight: 22,
   },
   legalHint: {

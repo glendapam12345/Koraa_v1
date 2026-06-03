@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { track } from '@/lib/analytics';
 import { fetchCurrentStreak, isStreakMilestone } from '@/lib/streak';
+import { markPrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
 import { publishCheckInCelebration } from '@/lib/checkInCelebration';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { markOnboardingCompleted } from '@/lib/onboardingGate';
@@ -257,6 +258,10 @@ export default function FocusScreen() {
         source: typeof from === 'string' && from.length > 0 ? from : 'onboarding',
         offline: checkInSavedOffline,
       });
+
+      if (from === 'sentir' || from === 'quick') {
+        await markPrioritiesReadyToast();
+      }
 
       let celebrationAfterSync: { streak: number; milestone: boolean } | null = null;
       if (!checkInSavedOffline && user) {

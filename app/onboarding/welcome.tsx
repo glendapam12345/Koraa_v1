@@ -76,6 +76,17 @@ export default function WelcomeScreen() {
         />
 
         <TouchableOpacity
+          style={styles.quickStartButton}
+          onPress={() => router.push('/onboarding/emotion')}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={t('onboarding.welcome.quickStart')}
+          accessibilityHint={t('onboarding.welcome.quickStartHint')}
+        >
+          <Text style={styles.quickStartText}>{t('onboarding.welcome.quickStart')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={styles.skipButton}
           onPress={() => void handleSkipIntro()}
           disabled={skipLoading}
@@ -181,8 +192,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: THEME.spacing.sm,
   },
-  skipButton: {
+  quickStartButton: {
     marginTop: THEME.spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: THEME.sizes.touchTarget,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.pill,
+    borderWidth: 1.5,
+    borderColor: THEME.colors.gradient.blue,
+  },
+  quickStartText: {
+    ...THEME.typography.body,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  skipButton: {
+    marginTop: THEME.spacing.sm,
     alignItems: 'center',
     padding: THEME.spacing.sm,
   },

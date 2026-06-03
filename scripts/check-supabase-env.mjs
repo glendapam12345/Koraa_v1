@@ -88,8 +88,9 @@ await new Promise((resolve, reject) => {
       console.log('   API health:', res.statusCode, '(esperado 200)');
       if (res.statusCode === 200) {
         console.log('\n✅ Supabase responde bien.\n');
-        console.log('   Siguiente (si aún no lo hiciste):');
-        console.log('   2) Migraciones → npm run check:supabase:migrations');
+        console.log('   Siguiente:');
+        console.log('   2) Esquema → npm run check:supabase:schema');
+        console.log('   3) Migraciones → npm run check:supabase:migrations');
         console.log(
           '      Guía: development_guidelines/learnings/SUPABASE_SCHEMA_AND_MIGRATIONS.md'
         );

@@ -1,16 +1,18 @@
 /**
  * Comprueba si las variables de entorno de Supabase están disponibles.
- * No importa lib/supabase para evitar que falle si faltan.
- * Solo para diagnóstico en desarrollo.
+ * Usa la misma resolución que lib/supabase.ts (vía supabaseConfig).
  */
-import Constants from 'expo-constants';
+import { isSupabaseConfiguredFromConfig, resolveSupabaseConfig } from '@/lib/supabaseConfig';
 
-export function getSupabaseEnvStatus(): { url: boolean; key: boolean } {
-  const url =
-    !!Constants.expoConfig?.extra?.supabaseUrl ||
-    !!(typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_SUPABASE_URL);
-  const key =
-    !!Constants.expoConfig?.extra?.supabaseAnonKey ||
-    !!(typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_SUPABASE_ANON_KEY);
-  return { url, key };
+export function getSupabaseEnvStatus(): { url: boolean; key: boolean; host: string } {
+  const { url, anonKey, host } = resolveSupabaseConfig();
+  return {
+    url: Boolean(url),
+    key: Boolean(anonKey),
+    host,
+  };
+}
+
+export function isSupabaseEnvReady(): boolean {
+  return isSupabaseConfiguredFromConfig();
 }
