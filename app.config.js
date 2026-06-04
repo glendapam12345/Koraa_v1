@@ -55,7 +55,7 @@ module.exports = {
   expo: {
     name: 'Koraa',
     slug: 'koraav1-1',
-    version: '1.0.2',
+    version: '1.0.3',
     orientation: 'portrait',
     icon: './assets/images/koraa-logo.png',
     scheme: 'myapp',
@@ -69,7 +69,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.impermanencecasaartisitca.koraav1',
-      buildNumber: '29',
+      buildNumber: '30',
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         CFBundleDisplayName: 'Koraa',
