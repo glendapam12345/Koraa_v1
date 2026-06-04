@@ -363,6 +363,9 @@ export const en: DeepStrings<typeof es> = {
       mentalUnloadBody:
         'Set aside what is not for today. Brain dump is step two — without asking how you feel again.',
       mentalUnloadCta: 'Empty my mind',
+      tipsPeekTitle: 'A tip for you',
+      tipForYou: 'For your day',
+      tipsPeekCta: 'See all tips',
     },
     updateFeel: 'Update how I feel',
     howItWorksBodyCheckedIn:

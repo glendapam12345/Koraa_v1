@@ -10,9 +10,11 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { supabase } from '@/lib/supabase';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
 import { getLocalDateString } from '@/lib/dateLocal';
-import { getEmotionTips } from '@/lib/emotionTips';
 import { generatePersonalizedRecommendations } from '@/lib/personalizedRecommendations';
-import { Lightbulb, Moon, Zap, Brain, Sparkles, Heart, Plus } from 'lucide-react-native';
+import { countTipsByCategory } from '@/lib/tipsPersonalization';
+import type { TipCategoryId } from '@/lib/tipsTypes';
+import { TipsCategoryCard } from '@/components/tips/TipsCategoryCard';
+import { Lightbulb, Sparkles, Heart, Plus } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
 import { ScreenIntroCard } from '@/components/ui/ScreenIntroCard';
@@ -32,25 +34,13 @@ const EMOTIONS = [
   { id: 'enfocada', emoji: '🎯', color: ['#667eea', '#764ba2'] },
 ] as const;
 
-const CATEGORY_ICONS = {
-  rest: Moon,
-  action: Zap,
-  mindset: Brain,
-  productivity: Sparkles,
-};
+const TIP_CATEGORY_ORDER: TipCategoryId[] = ['mindset', 'rest', 'action', 'productivity'];
 
-const TIP_CATEGORY_KEYS: Record<string, TranslationKey> = {
+const TIP_CATEGORY_KEYS: Record<TipCategoryId, TranslationKey> = {
   rest: 'tips.categories.rest',
   action: 'tips.categories.action',
   mindset: 'tips.categories.mindset',
   productivity: 'tips.categories.productivity',
-};
-
-const CATEGORY_COLORS = {
-  rest: '#9B59B6',
-  action: '#FF6B6B',
-  mindset: '#4A90E2',
-  productivity: '#30CFD0',
 };
 
 export default function TipsScreen() {
@@ -169,16 +159,35 @@ export default function TipsScreen() {
   };
 
   const emotionData = getEmotionData();
-  const tips = todayMood ? getEmotionTips(todayMood, locale) : [];
-  
-  // Agrupar tips por categoría
-  const tipsByCategory = tips.reduce((acc, tip) => {
-    if (!acc[tip.category]) {
-      acc[tip.category] = [];
-    }
-    acc[tip.category].push(tip);
-    return acc;
-  }, {} as Record<string, typeof tips>);
+
+  const tipsContext = useMemo(
+    () => ({
+      emotion: todayMood || 'tranquila',
+      energyLevel: energyLevel || 3,
+      availableTime,
+      focusLevel,
+    }),
+    [todayMood, energyLevel, availableTime, focusLevel],
+  );
+
+  const categoryCounts = useMemo(
+    () => (todayMood ? countTipsByCategory(tipsContext, locale) : null),
+    [todayMood, tipsContext, locale],
+  );
+
+  const openCategory = useCallback(
+    (category: TipCategoryId) => {
+      router.push({
+        pathname: '/tips/[category]',
+        params: {
+          category,
+          emotion: todayMood,
+          energy: String(energyLevel || 3),
+        },
+      });
+    },
+    [todayMood, energyLevel],
+  );
 
   // Generar recomendaciones personalizadas
   const hasPersonalizationProfile = Boolean(
@@ -215,24 +224,6 @@ export default function TipsScreen() {
     if (isSubscribed) return personalizedRecommendations;
     return personalizedRecommendations.slice(0, FREE_RECOMMENDATIONS_LIMIT);
   }, [isSubscribed, personalizedRecommendations]);
-
-  const visibleTipsByCategory = useMemo(() => {
-    if (isSubscribed) return tipsByCategory;
-
-    let remaining = FREE_GENERIC_TIPS_LIMIT;
-    const limited: Record<string, typeof tips> = {};
-
-    Object.entries(tipsByCategory).forEach(([category, categoryTips]) => {
-      if (remaining <= 0) return;
-      const slice = categoryTips.slice(0, remaining);
-      if (slice.length > 0) {
-        limited[category] = slice;
-        remaining -= slice.length;
-      }
-    });
-
-    return limited;
-  }, [isSubscribed, tipsByCategory]);
 
   if (loading || subscriptionLoading) {
     return (
@@ -367,30 +358,25 @@ export default function TipsScreen() {
               </View>
             )}
 
-            {/* Tips organizados por categoría */}
-            {Object.entries(visibleTipsByCategory).map(([category, categoryTips]) => {
-              const IconComponent = CATEGORY_ICONS[category as keyof typeof CATEGORY_ICONS];
-              const categoryLabel = t(TIP_CATEGORY_KEYS[category] ?? 'tips.categories.productivity');
-              const categoryColor = CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS];
-
-              return (
-                <View key={category} style={styles.categorySection}>
-                  <View style={styles.categoryHeader}>
-                    <View style={[styles.categoryIconContainer, { backgroundColor: categoryColor + '20' }]}>
-                      {IconComponent && <IconComponent size={20} color={categoryColor} />}
-                    </View>
-                    <Text style={styles.categoryTitle}>{categoryLabel}</Text>
-                  </View>
-                  
-                  {categoryTips.map((tip) => (
-                    <View key={tip.id} style={styles.tipCard}>
-                      <View style={[styles.tipIndicator, { backgroundColor: categoryColor }]} />
-                      <Text style={styles.tipText}>{tip.tip}</Text>
-                    </View>
-                  ))}
-                </View>
-              );
-            })}
+            <Text style={styles.exploreLead}>{t('tips.exploreLead')}</Text>
+            {categoryCounts ? (
+              <View style={styles.categoryGrid}>
+                {TIP_CATEGORY_ORDER.map((category) => (
+                  <TipsCategoryCard
+                    key={category}
+                    category={category}
+                    label={t(TIP_CATEGORY_KEYS[category])}
+                    tipCount={
+                      isSubscribed
+                        ? categoryCounts[category]
+                        : Math.min(categoryCounts[category], FREE_GENERIC_TIPS_LIMIT)
+                    }
+                    tipsLabel={t('tips.tipsCountLabel')}
+                    onPress={() => openCategory(category)}
+                  />
+                ))}
+              </View>
+            ) : null}
 
             {/* Mensaje final */}
             <View style={styles.footerMessage}>
@@ -622,6 +608,18 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
     marginTop: THEME.spacing.md,
     gap: THEME.spacing.sm,
+  },
+  exploreLead: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.md,
+    lineHeight: 22,
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: THEME.spacing.lg,
   },
   footerText: {
     ...THEME.typography.caption,

@@ -364,6 +364,9 @@ export const es = {
       mentalUnloadBody:
         'Aparta lo que no es para hoy. Vaciar la mente es el segundo paso — sin repetir cómo te sientes.',
       mentalUnloadCta: 'Vaciar mi mente',
+      tipsPeekTitle: 'Un consejo para ti',
+      tipForYou: 'Para tu día',
+      tipsPeekCta: 'Ver todos los consejos',
     },
     updateFeel: 'Actualizar cómo me siento',
     howItWorksBodyCheckedIn:

@@ -171,10 +171,16 @@ export const featuresEn = {
       'They change with today’s check-in in Today. Without a check-in, tips stay generic.',
     categories: {
       rest: 'Rest',
-      action: 'Action',
-      mindset: 'Mindset',
-      productivity: 'Productivity',
+      action: 'Gentle action',
+      mindset: 'Mental wellness',
+      productivity: 'Focus & work',
     },
+    tipsCountLabel: 'tips',
+    exploreLead: 'Pick a topic. Tap a card to see all tips.',
+    forYouBadge: 'For you',
+    backToGrid: 'See more tips',
+    categoryNotFound: 'Category not found',
+    openCategoryA11y: 'Open {{category}} tips',
   },
   onboarding: {
     welcome: {

@@ -9,6 +9,7 @@ import {
   type SentirEmotionOption,
 } from '@/components/sentir/SentirVisualCheckIn';
 import { getEmotionTips } from '@/lib/emotionTips';
+import { HoyTipsPeek } from '@/components/hoy/HoyTipsPeek';
 
 type HoyInicioViewProps = {
   emotions: SentirEmotionOption[];
@@ -87,6 +88,10 @@ export function HoyInicioView({
         />
         <Text style={styles.timeFocusHint}>{t('hoy.inicio.timeFocusHint')}</Text>
       </View>
+
+      {selectedEmotionPreview ? (
+        <HoyTipsPeek emotion={selectedEmotionPreview} />
+      ) : null}
 
       <LinearGradient
         colors={[THEME.colors.chartPalette[10], THEME.colors.gradient.pink]}

@@ -173,10 +173,16 @@ export const featuresEs = {
       'Cambian con tu check-in de hoy en Hoy. Sin check-in, no hay consejos personalizados.',
     categories: {
       rest: 'Descanso',
-      action: 'Acción',
-      mindset: 'Mentalidad',
-      productivity: 'Productividad',
+      action: 'Acción suave',
+      mindset: 'Bienestar mental',
+      productivity: 'Enfoque y trabajo',
     },
+    tipsCountLabel: 'consejos',
+    exploreLead: 'Elige un tema. Toca una tarjeta para ver todos los consejos.',
+    forYouBadge: 'Para ti',
+    backToGrid: 'Ver más consejos',
+    categoryNotFound: 'Categoría no encontrada',
+    openCategoryA11y: 'Abrir consejos de {{category}}',
   },
   onboarding: {
     welcome: {
