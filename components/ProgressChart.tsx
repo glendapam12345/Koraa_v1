@@ -25,7 +25,7 @@ type ProgressChartProps = {
 
 const CHART_HEIGHT = 100;
 const BAR_WIDTH = 16;
-const BAR_SPACING = 4;
+const DAY_LABEL_MIN_WIDTH = 32;
 
 // Función para obtener colores según emoción
 const getEmotionColors = (emotion?: string): readonly [string, string] => {
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   chartContainer: {
-    height: CHART_HEIGHT + 24,
+    height: CHART_HEIGHT + 32,
   },
   chart: {
     flexDirection: 'row',
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   barWrapper: {
     alignItems: 'center',
     flex: 1,
-    maxWidth: BAR_WIDTH + BAR_SPACING,
+    minWidth: DAY_LABEL_MIN_WIDTH,
   },
   barContainer: {
     width: BAR_WIDTH,
@@ -210,9 +210,11 @@ const styles = StyleSheet.create({
   label: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
-    fontSize: 9,
+    fontSize: 11,
+    lineHeight: 14,
     textAlign: 'center',
-    width: BAR_WIDTH + 4,
+    minWidth: DAY_LABEL_MIN_WIDTH,
+    paddingHorizontal: 2,
   },
   legendContainer: {
     marginTop: THEME.spacing.sm,

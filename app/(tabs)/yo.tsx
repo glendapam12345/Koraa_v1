@@ -1152,8 +1152,11 @@ const styles = StyleSheet.create({
   streakNumber: {
     fontSize: 36,
     color: THEME.colors.fill[100],
-    lineHeight: 36,
+    lineHeight: 44,
     fontFamily: THEME.fonts.heading.bold,
+    includeFontPadding: true,
+    textAlign: 'center',
+    minWidth: 40,
   },
   streakLabel: {
     ...THEME.typography.meta,
@@ -1222,19 +1225,27 @@ const styles = StyleSheet.create({
   },
   progressHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.xs,
     marginBottom: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.xs,
   },
   progressTitle: {
     fontSize: 28,
+    lineHeight: 36,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
+    flexShrink: 0,
   },
   progressSubtitle: {
     ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
+    flex: 1,
+    minWidth: 120,
+    textAlign: 'right',
+    lineHeight: 20,
   },
   menuItem: {
     flexDirection: 'row',

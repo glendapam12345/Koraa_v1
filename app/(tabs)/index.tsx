@@ -30,7 +30,6 @@ import { getCatalog } from '@/lib/i18n';
 import { logger } from '@/lib/logger';
 import { HoyDayFlowSection } from '@/components/hoy/HoyDayFlowSection';
 import { HoyWelcomeHeader } from '@/components/hoy/HoyWelcomeHeader';
-import { HoyHowItWorksCard } from '@/components/hoy/HoyHowItWorksCard';
 import { HoyLiteBanner } from '@/components/hoy/HoyLiteBanner';
 import { HoyQuickActions } from '@/components/hoy/HoyQuickActions';
 import { HoyMeditationCard } from '@/components/hoy/HoyMeditationCard';
@@ -1165,13 +1164,6 @@ export default function TodayScreen() {
             onLightenLoad={() => setShowRedistribute(true)}
           />
         ) : null}
-        {!loading && (!todayMood || showSecondaryModulesEffective) ? (
-          <HoyHowItWorksCard
-            hasCheckInToday={Boolean(todayMood)}
-            hasTasks={tasks.length > 0}
-          />
-        ) : null}
-
         {hoyLiteLayout ? <HoyLiteBanner onShowAll={() => void handleOptOutHoyLite()} /> : null}
 
         {!loading && !hoySetupMode ? (
