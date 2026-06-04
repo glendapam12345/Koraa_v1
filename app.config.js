@@ -69,10 +69,14 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.impermanencecasaartisitca.koraav1',
-      buildNumber: '28',
+      buildNumber: '29',
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         CFBundleDisplayName: 'Koraa',
+        NSCalendarsUsageDescription:
+          'Koraa usa tu calendario para agregar tareas con fecha como eventos.',
+        NSCalendarsWriteOnlyAccessUsageDescription:
+          'Koraa usa tu calendario para agregar tareas con fecha como eventos.',
       },
     },
     android: {
@@ -94,6 +98,9 @@ module.exports = {
         'expo-calendar',
         {
           calendarPermission:
+            'Koraa usa tu calendario para agregar tareas con fecha como eventos.',
+          writeOnlyAccess: true,
+          writeOnlyCalendarPermission:
             'Koraa usa tu calendario para agregar tareas con fecha como eventos.',
         },
       ],
