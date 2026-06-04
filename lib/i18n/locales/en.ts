@@ -22,7 +22,8 @@ export const en: DeepStrings<typeof es> = {
     today: 'Today',
     tasks: 'Tasks',
     feel: 'Feel',
-    week: 'Week',
+    week: 'Calendar',
+    paraMi: 'For you',
     tips: 'Tips',
     profile: 'Me',
     a11yToday: 'Today, your focus tasks for the day',
@@ -32,6 +33,8 @@ export const en: DeepStrings<typeof es> = {
     a11yFeelFlowStep: 'Feel, step 2 of 3: emotional check-in',
     a11yTodayFlowStep: 'Today, step 3 of 3: see your focus tasks',
     a11yWeekOptional: 'Week, optional weekly planning',
+    a11yWeekCalendar: 'Calendar, tasks by day and download',
+    a11yParaMi: 'For you, patterns and emotional history',
     a11yTipsOptional: 'Tips, optional, based on how you feel',
     a11yProfile: 'Me, profile and settings',
   },
@@ -140,15 +143,15 @@ export const en: DeepStrings<typeof es> = {
   help: {
     title: 'Help',
     intro:
-      'Quick answers and policy links. If you cannot find what you need, contact us.',
+      'Koraa organizes your day in 3 steps: how you feel (Today), brain dump, and calendar. Koraa picks your 2–5 focus tasks in Today. Common questions below.',
     faqTitle: 'Frequently asked questions',
     plansTitle: 'Free vs Premium',
     plansFreeTitle: 'Included free',
     plansFreeBullets:
-      '• Tasks, Feel, and Today (capture, check-in, and 2–5 daily focus tasks)\n• Tips with a daily limit\n• Week: sample view (first days only)',
+      '• Today: check-in, brain dump, and your 2–5 daily focus tasks\n• Calendar (basic view) and Tips with a limit\n• For Me: pattern preview',
     plansPremiumTitle: 'With Koraa Premium',
     plansPremiumBullets:
-      '• Full Week (7 days, filters, and history)\n• Unlimited tips and recommendations\n• Same experience on all devices with your account',
+      '• Full calendar, export tasks, and more history\n• For Me: energy and emotion patterns\n• Unlimited tips on all your devices',
     legalTitle: 'Legal',
     legalHint:
       'You can set public URLs in your project with EXPO_PUBLIC_PRIVACY_POLICY_URL and EXPO_PUBLIC_TERMS_OF_SERVICE_URL.',
@@ -162,20 +165,20 @@ export const en: DeepStrings<typeof es> = {
     emailError: 'Could not open email',
     faq: {
       sentir: {
-        q: 'What is Feel?',
-        a: 'Your daily emotional check-in: how you feel, energy, time, and focus. Koraa uses that to suggest priorities that fit your state, not just a rigid list.',
+        q: 'What is the daily check-in?',
+        a: 'Step 1 in Today: pick emotion and energy (about a minute). Koraa uses that to choose your 2–5 focus tasks at the top of the list. You can update it if your mood shifts.',
       },
       tasks: {
-        q: 'What is the Tasks tab for?',
-        a: 'Capture and organize what is pending (brain dump, assign a project or date). What you save is prioritized in Today based on your Feel check-in.',
+        q: 'Where do I add and organize tasks?',
+        a: 'Step 2: «Empty my mind» from Today (quick capture; project and date optional). Step 3: Calendar tab to view or add by day. You do not manually order your focus tasks.',
       },
       today: {
         q: 'How are tasks ordered in Today?',
-        a: 'We combine your day state (Feel) with what you have pending. You can filter by Today or see All pending tasks.',
+        a: 'After check-in, Koraa marks 2–5 focus tasks on top. The rest lives in Calendar and projects — no pressure to finish everything today. Filter by Today or All.',
       },
       premium: {
         q: 'What is Koraa Premium and where is it?',
-        a: 'The daily flow (Tasks → Feel → Today) is free. Week and Tips are optional. Premium expands Week (7 days and history) and unlimited Tips. Subscribe or restore in Settings → View Premium. See «Free vs Premium» below.',
+        a: 'The 3 daily steps are free in Today. Premium expands Calendar, For Me (patterns), and unlimited Tips. Subscribe or restore: Me → Settings → View Premium. Details below under «Free vs Premium».',
       },
       data: {
         q: 'Where is my data stored?',
@@ -187,11 +190,13 @@ export const en: DeepStrings<typeof es> = {
       },
       tips: {
         q: 'What is the Tips tab?',
-        a: 'Suggestions based on your day state (Feel) and profile. The more you complete check-ins and your profile, the more relevant they become. Find it in the bottom bar next to Week and Me.',
+        a: 'Gentle ideas based on today’s check-in in Today and your profile. Without a check-in, it nudges you to Today first. In the bottom bar next to Calendar, For Me, and Me.',
       },
     },
   },
   yo: {
+    intro:
+      'Your personal space: streak, profile, and projects. Your daily rhythm (check-in, brain dump, focus tasks) lives in Today; patterns live in For Me.',
     configSection: 'Settings',
     settings: 'Settings',
     settingsSub: 'Language, reminders, password, Premium, and help',
@@ -226,14 +231,29 @@ export const en: DeepStrings<typeof es> = {
     progressTitle: 'Your progress',
     streakDayOne: 'day',
     streakDayMany: 'days',
-    streakEmpty: 'Check in on Feel to start your streak.',
+    streakEmpty: 'Check in on Today to start your streak.',
     streakExplainer:
-      'A day counts when you complete Feel (how you feel and energy). Meditation is extra and does not change this number.',
+      'A day counts when you log how you feel and your energy in Today. Meditation is extra and does not change this number.',
     streakExplainerDismiss: 'Got it',
     consistencyLead: 'Check-in consistency over the last',
     twoWeeks: '2 weeks',
     daysProgress: '{{completed}}/{{total}} days',
     patternsTitle: 'Your emotional patterns',
+    paraMiTitle: 'For you',
+    paraMiSubtitle: 'Your history and how you have been feeling',
+    historyTitle: 'History',
+    historyEmpty: 'No check-ins yet. Start with step 1 in Today.',
+    historyGoCheckIn: 'Do check-in',
+    historyFreeLimit: 'Last {{days}} days',
+    historySeeAllPremium: 'See 30 days with Premium',
+    patternsSectionTitle: 'Patterns',
+    patternEnergyTitle: 'Your energy',
+    patternEnergySubtitle: 'Last 2 weeks',
+    patternEmotionTitle: 'Your emotions',
+    patternEmotionSubtitle: 'What you felt most often',
+    patternLockedTitle: 'Patterns with Premium',
+    patternLockedCta: 'Unlock patterns',
+    patternsNeedData: 'Complete at least 3 check-ins to see your patterns.',
     myProfileSection: 'My profile',
     menuActivitiesInterests: '{{activities}} activities • {{interests}} interests',
     footerTagline: 'Organize your day by',
@@ -257,10 +277,23 @@ export const en: DeepStrings<typeof es> = {
     devResetLabel: 'Reset onboarding',
     devResetSub: 'Development only',
   },
+  parami: {
+    intro:
+      'See how your energy and emotions have been over recent days. You need several check-ins in Today before charts appear.',
+    subtitle: 'Your patterns from how you have been feeling.',
+    energyCardBody:
+      'Learn when to use your energy and when your body asks you to pause.',
+    emotionCardBody:
+      'See which emotions show up most often over the last few weeks.',
+    unlockCta: 'Discover my patterns',
+  },
   sentir: {
     ritualTitle: 'Your daily ritual',
     ritualBody:
       'This is your daily check-in (emotion, energy, time, and focus). Koraa prioritizes tasks based on how you feel. Come back here every day.',
+    ritualBodyModal:
+      'Your daily check-in: emotion and energy in about a minute. Koraa orders your focus tasks in Today based on how you feel.',
+    modalTitle: 'Today’s check-in',
     ritualDismiss: 'Got it',
     title: 'How are you',
     titleAccent: 'feeling',
@@ -295,7 +328,7 @@ export const en: DeepStrings<typeof es> = {
     loading: 'Preparing your day...',
     streakDays: 'days',
     streakLabel: 'Streak',
-    streakHint: 'Your streak counts consecutive days with a Feel check-in. Meditation does not add to it.',
+    streakHint: 'Your streak counts consecutive days with a check-in in Today. Meditation does not add to it.',
     feelingLine: 'Feeling {{emotion}} · Energy {{energy}}/5',
     howItWorksTitle: 'How Koraa works',
     howItWorksBody:
@@ -305,16 +338,39 @@ export const en: DeepStrings<typeof es> = {
     goToFeel: 'Go to Feel',
     checkInHero: {
       title: 'How are you feeling today?',
-      subtitle: 'One minute in Feel and Koraa lines up your focus tasks.',
+      subtitle: 'One minute here and Koraa lines up your focus tasks.',
       cta: 'Do check-in',
     },
-    updateFeel: 'Update in Feel',
+    inicio: {
+      stepFeel: 'How you feel',
+      stepUnload: 'Brain dump',
+      stepCalendar: 'Calendar',
+      eyebrow: 'Your day in Koraa',
+      statusNoCheckIn: 'Start with how you feel today',
+      primaryCta: 'Go to check-in',
+      metaWithTasks: '{{count}} pending · check-in picks your 2–5 focus tasks',
+      metaNoTasks: 'Three simple steps to organize your day',
+      contextDefault: 'Pick the closest emotion and set your energy.',
+      contextForEmotion: 'When you feel {{emotion}}',
+      feelSectionSub: 'Step 1 · about a minute',
+      calendarHint: 'Step 3 · plan in the calendar anytime',
+      calendarCta: 'Open calendar',
+      emptyTasksCta: 'Open calendar and add tasks',
+      saveCheckIn: 'Save and see my focus tasks',
+      timeFocusHint:
+        'Time and focus use smart defaults. You can fine-tune later if you need to.',
+      mentalUnloadTitle: 'Lighten your mental load',
+      mentalUnloadBody:
+        'Set aside what is not for today. Brain dump is step two — without asking how you feel again.',
+      mentalUnloadCta: 'Empty my mind',
+    },
+    updateFeel: 'Update how I feel',
     howItWorksBodyCheckedIn:
-      'Your focus tasks are in the list below (2–5 tasks). If your mood shifts, update in Feel.',
+      'Your focus tasks are below (2–5 tasks). If your mood shifts, update your check-in.',
     focusCtaBelow: '↓ Your focus tasks are below in the list',
     focusScopeTitle: 'Today’s focus only',
     focusScopeBody:
-      'Everything else lives in Tasks and Projects — no pressure to finish it all today.',
+      'Everything else lives in Calendar and projects — no pressure to finish it all today.',
     focusScopeStats: '{{total}} pending in total · focus on {{focus}} in Hoy today',
     focusScopeGoTasks: 'Tasks',
     focusScopeGoProjects: 'Projects',
@@ -332,7 +388,7 @@ export const en: DeepStrings<typeof es> = {
     taskCountPendingPlural: '{{count}} pending tasks',
     filterHint: 'Tasks for today and without a scheduled date',
     sortHint:
-      'With check-in: focus tasks on top (1–5) · No Feel yet: flat list · Swipe to complete',
+      'With check-in: focus tasks on top (1–5) · No check-in yet: flat list · Swipe to complete',
     showAllSectionsToast: 'You will see all sections in Today',
     prioritiesUpdatedToast: 'Done: priorities updated based on your check-in ✨',
     ...hoyExtraEn,

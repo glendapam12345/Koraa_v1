@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
+import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { Flame, CircleHelp, Settings } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -42,7 +43,7 @@ export function HoyWelcomeHeader({
           ) : (
             <TouchableOpacity
               style={styles.streakBadgeMuted}
-              onPress={() => router.push('/(tabs)/sentir')}
+              onPress={() => router.push(CHECK_IN_ROUTE)}
               activeOpacity={0.75}
               accessibilityRole="button"
               accessibilityLabel={t('hoyExtra.noStreakA11y')}

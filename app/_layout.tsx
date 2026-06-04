@@ -132,6 +132,13 @@ export default function RootLayout() {
               <Stack.Screen name="help" />
               <Stack.Screen name="onboarding" />
               <Stack.Screen name="(tabs)" />
+              <Stack.Screen
+                name="sentir"
+                options={{
+                  presentation: 'modal',
+                  animation: 'slide_from_bottom',
+                }}
+              />
               <Stack.Screen name="paywall" />
               <Stack.Screen name="project/[id]" />
               <Stack.Screen name="proyectos" />

@@ -23,7 +23,7 @@ export function FirstSessionTourModal({ visible, userId, onFinished }: Props) {
   const steps = useMemo(
     () => [
       { tabLabel: t('tabs.tasks'), title: t('tour.step1Title'), body: t('tour.step1Body'), Icon: Edit3 },
-      { tabLabel: t('tabs.feel'), title: t('tour.step2Title'), body: t('tour.step2Body'), Icon: Heart },
+      { tabLabel: t('sentir.modalTitle'), title: t('tour.step2Title'), body: t('tour.step2Body'), Icon: Heart },
       { tabLabel: t('tabs.today'), title: t('tour.step3Title'), body: t('tour.step3Body'), Icon: Home },
       { tabLabel: t('tour.step4TabLabel'), title: t('tour.step4Title'), body: t('tour.step4Body'), Icon: Crown },
     ],

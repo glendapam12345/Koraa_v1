@@ -21,7 +21,8 @@ export const es = {
     today: 'Hoy',
     tasks: 'Tareas',
     feel: 'Sentir',
-    week: 'Semana',
+    week: 'Calendario',
+    paraMi: 'Para mí',
     tips: 'Consejos',
     profile: 'Yo',
     a11yToday: 'Hoy, tus focos del día',
@@ -31,6 +32,8 @@ export const es = {
     a11yFeelFlowStep: 'Sentir, paso 2 de 3: check-in emocional',
     a11yTodayFlowStep: 'Hoy, paso 3 de 3: ver focos del día',
     a11yWeekOptional: 'Semana, opcional, planificación semanal',
+    a11yWeekCalendar: 'Calendario, tareas por día y descarga',
+    a11yParaMi: 'Para mí, patrones e historial emocional',
     a11yTipsOptional: 'Consejos, opcional, según tu estado',
     a11yProfile: 'Yo, perfil y ajustes',
   },
@@ -139,15 +142,15 @@ export const es = {
   help: {
     title: 'Ayuda',
     intro:
-      'Aquí tienes respuestas rápidas y enlaces a políticas. Si no encuentras lo que buscas, escríbenos.',
+      'Koraa organiza tu día en 3 pasos: cómo te sientes (Hoy), vaciar la mente y calendario. Koraa elige tus 2–5 focos en Hoy. Aquí resolvemos dudas frecuentes.',
     faqTitle: 'Preguntas frecuentes',
     plansTitle: 'Gratis vs Premium',
     plansFreeTitle: 'Incluido gratis',
     plansFreeBullets:
-      '• Tareas, Sentir y Hoy (captura, check-in y 2–5 focos del día)\n• Consejos con límite diario\n• Semana: vista de muestra (primeros días)',
+      '• Hoy: check-in, vaciar la mente y tus 2–5 focos del día\n• Calendario (vista básica) y Consejos con límite\n• Para mí: vista previa de patrones',
     plansPremiumTitle: 'Con Koraa Premium',
     plansPremiumBullets:
-      '• Semana completa (7 días, filtros e historial)\n• Consejos y recomendaciones ilimitados\n• Misma experiencia en todos los dispositivos con tu cuenta',
+      '• Calendario completo, exportar tareas y más historial\n• Para mí: patrones de energía y emociones\n• Consejos ilimitados en todos tus dispositivos',
     legalTitle: 'Legal',
     legalHint:
       'Puedes definir URLs públicas en tu proyecto con variables EXPO_PUBLIC_PRIVACY_POLICY_URL y EXPO_PUBLIC_TERMS_OF_SERVICE_URL.',
@@ -160,20 +163,20 @@ export const es = {
     emailError: 'No se pudo abrir el correo',
     faq: {
       sentir: {
-        q: '¿Qué es Sentir?',
-        a: 'Es tu check-in emocional del día: cómo te sientes, energía, tiempo y foco. Koraa usa eso para sugerir prioridades más acordes a tu estado, no solo a una lista rígida.',
+        q: '¿Qué es el check-in del día?',
+        a: 'Es el paso 1 en Hoy: eliges emoción y energía (un minuto). Koraa usa eso para elegir tus 2–5 focos arriba en la lista. Puedes actualizarlo cuando cambie tu ánimo.',
       },
       tasks: {
-        q: '¿Para qué sirve la pestaña Tareas?',
-        a: 'Ahí capturas y organizas lo pendiente (vacía tu mente, asignar proyecto o fecha). Lo que guardes se prioriza en Hoy según tu check-in en Sentir.',
+        q: '¿Dónde anoto y organizo tareas?',
+        a: 'Paso 2: «Vaciar mi mente» desde Hoy (captura rápida, proyecto y fecha opcionales). Paso 3: pestaña Calendario para ver o agregar por día. No hace falta ordenar manualmente tus focos.',
       },
       today: {
         q: '¿Cómo se ordenan las tareas en Hoy?',
-        a: 'Combinamos tu estado del día (Sentir) con lo que tienes pendiente. Puedes filtrar por «Hoy» o ver «Todas» las pendientes.',
+        a: 'Tras tu check-in, Koraa marca 2–5 focos arriba. El resto queda en Calendario y proyectos, sin presión de terminarlo todo hoy. Filtra por «Hoy» o «Todas».',
       },
       premium: {
         q: '¿Qué es Koraa Premium y dónde está?',
-        a: 'El flujo del día (Tareas → Sentir → Hoy) es gratuito. Semana y Consejos son opcionales. Premium amplía Semana (7 días e historial) y Consejos ilimitados. Suscripción y restaurar compra: Ajustes → Ver Premium. Detalle en «Gratis vs Premium» más abajo.',
+        a: 'Los 3 pasos del día son gratis en Hoy. Premium amplía Calendario, Para mí (patrones) y Consejos ilimitados. Suscripción y restaurar: Yo → Ajustes → Ver Premium. Detalle abajo en «Gratis vs Premium».',
       },
       data: {
         q: '¿Dónde se guardan mis datos?',
@@ -185,11 +188,13 @@ export const es = {
       },
       tips: {
         q: '¿Qué es la pestaña Consejos?',
-        a: 'Sugerencias y tips según tu estado del día (Sentir) y tu perfil. Cuanto más completes el check-in y tu perfil, más relevantes serán. La encuentras en la barra inferior junto a Semana y Yo.',
+        a: 'Ideas suaves según tu check-in de hoy en Hoy y tu perfil. Sin check-in, te invita a ir a Hoy primero. Está en la barra junto a Calendario, Para mí y Yo.',
       },
     },
   },
   yo: {
+    intro:
+      'Tu espacio personal: racha, perfil y proyectos. El ritmo del día (check-in, vaciar la mente, focos) lo llevas en Hoy; los patrones, en Para mí.',
     configSection: 'Configuración',
     settings: 'Ajustes',
     settingsSub: 'Idioma, recordatorios, contraseña, Premium y ayuda',
@@ -224,14 +229,29 @@ export const es = {
     progressTitle: 'Tu progreso',
     streakDayOne: 'día',
     streakDayMany: 'días',
-    streakEmpty: 'Haz tu check-in en Sentir para encender la racha.',
+    streakEmpty: 'Haz tu check-in en Hoy para encender la racha.',
     streakExplainer:
-      'Un día cuenta cuando completas Sentir (cómo te sientes y energía). Meditar es un extra y no cambia este número.',
+      'Un día cuenta cuando registras cómo te sientes y tu energía en Hoy. Meditar es un extra y no cambia este número.',
     streakExplainerDismiss: 'Entendido',
     consistencyLead: 'Consistencia de check-ins en las últimas',
     twoWeeks: '2 semanas',
     daysProgress: '{{completed}}/{{total}} días',
     patternsTitle: 'Tus patrones emocionales',
+    paraMiTitle: 'Para ti',
+    paraMiSubtitle: 'Tu historial y cómo has estado',
+    historyTitle: 'Historial',
+    historyEmpty: 'Aún no hay check-ins. Empieza con el paso 1 en Hoy.',
+    historyGoCheckIn: 'Hacer check-in',
+    historyFreeLimit: 'Últimos {{days}} días',
+    historySeeAllPremium: 'Ver 30 días con Premium',
+    patternsSectionTitle: 'Patrones',
+    patternEnergyTitle: 'Tu energía',
+    patternEnergySubtitle: 'Últimas 2 semanas',
+    patternEmotionTitle: 'Tus emociones',
+    patternEmotionSubtitle: 'Con qué te sentiste más',
+    patternLockedTitle: 'Patrones con Premium',
+    patternLockedCta: 'Desbloquear patrones',
+    patternsNeedData: 'Haz al menos 3 check-ins para ver tus patrones.',
     myProfileSection: 'Mi perfil',
     menuActivitiesInterests: '{{activities}} actividades • {{interests}} intereses',
     footerTagline: 'Organiza tu día',
@@ -256,10 +276,23 @@ export const es = {
     devResetLabel: 'Resetear onboarding',
     devResetSub: 'Solo desarrollo',
   },
+  parami: {
+    intro:
+      'Aquí ves cómo ha sido tu energía y tus emociones en los últimos días. Necesitas varios check-ins en Hoy para que aparezcan los gráficos.',
+    subtitle: 'Tus patrones según cómo te has sentido.',
+    energyCardBody:
+      'Aprende cuándo aprovechar tu energía y cuándo tu cuerpo te pide parar.',
+    emotionCardBody:
+      'Conoce con qué emociones te sientes más a menudo en las últimas semanas.',
+    unlockCta: 'Conocer mis patrones',
+  },
   sentir: {
     ritualTitle: 'Tu ritual diario',
     ritualBody:
       'Aquí haces el check-in del día (emoción, energía, tiempo y enfoque). Koraa prioriza tus tareas según cómo te sientes. Puedes volver cada día desde esta pestaña.',
+    ritualBodyModal:
+      'Tu check-in del día: emoción y energía en un minuto. Koraa ordena tus focos en Hoy según cómo te sientes.',
+    modalTitle: 'Check-in de hoy',
     ritualDismiss: 'Entendido',
     title: '¿Cómo te',
     titleAccent: 'sientes',
@@ -295,26 +328,50 @@ export const es = {
     loading: 'Preparando tu día...',
     streakDays: 'días',
     streakLabel: 'Racha',
-    streakHint: 'La racha cuenta los días seguidos con check-in en Sentir. La meditación no suma a la racha.',
+    streakHint: 'La racha cuenta los días seguidos con check-in en Hoy. La meditación no suma a la racha.',
     feelingLine: 'Sintiéndote {{emotion}} · Energía {{energy}}/5',
     howItWorksTitle: 'Cómo funciona Koraa',
     howItWorksBody:
-      'Tareas: anota pendientes. Sentir: Koraa elige 2–5 focos según tu ánimo. Hoy: haz solo esos — arriba en la lista.',
+      '1) Cómo te sientes. 2) Vaciar la mente. 3) Calendario. Koraa elige 2–5 focos y los ves aquí arriba.',
     howItWorksBodyNoTasks:
-      'Empieza en Tareas: escribe lo que tienes en mente. Después Sentir elige tus focos y aquí los verás.',
-    goToFeel: 'Ir a Sentir',
+      'Tres pasos: check-in, vaciar la mente y calendario. Koraa ordena tus focos en esta lista.',
+    goToFeel: 'Actualizar check-in',
     checkInHero: {
       title: '¿Cómo te sientes hoy?',
-      subtitle: 'Un minuto en Sentir y Koraa ordena tus focos del día.',
+      subtitle: 'Un minuto aquí y Koraa ordena tus focos del día.',
       cta: 'Hacer check-in',
     },
-    updateFeel: 'Actualizar en Sentir',
+    inicio: {
+      stepFeel: 'Cómo te sientes',
+      stepUnload: 'Vaciar la mente',
+      stepCalendar: 'Calendario',
+      eyebrow: 'Tu día en Koraa',
+      statusNoCheckIn: 'Empieza por cómo te sientes hoy',
+      primaryCta: 'Ir al check-in',
+      metaWithTasks: '{{count}} pendientes · el check-in elige tus 2–5 focos',
+      metaNoTasks: 'Tres pasos sencillos para ordenar tu día',
+      contextDefault:
+        'Elige la emoción que más se acerque y ajusta tu energía.',
+      contextForEmotion: 'Cuando te sientes {{emotion}}',
+      feelSectionSub: 'Paso 1 · un minuto',
+      calendarHint: 'Paso 3 · planifica en el calendario cuando quieras',
+      calendarCta: 'Abrir calendario',
+      emptyTasksCta: 'Ver calendario y agregar tareas',
+      saveCheckIn: 'Guardar y ver mis focos',
+      timeFocusHint:
+        'Tiempo y enfoque usan valores por defecto. Puedes afinarlos después si lo necesitas.',
+      mentalUnloadTitle: 'Alivia tu carga mental',
+      mentalUnloadBody:
+        'Aparta lo que no es para hoy. Vaciar la mente es el segundo paso — sin repetir cómo te sientes.',
+      mentalUnloadCta: 'Vaciar mi mente',
+    },
+    updateFeel: 'Actualizar cómo me siento',
     howItWorksBodyCheckedIn:
-      'Tus focos del día están en la lista de abajo (2–5 tareas). Si cambia tu ánimo, actualiza en Sentir.',
+      'Tus focos del día están abajo (2–5 tareas). Si cambia tu ánimo, actualiza tu check-in.',
     focusCtaBelow: '↓ Tus focos están abajo en la lista',
     focusScopeTitle: 'Solo tus focos de hoy',
     focusScopeBody:
-      'El resto de tus pendientes vive en Tareas y en Proyectos — sin presión para terminarlo todo hoy.',
+      'El resto vive en Calendario y proyectos — sin presión para terminarlo todo hoy.',
     focusScopeStats: '{{total}} pendientes en total · hoy enfócate en {{focus}} focos',
     focusScopeGoTasks: 'Tareas',
     focusScopeGoProjects: 'Proyectos',
@@ -332,7 +389,7 @@ export const es = {
     taskCountPendingPlural: '{{count}} tareas pendientes',
     filterHint: 'Tareas de hoy y sin fecha asignada',
     sortHint:
-      'Con check-in: focos arriba (números 1–5) · Sin Sentir aún: lista sin orden de foco · Desliza para completar',
+      'Con check-in: focos arriba (1–5) · Sin check-in aún: lista sin orden de foco · Desliza para completar',
     showAllSectionsToast: 'Verás todas las secciones en Hoy',
     prioritiesUpdatedToast: 'Listo: prioridades actualizadas según tu check-in ✨',
     ...hoyExtra,

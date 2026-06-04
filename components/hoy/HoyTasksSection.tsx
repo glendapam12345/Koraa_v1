@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native
 import { useEffect, useMemo, type Dispatch, type SetStateAction } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import {
   Plus,
   Heart,
@@ -317,7 +318,7 @@ export function HoyTasksSection({
               {!todayMood && displayedIncompleteTasks.length > 0 && (
                 <TouchableOpacity
                   style={styles.checkInPromptBanner}
-                  onPress={() => router.push('/(tabs)/sentir')}
+                  onPress={() => router.push(CHECK_IN_ROUTE)}
                   activeOpacity={0.88}
                   accessibilityRole="button"
                   accessibilityLabel={t('hoyExtra.goFeelPrioritize')}
@@ -780,7 +781,7 @@ export function HoyTasksSection({
                     {incompleteTasks.length === 0 && tasks.length > 0 ? (
                       <TouchableOpacity
                         style={styles.emptyTasksSecondaryCta}
-                        onPress={() => router.push('/(tabs)/sentir')}
+                        onPress={() => router.push(CHECK_IN_ROUTE)}
                         activeOpacity={0.85}
                         accessibilityRole="button"
                         accessibilityLabel={t('hoyExtra.goFeelA11y')}

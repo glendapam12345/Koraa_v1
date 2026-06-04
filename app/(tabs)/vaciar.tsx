@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, RefreshControl, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,22 +7,20 @@ import { THEME } from '@/constants/theme';
 import { GradientButton } from '@/components/GradientButton';
 import { Tooltip } from '@/components/Tooltip';
 import { Toast } from '@/components/Toast';
-import { FlowIndicator } from '@/components/FlowIndicator';
+import { TaskCaptureOrganize } from '@/components/tasks/TaskCaptureOrganize';
 import { supabase, isNetworkError, getSchemaSetupMessage } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { track } from '@/lib/analytics';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { detectCategory } from '@/lib/categoryDetection';
-import { ProjectSelector } from '@/components/projects/ProjectSelector';
-import { DateSelector } from '@/components/tasks/DateSelector';
 import { TasksFlowCard } from '@/components/tasks/TasksFlowCard';
 import { prioritizeTasksForCheckIn } from '@/lib/checkInService';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProjectsLibraryLink } from '@/components/projects/ProjectsLibraryLink';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { useI18n } from '@/contexts/I18nContext';
-import { categoryKeys, type CategoryKey } from '@/lib/i18n/locales/features/categories';
-import { X, Plus, ChevronDown, ChevronUp, Sparkles, FolderKanban, Calendar } from 'lucide-react-native';
+import { X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react-native';
 
 const VACIAR_OPTIONAL_HINT_DISMISSED_KEY = (userId: string) =>
   `koraa_vaciar_optional_hint_dismissed_v1_${userId}`;
@@ -32,8 +30,6 @@ const VACIAR_FLOW_CARD_DISMISSED_KEY = (userId: string) =>
 
 const VACIAR_DICTATE_HINT_DISMISSED_KEY = (userId: string) =>
   `koraa_vaciar_dictate_hint_dismissed_v1_${userId}`;
-
-const CATEGORY_OPTIONS: { key: CategoryKey }[] = categoryKeys.map((key) => ({ key }));
 
 function trackTaskCreated(args: {
   priority: boolean;
@@ -77,8 +73,8 @@ export default function VaciarScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [dictateHintDismissed, setDictateHintDismissed] = useState(false);
   const [recentTaskSuggestions, setRecentTaskSuggestions] = useState<string[]>([]);
-  /** true = asignar a proyecto, false = solo categoría, null = no ha elegido */
-  const [assignToProject, setAssignToProject] = useState<boolean | null>(null);
+  /** true = proyecto, false = tarea suelta con categoría */
+  const [assignToProject, setAssignToProject] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('otros');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -86,7 +82,6 @@ export default function VaciarScreen() {
   void setShowDatePicker;
   void showDatePicker;
   const [, setProjectCount] = useState<number | null>(null);
-  const [moreOptionsExpanded, setMoreOptionsExpanded] = useState(false);
   const { user } = useAuth();
 
   // Pre-llenar input si hay sugerencia desde Tips; fecha desde Semana; proyecto desde detalle de proyecto
@@ -121,12 +116,6 @@ export default function VaciarScreen() {
     if (subtasks.length > 1) {
       setSubtasks(subtasks.filter((_, i) => i !== index));
     }
-  };
-
-  const updateSubtask = (index: number, value: string) => {
-    const newSubtasks = [...subtasks];
-    newSubtasks[index] = value;
-    setSubtasks(newSubtasks);
   };
 
   useEffect(() => {
@@ -421,12 +410,10 @@ export default function VaciarScreen() {
           setTaskInput('');
           setHasSubtasks(false);
           setSubtasks(['']);
-          setAssignToProject(null);
+          setAssignToProject(false);
           setSelectedCategory('otros');
           setSelectedProjectId(null);
           setSelectedDate(null);
-          setMoreOptionsExpanded(false);
-
           trackTaskCreated({
             priority: false,
             projectId: projectIdToSave,
@@ -476,12 +463,10 @@ export default function VaciarScreen() {
             setTaskInput('');
             setHasSubtasks(false);
             setSubtasks(['']);
-            setAssignToProject(null);
+            setAssignToProject(false);
             setSelectedCategory('otros');
             setSelectedProjectId(null);
             setSelectedDate(null);
-            setMoreOptionsExpanded(false);
-
             trackTaskCreated({
               priority: false,
               projectId: projectIdToSave,
@@ -543,12 +528,10 @@ export default function VaciarScreen() {
       setTaskInput('');
       setHasSubtasks(false);
       setSubtasks(['']);
-      setAssignToProject(null);
+      setAssignToProject(false);
       setSelectedCategory('otros');
       setSelectedProjectId(null);
       setSelectedDate(null);
-      setMoreOptionsExpanded(false);
-
       await loadRecentTaskSuggestions();
       
       // Cerrar tooltip después de agregar primera tarea
@@ -653,9 +636,6 @@ export default function VaciarScreen() {
             />
           }
         >
-        {/* Indicador de flujo */}
-        <FlowIndicator currentStep="vaciar" />
-
         <Text style={styles.title}>{t('vaciar.title')}</Text>
         <Text style={styles.titleAccent}>{t('vaciar.titleAccent')}</Text>
         <Text style={styles.subtitle}>{t('vaciar.subtitle')}</Text>
@@ -771,7 +751,7 @@ export default function VaciarScreen() {
         {hasTasks === true && hasCheckInToday === false && hasCheckInToday !== null && (
           <TouchableOpacity
             style={styles.checkInBanner}
-            onPress={() => router.push('/(tabs)/sentir')}
+            onPress={() => router.push(CHECK_IN_ROUTE)}
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel={t('vaciarExtra.a11yNextStepFeel')}
@@ -824,198 +804,42 @@ export default function VaciarScreen() {
           </View>
         ) : null}
 
-        {/* Sugerencias movidas al panel Organizar (opcional) */}
-
-        {taskInput.trim() ? (
-          <View style={styles.quickCaptureRow}>
-            <TouchableOpacity
-              style={[
-                styles.optionalExtrasCard,
-                moreOptionsExpanded && styles.optionalExtrasCardExpanded,
-              ]}
-              onPress={() => setMoreOptionsExpanded((e) => !e)}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel={
-                moreOptionsExpanded ? t('vaciar.lessOptions') : t('vaciar.moreOptions')
+        {taskInput.trim() && user ? (
+          <TaskCaptureOrganize
+            userId={user.id}
+            taskTitle={taskInput.trim()}
+            assignToProject={assignToProject}
+            onAssignToProjectChange={(value) => {
+              setAssignToProject(value);
+              if (!value) {
+                setSelectedProjectId(null);
+                setHasSubtasks(false);
+                setSubtasks(['']);
+              } else {
+                setSelectedCategory('otros');
               }
-              accessibilityHint={t('vaciarExtra.a11yOpenOptionsHint')}
-            >
-              <View style={styles.optionalExtrasIcons}>
-                <View style={styles.optionalExtrasIconBubble}>
-                  <FolderKanban size={16} color={THEME.colors.gradient.blue} />
-                </View>
-                <View style={styles.optionalExtrasIconBubble}>
-                  <Calendar size={16} color={THEME.colors.gradient.pink} />
-                </View>
-              </View>
-              <View style={styles.optionalExtrasTextWrap}>
-                <Text style={styles.optionalExtrasTitle}>
-                  {moreOptionsExpanded ? t('vaciar.lessOptions') : t('vaciar.moreOptions')}
-                </Text>
-                {!moreOptionsExpanded ? (
-                  <Text style={styles.optionalExtrasSub}>{t('vaciar.moreOptionsSub')}</Text>
-                ) : null}
-              </View>
-              {moreOptionsExpanded ? (
-                <ChevronUp size={20} color={THEME.colors.gradient.blue} />
-              ) : (
-                <ChevronDown size={20} color={THEME.colors.gradient.blue} />
-              )}
-            </TouchableOpacity>
-          </View>
-        ) : null}
-
-        {taskInput.trim() && !moreOptionsExpanded ? (
-          <Text style={styles.quickCaptureHint}>{t('vaciar.quickCaptureHint')}</Text>
-        ) : null}
-
-        {/* ¿Asignar a un proyecto? Sí / No */}
-        {taskInput.trim() && moreOptionsExpanded ? (
-          <View style={styles.assignSection}>
-            <Text style={styles.assignQuestion}>{t('vaciar.assignQuestion')}</Text>
-            <View style={styles.assignButtonsRow}>
-              <TouchableOpacity
-                style={[styles.assignButton, styles.assignButtonYes, assignToProject === true && styles.assignButtonYesSelected]}
-                onPress={() => {
-                  setAssignToProject(true);
-                  setSelectedCategory('otros');
-                }}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel={t('vaciarExtra.a11yAssignYes')}
-              >
-                <Text style={[styles.assignButtonText, assignToProject === true ? styles.assignButtonTextSelectedYes : null]}>
-                  {t('errors.yes')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.assignButton, styles.assignButtonNo, assignToProject === false && styles.assignButtonNoSelected]}
-                onPress={() => {
-                  setAssignToProject(false);
-                  setSelectedProjectId(null);
-                  setHasSubtasks(false);
-                  setSubtasks(['']);
-                }}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel={t('vaciarExtra.a11yAssignNo')}
-              >
-                <Text
-                  style={[
-                    styles.assignButtonText,
-                    assignToProject === false ? styles.assignButtonTextSelectedYes : null,
-                  ]}
-                >
-                  {t('errors.no')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {assignToProject === false && (
-              <View style={styles.categorySection}>
-                <Text style={styles.categorySectionLabel}>{t('vaciar.chooseCategory')}</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryChipsWrap}>
-                  {CATEGORY_OPTIONS.map((opt) => {
-                    const isSelected = selectedCategory === opt.key;
-                    const color = THEME.colors.category[opt.key as keyof typeof THEME.colors.category] ?? THEME.colors.text.secondary;
-                    return (
-                      <TouchableOpacity
-                        key={opt.key}
-                        style={[styles.categoryChip, isSelected && { backgroundColor: color, borderColor: color }]}
-                        onPress={() => setSelectedCategory(opt.key)}
-                        activeOpacity={0.8}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${t(`categories.${opt.key}`)}${isSelected ? t('vaciarExtra.a11ySelected') : ''}`}
-                      >
-                        <Text style={[styles.categoryChipText, isSelected && styles.categoryChipTextSelected]}>
-                          {t(`categories.${opt.key}`)}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-            )}
-
-            {assignToProject === true && user && (
-              <View style={styles.projectBlock}>
-                <ProjectSelector
-                  selectedProjectId={selectedProjectId}
-                  onSelect={setSelectedProjectId}
-                  userId={user.id}
-                  showLabel={false}
-                  assignMode={true}
-                  onBeforeOpenModal={() => {
-                    Keyboard.dismiss();
-                    taskInputRef.current?.blur();
-                  }}
-                  onError={(message) => showToast(message, 'error')}
-                  onSuccess={(projectName) =>
-                    showToast(t('vaciar.projectCreated', { name: projectName }), 'success')
-                  }
-                />
-                <TouchableOpacity
-                  style={[styles.subtasksToggle, hasSubtasks && styles.subtasksToggleActive]}
-                  onPress={() => {
-                    setHasSubtasks(!hasSubtasks);
-                    if (!hasSubtasks) setSubtasks(['']);
-                  }}
-                  activeOpacity={0.7}
-                  accessibilityRole="switch"
-                  accessibilityLabel={hasSubtasks ? t('vaciarExtra.a11ySubtasksOn') : t('vaciarExtra.a11ySubtasksOff')}
-                  accessibilityState={{ checked: hasSubtasks }}
-                >
-                  {hasSubtasks ? <ChevronUp size={20} color={THEME.colors.gradient.blue} /> : <ChevronDown size={20} color={THEME.colors.text.secondary} />}
-                  <Text style={[styles.subtasksToggleText, hasSubtasks && styles.subtasksToggleTextActive]}>
-                    {t('vaciar.subtasksToggle')}
-                  </Text>
-                </TouchableOpacity>
-                {hasSubtasks && (
-                  <View style={styles.subtasksContainer}>
-                    {subtasks.map((subtask, index) => (
-                      <View key={index} style={styles.subtaskRow}>
-                        <View style={styles.subtaskInputContainer}>
-                          <TextInput
-                            style={styles.subtaskInput}
-                            value={subtask}
-                            onChangeText={(value) => updateSubtask(index, value)}
-                            placeholder={t('vaciar.subtaskPlaceholder', { n: index + 1 })}
-                            placeholderTextColor={THEME.colors.text.secondary}
-                            maxLength={300}
-                          />
-                        </View>
-                        {subtasks.length > 1 && (
-                          <TouchableOpacity style={styles.removeSubtaskButton} onPress={() => removeSubtask(index)} activeOpacity={0.7}>
-                            <X size={18} color={THEME.colors.text.secondary} />
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    ))}
-                    <TouchableOpacity style={styles.addSubtaskButton} onPress={addSubtask} activeOpacity={0.7}>
-                      <Plus size={18} color={THEME.colors.gradient.blue} />
-                      <Text style={styles.addSubtaskText}>{t('vaciar.addSubtask')}</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
-        ) : null}
-
-        {taskInput.trim() && moreOptionsExpanded ? (
-          <View style={styles.opcionesSection}>
-            <Text style={styles.opcionesHeaderText}>{t('vaciar.options')}</Text>
-            <Text style={styles.opcionesHeaderHint}>{t('vaciar.optionsHint')}</Text>
-            <View style={styles.opcionesContent}>
-              <DateSelector
-                selectedDate={selectedDate}
-                onSelect={setSelectedDate}
-                calendarTaskTitle={taskInput}
-                calendarTaskId={`vaciar-draft-${selectedDate ?? 'none'}`}
-              />
-            </View>
-          </View>
+            }}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            selectedProjectId={selectedProjectId}
+            onProjectChange={setSelectedProjectId}
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            hasSubtasks={hasSubtasks}
+            onHasSubtasksChange={(value) => {
+              setHasSubtasks(value);
+              if (value) setSubtasks(['']);
+            }}
+            subtasks={subtasks}
+            onSubtasksChange={setSubtasks}
+            onAddSubtask={addSubtask}
+            onRemoveSubtask={removeSubtask}
+            onBlurInput={() => taskInputRef.current?.blur()}
+            onProjectError={(message) => showToast(message, 'error')}
+            onProjectCreated={(name) =>
+              showToast(t('vaciar.projectCreated', { name }), 'success')
+            }
+          />
         ) : null}
 
         <GradientButton

@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from
 import { useState, useEffect, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { subscribeCheckInCelebration } from '@/lib/checkInCelebration';
 import { THEME } from '@/constants/theme';
 import { generatePersonalizedRecommendations, type Recommendation, type UserPreferences, type CheckInContext } from '@/lib/personalizedRecommendations';
@@ -353,7 +354,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
                 <ChevronRight size={16} color={THEME.colors.gradient.blue} />
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => router.push('/(tabs)/sentir')}
+                onPress={() => router.push(CHECK_IN_ROUTE)}
                 activeOpacity={0.85}
                 accessibilityRole="button"
                 accessibilityLabel={t('recommendationsExtra.goFeel')}

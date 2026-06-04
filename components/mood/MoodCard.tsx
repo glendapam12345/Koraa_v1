@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { RefreshCw } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 
 type MoodCardProps = {
@@ -76,7 +77,7 @@ export function MoodCard({ todayMood, energyLevel, availableTime, focusLevel, on
       </View>
       <TouchableOpacity
         style={styles.updateButton}
-        onPress={() => router.push('/(tabs)/sentir')}
+        onPress={() => router.push(CHECK_IN_ROUTE)}
         activeOpacity={0.85}
         accessibilityRole="button"
         accessibilityLabel={t('moodCard.a11yUpdate')}

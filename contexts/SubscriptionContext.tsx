@@ -1,11 +1,11 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { Platform } from 'react-native';
 import type { CustomerInfo, PurchasesOffering } from 'react-native-purchases';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { ENTITLEMENT_ID } from '@/config/revenuecat';
 import { initializeRevenueCat } from '@/lib/revenuecat';
 import { logger } from '@/lib/logger';
+import { canProcessInAppPurchases } from '@/lib/subscriptionEnvironment';
 
 type SubscriptionContextType = {
   isLoading: boolean;
@@ -30,7 +30,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   }, [customerInfo]);
 
   const checkSubscription = useCallback(async (): Promise<boolean> => {
-    if (Platform.OS !== 'ios' && Platform.OS !== 'android') return false;
+    if (!canProcessInAppPurchases()) return false;
     try {
       const Purchases = (await import('react-native-purchases')).default;
       const [info, offerings] = await Promise.all([Purchases.getCustomerInfo(), Purchases.getOfferings()]);
@@ -46,7 +46,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const restorePurchases = useCallback(async () => {
-    if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
+    if (!canProcessInAppPurchases()) {
       return { success: false, error: t('subscription.unavailablePlatform') };
     }
     try {
@@ -64,8 +64,12 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     let cancelled = false;
     const syncRevenueCatUser = async () => {
-      if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
-        if (!cancelled) setIsLoading(false);
+      if (!canProcessInAppPurchases()) {
+        if (!cancelled) {
+          setCustomerInfo(null);
+          setCurrentOffering(null);
+          setIsLoading(false);
+        }
         return;
       }
       setIsLoading(true);

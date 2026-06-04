@@ -33,9 +33,20 @@ export type SentirEmotionOption = {
 type SentirVisualCheckInProps = {
   emotions: SentirEmotionOption[];
   onSaved: () => void;
+  /** En Hoy (Inicio): sin navegar atrás al guardar. */
+  embedded?: boolean;
+  /** En Hoy: oculta enlace a tiempo/enfoque (opcional aparte). */
+  hideAdvancedLink?: boolean;
+  onEmotionChange?: (emotionId: string) => void;
 };
 
-export function SentirVisualCheckIn({ emotions, onSaved }: SentirVisualCheckInProps) {
+export function SentirVisualCheckIn({
+  emotions,
+  onSaved,
+  embedded = false,
+  hideAdvancedLink = false,
+  onEmotionChange,
+}: SentirVisualCheckInProps) {
   const { user } = useAuth();
   const { t, locale } = useI18n();
   const [emotion, setEmotion] = useState('');
@@ -82,7 +93,13 @@ export function SentirVisualCheckIn({ emotions, onSaved }: SentirVisualCheckInPr
       void track('check_in_completed', { source: 'sentir_visual', offline: Boolean(result.offline) });
 
       onSaved();
-      router.replace('/(tabs)');
+      if (!embedded) {
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/(tabs)');
+        }
+      }
 
       setTimeout(() => {
         if (result.celebration) {
@@ -96,19 +113,26 @@ export function SentirVisualCheckIn({ emotions, onSaved }: SentirVisualCheckInPr
     }
   };
 
+  const selectEmotion = (id: string) => {
+    setEmotion(id);
+    onEmotionChange?.(id);
+  };
+
   return (
     <View style={styles.root}>
-      <LinearGradient
-        colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.hero}
-      >
-        <View style={styles.bubble}>
-          <Text style={styles.bubbleText}>{t('sentir.visualCheckIn.bubble')}</Text>
-        </View>
-        <Text style={styles.heroNote}>{t('sentir.inclusiveNote')}</Text>
-      </LinearGradient>
+      {!embedded ? (
+        <LinearGradient
+          colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
+          <View style={styles.bubble}>
+            <Text style={styles.bubbleText}>{t('sentir.visualCheckIn.bubble')}</Text>
+          </View>
+          <Text style={styles.heroNote}>{t('sentir.inclusiveNote')}</Text>
+        </LinearGradient>
+      ) : null}
 
       <ScrollView
         horizontal
@@ -122,17 +146,26 @@ export function SentirVisualCheckIn({ emotions, onSaved }: SentirVisualCheckInPr
           return (
             <TouchableOpacity
               key={item.id}
-              style={[styles.emotionChip, selected && styles.emotionChipSelected]}
-              onPress={() => setEmotion(item.id)}
+              style={[
+                styles.emotionChip,
+                embedded && styles.emotionChipEmbedded,
+                selected && styles.emotionChipSelected,
+                embedded && selected && styles.emotionChipEmbeddedSelected,
+              ]}
+              onPress={() => selectEmotion(item.id)}
               activeOpacity={0.8}
               accessibilityRole="radio"
               accessibilityState={{ selected }}
               accessibilityLabel={item.label}
             >
-              <Text style={styles.emotionEmoji}>{item.emoji}</Text>
-              <Text style={[styles.emotionLabel, selected && styles.emotionLabelSelected]}>
-                {item.label}
+              <Text style={[styles.emotionEmoji, embedded && styles.emotionEmojiEmbedded]}>
+                {item.emoji}
               </Text>
+              {!embedded ? (
+                <Text style={[styles.emotionLabel, selected && styles.emotionLabelSelected]}>
+                  {item.label}
+                </Text>
+              ) : null}
             </TouchableOpacity>
           );
         })}
@@ -144,20 +177,22 @@ export function SentirVisualCheckIn({ emotions, onSaved }: SentirVisualCheckInPr
         label={t('sentir.visualCheckIn.energyLabel')}
       />
 
-      <TouchableOpacity
-        onPress={handleAdvanced}
-        disabled={!emotion}
-        style={styles.advancedLink}
-        activeOpacity={0.75}
-        accessibilityRole="button"
-        accessibilityLabel={t('sentir.visualCheckIn.adjustTimeFocus')}
-        accessibilityHint={t('sentir.visualCheckIn.adjustHint')}
-        accessibilityState={{ disabled: !emotion }}
-      >
-        <Text style={[styles.advancedText, !emotion && styles.advancedTextDisabled]}>
-          {t('sentir.visualCheckIn.adjustTimeFocus')}
-        </Text>
-      </TouchableOpacity>
+      {!hideAdvancedLink ? (
+        <TouchableOpacity
+          onPress={handleAdvanced}
+          disabled={!emotion}
+          style={styles.advancedLink}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel={t('sentir.visualCheckIn.adjustTimeFocus')}
+          accessibilityHint={t('sentir.visualCheckIn.adjustHint')}
+          accessibilityState={{ disabled: !emotion }}
+        >
+          <Text style={[styles.advancedText, !emotion && styles.advancedTextDisabled]}>
+            {t('sentir.visualCheckIn.adjustTimeFocus')}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -166,10 +201,14 @@ export function SentirVisualCheckIn({ emotions, onSaved }: SentirVisualCheckInPr
           <ActivityIndicator color={THEME.colors.gradient.blue} style={styles.spinner} />
         ) : (
           <GradientButton
-            title={t('sentir.visualCheckIn.continue')}
+            title={
+              embedded ? t('hoy.inicio.saveCheckIn') : t('sentir.visualCheckIn.continue')
+            }
             onPress={() => void handleSave()}
             disabled={!canSubmit}
-            accessibilityLabel={t('sentir.visualCheckIn.continue')}
+            accessibilityLabel={
+              embedded ? t('hoy.inicio.saveCheckIn') : t('sentir.visualCheckIn.continue')
+            }
             accessibilityHint={t('sentirExtra.continueA11yHint')}
           />
         )}
@@ -227,9 +266,25 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     backgroundColor: THEME.colors.tint.blue.veryFaint,
   },
+  emotionChipEmbedded: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    padding: 0,
+    justifyContent: 'center',
+  },
+  emotionChipEmbeddedSelected: {
+    borderColor: THEME.colors.gradient.pink,
+    backgroundColor: THEME.colors.fill[100],
+    transform: [{ scale: 1.06 }],
+  },
   emotionEmoji: {
     fontSize: 36,
     marginBottom: 6,
+  },
+  emotionEmojiEmbedded: {
+    fontSize: 32,
+    marginBottom: 0,
   },
   emotionLabel: {
     ...THEME.typography.small,

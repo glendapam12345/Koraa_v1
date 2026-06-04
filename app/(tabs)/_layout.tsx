@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Tabs, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/constants/theme';
-import { Home, Edit3, Heart, User, Calendar, Lightbulb } from 'lucide-react-native';
+import { Home, User, Calendar, Lightbulb, Sparkles } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { resolvePostAuthGate } from '@/lib/onboardingGate';
 import { AppLoadingGate } from '@/components/AppLoadingGate';
@@ -35,7 +35,6 @@ export default function TabLayout() {
 
   const flowTabLabels = {
     tasks: hasCheckInToday ? t('tabs.a11yTasks') : t('tabs.a11yTasksFlowStep'),
-    feel: hasCheckInToday ? t('tabs.a11yFeel') : t('tabs.a11yFeelFlowStep'),
     today: hasCheckInToday ? t('tabs.a11yToday') : t('tabs.a11yTodayFlowStep'),
   };
 
@@ -169,33 +168,29 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="vaciar"
-          options={{
-            title: t('tabs.tasks'),
-            tabBarAccessibilityLabel: flowTabLabels.tasks,
-            tabBarIcon: ({ size, color }) => (
-              <Edit3 size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="sentir"
-          options={{
-            title: t('tabs.feel'),
-            tabBarAccessibilityLabel: flowTabLabels.feel,
-            tabBarIcon: ({ size, color }) => (
-              <Heart size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
           name="semana"
           options={{
             title: t('tabs.week'),
-            tabBarAccessibilityLabel: t('tabs.a11yWeekOptional'),
+            tabBarAccessibilityLabel: t('tabs.a11yWeekCalendar'),
             tabBarIcon: ({ size, color }) => (
               <Calendar size={size} color={color} />
             ),
+          }}
+        />
+        <Tabs.Screen
+          name="parami"
+          options={{
+            title: t('tabs.paraMi'),
+            tabBarAccessibilityLabel: t('tabs.a11yParaMi'),
+            tabBarIcon: ({ size, color }) => (
+              <Sparkles size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="vaciar"
+          options={{
+            href: null,
           }}
         />
         <Tabs.Screen

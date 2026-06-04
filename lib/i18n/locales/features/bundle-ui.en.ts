@@ -103,9 +103,11 @@ export const uiEn = {
     a11yHint: 'Opens the Premium subscription screen',
     semanaBody:
       'On the free plan you see {{days}} days of the week. Premium unlocks all 7 days, more filters, and full history.',
-    tipsBody: 'Premium unlocks unlimited tips and recommendations based on how you feel.',
+    tipsBody: 'Premium unlocks unlimited tips and recommendations based on your check-in in Today.',
     tipsFreeLimit: 'Free: {{recommendations}} recommendations and up to {{tips}} tips.',
     yoBody: 'Manage your subscription or unlock the full experience whenever you want.',
+    yoPatternsBody:
+      'Premium unlocks 30-day history, energy and emotion charts, and more detailed patterns.',
   },
   paywallExtra: {
     fallbackMonthlyPrice: 'MX$49 / month',
@@ -333,6 +335,7 @@ export const uiEn = {
     intro2ContinueHint: 'Next intro screen',
   },
   sentirExtra: {
+    a11yClose: 'Close check-in',
     a11yHelp: 'Help and FAQ',
     a11yHelpHint: 'Opens help about Feel, Tasks, and Today',
     a11yDismissRitual: 'Got it, hide ritual explanation',
@@ -343,11 +346,11 @@ export const uiEn = {
     continueA11yHint: 'Continue with energy, time, and focus for the day',
   },
   tipsExtra: {
-    a11yGoFeel: 'Go to Feel to check in',
-    emptySecondary: 'Complete your check-in on Feel to see personalized tips.',
+    a11yGoFeel: 'Go to Today to check in',
+    emptySecondary: 'Your check-in in Today unlocks personalized tips.',
     emptySecondaryLead: 'You can also open the ',
-    emptySecondaryTab: 'Feel',
-    emptySecondaryTrail: ' tab below and log how you feel',
+    emptySecondaryTab: 'Today',
+    emptySecondaryTrail: ' tab and log how you feel',
   },
   yoExtra2: {
     a11yManagePremium: 'View Premium options and restore purchase',

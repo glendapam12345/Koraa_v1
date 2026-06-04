@@ -15,6 +15,8 @@ import { generatePersonalizedRecommendations } from '@/lib/personalizedRecommend
 import { Lightbulb, Moon, Zap, Brain, Sparkles, Heart, Plus } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
+import { ScreenIntroCard } from '@/components/ui/ScreenIntroCard';
+import { StepBadge } from '@/components/ui/StepBadge';
 import type { TranslationKey } from '@/lib/i18n';
 
 const TIPS_TOOLTIP_SEEN_KEY = 'koraa_tips_tooltip_seen';
@@ -260,16 +262,18 @@ export default function TipsScreen() {
           }
         >
         {!todayMood ? (
-          // Sin check-in hoy
           <View style={styles.emptyState}>
+            <Text style={styles.screenTitle}>{t('tips.title')}</Text>
+            <Text style={styles.screenSubtitle}>{t('tips.subtitle')}</Text>
+            <StepBadge step={1} label={t('hoy.inicio.stepFeel')} />
             <View style={styles.emptyIconContainer}>
-              <Lightbulb size={64} color={THEME.colors.gradient.blue} />
+              <Lightbulb size={56} color={THEME.colors.gradient.blue} />
             </View>
             <Text style={styles.emptyTitle}>{t('tips.emptyTitle')}</Text>
             <Text style={styles.emptyMessage}>{t('tips.emptyBody')}</Text>
             <TouchableOpacity
               style={styles.emptyCta}
-              onPress={() => router.push('/(tabs)/sentir')}
+              onPress={() => router.push('/(tabs)')}
               activeOpacity={0.88}
               accessibilityRole="button"
               accessibilityLabel={t('tipsExtra.a11yGoFeel')}
@@ -292,9 +296,11 @@ export default function TipsScreen() {
             </View>
           </View>
         ) : emotionData ? (
-          // Con check-in - mostrar tips del estado actual
           <>
-            {/* Header con estado actual */}
+            <Text style={styles.screenTitle}>{t('tips.title')}</Text>
+            <Text style={styles.screenSubtitle}>{t('tips.subtitle')}</Text>
+            <ScreenIntroCard>{t('tips.intro')}</ScreenIntroCard>
+
             <View style={styles.header}>
               <LinearGradient
                 colors={emotionData.color as [string, string]}
@@ -443,26 +449,40 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
   },
+  screenTitle: {
+    ...THEME.typography.h1,
+    fontSize: 28,
+    color: THEME.colors.text.main,
+    marginBottom: 4,
+    alignSelf: 'stretch',
+  },
+  screenSubtitle: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.md,
+    lineHeight: 22,
+    alignSelf: 'stretch',
+  },
   emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: THEME.spacing.xl * 2,
+    alignItems: 'stretch',
+    paddingVertical: THEME.spacing.lg,
   },
   emptyIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: THEME.colors.fill[200],
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: THEME.spacing.lg,
+    alignSelf: 'center',
+    marginVertical: THEME.spacing.md,
   },
   emptyTitle: {
     ...THEME.typography.h2,
     color: THEME.colors.text.main,
     marginBottom: THEME.spacing.sm,
     textAlign: 'center',
+    alignSelf: 'center',
   },
   emptyMessage: {
     ...THEME.typography.body,

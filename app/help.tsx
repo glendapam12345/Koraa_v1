@@ -21,6 +21,7 @@ import {
 } from '@/constants/legalUrls';
 import { ChevronLeft, ChevronDown, ChevronRight, ExternalLink, Mail } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { ScreenIntroCard } from '@/components/ui/ScreenIntroCard';
 
 type FaqItem = {
   id: string;
@@ -109,7 +110,7 @@ export default function HelpScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + THEME.spacing.xl }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.intro}>{t('help.intro')}</Text>
+        <ScreenIntroCard>{t('help.intro')}</ScreenIntroCard>
 
         <Text style={styles.sectionTitle}>{t('help.faqTitle')}</Text>
         {faqItems.map((item) => {

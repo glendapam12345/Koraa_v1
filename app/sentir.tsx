@@ -14,12 +14,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { EmotionCard } from '@/components/EmotionCard';
 import { GradientButton } from '@/components/GradientButton';
-import { FlowIndicator } from '@/components/FlowIndicator';
 import { getEmotionTips } from '@/lib/emotionTips';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { router, useFocusEffect } from 'expo-router';
-import { Plus, Lightbulb, Heart, CircleHelp } from 'lucide-react-native';
+import { Plus, Lightbulb, Heart, CircleHelp, X } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { getLocalDateString } from '@/lib/dateLocal';
@@ -42,6 +41,14 @@ const EMOTION_IDS = [
   { id: 'abrumada', emoji: '🥺' },
   { id: 'enfocada', emoji: '🎯' },
 ] as const;
+
+function closeCheckInModal() {
+  if (router.canGoBack()) {
+    router.back();
+    return;
+  }
+  router.replace('/(tabs)');
+}
 
 export default function SentirScreen() {
   const insets = useSafeAreaInsets();
@@ -195,13 +202,23 @@ export default function SentirScreen() {
     <View style={styles.container}>
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.sm }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.helpHeaderRow}>
+        <View style={styles.modalHeaderRow}>
+          <TouchableOpacity
+            onPress={closeCheckInModal}
+            style={styles.modalHeaderBtn}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={t('sentirExtra.a11yClose')}
+          >
+            <X size={THEME.sizes.iconStandard} color={THEME.colors.text.main} />
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>{t('sentir.modalTitle')}</Text>
           <TouchableOpacity
             onPress={() => router.push('/help')}
-            style={styles.helpHeaderBtn}
+            style={styles.modalHeaderBtn}
             activeOpacity={0.75}
             accessibilityRole="button"
             accessibilityLabel={t('sentirExtra.a11yHelp')}
@@ -210,8 +227,6 @@ export default function SentirScreen() {
             <CircleHelp size={THEME.sizes.iconStandard} color={THEME.colors.text.main} />
           </TouchableOpacity>
         </View>
-        {/* Indicador de flujo */}
-        <FlowIndicator currentStep="sentir" />
 
         {showRitualHint ? (
           <View style={styles.ritualHint}>
@@ -221,7 +236,7 @@ export default function SentirScreen() {
               </View>
               <View style={styles.ritualHintTextCol}>
                 <Text style={styles.ritualHintTitle}>{t('sentir.ritualTitle')}</Text>
-                <Text style={styles.ritualHintBody}>{t('sentir.ritualBody')}</Text>
+                <Text style={styles.ritualHintBody}>{t('sentir.ritualBodyModal')}</Text>
               </View>
             </View>
             <TouchableOpacity
@@ -258,11 +273,13 @@ export default function SentirScreen() {
           />
         )}
 
-        {/* Banner si no hay tareas - Paso 1 del flujo */}
-        {hasTasks === false && !todayCheckIn && (
+        {hasTasks === false && !todayCheckIn ? (
           <TouchableOpacity
             style={styles.noTasksBanner}
-            onPress={() => router.push('/(tabs)/vaciar')}
+            onPress={() => {
+              closeCheckInModal();
+              router.push('/(tabs)/vaciar');
+            }}
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel={t('sentirExtra.a11yNoTasks')}
@@ -281,7 +298,7 @@ export default function SentirScreen() {
               </View>
             </LinearGradient>
           </TouchableOpacity>
-        )}
+        ) : null}
 
         {todayCheckIn ? (
           <>
@@ -327,7 +344,7 @@ export default function SentirScreen() {
       </ScrollView>
 
       {todayCheckIn ? (
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, THEME.spacing.lg) }]}>
           <GradientButton
             title={t('sentir.continue')}
             onPress={handleContinue}
@@ -345,7 +362,7 @@ export default function SentirScreen() {
           onComplete={() => {
             setShowQuickRecheck(false);
             void loadTodayCheckIn();
-            router.push('/(tabs)');
+            closeCheckInModal();
           }}
           initialEmotion={todayCheckIn?.emotion ?? ''}
           initialEnergy={todayCheckIn?.energy_level ?? 0}
@@ -360,20 +377,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: THEME.colors.fill[100],
   },
-  helpHeaderRow: {
+  modalHeaderRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: THEME.spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: THEME.spacing.md,
   },
-  helpHeaderBtn: {
+  modalHeaderBtn: {
     padding: THEME.spacing.xs,
     minWidth: THEME.sizes.touchTarget,
     minHeight: THEME.sizes.touchTarget,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  modalTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    flex: 1,
+    textAlign: 'center',
+  },
   content: {
     padding: THEME.spacing.lg,
+    paddingBottom: THEME.spacing.xl,
   },
   title: {
     ...THEME.typography.h1,
@@ -460,7 +486,6 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: THEME.spacing.lg,
-    paddingBottom: THEME.spacing.xl,
   },
   noTasksBanner: {
     borderRadius: THEME.borderRadius.rounded,
@@ -486,21 +511,6 @@ const styles = StyleSheet.create({
   noTasksBannerSubtext: {
     ...THEME.typography.caption,
     color: THEME.colors.onGradientMuted,
-  },
-  flowGuide: {
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.md,
-  },
-  flowGuideText: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    lineHeight: 22,
-  },
-  flowGuideAccent: {
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.gradient.blue,
   },
   tipsSection: {
     marginTop: THEME.spacing.lg,

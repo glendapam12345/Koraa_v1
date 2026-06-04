@@ -31,7 +31,7 @@ import { logger } from '@/lib/logger';
 import { HoyDayFlowSection } from '@/components/hoy/HoyDayFlowSection';
 import { HoyWelcomeHeader } from '@/components/hoy/HoyWelcomeHeader';
 import { HoyLiteBanner } from '@/components/hoy/HoyLiteBanner';
-import { HoyCheckInHero } from '@/components/hoy/HoyCheckInHero';
+import { HoyInicioView } from '@/components/hoy/HoyInicioView';
 import { HoyQuickActions } from '@/components/hoy/HoyQuickActions';
 import { HoyMeditationCard } from '@/components/hoy/HoyMeditationCard';
 import { HoyTasksSection } from '@/components/hoy/HoyTasksSection';
@@ -64,6 +64,7 @@ const NoPendingTasksCelebration = lazy(() =>
 export default function TodayScreen() {
   const insets = useSafeAreaInsets();
   const { t, locale } = useI18n();
+  const [emotionPreview, setEmotionPreview] = useState('');
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [expandedDetailsTasks, setExpandedDetailsTasks] = useState<Set<string>>(new Set());
   /** Secciones de categoría expandidas (null = todas expandidas) */
@@ -105,6 +106,7 @@ export default function TodayScreen() {
     message: string;
     tip: string;
   }[]>([]);
+  const scrollRef = useRef<ScrollView>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backgroundLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoadingTasksRef = useRef<boolean>(false);
@@ -162,6 +164,20 @@ export default function TodayScreen() {
     const emotions = getCatalog(locale).sentir.emotions as Record<string, string>;
     return emotions[todayMood.toLowerCase()] ?? todayMood;
   }, [locale, todayMood]);
+
+  const inicioEmotions = useMemo(() => {
+    const catalog = getCatalog(locale).sentir.emotions as Record<string, string>;
+    const ids = ['agotada', 'tranquila', 'ansiosa', 'motivada', 'abrumada', 'enfocada'] as const;
+    const emojis: Record<(typeof ids)[number], string> = {
+      agotada: '😔',
+      tranquila: '😌',
+      ansiosa: '😰',
+      motivada: '✨',
+      abrumada: '🥺',
+      enfocada: '🎯',
+    };
+    return ids.map((id) => ({ id, emoji: emojis[id], label: catalog[id] ?? id }));
+  }, [locale]);
 
   const {
     tasks,
@@ -1120,7 +1136,8 @@ export default function TodayScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView 
+      <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[
           styles.content,
           {
@@ -1146,7 +1163,7 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {!loading && (
+        {!loading && !hoyPreFlowActive && (
           <HoyWelcomeHeader
             greeting={getGreeting}
             showUserActions={Boolean(user)}
@@ -1154,10 +1171,25 @@ export default function TodayScreen() {
           />
         )}
 
-        {!loading && <FlowIndicator currentStep={flowStepOnHoy} />}
+        {!loading && !hoyPreFlowActive && <FlowIndicator currentStep={flowStepOnHoy} />}
 
         {!loading && hoyPreFlowActive ? (
-          <HoyCheckInHero onCheckIn={() => router.push('/(tabs)/sentir')} />
+          <HoyInicioView
+            emotions={inicioEmotions}
+            onCheckInSaved={() => {
+              setEmotionPreview('');
+              void loadTodayCheckIn();
+              void loadTasks();
+            }}
+            taskCount={incompleteTasks.length}
+            onOpenCalendar={() => router.push('/(tabs)/semana')}
+            onMentalUnload={() => router.push('/(tabs)/vaciar')}
+            onScrollToCheckIn={() =>
+              scrollRef.current?.scrollTo({ y: 280, animated: true })
+            }
+            selectedEmotionPreview={emotionPreview}
+            onEmotionPreviewChange={setEmotionPreview}
+          />
         ) : null}
 
         {!loading && todayMood ? (
@@ -1193,7 +1225,7 @@ export default function TodayScreen() {
           />
         ) : null}
 
-        {!loading && (
+        {!loading && !hoyPreFlowActive && (
           <HoyTasksSection
             todayMood={todayMood}
             todayEmotionLabel={todayEmotionLabel}

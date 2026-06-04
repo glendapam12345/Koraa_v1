@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { FolderKanban, ChevronRight, ChevronLeft, Calendar, List, CheckCircle2, Plus, Heart } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 import { getLocalDateString } from '@/lib/dateLocal';
 
@@ -222,7 +223,7 @@ export default function ProyectosScreen() {
                 {!hasCheckInToday ? (
                   <TouchableOpacity
                     style={styles.inventoryFeelBtn}
-                    onPress={() => router.push('/(tabs)/sentir')}
+                    onPress={() => router.push(CHECK_IN_ROUTE)}
                     activeOpacity={0.85}
                     accessibilityRole="button"
                     accessibilityLabel={t('projects.inventoryGoFeelA11y')}

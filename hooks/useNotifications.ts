@@ -7,6 +7,7 @@ import { getDailyReminderTime } from '@/lib/notificationPreferences';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { type AppLocale, translate } from '@/lib/i18n';
 import { getLocalDateString } from '@/lib/dateLocal';
+import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 
 const LOCALE_STORAGE_KEY = 'koraa_app_locale_v1';
 
@@ -62,7 +63,7 @@ export function useNotifications() {
       // Navegar a la pantalla correspondiente según el tipo de notificación
       if (notificationData?.type === 'daily_checkin_reminder') {
         import('expo-router').then(({ router }) => {
-          router.push('/(tabs)/sentir');
+          router.push(CHECK_IN_ROUTE);
         });
       }
       if (notificationData?.type === RECHECK_REMINDER_TYPE) {

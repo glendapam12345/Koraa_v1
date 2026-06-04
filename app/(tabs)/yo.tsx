@@ -25,6 +25,7 @@ import {
   Folder,
   RotateCcw,
   Flame,
+  Sparkles,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase, getErrorMessage } from '@/lib/supabase';
@@ -35,16 +36,15 @@ import { pickDailyStreakEncouragement, getLocalDateKey } from '@/lib/streakDaily
 import { ProgressChart } from '@/components/ProgressChart';
 import { StreakAura } from '@/components/branding/StreakAura';
 import * as Haptics from 'expo-haptics';
-import { generateEmotionalInsights } from '@/lib/emotionalInsights';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { useI18n } from '@/contexts/I18nContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ScreenIntroCard } from '@/components/ui/ScreenIntroCard';
 import Constants from 'expo-constants';
 const WINDOW_H = Dimensions.get('window').height;
 const PROFILE_MODAL_SCROLL_MAX = Math.min(WINDOW_H * 0.58, 520);
 
 const STREAK_EXPLAINER_DISMISSED_KEY = 'koraa_streak_explainer_dismissed_v1';
-
 type DayData = {
   date: string;
   hasCheckIn: boolean;
@@ -376,11 +376,6 @@ export default function ProfileScreen() {
   const totalDays = progressData.length;
   const consistencyPercentage = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
-  // Generar insights emocionales
-  const emotionalInsights = useMemo(() => {
-    return generateEmotionalInsights(progressData, currentStreak, locale);
-  }, [progressData, currentStreak, locale]);
-
   const displayName = useMemo(() => {
     const fromProfile = profile.full_name?.trim();
     if (fromProfile) return fromProfile;
@@ -574,6 +569,8 @@ export default function ProfileScreen() {
           </View>
         </TouchableOpacity>
 
+        <ScreenIntroCard>{t('yo.intro')}</ScreenIntroCard>
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('yo.progressTitle')}</Text>
           
@@ -647,25 +644,24 @@ export default function ProfileScreen() {
             </View>
             <ProgressChart data={progressData} />
           </View>
-
-          {/* Insights emocionales */}
-          {emotionalInsights.length > 0 && (
-            <View style={styles.insightsCard}>
-              <Text style={styles.insightsTitle}>{t('yo.patternsTitle')}</Text>
-              {emotionalInsights.map((insight, index) => (
-                <View key={index} style={styles.insightItem}>
-                  {insight.emoji && (
-                    <Text style={styles.insightEmoji}>{insight.emoji}</Text>
-                  )}
-                  <Text style={styles.insightText}>{insight.message}</Text>
-                </View>
-              ))}
-            </View>
-          )}
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('yo.myProfileSection')}</Text>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            activeOpacity={0.7}
+            onPress={() => router.push('/(tabs)/parami')}
+            accessibilityRole="button"
+            accessibilityLabel={t('tabs.paraMi')}
+          >
+            <Sparkles size={24} color={THEME.colors.gradient.pink} />
+            <View style={styles.menuItemContent}>
+              <Text style={styles.menuItemText}>{t('tabs.paraMi')}</Text>
+              <Text style={styles.menuItemSubtext}>{t('parami.subtitle')}</Text>
+            </View>
+          </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.menuItem} 
@@ -1439,6 +1435,24 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.sm,
     marginTop: THEME.spacing.md,
     ...THEME.shadows.soft,
+  },
+  paraMiSubtitle: {
+    ...THEME.typography.body,
+    fontSize: 14,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.md,
+  },
+  patternsSectionTitle: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: THEME.spacing.sm,
+    marginTop: THEME.spacing.xs,
+  },
+  premiumTeaserWrap: {
+    marginHorizontal: -THEME.spacing.lg,
   },
   insightsTitle: {
     fontSize: 16,

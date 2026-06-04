@@ -6,19 +6,36 @@ import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useWeekTasks, getWeekOptions } from '@/hooks/useWeekTasks';
+import { useMonthCalendar } from '@/hooks/useMonthCalendar';
 import type { Task } from '@/hooks/useTasks';
 import { getSupabaseEnvStatus } from '@/lib/envCheck';
-import { Calendar, Plus, FolderKanban, FileText, ChevronRight, ChevronLeft } from 'lucide-react-native';
+import {
+  Plus,
+  FolderKanban,
+  FileText,
+  ChevronRight,
+  ChevronLeft,
+  Download,
+  Brain,
+} from 'lucide-react-native';
+import { shareTasksCsv } from '@/lib/exportTasksCsv';
 import { router } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
 import { PremiumTeaserCard } from '@/components/PremiumTeaserCard';
 import { FocusProgressBar } from '@/components/FocusProgressBar';
+import { SemanaCalendarGrid } from '@/components/semana/SemanaCalendarGrid';
+import { SemanaCalendarLegend } from '@/components/semana/SemanaCalendarLegend';
+import { ScreenIntroCard } from '@/components/ui/ScreenIntroCard';
 import { getTodayPriorityStats } from '@/lib/priorityProgress';
 import { getLocalDateString } from '@/lib/dateLocal';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
 const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
+const MONTH_NAMES_FULL_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'] as const;
+const MONTH_NAMES_FULL_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as const;
 const FREE_VISIBLE_DAYS = 3;
+
+type ViewMode = 'calendar' | 'list';
 
 function formatDayLabel(dateStr: string, months: readonly string[]): string {
   const dayNum = parseInt(dateStr.slice(8, 10), 10);
@@ -30,15 +47,31 @@ export default function SemanaScreen() {
   const insets = useSafeAreaInsets();
   const { t, locale } = useI18n();
   const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
+  const monthNamesFull = locale === 'en' ? MONTH_NAMES_FULL_EN : MONTH_NAMES_FULL_ES;
   const { user } = useAuth();
   const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   void toastMessage; // used by showToast; Toast UI not rendered on this screen
+  const [viewMode, setViewMode] = useState<ViewMode>('calendar');
+  const todayStr = getLocalDateString();
+  const todayDate = useMemo(() => new Date(), []);
+  const [calendarYear, setCalendarYear] = useState(todayDate.getFullYear());
+  const [calendarMonth, setCalendarMonth] = useState(todayDate.getMonth());
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [selectedWeekStart, setSelectedWeekStart] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const showToast = useCallback((msg: string) => setToastMessage(msg), []);
+  const showToast = useCallback(
+    (msg: string, _type: 'success' | 'error' | 'info' = 'info') => setToastMessage(msg),
+    [],
+  );
 
   const { weekTasks, projects, loading, loadWeekTasks, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast, locale);
+  const { days: calendarDays, tasksByDate, loading: monthLoading, loadMonth } = useMonthCalendar(
+    calendarYear,
+    calendarMonth,
+    showToast,
+    locale,
+  );
   const envStatus = getSupabaseEnvStatus();
   const supabaseEnvOk = envStatus.url && envStatus.key;
 
@@ -74,8 +107,28 @@ export default function SemanaScreen() {
       : t('semanaExtra.weekFallback'));
 
   useEffect(() => {
-    loadWeekTasks(selectedWeekStart || undefined);
-  }, [loadWeekTasks, selectedWeekStart]);
+    if (viewMode === 'list') {
+      loadWeekTasks(selectedWeekStart || undefined);
+    }
+  }, [loadWeekTasks, selectedWeekStart, viewMode]);
+
+  useEffect(() => {
+    if (viewMode === 'calendar') {
+      loadMonth();
+    }
+  }, [loadMonth, viewMode, calendarYear, calendarMonth]);
+
+  useEffect(() => {
+    if (viewMode === 'list' && projects.length === 0) {
+      loadWeekTasks(selectedWeekStart || undefined);
+    }
+  }, [viewMode, projects.length, loadWeekTasks, selectedWeekStart]);
+
+  useEffect(() => {
+    if (viewMode === 'calendar' && projects.length === 0) {
+      loadWeekTasks(undefined);
+    }
+  }, [viewMode, projects.length, loadWeekTasks]);
 
   const handlePrevWeek = useCallback(() => {
     if (!canGoPrev) return;
@@ -86,6 +139,43 @@ export default function SemanaScreen() {
     if (!canGoNext) return;
     setSelectedWeekStart(weekOptions[weekIndex + 1].start);
   }, [canGoNext, weekIndex, weekOptions]);
+
+  const canGoPrevMonth = isSubscribed;
+  const canGoNextMonth = isSubscribed;
+  const monthNavLabel = `${monthNamesFull[calendarMonth]} ${calendarYear}`;
+
+  const handlePrevMonth = useCallback(() => {
+    if (!canGoPrevMonth) return;
+    if (calendarMonth === 0) {
+      setCalendarYear((y) => y - 1);
+      setCalendarMonth(11);
+    } else {
+      setCalendarMonth((m) => m - 1);
+    }
+  }, [canGoPrevMonth, calendarMonth]);
+
+  const handleNextMonth = useCallback(() => {
+    if (!canGoNextMonth) return;
+    if (calendarMonth === 11) {
+      setCalendarYear((y) => y + 1);
+      setCalendarMonth(0);
+    } else {
+      setCalendarMonth((m) => m + 1);
+    }
+  }, [canGoNextMonth, calendarMonth]);
+
+  const handleRefresh = useCallback(() => {
+    if (viewMode === 'calendar') {
+      loadMonth();
+      if (projects.length === 0) {
+        loadWeekTasks(selectedWeekStart || undefined);
+      }
+    } else {
+      loadWeekTasks(selectedWeekStart || undefined);
+    }
+  }, [viewMode, loadMonth, loadWeekTasks, projects.length, selectedWeekStart]);
+
+  const isRefreshing = viewMode === 'calendar' ? monthLoading : loading;
 
   const projectsMap = Object.fromEntries(projects.map((p) => [p.id, p]));
 
@@ -102,7 +192,13 @@ export default function SemanaScreen() {
     return filteredWeekTasks.slice(0, FREE_VISIBLE_DAYS);
   }, [isSubscribed, filteredWeekTasks]);
 
-  const todayStr = getLocalDateString();
+  const selectedDayData = useMemo(
+    () => calendarDays.find((d) => d.dateStr === selectedDate),
+    [calendarDays, selectedDate],
+  );
+  const selectedDayTasks = tasksByDate[selectedDate] ?? [];
+  const selectedDayLabel = formatDayLabel(selectedDate, monthNames);
+
   const todayWeekTasks = useMemo(() => {
     const todayDay = filteredWeekTasks.find(({ day }) => day.dateStr === todayStr);
     return todayDay?.tasks ?? [];
@@ -115,6 +211,21 @@ export default function SemanaScreen() {
 
   const weekIncludesToday = filteredWeekTasks.some(({ day }) => day.dateStr === todayStr);
 
+  const exportableTasks = useMemo(() => {
+    if (viewMode === 'calendar') {
+      return Object.values(tasksByDate).flat();
+    }
+    return filteredWeekTasks.flatMap(({ tasks }) => tasks);
+  }, [viewMode, tasksByDate, filteredWeekTasks]);
+
+  const handleExportTasks = useCallback(async () => {
+    if (exportableTasks.length === 0) {
+      showToast(t('semana.exportEmpty'), 'info');
+      return;
+    }
+    await shareTasksCsv(exportableTasks, t('semana.exportTitle'));
+  }, [exportableTasks, showToast, t]);
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -122,8 +233,8 @@ export default function SemanaScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={loading}
-            onRefresh={() => loadWeekTasks(selectedWeekStart || undefined)}
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
             tintColor={THEME.colors.gradient.blue}
           />
         }
@@ -133,22 +244,35 @@ export default function SemanaScreen() {
           style={styles.headerGradient}
         >
           <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => router.push('/(tabs)/vaciar')}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel={t('semanaExtra.a11yOpenAddTasks')}
-              style={styles.headerCalendarButtonWrap}
-            >
-              <LinearGradient
-                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.headerCalendarButton}
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                onPress={() => router.push('/(tabs)/vaciar')}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={t('semana.brainDumpA11y')}
+                style={styles.headerIconButtonWrap}
               >
-                <Calendar size={22} color={THEME.colors.onGradient} />
-              </LinearGradient>
-            </TouchableOpacity>
+                <LinearGradient
+                  colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.headerIconButton}
+                >
+                  <Brain size={22} color={THEME.colors.onGradient} />
+                </LinearGradient>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => void handleExportTasks()}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={t('semana.exportA11y')}
+                style={styles.headerIconButtonWrap}
+              >
+                <View style={[styles.headerIconButton, styles.headerIconButtonPlain]}>
+                  <Download size={22} color={THEME.colors.gradient.blue} />
+                </View>
+              </TouchableOpacity>
+            </View>
             <View style={styles.headerTextWrap}>
               <Text style={styles.title}>{t('semana.title')}</Text>
               <Text style={styles.subtitle}>{t('semana.subtitle')}</Text>
@@ -159,6 +283,196 @@ export default function SemanaScreen() {
           </View>
         </LinearGradient>
 
+        <View style={styles.viewToggle}>
+          <TouchableOpacity
+            style={[styles.viewToggleChip, viewMode === 'calendar' && styles.viewToggleChipActive]}
+            onPress={() => setViewMode('calendar')}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityState={{ selected: viewMode === 'calendar' }}
+            accessibilityLabel={t('semana.viewCalendar')}
+          >
+            {viewMode === 'calendar' ? (
+              <LinearGradient
+                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.viewToggleGradient}
+              >
+                <Text style={styles.viewToggleTextActive}>{t('semana.viewCalendar')}</Text>
+              </LinearGradient>
+            ) : (
+              <Text style={styles.viewToggleText}>{t('semana.viewCalendar')}</Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.viewToggleChip, viewMode === 'list' && styles.viewToggleChipActive]}
+            onPress={() => setViewMode('list')}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityState={{ selected: viewMode === 'list' }}
+            accessibilityLabel={t('semana.viewList')}
+          >
+            {viewMode === 'list' ? (
+              <LinearGradient
+                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.viewToggleGradient}
+              >
+                <Text style={styles.viewToggleTextActive}>{t('semana.viewList')}</Text>
+              </LinearGradient>
+            ) : (
+              <Text style={styles.viewToggleText}>{t('semana.viewList')}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <ScreenIntroCard>{t('semana.intro')}</ScreenIntroCard>
+
+        {viewMode === 'calendar' ? (
+          <>
+            <View style={styles.calendarSection}>
+              <SemanaCalendarLegend />
+            </View>
+
+            <View style={styles.weekNav}>
+              <TouchableOpacity
+                style={[styles.weekNavButton, !canGoPrevMonth && styles.weekNavButtonDisabled]}
+                onPress={handlePrevMonth}
+                disabled={!canGoPrevMonth}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={t('semana.monthNavA11yPrev')}
+              >
+                <ChevronLeft
+                  size={22}
+                  color={canGoPrevMonth ? THEME.colors.gradient.blue : THEME.colors.text.secondary}
+                />
+                <Text style={[styles.weekNavButtonText, !canGoPrevMonth && styles.weekNavButtonTextDisabled]}>
+                  {t('semana.prev')}
+                </Text>
+              </TouchableOpacity>
+              <View style={styles.weekNavCenterWrap}>
+                <LinearGradient
+                  colors={THEME.colors.gradientTint.weekNav}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.weekNavCenter}
+                >
+                  <Text style={styles.weekNavLabel} numberOfLines={1}>
+                    {monthNavLabel}
+                  </Text>
+                </LinearGradient>
+              </View>
+              <TouchableOpacity
+                style={[styles.weekNavButton, !canGoNextMonth && styles.weekNavButtonDisabled]}
+                onPress={handleNextMonth}
+                disabled={!canGoNextMonth}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={t('semana.monthNavA11yNext')}
+              >
+                <Text style={[styles.weekNavButtonText, !canGoNextMonth && styles.weekNavButtonTextDisabled]}>
+                  {t('semana.next')}
+                </Text>
+                <ChevronRight
+                  size={22}
+                  color={canGoNextMonth ? THEME.colors.gradient.blue : THEME.colors.text.secondary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {monthLoading ? (
+              <Text style={styles.loadingWeek}>{t('semana.loadingDays')}</Text>
+            ) : (
+              <View style={styles.calendarGridWrap}>
+                <SemanaCalendarGrid
+                  days={calendarDays}
+                  selectedDate={selectedDate}
+                  onSelectDate={setSelectedDate}
+                />
+              </View>
+            )}
+
+            <View style={styles.daySection}>
+              <View style={styles.dayHeader}>
+                <Text style={styles.dayLabel} numberOfLines={1}>
+                  {t('semana.selectedDayTitle', { day: selectedDayLabel })}
+                </Text>
+              </View>
+              <View style={styles.dayBody}>
+                {selectedDayData?.emotion ? (
+                  <Text style={styles.selectedDayCheckIn}>
+                    {t('semana.selectedDayCheckIn', {
+                      emotion: t(`sentir.emotions.${selectedDayData.emotion}` as 'sentir.emotions.tranquila'),
+                      energy: selectedDayData.energyLevel ?? '—',
+                    })}
+                  </Text>
+                ) : (
+                  <Text style={styles.selectedDayNoCheckIn}>{t('semana.selectedDayNoCheckIn')}</Text>
+                )}
+
+                {selectedDayTasks.length === 0 ? (
+                  <View style={styles.emptyDay}>
+                    <Text style={styles.emptyDayEmoji}>📅</Text>
+                    <Text style={styles.emptyDayText}>{t('semana.emptyDay')}</Text>
+                    <Text style={styles.emptyDayHint}>{t('semana.emptyHint')}</Text>
+                    <TouchableOpacity
+                      style={styles.addDayButtonWrap}
+                      onPress={() => router.push(`/(tabs)/vaciar?date=${selectedDate}`)}
+                      activeOpacity={0.85}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t('semana.addTasks')} ${selectedDayLabel}`}
+                    >
+                      <LinearGradient
+                        colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.addDayButton}
+                      >
+                        <Plus size={18} color={THEME.colors.onGradient} />
+                        <Text style={styles.addDayButtonText}>{t('semana.addTasks')}</Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <>
+                    <View style={styles.taskList}>
+                      {selectedDayTasks.map((task) => (
+                        <WeekTaskItem
+                          key={task.id}
+                          task={task}
+                          projectName={
+                            task.project_id
+                              ? projectsMap[task.project_id]?.name || t('semana.projectFallback')
+                              : null
+                          }
+                          projectColor={
+                            task.project_id
+                              ? projectsMap[task.project_id]?.color || THEME.colors.gradient.blue
+                              : undefined
+                          }
+                        />
+                      ))}
+                    </View>
+                    <TouchableOpacity
+                      style={styles.addDayButtonOutlined}
+                      onPress={() => router.push(`/(tabs)/vaciar?date=${selectedDate}`)}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t('semana.addMore')} ${selectedDayLabel}`}
+                    >
+                      <Plus size={16} color={THEME.colors.gradient.blue} />
+                      <Text style={styles.addDayButtonTextOutlined}>{t('semana.addMore')}</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            </View>
+          </>
+        ) : (
+          <>
         <View style={styles.weekNav}>
           <TouchableOpacity
             style={[styles.weekNavButton, !canGoPrev && styles.weekNavButtonDisabled]}
@@ -348,6 +662,9 @@ export default function SemanaScreen() {
           </View>
         ))}
 
+          </>
+        )}
+
         <View style={styles.bottomSection}>
           <TouchableOpacity
             style={styles.addButton}
@@ -507,17 +824,26 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.md,
     gap: THEME.spacing.md,
   },
-  headerCalendarButtonWrap: {
+  headerActions: {
+    flexDirection: 'row',
+    gap: THEME.spacing.xs,
+  },
+  headerIconButtonWrap: {
     borderRadius: 22,
     overflow: 'hidden',
     ...THEME.shadows.soft,
   },
-  headerCalendarButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  headerIconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerIconButtonPlain: {
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
   },
   headerTextWrap: {
     flex: 1,
@@ -535,6 +861,58 @@ const styles = StyleSheet.create({
   },
   focusProgress: {
     marginTop: THEME.spacing.sm,
+  },
+  viewToggle: {
+    flexDirection: 'row',
+    marginHorizontal: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
+    gap: THEME.spacing.sm,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.pill,
+    padding: 4,
+  },
+  viewToggleChip: {
+    flex: 1,
+    borderRadius: THEME.borderRadius.pill,
+    overflow: 'hidden',
+  },
+  viewToggleChipActive: {},
+  viewToggleGradient: {
+    paddingVertical: THEME.spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: THEME.borderRadius.pill,
+  },
+  viewToggleText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+    paddingVertical: THEME.spacing.sm,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  viewToggleTextActive: {
+    ...THEME.typography.caption,
+    color: THEME.colors.onGradient,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  calendarSection: {
+    marginHorizontal: THEME.spacing.lg,
+    marginBottom: THEME.spacing.sm,
+  },
+  calendarGridWrap: {
+    marginHorizontal: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
+  },
+  selectedDayCheckIn: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.sm,
+  },
+  selectedDayNoCheckIn: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontStyle: 'italic',
+    marginBottom: THEME.spacing.sm,
   },
   weekNav: {
     flexDirection: 'row',

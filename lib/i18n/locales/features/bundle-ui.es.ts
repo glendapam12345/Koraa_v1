@@ -103,9 +103,11 @@ export const uiEs = {
     a11yHint: 'Abre la pantalla de suscripción Premium',
     semanaBody:
       'En gratis ves {{days}} días de la semana. Premium desbloquea los 7 días, más filtros e historial completo.',
-    tipsBody: 'Premium desbloquea consejos y recomendaciones ilimitados según cómo te sientes.',
+    tipsBody: 'Premium desbloquea consejos y recomendaciones ilimitados según tu check-in en Hoy.',
     tipsFreeLimit: 'Gratis: {{recommendations}} recomendaciones y hasta {{tips}} consejos.',
     yoBody: 'Gestiona tu suscripción o desbloquea la experiencia completa cuando quieras.',
+    yoPatternsBody:
+      'Premium desbloquea historial de 30 días, gráficos de energía y emociones, y patrones más detallados.',
   },
   paywallExtra: {
     fallbackMonthlyPrice: 'MX$49 / mes',
@@ -333,6 +335,7 @@ export const uiEs = {
     intro2ContinueHint: 'Siguiente pantalla de la introducción',
   },
   sentirExtra: {
+    a11yClose: 'Cerrar check-in',
     a11yHelp: 'Ayuda y preguntas frecuentes',
     a11yHelpHint: 'Abre la pantalla de ayuda con preguntas sobre Sentir, Tareas y Hoy',
     a11yDismissRitual: 'Entendido, ocultar explicación del ritual',
@@ -343,11 +346,11 @@ export const uiEs = {
     continueA11yHint: 'Continúa con energía, tiempo y enfoque del día',
   },
   tipsExtra: {
-    a11yGoFeel: 'Ir a Sentir para hacer check-in',
-    emptySecondary: 'Completa tu check-in en Sentir para ver consejos personalizados.',
+    a11yGoFeel: 'Ir a Hoy para hacer check-in',
+    emptySecondary: 'Tu check-in en Hoy desbloquea consejos personalizados.',
     emptySecondaryLead: 'También puedes abrir la pestaña ',
-    emptySecondaryTab: 'Sentir',
-    emptySecondaryTrail: ' abajo y registrar cómo te sientes',
+    emptySecondaryTab: 'Hoy',
+    emptySecondaryTrail: ' y registrar cómo te sientes',
   },
   yoExtra2: {
     a11yManagePremium: 'Ver opciones Premium y restaurar compra',
