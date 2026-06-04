@@ -31,6 +31,7 @@ import { logger } from '@/lib/logger';
 import { HoyDayFlowSection } from '@/components/hoy/HoyDayFlowSection';
 import { HoyWelcomeHeader } from '@/components/hoy/HoyWelcomeHeader';
 import { HoyLiteBanner } from '@/components/hoy/HoyLiteBanner';
+import { HoyCheckInHero } from '@/components/hoy/HoyCheckInHero';
 import { HoyQuickActions } from '@/components/hoy/HoyQuickActions';
 import { HoyMeditationCard } from '@/components/hoy/HoyMeditationCard';
 import { HoyTasksSection } from '@/components/hoy/HoyTasksSection';
@@ -1154,6 +1155,10 @@ export default function TodayScreen() {
         )}
 
         {!loading && <FlowIndicator currentStep={flowStepOnHoy} />}
+
+        {!loading && hoyPreFlowActive ? (
+          <HoyCheckInHero onCheckIn={() => router.push('/(tabs)/sentir')} />
+        ) : null}
 
         {!loading && todayMood ? (
           <HoyDayFlowSection

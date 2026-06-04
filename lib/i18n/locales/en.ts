@@ -271,6 +271,14 @@ export const en: DeepStrings<typeof es> = {
     noTasksSub: 'Go to Tasks to add what you need to do today, then come back here',
     tipsFor: 'Tips for {{emotion}}',
     continue: 'Continue',
+    visualCheckIn: {
+      bubble: 'How are you feeling?',
+      energyLabel: 'Your energy',
+      continue: 'Save and see my Today',
+      error: 'Could not save your check-in. Please try again.',
+      adjustTimeFocus: 'Adjust time and focus',
+      adjustHint: 'Optional: set how much time you have and your focus level',
+    },
     emotions: {
       agotada: 'Exhausted',
       tranquila: 'Calm',
@@ -295,6 +303,11 @@ export const en: DeepStrings<typeof es> = {
     howItWorksBodyNoTasks:
       'Start in Tasks: write what’s on your mind. Then Feel picks your focus tasks and you’ll see them here.',
     goToFeel: 'Go to Feel',
+    checkInHero: {
+      title: 'How are you feeling today?',
+      subtitle: 'One minute in Feel and Koraa lines up your focus tasks.',
+      cta: 'Do check-in',
+    },
     updateFeel: 'Update in Feel',
     howItWorksBodyCheckedIn:
       'Your focus tasks are in the list below (2–5 tasks). If your mood shifts, update in Feel.',

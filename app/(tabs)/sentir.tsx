@@ -24,6 +24,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { SentirTodayCheckInCard } from '@/components/sentir/SentirTodayCheckInCard';
+import { SentirVisualCheckIn } from '@/components/sentir/SentirVisualCheckIn';
 
 const QuickRecheckInModal = lazy(() =>
   import('@/components/QuickRecheckInModal').then((module) => ({
@@ -235,25 +236,30 @@ export default function SentirScreen() {
           </View>
         ) : null}
 
-        <Text style={styles.title}>{t('sentir.title')}</Text>
-        <Text style={styles.titleAccent}>{t('sentir.titleAccent')}</Text>
-        <Text style={styles.subtitle}>{t('sentir.subtitle')}</Text>
-
-        <Text style={styles.description}>{t('sentir.description')}</Text>
-        <Text style={styles.inclusiveNote}>{t('sentir.inclusiveNote')}</Text>
-
         {todayCheckIn ? (
-          <SentirTodayCheckInCard
-            emotion={todayCheckIn.emotion}
-            emotionLabel={todayEmotionLabel}
-            energyLevel={todayCheckIn.energy_level}
-            onQuickRecheck={() => setShowQuickRecheck(true)}
-            onFullCheckIn={scrollToFullCheckIn}
+          <>
+            <Text style={styles.title}>{t('sentir.title')}</Text>
+            <Text style={styles.titleAccent}>{t('sentir.titleAccent')}</Text>
+            <Text style={styles.subtitle}>{t('sentir.subtitle')}</Text>
+            <Text style={styles.description}>{t('sentir.description')}</Text>
+            <Text style={styles.inclusiveNote}>{t('sentir.inclusiveNote')}</Text>
+            <SentirTodayCheckInCard
+              emotion={todayCheckIn.emotion}
+              emotionLabel={todayEmotionLabel}
+              energyLevel={todayCheckIn.energy_level}
+              onQuickRecheck={() => setShowQuickRecheck(true)}
+              onFullCheckIn={scrollToFullCheckIn}
+            />
+          </>
+        ) : (
+          <SentirVisualCheckIn
+            emotions={emotions}
+            onSaved={() => void loadTodayCheckIn()}
           />
-        ) : null}
+        )}
 
         {/* Banner si no hay tareas - Paso 1 del flujo */}
-        {hasTasks === false && (
+        {hasTasks === false && !todayCheckIn && (
           <TouchableOpacity
             style={styles.noTasksBanner}
             onPress={() => router.push('/(tabs)/vaciar')}
@@ -277,55 +283,60 @@ export default function SentirScreen() {
           </TouchableOpacity>
         )}
 
-        <View
-          onLayout={(e) => {
-            emotionsSectionY.current = e.nativeEvent.layout.y;
-          }}
-          style={styles.emotionsGrid}
-          accessibilityRole="radiogroup"
-          accessibilityLabel={t('sentirExtra.emotionGroupA11y')}
-        >
-          {emotions.map((emotion) => (
-            <View key={emotion.id} style={styles.emotionWrapper}>
-              <EmotionCard
-                emoji={emotion.emoji}
-                label={emotion.label}
-                selected={selectedEmotion === emotion.id}
-                onPress={() => handleEmotionSelect(emotion.id)}
-              />
+        {todayCheckIn ? (
+          <>
+            <View
+              onLayout={(e) => {
+                emotionsSectionY.current = e.nativeEvent.layout.y;
+              }}
+              style={styles.emotionsGrid}
+              accessibilityRole="radiogroup"
+              accessibilityLabel={t('sentirExtra.emotionGroupA11y')}
+            >
+              {emotions.map((emotion) => (
+                <View key={emotion.id} style={styles.emotionWrapper}>
+                  <EmotionCard
+                    emoji={emotion.emoji}
+                    label={emotion.label}
+                    selected={selectedEmotion === emotion.id}
+                    onPress={() => handleEmotionSelect(emotion.id)}
+                  />
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
 
-        {/* Tips contextuales después de seleccionar emoción */}
-        {selectedEmotion && (
-          <View style={styles.tipsSection}>
-            <View style={styles.tipsHeader}>
-              <Lightbulb size={20} color={THEME.colors.gradient.blue} />
-              <Text style={styles.tipsTitle}>
-                {t('sentir.tipsFor', {
-                  emotion: emotions.find((e) => e.id === selectedEmotion)?.label ?? '',
-                })}
-              </Text>
-            </View>
-            {getEmotionTips(selectedEmotion, locale).slice(0, 3).map((tip, index) => (
-              <View key={tip.id} style={styles.tipCard}>
-                <Text style={styles.tipText}>{tip.tip}</Text>
+            {selectedEmotion ? (
+              <View style={styles.tipsSection}>
+                <View style={styles.tipsHeader}>
+                  <Lightbulb size={20} color={THEME.colors.gradient.blue} />
+                  <Text style={styles.tipsTitle}>
+                    {t('sentir.tipsFor', {
+                      emotion: emotions.find((e) => e.id === selectedEmotion)?.label ?? '',
+                    })}
+                  </Text>
+                </View>
+                {getEmotionTips(selectedEmotion, locale).slice(0, 3).map((tip) => (
+                  <View key={tip.id} style={styles.tipCard}>
+                    <Text style={styles.tipText}>{tip.tip}</Text>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
-        )}
+            ) : null}
+          </>
+        ) : null}
       </ScrollView>
 
-      <View style={styles.footer}>
-        <GradientButton
-          title={t('sentir.continue')}
-          onPress={handleContinue}
-          disabled={!selectedEmotion}
-          accessibilityLabel={t('sentir.continue')}
-          accessibilityHint={t('sentirExtra.continueA11yHint')}
-        />
-      </View>
+      {todayCheckIn ? (
+        <View style={styles.footer}>
+          <GradientButton
+            title={t('sentir.continue')}
+            onPress={handleContinue}
+            disabled={!selectedEmotion}
+            accessibilityLabel={t('sentir.continue')}
+            accessibilityHint={t('sentirExtra.continueA11yHint')}
+          />
+        </View>
+      ) : null}
 
       <Suspense fallback={null}>
         <QuickRecheckInModal

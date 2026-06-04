@@ -469,6 +469,7 @@ export const extEn = {
     orderShow: 'View task order details',
     goFeelPrioritize: 'Go to Feel to log how you feel and prioritize',
     goFeelPrioritizeHint: 'Check in so Koraa can order your tasks',
+    checkInHeroHint: 'Opens Feel to complete your daily check-in',
     filterTodayA11y: 'View only today’s tasks',
     filterTodayHint: 'Shows today’s pending and tasks without a date',
     filterAllA11y: 'View all pending tasks',

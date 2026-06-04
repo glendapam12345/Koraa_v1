@@ -470,6 +470,7 @@ export const extEs = {
     orderShow: 'Ver detalles del orden de tareas',
     goFeelPrioritize: 'Ir a Sentir para registrar cómo te sientes y priorizar',
     goFeelPrioritizeHint: 'Haz check-in para que Koraa ordene tus tareas',
+    checkInHeroHint: 'Abre Sentir para hacer tu check-in del día',
     filterTodayA11y: 'Ver solo tareas de hoy',
     filterTodayHint: 'Muestra pendientes de hoy y tareas sin fecha',
     filterAllA11y: 'Ver todas las tareas pendientes',

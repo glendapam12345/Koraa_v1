@@ -271,6 +271,14 @@ export const es = {
       'Ve a la pestaña Tareas para agregar lo que necesitas hacer hoy, luego regresa aquí',
     tipsFor: 'Tips para {{emotion}}',
     continue: 'Continuar',
+    visualCheckIn: {
+      bubble: '¿Cómo te sientes?',
+      energyLabel: 'Tu energía',
+      continue: 'Guardar y ver mi Hoy',
+      error: 'No se pudo guardar tu check-in. Inténtalo de nuevo.',
+      adjustTimeFocus: 'Ajustar tiempo y enfoque',
+      adjustHint: 'Opcional: indica cuánto tiempo tienes y tu nivel de foco',
+    },
     emotions: {
       agotada: 'Sin energía',
       tranquila: 'En calma',
@@ -295,6 +303,11 @@ export const es = {
     howItWorksBodyNoTasks:
       'Empieza en Tareas: escribe lo que tienes en mente. Después Sentir elige tus focos y aquí los verás.',
     goToFeel: 'Ir a Sentir',
+    checkInHero: {
+      title: '¿Cómo te sientes hoy?',
+      subtitle: 'Un minuto en Sentir y Koraa ordena tus focos del día.',
+      cta: 'Hacer check-in',
+    },
     updateFeel: 'Actualizar en Sentir',
     howItWorksBodyCheckedIn:
       'Tus focos del día están en la lista de abajo (2–5 tareas). Si cambia tu ánimo, actualiza en Sentir.',
