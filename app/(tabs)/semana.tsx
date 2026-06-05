@@ -3,16 +3,18 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import { useWeekTasks, getWeekOptions } from '@/hooks/useWeekTasks';
+import { useWeekTasks, getWeekOptions, type WeekDayCheckIn } from '@/hooks/useWeekTasks';
 import { useMonthCalendar } from '@/hooks/useMonthCalendar';
+import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
 import { getSupabaseEnvStatus } from '@/lib/envCheck';
 import {
   Download,
   Brain,
 } from 'lucide-react-native';
 import { shareTasksCsv } from '@/lib/exportTasksCsv';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
+import type { TranslationKey } from '@/lib/i18n';
 import { PremiumTeaserCard } from '@/components/PremiumTeaserCard';
 import { FocusProgressBar } from '@/components/FocusProgressBar';
 import { SemanaCalendarGrid } from '@/components/semana/SemanaCalendarGrid';
@@ -20,11 +22,13 @@ import { SemanaCalendarLegend } from '@/components/semana/SemanaCalendarLegend';
 import { SemanaWeekNav } from '@/components/semana/SemanaWeekNav';
 import { SemanaProjectFilter } from '@/components/semana/SemanaProjectFilter';
 import { SemanaDaySection } from '@/components/semana/SemanaDaySection';
+import { SemanaCheckInFab } from '@/components/semana/SemanaCheckInFab';
 import { getTodayPriorityStats } from '@/lib/priorityProgress';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { subscribeCheckInRefresh } from '@/lib/checkInRefresh';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
 const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
@@ -38,6 +42,15 @@ function formatDayLabel(dateStr: string, months: readonly string[]): string {
   const dayNum = parseInt(dateStr.slice(8, 10), 10);
   const month = months[parseInt(dateStr.slice(5, 7), 10) - 1];
   return `${dayNum} ${month}`;
+}
+
+function formatCheckInChip(
+  checkIn: WeekDayCheckIn | undefined,
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string,
+): string | null {
+  if (!checkIn?.emotion) return null;
+  const emotionId = checkIn.emotion.toLowerCase();
+  return `${t(`sentir.emotions.${emotionId}` as TranslationKey)} · ${checkIn.energy_level}/5`;
 }
 
 export default function SemanaScreen() {
@@ -61,7 +74,9 @@ export default function SemanaScreen() {
     [],
   );
 
-  const { weekTasks, projects, loading, loadWeekTasks, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast, locale);
+  const { weekTasks, checkInsByDate, projects, loading, loadWeekTasks, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast, locale);
+  const { hasCheckInToday, refresh: refreshCheckInToday } = useHasCheckInToday(user?.id);
+  const showCheckInFab = hasCheckInToday === false;
   const { days: calendarDays, tasksByDate, loading: monthLoading, loadMonth } = useMonthCalendar(
     calendarYear,
     calendarMonth,
@@ -160,6 +175,23 @@ export default function SemanaScreen() {
     }
   }, [canGoNextMonth, calendarMonth]);
 
+  useEffect(() => {
+    return subscribeCheckInRefresh(() => {
+      void refreshCheckInToday();
+      if (viewMode === 'calendar') {
+        void loadMonth();
+      } else {
+        void loadWeekTasks(selectedWeekStart || undefined);
+      }
+    });
+  }, [refreshCheckInToday, viewMode, loadMonth, loadWeekTasks, selectedWeekStart]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshCheckInToday();
+    }, [refreshCheckInToday]),
+  );
+
   const handleRefresh = useCallback(() => {
     if (viewMode === 'calendar') {
       loadMonth();
@@ -195,9 +227,13 @@ export default function SemanaScreen() {
   const selectedDayTasks = tasksByDate[selectedDate] ?? [];
   const selectedDayLabel = formatDayLabel(selectedDate, monthNames);
   const selectedDayCheckInLabel = useMemo(() => {
-    if (!selectedDayData?.emotion) return null;
-    return `${t(`sentir.emotions.${selectedDayData.emotion}` as 'sentir.emotions.tranquila')} · ${selectedDayData.energyLevel ?? '—'}/5`;
+    const checkIn = selectedDayData?.emotion
+      ? { emotion: selectedDayData.emotion, energy_level: selectedDayData.energyLevel ?? 0 }
+      : undefined;
+    return formatCheckInChip(checkIn, t);
   }, [selectedDayData, t]);
+
+  const selectedDayEmotionId = selectedDayData?.emotion?.toLowerCase() ?? null;
 
   const todayWeekTasks = useMemo(() => {
     const todayDay = filteredWeekTasks.find(({ day }) => day.dateStr === todayStr);
@@ -231,6 +267,7 @@ export default function SemanaScreen() {
       <CalmScreen
         topInset="lg"
         gap={THEME.layout.sectionGapCompact}
+        contentStyle={showCheckInFab ? { paddingBottom: THEME.layout.floatingTabBarClearance + 56 } : undefined}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -269,6 +306,8 @@ export default function SemanaScreen() {
             <FocusProgressBar stats={todayPriorityStats} style={styles.focusProgress} />
           ) : null}
         </ScreenHeader>
+
+        <Text style={styles.intro}>{t('semana.intro')}</Text>
 
         <View style={styles.viewToggle}>
           <TouchableOpacity
@@ -343,6 +382,7 @@ export default function SemanaScreen() {
               tasks={selectedDayTasks}
               projectsMap={projectsMap}
               checkInChipText={selectedDayCheckInLabel}
+              emotionId={selectedDayEmotionId}
               addTasksA11yLabel={`${t('semana.addTasks')} ${selectedDayLabel}`}
               addMoreA11yLabel={`${t('semana.addMore')} ${selectedDayLabel}`}
             />
@@ -371,6 +411,7 @@ export default function SemanaScreen() {
 
         {!loading && visibleWeekTasks.map(({ day, tasks }) => {
           const dayLabel = formatDayLabel(day.dateStr, monthNames);
+          const dayCheckIn = checkInsByDate[day.dateStr];
           return (
             <SemanaDaySection
               key={day.dateStr}
@@ -379,6 +420,8 @@ export default function SemanaScreen() {
               tasks={tasks}
               projectsMap={projectsMap}
               isToday={day.isToday}
+              checkInChipText={formatCheckInChip(dayCheckIn, t)}
+              emotionId={dayCheckIn?.emotion?.toLowerCase() ?? null}
               addTasksA11yLabel={`${t('semana.addTasks')} ${dayLabel}`}
               addMoreA11yLabel={`${t('semana.addMore')} ${dayLabel}`}
             />
@@ -446,6 +489,10 @@ export default function SemanaScreen() {
           </View>
         ) : null}
       </CalmScreen>
+
+      {showCheckInFab ? (
+        <SemanaCheckInFab onPress={() => router.push('/sentir')} />
+      ) : null}
     </View>
   );
 }
@@ -469,6 +516,11 @@ const styles = StyleSheet.create({
   },
   focusProgress: {
     marginTop: THEME.spacing.sm,
+  },
+  intro: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    lineHeight: 22,
   },
   viewToggle: {
     flexDirection: 'row',

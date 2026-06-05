@@ -145,6 +145,9 @@ export const featuresEn = {
     exportA11y: 'Download tasks for the visible period',
     exportEmpty: 'No tasks to export in this period',
     brainDumpA11y: 'Brain dump, quick task capture',
+    checkInTodayFab: 'Check-in today',
+    calendarDayWithCheckInA11y: 'Day {{day}}, {{tasks}} tasks, {{emotion}}, energy {{energy}} out of 5',
+    legendEnergyNote: 'The bar at the bottom of each day shows your energy (1–5)',
   },
   tips: {
     loading: 'Loading tips…',

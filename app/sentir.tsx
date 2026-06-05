@@ -11,13 +11,16 @@ import { THEME } from '@/constants/theme';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
+import { usePreventRemove } from '@react-navigation/native';
+import type { NavigationAction } from '@react-navigation/native';
 import { Heart, CircleHelp, X } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { SentirTodayCheckInCard } from '@/components/sentir/SentirTodayCheckInCard';
 import { SentirVisualCheckIn } from '@/components/sentir/SentirVisualCheckIn';
+import { SentirExitConfirmModal } from '@/components/sentir/SentirExitConfirmModal';
 import { FlowIndicator, resolveFlowStep } from '@/components/FlowIndicator';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
@@ -34,17 +37,14 @@ const EMOTION_IDS = [
   { id: 'enfocada', emoji: '🎯' },
 ] as const;
 
-function closeCheckInModal() {
-  if (router.canGoBack()) {
-    router.back();
-    return;
-  }
+function navigateToHoyAfterCheckIn() {
   router.replace('/(tabs)');
 }
 
 export default function SentirScreen() {
   const { full } = useLocalSearchParams<{ full?: string }>();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
+  const navigation = useNavigation();
   const { user } = useAuth();
   const emotions = EMOTION_IDS.map((e) => ({
     ...e,
@@ -52,6 +52,10 @@ export default function SentirScreen() {
   }));
   const [hasTasks, setHasTasks] = useState<boolean | null>(null);
   const [showRitualHint, setShowRitualHint] = useState(false);
+  const [hasCheckInDraft, setHasCheckInDraft] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const pendingRemoveAction = useRef<NavigationAction | null>(null);
+  const pendingLeaveTarget = useRef<'back' | 'vaciar'>('back');
   const [todayCheckIn, setTodayCheckIn] = useState<{
     emotion: string;
     energy_level: number;
@@ -178,6 +182,54 @@ export default function SentirScreen() {
       todayCheckIn.emotion
     : '';
 
+  const shouldConfirmExit = hasCheckInDraft && !todayCheckIn;
+
+  const finishLeave = useCallback(() => {
+    setShowExitConfirm(false);
+    pendingRemoveAction.current = null;
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/(tabs)');
+  }, []);
+
+  const requestClose = useCallback(() => {
+    if (shouldConfirmExit) {
+      setShowExitConfirm(true);
+      return;
+    }
+    finishLeave();
+  }, [shouldConfirmExit, finishLeave]);
+
+  usePreventRemove(shouldConfirmExit, ({ data }) => {
+    pendingRemoveAction.current = data.action;
+    setShowExitConfirm(true);
+  });
+
+  const handleConfirmLeave = useCallback(() => {
+    const action = pendingRemoveAction.current;
+    const leaveTarget = pendingLeaveTarget.current;
+    setShowExitConfirm(false);
+    pendingRemoveAction.current = null;
+    pendingLeaveTarget.current = 'back';
+    if (action) {
+      navigation.dispatch(action);
+      return;
+    }
+    if (leaveTarget === 'vaciar') {
+      router.replace('/(tabs)/vaciar');
+      return;
+    }
+    finishLeave();
+  }, [navigation, finishLeave]);
+
+  const handleCheckInSaved = useCallback(() => {
+    setHasCheckInDraft(false);
+    void loadTodayCheckIn();
+    navigateToHoyAfterCheckIn();
+  }, [loadTodayCheckIn]);
+
   return (
     <View style={styles.container}>
       <CalmScreen
@@ -188,7 +240,7 @@ export default function SentirScreen() {
       >
         <View style={styles.modalHeaderRow}>
           <TouchableOpacity
-            onPress={closeCheckInModal}
+            onPress={requestClose}
             style={styles.modalHeaderBtn}
             activeOpacity={0.75}
             accessibilityRole="button"
@@ -256,10 +308,8 @@ export default function SentirScreen() {
                 emotions={emotions}
                 embedded
                 showQuickBadge
-                onSaved={() => {
-                  void loadTodayCheckIn();
-                  closeCheckInModal();
-                }}
+                onDraftChange={setHasCheckInDraft}
+                onSaved={handleCheckInSaved}
               />
             </CalmCard>
           </>
@@ -268,7 +318,12 @@ export default function SentirScreen() {
         {hasTasks === false && !todayCheckIn ? (
           <TouchableOpacity
             onPress={() => {
-              closeCheckInModal();
+              if (shouldConfirmExit) {
+                pendingLeaveTarget.current = 'vaciar';
+                setShowExitConfirm(true);
+                return;
+              }
+              finishLeave();
               router.push('/(tabs)/vaciar');
             }}
             activeOpacity={0.75}
@@ -281,6 +336,14 @@ export default function SentirScreen() {
         ) : null}
       </CalmScreen>
 
+      <SentirExitConfirmModal
+        visible={showExitConfirm}
+        onStay={() => {
+          setShowExitConfirm(false);
+          pendingRemoveAction.current = null;
+        }}
+        onLeave={handleConfirmLeave}
+      />
     </View>
   );
 }

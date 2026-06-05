@@ -7,6 +7,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import type { Task } from '@/hooks/useTasks';
 import { WeekTaskItem } from '@/components/semana/WeekTaskItem';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { getEmotionCalendarAccent, getEmotionCalendarFill } from '@/lib/emotionCalendarColors';
 
 type ProjectInfo = {
   name: string;
@@ -20,6 +21,7 @@ type SemanaDaySectionProps = {
   projectsMap: Record<string, ProjectInfo>;
   isToday?: boolean;
   checkInChipText?: string | null;
+  emotionId?: string | null;
   addTasksA11yLabel: string;
   addMoreA11yLabel: string;
 };
@@ -31,14 +33,31 @@ export function SemanaDaySection({
   projectsMap,
   isToday = false,
   checkInChipText = null,
+  emotionId = null,
   addTasksA11yLabel,
   addMoreA11yLabel,
 }: SemanaDaySectionProps) {
   const { t } = useI18n();
+  const emotionAccent = emotionId ? getEmotionCalendarAccent(emotionId) : null;
+  const emotionFill = emotionId ? getEmotionCalendarFill(emotionId) : null;
 
   const navigateToVaciar = () => {
     router.push(`/(tabs)/vaciar?date=${dateStr}`);
   };
+
+  const renderCheckInChip = () =>
+    checkInChipText ? (
+      <View
+        style={[
+          styles.dayCheckInChip,
+          emotionFill ? { backgroundColor: emotionFill, borderColor: emotionAccent ?? undefined } : null,
+        ]}
+      >
+        <Text style={styles.dayCheckInChipText} numberOfLines={1}>
+          {checkInChipText}
+        </Text>
+      </View>
+    ) : null;
 
   const renderHeader = () => {
     if (isToday) {
@@ -47,30 +66,36 @@ export function SemanaDaySection({
           colors={THEME.colors.gradientTint.dayToday}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={[styles.dayHeader, styles.dayHeaderToday]}
+          style={[
+            styles.dayHeader,
+            styles.dayHeaderToday,
+            emotionAccent ? { borderLeftColor: emotionAccent, borderLeftWidth: 4 } : null,
+          ]}
         >
           <Text style={[styles.dayLabel, styles.dayLabelToday]} numberOfLines={1}>
             {title}
           </Text>
-          <View style={styles.todayBadge}>
-            <Text style={styles.todayBadgeText}>{t('semana.today')}</Text>
+          <View style={styles.todayHeaderRight}>
+            {renderCheckInChip()}
+            <View style={styles.todayBadge}>
+              <Text style={styles.todayBadgeText}>{t('semana.today')}</Text>
+            </View>
           </View>
         </LinearGradient>
       );
     }
 
     return (
-      <View style={styles.dayHeader}>
+      <View
+        style={[
+          styles.dayHeader,
+          emotionAccent ? { borderLeftWidth: 4, borderLeftColor: emotionAccent } : null,
+        ]}
+      >
         <Text style={styles.dayLabel} numberOfLines={1}>
           {title}
         </Text>
-        {checkInChipText ? (
-          <View style={styles.dayCheckInChip}>
-            <Text style={styles.dayCheckInChipText} numberOfLines={1}>
-              {checkInChipText}
-            </Text>
-          </View>
-        ) : null}
+        {renderCheckInChip()}
       </View>
     );
   };
@@ -158,6 +183,8 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.pill,
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
   },
   dayCheckInChipText: {
     ...THEME.typography.caption,
@@ -167,6 +194,12 @@ const styles = StyleSheet.create({
   dayHeaderToday: {
     borderLeftWidth: 4,
     borderLeftColor: THEME.colors.surfaceOverlay.borderMedium,
+  },
+  todayHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    flexShrink: 1,
   },
   dayBody: {
     padding: THEME.spacing.md,

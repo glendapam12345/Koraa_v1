@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,8 @@ export type SentirEmotionOption = {
 type SentirVisualCheckInProps = {
   emotions: SentirEmotionOption[];
   onSaved: () => void;
+  /** Notifica si hay borrador sin guardar (emoción o energía distinta al default). */
+  onDraftChange?: (hasDraft: boolean) => void;
   /** En Hoy (Inicio): sin navegar atrás al guardar. */
   embedded?: boolean;
   /** En Hoy: oculta enlace a tiempo/enfoque (opcional aparte). */
@@ -48,6 +50,7 @@ type SentirVisualCheckInProps = {
 export function SentirVisualCheckIn({
   emotions,
   onSaved,
+  onDraftChange,
   embedded = false,
   hideAdvancedLink = false,
   showQuickBadge = false,
@@ -72,6 +75,10 @@ export function SentirVisualCheckIn({
   const embeddedSaveLabel = saveLabelKey
     ? t(saveLabelKey as never)
     : t('hoy.inicio.saveCheckIn');
+
+  useEffect(() => {
+    onDraftChange?.(Boolean(emotion) || energy !== 3);
+  }, [emotion, energy, onDraftChange]);
 
   const handleAdvanced = () => {
     if (!emotion || energy < 1) return;

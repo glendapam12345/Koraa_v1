@@ -18,6 +18,11 @@ export type WeekDay = {
   isToday: boolean;
 };
 
+export type WeekDayCheckIn = {
+  emotion: string;
+  energy_level: number;
+};
+
 export type DayTasks = {
   day: WeekDay;
   tasks: Task[];
@@ -100,6 +105,7 @@ export function useWeekTasks(
   locale: AppLocale = 'es',
 ) {
   const [weekTasks, setWeekTasks] = useState<DayTasks[]>([]);
+  const [checkInsByDate, setCheckInsByDate] = useState<Record<string, WeekDayCheckIn>>({});
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastLoadError, setLastLoadError] = useState<string | null>(null);
@@ -124,6 +130,7 @@ export function useWeekTasks(
         const emptyResult: DayTasks[] = weekDays.map((day) => ({ day, tasks: [] }));
         setWeekTasks(emptyResult);
         setProjects([]);
+        setCheckInsByDate({});
         showToast(translate(locale, 'hooks.weekSignIn'), 'info');
         setLoading(false);
         isLoadingRef.current = false;
@@ -146,15 +153,41 @@ export function useWeekTasks(
         setProjects(projectsData || []);
       }
 
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .gte('scheduled_date', start)
-        .lte('scheduled_date', end)
-        .order('scheduled_date', { ascending: true })
-        .order('is_priority', { ascending: false })
-        .order('created_at', { ascending: true });
+      const [tasksRes, checkInsRes] = await Promise.all([
+        supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('scheduled_date', start)
+          .lte('scheduled_date', end)
+          .order('scheduled_date', { ascending: true })
+          .order('is_priority', { ascending: false })
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('daily_check_ins')
+          .select('date, emotion, energy_level')
+          .eq('user_id', user.id)
+          .gte('date', start)
+          .lte('date', end),
+      ]);
+
+      const tasksError = tasksRes.error;
+      const tasksData = tasksRes.data;
+
+      if (checkInsRes.error && !isSchemaError(checkInsRes.error)) {
+        logger.error('Error cargando check-ins de la semana:', checkInsRes.error);
+      }
+
+      const weekCheckIns: Record<string, WeekDayCheckIn> = {};
+      for (const row of checkInsRes.data ?? []) {
+        if (row.date && row.emotion) {
+          weekCheckIns[row.date] = {
+            emotion: row.emotion,
+            energy_level: row.energy_level ?? 0,
+          };
+        }
+      }
+      setCheckInsByDate(weekCheckIns);
 
       if (tasksError) {
         if (isSchemaError(tasksError)) {
@@ -162,6 +195,7 @@ export function useWeekTasks(
           setLastLoadError(null);
           const emptyResult: DayTasks[] = weekDays.map((day) => ({ day, tasks: [] }));
           setWeekTasks(emptyResult);
+          setCheckInsByDate({});
           showToast(translate(locale, 'hooks.weekSchema'), 'info');
         } else {
           logger.error('Error cargando tareas de la semana:', tasksError);
@@ -169,6 +203,7 @@ export function useWeekTasks(
           setLastLoadError(getErrorMessage(tasksError, locale));
           const emptyResult: DayTasks[] = weekDays.map((day) => ({ day, tasks: [] }));
           setWeekTasks(emptyResult);
+          setCheckInsByDate({});
           showToast(translate(locale, 'hooks.weekLoadError'), 'error');
         }
         setLoading(false);
@@ -219,6 +254,7 @@ export function useWeekTasks(
       const { start } = getWeekBounds();
       const fallbackDays = buildWeekDays(start, locale);
       setWeekTasks(fallbackDays.map((day) => ({ day, tasks: [] })));
+      setCheckInsByDate({});
     } finally {
       setLoading(false);
       isLoadingRef.current = false;
@@ -227,6 +263,7 @@ export function useWeekTasks(
 
   return {
     weekTasks,
+    checkInsByDate,
     projects,
     loading,
     loadWeekTasks,

@@ -90,7 +90,7 @@ export function useHoyScreenLayout({
         if (cancelled) return;
         const showPrioritiesReady = await consumePrioritiesReadyToast();
         if (showPrioritiesReady && !cancelled) {
-          showToast(t('hoy.prioritiesUpdatedToast'), 'success');
+          showToast(t('sentir.checkInSavedToast'), 'success');
         }
       })();
       return () => {

@@ -80,6 +80,7 @@ export const uiEn = {
     a11yWeekTaskSubtasks: ', {{count}} steps',
     a11yDaySection: 'Tasks for {{day}}',
     a11yAddMoreHint: 'Opens Tasks to add more items for this day',
+    checkInTodayFabHint: 'Opens today’s emotional check-in',
     setupTitle: 'Set up Week and projects',
     setupScheduledDate: 'Week needs one more piece enabled to show tasks by day.',
     setupProjectsTable: 'Projects need to be enabled to organize your tasks.',
@@ -376,6 +377,8 @@ export const uiEn = {
     emotionGroupA11y: 'Choose how you feel today',
     emotionSelectedAnnounce: 'You selected {{emotion}}',
     continueA11yHint: 'Continue with energy, time, and focus for the day',
+    exitConfirmStayHint: 'Dismiss this message and continue your check-in',
+    exitConfirmLeaveHint: 'Leave without saving today’s check-in',
   },
   tipsExtra: {
     a11yGoFeel: 'Go to Today to check in',

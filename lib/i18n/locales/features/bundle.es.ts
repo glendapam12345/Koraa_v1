@@ -146,6 +146,9 @@ export const featuresEs = {
     exportTitle: 'Tareas Koraa',
     exportA11y: 'Descargar tareas del periodo visible',
     exportEmpty: 'No hay tareas para exportar en este periodo',
+    checkInTodayFab: 'Check-in hoy',
+    calendarDayWithCheckInA11y: 'Día {{day}}, {{tasks}} tareas, {{emotion}}, energía {{energy}} de 5',
+    legendEnergyNote: 'La barra inferior del día indica tu energía (1–5)',
     brainDumpA11y: 'Vaciar la mente, captura rápida de tareas',
   },
   tips: {

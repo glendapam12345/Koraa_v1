@@ -44,6 +44,15 @@ export function SemanaCalendarGrid({ days, selectedDate, onSelectDate }: SemanaC
             const fill = hasCheckIn ? getEmotionCalendarFill(day.emotion) : THEME.colors.fill[200];
             const accent = hasCheckIn ? getEmotionCalendarAccent(day.emotion) : THEME.colors.stroke[100];
 
+            const energyPct =
+              hasCheckIn && day.energyLevel
+                ? Math.min(100, Math.max(12, Math.round((day.energyLevel / 5) * 100)))
+                : 0;
+            const emotionLabel =
+              hasCheckIn && day.emotion
+                ? t(`sentir.emotions.${day.emotion.toLowerCase()}` as 'sentir.emotions.tranquila')
+                : null;
+
             return (
               <TouchableOpacity
                 key={day.dateStr}
@@ -57,10 +66,19 @@ export function SemanaCalendarGrid({ days, selectedDate, onSelectDate }: SemanaC
                 onPress={() => onSelectDate(day.dateStr)}
                 activeOpacity={0.85}
                 accessibilityRole="button"
-                accessibilityLabel={t('semana.calendarDayA11y', {
-                  day: day.dayNumber,
-                  tasks: day.taskCount,
-                })}
+                accessibilityLabel={
+                  hasCheckIn && emotionLabel
+                    ? t('semana.calendarDayWithCheckInA11y', {
+                        day: day.dayNumber,
+                        tasks: day.taskCount,
+                        emotion: emotionLabel,
+                        energy: day.energyLevel ?? 0,
+                      })
+                    : t('semana.calendarDayA11y', {
+                        day: day.dayNumber,
+                        tasks: day.taskCount,
+                      })
+                }
                 accessibilityState={{ selected }}
               >
                 {day.isToday ? (
@@ -78,6 +96,16 @@ export function SemanaCalendarGrid({ days, selectedDate, onSelectDate }: SemanaC
                 {day.taskCount > 0 ? (
                   <View style={[styles.taskBadge, { backgroundColor: accent }]}>
                     <Text style={styles.taskBadgeText}>{day.incompleteCount || day.taskCount}</Text>
+                  </View>
+                ) : null}
+                {hasCheckIn && energyPct > 0 ? (
+                  <View style={styles.energyTrack}>
+                    <View
+                      style={[
+                        styles.energyFill,
+                        { width: `${energyPct}%`, backgroundColor: accent },
+                      ]}
+                    />
                   </View>
                 ) : null}
               </TouchableOpacity>
@@ -164,5 +192,19 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
+  },
+  energyTrack: {
+    position: 'absolute',
+    bottom: 3,
+    left: 6,
+    right: 6,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.45)',
+    overflow: 'hidden',
+  },
+  energyFill: {
+    height: '100%',
+    borderRadius: 2,
   },
 });

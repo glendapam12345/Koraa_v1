@@ -104,7 +104,6 @@ export function useHoyScreenBootstrap({
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
       } else {
-        showToast(t('hoy.prioritiesUpdatedToast'), 'success');
         if (Platform.OS !== 'web') {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
