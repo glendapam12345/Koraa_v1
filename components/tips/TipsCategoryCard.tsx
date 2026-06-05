@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
+import { useI18n } from '@/contexts/I18nContext';
 import type { TipCategoryId } from '@/lib/tipsTypes';
 import { TIP_CATEGORY_META } from '@/lib/tipsPersonalization';
 
@@ -9,6 +10,7 @@ type TipsCategoryCardProps = {
   label: string;
   tipCount: number;
   tipsLabel: string;
+  cardWidth?: number;
   onPress: () => void;
 };
 
@@ -17,8 +19,10 @@ export function TipsCategoryCard({
   label,
   tipCount,
   tipsLabel,
+  cardWidth = undefined,
   onPress,
 }: TipsCategoryCardProps) {
+  const { t } = useI18n();
   const meta = TIP_CATEGORY_META[category];
 
   return (
@@ -27,7 +31,8 @@ export function TipsCategoryCard({
       onPress={onPress}
       activeOpacity={0.88}
       accessibilityRole="button"
-      accessibilityLabel={`${label}, ${tipCount} ${tipsLabel}`}
+      accessibilityLabel={t('tips.openCategoryA11y', { category: label })}
+      accessibilityHint={t('tipsExtra.a11yCategoryHint')}
     >
       <LinearGradient
         colors={[meta.gradient[0], meta.gradient[1]]}
@@ -49,28 +54,36 @@ export function TipsCategoryCard({
   );
 }
 
+const CARD_HEIGHT = 152;
+
 const styles = StyleSheet.create({
   wrap: {
-    width: '48%',
-    marginBottom: THEME.spacing.sm,
+    height: CARD_HEIGHT,
+    marginBottom: 0,
+  },
+  wrapFlex: {
+    flex: 1,
+    width: undefined,
   },
   card: {
-    borderRadius: THEME.borderRadius.rounded,
+    flex: 1,
+    borderRadius: THEME.borderRadius.card,
     padding: THEME.spacing.md,
-    minHeight: 148,
-    justifyContent: 'flex-end',
-    ...THEME.shadows.soft,
+    justifyContent: 'space-between',
+    minHeight: CARD_HEIGHT,
+    ...THEME.shadows.card,
   },
   emoji: {
-    fontSize: 36,
-    marginBottom: THEME.spacing.sm,
+    fontSize: 32,
   },
   label: {
     ...THEME.typography.h3,
-    fontSize: 16,
+    fontSize: 15,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
-    marginBottom: THEME.spacing.sm,
+    lineHeight: 20,
+    flex: 1,
+    marginVertical: THEME.spacing.xs,
   },
   badge: {
     alignSelf: 'flex-start',

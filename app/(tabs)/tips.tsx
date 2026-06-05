@@ -1,24 +1,27 @@
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
-import { PremiumTeaserCard } from '@/components/PremiumTeaserCard';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { supabase } from '@/lib/supabase';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { generatePersonalizedRecommendations } from '@/lib/personalizedRecommendations';
-import { countTipsByCategory } from '@/lib/tipsPersonalization';
+import { countTipsByCategory, getTipsDailyInsight } from '@/lib/tipsPersonalization';
 import type { TipCategoryId } from '@/lib/tipsTypes';
-import { TipsCategoryCard } from '@/components/tips/TipsCategoryCard';
-import { Lightbulb, Sparkles, Heart, Plus } from 'lucide-react-native';
+import { TipsCategoryGrid } from '@/components/tips/TipsCategoryGrid';
+import { TipsWeekChart } from '@/components/tips/TipsWeekChart';
+import { Lightbulb } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
+import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { useI18n } from '@/contexts/I18nContext';
-import { ScreenIntroCard } from '@/components/ui/ScreenIntroCard';
-import { StepBadge } from '@/components/ui/StepBadge';
+import { TipsMoodHeader } from '@/components/tips/TipsMoodHeader';
+import { CalmScreen } from '@/components/ui/calm/CalmScreen';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
+import { subscribeCheckInRefresh } from '@/lib/checkInRefresh';
 import type { TranslationKey } from '@/lib/i18n';
 
 const TIPS_TOOLTIP_SEEN_KEY = 'koraa_tips_tooltip_seen';
@@ -26,25 +29,17 @@ const FREE_RECOMMENDATIONS_LIMIT = 2;
 const FREE_GENERIC_TIPS_LIMIT = 3;
 
 const EMOTIONS = [
-  { id: 'agotada', emoji: '😔', color: ['#667eea', '#764ba2'] },
-  { id: 'tranquila', emoji: '😌', color: ['#f093fb', '#f5576c'] },
-  { id: 'ansiosa', emoji: '😰', color: ['#fa709a', '#fee140'] },
-  { id: 'motivada', emoji: '✨', color: ['#30cfd0', '#330867'] },
-  { id: 'abrumada', emoji: '🥺', color: ['#a8edea', '#fed6e3'] },
-  { id: 'enfocada', emoji: '🎯', color: ['#667eea', '#764ba2'] },
+  { id: 'agotada', emoji: '😔', color: [THEME.colors.calm.lavenderDeep, THEME.colors.gradient.pink] },
+  { id: 'tranquila', emoji: '😌', color: [THEME.colors.gradient.blue, THEME.colors.calm.lavender] },
+  { id: 'ansiosa', emoji: '😰', color: [THEME.colors.gradient.pink, THEME.colors.calm.lavenderDeep] },
+  { id: 'motivada', emoji: '✨', color: [THEME.colors.gradient.blue, THEME.colors.gradient.pink] },
+  { id: 'abrumada', emoji: '🥺', color: [THEME.colors.calm.lavender, THEME.colors.gradient.pink] },
+  { id: 'enfocada', emoji: '🎯', color: [THEME.colors.gradient.blue, THEME.colors.calm.lavenderDeep] },
 ] as const;
 
 const TIP_CATEGORY_ORDER: TipCategoryId[] = ['mindset', 'rest', 'action', 'productivity'];
 
-const TIP_CATEGORY_KEYS: Record<TipCategoryId, TranslationKey> = {
-  rest: 'tips.categories.rest',
-  action: 'tips.categories.action',
-  mindset: 'tips.categories.mindset',
-  productivity: 'tips.categories.productivity',
-};
-
 export default function TipsScreen() {
-  const insets = useSafeAreaInsets();
   const { t, locale } = useI18n();
   const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
   const [todayMood, setTodayMood] = useState<string>('');
@@ -123,6 +118,12 @@ export default function TipsScreen() {
     loadTodayCheckIn();
   }, [loadTodayCheckIn]);
 
+  useEffect(() => {
+    return subscribeCheckInRefresh(() => {
+      void loadTodayCheckIn();
+    });
+  }, [loadTodayCheckIn]);
+
   useFocusEffect(
     useCallback(() => {
       loadTodayCheckIn();
@@ -172,6 +173,11 @@ export default function TipsScreen() {
 
   const categoryCounts = useMemo(
     () => (todayMood ? countTipsByCategory(tipsContext, locale) : null),
+    [todayMood, tipsContext, locale],
+  );
+
+  const patternLine = useMemo(
+    () => (todayMood ? getTipsDailyInsight(tipsContext, locale) : ''),
     [todayMood, tipsContext, locale],
   );
 
@@ -227,57 +233,43 @@ export default function TipsScreen() {
 
   if (loading || subscriptionLoading) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>{t('tips.loading')}</Text>
-        </View>
-      </View>
+      <CalmScreen scroll={false}>
+        <Text style={styles.loadingText}>{t('tips.loading')}</Text>
+      </CalmScreen>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-          contentContainerStyle={[
-            styles.content,
-            { paddingTop: insets.top + THEME.spacing.md, paddingBottom: insets.bottom + THEME.spacing.xl },
-          ]}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={THEME.colors.gradient.blue}
-              colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-            />
-          }
-        >
+    <CalmScreen
+      contentStyle={{ gap: THEME.layout.sectionGapCompact }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={THEME.colors.calm.lavenderDeep}
+        />
+      }
+    >
         {!todayMood ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.screenTitle}>{t('tips.title')}</Text>
-            <Text style={styles.screenSubtitle}>{t('tips.subtitle')}</Text>
-            <StepBadge step={1} label={t('hoy.inicio.stepFeel')} />
-            <View style={styles.emptyIconContainer}>
+          <View style={styles.emptyState} accessibilityRole="summary">
+            <ScreenHeader title={t('tips.title')} />
+            <View
+              style={styles.emptyIconContainer}
+              importantForAccessibility="no-hide-descendants"
+              accessibilityElementsHidden
+            >
               <Lightbulb size={56} color={THEME.colors.gradient.blue} />
             </View>
-            <Text style={styles.emptyTitle}>{t('tips.emptyTitle')}</Text>
+            <Text style={styles.emptyTitle} accessibilityRole="header">
+              {t('tips.emptyTitle')}
+            </Text>
             <Text style={styles.emptyMessage}>{t('tips.emptyBody')}</Text>
-            <TouchableOpacity
-              style={styles.emptyCta}
-              onPress={() => router.push('/(tabs)')}
-              activeOpacity={0.88}
-              accessibilityRole="button"
+            <CalmPrimaryButton
+              label={t('tips.goToFeel')}
+              onPress={() => router.push(CHECK_IN_ROUTE)}
               accessibilityLabel={t('tipsExtra.a11yGoFeel')}
-            >
-              <LinearGradient
-                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.emptyCtaGradient}
-              >
-                <Text style={styles.emptyCtaText}>{t('tips.goToFeel')}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+              accessibilityHint={t('tipsExtra.a11yEmptyCtaHint')}
+            />
             <View style={styles.emptyActionContainer}>
               <Text style={styles.emptyActionText}>
                 {t('tipsExtra.emptySecondaryLead')}
@@ -288,117 +280,68 @@ export default function TipsScreen() {
           </View>
         ) : emotionData ? (
           <>
-            <Text style={styles.screenTitle}>{t('tips.title')}</Text>
-            <Text style={styles.screenSubtitle}>{t('tips.subtitle')}</Text>
-            <ScreenIntroCard>{t('tips.intro')}</ScreenIntroCard>
+            <ScreenHeader title={t('tips.title')} subtitle={t('tips.subtitle')} />
+            <Text style={styles.flowHint}>{t('tips.flowHint')}</Text>
 
-            <View style={styles.header}>
-              <LinearGradient
-                colors={emotionData.color as [string, string]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.emotionHeader}
-              >
-                <Text style={styles.emotionEmoji}>{emotionData.emoji}</Text>
-                <View style={styles.emotionHeaderContent}>
-                  <Text style={styles.emotionLabel}>{t('tips.feeling')}</Text>
-                  <Text style={styles.emotionName}>
-                    {t(`sentir.emotions.${emotionData.id}` as TranslationKey)}
-                  </Text>
-                </View>
-              </LinearGradient>
-              <Text style={styles.updatedSubtitle}>{t('tips.updatedFromCheckIn')}</Text>
-            </View>
+            <TipsMoodHeader
+              emoji={emotionData.emoji}
+              emotionName={t(`sentir.emotions.${emotionData.id}` as TranslationKey)}
+              energyLevel={energyLevel || 3}
+              patternLine={patternLine}
+              onPressEmotion={() => openRecheckCheckIn('tips_mood')}
+            />
+
+            {categoryCounts ? (
+              <View accessibilityRole="summary" accessibilityLabel={t('tipsExtra.a11yCategoryGrid')}>
+                <Text style={styles.gridSectionTitle} accessibilityRole="header">
+                  {t('tips.exploreGrid')}
+                </Text>
+                <Text style={styles.exploreLead}>{t('tips.exploreLead')}</Text>
+                <TipsCategoryGrid
+                  order={TIP_CATEGORY_ORDER}
+                  labels={{
+                    mindset: t('tips.categoriesShort.mindset'),
+                    rest: t('tips.categoriesShort.rest'),
+                    action: t('tips.categoriesShort.action'),
+                    productivity: t('tips.categoriesShort.productivity'),
+                  }}
+                  counts={{
+                    mindset: isSubscribed
+                      ? categoryCounts.mindset
+                      : Math.min(categoryCounts.mindset, FREE_GENERIC_TIPS_LIMIT),
+                    rest: isSubscribed
+                      ? categoryCounts.rest
+                      : Math.min(categoryCounts.rest, FREE_GENERIC_TIPS_LIMIT),
+                    action: isSubscribed
+                      ? categoryCounts.action
+                      : Math.min(categoryCounts.action, FREE_GENERIC_TIPS_LIMIT),
+                    productivity: isSubscribed
+                      ? categoryCounts.productivity
+                      : Math.min(categoryCounts.productivity, FREE_GENERIC_TIPS_LIMIT),
+                  }}
+                  tipsLabel={t('tips.tipsCountLabel')}
+                  onPressCategory={openCategory}
+                />
+              </View>
+            ) : null}
 
             {!hasPersonalizationProfile ? (
               <TouchableOpacity
-                style={styles.profileHintCard}
+                style={styles.profileHintCompact}
                 onPress={() => router.push('/(tabs)/yo')}
-                activeOpacity={0.7}
+                activeOpacity={0.85}
                 accessibilityRole="button"
-                accessibilityLabel={t('tips.goToProfile')}
+                accessibilityLabel={t('tips.profileLinkShort')}
+                accessibilityHint={t('tipsExtra.a11yProfileHint')}
               >
-                <Text style={styles.profileHintText}>{t('tips.profileHint')}</Text>
-                <Text style={styles.profileHintLink}>{t('tips.goToProfile')}</Text>
+                <Text style={styles.profileHintCompactText}>{t('tips.profileHintCompact')}</Text>
+                <Text style={styles.profileHintCompactLink}>{t('tips.profileHintCta')}</Text>
               </TouchableOpacity>
             ) : null}
 
-            {/* Recomendaciones personalizadas */}
-            {visiblePersonalizedRecommendations.length > 0 && (
-              <View style={styles.recommendationsSection}>
-                <View style={styles.recommendationsHeader}>
-                  <Sparkles size={20} color={THEME.colors.gradient.pink} />
-                  <Text style={styles.recommendationsTitle}>{t('tips.recommendations')}</Text>
-                </View>
-                {visiblePersonalizedRecommendations.map((rec) => (
-                  <View key={rec.id} style={styles.recommendationCard}>
-                    <Text style={styles.recommendationEmoji}>{rec.emoji}</Text>
-                    <View style={styles.recommendationContent}>
-                      <Text style={styles.recommendationTitle}>{rec.title}</Text>
-                      <Text style={styles.recommendationMessage}>{rec.message}</Text>
-                      {rec.suggestion && (
-                        <TouchableOpacity
-                          style={styles.suggestionButton}
-                          onPress={() => {
-                            // Navegar a Tareas con la sugerencia pre-rellenada
-                            router.push({
-                              pathname: '/(tabs)/vaciar',
-                              params: { suggestion: rec.suggestion },
-                            });
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Plus size={16} color={THEME.colors.gradient.blue} />
-                          <Text style={styles.suggestionButtonText}>{t('tips.addToTasks')}</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            <Text style={styles.exploreLead}>{t('tips.exploreLead')}</Text>
-            {categoryCounts ? (
-              <View style={styles.categoryGrid}>
-                {TIP_CATEGORY_ORDER.map((category) => (
-                  <TipsCategoryCard
-                    key={category}
-                    category={category}
-                    label={t(TIP_CATEGORY_KEYS[category])}
-                    tipCount={
-                      isSubscribed
-                        ? categoryCounts[category]
-                        : Math.min(categoryCounts[category], FREE_GENERIC_TIPS_LIMIT)
-                    }
-                    tipsLabel={t('tips.tipsCountLabel')}
-                    onPress={() => openCategory(category)}
-                  />
-                ))}
-              </View>
-            ) : null}
-
-            {/* Mensaje final */}
-            <View style={styles.footerMessage}>
-              <Heart size={20} color={THEME.colors.gradient.pink} />
-              <Text style={styles.footerText}>
-                {t('tips.footer')}
-              </Text>
-            </View>
-
-            {!isSubscribed && todayMood ? (
-              <PremiumTeaserCard
-                title={t('tips.premiumTitle')}
-                body={t('premiumTeaser.tipsBody')}
-                freeLimitNote={t('premiumTeaser.tipsFreeLimit', {
-                  recommendations: FREE_RECOMMENDATIONS_LIMIT,
-                  tips: FREE_GENERIC_TIPS_LIMIT,
-                })}
-              />
-            ) : null}
+            <TipsWeekChart />
           </>
         ) : null}
-      </ScrollView>
 
       <Tooltip
         visible={showTooltip}
@@ -413,51 +356,76 @@ export default function TipsScreen() {
           }
         }}
       />
-    </View>
+    </CalmScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: THEME.colors.fill[100],
-  },
-  content: {
-    padding: THEME.spacing.lg,
-    paddingBottom: THEME.spacing.xl,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   loadingText: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
+  },
+  headerBlock: {
+    gap: THEME.spacing.xs,
+    alignSelf: 'stretch',
   },
   screenTitle: {
     ...THEME.typography.h1,
     fontSize: 28,
     color: THEME.colors.text.main,
-    marginBottom: 4,
     alignSelf: 'stretch',
   },
   screenSubtitle: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.md,
     lineHeight: 22,
     alignSelf: 'stretch',
   },
+  featuredRec: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    ...THEME.surfaces.muted,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.lg,
+  },
+  featuredRecEmoji: {
+    fontSize: 24,
+  },
+  featuredRecText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+    flex: 1,
+  },
+  profileHintCompact: {
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    gap: 4,
+  },
+  profileHintCompactText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+  },
+  profileHintCompactLink: {
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.bold,
+  },
   emptyState: {
     alignItems: 'stretch',
-    paddingVertical: THEME.spacing.lg,
+    gap: THEME.layout.sectionGap,
   },
   emptyIconContainer: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: THEME.colors.fill[200],
+    ...THEME.surfaces.muted,
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
@@ -476,34 +444,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: THEME.spacing.lg,
-    paddingHorizontal: THEME.spacing.lg,
   },
   emptyAccent: {
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.bold,
   },
-  emptyCta: {
-    alignSelf: 'stretch',
-    marginHorizontal: THEME.spacing.lg,
-    marginBottom: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.pill,
-    overflow: 'hidden',
-    ...THEME.shadows.soft,
-  },
-  emptyCtaGradient: {
-    paddingVertical: THEME.spacing.sm + 4,
-    paddingHorizontal: THEME.spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyCtaText: {
-    ...THEME.typography.body,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
-  },
   emptyActionContainer: {
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
+    ...THEME.surfaces.panel,
     padding: THEME.spacing.md,
     marginTop: THEME.spacing.md,
   },
@@ -522,8 +469,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   profileHintCard: {
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
+    ...THEME.surfaces.panel,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.lg,
   },
@@ -584,12 +530,11 @@ const styles = StyleSheet.create({
   },
   tipCard: {
     flexDirection: 'row',
-    backgroundColor: THEME.colors.fill[100],
+    ...THEME.surfaces.elevated,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.sm,
     borderLeftWidth: 3,
-    ...THEME.shadows.soft,
   },
   tipIndicator: {
     width: 3,
@@ -603,23 +548,37 @@ const styles = StyleSheet.create({
   },
   footerMessage: {
     flexDirection: 'row',
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
+    ...THEME.surfaces.panel,
     padding: THEME.spacing.md,
     marginTop: THEME.spacing.md,
     gap: THEME.spacing.sm,
   },
+  flowHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 20,
+    alignSelf: 'stretch',
+  },
+  gridSectionTitle: {
+    ...THEME.typography.sectionTitle,
+    color: THEME.colors.text.main,
+    marginBottom: THEME.spacing.xs,
+    alignSelf: 'stretch',
+  },
   exploreLead: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.md,
     lineHeight: 22,
+    marginBottom: THEME.spacing.xs,
+    alignSelf: 'stretch',
   },
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: THEME.spacing.lg,
+    gap: THEME.spacing.sm,
+    marginBottom: 0,
+    alignSelf: 'stretch',
+    width: '100%',
   },
   footerText: {
     ...THEME.typography.caption,
@@ -643,11 +602,10 @@ const styles = StyleSheet.create({
   },
   recommendationCard: {
     flexDirection: 'row',
-    backgroundColor: THEME.colors.fill[100],
+    ...THEME.surfaces.elevated,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.sm,
-    ...THEME.shadows.soft,
     gap: THEME.spacing.sm,
   },
   recommendationEmoji: {
@@ -675,8 +633,7 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.xs,
     paddingVertical: THEME.spacing.xs,
     paddingHorizontal: THEME.spacing.sm,
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.pill,
+    ...THEME.surfaces.chip,
     alignSelf: 'flex-start',
   },
   suggestionButtonText: {

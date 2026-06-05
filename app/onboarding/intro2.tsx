@@ -2,7 +2,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
-import { GradientButton } from '@/components/GradientButton';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { OnboardingProgressDots } from '@/components/onboarding/OnboardingProgressDots';
 import { Wind } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { markOnboardingCompleted } from '@/lib/onboardingGate';
@@ -41,7 +42,12 @@ export default function Intro2Screen() {
         <Text style={styles.titleAccent}>{t('onboarding.intro2.titleAccent')}</Text>
         <Text style={styles.description}>{t('onboarding.intro2.subtitle')}</Text>
 
-        <View style={styles.previewContainer}>
+        <View
+          style={styles.previewContainer}
+          importantForAccessibility="no-hide-descendants"
+          accessibilityElementsHidden
+          accessibilityLabel={t('onboardingA11y.previewDecorative')}
+        >
           <View style={styles.previewCard}>
             <View style={styles.previewHeader}>
               <Text style={styles.previewTitle}>{t('onboarding.intro2.previewTitle')}</Text>
@@ -66,16 +72,12 @@ export default function Intro2Screen() {
           </View>
         </View>
 
-        <View style={styles.dotContainer}>
-          <View style={styles.dot} />
-          <View style={[styles.dot, styles.dotActive]} />
-          <View style={styles.dot} />
-        </View>
+        <OnboardingProgressDots total={3} activeIndex={1} style={styles.dotContainer} />
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton
-          title={t('onboarding.intro2.continue')}
+        <CalmPrimaryButton
+          label={t('onboarding.intro2.continue')}
           onPress={() => router.push('/onboarding/intro3')}
           accessibilityHint={t('onboardingA11y.intro2ContinueHint')}
         />

@@ -8,12 +8,14 @@ import { logger } from '@/lib/logger';
 import { Task } from './useTasks';
 import { countPriorityCompletedBefore } from '@/lib/priorityProgress';
 import { getLocalDateString } from '@/lib/dateLocal';
+import { trackTaskCompleted } from '@/lib/productAnalytics';
 
 export type TaskCompletedPayload = {
   task: Task;
   isSubtask: boolean;
   isFirstPriorityToday: boolean;
   allPrioritiesDoneToday: boolean;
+  remainingPriorities: number;
 };
 
 interface UseTaskActionsParams {
@@ -156,18 +158,24 @@ export function useTaskActions({
             });
           } else {
             if (newCompletedState) {
+              trackTaskCompleted({
+                is_subtask: isSubtask,
+                is_priority: !isSubtask && Boolean(task.is_priority),
+                has_project: Boolean(task.project_id),
+              });
+
               const notifyPriorityComplete = isCompletingMainPriority && onTaskCompleted;
               if (Platform.OS !== 'web' && !notifyPriorityComplete) {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               }
 
               if (notifyPriorityComplete) {
-                const doneAfter = priorPriorityDone + 1;
                 onTaskCompleted({
                   task,
                   isSubtask: false,
                   isFirstPriorityToday: priorPriorityDone === 0,
                   allPrioritiesDoneToday: pendingPriorityBefore <= 1,
+                  remainingPriorities: Math.max(0, pendingPriorityBefore - 1),
                 });
               }
             }
@@ -189,6 +197,14 @@ export function useTaskActions({
                   .update({ is_completed: true, completed_at: completedAt })
                   .eq('id', parentTaskId);
                 if (!parentError) {
+                  const parentTask = tasks.find((t) => t.id === parentTaskId);
+                  trackTaskCompleted({
+                    is_subtask: false,
+                    is_priority: Boolean(parentTask?.is_priority),
+                    has_project: Boolean(parentTask?.project_id),
+                    parent_auto: true,
+                  });
+
                   setTasks((prev: Task[]) =>
                     prev.map((t: Task) =>
                       t.id === parentTaskId

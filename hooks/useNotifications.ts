@@ -67,8 +67,8 @@ export function useNotifications() {
         });
       }
       if (notificationData?.type === RECHECK_REMINDER_TYPE) {
-        import('expo-router').then(({ router }) => {
-          router.push({ pathname: '/(tabs)', params: { openRecheck: '1' } });
+        import('@/lib/recheckCheckInBridge').then(({ openRecheckCheckIn }) => {
+          openRecheckCheckIn('notification');
         });
       }
     });

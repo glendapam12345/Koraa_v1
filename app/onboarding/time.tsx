@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
-import { GradientButton } from '@/components/GradientButton';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { Clock } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
@@ -68,8 +68,8 @@ export default function TimeScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton
-          title={t('onboarding.time.continue')}
+        <CalmPrimaryButton
+          label={t('onboarding.time.continue')}
           onPress={handleContinue}
           disabled={!selectedTime}
           accessibilityLabel={t('onboarding.time.continue')}

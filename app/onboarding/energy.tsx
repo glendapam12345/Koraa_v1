@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
-import { GradientButton } from '@/components/GradientButton';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { Battery } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
@@ -81,8 +81,8 @@ export default function EnergyScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton
-          title={t('onboarding.energy.continue')}
+        <CalmPrimaryButton
+          label={t('onboarding.energy.continue')}
           onPress={handleContinue}
           disabled={selectedEnergy === 0}
           accessibilityLabel={t('onboarding.energy.continue')}

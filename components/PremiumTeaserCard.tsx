@@ -59,13 +59,10 @@ export function PremiumTeaserCard({
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: THEME.spacing.lg,
     marginBottom: THEME.spacing.lg,
-    backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.standard,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    padding: THEME.spacing.sm,
+    ...THEME.surfaces.elevated,
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
   },
   header: {
     flexDirection: 'row',

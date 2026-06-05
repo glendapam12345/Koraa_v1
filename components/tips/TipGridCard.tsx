@@ -1,7 +1,10 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { useI18n } from '@/contexts/I18nContext';
 import type { ScoredTip } from '@/lib/tipsPersonalization';
+const BADGE_ROW_HEIGHT = 22;
 
 type TipGridCardProps = {
   tip: ScoredTip;
@@ -10,6 +13,10 @@ type TipGridCardProps = {
 };
 
 export function TipGridCard({ tip, forYouLabel, onPress }: TipGridCardProps) {
+  const { t } = useI18n();
+  const showBadge = Boolean(tip.forYou && forYouLabel);
+  const a11yLabel = `${tip.title}${showBadge ? t('tipsExtra.a11yTipForYou') : ''}`;
+
   return (
     <TouchableOpacity
       style={styles.wrap}
@@ -17,16 +24,19 @@ export function TipGridCard({ tip, forYouLabel, onPress }: TipGridCardProps) {
       activeOpacity={0.9}
       disabled={!onPress}
       accessibilityRole={onPress ? 'button' : 'text'}
-      accessibilityLabel={tip.title}
+      accessibilityLabel={a11yLabel}
+      accessibilityHint={onPress ? t('tipsExtra.a11yTipOpenHint') : undefined}
     >
       <View style={styles.card}>
-        {tip.forYou && forYouLabel ? (
-          <View style={styles.forYouPill}>
-            <Text style={styles.forYouText}>{forYouLabel}</Text>
-          </View>
-        ) : null}
+        <View style={styles.badgeRow}>
+          {showBadge ? (
+            <View style={styles.forYouPill}>
+              <Text style={styles.forYouText}>{forYouLabel}</Text>
+            </View>
+          ) : null}
+        </View>
         <Text style={styles.emoji}>{tip.emoji}</Text>
-        <Text style={styles.title} numberOfLines={3}>
+        <Text style={styles.title} numberOfLines={2}>
           {tip.title}
         </Text>
       </View>
@@ -34,38 +44,59 @@ export function TipGridCard({ tip, forYouLabel, onPress }: TipGridCardProps) {
   );
 }
 
+type TipDetailExpandedProps = {
+  tip: ScoredTip;
+  actionLabel?: string;
+  onAction?: () => void;
+};
+
 /** Tarjeta expandida con el consejo completo */
-export function TipDetailExpanded({ tip }: { tip: ScoredTip }) {
+export function TipDetailExpanded({ tip, actionLabel, onAction }: TipDetailExpandedProps) {
+  const { t } = useI18n();
+
   return (
-    <LinearGradient
-      colors={[THEME.colors.tint.blue.veryFaint, THEME.colors.fill[100]]}
-      style={styles.expanded}
+    <View
+      accessibilityRole="summary"
+      accessibilityLabel={t('tipsExtra.a11yTipExpanded', { title: tip.title, body: tip.body })}
     >
-      <Text style={styles.expandedEmoji}>{tip.emoji}</Text>
+      <LinearGradient
+        colors={[THEME.colors.tint.blue.veryFaint, THEME.colors.fill[100]]}
+        style={styles.expanded}
+      >
+        <Text style={styles.expandedEmoji} importantForAccessibility="no" accessibilityElementsHidden>
+          {tip.emoji}
+        </Text>
       <Text style={styles.expandedTitle}>{tip.title}</Text>
       <Text style={styles.expandedBody}>{tip.body}</Text>
-    </LinearGradient>
+      {actionLabel && onAction ? (
+        <CalmPrimaryButton label={actionLabel} onPress={onAction} variant="soft" />
+      ) : null}
+      </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
     width: '48%',
+    aspectRatio: 1,
     marginBottom: THEME.spacing.sm,
   },
   card: {
-    backgroundColor: THEME.colors.fill[200],
+    flex: 1,
+    ...THEME.surfaces.elevated,
     borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    minHeight: 120,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    ...THEME.shadows.soft,
+    paddingHorizontal: THEME.spacing.md,
+    paddingBottom: THEME.spacing.md,
+  },
+  badgeRow: {
+    height: BADGE_ROW_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    marginTop: THEME.spacing.xs,
+    marginBottom: THEME.spacing.xs,
   },
   forYouPill: {
-    position: 'absolute',
-    top: THEME.spacing.xs,
-    right: THEME.spacing.xs,
     backgroundColor: THEME.colors.gradient.pink,
     borderRadius: THEME.borderRadius.pill,
     paddingHorizontal: 8,
@@ -85,7 +116,8 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
-    lineHeight: 22,
+    lineHeight: 20,
+    flex: 1,
   },
   expanded: {
     borderRadius: THEME.borderRadius.rounded,
@@ -93,15 +125,14 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.md,
     borderWidth: 1,
     borderColor: THEME.colors.tint.blue.border,
+    gap: THEME.spacing.sm,
   },
   expandedEmoji: {
     fontSize: 40,
-    marginBottom: THEME.spacing.sm,
   },
   expandedTitle: {
     ...THEME.typography.h2,
     color: THEME.colors.text.main,
-    marginBottom: THEME.spacing.sm,
   },
   expandedBody: {
     ...THEME.typography.body,

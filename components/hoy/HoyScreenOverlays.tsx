@@ -20,12 +20,6 @@ const ConfettiCelebration = lazy(() =>
     .catch(() => ({ default: () => null as any })),
 );
 
-const QuickRecheckInModal = lazy(() =>
-  import('@/components/QuickRecheckInModal')
-    .then((module) => ({ default: module.QuickRecheckInModal }))
-    .catch(() => ({ default: () => null as any })),
-);
-
 export type HoyScreenOverlaysProps = {
   menuOpen: string | null;
   onCloseMenu: () => void;
@@ -48,11 +42,6 @@ export type HoyScreenOverlaysProps = {
   onRedistributeApplied: () => void;
   showQuickOnboarding: boolean;
   onCloseQuickOnboarding: () => void;
-  showQuickRecheck: boolean;
-  onCloseQuickRecheck: () => void;
-  initialEmotion: string;
-  initialEnergy: number;
-  onQuickRecheckComplete: () => void;
   showMeditation: boolean;
   onCloseMeditation: () => void;
   meditationType: 'morning' | 'evening';
@@ -81,11 +70,6 @@ export function HoyScreenOverlays({
   onRedistributeApplied,
   showQuickOnboarding,
   onCloseQuickOnboarding,
-  showQuickRecheck,
-  onCloseQuickRecheck,
-  initialEmotion,
-  initialEnergy,
-  onQuickRecheckComplete,
   showMeditation,
   onCloseMeditation,
   meditationType,
@@ -148,18 +132,6 @@ export function HoyScreenOverlays({
       ) : null}
 
       <QuickOnboardingModal visible={showQuickOnboarding} onClose={onCloseQuickOnboarding} />
-
-      {showQuickRecheck ? (
-        <Suspense fallback={null}>
-          <QuickRecheckInModal
-            visible={showQuickRecheck}
-            initialEmotion={initialEmotion}
-            initialEnergy={initialEnergy}
-            onClose={onCloseQuickRecheck}
-            onComplete={onQuickRecheckComplete}
-          />
-        </Suspense>
-      ) : null}
 
       {showMeditation ? (
         <MeditationCircleSimple

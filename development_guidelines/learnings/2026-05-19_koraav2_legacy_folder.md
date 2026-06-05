@@ -1,6 +1,7 @@
 # Carpeta `koraav2/` — legacy (auditoría paso 10)
 
 **Fecha:** 2026-05-19  
+**Actualización:** 2026-06-04 — carpeta **eliminada del disco** por decisión del equipo.  
 **Severidad:** Baja (confusión en desarrollo, no afecta EAS si no se importa)
 
 ## Problema

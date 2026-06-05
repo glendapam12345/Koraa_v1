@@ -498,7 +498,6 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.xs,
   },
   simpleHeader: {
-    marginHorizontal: THEME.spacing.lg,
     marginBottom: THEME.spacing.sm,
   },
   simpleHeaderTitle: {

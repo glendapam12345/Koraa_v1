@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native
 import { useEffect, useMemo, type Dispatch, type SetStateAction } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
+import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
 import {
   Plus,
   Heart,
@@ -16,9 +16,11 @@ import {
   CalendarRange,
 } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
-import { GradientButton } from '@/components/GradientButton';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { TaskList } from '@/components/tasks/TaskList';
 import { HoyTasksHero } from '@/components/hoy/HoyTasksHero';
+import { HoyFocusPanel } from '@/components/hoy/HoyFocusPanel';
+import { HoyRestOfDayPanel } from '@/components/hoy/HoyRestOfDayPanel';
 import { HoyFocusScopeBanner } from '@/components/hoy/HoyFocusScopeBanner';
 import { hoyTasksSectionStyles as styles } from '@/components/hoy/hoyTasksSectionStyles';
 import { CATEGORY_ORDER_KEYS, categoryLabel, normalizeCategoryKey } from '@/lib/i18n/categoryLabels';
@@ -94,6 +96,22 @@ export type HoyTasksSectionProps = {
   handleDeleteTask: (task: Task) => void;
   toggleTask: (taskId: string, isSubtask: boolean, parentTaskId?: string) => void;
   getTaskPriorityInsightForList: (taskId: string) => { whyUp: string[]; whyDown: string[] } | undefined;
+  compactFocusLayout?: boolean;
+  /** Lista simple de pendientes (no focos) tras «Ver más» en vista foco. */
+  restOfDayExpanded?: boolean;
+  onCollapseRestOfDay?: () => void;
+  displayName?: string;
+  currentStreak?: number;
+  coachSuggestion?: string;
+  onOpenCalendar?: () => void;
+  onShowMoreForToday?: () => void;
+  onDeleteTask?: (task: Task) => void;
+  onChangeEmotion?: () => void;
+  showDayChangedCard?: boolean;
+  showNothingDoneCard?: boolean;
+  onQuickRecheck?: () => void;
+  onDismissDayChanged?: () => void;
+  onLightenLoad?: () => void;
 };
 
 export function HoyTasksSection({
@@ -141,12 +159,40 @@ export function HoyTasksSection({
   handleDeleteTask,
   toggleTask,
   getTaskPriorityInsightForList,
+  compactFocusLayout = false,
+  restOfDayExpanded = false,
+  onCollapseRestOfDay,
+  displayName = '',
+  currentStreak = 0,
+  coachSuggestion = '',
+  onOpenCalendar,
+  onShowMoreForToday,
+  onDeleteTask,
+  onChangeEmotion,
+  showDayChangedCard = false,
+  showNothingDoneCard = false,
+  onQuickRecheck,
+  onDismissDayChanged,
+  onLightenLoad,
 }: HoyTasksSectionProps) {
   const { t, locale } = useI18n();
 
-  const focusTaskCount = useMemo(
-    () => displayedIncompleteTasks.filter((task) => task.is_priority).length,
+  const focusTasks = useMemo(
+    () =>
+      displayedIncompleteTasks.filter(
+        (task) => task.is_priority && !task.parent_task_id,
+      ),
     [displayedIncompleteTasks],
+  );
+
+  const focusTaskCount = focusTasks.length;
+
+  const restOfDayTasks = useMemo(
+    () =>
+      incompleteTasksForToday.filter(
+        (task) => !task.is_priority && !task.parent_task_id,
+      ),
+    [incompleteTasksForToday],
   );
 
   const taskSections = useMemo(() => {
@@ -208,10 +254,62 @@ export function HoyTasksSection({
     onExpandedSectionsChange(null);
   }, [hoyLiteLayout, onExpandedSectionsChange]);
 
+  if (compactFocusLayout && todayMood && onOpenCalendar) {
+    return (
+      <View style={styles.tasksContainer}>
+        <HoyFocusPanel
+          userId={user?.id}
+          locale={locale}
+          displayName={displayName}
+          currentStreak={currentStreak}
+          todayMood={todayMood}
+          emotionLabel={todayEmotionLabel}
+          energyLevel={energyLevel}
+          coachSuggestion={coachSuggestion}
+          priorityStats={todayPriorityStats}
+          focusTasks={focusTasks}
+          totalPending={incompleteTasksForToday.length}
+          projectsMap={projectsMap}
+          onToggleTask={(taskId) => void handleToggleTask(taskId)}
+          onOpenTask={handleEditTask}
+          onOpenCalendar={onOpenCalendar}
+          onShowMoreForToday={restOfDayExpanded ? undefined : onShowMoreForToday}
+          onDeleteTask={onDeleteTask}
+          onChangeEmotion={onChangeEmotion}
+          showDayChangedCard={showDayChangedCard}
+          showNothingDoneCard={showNothingDoneCard}
+          onQuickRecheck={onQuickRecheck}
+          onDismissDayChanged={onDismissDayChanged}
+          onLightenLoad={onLightenLoad}
+          initialMoreOpen={hoyLiteLayout === false}
+        />
+        {restOfDayExpanded && onCollapseRestOfDay ? (
+          <HoyRestOfDayPanel
+            tasks={tasks}
+            restTasks={restOfDayTasks}
+            projectsMap={projectsMap}
+            expandedTasks={expandedTasks}
+            expandedDetailsTasks={expandedDetailsTasks}
+            menuOpen={menuOpen}
+            onMenuPress={onMenuPress}
+            onToggleTask={handleToggleTask}
+            onToggleExpansion={toggleTaskExpansion}
+            onToggleDetailsExpansion={toggleDetailsExpansion}
+            onEditTask={handleEditTask}
+            onDeleteTask={handleDeleteTask}
+            onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
+            getCategoryColor={getCategoryColor}
+            onCollapse={onCollapseRestOfDay}
+          />
+        ) : null}
+      </View>
+    );
+  }
+
   return (
           <View style={styles.tasksContainer}>
             <View style={styles.tasksListCard}>
-              {todayMood && (
+              {todayMood && !compactFocusLayout && (
                 <View style={[styles.heroTodayWrap, styles.heroTodayWrapFirst]}>
                   <HoyTasksHero
                     todayMood={todayMood}
@@ -315,30 +413,6 @@ export function HoyTasksSection({
                   )}
                 </View>
               )}
-              {!todayMood && displayedIncompleteTasks.length > 0 && (
-                <TouchableOpacity
-                  style={styles.checkInPromptBanner}
-                  onPress={() => router.push(CHECK_IN_ROUTE)}
-                  activeOpacity={0.88}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('hoyExtra.goFeelPrioritize')}
-                  accessibilityHint={t('hoyExtra.goFeelPrioritizeHint')}
-                >
-                  <LinearGradient
-                    colors={[THEME.colors.tint.pink.soft, THEME.colors.tint.blue.veryFaint]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.checkInPromptBannerGradient}
-                  >
-                    <Heart size={22} color={THEME.colors.gradient.blue} />
-                    <View style={styles.checkInPromptBannerTextWrap}>
-                      <Text style={styles.checkInPromptBannerTitle}>{t('hoy.howFeelToday')}</Text>
-                      <Text style={styles.checkInPromptBannerSub}>{t('commonExtra.checkInPromptSub')}</Text>
-                    </View>
-                    <ChevronRight size={22} color={THEME.colors.gradient.blue} />
-                  </LinearGradient>
-                </TouchableOpacity>
-              )}
               {selectedEmotionalMemoryInsight && !hoyLiteLayout && showSecondaryModulesEffective && (
                 <Animated.View
                   style={[
@@ -380,7 +454,7 @@ export function HoyTasksSection({
                   </LinearGradient>
                 </Animated.View>
               )}
-              {todayMood ? (
+              {todayMood && !compactFocusLayout ? (
                 <HoyFocusScopeBanner
                   totalPending={incompleteTasks.length}
                   focusCount={todayPriorityStats.total}
@@ -388,7 +462,9 @@ export function HoyTasksSection({
               ) : null}
               <View style={styles.tareasHeaderSection}>
               <Text style={styles.tareasTitle} numberOfLines={1}>
-                {t('commonExtra.tasksSection')}
+                {todayMood && compactFocusLayout
+                  ? t('hoy.forTodayTitle')
+                  : t('commonExtra.tasksSection')}
               </Text>
               {/* Fecha + filtros en una fila; el estado va debajo a todo el ancho (evita columna estrecha al lado de los pills). */}
               <View style={styles.tareasHeaderMetaRow}>
@@ -399,7 +475,7 @@ export function HoyTasksSection({
                     year: 'numeric',
                   })}
                 </Text>
-                {!hoyLiteLayout && (
+                {!hoyLiteLayout && !compactFocusLayout && (
                   <View style={styles.taskFilterWrap}>
                     <TouchableOpacity
                       style={[styles.taskFilterPill, taskFilter === 'hoy' && styles.taskFilterPillActive]}
@@ -465,7 +541,7 @@ export function HoyTasksSection({
                         { count: displayedIncompleteTasks.length },
                       )}
               </Text>
-              {taskFilter === 'hoy' && !hoyLiteLayout && (
+              {taskFilter === 'hoy' && !hoyLiteLayout && !compactFocusLayout && (
                 <Text style={styles.taskFilterHint}>{t('hoy.filterHint')}</Text>
               )}
               {displayedIncompleteTasks.length > 0 && (
@@ -594,7 +670,7 @@ export function HoyTasksSection({
                               onDeleteTask={handleDeleteTask}
                               getCategoryColor={getCategoryColor}
                               onSubtaskToggle={(subtaskId, parentTaskId) => toggleTask(subtaskId, true, parentTaskId)}
-                              getProjectInfo={() => ({ label: t('hoyExtra.looseLabel'), color: THEME.colors.text.secondary })}
+                              getProjectInfo={() => ({ label: '', color: THEME.colors.text.secondary })}
                               getProjectSteps={(_projectId, _excludeTaskId) => []}
                               expandedProjectSteps={expandedProjectStepsTasks}
                               onToggleProjectSteps={(taskId) => {
@@ -699,7 +775,7 @@ export function HoyTasksSection({
                                 return {
                                   label: t('hoyExtra.projectColon', { name }), color: p?.color ?? THEME.colors.gradient.blue, projectId: task.project_id, projectName: name };
                               }
-                              return { label: t('hoyExtra.looseLabel'), color: THEME.colors.text.secondary };
+                              return { label: '', color: THEME.colors.text.secondary };
                             }}
                             getProjectSteps={(projectId, excludeTaskId) =>
                               displayedIncompleteTasks.filter(
@@ -774,14 +850,15 @@ export function HoyTasksSection({
                     </>
                   )}
                   <View style={styles.emptyTasksCta}>
-                    <GradientButton
-                      title={t('hoy.goToTasks')}
+                    <CalmPrimaryButton
+                      label={t('hoy.goToTasks')}
                       onPress={() => router.push('/(tabs)/vaciar')}
+                      large
                     />
                     {incompleteTasks.length === 0 && tasks.length > 0 ? (
                       <TouchableOpacity
                         style={styles.emptyTasksSecondaryCta}
-                        onPress={() => router.push(CHECK_IN_ROUTE)}
+                        onPress={() => openRecheckCheckIn('hoy_tasks_empty')}
                         activeOpacity={0.85}
                         accessibilityRole="button"
                         accessibilityLabel={t('hoyExtra.goFeelA11y')}

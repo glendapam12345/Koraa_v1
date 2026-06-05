@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { supabase, getErrorMessage } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getLocalDateString } from '@/lib/dateLocal';
+import { getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
 
 export interface Task {
   id: string;
@@ -38,7 +38,7 @@ function rowToTask(row: Record<string, unknown>): Task {
     created_at: String(row.created_at ?? ''),
     parent_task_id: (row.parent_task_id as string | null | undefined) ?? null,
     project_id: (row.project_id as string | null | undefined) ?? null,
-    scheduled_date: (row.scheduled_date as string | null | undefined) ?? null,
+    scheduled_date: normalizeScheduledDate(row.scheduled_date as string | null | undefined),
   };
 }
 

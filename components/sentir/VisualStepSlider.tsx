@@ -16,17 +16,19 @@ type VisualStepSliderProps = {
   value: number;
   onChange: (level: number) => void;
   label: string;
+  size?: 'default' | 'large';
 };
 
-export function VisualStepSlider({ value, onChange, label }: VisualStepSliderProps) {
+export function VisualStepSlider({ value, onChange, label, size = 'default' }: VisualStepSliderProps) {
+  const isLarge = size === 'large';
   const { t } = useI18n();
   const activeLevel = ENERGY_LEVELS.find((l) => l.id === value);
   const valueLabel = activeLevel ? t(activeLevel.key) : '';
 
   return (
-    <View style={styles.wrap}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.trackOuter} accessibilityRole="adjustable">
+    <View style={[styles.wrap, isLarge && styles.wrapLarge]}>
+      <Text style={[styles.label, isLarge && styles.labelLarge]}>{label}</Text>
+      <View style={[styles.trackOuter, isLarge && styles.trackOuterLarge]} accessibilityRole="adjustable">
         <LinearGradient
           colors={[THEME.colors.gradient.pink, THEME.colors.gradient.blue]}
           start={{ x: 0, y: 0.5 }}
@@ -46,13 +48,20 @@ export function VisualStepSlider({ value, onChange, label }: VisualStepSliderPro
                 accessibilityLabel={t('onboardingA11y.selectEnergy', { label: t(level.key) })}
                 accessibilityState={{ selected }}
               >
-                <View style={[styles.stepDot, selected && styles.stepDotSelected]} />
+                <View
+                  style={[
+                    styles.stepDot,
+                    isLarge && styles.stepDotLarge,
+                    selected && styles.stepDotSelected,
+                    isLarge && selected && styles.stepDotSelectedLarge,
+                  ]}
+                />
               </TouchableOpacity>
             );
           })}
         </View>
       </View>
-      <Text style={styles.valueLabel}>{valueLabel}</Text>
+      <Text style={[styles.valueLabel, isLarge && styles.valueLabelLarge]}>{valueLabel}</Text>
     </View>
   );
 }
@@ -61,16 +70,27 @@ const styles = StyleSheet.create({
   wrap: {
     marginTop: THEME.spacing.md,
   },
+  wrapLarge: {
+    marginTop: THEME.spacing.lg,
+  },
   label: {
     ...THEME.typography.caption,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
     marginBottom: THEME.spacing.sm,
   },
+  labelLarge: {
+    ...THEME.typography.body,
+    fontSize: 17,
+    marginBottom: THEME.spacing.md,
+  },
   trackOuter: {
     height: 44,
     justifyContent: 'center',
     position: 'relative',
+  },
+  trackOuterLarge: {
+    height: 52,
   },
   trackGradient: {
     position: 'absolute',
@@ -91,6 +111,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  stepHitLarge: {
+    width: 52,
+    height: 52,
+  },
   stepDot: {
     width: 14,
     height: 14,
@@ -99,10 +123,18 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: THEME.colors.stroke[100],
   },
+  stepDotLarge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
   stepDotSelected: {
     backgroundColor: THEME.colors.gradient.blue,
     borderColor: THEME.colors.gradient.blue,
     transform: [{ scale: 1.15 }],
+  },
+  stepDotSelectedLarge: {
+    transform: [{ scale: 1.12 }],
   },
   valueLabel: {
     ...THEME.typography.body,
@@ -110,5 +142,9 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
     textAlign: 'center',
     marginTop: THEME.spacing.sm,
+  },
+  valueLabelLarge: {
+    fontSize: 18,
+    marginTop: THEME.spacing.md,
   },
 });

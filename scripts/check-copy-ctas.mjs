@@ -37,7 +37,7 @@ const ALLOWED_CTAS = new Set([
 
 const IGNORE_DIR_PARTS = new Set(['node_modules', '.git', 'koraav2', 'dist', '.expo']);
 const CTA_PATTERNS = [
-  { name: 'GradientButton.title', re: /<GradientButton[\s\S]*?\btitle="([^"]+)"/g },
+  { name: 'CalmPrimaryButton.label', re: /<CalmPrimaryButton[\s\S]*?\blabel="([^"]+)"/g },
   { name: 'primaryCta.label', re: /primaryCta\([^,]+,\s*'([^']+)'/g },
   { name: 'ctaText', re: /<Text\s+style=\{styles\.ctaText\}>([^<]+)</g },
   { name: 'buttonText', re: /<Text\s+style=\{styles\.buttonText\}>([^<]+)</g },

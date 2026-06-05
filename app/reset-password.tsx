@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingVi
 import { useState, useEffect, useCallback } from 'react';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
-import { GradientButton } from '@/components/GradientButton';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { PasswordRequirementsHint } from '@/components/auth/PasswordRequirementsHint';
 import { getPasswordErrorKey } from '@/lib/passwordPolicy';
 import { useI18n } from '@/contexts/I18nContext';
@@ -227,7 +227,7 @@ export default function ResetPasswordScreen() {
             <Text style={styles.title}>{t('resetPassword.successTitle')}</Text>
             <Text style={styles.subtitle}>{t('resetPassword.successBody')}</Text>
           </View>
-          <GradientButton title={t('resetPassword.signIn')} onPress={() => router.replace('/auth/login')} />
+          <CalmPrimaryButton label={t('resetPassword.signIn')} onPress={() => router.replace('/auth/login')} />
         </ScrollView>
       </View>
     );
@@ -283,8 +283,8 @@ export default function ResetPasswordScreen() {
           </View>
         ) : null}
 
-        <GradientButton
-          title={t('resetPassword.save')}
+        <CalmPrimaryButton
+          label={t('resetPassword.save')}
           onPress={handleSubmit}
           disabled={loading || !password || !confirmPassword}
         />

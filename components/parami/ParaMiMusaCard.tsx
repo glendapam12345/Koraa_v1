@@ -1,16 +1,14 @@
 import type { ReactNode } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Lock } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
+import { useI18n } from '@/contexts/I18nContext';
 
 type ParaMiMusaCardProps = {
   colors: readonly [string, string];
   title: string;
   body: string;
   locked: boolean;
-  onUnlock: () => void;
-  unlockCta: string;
   children?: ReactNode;
 };
 
@@ -19,38 +17,28 @@ export function ParaMiMusaCard({
   title,
   body,
   locked,
-  onUnlock,
-  unlockCta,
   children,
 }: ParaMiMusaCardProps) {
+  const { t } = useI18n();
+
   return (
-    <View style={styles.wrap}>
+    <View
+      style={styles.wrap}
+      accessibilityRole="summary"
+      accessibilityLabel={`${title}. ${body}${locked ? t('paramiExtra.a11yCardLockedSuffix') : ''}`}
+    >
       <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
-        {locked ? (
-          <View style={styles.lockBadge}>
-            <Lock size={20} color={THEME.colors.onGradient} />
-          </View>
-        ) : null}
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.body}>{body}</Text>
-        <View style={locked ? styles.chartLocked : styles.chartOpen}>{children}</View>
+        <View
+          style={styles.chartWrap}
+          importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}
+          accessibilityElementsHidden={locked}
+        >
+          <View style={locked ? styles.chartLocked : styles.chartOpen}>{children}</View>
+        </View>
         {locked ? (
-          <TouchableOpacity
-            style={styles.cta}
-            onPress={onUnlock}
-            activeOpacity={0.9}
-            accessibilityRole="button"
-            accessibilityLabel={unlockCta}
-          >
-            <LinearGradient
-              colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.ctaGradient}
-            >
-              <Text style={styles.ctaText}>{unlockCta}</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+          <Text style={styles.lockedFootnote}>{t('parami.lockedPremiumHint')}</Text>
         ) : null}
       </LinearGradient>
     </View>
@@ -59,23 +47,14 @@ export function ParaMiMusaCard({
 
 const styles = StyleSheet.create({
   wrap: {
-    marginBottom: THEME.spacing.lg,
+    marginBottom: THEME.spacing.sm,
   },
   card: {
-    borderRadius: THEME.borderRadius.rounded,
+    borderRadius: THEME.borderRadius.xl,
     padding: THEME.spacing.lg,
-    minHeight: 220,
-    ...THEME.shadows.soft,
-  },
-  lockBadge: {
-    alignSelf: 'center',
-    marginBottom: THEME.spacing.sm,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    minHeight: 200,
+    overflow: 'hidden',
+    ...THEME.shadows.card,
   },
   title: {
     ...THEME.typography.h2,
@@ -90,27 +69,21 @@ const styles = StyleSheet.create({
     color: THEME.colors.onGradientMuted,
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
+  },
+  chartWrap: {
+    position: 'relative',
+    minHeight: 96,
+    marginBottom: THEME.spacing.xs,
   },
   chartLocked: {
-    opacity: 0.35,
-    marginBottom: THEME.spacing.md,
+    opacity: 0.55,
   },
-  chartOpen: {
-    marginBottom: THEME.spacing.md,
-  },
-  cta: {
-    borderRadius: THEME.borderRadius.pill,
-    overflow: 'hidden',
-  },
-  ctaGradient: {
-    paddingVertical: THEME.spacing.md,
-    paddingHorizontal: THEME.spacing.lg,
-    alignItems: 'center',
-  },
-  ctaText: {
-    ...THEME.typography.body,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
+  chartOpen: {},
+  lockedFootnote: {
+    ...THEME.typography.meta,
+    color: THEME.colors.onGradientFaint,
+    textAlign: 'center',
+    marginTop: THEME.spacing.xs,
   },
 });

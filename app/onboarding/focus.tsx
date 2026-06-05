@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
-import { GradientButton } from '@/components/GradientButton';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { Toast } from '@/components/Toast';
 import { Focus } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
@@ -342,8 +342,8 @@ export default function FocusScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton
-          title={isSaving ? t('onboarding.focus.saving') : from === 'sentir' ? t('onboarding.focus.fromSentirSave') : t('onboarding.focus.start')}
+        <CalmPrimaryButton
+          label={isSaving ? t('onboarding.focus.saving') : from === 'sentir' ? t('onboarding.focus.fromSentirSave') : t('onboarding.focus.start')}
           onPress={handleContinue}
           disabled={!selectedFocus || isSaving}
           accessibilityLabel={

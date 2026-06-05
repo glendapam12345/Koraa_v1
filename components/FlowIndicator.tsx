@@ -5,6 +5,7 @@ import { CheckCircle2 } from 'lucide-react-native';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
+
 type FlowStep = 'vaciar' | 'sentir' | 'accionar';
 
 interface FlowIndicatorProps {
@@ -12,12 +13,22 @@ interface FlowIndicatorProps {
 }
 
 const STEP_ROUTES: Record<FlowStep, string> = {
-  sentir: '/(tabs)',
   vaciar: '/(tabs)/vaciar',
+  sentir: '/(tabs)',
   accionar: '/(tabs)',
 };
 
 export type { FlowStep };
+
+/** Progreso del día: Tareas → Check-in en Hoy → focos en Hoy. */
+export function resolveFlowStep(args: {
+  hasCheckIn: boolean;
+  hasTasks: boolean;
+}): FlowStep {
+  if (args.hasCheckIn && args.hasTasks) return 'accionar';
+  if (!args.hasTasks) return 'vaciar';
+  return 'sentir';
+}
 
 export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
   const router = useRouter();
@@ -30,9 +41,24 @@ export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
     hintKey: TranslationKey;
     a11yKey: TranslationKey;
   }[] = [
-    { id: 'sentir', label: t('hoy.inicio.stepFeel'), hintKey: 'flow.stepFeelHint', a11yKey: 'flow.stepFeelA11y' },
-    { id: 'vaciar', label: t('hoy.inicio.stepUnload'), hintKey: 'flow.stepTasksHint', a11yKey: 'flow.stepTasksA11y' },
-    { id: 'accionar', label: t('tabs.today'), hintKey: 'flow.stepTodayHint', a11yKey: 'flow.stepTodayA11y' },
+    {
+      id: 'vaciar',
+      label: t('tabs.tasks'),
+      hintKey: 'flow.stepTasksHint',
+      a11yKey: 'tabs.a11yTasksFlowStep',
+    },
+    {
+      id: 'sentir',
+      label: t('flow.stepCheckInLabel'),
+      hintKey: 'flow.stepCheckInHint',
+      a11yKey: 'tabs.a11yFeelFlowStep',
+    },
+    {
+      id: 'accionar',
+      label: t('tabs.today'),
+      hintKey: 'flow.stepTodayHint',
+      a11yKey: 'tabs.a11yTodayFlowStep',
+    },
   ];
 
   const getStepStatus = (step: FlowStep) => {

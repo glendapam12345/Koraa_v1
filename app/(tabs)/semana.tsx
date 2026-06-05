@@ -1,20 +1,12 @@
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useWeekTasks, getWeekOptions } from '@/hooks/useWeekTasks';
 import { useMonthCalendar } from '@/hooks/useMonthCalendar';
-import type { Task } from '@/hooks/useTasks';
 import { getSupabaseEnvStatus } from '@/lib/envCheck';
 import {
-  Plus,
-  FolderKanban,
-  FileText,
-  ChevronRight,
-  ChevronLeft,
   Download,
   Brain,
 } from 'lucide-react-native';
@@ -25,9 +17,14 @@ import { PremiumTeaserCard } from '@/components/PremiumTeaserCard';
 import { FocusProgressBar } from '@/components/FocusProgressBar';
 import { SemanaCalendarGrid } from '@/components/semana/SemanaCalendarGrid';
 import { SemanaCalendarLegend } from '@/components/semana/SemanaCalendarLegend';
-import { ScreenIntroCard } from '@/components/ui/ScreenIntroCard';
+import { SemanaWeekNav } from '@/components/semana/SemanaWeekNav';
+import { SemanaProjectFilter } from '@/components/semana/SemanaProjectFilter';
+import { SemanaDaySection } from '@/components/semana/SemanaDaySection';
 import { getTodayPriorityStats } from '@/lib/priorityProgress';
 import { getLocalDateString } from '@/lib/dateLocal';
+import { CalmScreen } from '@/components/ui/calm/CalmScreen';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
 const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
@@ -44,7 +41,6 @@ function formatDayLabel(dateStr: string, months: readonly string[]): string {
 }
 
 export default function SemanaScreen() {
-  const insets = useSafeAreaInsets();
   const { t, locale } = useI18n();
   const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
   const monthNamesFull = locale === 'en' ? MONTH_NAMES_FULL_EN : MONTH_NAMES_FULL_ES;
@@ -198,6 +194,10 @@ export default function SemanaScreen() {
   );
   const selectedDayTasks = tasksByDate[selectedDate] ?? [];
   const selectedDayLabel = formatDayLabel(selectedDate, monthNames);
+  const selectedDayCheckInLabel = useMemo(() => {
+    if (!selectedDayData?.emotion) return null;
+    return `${t(`sentir.emotions.${selectedDayData.emotion}` as 'sentir.emotions.tranquila')} · ${selectedDayData.energyLevel ?? '—'}/5`;
+  }, [selectedDayData, t]);
 
   const todayWeekTasks = useMemo(() => {
     const todayDay = filteredWeekTasks.find(({ day }) => day.dateStr === todayStr);
@@ -228,9 +228,9 @@ export default function SemanaScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg }]}
-        showsVerticalScrollIndicator={false}
+      <CalmScreen
+        topInset="lg"
+        gap={THEME.layout.sectionGapCompact}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -239,49 +239,36 @@ export default function SemanaScreen() {
           />
         }
       >
-        <LinearGradient
-          colors={THEME.colors.gradientTint.header}
-          style={styles.headerGradient}
-        >
-          <View style={styles.header}>
-            <View style={styles.headerActions}>
+        <ScreenHeader
+          title={t('semana.title')}
+          subtitle={t('semana.subtitle')}
+          trailing={
+            <>
               <TouchableOpacity
                 onPress={() => router.push('/(tabs)/vaciar')}
                 activeOpacity={0.85}
                 accessibilityRole="button"
                 accessibilityLabel={t('semana.brainDumpA11y')}
-                style={styles.headerIconButtonWrap}
+                style={[styles.headerIconButton, styles.headerIconButtonPlain]}
               >
-                <LinearGradient
-                  colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.headerIconButton}
-                >
-                  <Brain size={22} color={THEME.colors.onGradient} />
-                </LinearGradient>
+                <Brain size={22} color={THEME.colors.calm.lavenderDeep} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => void handleExportTasks()}
                 activeOpacity={0.85}
                 accessibilityRole="button"
                 accessibilityLabel={t('semana.exportA11y')}
-                style={styles.headerIconButtonWrap}
+                style={[styles.headerIconButton, styles.headerIconButtonPlain]}
               >
-                <View style={[styles.headerIconButton, styles.headerIconButtonPlain]}>
-                  <Download size={22} color={THEME.colors.gradient.blue} />
-                </View>
+                <Download size={22} color={THEME.colors.calm.lavenderDeep} />
               </TouchableOpacity>
-            </View>
-            <View style={styles.headerTextWrap}>
-              <Text style={styles.title}>{t('semana.title')}</Text>
-              <Text style={styles.subtitle}>{t('semana.subtitle')}</Text>
-              {weekIncludesToday && (
-                <FocusProgressBar stats={todayPriorityStats} style={styles.focusProgress} />
-              )}
-            </View>
-          </View>
-        </LinearGradient>
+            </>
+          }
+        >
+          {weekIncludesToday ? (
+            <FocusProgressBar stats={todayPriorityStats} style={styles.focusProgress} />
+          ) : null}
+        </ScreenHeader>
 
         <View style={styles.viewToggle}>
           <TouchableOpacity
@@ -291,19 +278,16 @@ export default function SemanaScreen() {
             accessibilityRole="button"
             accessibilityState={{ selected: viewMode === 'calendar' }}
             accessibilityLabel={t('semana.viewCalendar')}
+            accessibilityHint={t('semanaExtra.a11yViewCalendarHint')}
           >
-            {viewMode === 'calendar' ? (
-              <LinearGradient
-                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.viewToggleGradient}
-              >
-                <Text style={styles.viewToggleTextActive}>{t('semana.viewCalendar')}</Text>
-              </LinearGradient>
-            ) : (
-              <Text style={styles.viewToggleText}>{t('semana.viewCalendar')}</Text>
-            )}
+            <Text
+              style={[
+                styles.viewToggleText,
+                viewMode === 'calendar' && styles.viewToggleTextActive,
+              ]}
+            >
+              {t('semana.viewCalendar')}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.viewToggleChip, viewMode === 'list' && styles.viewToggleChipActive]}
@@ -312,23 +296,18 @@ export default function SemanaScreen() {
             accessibilityRole="button"
             accessibilityState={{ selected: viewMode === 'list' }}
             accessibilityLabel={t('semana.viewList')}
+            accessibilityHint={t('semanaExtra.a11yViewListHint')}
           >
-            {viewMode === 'list' ? (
-              <LinearGradient
-                colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.viewToggleGradient}
-              >
-                <Text style={styles.viewToggleTextActive}>{t('semana.viewList')}</Text>
-              </LinearGradient>
-            ) : (
-              <Text style={styles.viewToggleText}>{t('semana.viewList')}</Text>
-            )}
+            <Text
+              style={[
+                styles.viewToggleText,
+                viewMode === 'list' && styles.viewToggleTextActive,
+              ]}
+            >
+              {t('semana.viewList')}
+            </Text>
           </TouchableOpacity>
         </View>
-
-        <ScreenIntroCard>{t('semana.intro')}</ScreenIntroCard>
 
         {viewMode === 'calendar' ? (
           <>
@@ -336,52 +315,15 @@ export default function SemanaScreen() {
               <SemanaCalendarLegend />
             </View>
 
-            <View style={styles.weekNav}>
-              <TouchableOpacity
-                style={[styles.weekNavButton, !canGoPrevMonth && styles.weekNavButtonDisabled]}
-                onPress={handlePrevMonth}
-                disabled={!canGoPrevMonth}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel={t('semana.monthNavA11yPrev')}
-              >
-                <ChevronLeft
-                  size={22}
-                  color={canGoPrevMonth ? THEME.colors.gradient.blue : THEME.colors.text.secondary}
-                />
-                <Text style={[styles.weekNavButtonText, !canGoPrevMonth && styles.weekNavButtonTextDisabled]}>
-                  {t('semana.prev')}
-                </Text>
-              </TouchableOpacity>
-              <View style={styles.weekNavCenterWrap}>
-                <LinearGradient
-                  colors={THEME.colors.gradientTint.weekNav}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.weekNavCenter}
-                >
-                  <Text style={styles.weekNavLabel} numberOfLines={1}>
-                    {monthNavLabel}
-                  </Text>
-                </LinearGradient>
-              </View>
-              <TouchableOpacity
-                style={[styles.weekNavButton, !canGoNextMonth && styles.weekNavButtonDisabled]}
-                onPress={handleNextMonth}
-                disabled={!canGoNextMonth}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel={t('semana.monthNavA11yNext')}
-              >
-                <Text style={[styles.weekNavButtonText, !canGoNextMonth && styles.weekNavButtonTextDisabled]}>
-                  {t('semana.next')}
-                </Text>
-                <ChevronRight
-                  size={22}
-                  color={canGoNextMonth ? THEME.colors.gradient.blue : THEME.colors.text.secondary}
-                />
-              </TouchableOpacity>
-            </View>
+            <SemanaWeekNav
+              label={monthNavLabel}
+              canGoPrev={canGoPrevMonth}
+              canGoNext={canGoNextMonth}
+              onPrev={handlePrevMonth}
+              onNext={handleNextMonth}
+              prevA11yLabel={t('semana.monthNavA11yPrev')}
+              nextA11yLabel={t('semana.monthNavA11yNext')}
+            />
 
             {monthLoading ? (
               <Text style={styles.loadingWeek}>{t('semana.loadingDays')}</Text>
@@ -395,294 +337,65 @@ export default function SemanaScreen() {
               </View>
             )}
 
-            <View style={styles.daySection}>
-              <View style={styles.dayHeader}>
-                <Text style={styles.dayLabel} numberOfLines={1}>
-                  {t('semana.selectedDayTitle', { day: selectedDayLabel })}
-                </Text>
-              </View>
-              <View style={styles.dayBody}>
-                {selectedDayData?.emotion ? (
-                  <Text style={styles.selectedDayCheckIn}>
-                    {t('semana.selectedDayCheckIn', {
-                      emotion: t(`sentir.emotions.${selectedDayData.emotion}` as 'sentir.emotions.tranquila'),
-                      energy: selectedDayData.energyLevel ?? '—',
-                    })}
-                  </Text>
-                ) : (
-                  <Text style={styles.selectedDayNoCheckIn}>{t('semana.selectedDayNoCheckIn')}</Text>
-                )}
-
-                {selectedDayTasks.length === 0 ? (
-                  <View style={styles.emptyDay}>
-                    <Text style={styles.emptyDayEmoji}>📅</Text>
-                    <Text style={styles.emptyDayText}>{t('semana.emptyDay')}</Text>
-                    <Text style={styles.emptyDayHint}>{t('semana.emptyHint')}</Text>
-                    <TouchableOpacity
-                      style={styles.addDayButtonWrap}
-                      onPress={() => router.push(`/(tabs)/vaciar?date=${selectedDate}`)}
-                      activeOpacity={0.85}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${t('semana.addTasks')} ${selectedDayLabel}`}
-                    >
-                      <LinearGradient
-                        colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.addDayButton}
-                      >
-                        <Plus size={18} color={THEME.colors.onGradient} />
-                        <Text style={styles.addDayButtonText}>{t('semana.addTasks')}</Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <>
-                    <View style={styles.taskList}>
-                      {selectedDayTasks.map((task) => (
-                        <WeekTaskItem
-                          key={task.id}
-                          task={task}
-                          projectName={
-                            task.project_id
-                              ? projectsMap[task.project_id]?.name || t('semana.projectFallback')
-                              : null
-                          }
-                          projectColor={
-                            task.project_id
-                              ? projectsMap[task.project_id]?.color || THEME.colors.gradient.blue
-                              : undefined
-                          }
-                        />
-                      ))}
-                    </View>
-                    <TouchableOpacity
-                      style={styles.addDayButtonOutlined}
-                      onPress={() => router.push(`/(tabs)/vaciar?date=${selectedDate}`)}
-                      activeOpacity={0.8}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${t('semana.addMore')} ${selectedDayLabel}`}
-                    >
-                      <Plus size={16} color={THEME.colors.gradient.blue} />
-                      <Text style={styles.addDayButtonTextOutlined}>{t('semana.addMore')}</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-            </View>
+            <SemanaDaySection
+              dateStr={selectedDate}
+              title={t('semana.selectedDayTitle', { day: selectedDayLabel })}
+              tasks={selectedDayTasks}
+              projectsMap={projectsMap}
+              checkInChipText={selectedDayCheckInLabel}
+              addTasksA11yLabel={`${t('semana.addTasks')} ${selectedDayLabel}`}
+              addMoreA11yLabel={`${t('semana.addMore')} ${selectedDayLabel}`}
+            />
           </>
         ) : (
           <>
-        <View style={styles.weekNav}>
-          <TouchableOpacity
-            style={[styles.weekNavButton, !canGoPrev && styles.weekNavButtonDisabled]}
-            onPress={handlePrevWeek}
-            disabled={!canGoPrev}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={t('semanaExtra.a11yPrevWeek')}
-          >
-            <ChevronLeft size={22} color={canGoPrev ? THEME.colors.gradient.blue : THEME.colors.text.secondary} />
-            <Text style={[styles.weekNavButtonText, !canGoPrev && styles.weekNavButtonTextDisabled]}>
-              {t('semana.prev')}
-            </Text>
-          </TouchableOpacity>
-          <View style={styles.weekNavCenterWrap}>
-            <LinearGradient
-              colors={THEME.colors.gradientTint.weekNav}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.weekNavCenter}
-            >
-              <Text style={styles.weekNavLabel} numberOfLines={1}>
-                {displayWeekLabel}
-              </Text>
-            </LinearGradient>
-          </View>
-          <TouchableOpacity
-            style={[styles.weekNavButton, !canGoNext && styles.weekNavButtonDisabled]}
-            onPress={handleNextWeek}
-            disabled={!canGoNext}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={t('semanaExtra.a11yNextWeek')}
-          >
-            <Text style={[styles.weekNavButtonText, !canGoNext && styles.weekNavButtonTextDisabled]}>
-              {t('semana.next')}
-            </Text>
-            <ChevronRight size={22} color={canGoNext ? THEME.colors.gradient.blue : THEME.colors.text.secondary} />
-          </TouchableOpacity>
-        </View>
+        <SemanaWeekNav
+          label={displayWeekLabel}
+          canGoPrev={canGoPrev}
+          canGoNext={canGoNext}
+          onPrev={handlePrevWeek}
+          onNext={handleNextWeek}
+          prevA11yLabel={t('semanaExtra.a11yPrevWeek')}
+          nextA11yLabel={t('semanaExtra.a11yNextWeek')}
+        />
 
-        <View style={styles.filterRow}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterContent}
-          >
-            <TouchableOpacity
-              onPress={() => setSelectedProjectId(null)}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel={t('semanaExtra.a11yViewAllTasks')}
-              style={styles.filterChipTouchable}
-            >
-              {!selectedProjectId ? (
-                <LinearGradient
-                  colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.filterChipGradient}
-                >
-                  <Text style={styles.filterChipTextSelected}>{t('semana.all')}</Text>
-                </LinearGradient>
-              ) : (
-                <View style={styles.filterChip}>
-                  <Text style={styles.filterChipText}>{t('semana.all')}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-            {projects.map((p) => {
-              const isSelected = selectedProjectId === p.id;
-              const chipColor = p.color || THEME.colors.gradient.blue;
-              return (
-                <TouchableOpacity
-                  key={p.id}
-                  onPress={() => setSelectedProjectId(p.id)}
-                  activeOpacity={0.85}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('semanaExtra.a11yFilterProject', { name: p.name })}
-                  style={styles.filterChipTouchable}
-                >
-                  {isSelected ? (
-                    <LinearGradient
-                      colors={[chipColor, chipColor]}
-                      style={[styles.filterChipGradient, { opacity: 0.95 }]}
-                    >
-                      <View style={[styles.filterChipDotLight, { backgroundColor: THEME.colors.onGradientMuted }]} />
-                      <Text style={styles.filterChipTextSelected} numberOfLines={1}>{p.name}</Text>
-                    </LinearGradient>
-                  ) : (
-                    <View style={styles.filterChip}>
-                      <View style={[styles.filterChipDot, { backgroundColor: chipColor }]} />
-                      <Text style={styles.filterChipText} numberOfLines={1}>{p.name}</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
+        <SemanaProjectFilter
+          projects={projects}
+          selectedProjectId={selectedProjectId}
+          onSelectProject={setSelectedProjectId}
+        />
 
         {loading ? (
           <Text style={styles.loadingWeek}>{t('semana.loadingDays')}</Text>
         ) : null}
 
-        {!loading && visibleWeekTasks.map(({ day, tasks }) => (
-          <View key={day.dateStr} style={styles.daySection}>
-            {day.isToday ? (
-              <LinearGradient
-                colors={THEME.colors.gradientTint.dayToday}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[styles.dayHeader, styles.dayHeaderToday]}
-              >
-                <Text style={[styles.dayLabel, styles.dayLabelToday]} numberOfLines={1}>
-                  {formatDayLabel(day.dateStr, monthNames)}
-                </Text>
-                <View style={styles.todayBadge}>
-                  <Text style={styles.todayBadgeText}>{t('semana.today')}</Text>
-                </View>
-              </LinearGradient>
-            ) : (
-              <View style={styles.dayHeader}>
-                <Text style={styles.dayLabel} numberOfLines={1}>
-                  {formatDayLabel(day.dateStr, monthNames)}
-                </Text>
-              </View>
-            )}
-
-            {tasks.length === 0 ? (
-              <View style={styles.dayBody}>
-                <View style={styles.emptyDay}>
-                  <Text style={styles.emptyDayEmoji}>📅</Text>
-                  <Text style={styles.emptyDayText}>{t('semana.emptyDay')}</Text>
-                  <Text style={styles.emptyDayHint}>{t('semana.emptyHint')}</Text>
-                  <TouchableOpacity
-                    style={styles.addDayButtonWrap}
-                    onPress={() => router.push(`/(tabs)/vaciar?date=${day.dateStr}`)}
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${t('semana.addTasks')} ${formatDayLabel(day.dateStr, monthNames)}`}
-                  >
-                    <LinearGradient
-                      colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.addDayButton}
-                    >
-                      <Plus size={18} color={THEME.colors.onGradient} />
-                      <Text style={styles.addDayButtonText}>{t('semana.addTasks')}</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              <View style={styles.dayBody}>
-                <View style={styles.taskList}>
-                  {tasks.map((task) => (
-                    <WeekTaskItem
-                      key={task.id}
-                      task={task}
-                      projectName={
-                        task.project_id
-                          ? projectsMap[task.project_id]?.name || t('semana.projectFallback')
-                          : null
-                      }
-                      projectColor={
-                        task.project_id
-                          ? projectsMap[task.project_id]?.color || THEME.colors.gradient.blue
-                          : undefined
-                      }
-                    />
-                  ))}
-                </View>
-                <TouchableOpacity
-                  style={styles.addDayButtonOutlined}
-                  onPress={() => router.push(`/(tabs)/vaciar?date=${day.dateStr}`)}
-                  activeOpacity={0.8}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${t('semana.addMore')} ${formatDayLabel(day.dateStr, monthNames)}`}
-                >
-                  <Plus size={16} color={THEME.colors.gradient.blue} />
-                  <Text style={styles.addDayButtonTextOutlined}>{t('semana.addMore')}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        ))}
+        {!loading && visibleWeekTasks.map(({ day, tasks }) => {
+          const dayLabel = formatDayLabel(day.dateStr, monthNames);
+          return (
+            <SemanaDaySection
+              key={day.dateStr}
+              dateStr={day.dateStr}
+              title={dayLabel}
+              tasks={tasks}
+              projectsMap={projectsMap}
+              isToday={day.isToday}
+              addTasksA11yLabel={`${t('semana.addTasks')} ${dayLabel}`}
+              addMoreA11yLabel={`${t('semana.addMore')} ${dayLabel}`}
+            />
+          );
+        })}
 
           </>
         )}
 
+        {viewMode === 'list' ? (
         <View style={styles.bottomSection}>
-          <TouchableOpacity
-            style={styles.addButton}
+          <CalmPrimaryButton
+            label={t('semana.addTasksOrProjects')}
             onPress={() => router.push('/(tabs)/vaciar')}
-            activeOpacity={0.88}
-            accessibilityRole="button"
+            large
             accessibilityLabel={t('semana.addTasksOrProjects')}
-          >
-            <LinearGradient
-              colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.addButtonGradient}
-            >
-              <Plus size={22} color={THEME.colors.onGradient} />
-              <Text style={styles.addButtonText}>{t('semana.addTasksOrProjects')}</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+          />
 
           {schemaSetupType ? (
             <View style={styles.setupCard}>
@@ -701,6 +414,7 @@ export default function SemanaScreen() {
             </View>
           ) : null}
         </View>
+        ) : null}
 
         {!loading && !subscriptionLoading && !isSubscribed && (
           <PremiumTeaserCard
@@ -731,74 +445,7 @@ export default function SemanaScreen() {
             ) : null}
           </View>
         ) : null}
-      </ScrollView>
-    </View>
-  );
-}
-
-function WeekTaskItem({
-  task,
-  projectName,
-  projectColor,
-}: {
-  task: Task;
-  projectName: string | null;
-  projectColor?: string;
-}) {
-  const { t } = useI18n();
-  const hasSubtasks = task.subtasks && task.subtasks.length > 0;
-  const accentColor = projectColor || THEME.colors.gradient.blue;
-
-  return (
-    <View style={[styles.taskCard, { borderLeftColor: accentColor }]}>
-      <View style={styles.taskRow}>
-        <View
-          style={[
-            styles.taskCheck,
-            task.is_completed && styles.taskCheckCompleted,
-          ]}
-        />
-        <View style={styles.taskBody}>
-          {projectName ? (
-            <View style={styles.projectBadge}>
-              <FolderKanban size={12} color={accentColor} />
-              <Text style={[styles.projectBadgeText, { color: accentColor }]}>{projectName}</Text>
-            </View>
-          ) : (
-            <View style={styles.standaloneBadge}>
-              <FileText size={12} color={THEME.colors.text.secondary} />
-              <Text style={styles.standaloneBadgeText}>{t('semana.looseTasks')}</Text>
-            </View>
-          )}
-          <Text
-            style={[
-              styles.taskContent,
-              task.is_completed && styles.taskContentCompleted,
-            ]}
-            numberOfLines={2}
-          >
-            {task.content}
-          </Text>
-          {hasSubtasks && (
-            <View style={styles.subtasksList}>
-              {task.subtasks!.map((st) => (
-                <View key={st.id} style={styles.subtaskRow}>
-                  <ChevronRight size={14} color={THEME.colors.text.secondary} />
-                  <Text
-                    style={[
-                      styles.subtaskContent,
-                      st.is_completed && styles.taskContentCompleted,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {st.content}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
-      </View>
+      </CalmScreen>
     </View>
   );
 }
@@ -806,88 +453,47 @@ function WeekTaskItem({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.fill[100],
-  },
-  content: {
-    paddingBottom: THEME.spacing.xl,
-  },
-  headerGradient: {
-    marginHorizontal: THEME.spacing.lg,
-    marginBottom: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.rounded,
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: THEME.spacing.md,
-    paddingVertical: THEME.spacing.md,
-    gap: THEME.spacing.md,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    gap: THEME.spacing.xs,
-  },
-  headerIconButtonWrap: {
-    borderRadius: 22,
-    overflow: 'hidden',
-    ...THEME.shadows.soft,
+    backgroundColor: THEME.colors.calm.background,
   },
   headerIconButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: THEME.borderRadius.rounded,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerIconButtonPlain: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-  },
-  headerTextWrap: {
-    flex: 1,
-  },
-  title: {
-    ...THEME.typography.h2,
-    fontSize: 26,
-    color: THEME.colors.text.main,
-    marginBottom: 2,
-  },
-  subtitle: {
-    ...THEME.typography.body,
-    fontSize: 14,
-    color: THEME.colors.text.secondary,
+    borderColor: THEME.colors.calm.border,
   },
   focusProgress: {
     marginTop: THEME.spacing.sm,
   },
   viewToggle: {
     flexDirection: 'row',
-    marginHorizontal: THEME.spacing.lg,
     marginBottom: THEME.spacing.md,
-    gap: THEME.spacing.sm,
-    backgroundColor: THEME.colors.fill[200],
+    gap: THEME.spacing.xs,
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.pill,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
     padding: 4,
   },
   viewToggleChip: {
     flex: 1,
     borderRadius: THEME.borderRadius.pill,
-    overflow: 'hidden',
-  },
-  viewToggleChipActive: {},
-  viewToggleGradient: {
     paddingVertical: THEME.spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: THEME.borderRadius.pill,
+  },
+  viewToggleChipActive: {
+    backgroundColor: THEME.colors.calm.lavenderDeep,
   },
   viewToggleText: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
     textAlign: 'center',
-    paddingVertical: THEME.spacing.sm,
     fontFamily: THEME.fonts.heading.medium,
   },
   viewToggleTextActive: {
@@ -896,343 +502,20 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
   },
   calendarSection: {
-    marginHorizontal: THEME.spacing.lg,
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 0,
   },
   calendarGridWrap: {
-    marginHorizontal: THEME.spacing.lg,
-    marginBottom: THEME.spacing.md,
-  },
-  selectedDayCheckIn: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.sm,
-  },
-  selectedDayNoCheckIn: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    fontStyle: 'italic',
-    marginBottom: THEME.spacing.sm,
-  },
-  weekNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: THEME.spacing.lg,
-    marginBottom: THEME.spacing.md,
-    gap: THEME.spacing.sm,
-  },
-  weekNavButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.sm,
-    minWidth: 90,
-    maxWidth: 100,
-  },
-  weekNavButtonDisabled: {
-    opacity: 0.5,
-  },
-  weekNavButtonText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  weekNavButtonTextDisabled: {
-    color: THEME.colors.text.secondary,
-  },
-  weekNavCenterWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 0,
-  },
-  weekNavCenter: {
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 120,
-  },
-  weekNavLabel: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-    fontSize: 13,
-  },
-  filterRow: {
-    marginBottom: THEME.spacing.md,
-  },
-  filterContent: {
-    paddingHorizontal: THEME.spacing.lg,
-    gap: THEME.spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: THEME.spacing.sm,
-  },
-  filterChipTouchable: {
-    borderRadius: THEME.borderRadius.pill,
-    overflow: 'hidden',
-  },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.xs + 2,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[200],
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-  },
-  filterChipGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.xs + 2,
-    borderRadius: THEME.borderRadius.pill,
-  },
-  filterChipDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  filterChipDotLight: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  filterChipText: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.main,
-  },
-  filterChipTextSelected: {
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
-    fontSize: 13,
+    marginBottom: 0,
   },
   loadingWeek: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
-    paddingHorizontal: THEME.spacing.lg,
-    marginBottom: THEME.spacing.md,
-  },
-  daySection: {
-    marginHorizontal: THEME.spacing.lg,
-    marginBottom: THEME.spacing.lg,
-    backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.rounded,
-    padding: 0,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    overflow: 'hidden',
-    ...THEME.shadows.soft,
-  },
-  dayHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
-    borderRadius: 0,
-    backgroundColor: THEME.colors.fill[200],
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.stroke[100],
-  },
-  dayHeaderToday: {
-    borderLeftWidth: 4,
-    borderLeftColor: THEME.colors.surfaceOverlay.borderMedium,
-  },
-  dayBody: {
-    padding: THEME.spacing.md,
-  },
-  dayLabel: {
-    ...THEME.typography.h3,
-    fontSize: 16,
-    color: THEME.colors.text.main,
-  },
-  dayLabelToday: {
-    color: THEME.colors.gradient.blue,
-  },
-  todayBadge: {
-    marginLeft: THEME.spacing.sm,
-    backgroundColor: THEME.colors.gradient.blue,
-    paddingHorizontal: THEME.spacing.xs,
-    paddingVertical: 2,
-    borderRadius: THEME.borderRadius.standard,
-  },
-  todayBadgeText: {
-    ...THEME.typography.small,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  emptyDay: {
-    paddingVertical: THEME.spacing.md,
-    paddingHorizontal: THEME.spacing.sm,
-    alignItems: 'center',
-  },
-  emptyDayEmoji: {
-    fontSize: 40,
-    marginBottom: THEME.spacing.xs,
-  },
-  emptyDayText: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-    marginBottom: 4,
-  },
-  emptyDayHint: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    fontStyle: 'italic',
-    marginBottom: THEME.spacing.md,
-  },
-  addDayButtonWrap: {
-    borderRadius: THEME.borderRadius.rounded,
-    overflow: 'hidden',
-    alignSelf: 'stretch',
-    ...THEME.shadows.soft,
-  },
-  addDayButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: THEME.spacing.xs,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
-  },
-  addDayButtonText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
-    fontSize: 14,
-  },
-  addDayButtonOutlined: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: THEME.spacing.xs,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.standard,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: THEME.colors.gradient.blue,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
-    marginTop: THEME.spacing.xs,
-  },
-  addDayButtonTextOutlined: {
-    ...THEME.typography.caption,
-    color: THEME.colors.gradient.blue,
-    fontFamily: THEME.fonts.heading.medium,
-    fontSize: 13,
-  },
-  taskList: {
-    gap: THEME.spacing.xs,
-  },
-  taskCard: {
-    backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.standard,
-    padding: THEME.spacing.sm,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    borderLeftWidth: 4,
-    ...THEME.shadows.soft,
-  },
-  taskRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: THEME.spacing.sm,
-  },
-  taskCheck: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: THEME.colors.stroke[100],
-    marginTop: 2,
-  },
-  taskCheckCompleted: {
-    backgroundColor: THEME.colors.gradient.blue,
-    borderColor: THEME.colors.gradient.blue,
-  },
-  taskBody: {
-    flex: 1,
-  },
-  projectBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 4,
-  },
-  projectBadgeText: {
-    ...THEME.typography.small,
-    color: THEME.colors.gradient.blue,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  standaloneBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 4,
-  },
-  standaloneBadgeText: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-  },
-  taskContent: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-  },
-  taskContentCompleted: {
-    textDecorationLine: 'line-through',
-    color: THEME.colors.text.secondary,
-  },
-  subtasksList: {
-    marginTop: THEME.spacing.xs,
-    paddingLeft: THEME.spacing.sm,
-    borderLeftWidth: 2,
-    borderLeftColor: THEME.colors.fill[200],
-  },
-  subtaskRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 2,
-  },
-  subtaskContent: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    flex: 1,
+    marginBottom: 0,
   },
   bottomSection: {
-    marginHorizontal: THEME.spacing.lg,
-    marginTop: THEME.spacing.lg,
-    marginBottom: THEME.spacing.xl,
-    gap: THEME.spacing.md,
-  },
-  addButton: {
-    borderRadius: THEME.borderRadius.rounded,
-    overflow: 'hidden',
-    ...THEME.shadows.soft,
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-  addButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginTop: 0,
+    marginBottom: THEME.spacing.md,
     gap: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.md + 4,
-    paddingHorizontal: THEME.spacing.lg,
-  },
-  addButtonText: {
-    ...THEME.typography.body,
-    fontSize: 16,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
   },
   setupCard: {
     padding: THEME.spacing.md + 4,
@@ -1274,12 +557,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   diagnostico: {
-    marginHorizontal: THEME.spacing.lg,
     marginTop: THEME.spacing.lg,
     marginBottom: THEME.spacing.xl,
     padding: THEME.spacing.md,
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.standard,
+    ...THEME.surfaces.panel,
     borderLeftWidth: 4,
     borderLeftColor: THEME.colors.gradient.blue,
   },

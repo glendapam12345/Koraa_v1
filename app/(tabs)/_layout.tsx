@@ -141,15 +141,21 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: THEME.colors.gradient.blue,
+          tabBarActiveTintColor: THEME.colors.calm.lavenderDeep,
           tabBarInactiveTintColor: THEME.colors.text.secondary,
           tabBarStyle: {
-            backgroundColor: THEME.colors.fill[100],
-            borderTopWidth: 1,
-            borderTopColor: THEME.colors.stroke[100],
-            height: 60 + insets.bottom,
-            paddingBottom: insets.bottom + 6,
-            paddingTop: 8,
+            backgroundColor: THEME.colors.calm.card,
+            borderTopWidth: 0,
+            height: 64 + insets.bottom,
+            paddingBottom: insets.bottom + 8,
+            paddingTop: 10,
+            marginHorizontal: THEME.spacing.sm,
+            marginBottom: THEME.spacing.xs,
+            borderRadius: THEME.borderRadius.xl,
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            ...THEME.shadows.soft,
           },
           tabBarLabelStyle: {
             fontSize: 13,

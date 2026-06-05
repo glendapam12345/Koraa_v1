@@ -4,6 +4,7 @@ import { translate, type AppLocale } from '@/lib/i18n';
 import { logger } from '@/lib/logger';
 import { buildMonthGrid, getMonthBounds, type CalendarDayCell } from '@/lib/calendarGrid';
 import type { Task } from '@/hooks/useTasks';
+import { normalizeScheduledDate } from '@/lib/dateLocal';
 
 export type CalendarDayData = CalendarDayCell & {
   emotion?: string;
@@ -85,9 +86,10 @@ export function useMonthCalendar(
 
       const byDate: Record<string, Task[]> = {};
       for (const task of (tasksRes.data ?? []) as Task[]) {
-        if (!task.scheduled_date || task.parent_task_id) continue;
-        if (!byDate[task.scheduled_date]) byDate[task.scheduled_date] = [];
-        byDate[task.scheduled_date].push(task);
+        const dateKey = normalizeScheduledDate(task.scheduled_date);
+        if (!dateKey || task.parent_task_id) continue;
+        if (!byDate[dateKey]) byDate[dateKey] = [];
+        byDate[dateKey].push({ ...task, scheduled_date: dateKey });
       }
 
       setTasksByDate(byDate);

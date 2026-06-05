@@ -1,10 +1,10 @@
 import type { CatalogTipEntry } from '@/lib/i18n/locales/tipsCatalog.es';
 
 export const TIPS_CATALOG_EN: CatalogTipEntry[] = [
-  { id: 'mind-1', category: 'mindset', title: 'Your power song', body: 'Play a song that lifts you for 3 minutes. Just listen and breathe.', emoji: '🎧', emotions: ['agotada', 'ansiosa', 'abrumada'] },
+  { id: 'mind-1', category: 'mindset', title: 'Your power song', body: 'Play a song that lifts you for 3 minutes. Just listen and breathe.', emoji: '🎧', action: 'spotify', emotions: ['agotada', 'ansiosa', 'abrumada'] },
   { id: 'mind-2', category: 'mindset', title: 'Mental stories', body: 'What story are you telling yourself today? Write one line and ask if it is fully true.', emoji: '🧠', emotions: ['ansiosa', 'abrumada'] },
-  { id: 'mind-3', category: 'mindset', title: 'Breathe', body: '4 slow breaths: in 4, hold 2, out 6. Your body gets it before your mind.', emoji: '🌬️', emotions: ['ansiosa', 'agotada', 'abrumada'] },
-  { id: 'mind-4', category: 'mindset', title: 'Write and release', body: 'Two minutes in notes: what you feel, what you need, what can wait.', emoji: '📝', emotions: ['abrumada', 'ansiosa'] },
+  { id: 'mind-3', category: 'mindset', title: 'Breathe', body: '4 slow breaths: in 4, hold 2, out 6. Your body gets it before your mind.', emoji: '🌬️', action: 'health_mindfulness', emotions: ['ansiosa', 'agotada', 'abrumada'] },
+  { id: 'mind-4', category: 'mindset', title: 'Write and release', body: 'Two minutes in notes: what you feel, what you need, what can wait.', emoji: '📝', action: 'reminders', emotions: ['abrumada', 'ansiosa'] },
   { id: 'mind-5', category: 'mindset', title: 'Be kind to you', body: 'You do not need 100% today. One small step counts as a win.', emoji: '💗', emotions: ['agotada', 'abrumada'] },
   { id: 'mind-6', category: 'mindset', title: 'No scroll on wake', body: 'First 15 minutes without social feeds. Your brain will thank you.', emoji: '📵', minEnergy: 1, maxEnergy: 3 },
   { id: 'mind-7', category: 'mindset', title: 'Ground the day', body: 'Name 3 things you can actually do today. The rest goes on the calendar, guilt-free.', emoji: '🪨', emotions: ['enfocada', 'motivada', 'tranquila'] },
@@ -14,10 +14,10 @@ export const TIPS_CATALOG_EN: CatalogTipEntry[] = [
   { id: 'rest-3', category: 'rest', title: 'Active rest', body: 'A 10-minute walk counts as a reset.', emoji: '🚶‍♀️', minEnergy: 2, maxEnergy: 4 },
   { id: 'rest-4', category: 'rest', title: 'Lower stress', body: 'Water, soft light, something warm. Your nervous system looks for safety cues.', emoji: '🫖', emotions: ['ansiosa', 'agotada'] },
   { id: 'rest-5', category: 'rest', title: 'Do not skip meals', body: 'Something simple and nourishing stabilizes mood and energy.', emoji: '🥣', maxEnergy: 3 },
-  { id: 'rest-6', category: 'rest', title: 'Mental micro-nap', body: 'Close your eyes 2 minutes with soft music. Maintenance, not laziness.', emoji: '😌', emotions: ['agotada'] },
+  { id: 'rest-6', category: 'rest', title: 'Mental micro-nap', body: 'Close your eyes 2 minutes with soft music. Maintenance, not laziness.', emoji: '😌', action: 'apple_music', emotions: ['agotada'] },
   { id: 'act-1', category: 'action', title: 'One thing at a time', body: 'Pick the smallest task and finish it before opening another.', emoji: '👣', emotions: ['ansiosa', 'abrumada'] },
   { id: 'act-2', category: 'action', title: 'Ask for help', body: 'A short message: “Can you help with X?” Sometimes it lightens more than an hour alone.', emoji: '🤝', emotions: ['abrumada', 'agotada'] },
-  { id: 'act-3', category: 'action', title: '25-minute block', body: 'One pomodoro on one task. Then 5 minutes off, guilt-free.', emoji: '⏱️', emotions: ['enfocada', 'motivada'], minEnergy: 3 },
+  { id: 'act-3', category: 'action', title: '25-minute block', body: 'One pomodoro on one task. Then 5 minutes off, guilt-free.', emoji: '⏱️', action: 'focus_session', emotions: ['enfocada', 'motivada'], minEnergy: 3 },
   { id: 'act-4', category: 'action', title: 'Move your body', body: 'Stretch or dance 5 min. Energy rises without extra coffee.', emoji: '💃', emotions: ['motivada', 'tranquila'], minEnergy: 2 },
   { id: 'act-5', category: 'action', title: 'Small decision', body: 'If stuck, pick the “good enough” option in 2 minutes and move.', emoji: '🔀', emotions: ['ansiosa'] },
   { id: 'act-6', category: 'action', title: 'Get outside', body: 'Natural light for 10 minutes helps rhythm and clarity.', emoji: '🌤️', minEnergy: 2 },

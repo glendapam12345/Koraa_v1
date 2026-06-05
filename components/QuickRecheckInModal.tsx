@@ -3,7 +3,7 @@ import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { X } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { EmotionCard } from '@/components/EmotionCard';
-import { GradientButton } from '@/components/GradientButton';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
@@ -42,6 +42,8 @@ type QuickRecheckInModalProps = {
   onComplete: () => void;
   initialEmotion?: string;
   initialEnergy?: number;
+  initialTime?: string;
+  initialFocus?: string;
 };
 
 export function QuickRecheckInModal({
@@ -50,6 +52,8 @@ export function QuickRecheckInModal({
   onComplete,
   initialEmotion = '',
   initialEnergy = 0,
+  initialTime = '',
+  initialFocus = '',
 }: QuickRecheckInModalProps) {
   const { user } = useAuth();
   const { t, locale } = useI18n();
@@ -64,10 +68,10 @@ export function QuickRecheckInModal({
     if (!visible) return;
     setEmotion(initialEmotion);
     setEnergy(initialEnergy);
-    setTime('');
-    setFocus('');
+    setTime(initialTime);
+    setFocus(initialFocus);
     setError(null);
-  }, [visible, initialEmotion, initialEnergy]);
+  }, [visible, initialEmotion, initialEnergy, initialTime, initialFocus]);
 
   const canSubmit = Boolean(emotion && energy >= 1 && energy <= 5 && time && focus && user);
 
@@ -112,11 +116,18 @@ export function QuickRecheckInModal({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      accessibilityViewIsModal
+    >
+      <View style={styles.overlay} accessibilityRole="none">
         <View style={styles.sheet}>
           <View style={styles.header}>
             <View style={styles.headerText}>
+              <Text style={styles.fullBadge}>{t('quickRecheck.fullCheckInBadge')}</Text>
               <Text style={styles.title}>{t('quickRecheck.title')}</Text>
               <Text style={styles.subtitle}>{t('quickRecheck.subtitle')}</Text>
               <Text style={styles.hint}>{stepHint}</Text>
@@ -206,11 +217,13 @@ export function QuickRecheckInModal({
           </ScrollView>
 
           <View style={styles.footer}>
-            <GradientButton
-              title={saving ? t('quickRecheck.saving') : t('quickRecheck.submit')}
+            <CalmPrimaryButton
+              label={t('quickRecheck.submit')}
               onPress={() => void handleSubmit()}
               disabled={!canSubmit || saving}
-              accessibilityHint={t('quickRecheck.submitHint')}
+              loading={saving}
+              large
+              accessibilityHint={stepHint}
             />
           </View>
         </View>
@@ -240,6 +253,18 @@ const styles = StyleSheet.create({
     borderBottomColor: THEME.colors.stroke[100],
   },
   headerText: { flex: 1, gap: 4 },
+  fullBadge: {
+    ...THEME.typography.meta,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+    alignSelf: 'flex-start',
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    paddingVertical: 4,
+    paddingHorizontal: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.pill,
+    overflow: 'hidden',
+    marginBottom: 4,
+  },
   title: {
     ...THEME.typography.h3,
     color: THEME.colors.text.main,

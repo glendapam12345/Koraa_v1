@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { requireOptionalNativeModule } from 'expo-modules-core';
-import { parseLocalDateString } from '@/lib/dateLocal';
+import { normalizeScheduledDate, parseLocalDateString } from '@/lib/dateLocal';
 
 const STORAGE_PREFIX = 'koraa_device_calendar_event:';
 
@@ -109,7 +109,8 @@ export async function addTaskToDeviceCalendar(
   }
 
   const trimmedTitle = input.title.trim();
-  if (!trimmedTitle || !input.scheduledDate) {
+  const dateKey = normalizeScheduledDate(input.scheduledDate);
+  if (!trimmedTitle || !dateKey) {
     return { ok: false, reason: 'error' };
   }
 
@@ -130,7 +131,7 @@ export async function addTaskToDeviceCalendar(
   }
 
   try {
-    const startDate = parseLocalDateString(input.scheduledDate);
+    const startDate = parseLocalDateString(dateKey);
     startDate.setHours(9, 0, 0, 0);
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 1);

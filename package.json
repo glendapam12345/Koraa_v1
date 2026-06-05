@@ -1,5 +1,5 @@
 {
-  "name": "bolt-expo-starter",
+  "name": "koraa",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "private": true,
@@ -28,9 +28,11 @@
     "check:supabase:migrations": "node scripts/supabase-migrations-hint.mjs",
     "env:bootstrap": "node scripts/env-bootstrap.mjs",
     "verify:local": "npm run check:metro && npm run check:legacy && npm run check:supabase && npm run check:supabase:schema && npm run check:supabase:migrations && npm run check:calendar && npm run test:unit",
+    "verify:all": "npx expo-doctor && npm run typecheck && npm run lint && npm run test",
     "supabase:email-otp-templates": "node scripts/update-supabase-otp-email-templates.mjs",
+    "deploy:hoy-coach": "supabase functions deploy hoy-coach --project-ref oucczxqlxsqoqvetmedm",
     "supabase:email_otp_templates": "node scripts/update-supabase-otp-email-templates.mjs",
-    "test": "jest",
+    "test": "jest --config jest.config.js",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:unit": "jest --config jest.config.simple.js",
@@ -47,9 +49,11 @@
     "@react-navigation/native": "^7.0.14",
     "@supabase/supabase-js": "^2.58.0",
     "expo": "~54.0.35",
+    "expo-auth-session": "~7.0.11",
     "expo-blur": "~15.0.7",
     "expo-calendar": "~15.0.8",
     "expo-constants": "~18.0.9",
+    "expo-crypto": "~15.0.9",
     "expo-font": "~14.0.12",
     "expo-haptics": "~15.0.7",
     "expo-linear-gradient": "~15.0.7",
@@ -82,7 +86,9 @@
     "react-native-worklets-core": "^1.6.3"
   },
   "overrides": {
-    "react-native-worklets": "0.5.1"
+    "react-native-worklets": "0.5.1",
+    "axios": "^1.9.0",
+    "minimatch": "^10.2.3"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

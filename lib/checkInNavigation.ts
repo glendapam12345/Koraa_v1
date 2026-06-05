@@ -1,2 +1,7 @@
-/** Ruta modal de check-in (Sentir), abierta desde Hoy u otras pantallas — no es tab. */
-export const CHECK_IN_ROUTE = '/sentir' as const;
+/** Tab Hoy — check-in embebido (flujo principal del día). */
+export const CHECK_IN_ROUTE = '/(tabs)' as const;
+
+/** @deprecated Usar `openRecheckCheckIn()` — modal global unificado. */
+export const RECHECK_IN_ROUTE = '/sentir' as const;
+
+export { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';

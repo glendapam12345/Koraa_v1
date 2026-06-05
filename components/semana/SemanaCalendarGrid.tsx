@@ -91,7 +91,7 @@ export function SemanaCalendarGrid({ days, selectedDate, onSelectDate }: SemanaC
 
 const styles = StyleSheet.create({
   wrap: {
-    marginBottom: THEME.spacing.md,
+    marginBottom: 0,
   },
   weekdayRow: {
     flexDirection: 'row',

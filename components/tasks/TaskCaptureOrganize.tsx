@@ -13,7 +13,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { ProjectSelector } from '@/components/projects/ProjectSelector';
 import { DateSelector } from '@/components/tasks/DateSelector';
 import { categoryKeys, type CategoryKey } from '@/lib/i18n/locales/features/categories';
-import { getLocalDateString } from '@/lib/dateLocal';
+import { getLocalDateString, getEndOfWeekLocalDateString } from '@/lib/dateLocal';
 
 const CATEGORY_OPTIONS: { key: CategoryKey }[] = categoryKeys.map((key) => ({ key }));
 
@@ -62,6 +62,8 @@ export function TaskCaptureOrganize({
 }: TaskCaptureOrganizeProps) {
   const { t } = useI18n();
   const today = getLocalDateString();
+  const weekEnd = getEndOfWeekLocalDateString();
+  const isThisWeekSelected = selectedDate === weekEnd && selectedDate !== today;
 
   const updateSubtask = (index: number, value: string) => {
     const next = [...subtasks];
@@ -70,7 +72,11 @@ export function TaskCaptureOrganize({
   };
 
   return (
-    <View style={styles.card}>
+    <View
+      style={styles.card}
+      accessibilityRole="summary"
+      accessibilityLabel={t('vaciarExtra.a11yOrganizeCard')}
+    >
       <Text style={styles.cardTitle}>{t('vaciar.organizeCardTitle')}</Text>
       <Text style={styles.cardSub}>{t('vaciar.organizeCardSub')}</Text>
 
@@ -82,6 +88,7 @@ export function TaskCaptureOrganize({
           activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityState={{ selected: !assignToProject }}
+          accessibilityLabel={t('vaciarExtra.a11yAssignNo')}
         >
           <Text style={[styles.segmentText, !assignToProject && styles.segmentTextActive]}>
             {t('vaciar.looseTask')}
@@ -93,6 +100,7 @@ export function TaskCaptureOrganize({
           activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityState={{ selected: assignToProject }}
+          accessibilityLabel={t('vaciarExtra.a11yAssignYes')}
         >
           <FolderKanban size={16} color={assignToProject ? THEME.colors.onGradient : THEME.colors.gradient.blue} />
           <Text style={[styles.segmentText, assignToProject && styles.segmentTextActive]}>
@@ -114,6 +122,9 @@ export function TaskCaptureOrganize({
                 style={[styles.chip, isSelected && { backgroundColor: color, borderColor: color }]}
                 onPress={() => onCategoryChange(opt.key)}
                 activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                accessibilityLabel={t('vaciarExtra.a11yCategory', { name: t(`categories.${opt.key}`) })}
               >
                 <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
                   {t(`categories.${opt.key}`)}
@@ -141,23 +152,42 @@ export function TaskCaptureOrganize({
       )}
 
       <Text style={styles.fieldLabel}>{t('vaciar.fieldDate')}</Text>
+      <Text style={styles.fieldHint}>{t('vaciar.fieldDateHint')}</Text>
       <View style={styles.dateQuickRow}>
         <TouchableOpacity
           style={[styles.dateChip, selectedDate === today && styles.dateChipActive]}
           onPress={() => onDateChange(today)}
           activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityState={{ selected: selectedDate === today }}
+          accessibilityLabel={t('vaciarExtra.a11yDateToday')}
         >
           <Text style={[styles.dateChipText, selectedDate === today && styles.dateChipTextActive]}>
-            {t('semana.today')}
+            {t('vaciar.whenToday')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.dateChip, isThisWeekSelected && styles.dateChipActive]}
+          onPress={() => onDateChange(weekEnd)}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityState={{ selected: isThisWeekSelected }}
+          accessibilityLabel={t('vaciarExtra.a11yDateThisWeek')}
+        >
+          <Text style={[styles.dateChipText, isThisWeekSelected && styles.dateChipTextActive]}>
+            {t('vaciar.whenThisWeek')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.dateChip, selectedDate === null && styles.dateChipActive]}
           onPress={() => onDateChange(null)}
           activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityState={{ selected: selectedDate === null }}
+          accessibilityLabel={t('vaciarExtra.a11yDateNoRush')}
         >
           <Text style={[styles.dateChipText, selectedDate === null && styles.dateChipTextActive]}>
-            {t('vaciar.noDate')}
+            {t('vaciar.whenNoRush')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -174,6 +204,9 @@ export function TaskCaptureOrganize({
             style={[styles.subtasksToggle, hasSubtasks && styles.subtasksToggleActive]}
             onPress={() => onHasSubtasksChange(!hasSubtasks)}
             activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityState={{ selected: hasSubtasks }}
+            accessibilityLabel={hasSubtasks ? t('vaciarExtra.a11ySubtasksOn') : t('vaciarExtra.a11ySubtasksOff')}
           >
             {hasSubtasks ? (
               <ChevronUp size={18} color={THEME.colors.gradient.blue} />
@@ -195,15 +228,27 @@ export function TaskCaptureOrganize({
                     placeholder={t('vaciar.subtaskPlaceholder', { n: index + 1 })}
                     placeholderTextColor={THEME.colors.text.secondary}
                     maxLength={300}
+                    accessibilityLabel={t('vaciarExtra.a11ySubtaskField', { n: index + 1 })}
                   />
                   {subtasks.length > 1 ? (
-                    <TouchableOpacity onPress={() => onRemoveSubtask(index)} hitSlop={8}>
+                    <TouchableOpacity
+                      onPress={() => onRemoveSubtask(index)}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('vaciarExtra.a11yRemoveSubtask', { n: index + 1 })}
+                    >
                       <X size={18} color={THEME.colors.text.secondary} />
                     </TouchableOpacity>
                   ) : null}
                 </View>
               ))}
-              <TouchableOpacity style={styles.addSubtaskBtn} onPress={onAddSubtask} activeOpacity={0.85}>
+              <TouchableOpacity
+                style={styles.addSubtaskBtn}
+                onPress={onAddSubtask}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={t('vaciarExtra.a11yAddSubtask')}
+              >
                 <Plus size={16} color={THEME.colors.gradient.blue} />
                 <Text style={styles.addSubtaskText}>{t('vaciar.addSubtask')}</Text>
               </TouchableOpacity>
@@ -244,6 +289,12 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
     marginBottom: THEME.spacing.xs,
     marginTop: THEME.spacing.xs,
+  },
+  fieldHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.xs,
+    lineHeight: 18,
   },
   segmentRow: {
     flexDirection: 'row',
@@ -301,6 +352,7 @@ const styles = StyleSheet.create({
   },
   dateQuickRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: THEME.spacing.sm,
     marginBottom: THEME.spacing.sm,
   },

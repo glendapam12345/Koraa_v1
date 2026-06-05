@@ -21,6 +21,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { logger } from '@/lib/logger';
 import { useNotifications, scheduleDailyReminder } from '@/hooks/useNotifications';
 import { AnalyticsScreenTracker } from '@/components/AnalyticsScreenTracker';
+import { RecheckCheckInProvider } from '@/contexts/RecheckCheckInContext';
 import { initializeRevenueCat } from '@/lib/revenuecat';
 
 SplashScreen.preventAutoHideAsync();
@@ -121,6 +122,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={styles.root}>
       <I18nProvider>
       <AuthProvider>
+        <RecheckCheckInProvider>
         <SubscriptionProvider>
           <SafeAreaProvider>
             <AnalyticsScreenTracker />
@@ -142,12 +144,15 @@ export default function RootLayout() {
               <Stack.Screen name="paywall" />
               <Stack.Screen name="project/[id]" />
               <Stack.Screen name="proyectos" />
+              <Stack.Screen name="tips" />
+              <Stack.Screen name="focus-session" />
               <Stack.Screen name="+not-found" />
             </Stack>
               <StatusBar style="auto" />
             </View>
           </SafeAreaProvider>
         </SubscriptionProvider>
+        </RecheckCheckInProvider>
       </AuthProvider>
       </I18nProvider>
     </GestureHandlerRootView>

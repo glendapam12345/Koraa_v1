@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
-import { GradientButton } from '@/components/GradientButton';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { Sparkles, ArrowDown } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { markOnboardingCompleted } from '@/lib/onboardingGate';
@@ -69,8 +69,8 @@ export default function WelcomeScreen() {
           </View>
         </View>
 
-        <GradientButton
-          title={t('onboarding.welcome.continue')}
+        <CalmPrimaryButton
+          label={t('onboarding.welcome.continue')}
           onPress={() => router.push('/onboarding/intro2')}
           accessibilityHint={t('onboardingA11y.welcomeContinueHint')}
         />

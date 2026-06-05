@@ -1,6 +1,7 @@
 import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
+import { useI18n } from '@/contexts/I18nContext';
 
 type MiniSparklineChartProps = {
   values: number[];
@@ -13,10 +14,11 @@ export function MiniSparklineChart({
   maxValue = 5,
   height = 56,
 }: MiniSparklineChartProps) {
+  const { t } = useI18n();
   const max = Math.max(maxValue, 1);
 
   return (
-    <View style={[styles.row, { height }]}>
+    <View style={[styles.row, { height }]} accessibilityLabel={t('paramiExtra.a11yEnergySparkline')}>
       {values.map((value, index) => {
         const barHeight = value > 0 ? Math.max(6, (value / max) * (height - 8)) : 4;
         return (

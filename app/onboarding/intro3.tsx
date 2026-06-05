@@ -1,8 +1,9 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-import { GradientButton } from '@/components/GradientButton';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { OnboardingHighlightCard } from '@/components/onboarding/OnboardingHighlightCard';
+import { OnboardingProgressDots } from '@/components/onboarding/OnboardingProgressDots';
 import { Sparkles, ChevronDown } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
 
@@ -22,24 +23,59 @@ export default function Intro3Screen() {
         <Text style={styles.titleAccent}>{t('onboarding.intro3.titleAccent')}</Text>
         <Text style={styles.description}>{t('onboarding.intro3.subtitle')}</Text>
 
-        <View style={styles.flowContainer}>
-          <View style={styles.flowStep}>
+        <View
+          style={styles.flowContainer}
+          accessibilityRole="summary"
+          accessibilityLabel={t('onboardingA11y.intro3FlowGroup')}
+        >
+          <View
+            style={styles.flowStep}
+            accessible
+            accessibilityRole="text"
+            accessibilityLabel={t('onboardingA11y.flowStep', {
+              step: 1,
+              title: t('onboarding.intro3.step1Title'),
+              body: t('onboarding.intro3.step1Desc'),
+            })}
+          >
             <View style={styles.flowStepNumber}><Text style={styles.flowStepNumberText}>1</Text></View>
             <View style={styles.flowStepContent}>
               <Text style={styles.flowStepTitle}>{t('onboarding.intro3.step1Title')}</Text>
               <Text style={styles.flowStepDesc}>{t('onboarding.intro3.step1Desc')}</Text>
             </View>
           </View>
-          <View style={styles.flowArrowDown}><ChevronDown size={24} color={THEME.colors.text.secondary} /></View>
-          <View style={styles.flowStep}>
+          <View style={styles.flowArrowDown} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+            <ChevronDown size={24} color={THEME.colors.text.secondary} />
+          </View>
+          <View
+            style={styles.flowStep}
+            accessible
+            accessibilityRole="text"
+            accessibilityLabel={t('onboardingA11y.flowStep', {
+              step: 2,
+              title: t('onboarding.intro3.step2Title'),
+              body: t('onboarding.intro3.step2Desc'),
+            })}
+          >
             <View style={styles.flowStepNumber}><Text style={styles.flowStepNumberText}>2</Text></View>
             <View style={styles.flowStepContent}>
               <Text style={styles.flowStepTitle}>{t('onboarding.intro3.step2Title')}</Text>
               <Text style={styles.flowStepDesc}>{t('onboarding.intro3.step2Desc')}</Text>
             </View>
           </View>
-          <View style={styles.flowArrowDown}><ChevronDown size={24} color={THEME.colors.text.secondary} /></View>
-          <View style={styles.flowStep}>
+          <View style={styles.flowArrowDown} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+            <ChevronDown size={24} color={THEME.colors.text.secondary} />
+          </View>
+          <View
+            style={styles.flowStep}
+            accessible
+            accessibilityRole="text"
+            accessibilityLabel={t('onboardingA11y.flowStep', {
+              step: 3,
+              title: t('onboarding.intro3.step3Title'),
+              body: t('onboarding.intro3.step3Desc'),
+            })}
+          >
             <View style={styles.flowStepNumber}><Text style={styles.flowStepNumberText}>3</Text></View>
             <View style={styles.flowStepContent}>
               <Text style={styles.flowStepTitle}>{t('onboarding.intro3.step3Title')}</Text>
@@ -48,22 +84,20 @@ export default function Intro3Screen() {
           </View>
         </View>
 
-        <View style={styles.resultCard}>
-          <LinearGradient colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.resultGradient}>
-            <Text style={styles.resultTitle}>{t('onboarding.intro3.resultTitle')}</Text>
-            <Text style={styles.resultText}>{t('onboarding.intro3.resultBody')}</Text>
-          </LinearGradient>
-        </View>
+        <OnboardingHighlightCard
+          title={t('onboarding.intro3.resultTitle')}
+          body={t('onboarding.intro3.resultBody')}
+        />
 
-        <View style={styles.dotContainer}>
-          <View style={styles.dot} />
-          <View style={styles.dot} />
-          <View style={[styles.dot, styles.dotActive]} />
-        </View>
+        <OnboardingProgressDots total={3} activeIndex={2} style={styles.dotContainer} />
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton title={t('onboarding.intro3.continue')} onPress={() => router.push('/onboarding/how-it-works')} />
+        <CalmPrimaryButton
+          label={t('onboarding.intro3.continue')}
+          onPress={() => router.push('/onboarding/how-it-works')}
+          accessibilityHint={t('onboardingA11y.intro3ContinueHint')}
+        />
       </View>
     </View>
   );
@@ -78,9 +112,7 @@ const styles = StyleSheet.create({
   title: { ...THEME.typography.h1, color: THEME.colors.text.main, marginBottom: THEME.spacing.xs },
   titleAccent: { ...THEME.typography.h1, fontFamily: THEME.fonts.accent.italic, color: THEME.colors.text.main, marginBottom: THEME.spacing.lg },
   description: { ...THEME.typography.body, color: THEME.colors.text.secondary, lineHeight: 28 },
-  dotContainer: { flexDirection: 'row', gap: THEME.spacing.xs, marginTop: THEME.spacing.xl },
-  dot: { width: 32, height: 4, borderRadius: 2, backgroundColor: THEME.colors.stroke[100] },
-  dotActive: { backgroundColor: THEME.colors.gradient.blue },
+  dotContainer: { marginTop: THEME.spacing.xl },
   footer: { padding: THEME.spacing.lg, paddingBottom: THEME.spacing.xl },
   flowContainer: { marginTop: THEME.spacing.xl, marginBottom: THEME.spacing.lg, width: '100%' },
   flowStep: { flexDirection: 'row', alignItems: 'center', width: '100%' },
@@ -90,8 +122,4 @@ const styles = StyleSheet.create({
   flowStepTitle: { ...THEME.typography.h3, color: THEME.colors.text.main, fontFamily: THEME.fonts.heading.bold, marginBottom: 4 },
   flowStepDesc: { ...THEME.typography.body, color: THEME.colors.text.secondary, lineHeight: 22 },
   flowArrowDown: { alignItems: 'center', justifyContent: 'center', paddingVertical: THEME.spacing.sm, marginBottom: THEME.spacing.xs },
-  resultCard: { borderRadius: THEME.borderRadius.rounded, overflow: 'hidden', marginTop: THEME.spacing.lg, marginBottom: THEME.spacing.md, ...THEME.shadows.soft },
-  resultGradient: { padding: THEME.spacing.lg },
-  resultTitle: { ...THEME.typography.h3, color: THEME.colors.onGradient, marginBottom: THEME.spacing.xs },
-  resultText: { ...THEME.typography.body, color: THEME.colors.onGradient, lineHeight: 24 },
 });

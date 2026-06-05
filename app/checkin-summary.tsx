@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-import { GradientButton } from '@/components/GradientButton';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -192,7 +192,7 @@ export default function CheckInSummaryScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton title={t('checkinSummary.viewPriorities')} onPress={handleContinue} />
+        <CalmPrimaryButton label={t('checkinSummary.viewPriorities')} onPress={handleContinue} />
       </View>
     </View>
   );

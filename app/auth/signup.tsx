@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -18,8 +17,8 @@ import { PasswordRequirementsHint } from '@/components/auth/PasswordRequirements
 import { getPasswordErrorKey } from '@/lib/passwordPolicy';
 import { OTPInput } from '@/components/auth/OTPInput';
 import { THEME } from '@/constants/theme';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OTP_CODE_LENGTH, emptyOtpSlots } from '@/constants/authOtp';
-import { LinearGradient } from 'expo-linear-gradient';
 
 type Step = 'signup' | 'otp' | 'success';
 
@@ -141,29 +140,15 @@ export default function SignupScreen() {
     label: string,
     accessibilityHint?: string,
   ) => (
-    <TouchableOpacity
+    <CalmPrimaryButton
+      label={label}
       onPress={onPress}
       disabled={isLoading}
-      style={[styles.ctaOuter, isLoading && styles.ctaDisabled]}
-      activeOpacity={0.85}
-      accessibilityRole="button"
+      loading={isLoading}
+      style={styles.cta}
       accessibilityLabel={isLoading ? `${label}${t('commonExtra.loadingSuffix')}` : label}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: isLoading, busy: isLoading }}
-    >
-      <LinearGradient
-        colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.ctaGradient}
-      >
-        {isLoading ? (
-          <ActivityIndicator color={THEME.colors.onGradient} />
-        ) : (
-          <Text style={styles.ctaText}>{label}</Text>
-        )}
-      </LinearGradient>
-    </TouchableOpacity>
+    />
   );
 
   if (step === 'signup') {
@@ -371,23 +356,11 @@ export default function SignupScreen() {
     <View style={[styles.successRoot, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <Text style={styles.successTitle}>{t('authSignup.successTitle')}</Text>
       <Text style={styles.successBody}>{t('authSignup.successBody')}</Text>
-      <TouchableOpacity
+      <CalmPrimaryButton
+        label={t('authSignup.continue')}
         onPress={() => router.replace('/')}
-        style={styles.ctaOuter}
-        activeOpacity={0.85}
-        accessibilityRole="button"
-        accessibilityLabel={t('authSignup.continue')}
         accessibilityHint={t('authSignup.continueHint')}
-      >
-        <LinearGradient
-          colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.ctaGradient}
-        >
-          <Text style={styles.ctaText}>{t('authSignup.continue')}</Text>
-        </LinearGradient>
-      </TouchableOpacity>
+      />
     </View>
   );
 }
@@ -444,27 +417,8 @@ const styles = StyleSheet.create({
     color: THEME.colors.semantic.danger,
     textAlign: 'center',
   },
-  ctaOuter: {
+  cta: {
     marginTop: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.rounded,
-    overflow: 'hidden',
-    minHeight: THEME.sizes.buttonHeight,
-    ...THEME.shadows.card,
-  },
-  ctaDisabled: {
-    opacity: 0.75,
-  },
-  ctaGradient: {
-    flex: 1,
-    minHeight: THEME.sizes.buttonHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: THEME.spacing.md,
-  },
-  ctaText: {
-    ...THEME.typography.body,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
   },
   footer: {
     flexDirection: 'row',

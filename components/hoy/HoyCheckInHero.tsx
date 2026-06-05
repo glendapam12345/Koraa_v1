@@ -2,7 +2,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Heart } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
-import { GradientButton } from '@/components/GradientButton';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { useI18n } from '@/contexts/I18nContext';
 
 type HoyCheckInHeroProps = {
@@ -25,11 +25,11 @@ export function HoyCheckInHero({ onCheckIn }: HoyCheckInHeroProps) {
         </View>
         <Text style={styles.title}>{t('hoy.checkInHero.title')}</Text>
         <Text style={styles.subtitle}>{t('hoy.checkInHero.subtitle')}</Text>
-        <GradientButton
-          title={t('hoy.checkInHero.cta')}
+        <CalmPrimaryButton
+          label={t('hoy.checkInHero.cta')}
           onPress={onCheckIn}
+          variant="soft"
           accessibilityLabel={t('hoy.checkInHero.cta')}
-          accessibilityHint={t('hoyExtra.checkInHeroHint')}
         />
       </LinearGradient>
     </View>
@@ -38,7 +38,6 @@ export function HoyCheckInHero({ onCheckIn }: HoyCheckInHeroProps) {
 
 const styles = StyleSheet.create({
   wrap: {
-    marginHorizontal: THEME.spacing.lg,
     marginBottom: THEME.spacing.md,
   },
   card: {

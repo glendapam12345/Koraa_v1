@@ -16,7 +16,7 @@ export function MiniEmotionBars({ items }: MiniEmotionBarsProps) {
   }
 
   return (
-    <View style={styles.wrap}>
+    <View style={styles.wrap} accessibilityLabel={t('paramiExtra.a11yEmotionMix')}>
       {items.map((item) => {
         const widthPct = Math.max(12, Math.round((item.count / maxCount) * 100));
         return (

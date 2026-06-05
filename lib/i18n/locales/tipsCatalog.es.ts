@@ -1,4 +1,5 @@
 import type { TipCategoryId } from '@/lib/tipsTypes';
+import type { TipAction } from '@/lib/tipActions';
 
 export type CatalogTipEntry = {
   id: string;
@@ -6,6 +7,8 @@ export type CatalogTipEntry = {
   title: string;
   body: string;
   emoji: string;
+  /** Abre Spotify, sesión de foco en la app, etc. */
+  action?: TipAction;
   /** Emociones donde este tip encaja mejor */
   emotions?: string[];
   /** Energía 1–5 */
@@ -21,6 +24,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Tu canción poderosa',
     body: 'Pon una canción que te levante el ánimo 3 minutos. No hace falta bailar: solo escuchar y respirar.',
     emoji: '🎧',
+    action: 'spotify',
     emotions: ['agotada', 'ansiosa', 'abrumada'],
   },
   {
@@ -37,6 +41,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Medita o respira',
     body: '4 respiraciones lentas: inhala 4, sostén 2, exhala 6. Tu cuerpo entiende antes que tu mente.',
     emoji: '🌬️',
+    action: 'health_mindfulness',
     emotions: ['ansiosa', 'agotada', 'abrumada'],
   },
   {
@@ -45,6 +50,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Escribe y suelta',
     body: 'Dos minutos en notas: qué sientes, qué necesitas, qué puede esperar. Cierra la app y respira.',
     emoji: '📝',
+    action: 'reminders',
     emotions: ['abrumada', 'ansiosa'],
   },
   {
@@ -130,6 +136,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Micro siesta mental',
     body: 'Cierra ojos 2 minutos con música suave. No es flojera, es mantenimiento.',
     emoji: '😌',
+    action: 'apple_music',
     emotions: ['agotada'],
   },
   // —— Acción suave ——
@@ -155,6 +162,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Bloque de 25 min',
     body: 'Un pomodoro en una sola tarea. Descanso 5 min después, sin culpa.',
     emoji: '⏱️',
+    action: 'focus_session',
     emotions: ['enfocada', 'motivada'],
     minEnergy: 3,
   },

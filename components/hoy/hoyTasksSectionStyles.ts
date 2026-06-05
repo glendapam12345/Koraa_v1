@@ -25,10 +25,9 @@ export const hoyTasksSectionStyles = StyleSheet.create({
   },
   areaCard: {
     marginBottom: THEME.spacing.sm,
-    backgroundColor: THEME.colors.fill[100],
+    ...THEME.surfaces.elevated,
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
-    ...THEME.shadows.card,
   },
   areaCardInner: {
     paddingTop: THEME.spacing.xs,
@@ -158,34 +157,6 @@ export const hoyTasksSectionStyles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.md,
     borderLeftWidth: 4,
     backgroundColor: THEME.colors.fill[200],
-  },
-  checkInPromptBanner: {
-    marginBottom: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.rounded,
-    overflow: 'hidden',
-    ...THEME.shadows.soft,
-  },
-  checkInPromptBannerGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: THEME.spacing.md,
-    paddingHorizontal: THEME.spacing.md,
-    gap: THEME.spacing.sm,
-  },
-  checkInPromptBannerSub: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    lineHeight: 20,
-  },
-  checkInPromptBannerTextWrap: {
-    flex: 1,
-    minWidth: 0,
-  },
-  checkInPromptBannerTitle: {
-    ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-    marginBottom: 4,
   },
   focusSectionBanner: {
     flexDirection: 'row',
@@ -576,16 +547,11 @@ export const hoyTasksSectionStyles = StyleSheet.create({
     alignItems: 'center',
   },
   tasksContainer: {
-    paddingHorizontal: THEME.spacing.lg,
     paddingBottom: THEME.spacing.sm,
   },
   tasksListCard: {
-    backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.rounded,
+    ...THEME.surfaces.elevated,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.sm,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    ...THEME.shadows.card,
   },
 });

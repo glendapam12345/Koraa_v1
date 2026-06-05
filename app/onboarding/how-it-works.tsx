@@ -1,9 +1,10 @@
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-import { GradientButton } from '@/components/GradientButton';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { OnboardingHighlightCard } from '@/components/onboarding/OnboardingHighlightCard';
+import { OnboardingProgressDots } from '@/components/onboarding/OnboardingProgressDots';
 import { ArrowRight, PenTool, Heart, Target } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { markOnboardingCompleted } from '@/lib/onboardingGate';
@@ -37,8 +38,18 @@ export default function HowItWorksScreen() {
         <Text style={styles.titleAccent}>{t('onboarding.howItWorks.titleAccent')}</Text>
         <Text style={styles.subtitle}>{t('onboarding.howItWorks.subtitle')}</Text>
 
+        <View accessibilityRole="summary" accessibilityLabel={t('onboardingA11y.howItWorksStepsGroup')}>
         {/* Paso 1 */}
-        <View style={styles.stepContainer}>
+        <View
+          style={styles.stepContainer}
+          accessible
+          accessibilityRole="text"
+          accessibilityLabel={t('onboardingA11y.flowStep', {
+            step: 1,
+            title: t('onboarding.howItWorks.step1Title'),
+            body: t('onboarding.howItWorks.step1Body'),
+          })}
+        >
           <View style={styles.stepNumber}>
             <Text style={styles.stepNumberText}>1</Text>
           </View>
@@ -48,7 +59,7 @@ export default function HowItWorksScreen() {
               <Text style={styles.stepTitle}>{t('onboarding.howItWorks.step1Title')}</Text>
             </View>
             <Text style={styles.stepDescription}>{t('onboarding.howItWorks.step1Body')}</Text>
-            <View style={styles.exampleCard}>
+            <View style={styles.exampleCard} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
               <Text style={styles.exampleText}>{t('onboarding.howItWorks.exampleTask1')}</Text>
               <Text style={styles.exampleText}>{t('onboarding.howItWorks.exampleTask2')}</Text>
               <Text style={styles.exampleText}>{t('onboarding.howItWorks.exampleTask3')}</Text>
@@ -56,12 +67,21 @@ export default function HowItWorksScreen() {
           </View>
         </View>
 
-        <View style={styles.arrowContainer}>
+        <View style={styles.arrowContainer} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
           <ArrowRight size={24} color={THEME.colors.text.secondary} />
         </View>
 
         {/* Paso 2 */}
-        <View style={styles.stepContainer}>
+        <View
+          style={styles.stepContainer}
+          accessible
+          accessibilityRole="text"
+          accessibilityLabel={t('onboardingA11y.flowStep', {
+            step: 2,
+            title: t('onboarding.howItWorks.step2Title'),
+            body: t('onboarding.howItWorks.step2Body'),
+          })}
+        >
           <View style={styles.stepNumber}>
             <Text style={styles.stepNumberText}>2</Text>
           </View>
@@ -71,7 +91,7 @@ export default function HowItWorksScreen() {
               <Text style={styles.stepTitle}>{t('onboarding.howItWorks.step2Title')}</Text>
             </View>
             <Text style={styles.stepDescription}>{t('onboarding.howItWorks.step2Body')}</Text>
-            <View style={styles.exampleCard}>
+            <View style={styles.exampleCard} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
               <View style={styles.exampleRow}>
                 <Text style={styles.exampleLabel}>{t('onboarding.howItWorks.emotionLabel')}</Text>
                 <Text style={styles.exampleValue}>{t('onboarding.howItWorks.emotionExample')}</Text>
@@ -84,12 +104,21 @@ export default function HowItWorksScreen() {
           </View>
         </View>
 
-        <View style={styles.arrowContainer}>
+        <View style={styles.arrowContainer} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
           <ArrowRight size={24} color={THEME.colors.text.secondary} />
         </View>
 
         {/* Paso 3 */}
-        <View style={styles.stepContainer}>
+        <View
+          style={styles.stepContainer}
+          accessible
+          accessibilityRole="text"
+          accessibilityLabel={t('onboardingA11y.flowStep', {
+            step: 3,
+            title: t('onboarding.howItWorks.step3Title'),
+            body: t('onboarding.howItWorks.step3Body'),
+          })}
+        >
           <View style={styles.stepNumber}>
             <Text style={styles.stepNumberText}>3</Text>
           </View>
@@ -99,7 +128,7 @@ export default function HowItWorksScreen() {
               <Text style={styles.stepTitle}>{t('onboarding.howItWorks.step3Title')}</Text>
             </View>
             <Text style={styles.stepDescription}>{t('onboarding.howItWorks.step3Body')}</Text>
-            <View style={styles.exampleCard}>
+            <View style={styles.exampleCard} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
               <View style={styles.priorityExample}>
                 <View style={styles.priorityNumber}>
                   <Text style={styles.priorityNumberText}>1</Text>
@@ -115,34 +144,24 @@ export default function HowItWorksScreen() {
             </View>
           </View>
         </View>
-
-        {/* Ejemplo de adaptación */}
-        <View style={styles.adaptationCard}>
-          <LinearGradient
-            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.adaptationGradient}
-          >
-            <Text style={styles.adaptationTitle}>{t('onboarding.howItWorks.adaptTitle')}</Text>
-            <Text style={styles.adaptationText}>{t('onboarding.howItWorks.adaptBody')}</Text>
-          </LinearGradient>
         </View>
 
-        <View style={styles.dotContainer}>
-          <View style={styles.dot} />
-          <View style={styles.dot} />
-          <View style={styles.dot} />
-          <View style={[styles.dot, styles.dotActive]} />
-        </View>
+        <OnboardingHighlightCard
+          title={t('onboarding.howItWorks.adaptTitle')}
+          body={t('onboarding.howItWorks.adaptBody')}
+        />
+
+        <OnboardingProgressDots total={4} activeIndex={3} style={styles.dotContainer} />
       </ScrollView>
 
       <View style={styles.footer}>
-        {saving ? (
-          <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
-        ) : (
-          <GradientButton title={t('onboarding.howItWorks.continue')} onPress={handleContinue} />
-        )}
+        <CalmPrimaryButton
+          label={t('onboarding.howItWorks.continue')}
+          onPress={handleContinue}
+          loading={saving}
+          disabled={saving}
+          accessibilityHint={t('onboardingA11y.howItWorksContinueHint')}
+        />
       </View>
     </View>
   );
@@ -263,40 +282,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: THEME.spacing.sm,
   },
-  adaptationCard: {
-    borderRadius: THEME.borderRadius.rounded,
-    overflow: 'hidden',
-    marginTop: THEME.spacing.lg,
-    marginBottom: THEME.spacing.lg,
-    ...THEME.shadows.soft,
-  },
-  adaptationGradient: {
-    padding: THEME.spacing.lg,
-  },
-  adaptationTitle: {
-    ...THEME.typography.h3,
-    color: THEME.colors.onGradient,
-    marginBottom: THEME.spacing.sm,
-  },
-  adaptationText: {
-    ...THEME.typography.body,
-    color: THEME.colors.onGradient,
-    lineHeight: 24,
-  },
   dotContainer: {
-    flexDirection: 'row',
-    gap: THEME.spacing.xs,
     marginTop: THEME.spacing.lg,
     justifyContent: 'center',
-  },
-  dot: {
-    width: 32,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: THEME.colors.stroke[100],
-  },
-  dotActive: {
-    backgroundColor: THEME.colors.gradient.blue,
   },
   footer: {
     padding: THEME.spacing.lg,

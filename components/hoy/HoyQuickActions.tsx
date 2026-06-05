@@ -81,7 +81,6 @@ export function HoyQuickActions({
 
 const styles = StyleSheet.create({
   addTasksPill: {
-    marginHorizontal: THEME.spacing.lg,
     marginBottom: THEME.spacing.md,
     borderRadius: THEME.borderRadius.pill,
     overflow: 'hidden',
@@ -102,7 +101,6 @@ const styles = StyleSheet.create({
     color: THEME.colors.onGradient,
   },
   secondaryModulesToggle: {
-    marginHorizontal: THEME.spacing.lg,
     marginTop: -THEME.spacing.xs,
     marginBottom: THEME.spacing.md,
     paddingVertical: THEME.spacing.sm,
@@ -122,7 +120,6 @@ const styles = StyleSheet.create({
   },
   secondaryModulesHint: {
     ...THEME.typography.meta,
-    marginHorizontal: THEME.spacing.lg,
     marginTop: -THEME.spacing.sm,
     marginBottom: THEME.spacing.md,
     color: THEME.colors.text.secondary,

@@ -5,7 +5,6 @@ import { Calendar, X } from 'lucide-react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useI18n } from '@/contexts/I18nContext';
 import { getLocalDateString, parseLocalDateString } from '@/lib/dateLocal';
-import { AddToDeviceCalendarButton } from '@/components/tasks/AddToDeviceCalendarButton';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
 const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
@@ -47,8 +46,8 @@ function formatDateLabel(
 export function DateSelector({
   selectedDate,
   onSelect,
-  calendarTaskTitle,
-  calendarTaskId = 'draft-task',
+  calendarTaskTitle: _calendarTaskTitle,
+  calendarTaskId: _calendarTaskId = 'draft-task',
 }: DateSelectorProps) {
   const { t, locale } = useI18n();
   const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
@@ -104,13 +103,8 @@ export function DateSelector({
         <Text style={styles.selectorText}>{displayLabel}</Text>
       </TouchableOpacity>
 
-      {selectedDate && calendarTaskTitle?.trim() ? (
-        <AddToDeviceCalendarButton
-          taskId={calendarTaskId}
-          title={calendarTaskTitle}
-          scheduledDate={selectedDate}
-          variant="row"
-        />
+      {selectedDate ? (
+        <Text style={styles.calendarHint}>{t('deviceCalendar.draftDateHint')}</Text>
       ) : null}
 
       <Modal
@@ -177,10 +171,7 @@ export function DateSelector({
                   onPress={() => {
                     onSelect(opt.value);
                     if (opt.value) {
-                      const parsed = new Date(`${opt.value}T00:00:00`);
-                      if (!Number.isNaN(parsed.getTime())) {
-                        setPickerDate(parsed);
-                      }
+                      setPickerDate(parseLocalDateString(opt.value));
                     }
                     setShowModal(false);
                   }}
@@ -301,5 +292,11 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.standard,
     paddingHorizontal: THEME.spacing.sm,
     marginBottom: THEME.spacing.sm,
+  },
+  calendarHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+    marginTop: THEME.spacing.xs,
   },
 });

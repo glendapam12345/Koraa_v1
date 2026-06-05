@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
+import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
 import { Flame, CircleHelp, Settings } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -43,7 +43,7 @@ export function HoyWelcomeHeader({
           ) : (
             <TouchableOpacity
               style={styles.streakBadgeMuted}
-              onPress={() => router.push(CHECK_IN_ROUTE)}
+              onPress={() => openRecheckCheckIn('hoy_streak')}
               activeOpacity={0.75}
               accessibilityRole="button"
               accessibilityLabel={t('hoyExtra.noStreakA11y')}
@@ -90,7 +90,6 @@ export function HoyWelcomeHeader({
 const styles = StyleSheet.create({
   welcomeSection: {
     marginBottom: THEME.spacing.md,
-    paddingHorizontal: THEME.spacing.lg,
     gap: THEME.spacing.sm,
   },
   welcomeActionsRow: {

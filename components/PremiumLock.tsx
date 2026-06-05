@@ -126,7 +126,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   banner: {
-    marginHorizontal: THEME.spacing.lg,
     marginTop: THEME.spacing.sm,
     marginBottom: THEME.spacing.sm,
     padding: THEME.spacing.md,

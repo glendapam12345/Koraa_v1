@@ -4,7 +4,7 @@ import { RectButton, Swipeable } from 'react-native-gesture-handler';
 import { THEME } from '@/constants/theme';
 import { getCategoryEmoji } from '@/constants/emojis';
 import { ChevronDown, ChevronRight, Check, Pencil, Trash2, Calendar } from 'lucide-react-native';
-import { AddToDeviceCalendarButton } from '@/components/tasks/AddToDeviceCalendarButton';
+import { TaskCalendarExportRow } from '@/components/tasks/TaskCalendarExportRow';
 import { useI18n } from '@/contexts/I18nContext';
 import { categoryLabel } from '@/lib/i18n/categoryLabels';
 import { parseLocalDateString } from '@/lib/dateLocal';
@@ -374,7 +374,7 @@ export function TaskCard({
                     </Text>
                   </View>
                   {!task.is_completed && task.scheduled_date ? (
-                    <AddToDeviceCalendarButton
+                    <TaskCalendarExportRow
                       taskId={task.id}
                       title={task.content}
                       scheduledDate={task.scheduled_date}
@@ -384,7 +384,7 @@ export function TaskCard({
               ) : null}
               {showProjectLegend && (
                 <Text style={styles.metaLine} numberOfLines={1}>
-                  {projectName}
+                  {t('hoyExtra.projectColon', { name: projectName })}
                 </Text>
               )}
               {hasSubtasks && !showProjectLegend && (
@@ -443,7 +443,7 @@ export function TaskCard({
                     </Text>
                   </View>
                   {!task.is_completed && task.scheduled_date ? (
-                    <AddToDeviceCalendarButton
+                    <TaskCalendarExportRow
                       taskId={task.id}
                       title={task.content}
                       scheduledDate={task.scheduled_date}

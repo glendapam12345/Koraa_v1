@@ -27,10 +27,6 @@ if (!src.includes('getDefaultConfig')) {
   ok = false;
 }
 
-if (!src.includes('koraav2')) {
-  console.warn('⚠️ metro.config.js: considera blockList para koraav2/ (carpeta legacy).');
-}
-
 if (!ok) {
   process.exit(1);
 }

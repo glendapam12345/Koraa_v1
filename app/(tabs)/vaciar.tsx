@@ -1,54 +1,28 @@
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, RefreshControl } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, RefreshControl } from 'react-native';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-import { GradientButton } from '@/components/GradientButton';
 import { Tooltip } from '@/components/Tooltip';
 import { Toast } from '@/components/Toast';
 import { TaskCaptureOrganize } from '@/components/tasks/TaskCaptureOrganize';
-import { supabase, isNetworkError, getSchemaSetupMessage } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
-import { track } from '@/lib/analytics';
-import { getLocalDateString } from '@/lib/dateLocal';
-import { detectCategory } from '@/lib/categoryDetection';
 import { TasksFlowCard } from '@/components/tasks/TasksFlowCard';
-import { prioritizeTasksForCheckIn } from '@/lib/checkInService';
+import { FlowIndicator, resolveFlowStep } from '@/components/FlowIndicator';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProjectsLibraryLink } from '@/components/projects/ProjectsLibraryLink';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { useI18n } from '@/contexts/I18nContext';
-import { X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react-native';
-
-const VACIAR_OPTIONAL_HINT_DISMISSED_KEY = (userId: string) =>
-  `koraa_vaciar_optional_hint_dismissed_v1_${userId}`;
-
-const VACIAR_FLOW_CARD_DISMISSED_KEY = (userId: string) =>
-  `koraa_vaciar_flow_card_dismissed_v1_${userId}`;
-
-const VACIAR_DICTATE_HINT_DISMISSED_KEY = (userId: string) =>
-  `koraa_vaciar_dictate_hint_dismissed_v1_${userId}`;
-
-function trackTaskCreated(args: {
-  priority: boolean;
-  projectId: string | null;
-  scheduledDate: string | null;
-  hasSubtasks: boolean;
-  offline?: boolean;
-}) {
-  void track('task_created', {
-    priority: args.priority,
-    has_project: Boolean(args.projectId),
-    has_date: Boolean(args.scheduledDate),
-    has_subtasks: args.hasSubtasks,
-    ...(args.offline !== undefined ? { offline: args.offline } : {}),
-  });
-}
+import { X, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { CalmScreen } from '@/components/ui/calm/CalmScreen';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
+import { useVaciarHints } from '@/hooks/useVaciarHints';
+import { useVaciarTaskSave } from '@/hooks/useVaciarTaskSave';
 
 export default function VaciarScreen() {
-  const insets = useSafeAreaInsets();
   const { t, locale } = useI18n();
   const { suggestion, date: dateParam, projectId: projectIdParam } = useLocalSearchParams<{
     suggestion?: string;
@@ -60,18 +34,11 @@ export default function VaciarScreen() {
   const [hasSubtasks, setHasSubtasks] = useState(false);
   const [subtasks, setSubtasks] = useState<string[]>(['']);
   const [recentTasks, setRecentTasks] = useState<string[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasCheckInToday, setHasCheckInToday] = useState<boolean | null>(null);
-  const [showTooltip, setShowTooltip] = useState(false);
-  const [hasTasks, setHasTasks] = useState<boolean | null>(null);
-  const [optionalHintDismissed, setOptionalHintDismissed] = useState(false);
-  const [flowCardDismissed, setFlowCardDismissed] = useState(false);
   const [optionalHintExpanded, setOptionalHintExpanded] = useState(false);
   const [organizePanelExpanded, setOrganizePanelExpanded] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
   const [refreshing, setRefreshing] = useState(false);
-  const [dictateHintDismissed, setDictateHintDismissed] = useState(false);
   const [recentTaskSuggestions, setRecentTaskSuggestions] = useState<string[]>([]);
   /** true = proyecto, false = tarea suelta con categoría */
   const [assignToProject, setAssignToProject] = useState(false);
@@ -83,6 +50,79 @@ export default function VaciarScreen() {
   void showDatePicker;
   const [, setProjectCount] = useState<number | null>(null);
   const { user } = useAuth();
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+  }, []);
+
+  const loadRecentTaskSuggestions = useCallback(async () => {
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('content')
+        .eq('user_id', authUser.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        logger.error('Error cargando sugerencias:', error);
+        return;
+      }
+
+      if (data) {
+        const uniqueTasks = Array.from(new Set(data.map((row) => row.content.trim())));
+        setRecentTaskSuggestions(uniqueTasks.slice(0, 3));
+      }
+    } catch (error) {
+      logger.error('Error inesperado:', error);
+    }
+  }, []);
+
+  const { hasCheckInToday, refresh: refreshCheckInToday } = useHasCheckInToday(user?.id);
+  const {
+    hasTasks,
+    setHasTasks,
+    optionalHintDismissed,
+    flowCardDismissed,
+    dictateHintDismissed,
+    showTooltip,
+    setShowTooltip,
+    loadHintState,
+    dismissFlowCard,
+    dismissDictateHint,
+    dismissOptionalHint,
+  } = useVaciarHints(user?.id);
+
+  const resetTaskForm = useCallback(() => {
+    setTaskInput('');
+    setHasSubtasks(false);
+    setSubtasks(['']);
+    setAssignToProject(false);
+    setSelectedCategory('otros');
+    setSelectedProjectId(null);
+    setSelectedDate(null);
+  }, []);
+
+  const handleTaskSaved = useCallback(
+    async ({ savedTitle }: { savedTitle: string }) => {
+      setHasTasks(true);
+      setRecentTasks((prev) => [savedTitle, ...prev.slice(0, 4)]);
+      resetTaskForm();
+      await loadRecentTaskSuggestions();
+      if (showTooltip) setShowTooltip(false);
+    },
+    [loadRecentTaskSuggestions, resetTaskForm, setHasTasks, setShowTooltip, showTooltip],
+  );
+
+  const { isSaving, saveTask } = useVaciarTaskSave({
+    hasCheckInToday,
+    showToast,
+    onSaved: handleTaskSaved,
+  });
 
   // Pre-llenar input si hay sugerencia desde Tips; fecha desde Semana; proyecto desde detalle de proyecto
   useEffect(() => {
@@ -97,11 +137,6 @@ export default function VaciarScreen() {
       setSelectedProjectId(projectIdParam);
     }
   }, [suggestion, dateParam, projectIdParam]);
-
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
-    setToastMessage(message);
-    setToastType(type);
-  };
 
   const addSubtask = () => {
     // Validar límite máximo de subtareas
@@ -119,10 +154,10 @@ export default function VaciarScreen() {
   };
 
   useEffect(() => {
-    checkTodayCheckIn();
-    checkIfFirstTime();
-    loadRecentTaskSuggestions();
-  }, []);
+    void refreshCheckInToday();
+    void loadHintState();
+    void loadRecentTaskSuggestions();
+  }, [refreshCheckInToday, loadHintState, loadRecentTaskSuggestions]);
 
   const loadProjectCount = useCallback(async () => {
     if (!user) {
@@ -140,437 +175,22 @@ export default function VaciarScreen() {
   // Recargar banner y conteo de proyectos cuando la pantalla recibe foco
   useFocusEffect(
     useCallback(() => {
-      checkTodayCheckIn();
-      checkIfFirstTime();
-      loadProjectCount();
-    }, [loadProjectCount])
+      void refreshCheckInToday();
+      void loadHintState();
+      void loadProjectCount();
+    }, [loadProjectCount, refreshCheckInToday, loadHintState]),
   );
 
-  const checkIfFirstTime = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('id')
-        .eq('user_id', user.id)
-        .limit(1);
-
-      if (error) {
-        logger.error('Error verificando tareas:', error);
-        // No mostrar toast para errores no críticos de verificación
-        return;
-      }
-
-      const userHasTasks = (data?.length || 0) > 0;
-      setHasTasks(userHasTasks);
-
-      let hintDismissedInStorage = false;
-      try {
-        hintDismissedInStorage =
-          (await AsyncStorage.getItem(VACIAR_OPTIONAL_HINT_DISMISSED_KEY(user.id))) === '1';
-      } catch {
-        hintDismissedInStorage = false;
-      }
-      setOptionalHintDismissed(hintDismissedInStorage);
-
-      let flowCardDismissedInStorage = false;
-      try {
-        flowCardDismissedInStorage =
-          (await AsyncStorage.getItem(VACIAR_FLOW_CARD_DISMISSED_KEY(user.id))) === '1';
-      } catch {
-        flowCardDismissedInStorage = false;
-      }
-      setFlowCardDismissed(flowCardDismissedInStorage);
-
-      let dictateHintDismissedInStorage = false;
-      try {
-        dictateHintDismissedInStorage =
-          (await AsyncStorage.getItem(VACIAR_DICTATE_HINT_DISMISSED_KEY(user.id))) === '1';
-      } catch {
-        dictateHintDismissedInStorage = false;
-      }
-      setDictateHintDismissed(dictateHintDismissedInStorage);
-
-      // Tooltip modal: si aún no hay tareas, solo si ya cerraron la tarjeta de "opcional"
-      // (evita solaparse con el hint inline la primera vez).
-      if (!userHasTasks) {
-        setShowTooltip(hintDismissedInStorage);
-      } else {
-        setShowTooltip(false);
-      }
-    } catch (error) {
-      logger.error('Error inesperado:', error);
-    }
-  };
-
-  const dismissFlowCard = async () => {
-    if (user?.id) {
-      try {
-        await AsyncStorage.setItem(VACIAR_FLOW_CARD_DISMISSED_KEY(user.id), '1');
-      } catch {
-        /* no bloquear UI */
-      }
-    }
-    setFlowCardDismissed(true);
-  };
-
-  const reprioritizeAfterTaskSave = async (userId: string) => {
-    const today = getLocalDateString();
-    const { data: checkIn, error } = await supabase
-      .from('daily_check_ins')
-      .select('emotion, energy_level, available_time, focus_level')
-      .eq('user_id', userId)
-      .eq('date', today)
-      .maybeSingle();
-
-    if (error || !checkIn) return;
-
-    await prioritizeTasksForCheckIn(userId, {
-      energyLevel: checkIn.energy_level,
-      emotion: checkIn.emotion,
-      availableTime: checkIn.available_time,
-      focusLevel: checkIn.focus_level,
-      locale,
+  const handleAddTask = () => {
+    void saveTask({
+      content: taskInput,
+      hasSubtasks,
+      subtasks,
+      assignToProject,
+      selectedCategory,
+      selectedProjectId,
+      selectedDate,
     });
-  };
-
-  const dismissDictateHint = async () => {
-    if (user?.id) {
-      try {
-        await AsyncStorage.setItem(VACIAR_DICTATE_HINT_DISMISSED_KEY(user.id), '1');
-      } catch {
-        /* no bloquear UI */
-      }
-    }
-    setDictateHintDismissed(true);
-  };
-
-  const dismissOptionalHint = async () => {
-    if (user?.id) {
-      try {
-        await AsyncStorage.setItem(VACIAR_OPTIONAL_HINT_DISMISSED_KEY(user.id), '1');
-      } catch {
-        /* no bloquear UI */
-      }
-    }
-    setOptionalHintDismissed(true);
-  };
-
-  // Cargar sugerencias de tareas recientes para autocompletar
-  const loadRecentTaskSuggestions = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('content')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (error) {
-        logger.error('Error cargando sugerencias:', error);
-        // No mostrar toast para errores no críticos de sugerencias
-        return;
-      }
-
-      if (data) {
-        // Extraer tareas únicas (sin duplicados exactos)
-        const uniqueTasks = Array.from(new Set(data.map(t => t.content.trim())));
-        setRecentTaskSuggestions(uniqueTasks.slice(0, 3)); // Máximo 3 sugerencias
-      }
-    } catch (error) {
-      logger.error('Error inesperado:', error);
-    }
-  };
-
-  const checkTodayCheckIn = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const today = getLocalDateString();
-      const { data, error } = await supabase
-        .from('daily_check_ins')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('date', today)
-        .maybeSingle();
-
-      if (error) {
-        logger.error('Error verificando check-in:', error);
-        // No mostrar toast para errores no críticos de verificación
-        return;
-      }
-
-      setHasCheckInToday(!!data);
-    } catch (error) {
-      logger.error('Error inesperado:', error);
-    }
-  };
-
-  const handleAddTask = async () => {
-    // Validar que la tarea principal no esté vacía
-    if (!taskInput.trim()) {
-      showToast(t('vaciar.enterTask'), 'info');
-      return;
-    }
-    if (assignToProject === true && !selectedProjectId) {
-      showToast(t('vaciar.selectProject'), 'info');
-      return;
-    }
-
-    // Validar longitud máxima de la tarea principal
-    if (taskInput.trim().length > 300) {
-      showToast(t('vaciar.taskTooLong'), 'error');
-      return;
-    }
-
-    // Validar subtareas si están habilitadas
-    if (hasSubtasks) {
-      const validSubtasks = subtasks.filter(st => st.trim());
-      if (validSubtasks.length === 0) {
-        showToast(t('vaciar.addSubtaskOrDisable'), 'info');
-        return;
-      }
-      
-      // Validar longitud de cada subtarea
-      for (const subtask of validSubtasks) {
-        if (subtask.trim().length > 300) {
-          showToast(t('vaciar.subtaskTooLong'), 'error');
-          return;
-        }
-      }
-    }
-
-    setIsSaving(true);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        showToast(t('errors.notAuthenticated'), 'error');
-        setIsSaving(false);
-        return;
-      }
-
-      const detectedCategory = detectCategory(taskInput.trim());
-      const categoryToSave = assignToProject === false ? selectedCategory : (detectedCategory || 'otros');
-      const projectIdToSave = assignToProject === true ? selectedProjectId : null;
-
-      const { data: mainTask, error: mainTaskError } = await supabase
-        .from('tasks')
-        .insert({
-          user_id: user.id,
-          content: taskInput.trim(),
-          category: categoryToSave,
-          is_priority: false,
-          is_completed: false,
-          parent_task_id: null,
-          project_id: projectIdToSave,
-          scheduled_date: selectedDate,
-        })
-        .select()
-        .single();
-
-      // Si hay error de red, guardar offline
-      if (mainTaskError) {
-        if (isNetworkError(mainTaskError)) {
-          // Guardar offline
-          const { saveTaskOffline } = await import('@/lib/offlineStorage');
-          // Guardar tarea principal y obtener su ID generado
-          const mainTaskId = await saveTaskOffline({
-            content: taskInput.trim(),
-            category: categoryToSave,
-            is_priority: false,
-            is_completed: false,
-            parent_task_id: null,
-            project_id: projectIdToSave,
-            scheduled_date: selectedDate,
-          });
-
-          if (hasSubtasks) {
-            const validSubtasks = subtasks.filter(st => st.trim());
-            for (const subtask of validSubtasks) {
-              const stCat = detectCategory(subtask.trim()) || categoryToSave;
-              await saveTaskOffline({
-                content: subtask.trim(),
-                category: stCat,
-                is_priority: false,
-                is_completed: false,
-                parent_task_id: mainTaskId,
-                project_id: projectIdToSave,
-              });
-            }
-          }
-
-          setRecentTasks([taskInput.trim(), ...recentTasks.slice(0, 4)]);
-          setTaskInput('');
-          setHasSubtasks(false);
-          setSubtasks(['']);
-          setAssignToProject(false);
-          setSelectedCategory('otros');
-          setSelectedProjectId(null);
-          setSelectedDate(null);
-          trackTaskCreated({
-            priority: false,
-            projectId: projectIdToSave,
-            scheduledDate: selectedDate,
-            hasSubtasks: hasSubtasks && subtasks.some((st) => st.trim()),
-            offline: true,
-          });
-
-          showToast(t('vaciar.savedOffline'), 'info');
-          setIsSaving(false);
-          return;
-        } else {
-          const schemaType = getSchemaSetupMessage(mainTaskError);
-          const isProjectOrScheduledSchema = schemaType === 'project_id' || schemaType === 'scheduled_date';
-          if (isProjectOrScheduledSchema) {
-            const { data: fallbackTask, error: fallbackError } = await supabase
-              .from('tasks')
-              .insert({
-                user_id: user.id,
-                content: taskInput.trim(),
-                category: categoryToSave,
-                is_priority: false,
-                is_completed: false,
-                parent_task_id: null,
-              })
-              .select()
-              .single();
-            if (fallbackError) {
-              logger.error('Error guardando tarea (fallback):', fallbackError);
-              showToast(t('errors.saveTaskFailed'), 'error');
-              setIsSaving(false);
-              return;
-            }
-            if (hasSubtasks && fallbackTask) {
-              const validSubtasks = subtasks.filter(st => st.trim());
-              const subtasksToInsert = validSubtasks.map(subtask => ({
-                user_id: user.id,
-                content: subtask.trim(),
-                category: detectCategory(subtask.trim()),
-                is_priority: false,
-                is_completed: false,
-                parent_task_id: fallbackTask.id,
-              }));
-              await supabase.from('tasks').insert(subtasksToInsert);
-            }
-            setRecentTasks([taskInput.trim(), ...recentTasks.slice(0, 4)]);
-            setTaskInput('');
-            setHasSubtasks(false);
-            setSubtasks(['']);
-            setAssignToProject(false);
-            setSelectedCategory('otros');
-            setSelectedProjectId(null);
-            setSelectedDate(null);
-            trackTaskCreated({
-              priority: false,
-              projectId: projectIdToSave,
-              scheduledDate: selectedDate,
-              hasSubtasks: hasSubtasks && subtasks.some((st) => st.trim()),
-            });
-
-            showToast(t('vaciar.savedPartial'), 'success');
-            setIsSaving(false);
-            return;
-          }
-          logger.error('Error guardando tarea principal:', mainTaskError);
-          showToast(t('errors.saveTaskFailed'), 'error');
-          setIsSaving(false);
-          return;
-        }
-      }
-
-      // Crear subtareas si existen
-      if (hasSubtasks && mainTask) {
-        const validSubtasks = subtasks.filter(st => st.trim());
-        if (validSubtasks.length > 0) {
-          const subtasksToInsert = validSubtasks.map(subtask => ({
-            user_id: user.id,
-            content: subtask.trim(),
-            category: detectCategory(subtask.trim()) || categoryToSave,
-            is_priority: false,
-            is_completed: false,
-            parent_task_id: mainTask.id,
-            project_id: projectIdToSave,
-            scheduled_date: selectedDate,
-          }));
-
-          const { error: subtasksError } = await supabase
-            .from('tasks')
-            .insert(subtasksToInsert);
-
-          if (subtasksError) {
-            logger.error('Error guardando subtareas:', subtasksError);
-            // Intentar eliminar la tarea principal si fallan las subtareas
-            await supabase.from('tasks').delete().eq('id', mainTask.id);
-            showToast(t('vaciar.savedSubtasksError'), 'error');
-            setIsSaving(false);
-            return;
-          }
-        }
-      }
-
-      trackTaskCreated({
-        priority: false,
-        projectId: projectIdToSave,
-        scheduledDate: selectedDate,
-        hasSubtasks: hasSubtasks && subtasks.some((st) => st.trim()),
-      });
-
-      setHasTasks(true);
-
-      setRecentTasks([taskInput.trim(), ...recentTasks.slice(0, 4)]);
-      setTaskInput('');
-      setHasSubtasks(false);
-      setSubtasks(['']);
-      setAssignToProject(false);
-      setSelectedCategory('otros');
-      setSelectedProjectId(null);
-      setSelectedDate(null);
-      await loadRecentTaskSuggestions();
-      
-      // Cerrar tooltip después de agregar primera tarea
-      if (showTooltip) {
-        setShowTooltip(false);
-      }
-
-      const subtaskCount = subtasks.filter((st) => st.trim()).length;
-      const message = hasSubtasks
-        ? t('vaciarExtra.toastWithSubtasks', {
-            count: subtaskCount,
-            priority: t('vaciarExtra.toastWithSubtasksSuccess'),
-          })
-        : t('vaciarExtra.toastAdded');
-
-      let reprioritized = false;
-      if (hasCheckInToday) {
-        try {
-          await reprioritizeAfterTaskSave(user.id);
-          reprioritized = true;
-        } catch (reprioritizeError) {
-          logger.error('Error repriorizando tras guardar tarea:', reprioritizeError);
-        }
-      }
-
-      showToast(
-        reprioritized
-          ? t('vaciar.reprioritizedToast')
-          : hasCheckInToday
-            ? message
-            : t('vaciarExtra.toastAddedGoFeel'),
-        reprioritized || !hasCheckInToday ? 'info' : 'success',
-      );
-    } catch (error) {
-      logger.error('Error inesperado:', error);
-      showToast(t('errors.saveTaskFailed'), 'error');
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   // Función para manejar pull to refresh
@@ -578,8 +198,8 @@ export default function VaciarScreen() {
     setRefreshing(true);
     try {
       await Promise.all([
-        checkTodayCheckIn(),
-        checkIfFirstTime(),
+        refreshCheckInToday(),
+        loadHintState(),
       ]);
       // Intentar sincronizar datos offline
       const { syncAll } = await import('@/lib/offlineStorage');
@@ -622,23 +242,29 @@ export default function VaciarScreen() {
         />
       )}
 
-      <ScrollView
-          contentContainerStyle={[styles.content, { paddingTop: insets.top + THEME.spacing.lg, paddingBottom: THEME.spacing.xl * 2 }]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={THEME.colors.gradient.blue}
-              colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-            />
-          }
-        >
-        <Text style={styles.title}>{t('vaciar.title')}</Text>
-        <Text style={styles.titleAccent}>{t('vaciar.titleAccent')}</Text>
-        <Text style={styles.subtitle}>{t('vaciar.subtitle')}</Text>
+      <CalmScreen
+        topInset="lg"
+        gap={THEME.layout.sectionGap}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentStyle={{ paddingBottom: THEME.spacing.md }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={THEME.colors.calm.lavenderDeep}
+          />
+        }
+      >
+        <ScreenHeader title={t('vaciar.title')} subtitle={t('vaciar.subtitle')} />
+        <Text style={styles.valueProp}>{t('vaciar.valueProp')}</Text>
+
+        <FlowIndicator
+          currentStep={resolveFlowStep({
+            hasCheckIn: hasCheckInToday === true,
+            hasTasks: hasTasks === true,
+          })}
+        />
 
         {showOrganizePanel ? (
           <View style={styles.organizePanelWrap}>
@@ -748,29 +374,18 @@ export default function VaciarScreen() {
         ) : null}
 
         {/* Banner: con tareas guardadas, el siguiente paso es Sentir */}
-        {hasTasks === true && hasCheckInToday === false && hasCheckInToday !== null && (
+        {hasTasks === true && hasCheckInToday === false && hasCheckInToday !== null ? (
           <TouchableOpacity
-            style={styles.checkInBanner}
+            style={styles.checkInLinkWrap}
             onPress={() => router.push(CHECK_IN_ROUTE)}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={t('vaciarExtra.a11yNextStepFeel')}
+            activeOpacity={0.75}
+            accessibilityRole="link"
+            accessibilityLabel={t('vaciar.nextStepFeelLink')}
             accessibilityHint={t('vaciarExtra.a11yNextStepFeelHint')}
           >
-            <LinearGradient
-              colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.checkInBannerGradient}
-            >
-              <Sparkles size={20} color={THEME.colors.onGradient} />
-              <View style={styles.checkInBannerContent}>
-                <Text style={styles.checkInBannerText}>{t('vaciar.nextStepFeel')}</Text>
-                <Text style={styles.checkInBannerSubtext}>{t('vaciar.nextStepFeelSub')}</Text>
-              </View>
-            </LinearGradient>
+            <Text style={styles.checkInLink}>{t('vaciar.nextStepFeelLink')}</Text>
           </TouchableOpacity>
-        )}
+        ) : null}
 
         <View style={styles.inputContainer}>
           <TextInput
@@ -842,10 +457,11 @@ export default function VaciarScreen() {
           />
         ) : null}
 
-        <GradientButton
-          title={isSaving ? t('vaciar.saving') : t('vaciar.saveTask')}
+        <CalmPrimaryButton
+          label={isSaving ? t('vaciar.saving') : t('vaciar.saveTask')}
           onPress={handleAddTask}
           disabled={!taskInput.trim() || isSaving}
+          loading={isSaving}
           accessibilityHint={t('vaciarExtra.a11ySaveTaskHint')}
         />
 
@@ -859,8 +475,8 @@ export default function VaciarScreen() {
             ))}
           </View>
         )}
-      </ScrollView>
-      
+      </CalmScreen>
+
       <Tooltip
         visible={showTooltip}
         title={t('vaciar.brainDumpTooltipTitle')}
@@ -874,26 +490,15 @@ export default function VaciarScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.background,
   },
-  content: {
-    padding: THEME.spacing.lg,
-  },
-  title: {
-    ...THEME.typography.h1,
-    color: THEME.colors.text.main,
-  },
-  titleAccent: {
-    ...THEME.typography.h1,
-    fontFamily: THEME.fonts.accent.italic,
-    color: THEME.colors.text.main,
+  valueProp: {
+    ...THEME.typography.small,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
+    lineHeight: 20,
+    marginTop: -THEME.spacing.sm,
     marginBottom: THEME.spacing.sm,
-  },
-  subtitle: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-    lineHeight: 24,
-    marginBottom: THEME.spacing.lg,
   },
   organizePanelWrap: {
     marginBottom: THEME.spacing.md,
@@ -904,10 +509,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.rounded,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    backgroundColor: THEME.colors.fill[200],
+    ...THEME.surfaces.panel,
   },
   organizePanelToggleText: {
     ...THEME.typography.small,
@@ -927,13 +529,10 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.sm,
   },
   optionalHintCard: {
-    borderRadius: THEME.borderRadius.rounded,
-    borderWidth: 1,
+    ...THEME.surfaces.elevated,
     borderColor: THEME.colors.tint.blue.border,
-    backgroundColor: THEME.colors.fill[100],
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.lg,
-    ...THEME.shadows.soft,
   },
   optionalHintHeader: {
     flexDirection: 'row',
@@ -1011,9 +610,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: THEME.spacing.xs,
     borderRadius: THEME.borderRadius.pill,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    backgroundColor: THEME.colors.fill[200],
+    ...THEME.surfaces.chip,
     flexShrink: 1,
   },
   priorityChipActive: {
@@ -1041,8 +638,7 @@ const styles = StyleSheet.create({
     minHeight: THEME.sizes.touchTarget,
   },
   optionalExtrasCardExpanded: {
-    backgroundColor: THEME.colors.fill[200],
-    borderColor: THEME.colors.stroke[100],
+    ...THEME.surfaces.panel,
   },
   optionalExtrasIcons: {
     flexDirection: 'row',
@@ -1098,8 +694,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.md,
     borderRadius: THEME.borderRadius.rounded,
     borderWidth: 2,
-    borderColor: THEME.colors.stroke[100],
-    backgroundColor: THEME.colors.fill[200],
+    ...THEME.surfaces.chip,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 48,
@@ -1113,8 +708,8 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.gradient.blue,
   },
   assignButtonNo: {
-    borderColor: THEME.colors.stroke[100],
-    backgroundColor: THEME.colors.fill[200],
+    ...THEME.surfaces.chip,
+    borderWidth: 2,
   },
   assignButtonNoSelected: {
     backgroundColor: THEME.colors.gradient.blue,
@@ -1146,10 +741,8 @@ const styles = StyleSheet.create({
   categoryChip: {
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: THEME.spacing.xs + 2,
+    ...THEME.surfaces.elevated,
     borderRadius: THEME.borderRadius.pill,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    backgroundColor: THEME.colors.fill[100],
   },
   categoryChipText: {
     ...THEME.typography.caption,
@@ -1165,11 +758,9 @@ const styles = StyleSheet.create({
   },
   opcionesSection: {
     marginBottom: THEME.spacing.md,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    ...THEME.surfaces.panel,
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
-    backgroundColor: THEME.colors.fill[200],
   },
   opcionesHeader: {
     flexDirection: 'row',
@@ -1194,15 +785,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.md,
     paddingBottom: THEME.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: THEME.colors.stroke[100],
+    borderTopColor: THEME.colors.calm.border,
   },
   inputContainer: {
-    backgroundColor: THEME.colors.fill[200],
+    ...THEME.surfaces.elevated,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
   },
   input: {
     ...THEME.typography.body,
@@ -1219,7 +808,7 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.sm,
   },
   recentItem: {
-    backgroundColor: THEME.colors.fill[200],
+    ...THEME.surfaces.muted,
     borderRadius: THEME.borderRadius.standard,
     padding: THEME.spacing.sm,
     marginBottom: THEME.spacing.xs,
@@ -1233,11 +822,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: THEME.spacing.sm,
     padding: THEME.spacing.md,
-    backgroundColor: THEME.colors.fill[200],
+    ...THEME.surfaces.panel,
     borderRadius: THEME.borderRadius.rounded,
     marginBottom: THEME.spacing.md,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
   },
   priorityToggleActive: {
     backgroundColor: THEME.colors.gradient.pink + '12',
@@ -1256,11 +843,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: THEME.spacing.sm,
     padding: THEME.spacing.md,
-    backgroundColor: THEME.colors.fill[200],
+    ...THEME.surfaces.panel,
     borderRadius: THEME.borderRadius.rounded,
     marginBottom: THEME.spacing.md,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
   },
   subtasksToggleActive: {
     backgroundColor: THEME.colors.gradient.blue + '12',
@@ -1275,7 +860,7 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
   },
   subtasksContainer: {
-    backgroundColor: THEME.colors.fill[200],
+    ...THEME.surfaces.panel,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
@@ -1321,30 +906,14 @@ const styles = StyleSheet.create({
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
   },
-  checkInBanner: {
-    borderRadius: THEME.borderRadius.rounded,
-    marginBottom: THEME.spacing.md,
-    overflow: 'hidden',
-    ...THEME.shadows.soft,
+  checkInLinkWrap: {
+    alignSelf: 'flex-start',
+    marginBottom: THEME.spacing.sm,
   },
-  checkInBannerGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: THEME.spacing.md,
-    gap: THEME.spacing.sm,
-  },
-  checkInBannerContent: {
-    flex: 1,
-  },
-  checkInBannerText: {
+  checkInLink: {
     ...THEME.typography.body,
-    color: THEME.colors.onGradient,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
-    marginBottom: 4,
-  },
-  checkInBannerSubtext: {
-    ...THEME.typography.caption,
-    color: THEME.colors.onGradientMuted,
   },
   dictateHintRow: {
     flexDirection: 'row',
@@ -1378,17 +947,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: THEME.spacing.xs,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[200],
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    ...THEME.surfaces.chip,
   },
   suggestionText: {
     ...THEME.typography.caption,
     color: THEME.colors.text.main,
   },
   flowGuide: {
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
+    ...THEME.surfaces.panel,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
   },

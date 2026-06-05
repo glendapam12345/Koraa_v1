@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { ChevronLeft } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -13,6 +13,8 @@ import {
   type ScoredTip,
 } from '@/lib/tipsPersonalization';
 import { TipDetailExpanded, TipGridCard } from '@/components/tips/TipGridCard';
+import { executeTipAction, getTipActionLabel } from '@/lib/tipActions';
+import { trackTipActionTapped, trackTipViewed, trackTipsCategoryOpened } from '@/lib/productAnalytics';
 
 const CATEGORY_KEYS: Record<TipCategoryId, TranslationKey> = {
   mindset: 'tips.categories.mindset',
@@ -54,13 +56,26 @@ export default function TipsCategoryScreen() {
 
   const [selected, setSelected] = useState<ScoredTip | null>(null);
 
+  useEffect(() => {
+    if (category) {
+      trackTipsCategoryOpened(category, Boolean(emotion));
+    }
+  }, [category, emotion]);
+
   if (!category) {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backBtn}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+        >
           <ChevronLeft size={28} color={THEME.colors.text.main} />
         </TouchableOpacity>
-        <Text style={styles.error}>{t('tips.categoryNotFound')}</Text>
+        <Text style={styles.error} accessibilityRole="alert">
+          {t('tips.categoryNotFound')}
+        </Text>
       </View>
     );
   }
@@ -78,7 +93,7 @@ export default function TipsCategoryScreen() {
         >
           <ChevronLeft size={28} color={THEME.colors.text.main} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
+        <Text style={styles.headerTitle} numberOfLines={1} accessibilityRole="header">
           {t(CATEGORY_KEYS[category])}
         </Text>
         <View style={styles.headerSpacer} />
@@ -92,24 +107,43 @@ export default function TipsCategoryScreen() {
 
         {selected ? (
           <>
-            <TipDetailExpanded tip={selected} />
+            <TipDetailExpanded
+              tip={selected}
+              actionLabel={
+                selected.action ? getTipActionLabel(selected.action, t) : undefined
+              }
+              onAction={
+                selected.action
+                  ? () => {
+                      trackTipActionTapped(selected.action!, category, selected.id);
+                      void executeTipAction(selected.action!, t);
+                    }
+                  : undefined
+              }
+            />
             <TouchableOpacity
               onPress={() => setSelected(null)}
               style={styles.backToGrid}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={t('tips.backToGrid')}
+              accessibilityHint={t('tipsExtra.a11yBackToGridHint')}
             >
               <Text style={styles.backToGridText}>{t('tips.backToGrid')}</Text>
             </TouchableOpacity>
           </>
         ) : null}
 
-        <View style={styles.grid}>
+        <View style={styles.grid} accessibilityRole="list">
           {tips.map((tip) => (
             <TipGridCard
               key={tip.id}
               tip={tip}
               forYouLabel={t('tips.forYouBadge')}
-              onPress={() => setSelected(tip)}
+              onPress={() => {
+                trackTipViewed(category, tip.id);
+                setSelected(tip);
+              }}
             />
           ))}
         </View>
@@ -121,15 +155,15 @@ export default function TipsCategoryScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: THEME.spacing.sm,
+    paddingHorizontal: THEME.layout.screenPaddingX,
     paddingBottom: THEME.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.stroke[100],
+    borderBottomColor: THEME.colors.calm.border,
   },
   backBtn: {
     padding: THEME.spacing.xs,
@@ -147,7 +181,8 @@ const styles = StyleSheet.create({
     width: 44,
   },
   content: {
-    padding: THEME.spacing.lg,
+    paddingHorizontal: THEME.layout.screenPaddingX,
+    paddingTop: THEME.spacing.md,
   },
   lead: {
     ...THEME.typography.body,

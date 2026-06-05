@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase, getErrorMessage, isSchemaError, getSchemaSetupMessage, type SchemaSetupType } from '@/lib/supabase';
-import { getLocalDateString, parseLocalDateString } from '@/lib/dateLocal';
+import { getLocalDateString, normalizeScheduledDate, parseLocalDateString } from '@/lib/dateLocal';
 import { translate, type AppLocale } from '@/lib/i18n';
 import { logger } from '@/lib/logger';
 import type { Task } from '@/hooks/useTasks';
@@ -193,9 +193,9 @@ export function useWeekTasks(
         byDate.set(day.dateStr, []);
       }
       for (const task of tasksWithSubtasks) {
-        const dateStr = task.scheduled_date || start;
-        if (byDate.has(dateStr)) {
-          byDate.get(dateStr)!.push(task);
+        const dateStr = normalizeScheduledDate(task.scheduled_date);
+        if (dateStr && byDate.has(dateStr)) {
+          byDate.get(dateStr)!.push({ ...task, scheduled_date: dateStr });
         }
       }
 

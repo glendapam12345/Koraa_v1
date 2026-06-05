@@ -1,4 +1,4 @@
-import { getLocalDateFromISO, getLocalDateString } from '@/lib/dateLocal';
+import { getLocalDateFromISO, getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
 import { isPriorityCompletedToday } from '@/lib/priorityProgress';
 import type { Task } from '@/hooks/useTasks';
 
@@ -23,6 +23,18 @@ describe('getLocalDateFromISO', () => {
 
   it('returns date-only prefix for plain YYYY-MM-DD', () => {
     expect(getLocalDateFromISO('2026-05-19')).toBe('2026-05-19');
+  });
+});
+
+describe('normalizeScheduledDate', () => {
+  it('maps timestamptz to local calendar day for grouping', () => {
+    const iso = '2026-05-20T02:00:00.000Z';
+    expect(normalizeScheduledDate(iso)).toBe(getLocalDateFromISO(iso));
+  });
+
+  it('returns null for empty values', () => {
+    expect(normalizeScheduledDate(null)).toBeNull();
+    expect(normalizeScheduledDate('')).toBeNull();
   });
 });
 

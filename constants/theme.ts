@@ -1,10 +1,20 @@
-import { TextStyle } from 'react-native';
+import { TextStyle, ViewStyle } from 'react-native';
 
 export const THEME = {
   colors: {
     fill: {
       100: '#FFFFFF',
       200: '#F4F4F7',
+    },
+    /** Fondo y acentos suaves (calma / mascota Ellie) */
+    calm: {
+      background: '#F8F5FC',
+      card: '#FFFFFF',
+      lavender: '#EDE6FA',
+      lavenderDeep: '#7B61A8',
+      blush: '#F9EEF5',
+      mist: '#F0EBF8',
+      border: '#E6DDF2',
     },
     stroke: {
       100: '#E0E0E0',
@@ -103,6 +113,14 @@ export const THEME = {
       weekNav: ['rgba(74, 144, 226, 0.12)', 'rgba(255, 107, 107, 0.08)'] as const,
       dayToday: ['rgba(74, 144, 226, 0.2)', 'rgba(255, 107, 107, 0.12)'] as const,
     },
+    /** Para mí, headers premium, cards de patrón */
+    parami: {
+      header: ['#4A90E2', '#7B61A8', '#FF6B6B'] as const,
+      balanceCard: 'rgba(255, 255, 255, 0.14)',
+      moodCard: ['#7B61A8', '#FF6B6B'] as const,
+      energyCard: ['#4A90E2', '#6BB6FF'] as const,
+      symptomsCard: ['#FF6B6B', '#7B61A8'] as const,
+    },
     /** Emotion check-in tints (soft background per emotion) */
     emotionTint: {
       enfocada: 'rgba(74, 144, 226, 0.15)',
@@ -168,6 +186,23 @@ export const THEME = {
       fontFamily: 'DMSans-Medium',
       color: '#595959',
     } as TextStyle,
+    /** Título principal de tab (Hoy, Tips, Semana, Vaciar). */
+    screenTitle: {
+      fontSize: 28,
+      lineHeight: 34,
+      fontFamily: 'DMSans-Bold',
+    } as TextStyle,
+    screenSubtitle: {
+      fontSize: 15,
+      lineHeight: 22,
+      fontFamily: 'DMSans-Medium',
+    } as TextStyle,
+    /** Encabezado de sección dentro de una tab. */
+    sectionTitle: {
+      fontSize: 20,
+      lineHeight: 26,
+      fontFamily: 'DMSans-Bold',
+    } as TextStyle,
   },
 
   spacing: {
@@ -178,11 +213,69 @@ export const THEME = {
     xl: 48,
   },
 
+  layout: {
+    /** Margen horizontal de pantallas con scroll (única fuente; no sumar marginHorizontal en hijos). */
+    screenPaddingX: 14,
+    screenMaxWidth: 520,
+    sectionGap: 20,
+    /** Entre bloques en tabs con muchas tarjetas (Tips, Para mí). */
+    sectionGapCompact: 12,
+    /** Espacio extra sobre la tab bar flotante (altura ~64 + margen). */
+    floatingTabBarClearance: 80,
+  },
+
+  /** Tarjetas y paneles reutilizables — preferir sobre estilos locales en cada pantalla. */
+  surfaces: {
+    elevated: {
+      backgroundColor: '#FFFFFF',
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: '#E6DDF2',
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.04,
+      shadowRadius: 8,
+      elevation: 2,
+    } as ViewStyle,
+    muted: {
+      backgroundColor: '#F4F4F7',
+      borderRadius: 16,
+    } as ViewStyle,
+    tinted: {
+      backgroundColor: '#EDE6FA',
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: '#E6DDF2',
+    } as ViewStyle,
+    /** Chips inactivos (filtros, pills). */
+    chip: {
+      backgroundColor: '#F4F4F7',
+      borderRadius: 24,
+      borderWidth: 1,
+      borderColor: '#E6DDF2',
+    } as ViewStyle,
+    /** Chips activos/seleccionados (filtros Semana, toggles). */
+    chipSelected: {
+      backgroundColor: '#7B61A8',
+      borderRadius: 24,
+      borderWidth: 0,
+    } as ViewStyle,
+    /** Paneles secundarios colapsables (hints, bloques vacíos). */
+    panel: {
+      backgroundColor: '#F4F4F7',
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: '#E6DDF2',
+    } as ViewStyle,
+  },
+
   borderRadius: {
     standard: 8,
     rounded: 16,
     pill: 24,
     full: 32,
+    card: 20,
+    xl: 28,
   },
 
   shadows: {

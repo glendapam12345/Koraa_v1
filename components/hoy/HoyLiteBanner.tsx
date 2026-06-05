@@ -28,7 +28,6 @@ export function HoyLiteBanner({ onShowAll }: HoyLiteBannerProps) {
 
 const styles = StyleSheet.create({
   hoyLiteBanner: {
-    marginHorizontal: THEME.spacing.lg,
     marginBottom: THEME.spacing.md,
     padding: THEME.spacing.md,
     borderRadius: THEME.borderRadius.rounded,

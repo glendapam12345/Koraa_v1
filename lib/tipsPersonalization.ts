@@ -132,6 +132,55 @@ export function getCategoryLead(
   return cat.default ?? table[category].default;
 }
 
+/** Insight breve para cabecera de Consejos (patrones, no horóscopo). */
+export function getTipsDailyInsight(
+  ctx: TipsUserContext,
+  locale: AppLocale = 'es',
+): string {
+  const emotion = ctx.emotion.toLowerCase();
+  const e = ctx.energyLevel;
+
+  const es: Record<string, string> = {
+    default:
+      'Tus consejos se adaptan a cómo te sientes hoy. Un tip a la vez basta.',
+    agotada:
+      'Con poca energía suele ayudar priorizar descanso y una sola acción pequeña.',
+    tranquila:
+      'En calma, pequeños pasos sostienen el ritmo sin presionarte.',
+    ansiosa:
+      'Cuando la mente va rápido, respirar y simplificar la lista suele aliviar.',
+    motivada:
+      'Buen impulso: canalízalo en pocas tareas con impacto, no en hacerlo todo.',
+    abrumada:
+      'Si te sientes abrumada, conviene aligerar: menos focos y más pausas.',
+    enfocada:
+      'Con claridad, conviene proteger el foco y posponer lo que no es esencial hoy.',
+  };
+
+  const en: Record<string, string> = {
+    default:
+      'Tips adapt to how you feel today. One at a time is enough.',
+    agotada:
+      'Low energy often calls for rest first and one tiny action.',
+    tranquila:
+      'When calm, small steady steps work better than big pushes.',
+    ansiosa:
+      'When your mind races, breathing and a shorter list usually help.',
+    motivada:
+      'Good momentum: channel it into a few high-impact tasks, not everything.',
+    abrumada:
+      'Feeling overloaded is valid. Koraa suggests fewer focus tasks and more pauses.',
+    enfocada:
+      'With clarity, protect your focus and defer what is not essential today.',
+  };
+
+  const table = locale === 'en' ? en : es;
+  if (table[emotion]) return table[emotion];
+  if (e <= 2) return table.agotada ?? table.default;
+  if (e >= 4) return table.motivada ?? table.default;
+  return table.default;
+}
+
 export const TIP_CATEGORY_META: Record<
   TipCategoryId,
   { emoji: string; gradient: readonly [string, string] }

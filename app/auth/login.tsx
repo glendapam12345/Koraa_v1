@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { THEME } from '@/constants/theme';
-import { LinearGradient } from 'expo-linear-gradient';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -122,29 +121,15 @@ export default function LoginScreen() {
             </Text>
           ) : null}
 
-          <TouchableOpacity
+          <CalmPrimaryButton
+            label={t('auth.login.submit')}
             onPress={handleLogin}
             disabled={isLoading}
-            style={[styles.ctaOuter, isLoading && styles.ctaDisabled]}
-            activeOpacity={0.85}
-            accessibilityRole="button"
+            loading={isLoading}
+            style={styles.cta}
             accessibilityLabel={isLoading ? t('authA11y.signingIn') : t('authA11y.signIn')}
             accessibilityHint={t('authA11y.signInHint')}
-            accessibilityState={{ disabled: isLoading, busy: isLoading }}
-          >
-            <LinearGradient
-              colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.ctaGradient}
-            >
-              {isLoading ? (
-                <ActivityIndicator color={THEME.colors.onGradient} />
-              ) : (
-                <Text style={styles.ctaText}>{t('auth.login.submit')}</Text>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
+          />
         </View>
 
         <View style={styles.footer}>
@@ -222,27 +207,8 @@ const styles = StyleSheet.create({
     color: THEME.colors.semantic.danger,
     textAlign: 'center',
   },
-  ctaOuter: {
+  cta: {
     marginTop: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.rounded,
-    overflow: 'hidden',
-    minHeight: THEME.sizes.buttonHeight,
-    ...THEME.shadows.card,
-  },
-  ctaDisabled: {
-    opacity: 0.75,
-  },
-  ctaGradient: {
-    flex: 1,
-    minHeight: THEME.sizes.buttonHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: THEME.spacing.md,
-  },
-  ctaText: {
-    ...THEME.typography.body,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
   },
   footer: {
     flexDirection: 'row',

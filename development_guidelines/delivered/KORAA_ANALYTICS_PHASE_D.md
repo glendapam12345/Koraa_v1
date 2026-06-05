@@ -7,12 +7,20 @@
 
 - Tabla **`app_events`** (Supabase): `user_id`, `event_name`, `properties` (jsonb, sin PII), `platform`, `created_at`. RLS: cada usuario inserta y lee solo sus filas.
 - Cliente: **`lib/analytics.ts`** — `track(name, props?)` y `trackScreen(path)` (vía `screen_view`).
+- Helpers tipados: **`lib/productAnalytics.ts`** — tareas, focus, tips.
 - **`AnalyticsScreenTracker`** en el layout raíz: envía `screen_view` al cambiar la ruta (solo si hay sesión).
 - Eventos explícitos:
   - `auth_sign_in`, `auth_sign_out`
   - `auth_sign_up` (solo si el registro devuelve sesión inmediata; si pide confirmar email, no hay fila hasta que inicie sesión)
   - `check_in_completed` (`source`, `offline`)
   - `task_created` (`priority`, `has_project`, `has_date`, `has_subtasks`, opcional `offline`)
+  - `task_completed` (`is_subtask`, `is_priority`, `has_project`, opcional `parent_auto`)
+  - `focus_session_opened` | `focus_session_started` | `focus_session_paused` | `focus_session_completed` | `focus_session_abandoned` (opcional `remaining_seconds`)
+  - `tips_category_opened` (`category`, `has_check_in`)
+  - `tip_viewed` (`category`, `tip_id`)
+  - `tip_action_tapped` (`action`, opcional `category`, `tip_id`)
+  - `recheck_opened`, `recheck_completed` (`source`)
+  - `profile_saved`
 
 ## Cómo activar en el proyecto Supabase
 

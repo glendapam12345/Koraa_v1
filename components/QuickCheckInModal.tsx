@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'rea
 import { useState } from 'react';
 import { THEME } from '@/constants/theme';
 import { EmotionCard } from './EmotionCard';
-import { GradientButton } from './GradientButton';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { X } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
@@ -80,7 +80,7 @@ export function QuickCheckInModal({ visible, onClose }: QuickCheckInModalProps) 
           </ScrollView>
 
           <View style={styles.footer}>
-            <GradientButton title={t('quickCheckIn.continue')} onPress={handleContinue} disabled={!selectedEmotion} />
+            <CalmPrimaryButton label={t('quickCheckIn.continue')} onPress={handleContinue} disabled={!selectedEmotion} />
           </View>
         </View>
       </View>

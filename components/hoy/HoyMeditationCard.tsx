@@ -111,7 +111,6 @@ export function HoyMeditationCard({
 const styles = StyleSheet.create({
   meditationWrap: {
     marginBottom: THEME.spacing.lg,
-    marginHorizontal: THEME.spacing.lg,
     borderRadius: THEME.borderRadius.rounded + 4,
     overflow: 'hidden',
     ...THEME.shadows.soft,

@@ -16,12 +16,13 @@ Koraa is a mobile-first wellness productivity app that prioritizes tasks based o
 
 **Tech Stack**:
 - **Language**: TypeScript 5.9.2 (strict mode enabled)
-- **Framework**: Expo 54.0.10 with React Native 0.81.4, React 19.1.0
-- **Navigation**: Expo Router 6.0.8 (file-based routing)
-- **Backend**: Supabase 2.58.0 (Authentication + PostgreSQL database)
-- **UI**: React Native StyleSheet, Lucide React Native icons
+- **Framework**: Expo SDK 54 (~54.0.35), React Native 0.81.5, React 19.1.0
+- **Navigation**: Expo Router ~6.0.24 (file-based routing)
+- **Backend**: Supabase 2.58+ (Auth + PostgreSQL + Edge Functions)
+- **Monetization**: RevenueCat (`react-native-purchases`)
+- **UI**: `THEME` tokens, `CalmScreen` / `CalmCard` / `CalmPrimaryButton`, Lucide icons
 - **Fonts**: DM Sans (Medium/Bold), Libre Baskerville (Italic)
-- **Architecture**: Expo New Architecture enabled
+- **i18n**: ES/EN vía `I18nContext` (`lib/i18n/`)
 
 ---
 
@@ -29,43 +30,35 @@ Koraa is a mobile-first wellness productivity app that prioritizes tasks based o
 
 ```
 [project-root]/
-├── app/                    # Expo Router file-based routing
-│   ├── _layout.tsx         # Root layout with font loading, AuthProvider
-│   ├── index.tsx           # Entry point / welcome screen
-│   ├── auth.tsx            # Authentication screen
-│   ├── help.tsx            # FAQ, legal links, soporte (ruta /help)
-│   ├── (tabs)/             # Tab navigation group
-│   │   ├── index.tsx       # "Hoy" - Today's prioritized tasks
-│   │   ├── vaciar.tsx      # Tab "Tareas" - captura y asignación de tareas
-│   │   ├── sentir.tsx      # "Sentir" - Daily emotional check-in
-│   │   ├── semana.tsx      # "Semana" - weekly view
-│   │   ├── tips.tsx        # Tab "Consejos" - tips según estado y perfil
-│   │   └── yo.tsx          # "Yo" - Profile and settings
-│   ├── onboarding/         # Onboarding flow screens
-│   │   ├── welcome.tsx
-│   │   ├── emotion.tsx
-│   │   ├── energy.tsx
-│   │   ├── time.tsx
-│   │   └── focus.tsx
-│   └── +not-found.tsx      # 404 screen
-├── components/             # Reusable UI components
-│   ├── EmotionCard.tsx
-│   └── GradientButton.tsx
-├── constants/              # App constants and design tokens
-│   ├── theme.ts            # Complete design system (THEME)
-│   └── legalUrls.ts        # URLs opcionales privacidad/términos + email soporte
-├── contexts/               # React Context providers
-│   └── AuthContext.tsx     # Authentication state management
-├── hooks/                  # Custom React hooks
-│   └── useFrameworkReady.ts
-├── lib/                    # Third-party client libraries
-│   └── supabase.ts         # Supabase client configuration
-├── supabase/               # Database migrations
-│   └── migrations/
-└── assets/                 # Images, fonts, etc.
+├── app/                    # Expo Router (file-based)
+│   ├── _layout.tsx         # Root: fonts, AuthProvider, deep links
+│   ├── index.tsx           # Auth / onboarding gate
+│   ├── auth/               # login, signup, forgot-password
+│   ├── sentir.tsx          # Modal check-in (Sentir)
+│   ├── focus-session.tsx   # Pomodoro 25 min
+│   ├── settings.tsx, help.tsx, paywall.tsx
+│   ├── (tabs)/             # Tab navigation (auth-gated)
+│   │   ├── index.tsx       # Hoy — prioridades del día
+│   │   ├── vaciar.tsx      # Tareas — captura (tab oculta en barra)
+│   │   ├── semana.tsx      # Semana — calendario
+│   │   ├── tips.tsx        # Consejos
+│   │   ├── parami.tsx      # Para mí — insights
+│   │   └── yo.tsx          # Perfil
+│   ├── onboarding/       # welcome → emotion/energy/time/focus
+│   └── tips/[category].tsx
+├── components/
+│   ├── hoy/                # Hoy descompuesto (HoyFocusPanel, etc.)
+│   ├── ui/calm/            # CalmScreen, CalmCard, CalmPrimaryButton
+│   └── tasks/              # TaskCard, AddToGoogleCalendarButton, …
+├── constants/theme.ts      # Design system (THEME)
+├── contexts/               # AuthContext, I18nContext, SubscriptionContext
+├── hooks/                  # useTasks, useCheckIn, useGoogleCalendarConnection, …
+├── lib/                    # supabase, smartPrioritization, googleCalendar, i18n
+├── supabase/migrations/    # SQL + functions (hoy-coach, revenuecat-webhook)
+└── app.config.js           # Única config Expo (sin app.json duplicado)
 ```
 
-**⚠️ No editar `koraav2/`** — copia legacy archivada (~1.2 GB); la app activa es la raíz anterior. Ver [2026-05-19_koraav2_legacy_folder.md](development_guidelines/learnings/2026-05-19_koraav2_legacy_folder.md).
+**Flujo del día:** Tareas (vaciar) → Sentir (check-in) → Hoy (focos). La carpeta legacy `koraav2/` fue eliminada; `npm run check:legacy` evita reintroducirla.
 
 ### Key Directories
 
@@ -99,12 +92,15 @@ The `development_guidelines/` directory organizes extended project context:
 
 See individual README files in each subdirectory for usage guidelines.
 
-**UX / flujo de usuario:** Auditoría y entregables en [koraa_ux_flow_audit.md](development_guidelines/delivered/koraa_ux_flow_audit.md) (actualizada 2026-05-19: focos, recheck en Sentir, captura rápida en Tareas, gates de carga, `components/hoy/`). Expo Go en dispositivo: `npm run dev:cf` — ver *Probar en Expo Go* en ese documento.
+**UX / flujo de usuario:** [koraa_ux_flow_audit.md](development_guidelines/delivered/koraa_ux_flow_audit.md). Expo Go: `npm run dev:cf` o `npm run dev:phone`.
 
-**TestFlight iOS:** Build **26** (`app.config.js` → `ios.buildNumber`). Guía de release y checklist testers: [2026-05-19_testflight_build_26.md](development_guidelines/delivered/2026-05-19_testflight_build_26.md). Comando: `eas build --platform ios --profile production`.
+**Design system (en curso):** [2026-05-19_design_system_unification.md](development_guidelines/running/2026-05-19_design_system_unification.md) — `CalmScreen`, `CalmCard`, `CalmPrimaryButton`, `ScreenHeader`, `THEME.surfaces.*`.
 
-**Voz y microcopy (estándar UI):** reglas de tono, CTAs, errores y ejemplos “antes/después” en [2026-05-05_koraa_voice_and_microcopy_guide.md](development_guidelines/delivered/2026-05-05_koraa_voice_and_microcopy_guide.md).
-Checklist corto de errores/reintentos (patrón `No se pudo... Inténtalo de nuevo.`): [2026-05-06_microcopy_error_retry_checklist.md](development_guidelines/delivered/2026-05-06_microcopy_error_retry_checklist.md).
+**TestFlight iOS:** v**1.0.3**, build **30** (`app.config.js`). Release: [2026-06-04_testflight_build_30_v103.md](development_guidelines/delivered/2026-06-04_testflight_build_30_v103.md). `eas build --platform ios --profile production`.
+
+**Google Calendar (export tareas):** [GOOGLE_CALENDAR_API_SETUP.md](development_guidelines/learnings/GOOGLE_CALENDAR_API_SETUP.md). Coach IA opcional: [HOY_COACH_AI_EDGE_FUNCTION.md](development_guidelines/learnings/HOY_COACH_AI_EDGE_FUNCTION.md).
+
+**Microcopy errores/reintentos:** [2026-05-06_microcopy_error_retry_checklist.md](development_guidelines/delivered/2026-05-06_microcopy_error_retry_checklist.md).
 
 ---
 
@@ -146,8 +142,10 @@ Checklist corto de errores/reintentos (patrón `No se pudo... Inténtalo de nuev
 
 ### Testing Requirements
 
-- Testing framework: Not currently configured. Consider adding Jest + React Native Testing Library
-- Test location: To be determined when testing is added
+- **Unit tests:** Jest (`jest.config.simple.js`) — `npm run test:unit` (lógica en `lib/`, 13 suites)
+- **Hooks:** `npm run test:hooks` (config `jest.config.hooks.js` si existe)
+- **Verificación local:** `npx expo-doctor` + `npm run verify:local` antes de marcar trabajo completo
+- Componentes/pantallas: sin cobertura automatizada aún; QA manual en simulador/dispositivo
 
 ### Documentation
 
@@ -164,15 +162,17 @@ Checklist corto de errores/reintentos (patrón `No se pudo... Inténtalo de nuev
 npm run dev                    # Start Expo development server (disables telemetry)
 npm install                    # Install dependencies
 
-# Linting & Type Checking
-npm run lint                   # Run Expo linter
-npm run typecheck              # Run TypeScript compiler in check mode (no emit)
+# Linting, types & health
+npm run lint                   # ESLint (expo lint)
+npm run typecheck              # tsc --noEmit
+npx expo-doctor                # Salud del proyecto Expo (obligatorio pre-release)
 
-# Supabase (local checks & migration hints)
+# Supabase & checks locales
 npm run env:bootstrap          # Crea .env desde .env.example si no existe
-npm run check:supabase       # Verifica .env, DNS y /auth/v1/health
-npm run check:supabase:migrations  # Lista migraciones y orden sugerido (ver guía)
-npm run verify:local         # check:supabase + check:supabase:migrations
+npm run check:supabase         # .env, DNS, /auth/v1/health
+npm run check:supabase:migrations
+npm run test:unit              # Tests unitarios lib/
+npm run verify:local           # metro + legacy + supabase + schema + calendar + test:unit
 
 # Building
 npm run build:web              # Export web build using Expo
@@ -264,11 +264,12 @@ Before making any code changes:
 
 ### UI Patterns
 
-- **Gradient Cards**: Use `LinearGradient` from `expo-linear-gradient` with `THEME.colors.gradient.blue` and `THEME.colors.gradient.pink`
-- **Empty States**: Show helpful message with accent text using `THEME.fonts.accent.italic`
-- **Cards**: White background (`THEME.colors.fill[100]`), rounded corners (`THEME.borderRadius.rounded`), soft shadow
-- **Touch Targets**: Minimum 48px height (THEME.sizes.touchTarget)
-- **Icons**: Use Lucide React Native icons, size 24px standard, 32px large
+- **Pantallas con scroll:** `CalmScreen` + `THEME.layout.screenPaddingX` (no duplicar márgenes)
+- **Tarjetas:** `CalmCard` o `THEME.surfaces.elevated` / `muted` / `panel`
+- **CTAs principales:** `CalmPrimaryButton` (`variant="default"` gradiente, `"soft"` secundario)
+- **Títulos de tab:** `ScreenHeader` + `typography.screenTitle`
+- **Touch targets:** mínimo 48px (`THEME.sizes.touchTarget`)
+- **Iconos:** Lucide React Native, 24px estándar
 
 ---
 
@@ -331,13 +332,14 @@ Before making any code changes:
 
 ### Environment Variables
 
-Required in `.env` file:
+Required in `.env` (ver `.env.example`):
 ```bash
-EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+EXPO_PUBLIC_SUPABASE_URL=...
+EXPO_PUBLIC_SUPABASE_ANON_KEY=...
+EXPO_PUBLIC_REVENUECAT_API_KEY_IOS=...   # obligatorio en release (app.config.js)
 ```
 
-Opcional (pantalla **Ayuda** → enlaces legales): `EXPO_PUBLIC_PRIVACY_POLICY_URL`, `EXPO_PUBLIC_TERMS_OF_SERVICE_URL`. Ver [KORAA_HELP_AND_LEGAL_URLS.md](development_guidelines/learnings/KORAA_HELP_AND_LEGAL_URLS.md).
+Opcional: `EXPO_PUBLIC_HOY_COACH_AI_ENABLED`, `EXPO_PUBLIC_GOOGLE_*_CLIENT_ID`, `EXPO_PUBLIC_PRIVACY_POLICY_URL`, `EXPO_PUBLIC_TERMS_OF_SERVICE_URL`. Ver [KORAA_HELP_AND_LEGAL_URLS.md](development_guidelines/learnings/KORAA_HELP_AND_LEGAL_URLS.md).
 Base legal para suscripciones y App Review: [KORAA_TERMS_OF_USE.md](development_guidelines/delivered/KORAA_TERMS_OF_USE.md).
 
 Medición de producto (tabla `app_events`, `lib/analytics.ts`): [KORAA_ANALYTICS_PHASE_D.md](development_guidelines/delivered/KORAA_ANALYTICS_PHASE_D.md). Opcional: `EXPO_PUBLIC_ANALYTICS_ENABLED=false`.
@@ -387,7 +389,7 @@ Onboarding obligatorio y tabs con sesión: [onboarding_gate_and_tabs_auth.md](de
 
 ## 🔄 Maintenance
 
-**Last Updated**: January 2025
+**Last Updated**: June 2026
 
 **Maintained By**: Development Team
 
@@ -404,8 +406,10 @@ Before starting any task:
 - [ ] I understand the data flow (Supabase queries, auth state)
 
 Before committing:
-- [ ] TypeScript compiles without errors (`npm run typecheck`)
+- [ ] `npx expo-doctor` passes critical checks
+- [ ] TypeScript compiles (`npm run typecheck`)
 - [ ] Linter passes (`npm run lint`)
+- [ ] Unit tests pass (`npm run test:unit`) when `lib/` changed
 - [ ] All styles use THEME constants
 - [ ] TypeScript types are defined for all props
 - [ ] Error handling is implemented for async operations

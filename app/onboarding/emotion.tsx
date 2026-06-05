@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useState, useEffect } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
-import { GradientButton } from '@/components/GradientButton';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { EmotionCard } from '@/components/EmotionCard';
 import { Sparkles } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
@@ -74,8 +74,8 @@ export default function EmotionScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <GradientButton
-          title={t('onboarding.emotion.continue')}
+        <CalmPrimaryButton
+          label={t('onboarding.emotion.continue')}
           onPress={handleContinue}
           disabled={!selectedEmotion}
           accessibilityLabel={t('onboarding.emotion.continue')}

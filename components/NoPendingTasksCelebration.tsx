@@ -49,7 +49,6 @@ export function NoPendingTasksCelebration({ onDismiss }: NoPendingTasksCelebrati
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: THEME.spacing.lg,
     marginBottom: THEME.spacing.lg,
   },
   card: {

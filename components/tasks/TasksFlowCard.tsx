@@ -26,7 +26,7 @@ export function TasksFlowCard({ onDismiss }: TasksFlowCardProps) {
           <View style={styles.stepDot}>
             <Heart size={12} color={THEME.colors.gradient.blue} />
           </View>
-          <Text style={styles.stepLabel}>{t('tabs.feel')}</Text>
+          <Text style={styles.stepLabel}>{t('flow.stepCheckInLabel')}</Text>
         </View>
         <ArrowRight size={14} color={THEME.colors.text.tertiary} />
         <View style={styles.step}>

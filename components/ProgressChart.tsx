@@ -120,14 +120,24 @@ export function ProgressChart({ data }: ProgressChartProps) {
   const maxBarHeight = CHART_HEIGHT - 32;
   const minBarHeight = 20;
   const emotionLabels = getCatalog(locale).sentir.emotions as Record<string, string>;
+  const checkInCount = data.filter((d) => d.hasCheckIn).length;
+  const chartSummary = t('tipsExtra.a11yChartSummary', {
+    checkIns: checkInCount,
+    total: data.length,
+  });
 
   const emotionsInData = Array.from(
     new Set(data.filter(d => d.emotion).map(d => d.emotion))
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.chartContainer}>
+    <View
+      style={styles.container}
+      accessibilityRole="image"
+      accessibilityLabel={`${t('progressUi.chartLegend')}. ${chartSummary}. ${t('progressUi.chartLegendNote')}`}
+      importantForAccessibility="yes"
+    >
+      <View style={styles.chartContainer} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
         <View style={styles.chart}>
           {data.map((day, index) => (
             <AnimatedBar
@@ -143,7 +153,7 @@ export function ProgressChart({ data }: ProgressChartProps) {
 
       {/* Leyenda simplificada */}
       {emotionsInData.length > 0 && (
-        <View style={styles.legendContainer}>
+        <View style={styles.legendContainer} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
           <View style={styles.legendRow}>
             <View style={styles.legendItems}>
               {emotionsInData.slice(0, 6).map((emotion) => {
