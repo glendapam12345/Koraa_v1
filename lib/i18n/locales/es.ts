@@ -351,6 +351,8 @@ export const es = {
     habitMeals: 'Comidas',
     habitExercise: 'Ejercicio',
     habitsComingSoon: 'Próximamente: registra hábitos y conéctalos con tu reloj.',
+    insightsLockedTitle: 'Patrones con Premium',
+    insightsLockedBody: 'Desbloquea ideas sobre tu energía, emociones y días más sensibles.',
   },
   sentir: {
     ritualTitle: 'Tu ritual diario',

@@ -30,6 +30,8 @@ import Constants from 'expo-constants';
 import { useYoProfile } from '@/hooks/useYoProfile';
 import { YoEditProfileModal } from '@/components/yo/YoEditProfileModal';
 import { YoMenuRow } from '@/components/yo/YoMenuRow';
+import { YoStreakHero } from '@/components/yo/YoStreakHero';
+import { useStreak } from '@/hooks/today/useStreak';
 import { subscribeCheckInRefresh } from '@/lib/checkInRefresh';
 
 export default function ProfileScreen() {
@@ -38,6 +40,7 @@ export default function ProfileScreen() {
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const { currentStreak, loadStreak } = useStreak(user?.id);
 
   const profileState = useYoProfile({
     userId: user?.id,
@@ -76,19 +79,22 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     void loadProfile();
-  }, [loadProfile]);
+    void loadStreak();
+  }, [loadProfile, loadStreak]);
 
   useFocusEffect(
     useCallback(() => {
       void loadProfile();
-    }, [loadProfile]),
+      void loadStreak();
+    }, [loadProfile, loadStreak]),
   );
 
   useEffect(() => {
     return subscribeCheckInRefresh(() => {
       void loadProfile();
+      void loadStreak();
     });
-  }, [loadProfile]);
+  }, [loadProfile, loadStreak]);
 
   const displayName = useMemo(
     () =>
@@ -121,6 +127,7 @@ export default function ProfileScreen() {
     setRefreshing(true);
     try {
       await loadProfile();
+      await loadStreak();
     } catch (error) {
       logger.error('Error al refrescar:', error);
     } finally {
@@ -185,6 +192,8 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </CalmCard>
         ) : null}
+
+        <YoStreakHero streak={currentStreak} />
 
         <CalmCard style={styles.menuCard}>
           <YoMenuRow

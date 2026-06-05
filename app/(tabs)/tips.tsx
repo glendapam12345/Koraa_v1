@@ -12,6 +12,8 @@ import { countTipsByCategory, getTipsDailyInsight } from '@/lib/tipsPersonalizat
 import type { TipCategoryId } from '@/lib/tipsTypes';
 import { TipsCategoryGrid } from '@/components/tips/TipsCategoryGrid';
 import { TipsWeekChart } from '@/components/tips/TipsWeekChart';
+import { TipsMoodEnergyCards } from '@/components/tips/TipsMoodEnergyCards';
+import { useCheckInInsightsData } from '@/hooks/useCheckInInsightsData';
 import { Lightbulb } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
@@ -37,6 +39,9 @@ const EMOTIONS = [
   { id: 'enfocada', emoji: '🎯', color: [THEME.colors.gradient.blue, THEME.colors.calm.lavenderDeep] },
 ] as const;
 
+const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
+const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
+
 const TIP_CATEGORY_ORDER: TipCategoryId[] = ['mindset', 'rest', 'action', 'productivity'];
 
 export default function TipsScreen() {
@@ -57,6 +62,24 @@ export default function TipsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
+  const dayLabels = useMemo(
+    () => [
+      t('yo.dayShortSun'),
+      t('yo.dayShortMon'),
+      t('yo.dayShortTue'),
+      t('yo.dayShortWed'),
+      t('yo.dayShortThu'),
+      t('yo.dayShortFri'),
+      t('yo.dayShortSat'),
+    ],
+    [t],
+  );
+  const { progressData, loading: insightsLoading, load: loadInsights } = useCheckInInsightsData(
+    monthNames,
+    dayLabels,
+  );
+  const weekChartData = useMemo(() => progressData.slice(-7), [progressData]);
 
   const loadTodayCheckIn = useCallback(async () => {
     try {
@@ -127,7 +150,11 @@ export default function TipsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadTodayCheckIn();
-    }, [loadTodayCheckIn])
+      void (async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) void loadInsights(user.id);
+      })();
+    }, [loadTodayCheckIn, loadInsights])
   );
 
   useFocusEffect(
@@ -289,6 +316,14 @@ export default function TipsScreen() {
               energyLevel={energyLevel || 3}
               patternLine={patternLine}
               onPressEmotion={() => openRecheckCheckIn('tips_mood')}
+            />
+
+            <TipsMoodEnergyCards
+              emotionEmoji={emotionData.emoji}
+              emotionLabel={t(`sentir.emotions.${emotionData.id}` as TranslationKey)}
+              energyLevel={energyLevel || 3}
+              weekData={weekChartData}
+              loading={insightsLoading}
             />
 
             {categoryCounts ? (

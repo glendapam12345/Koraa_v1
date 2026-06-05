@@ -4,7 +4,7 @@ import type { DayData } from '@/components/ProgressChart';
 import type { YoHistoryEntry } from '@/components/yo/YoCheckInHistory';
 import { getLocalDateString } from '@/lib/dateLocal';
 
-const PROGRESS_DAYS = 14;
+const PROGRESS_DAYS = 30;
 const HISTORY_DAYS = 30;
 
 function formatHistoryDateLabel(dateStr: string, monthNames: readonly string[]): string {
@@ -26,26 +26,25 @@ export function useCheckInInsightsData(
     const today = new Date();
     const checkInMap = new Map<string, { emotion: string; energy_level: number }>();
 
-    const fourteenDaysAgo = new Date(today);
-    fourteenDaysAgo.setDate(today.getDate() - (PROGRESS_DAYS - 1));
-
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(today.getDate() - (HISTORY_DAYS - 1));
+    const rangeStart = getLocalDateString(thirtyDaysAgo);
+    const rangeEnd = getLocalDateString(today);
 
     const [progressRes, historyRes] = await Promise.all([
       supabase
         .from('daily_check_ins')
         .select('date, emotion, energy_level')
         .eq('user_id', userId)
-        .gte('date', getLocalDateString(fourteenDaysAgo))
-        .lte('date', getLocalDateString(today))
+        .gte('date', rangeStart)
+        .lte('date', rangeEnd)
         .order('date', { ascending: true }),
       supabase
         .from('daily_check_ins')
         .select('date, emotion, energy_level')
         .eq('user_id', userId)
-        .gte('date', getLocalDateString(thirtyDaysAgo))
-        .lte('date', getLocalDateString(today))
+        .gte('date', rangeStart)
+        .lte('date', rangeEnd)
         .order('date', { ascending: false }),
     ]);
 

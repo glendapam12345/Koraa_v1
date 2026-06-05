@@ -390,6 +390,7 @@ export const uiEs = {
     a11yMoodPill: 'Emoción actual: {{emotion}}',
     a11yWeekChartRegion: 'Ritmo semanal de check-ins',
     a11yWeekChartHint: 'Abre Para mí para ver gráficas detalladas',
+    a11yMoodEnergyCards: 'Resumen de ánimo y energía de la semana',
     a11yProfileHint: 'Abre tu perfil para personalizar consejos',
     a11yTipOpenHint: 'Toca para leer el consejo completo',
     a11yTipForYou: ', recomendado para ti',
@@ -412,6 +413,9 @@ export const uiEs = {
     a11yEmotionMix: 'Emociones más frecuentes en tus check-ins recientes',
     a11yEnergySparkline: 'Tendencia de energía en check-ins recientes',
     a11yLockedChart: 'Vista previa de gráfica Premium',
+    a11yInsightsSection: 'Ideas sobre tu ritmo emocional',
+    a11yInsightsLocked: 'Patrones e ideas con Premium',
+    a11yMoodTimeline: 'Ánimo por día: {{checkIns}} check-ins de {{total}} días',
   },
   focus: {
     sessionTitle: 'Sesión de enfoque',

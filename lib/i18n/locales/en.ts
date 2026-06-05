@@ -352,6 +352,8 @@ export const en: DeepStrings<typeof es> = {
     habitMeals: 'Meals',
     habitExercise: 'Exercise',
     habitsComingSoon: 'Coming soon: log habits and connect your watch.',
+    insightsLockedTitle: 'Patterns with Premium',
+    insightsLockedBody: 'Unlock insights about your energy, emotions, and sensitive days.',
   },
   sentir: {
     ritualTitle: 'Your daily ritual',

@@ -6,18 +6,24 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useCheckInInsightsData } from '@/hooks/useCheckInInsightsData';
+import { useStreak } from '@/hooks/today/useStreak';
 import {
   buildEmotionMix,
   buildEnergySparkline,
   hasEnoughPatternData,
 } from '@/lib/checkInPatterns';
+import { slicePeriodData } from '@/lib/checkInPeriod';
+import { generateEmotionalInsights } from '@/lib/emotionalInsights';
 import { MiniSparklineChart } from '@/components/yo/MiniSparklineChart';
 import { MiniEmotionBars } from '@/components/yo/MiniEmotionBars';
+import { MiniMoodTimeline } from '@/components/yo/MiniMoodTimeline';
+import { YoCheckInHistory } from '@/components/yo/YoCheckInHistory';
 import { FocusSessionCard } from '@/components/focus/FocusSessionCard';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
-import { ParaMiMusaHeader } from '@/components/parami/ParaMiMusaHeader';
+import { ParaMiMusaHeader, type ParaMiPeriodId } from '@/components/parami/ParaMiMusaHeader';
 import { ParaMiMusaCard } from '@/components/parami/ParaMiMusaCard';
+import { ParaMiInsights } from '@/components/parami/ParaMiInsights';
 import { LockedChartPreview } from '@/components/parami/LockedChartPreview';
 import { getDisplayName, getFirstName } from '@/lib/displayName';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
@@ -36,6 +42,7 @@ export default function ParaMiScreen() {
   const [profileFullName, setProfileFullName] = useState<string | undefined>();
   const [todayEmotion, setTodayEmotion] = useState<string>('');
   const [todayEnergy, setTodayEnergy] = useState(0);
+  const [period, setPeriod] = useState<ParaMiPeriodId>('week');
 
   useEffect(() => {
     if (!user?.id) return;
@@ -77,6 +84,7 @@ export default function ParaMiScreen() {
   }, [todayEmotion, t]);
 
   const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
+  const { currentStreak, loadStreak } = useStreak(user?.id);
   const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
   const dayLabels = useMemo(
     () => [
@@ -91,14 +99,15 @@ export default function ParaMiScreen() {
     [t],
   );
 
-  const { progressData, loading, load } = useCheckInInsightsData(monthNames, dayLabels);
+  const { progressData, historyEntries, loading, load } = useCheckInInsightsData(monthNames, dayLabels);
 
   const refresh = useCallback(() => {
     if (user?.id) {
       void load(user.id);
       void loadTodayCheckIn();
+      void loadStreak();
     }
-  }, [user?.id, load, loadTodayCheckIn]);
+  }, [user?.id, load, loadTodayCheckIn, loadStreak]);
 
   useFocusEffect(
     useCallback(() => {
@@ -106,15 +115,20 @@ export default function ParaMiScreen() {
     }, [refresh]),
   );
 
-  const energySparkline = useMemo(() => buildEnergySparkline(progressData), [progressData]);
-  const emotionMix = useMemo(() => buildEmotionMix(progressData), [progressData]);
-  const hasPatternData = useMemo(() => hasEnoughPatternData(progressData), [progressData]);
+  const periodData = useMemo(() => slicePeriodData(progressData, period), [progressData, period]);
+  const energySparkline = useMemo(() => buildEnergySparkline(periodData), [periodData]);
+  const emotionMix = useMemo(() => buildEmotionMix(periodData), [periodData]);
+  const hasPatternData = useMemo(() => hasEnoughPatternData(periodData), [periodData]);
   const locked = !isSubscribed;
+  const insights = useMemo(
+    () => generateEmotionalInsights(periodData, currentStreak, locale),
+    [periodData, currentStreak, locale],
+  );
 
   const moodChart = locked ? (
     <LockedChartPreview variant="mood" />
   ) : hasPatternData ? (
-    <MiniEmotionBars items={emotionMix} />
+    <MiniMoodTimeline days={periodData} />
   ) : (
     <Text style={styles.placeholder}>{t('yo.patternsNeedData')}</Text>
   );
@@ -127,7 +141,7 @@ export default function ParaMiScreen() {
     <Text style={styles.placeholder}>{t('yo.patternsNeedData')}</Text>
   );
 
-  const symptomsChart = locked ? (
+  const emotionsChart = locked ? (
     <LockedChartPreview variant="symptoms" />
   ) : hasPatternData ? (
     <MiniEmotionBars items={emotionMix} />
@@ -148,9 +162,18 @@ export default function ParaMiScreen() {
         progressData={progressData}
         todayEmotionLabel={todayEmotionLabel}
         todayEnergyLevel={todayEnergy}
+        period={period}
+        onPeriodChange={setPeriod}
       />
 
       <Text style={styles.flowHint}>{t('parami.flowHint')}</Text>
+
+      <ParaMiInsights
+        insights={insights}
+        locked={locked}
+        hasEnoughData={hasPatternData}
+        loading={loading}
+      />
 
       <FocusSessionCard />
 
@@ -185,7 +208,7 @@ export default function ParaMiScreen() {
         body={t('parami.symptomsCardBody')}
         locked={locked}
       >
-        {symptomsChart}
+        {emotionsChart}
       </ParaMiMusaCard>
 
       {locked && !subscriptionLoading ? (
@@ -199,6 +222,8 @@ export default function ParaMiScreen() {
       {!locked && !subscriptionLoading && !hasPatternData && !loading ? (
         <Text style={styles.footerHint}>{t('parami.patternsNeedCheckIns')}</Text>
       ) : null}
+
+      <YoCheckInHistory entries={historyEntries} isSubscribed={isSubscribed} />
     </CalmScreen>
   );
 }

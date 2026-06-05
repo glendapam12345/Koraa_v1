@@ -389,6 +389,7 @@ export const uiEn = {
     a11yMoodPill: 'Current emotion: {{emotion}}',
     a11yWeekChartRegion: 'Weekly check-in rhythm',
     a11yWeekChartHint: 'Opens For me for detailed charts',
+    a11yMoodEnergyCards: 'Weekly mood and energy summary',
     a11yProfileHint: 'Opens your profile to personalize tips',
     a11yTipOpenHint: 'Tap to read the full tip',
     a11yTipForYou: ', recommended for you',
@@ -411,6 +412,9 @@ export const uiEn = {
     a11yEmotionMix: 'Most frequent emotions in recent check-ins',
     a11yEnergySparkline: 'Energy trend in recent check-ins',
     a11yLockedChart: 'Premium chart preview',
+    a11yInsightsSection: 'Insights about your emotional rhythm',
+    a11yInsightsLocked: 'Patterns and insights with Premium',
+    a11yMoodTimeline: 'Mood by day: {{checkIns}} check-ins out of {{total}} days',
   },
   focus: {
     sessionTitle: 'Focus session',

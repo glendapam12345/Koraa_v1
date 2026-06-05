@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Lock } from 'lucide-react-native';
@@ -7,6 +7,7 @@ import { THEME } from '@/constants/theme';
 import { bleedScreenPaddingX } from '@/lib/screenLayout';
 import { useI18n } from '@/contexts/I18nContext';
 import type { DayData } from '@/components/ProgressChart';
+import { periodDayCount, slicePeriodData } from '@/lib/checkInPeriod';
 
 export type ParaMiPeriodId = 'week' | 'twoWeeks' | 'month';
 
@@ -16,6 +17,8 @@ type ParaMiMusaHeaderProps = {
   progressData: DayData[];
   todayEmotionLabel?: string;
   todayEnergyLevel?: number;
+  period: ParaMiPeriodId;
+  onPeriodChange: (period: ParaMiPeriodId) => void;
 };
 
 function formatShortDate(date: Date, locale: string): string {
@@ -44,9 +47,10 @@ export function ParaMiMusaHeader({
   progressData,
   todayEmotionLabel,
   todayEnergyLevel = 0,
+  period,
+  onPeriodChange,
 }: ParaMiMusaHeaderProps) {
   const { t, locale } = useI18n();
-  const [period, setPeriod] = useState<ParaMiPeriodId>('week');
 
   const periods: { id: ParaMiPeriodId; labelKey: 'parami.periodWeek' | 'parami.periodTwoWeeks' | 'parami.periodMonth'; premium: boolean }[] = [
     { id: 'week', labelKey: 'parami.periodWeek', premium: false },
@@ -54,13 +58,14 @@ export function ParaMiMusaHeader({
     { id: 'month', labelKey: 'parami.periodMonth', premium: true },
   ];
 
-  const daysBack = period === 'month' ? 30 : period === 'twoWeeks' ? 14 : 7;
+  const daysBack = periodDayCount(period);
+  const periodData = useMemo(() => slicePeriodData(progressData, period), [progressData, period]);
 
   const periodMeta = useMemo(() => {
     const end = new Date();
     const start = new Date();
     start.setDate(end.getDate() - (daysBack - 1));
-    const withCheckIn = progressData.filter((d) => d.hasCheckIn);
+    const withCheckIn = periodData.filter((d) => d.hasCheckIn);
     const avgEnergy =
       withCheckIn.length > 0
         ? Math.round(
@@ -78,14 +83,14 @@ export function ParaMiMusaHeader({
       energy: avgEnergy || todayEnergyLevel,
       checkInCount: withCheckIn.length,
     };
-  }, [daysBack, progressData, todayEnergyLevel, t, locale]);
+  }, [daysBack, periodData, todayEnergyLevel, t, locale]);
 
   const handlePeriodPress = (id: ParaMiPeriodId, premium: boolean) => {
     if (premium && !isSubscribed) {
       router.push('/paywall');
       return;
     }
-    setPeriod(id);
+    onPeriodChange(id);
   };
 
   const moodLabel = todayEmotionLabel?.trim() || t('parami.balanceNoMood');
