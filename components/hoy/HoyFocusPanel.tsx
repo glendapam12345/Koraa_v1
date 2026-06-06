@@ -10,6 +10,7 @@ import { HoyFocusTaskRow } from '@/components/hoy/HoyFocusTaskRow';
 import { HoyMoodHeroCard } from '@/components/hoy/HoyMoodHeroCard';
 import { HoyDayFlowSection } from '@/components/hoy/HoyDayFlowSection';
 import { HoyFocusScopeBanner } from '@/components/hoy/HoyFocusScopeBanner';
+import { KoraaLogicExplanation } from '@/components/hoy/KoraaLogicExplanation';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { useHoyCoachMessage } from '@/hooks/useHoyCoachMessage';
@@ -27,6 +28,8 @@ type HoyFocusPanelProps = {
   todayMood: string;
   emotionLabel: string;
   energyLevel: number;
+  time?: string;
+  focusLevel?: string;
   coachSuggestion: string;
   priorityStats: FocusProgressStats;
   focusTasks: Task[];
@@ -54,6 +57,8 @@ export function HoyFocusPanel({
   currentStreak,
   emotionLabel,
   energyLevel,
+  time = '',
+  focusLevel = '',
   todayMood,
   coachSuggestion,
   priorityStats,
@@ -186,6 +191,18 @@ export function HoyFocusPanel({
           </Text>
         ) : null}
       </View>
+
+      {focusTasks.length > 0 && time && focusLevel ? (
+        <KoraaLogicExplanation
+          checkIn={{
+            energyLevel,
+            emotion: todayMood,
+            availableTime: time,
+            focusLevel,
+          }}
+          emotionLabel={emotionLabel}
+        />
+      ) : null}
 
       <CalmCard style={styles.focusCard}>
         {allFocusDone ? (

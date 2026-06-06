@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
+import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
@@ -24,6 +25,22 @@ import { publishCheckInCelebration } from '@/lib/checkInCelebration';
 import { markPrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
 import { scheduleRecheckReminder } from '@/hooks/useNotifications';
 import { track } from '@/lib/analytics';
+import type { TranslationKey } from '@/lib/i18n';
+
+const TIME_OPTIONS: { id: string; labelKey: TranslationKey }[] = [
+  { id: 'Poco (1-2hrs)', labelKey: 'onboarding.time.little' },
+  { id: 'Medio (2-4hrs)', labelKey: 'onboarding.time.medium' },
+  { id: 'Bastante (4-6hrs)', labelKey: 'onboarding.time.plenty' },
+  { id: 'Todo el día', labelKey: 'onboarding.time.allDay' },
+];
+
+const FOCUS_OPTIONS: { id: string; labelKey: TranslationKey }[] = [
+  { id: 'Muy distraída', labelKey: 'onboarding.focus.scattered' },
+  { id: 'Algo distraída', labelKey: 'onboarding.focus.somewhat' },
+  { id: 'Normal', labelKey: 'onboarding.focus.normal' },
+  { id: 'Enfocada', labelKey: 'onboarding.focus.focused' },
+  { id: 'Súper enfocada', labelKey: 'onboarding.focus.veryFocused' },
+];
 
 export type SentirEmotionOption = {
   id: string;
@@ -61,6 +78,9 @@ export function SentirVisualCheckIn({
   const { t, locale } = useI18n();
   const [emotion, setEmotion] = useState('');
   const [energy, setEnergy] = useState(3);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [availableTime, setAvailableTime] = useState(DEFAULT_CHECK_IN_TIME);
+  const [focusLevel, setFocusLevel] = useState(DEFAULT_CHECK_IN_FOCUS);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,19 +94,11 @@ export function SentirVisualCheckIn({
   const canSubmit = Boolean(emotion && energy >= 1 && energy <= 5 && user);
   const embeddedSaveLabel = saveLabelKey
     ? t(saveLabelKey as never)
-    : t('hoy.inicio.saveCheckIn');
+    : t('sentir.visualCheckIn.generateFocos');
 
   useEffect(() => {
     onDraftChange?.(Boolean(emotion) || energy !== 3);
   }, [emotion, energy, onDraftChange]);
-
-  const handleAdvanced = () => {
-    if (!emotion || energy < 1) return;
-    router.push({
-      pathname: '/onboarding/time',
-      params: { emotion, energy: String(energy), from: 'sentir' },
-    });
-  };
 
   const handleSave = async () => {
     if (!canSubmit || !user) return;
@@ -97,8 +109,8 @@ export function SentirVisualCheckIn({
         userId: user.id,
         emotion,
         energyLevel: energy,
-        availableTime: DEFAULT_CHECK_IN_TIME,
-        focusLevel: DEFAULT_CHECK_IN_FOCUS,
+        availableTime,
+        focusLevel,
         locale,
       });
 
@@ -246,20 +258,70 @@ export function SentirVisualCheckIn({
       />
 
       {!hideAdvancedLink ? (
-        <TouchableOpacity
-          onPress={handleAdvanced}
-          disabled={!emotion}
-          style={styles.advancedLink}
-          activeOpacity={0.75}
-          accessibilityRole="button"
-          accessibilityLabel={t('sentir.visualCheckIn.adjustTimeFocus')}
-          accessibilityHint={t('sentir.visualCheckIn.adjustHint')}
-          accessibilityState={{ disabled: !emotion }}
-        >
-          <Text style={[styles.advancedText, !emotion && styles.advancedTextDisabled]}>
-            {t('sentir.visualCheckIn.adjustTimeFocus')}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.advancedWrap}>
+          <TouchableOpacity
+            onPress={() => setAdvancedOpen((open) => !open)}
+            disabled={!emotion}
+            style={styles.advancedToggle}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={t('sentir.visualCheckIn.advancedToggle')}
+            accessibilityState={{ expanded: advancedOpen, disabled: !emotion }}
+          >
+            <Text style={[styles.advancedText, !emotion && styles.advancedTextDisabled]}>
+              {t('sentir.visualCheckIn.advancedToggle')}
+            </Text>
+            {advancedOpen ? (
+              <ChevronUp size={18} color={THEME.colors.calm.lavenderDeep} />
+            ) : (
+              <ChevronDown size={18} color={THEME.colors.calm.lavenderDeep} />
+            )}
+          </TouchableOpacity>
+          {advancedOpen ? (
+            <View style={styles.advancedPanel}>
+              <Text style={styles.advancedFieldLabel}>{t('onboarding.time.title')}</Text>
+              <View style={styles.optionRow}>
+                {TIME_OPTIONS.map((option) => {
+                  const selected = availableTime === option.id;
+                  return (
+                    <TouchableOpacity
+                      key={option.id}
+                      style={[styles.optionChip, selected && styles.optionChipSelected]}
+                      onPress={() => setAvailableTime(option.id)}
+                      activeOpacity={0.85}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.optionChipText, selected && styles.optionChipTextSelected]}>
+                        {t(option.labelKey)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={styles.advancedFieldLabel}>{t('onboarding.focus.title')}</Text>
+              <View style={styles.optionRow}>
+                {FOCUS_OPTIONS.map((option) => {
+                  const selected = focusLevel === option.id;
+                  return (
+                    <TouchableOpacity
+                      key={option.id}
+                      style={[styles.optionChip, selected && styles.optionChipSelected]}
+                      onPress={() => setFocusLevel(option.id)}
+                      activeOpacity={0.85}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.optionChipText, selected && styles.optionChipTextSelected]}>
+                        {t(option.labelKey)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          ) : null}
+        </View>
       ) : null}
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -270,13 +332,13 @@ export function SentirVisualCheckIn({
         ) : (
           <CalmPrimaryButton
             label={
-              embedded ? embeddedSaveLabel : t('sentir.visualCheckIn.continue')
+              embedded ? embeddedSaveLabel : t('sentir.visualCheckIn.generateFocos')
             }
             large={embedded}
             onPress={() => void handleSave()}
             disabled={!canSubmit}
             accessibilityLabel={
-              embedded ? embeddedSaveLabel : t('sentir.visualCheckIn.continue')
+              embedded ? embeddedSaveLabel : t('sentir.visualCheckIn.generateFocos')
             }
           />
         )}
@@ -432,16 +494,59 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
   },
-  advancedLink: {
-    alignSelf: 'center',
+  advancedWrap: {
     marginTop: THEME.spacing.md,
+    gap: THEME.spacing.sm,
+  },
+  advancedToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
     paddingVertical: THEME.spacing.xs,
+  },
+  advancedPanel: {
+    gap: THEME.spacing.sm,
+    padding: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+  },
+  advancedFieldLabel: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.xs,
+  },
+  optionChip: {
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: 6,
+    borderRadius: THEME.borderRadius.pill,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    backgroundColor: THEME.colors.calm.card,
+  },
+  optionChipSelected: {
+    borderColor: THEME.colors.calm.lavenderDeep,
+    backgroundColor: THEME.colors.fill[100],
+  },
+  optionChipText: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.secondary,
+  },
+  optionChipTextSelected: {
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.bold,
   },
   advancedText: {
     ...THEME.typography.caption,
-    color: THEME.colors.gradient.blue,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
-    textDecorationLine: 'underline',
   },
   advancedTextDisabled: {
     color: THEME.colors.text.tertiary,

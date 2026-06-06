@@ -51,6 +51,7 @@ export interface Task {
   parent_task_id: string | null;
   project_id?: string | null;
   scheduled_date?: string | null;
+  perceivedEffort?: 'light' | 'medium' | 'heavy';
 }
 
 interface TaskCardProps {

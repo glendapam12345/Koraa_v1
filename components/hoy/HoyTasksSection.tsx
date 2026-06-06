@@ -265,6 +265,8 @@ export function HoyTasksSection({
           todayMood={todayMood}
           emotionLabel={todayEmotionLabel}
           energyLevel={energyLevel}
+          time={time}
+          focusLevel={focusLevel}
           coachSuggestion={coachSuggestion}
           priorityStats={todayPriorityStats}
           focusTasks={focusTasks}

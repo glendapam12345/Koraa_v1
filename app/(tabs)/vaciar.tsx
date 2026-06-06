@@ -21,6 +21,8 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
 import { useVaciarHints } from '@/hooks/useVaciarHints';
 import { useVaciarTaskSave } from '@/hooks/useVaciarTaskSave';
+import { TaskEffortPicker } from '@/components/tasks/TaskEffortPicker';
+import type { TaskEffort } from '@/lib/taskPerceivedEffort';
 
 export default function VaciarScreen() {
   const { t, locale } = useI18n();
@@ -45,6 +47,7 @@ export default function VaciarScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string>('otros');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [effortFeel, setEffortFeel] = useState<TaskEffort | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   void setShowDatePicker;
   void showDatePicker;
@@ -105,6 +108,7 @@ export default function VaciarScreen() {
     setSelectedCategory('otros');
     setSelectedProjectId(null);
     setSelectedDate(null);
+    setEffortFeel(null);
   }, []);
 
   const handleTaskSaved = useCallback(
@@ -182,15 +186,18 @@ export default function VaciarScreen() {
   );
 
   const handleAddTask = () => {
-    void saveTask({
-      content: taskInput,
-      hasSubtasks,
-      subtasks,
-      assignToProject,
-      selectedCategory,
-      selectedProjectId,
-      selectedDate,
-    });
+    void saveTask(
+      {
+        content: taskInput,
+        hasSubtasks,
+        subtasks,
+        assignToProject,
+        selectedCategory,
+        selectedProjectId,
+        selectedDate,
+      },
+      { effortFeel },
+    );
   };
 
   // Función para manejar pull to refresh
@@ -403,6 +410,10 @@ export default function VaciarScreen() {
             accessibilityHint={t('vaciarExtra.a11yTaskFieldHint')}
           />
         </View>
+
+        {taskInput.trim() ? (
+          <TaskEffortPicker value={effortFeel} onChange={setEffortFeel} />
+        ) : null}
 
         {Platform.OS !== 'web' && !dictateHintDismissed ? (
           <View style={styles.dictateHintRow}>

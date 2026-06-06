@@ -22,6 +22,7 @@ export type VaciarCreateTaskResult =
       reprioritized: boolean;
       projectId: string | null;
       hasSubtasks: boolean;
+      taskId?: string;
     }
   | { status: 'not_authenticated' }
   | { status: 'error' };
@@ -134,6 +135,7 @@ export async function createVaciarTask(
         reprioritized: false,
         projectId: projectIdToSave,
         hasSubtasks: draft.hasSubtasks,
+        taskId: mainTaskId,
       };
     }
 
@@ -185,6 +187,7 @@ export async function createVaciarTask(
         reprioritized: false,
         projectId: projectIdToSave,
         hasSubtasks: draft.hasSubtasks,
+        taskId: fallbackTask?.id,
       };
     }
 
@@ -237,5 +240,6 @@ export async function createVaciarTask(
     reprioritized,
     projectId: projectIdToSave,
     hasSubtasks: draft.hasSubtasks,
+    taskId: mainTask?.id,
   };
 }

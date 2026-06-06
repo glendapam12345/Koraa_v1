@@ -7,6 +7,7 @@ import {
   validateVaciarTaskDraft,
   type VaciarTaskDraft,
 } from '@/lib/vaciarCreateTask';
+import { setTaskEffort, type TaskEffort } from '@/lib/taskPerceivedEffort';
 
 type ToastFn = (message: string, type?: 'success' | 'error' | 'info') => void;
 
@@ -49,7 +50,7 @@ export function useVaciarTaskSave({
   );
 
   const saveTask = useCallback(
-    async (draft: VaciarTaskDraft) => {
+    async (draft: VaciarTaskDraft, options?: { effortFeel?: TaskEffort | null }) => {
       const validation = validateVaciarTaskDraft(draft);
       if (validation === 'empty') {
         showToast(t('vaciar.enterTask'), 'info');
@@ -87,6 +88,10 @@ export function useVaciarTaskSave({
           showToast(t('errors.saveTaskFailed'), 'error');
           return;
         }
+        if (result.taskId && options?.effortFeel) {
+          await setTaskEffort(result.taskId, options.effortFeel);
+        }
+
         if (result.status === 'offline') {
           await onSaved({
             savedTitle: result.savedTitle,

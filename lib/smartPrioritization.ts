@@ -17,6 +17,7 @@ export interface Task {
   parent_task_id: string | null;
   created_at: string;
   subtasks?: Task[];
+  perceivedEffort?: 'light' | 'medium' | 'heavy';
 }
 
 export interface CheckInData {
@@ -190,9 +191,14 @@ function estimateTaskDuration(task: Task): number {
  * Determina la complejidad de una tarea basado en su contenido
  */
 function getTaskComplexity(task: Task): 'simple' | 'medium' | 'complex' {
+  const perceived = task.perceivedEffort;
+  if (perceived === 'light') return 'simple';
+  if (perceived === 'heavy') return 'complex';
+  if (perceived === 'medium') return 'medium';
+
   const content = task.content.toLowerCase();
   const wordCount = task.content.split(' ').length;
-  
+
   // Tareas con subtareas son más complejas
   if (task.subtasks && task.subtasks.length > 0) {
     return task.subtasks.length > 3 ? 'complex' : 'medium';

@@ -3,6 +3,7 @@ import { supabase, getErrorMessage } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
+import { loadTaskEffortMap } from '@/lib/taskPerceivedEffort';
 
 export interface Task {
   id: string;
@@ -16,6 +17,7 @@ export interface Task {
   parent_task_id: string | null;
   project_id?: string | null;
   scheduled_date?: string | null;
+  perceivedEffort?: 'light' | 'medium' | 'heavy';
 }
 
 function isMissingColumnError(error: { code?: string; message?: string } | null | undefined): boolean {
@@ -129,7 +131,17 @@ export function useTasks(
           }) ?? [];
       }
 
-      setTasks(tasksWithSubtasks);
+      const effortMap = await loadTaskEffortMap();
+      const withEffort = tasksWithSubtasks.map((task) => ({
+        ...task,
+        perceivedEffort: effortMap[task.id],
+        subtasks: task.subtasks?.map((sub) => ({
+          ...sub,
+          perceivedEffort: effortMap[sub.id],
+        })),
+      }));
+
+      setTasks(withEffort);
 
       if (todayMood && tasksWithSubtasks.length > 0) {
         const today = getLocalDateString();
