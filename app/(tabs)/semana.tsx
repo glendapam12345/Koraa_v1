@@ -23,6 +23,7 @@ import { SemanaWeekNav } from '@/components/semana/SemanaWeekNav';
 import { SemanaProjectFilter } from '@/components/semana/SemanaProjectFilter';
 import { SemanaDaySection } from '@/components/semana/SemanaDaySection';
 import { SemanaCheckInFab } from '@/components/semana/SemanaCheckInFab';
+import { SemanaTodayCheckInBanner } from '@/components/semana/SemanaTodayCheckInBanner';
 import { getTodayPriorityStats } from '@/lib/priorityProgress';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
@@ -309,6 +310,8 @@ export default function SemanaScreen() {
 
         <Text style={styles.intro}>{t('semana.intro')}</Text>
 
+        {hasCheckInToday === false ? <SemanaTodayCheckInBanner /> : null}
+
         <View style={styles.viewToggle}>
           <TouchableOpacity
             style={[styles.viewToggleChip, viewMode === 'calendar' && styles.viewToggleChipActive]}
@@ -381,8 +384,11 @@ export default function SemanaScreen() {
               title={t('semana.selectedDayTitle', { day: selectedDayLabel })}
               tasks={selectedDayTasks}
               projectsMap={projectsMap}
+              isToday={selectedDate === todayStr}
               checkInChipText={selectedDayCheckInLabel}
               emotionId={selectedDayEmotionId}
+              energyLevel={selectedDayData?.energyLevel ?? null}
+              focusCount={selectedDate === todayStr ? todayPriorityStats.total : null}
               addTasksA11yLabel={`${t('semana.addTasks')} ${selectedDayLabel}`}
               addMoreA11yLabel={`${t('semana.addMore')} ${selectedDayLabel}`}
             />
@@ -422,6 +428,8 @@ export default function SemanaScreen() {
               isToday={day.isToday}
               checkInChipText={formatCheckInChip(dayCheckIn, t)}
               emotionId={dayCheckIn?.emotion?.toLowerCase() ?? null}
+              energyLevel={dayCheckIn?.energy_level ?? null}
+              focusCount={day.isToday ? todayPriorityStats.total : null}
               addTasksA11yLabel={`${t('semana.addTasks')} ${dayLabel}`}
               addMoreA11yLabel={`${t('semana.addMore')} ${dayLabel}`}
             />

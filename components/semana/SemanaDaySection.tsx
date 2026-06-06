@@ -22,6 +22,8 @@ type SemanaDaySectionProps = {
   isToday?: boolean;
   checkInChipText?: string | null;
   emotionId?: string | null;
+  energyLevel?: number | null;
+  focusCount?: number | null;
   addTasksA11yLabel: string;
   addMoreA11yLabel: string;
 };
@@ -34,16 +36,63 @@ export function SemanaDaySection({
   isToday = false,
   checkInChipText = null,
   emotionId = null,
+  energyLevel = null,
+  focusCount = null,
   addTasksA11yLabel,
   addMoreA11yLabel,
 }: SemanaDaySectionProps) {
   const { t } = useI18n();
   const emotionAccent = emotionId ? getEmotionCalendarAccent(emotionId) : null;
   const emotionFill = emotionId ? getEmotionCalendarFill(emotionId) : null;
+  const hasCheckIn = Boolean(checkInChipText);
 
   const navigateToVaciar = () => {
     router.push(`/(tabs)/vaciar?date=${dateStr}`);
   };
+
+  const openHoy = () => {
+    router.push('/(tabs)');
+  };
+
+  type EmptyVariant = 'noCheckInToday' | 'lightDay' | 'default';
+
+  const showHeavyDayBanner =
+    isToday &&
+    hasCheckIn &&
+    energyLevel != null &&
+    energyLevel <= 2 &&
+    tasks.length > 3 &&
+    focusCount != null;
+
+  const emptyVariant: EmptyVariant = (() => {
+    if (isToday && !hasCheckIn) return 'noCheckInToday';
+    if (hasCheckIn && tasks.length === 0) return 'lightDay';
+    return 'default';
+  })();
+
+  const emptyCopy = {
+    noCheckInToday: {
+      title: t('semana.emptyTodayNoCheckIn'),
+      hint: t('semana.emptyTodayNoCheckInHint'),
+      cta: t('semana.emptyTodayNoCheckInCta'),
+      onPress: openHoy,
+      a11y: t('semana.emptyTodayNoCheckInCta'),
+    },
+    lightDay: {
+      title: t('semana.emptyLightDay'),
+      hint: t('semana.emptyLightDayHint'),
+      cta: t('semana.addTasks'),
+      onPress: navigateToVaciar,
+      a11y: addTasksA11yLabel,
+    },
+    default: {
+      title: t('semana.emptyDay'),
+      hint: t('semana.emptyHint'),
+      cta: t('semana.addTasks'),
+      onPress: navigateToVaciar,
+      a11y: addTasksA11yLabel,
+    },
+  }[emptyVariant];
 
   const renderCheckInChip = () =>
     checkInChipText ? (
@@ -110,17 +159,33 @@ export function SemanaDaySection({
       <View style={styles.dayBody}>
         {tasks.length === 0 ? (
           <View style={styles.emptyDay}>
-            <Text style={styles.emptyDayEmoji}>📅</Text>
-            <Text style={styles.emptyDayText}>{t('semana.emptyDay')}</Text>
-            <Text style={styles.emptyDayHint}>{t('semana.emptyHint')}</Text>
+            <Text style={styles.emptyDayEmoji}>
+              {emptyVariant === 'lightDay' ? '🌿' : emptyVariant === 'noCheckInToday' ? '💜' : '📅'}
+            </Text>
+            <Text style={styles.emptyDayText}>{emptyCopy.title}</Text>
+            <Text style={styles.emptyDayHint}>{emptyCopy.hint}</Text>
             <CalmPrimaryButton
-              label={t('semana.addTasks')}
-              onPress={navigateToVaciar}
-              accessibilityLabel={addTasksA11yLabel}
+              label={emptyCopy.cta}
+              onPress={emptyCopy.onPress}
+              accessibilityLabel={emptyCopy.a11y}
             />
           </View>
         ) : (
           <>
+            {showHeavyDayBanner ? (
+              <TouchableOpacity
+                style={styles.heavyDayBanner}
+                onPress={openHoy}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={t('semana.emptyHeavyDayCta')}
+              >
+                <Text style={styles.heavyDayTitle}>
+                  {t('semana.emptyHeavyDay', { count: focusCount ?? 0, total: tasks.length })}
+                </Text>
+                <Text style={styles.heavyDayCta}>{t('semana.emptyHeavyDayCta')}</Text>
+              </TouchableOpacity>
+            ) : null}
             <View style={styles.taskList}>
               {tasks.map((task) => (
                 <WeekTaskItem
@@ -244,6 +309,26 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     fontStyle: 'italic',
     marginBottom: THEME.spacing.md,
+    textAlign: 'center',
+  },
+  heavyDayBanner: {
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderRadius: THEME.borderRadius.standard,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+    padding: THEME.spacing.sm,
+    marginBottom: THEME.spacing.sm,
+    gap: 4,
+  },
+  heavyDayTitle: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.main,
+    lineHeight: 20,
+  },
+  heavyDayCta: {
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.bold,
   },
   addDayButtonOutlined: {
     flexDirection: 'row',

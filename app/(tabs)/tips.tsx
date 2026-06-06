@@ -17,6 +17,8 @@ import { router, useFocusEffect } from 'expo-router';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 import { TipsMoodHeader } from '@/components/tips/TipsMoodHeader';
+import { TipsActionHero } from '@/components/tips/TipsActionHero';
+import { getTipsActionHero } from '@/lib/tipsActionHero';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -146,6 +148,11 @@ export default function TipsScreen() {
     [todayMood, tipsContext, locale],
   );
 
+  const actionHero = useMemo(
+    () => (todayMood ? getTipsActionHero(tipsContext, weekChartData) : null),
+    [todayMood, tipsContext, weekChartData],
+  );
+
   const openCategory = useCallback(
     (category: TipCategoryId) => {
       router.push({
@@ -224,6 +231,13 @@ export default function TipsScreen() {
               patternLine={patternLine}
               onPressEmotion={() => openRecheckCheckIn('tips_mood')}
             />
+
+            {actionHero ? (
+              <TipsActionHero
+                content={actionHero}
+                emotionLabel={t(`sentir.emotions.${emotionData.id}` as TranslationKey)}
+              />
+            ) : null}
 
             <TipsMoodEnergyCards
               emotionEmoji={emotionData.emoji}

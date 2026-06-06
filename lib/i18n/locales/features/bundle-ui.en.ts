@@ -81,6 +81,7 @@ export const uiEn = {
     a11yDaySection: 'Tasks for {{day}}',
     a11yAddMoreHint: 'Opens Tasks to add more items for this day',
     checkInTodayFabHint: 'Opens today’s emotional check-in',
+    noCheckInTodayBannerHint: 'Opens Today to log how you feel',
     setupTitle: 'Set up Week and projects',
     setupScheduledDate: 'Week needs one more piece enabled to show tasks by day.',
     setupProjectsTable: 'Projects need to be enabled to organize your tasks.',
@@ -400,6 +401,7 @@ export const uiEn = {
     emptySecondaryLead: 'You can also open the ',
     emptySecondaryTab: 'Today',
     emptySecondaryTrail: ' tab and log how you feel',
+    a11yActionHeroHint: 'Opens Today to see your focus tasks',
   },
   paramiExtra: {
     a11yPeriodHint: 'Change the summary time period',

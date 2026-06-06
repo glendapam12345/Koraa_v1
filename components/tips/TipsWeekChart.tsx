@@ -49,6 +49,10 @@ export function TipsWeekChart({ progressData, loading = false }: TipsWeekChartPr
         </CalmCard>
       ) : null}
 
+      {!loading ? (
+        <Text style={styles.footnoteText}>{t('tips.weekChartFootnote')}</Text>
+      ) : null}
+
       {!isSubscribed && !loading ? (
         <View style={styles.footnote}>
           <Text style={styles.footnoteText}>{t('tips.weekRhythmFreeNote')}</Text>

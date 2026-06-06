@@ -82,6 +82,7 @@ export const uiEs = {
     a11yDaySection: 'Tareas de {{day}}',
     a11yAddMoreHint: 'Abre Tareas para agregar más pendientes este día',
     checkInTodayFabHint: 'Abre el check-in emocional de hoy',
+    noCheckInTodayBannerHint: 'Abre Hoy para registrar cómo te sientes',
     setupTitle: 'Configura Semana y proyectos',
     setupScheduledDate: 'Falta activar una parte de Semana para ver tareas por día.',
     setupProjectsTable: 'Falta activar proyectos para organizar tus tareas.',
@@ -401,6 +402,7 @@ export const uiEs = {
     emptySecondaryLead: 'También puedes abrir la pestaña ',
     emptySecondaryTab: 'Hoy',
     emptySecondaryTrail: ' y registrar cómo te sientes',
+    a11yActionHeroHint: 'Abre Hoy para ver tus focos del día',
   },
   paramiExtra: {
     a11yPeriodHint: 'Cambia el período del resumen',
