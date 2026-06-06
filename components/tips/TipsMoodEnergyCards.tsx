@@ -12,7 +12,6 @@ type TipsMoodEnergyCardsProps = {
   emotionLabel: string;
   energyLevel: number;
   weekData: DayData[];
-  loading: boolean;
 };
 
 export function TipsMoodEnergyCards({
@@ -20,12 +19,9 @@ export function TipsMoodEnergyCards({
   emotionLabel,
   energyLevel,
   weekData,
-  loading,
 }: TipsMoodEnergyCardsProps) {
   const { t } = useI18n();
   const sparkline = buildEnergySparkline(weekData);
-
-  if (loading) return null;
 
   return (
     <View

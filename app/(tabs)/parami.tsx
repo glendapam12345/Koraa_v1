@@ -223,7 +223,11 @@ export default function ParaMiScreen() {
         <Text style={styles.footerHint}>{t('parami.patternsNeedCheckIns')}</Text>
       ) : null}
 
-      <YoCheckInHistory entries={historyEntries} isSubscribed={isSubscribed} />
+      <YoCheckInHistory
+        entries={historyEntries}
+        isSubscribed={isSubscribed}
+        titleKey="parami.historyTitle"
+      />
     </CalmScreen>
   );
 }

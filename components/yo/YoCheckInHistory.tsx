@@ -5,6 +5,8 @@ import { useI18n } from '@/contexts/I18nContext';
 import { getEmotionEmoji } from '@/lib/emotionalInsights';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 
+import type { TranslationKey } from '@/lib/i18n';
+
 export type YoHistoryEntry = {
   date: string;
   dateLabel: string;
@@ -16,12 +18,14 @@ type YoCheckInHistoryProps = {
   entries: YoHistoryEntry[];
   isSubscribed: boolean;
   freeVisibleCount?: number;
+  titleKey?: TranslationKey;
 };
 
 export function YoCheckInHistory({
   entries,
   isSubscribed,
   freeVisibleCount = 7,
+  titleKey = 'yo.historyTitle',
 }: YoCheckInHistoryProps) {
   const { t } = useI18n();
   const visible = isSubscribed ? entries : entries.slice(0, freeVisibleCount);
@@ -46,7 +50,7 @@ export function YoCheckInHistory({
   return (
     <View style={styles.wrap}>
       <View style={styles.headerRow}>
-        <Text style={styles.sectionLabel}>{t('yo.historyTitle')}</Text>
+        <Text style={styles.sectionLabel}>{t(titleKey)}</Text>
         {!isSubscribed ? (
           <Text style={styles.limitHint}>
             {t('yo.historyFreeLimit', { days: freeVisibleCount })}

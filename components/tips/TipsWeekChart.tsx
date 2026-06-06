@@ -1,44 +1,23 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useMemo, useCallback } from 'react';
-import { router, useFocusEffect } from 'expo-router';
+import { useMemo } from 'react';
+import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import { useCheckInInsightsData } from '@/hooks/useCheckInInsightsData';
+import type { DayData } from '@/components/ProgressChart';
 import { ProgressChart } from '@/components/ProgressChart';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
 
 const FREE_WEEK_DAYS = 7;
 
-const MONTH_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
-const MONTH_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
+type TipsWeekChartProps = {
+  progressData: DayData[];
+  loading?: boolean;
+};
 
-export function TipsWeekChart() {
-  const { t, locale } = useI18n();
-  const { user } = useAuth();
+export function TipsWeekChart({ progressData, loading = false }: TipsWeekChartProps) {
+  const { t } = useI18n();
   const { isSubscribed } = useSubscription();
-  const monthNames = locale === 'en' ? MONTH_EN : MONTH_ES;
-  const dayLabels = useMemo(
-    () => [
-      t('yo.dayShortSun'),
-      t('yo.dayShortMon'),
-      t('yo.dayShortTue'),
-      t('yo.dayShortWed'),
-      t('yo.dayShortThu'),
-      t('yo.dayShortFri'),
-      t('yo.dayShortSat'),
-    ],
-    [t],
-  );
-
-  const { progressData, loading, load } = useCheckInInsightsData(monthNames, dayLabels);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (user?.id) void load(user.id);
-    }, [user?.id, load]),
-  );
 
   const chartData = useMemo(() => {
     if (isSubscribed) return progressData;
@@ -48,8 +27,6 @@ export function TipsWeekChart() {
   const completedDays = chartData.filter((d) => d.hasCheckIn).length;
   const totalDays = chartData.length;
   const pct = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
-
-  if (!user) return null;
 
   return (
     <View

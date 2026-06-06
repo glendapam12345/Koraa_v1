@@ -406,6 +406,8 @@ export const uiEn = {
     a11yPeriodLockedHint: 'Premium required. Opens the subscription screen',
     a11yBalanceSummary:
       'Balance until today: {{word}}. Mood: {{mood}}. Energy: {{energy}}. Score {{score}} out of 100.',
+    a11yActiveSummary: 'Active summary: {{headline}}. Mood: {{mood}}. Energy: {{energy}}.',
+    a11yHeaderCtaHint: 'Opens the screen related to this action',
     a11yPatternsSection: 'Patterns: how you have been feeling',
     a11yCardLockedSuffix: '. Premium preview',
     a11yUnlockHint: 'Opens the Premium subscription screen',

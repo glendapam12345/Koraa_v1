@@ -8,6 +8,7 @@ import { bleedScreenPaddingX } from '@/lib/screenLayout';
 import { useI18n } from '@/contexts/I18nContext';
 import type { DayData } from '@/components/ProgressChart';
 import { periodDayCount, slicePeriodData } from '@/lib/checkInPeriod';
+import { getParamiActiveSummary } from '@/lib/paramiActionSummary';
 
 export type ParaMiPeriodId = 'week' | 'twoWeeks' | 'month';
 
@@ -33,12 +34,6 @@ function energyLevelLabel(level: number, t: (k: 'parami.levelLow' | 'parami.leve
   if (level <= 2) return t('parami.levelLow');
   if (level >= 4) return t('parami.levelHigh');
   return t('parami.levelMedium');
-}
-
-function balanceWord(score: number, t: (k: 'parami.balanceLow' | 'parami.balanceDecent' | 'parami.balanceGood') => string) {
-  if (score < 45) return t('parami.balanceLow');
-  if (score < 70) return t('parami.balanceDecent');
-  return t('parami.balanceGood');
 }
 
 export function ParaMiMusaHeader({
@@ -72,18 +67,21 @@ export function ParaMiMusaHeader({
             withCheckIn.reduce((sum, d) => sum + (d.energyLevel ?? 3), 0) / withCheckIn.length,
           )
         : todayEnergyLevel;
-    const score = Math.min(100, Math.max(0, Math.round((avgEnergy / 5) * 100)));
     return {
       rangeLabel: t('parami.periodRange', {
         start: formatShortDate(start, locale),
         end: formatShortDate(end, locale),
         days: String(daysBack),
       }),
-      score,
       energy: avgEnergy || todayEnergyLevel,
       checkInCount: withCheckIn.length,
     };
   }, [daysBack, periodData, todayEnergyLevel, t, locale]);
+
+  const activeSummary = useMemo(
+    () => getParamiActiveSummary(periodData, todayEnergyLevel),
+    [periodData, todayEnergyLevel],
+  );
 
   const handlePeriodPress = (id: ParaMiPeriodId, premium: boolean) => {
     if (premium && !isSubscribed) {
@@ -95,6 +93,10 @@ export function ParaMiMusaHeader({
 
   const moodLabel = todayEmotionLabel?.trim() || t('parami.balanceNoMood');
   const energyLabel = periodMeta.energy > 0 ? energyLevelLabel(periodMeta.energy, t) : '—';
+
+  const openHeaderCta = () => {
+    router.push('/(tabs)');
+  };
 
   return (
     <LinearGradient
@@ -138,54 +140,50 @@ export function ParaMiMusaHeader({
       <View
         style={styles.balanceCard}
         accessibilityRole="summary"
-        accessibilityLabel={t('paramiExtra.a11yBalanceSummary', {
-          word: balanceWord(periodMeta.score, t),
+        accessibilityLabel={t('paramiExtra.a11yActiveSummary', {
+          headline: t(activeSummary.headlineKey),
           mood: moodLabel,
           energy: energyLabel,
-          score: periodMeta.score,
         })}
       >
-        <View style={styles.balanceTop}>
-          <Text style={styles.balanceTitle}>{t('parami.balanceTitle')}</Text>
-          <View style={styles.untilTodayPill}>
-            <Text style={styles.untilTodayText}>{t('parami.balanceUntilToday')}</Text>
-          </View>
+        <Text style={styles.activeHeadline}>{t(activeSummary.headlineKey)}</Text>
+
+        {activeSummary.checkInCount > 0 ? (
+          <Text style={styles.activeSubline}>
+            {t('parami.activeSubline', {
+              count: activeSummary.checkInCount,
+              level: activeSummary.avgEnergy,
+            })}
+          </Text>
+        ) : null}
+
+        <View style={styles.statRow}>
+          <View style={[styles.dot, styles.dotMood]} />
+          <Text style={styles.statText}>
+            {t('parami.moodLabel')}: {moodLabel}
+          </Text>
+        </View>
+        <View style={styles.statRow}>
+          <View style={[styles.dot, styles.dotEnergy]} />
+          <Text style={styles.statText}>
+            {t('parami.energyLabel')}: {energyLabel}
+          </Text>
         </View>
 
-        <View style={styles.balanceMain}>
-          <View style={styles.balanceLeft}>
-            <Text style={styles.balanceWord}>{balanceWord(periodMeta.score, t)}</Text>
-            <View style={styles.statRow}>
-              <View style={[styles.dot, styles.dotMood]} />
-              <Text style={styles.statText}>
-                {t('parami.moodLabel')}: {moodLabel}
-              </Text>
-            </View>
-            <View style={styles.statRow}>
-              <View style={[styles.dot, styles.dotEnergy]} />
-              <Text style={styles.statText}>
-                {t('parami.energyLabel')}: {energyLabel}
-              </Text>
-            </View>
-            {periodMeta.checkInCount === 0 && todayEnergyLevel <= 0 ? (
-              <Text style={styles.balanceHint}>{t('parami.noCheckInYet')}</Text>
-            ) : null}
-          </View>
+        {periodMeta.checkInCount === 0 && todayEnergyLevel <= 0 ? (
+          <Text style={styles.balanceHint}>{t('parami.noCheckInYet')}</Text>
+        ) : null}
 
-          <View
-            style={styles.ringWrap}
-            importantForAccessibility="no-hide-descendants"
-            accessibilityElementsHidden
-          >
-            <View style={styles.ringOuter}>
-              <View style={[styles.ringArcMood, { height: `${Math.min(100, periodMeta.score)}%` }]} />
-              <View style={[styles.ringArcEnergy, { height: `${Math.min(100, (periodMeta.energy / 5) * 100)}%` }]} />
-              <View style={styles.ringInner}>
-                <Text style={styles.ringScore}>{periodMeta.score}</Text>
-              </View>
-            </View>
-          </View>
-        </View>
+        <TouchableOpacity
+          style={styles.headerCta}
+          onPress={openHeaderCta}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={t(activeSummary.ctaKey)}
+          accessibilityHint={t('paramiExtra.a11yHeaderCtaHint')}
+        >
+          <Text style={styles.headerCtaText}>{t(activeSummary.ctaKey)}</Text>
+        </TouchableOpacity>
       </View>
 
     </LinearGradient>
@@ -260,44 +258,19 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
     borderWidth: 1,
     borderColor: THEME.colors.surfaceOverlay.border,
+    gap: THEME.spacing.sm,
   },
-  balanceTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: THEME.spacing.md,
-  },
-  balanceTitle: {
-    ...THEME.typography.body,
-    color: THEME.colors.onGradientMuted,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  untilTodayPill: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: THEME.borderRadius.pill,
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: 4,
-  },
-  untilTodayText: {
-    ...THEME.typography.meta,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  balanceMain: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.md,
-  },
-  balanceLeft: {
-    flex: 1,
-    gap: THEME.spacing.xs,
-  },
-  balanceWord: {
-    ...THEME.typography.h1,
-    fontSize: 32,
+  activeHeadline: {
+    ...THEME.typography.h2,
+    fontSize: 22,
+    lineHeight: 28,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
-    marginBottom: THEME.spacing.xs,
+  },
+  activeSubline: {
+    ...THEME.typography.body,
+    color: THEME.colors.onGradientMuted,
+    lineHeight: 22,
   },
   statRow: {
     flexDirection: 'row',
@@ -322,52 +295,19 @@ const styles = StyleSheet.create({
   balanceHint: {
     ...THEME.typography.meta,
     color: THEME.colors.onGradientFaint,
+  },
+  headerCta: {
     marginTop: THEME.spacing.xs,
-  },
-  ringWrap: {
-    width: 88,
-    height: 88,
-  },
-  ringOuter: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderWidth: 6,
-    borderColor: 'rgba(255,255,255,0.15)',
+    minHeight: THEME.sizes.touchTarget,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[100],
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-    position: 'relative',
+    paddingHorizontal: THEME.spacing.md,
   },
-  ringArcMood: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: THEME.colors.calm.lavenderDeep,
-    opacity: 0.35,
-  },
-  ringArcEnergy: {
-    position: 'absolute',
-    bottom: 0,
-    left: '30%',
-    right: '30%',
-    backgroundColor: THEME.colors.semantic.success,
-    opacity: 0.4,
-    borderRadius: 4,
-  },
-  ringInner: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: THEME.colors.calm.lavenderDeep,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  ringScore: {
-    ...THEME.typography.h2,
-    color: THEME.colors.onGradient,
+  headerCtaText: {
+    ...THEME.typography.body,
     fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
   },
 });

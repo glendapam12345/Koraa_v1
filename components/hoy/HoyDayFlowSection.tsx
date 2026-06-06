@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { RefreshCw, Feather, X } from 'lucide-react-native';
+import { X } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 
@@ -7,18 +7,14 @@ type HoyDayFlowSectionProps = {
   showDayChangedCard: boolean;
   showNothingDoneCard: boolean;
   focusTaskNames?: string[];
-  onQuickRecheck: () => void;
   onDismissDayChanged: () => void;
-  onLightenLoad: () => void;
 };
 
 export function HoyDayFlowSection({
   showDayChangedCard,
   showNothingDoneCard,
   focusTaskNames = [],
-  onQuickRecheck,
   onDismissDayChanged,
-  onLightenLoad,
 }: HoyDayFlowSectionProps) {
   const { t } = useI18n();
 
@@ -64,43 +60,17 @@ export function HoyDayFlowSection({
         </View>
       ) : null}
 
-      <View style={styles.actions}>
+      {showDayChangedCard ? (
         <TouchableOpacity
-          style={styles.primaryBtn}
-          onPress={onQuickRecheck}
+          style={styles.tertiaryBtn}
+          onPress={onDismissDayChanged}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel={t('hoyDayFlow.reorganizeCta')}
+          accessibilityLabel={t('hoyDayFlow.dismissTodayA11y')}
         >
-          <RefreshCw size={18} color={THEME.colors.onGradient} />
-          <Text style={styles.primaryBtnText}>{t('hoyDayFlow.reorganizeCta')}</Text>
+          <Text style={styles.tertiaryBtnText}>{t('hoyDayFlow.dismissToday')}</Text>
         </TouchableOpacity>
-
-        {showNothingDoneCard ? (
-          <TouchableOpacity
-            style={styles.secondaryBtn}
-            onPress={onLightenLoad}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityLabel={t('hoyDayFlow.lightenCta')}
-          >
-            <Feather size={18} color={THEME.colors.gradient.blue} />
-            <Text style={styles.secondaryBtnText}>{t('hoyDayFlow.lightenCta')}</Text>
-          </TouchableOpacity>
-        ) : null}
-
-        {showDayChangedCard ? (
-          <TouchableOpacity
-            style={styles.tertiaryBtn}
-            onPress={onDismissDayChanged}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityLabel={t('hoyDayFlow.dismissTodayA11y')}
-          >
-            <Text style={styles.tertiaryBtnText}>{t('hoyDayFlow.dismissToday')}</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
+      ) : null}
     </View>
   );
 }

@@ -7,7 +7,11 @@ type HoyMoodHeroCardProps = {
   emotionEmoji: string;
   emotionLabel: string;
   energyLevel: number;
+  focusCount: number;
+  restCount: number;
+  firstFocusTaskName?: string;
   coachLine: string;
+  allFocusDone: boolean;
   onPressFeel?: () => void;
 };
 
@@ -15,10 +19,30 @@ export function HoyMoodHeroCard({
   emotionEmoji,
   emotionLabel,
   energyLevel,
+  focusCount,
+  restCount,
+  firstFocusTaskName,
   coachLine,
+  allFocusDone,
   onPressFeel,
 }: HoyMoodHeroCardProps) {
   const { t } = useI18n();
+
+  const koraaLine =
+    focusCount > 0
+      ? restCount > 0
+        ? t('hoy.moodHeroKoraaDid', {
+            level: energyLevel,
+            count: focusCount,
+            rest: restCount,
+          })
+        : t('hoy.moodHeroKoraaDidNoRest', { level: energyLevel, count: focusCount })
+      : t('hoy.moodHeroKoraaDidNoFocus', { level: energyLevel });
+
+  const stepLine =
+    firstFocusTaskName && !allFocusDone
+      ? t('hoy.moodHeroFirstStep', { task: firstFocusTaskName })
+      : coachLine;
 
   const content = (
     <>
@@ -32,8 +56,8 @@ export function HoyMoodHeroCard({
           <Text style={styles.energy}>{t('hoy.moodHeroEnergy', { level: energyLevel })}</Text>
         </View>
       </View>
-      <Text style={styles.valueLine}>{t('hoy.moodHeroValue')}</Text>
-      <Text style={styles.coach}>{coachLine}</Text>
+      <Text style={styles.koraaLine}>{koraaLine}</Text>
+      <Text style={styles.coach}>{stepLine}</Text>
       {onPressFeel ? (
         <Text style={styles.tapHint}>{t('hoy.moodHeroTapHint')}</Text>
       ) : null}
@@ -105,16 +129,17 @@ const styles = StyleSheet.create({
     color: THEME.colors.onGradientSoft,
     fontFamily: THEME.fonts.heading.medium,
   },
-  valueLine: {
-    ...THEME.typography.small,
-    lineHeight: 20,
-    color: THEME.colors.onGradientSoft,
-    marginTop: THEME.spacing.sm,
-  },
-  coach: {
+  koraaLine: {
     ...THEME.typography.body,
     fontSize: 16,
     lineHeight: 24,
+    color: THEME.colors.onGradient,
+    fontFamily: THEME.fonts.heading.medium,
+    marginTop: THEME.spacing.sm,
+  },
+  coach: {
+    ...THEME.typography.small,
+    lineHeight: 20,
     color: THEME.colors.onGradientMuted,
     marginTop: THEME.spacing.xs,
   },

@@ -406,7 +406,9 @@ export const uiEs = {
     a11yPeriodHint: 'Cambia el período del resumen',
     a11yPeriodLockedHint: 'Requiere Premium. Abre la pantalla de suscripción',
     a11yBalanceSummary:
-      'Balance hasta hoy: {{word}}. Ánimo: {{mood}}. Energía: {{energy}}. Puntuación {{score}} de 100.',
+      'Balance until today: {{word}}. Mood: {{mood}}. Energy: {{energy}}. Score {{score}} of 100.',
+    a11yActiveSummary: 'Resumen activo: {{headline}}. Ánimo: {{mood}}. Energía: {{energy}}.',
+    a11yHeaderCtaHint: 'Abre la pantalla relacionada con esta acción',
     a11yPatternsSection: 'Patrones: cómo te has sentido',
     a11yCardLockedSuffix: '. Vista previa Premium',
     a11yUnlockHint: 'Abre la pantalla de suscripción Premium',

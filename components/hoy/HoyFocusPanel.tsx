@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Sparkles, CircleHelp, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { Sparkles, CircleHelp, ChevronDown, ChevronUp, RefreshCw, Feather } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
 import { THEME } from '@/constants/theme';
@@ -9,6 +9,7 @@ import type { FocusProgressStats } from '@/components/FocusProgressBar';
 import { HoyFocusTaskRow } from '@/components/hoy/HoyFocusTaskRow';
 import { HoyMoodHeroCard } from '@/components/hoy/HoyMoodHeroCard';
 import { HoyDayFlowSection } from '@/components/hoy/HoyDayFlowSection';
+import { HoyFocusScopeBanner } from '@/components/hoy/HoyFocusScopeBanner';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { useHoyCoachMessage } from '@/hooks/useHoyCoachMessage';
@@ -117,10 +118,15 @@ export function HoyFocusPanel({
     () => focusTasks.filter((task) => !task.is_completed).map((task) => task.content.trim()).filter(Boolean),
     [focusTasks],
   );
+  const firstFocusTaskName = focusTaskNames[0];
+  const activeFocusCount = focusTasks.filter((task) => !task.is_completed).length;
+  const totalFocusCount = focusTasks.length;
 
   const showDayFlowCard =
     (showDayChangedCard || showNothingDoneCard) &&
     Boolean(onQuickRecheck && onDismissDayChanged && onLightenLoad);
+
+  const showActionRow = Boolean(onQuickRecheck || onLightenLoad) && totalFocusCount + nonFocusPending > 0;
 
   const coachLine = coach?.body ?? t('hoy.focusCoachFallback');
   const hasMoreOptions =
@@ -148,7 +154,11 @@ export function HoyFocusPanel({
         emotionEmoji={emotionEmoji}
         emotionLabel={emotionLabel}
         energyLevel={energyLevel}
+        focusCount={totalFocusCount}
+        restCount={nonFocusPending}
+        firstFocusTaskName={firstFocusTaskName}
         coachLine={coachLine}
+        allFocusDone={allFocusDone}
         onPressFeel={openFeel}
       />
 
@@ -157,9 +167,7 @@ export function HoyFocusPanel({
           showDayChangedCard={showDayChangedCard}
           showNothingDoneCard={showNothingDoneCard}
           focusTaskNames={focusTaskNames}
-          onQuickRecheck={onQuickRecheck!}
           onDismissDayChanged={onDismissDayChanged!}
-          onLightenLoad={onLightenLoad!}
         />
       ) : null}
 
@@ -172,7 +180,8 @@ export function HoyFocusPanel({
         {focusTasks.length > 0 ? (
           <Text style={styles.sectionSub}>
             {t('hoy.focusPanelSubtitle', {
-              count: focusTasks.filter((task) => !task.is_completed).length,
+              count: activeFocusCount,
+              emotion: emotionLabel.toLowerCase(),
             })}
           </Text>
         ) : null}
@@ -216,6 +225,41 @@ export function HoyFocusPanel({
           </View>
         )}
       </CalmCard>
+
+      {showActionRow ? (
+        <View style={styles.actionRow}>
+          {onQuickRecheck ? (
+            <TouchableOpacity
+              style={styles.actionPrimary}
+              onPress={onQuickRecheck}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={t('hoy.focusReorganizeCta')}
+              accessibilityHint={t('hoy.focusReorganizeA11y')}
+            >
+              <RefreshCw size={18} color={THEME.colors.onGradient} />
+              <Text style={styles.actionPrimaryText}>{t('hoy.focusReorganizeCta')}</Text>
+            </TouchableOpacity>
+          ) : null}
+          {onLightenLoad && nonFocusPending > 0 ? (
+            <TouchableOpacity
+              style={styles.actionSecondary}
+              onPress={onLightenLoad}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={t('hoy.focusLightenCta')}
+              accessibilityHint={t('hoy.focusLightenA11y')}
+            >
+              <Feather size={18} color={THEME.colors.calm.lavenderDeep} />
+              <Text style={styles.actionSecondaryText}>{t('hoy.focusLightenCta')}</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      ) : null}
+
+      {nonFocusPending > 0 ? (
+        <HoyFocusScopeBanner totalPending={totalPending} focusCount={totalFocusCount} />
+      ) : null}
 
       {hasMoreOptions ? (
         <View style={styles.moreWrap}>
@@ -401,6 +445,45 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
     lineHeight: 22,
+  },
+  actionRow: {
+    gap: THEME.spacing.sm,
+  },
+  actionPrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
+    minHeight: THEME.sizes.touchTarget,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.calm.lavenderDeep,
+    paddingHorizontal: THEME.spacing.md,
+  },
+  actionPrimaryText: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.onGradient,
+    textAlign: 'center',
+    flexShrink: 1,
+  },
+  actionSecondary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
+    minHeight: THEME.sizes.touchTarget,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.lavender,
+    paddingHorizontal: THEME.spacing.md,
+  },
+  actionSecondaryText: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.calm.lavenderDeep,
+    textAlign: 'center',
+    flexShrink: 1,
   },
   moreWrap: {
     gap: THEME.spacing.xs,

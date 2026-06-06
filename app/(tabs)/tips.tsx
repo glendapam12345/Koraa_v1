@@ -4,16 +4,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import { supabase } from '@/lib/supabase';
-import { fetchProfilePreferences } from '@/lib/profilePreferences';
-import { getLocalDateString } from '@/lib/dateLocal';
-import { generatePersonalizedRecommendations } from '@/lib/personalizedRecommendations';
+import { useAuth } from '@/contexts/AuthContext';
 import { countTipsByCategory, getTipsDailyInsight } from '@/lib/tipsPersonalization';
 import type { TipCategoryId } from '@/lib/tipsTypes';
 import { TipsCategoryGrid } from '@/components/tips/TipsCategoryGrid';
 import { TipsWeekChart } from '@/components/tips/TipsWeekChart';
 import { TipsMoodEnergyCards } from '@/components/tips/TipsMoodEnergyCards';
 import { useCheckInInsightsData } from '@/hooks/useCheckInInsightsData';
+import { useTipsScreenData } from '@/hooks/useTipsScreenData';
 import { Lightbulb } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
@@ -27,7 +25,6 @@ import { subscribeCheckInRefresh } from '@/lib/checkInRefresh';
 import type { TranslationKey } from '@/lib/i18n';
 
 const TIPS_TOOLTIP_SEEN_KEY = 'koraa_tips_tooltip_seen';
-const FREE_RECOMMENDATIONS_LIMIT = 2;
 const FREE_GENERIC_TIPS_LIMIT = 3;
 
 const EMOTIONS = [
@@ -46,21 +43,19 @@ const TIP_CATEGORY_ORDER: TipCategoryId[] = ['mindset', 'rest', 'action', 'produ
 
 export default function TipsScreen() {
   const { t, locale } = useI18n();
-  const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
-  const [todayMood, setTodayMood] = useState<string>('');
-  const [energyLevel, setEnergyLevel] = useState<number>(0);
-  const [availableTime, setAvailableTime] = useState<string>('');
-  const [focusLevel, setFocusLevel] = useState<string>('');
-  type UserProfile = {
-    age?: number;
-    favorite_activities?: string[];
-    interests?: string[];
-    other_preferences?: Record<string, any>;
-  };
-  
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+  const { isSubscribed } = useSubscription();
+  const {
+    todayMood,
+    energyLevel,
+    availableTime,
+    focusLevel,
+    userProfile,
+    checkInReady,
+    refreshing,
+    load: loadTipsData,
+    refresh: handleRefresh,
+  } = useTipsScreenData(user?.id);
   const [showTooltip, setShowTooltip] = useState(false);
   const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
   const dayLabels = useMemo(
@@ -78,84 +73,26 @@ export default function TipsScreen() {
   const { progressData, loading: insightsLoading, load: loadInsights } = useCheckInInsightsData(
     monthNames,
     dayLabels,
+    { progressDays: 14, includeHistory: false },
   );
   const weekChartData = useMemo(() => progressData.slice(-7), [progressData]);
 
-  const loadTodayCheckIn = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      const today = getLocalDateString();
-      const { data: checkIn, error } = await supabase
-        .from('daily_check_ins')
-        .select('emotion, energy_level, available_time, focus_level')
-        .eq('user_id', user.id)
-        .eq('date', today)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error cargando check-in:', error);
-        setLoading(false);
-        return;
-      }
-
-      if (checkIn) {
-        setTodayMood(checkIn.emotion.toLowerCase());
-        setEnergyLevel(checkIn.energy_level);
-        setAvailableTime(checkIn.available_time);
-        setFocusLevel(checkIn.focus_level || '');
-      } else {
-        setTodayMood('');
-        setEnergyLevel(0);
-        setAvailableTime('');
-        setFocusLevel('');
-      }
-
-      const { data: prefs, error: profileError } = await fetchProfilePreferences(user.id);
-
-      if (profileError) {
-        console.error('Error cargando perfil:', profileError);
-        setUserProfile(null);
-      } else if (prefs) {
-        setUserProfile({
-          age: prefs.age ?? undefined,
-          favorite_activities: prefs.favorite_activities,
-          interests: prefs.interests,
-          other_preferences: prefs.other_preferences,
-        });
-      } else {
-        setUserProfile(null);
-      }
-    } catch (error) {
-      console.error('Error inesperado:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadTodayCheckIn();
-  }, [loadTodayCheckIn]);
-
-  useEffect(() => {
-    return subscribeCheckInRefresh(() => {
-      void loadTodayCheckIn();
-    });
-  }, [loadTodayCheckIn]);
+  const reloadAll = useCallback(() => {
+    void Promise.all([
+      loadTipsData(),
+      user?.id ? loadInsights(user.id) : Promise.resolve(),
+    ]);
+  }, [loadTipsData, loadInsights, user?.id]);
 
   useFocusEffect(
     useCallback(() => {
-      loadTodayCheckIn();
-      void (async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.id) void loadInsights(user.id);
-      })();
-    }, [loadTodayCheckIn, loadInsights])
+      reloadAll();
+    }, [reloadAll]),
   );
+
+  useEffect(() => {
+    return subscribeCheckInRefresh(reloadAll);
+  }, [reloadAll]);
 
   useFocusEffect(
     useCallback(() => {
@@ -176,11 +113,12 @@ export default function TipsScreen() {
     }, [])
   );
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await loadTodayCheckIn();
-    setRefreshing(false);
-  };
+  const onRefresh = useCallback(async () => {
+    await Promise.all([
+      handleRefresh(),
+      user?.id ? loadInsights(user.id) : Promise.resolve(),
+    ]);
+  }, [handleRefresh, loadInsights, user?.id]);
 
   const getEmotionData = () => {
     return EMOTIONS.find(e => e.id === todayMood) || null;
@@ -222,43 +160,12 @@ export default function TipsScreen() {
     [todayMood, energyLevel],
   );
 
-  // Generar recomendaciones personalizadas
   const hasPersonalizationProfile = Boolean(
     (userProfile?.favorite_activities?.length ?? 0) > 0 ||
       (userProfile?.interests?.length ?? 0) > 0,
   );
 
-  const personalizedRecommendations = useMemo(() => {
-    if (!todayMood) return [];
-
-    try {
-      return generatePersonalizedRecommendations(
-        {
-          age: userProfile?.age,
-          favorite_activities: userProfile?.favorite_activities ?? [],
-          interests: userProfile?.interests ?? [],
-          other_preferences: userProfile?.other_preferences ?? {},
-        },
-        {
-          emotion: todayMood,
-          energyLevel,
-          availableTime,
-          focusLevel,
-        },
-        locale,
-      );
-    } catch (error) {
-      console.error('Error generando recomendaciones:', error);
-      return []; // Retornar array vacío en caso de error
-    }
-  }, [todayMood, userProfile, energyLevel, availableTime, focusLevel, locale]);
-
-  const visiblePersonalizedRecommendations = useMemo(() => {
-    if (isSubscribed) return personalizedRecommendations;
-    return personalizedRecommendations.slice(0, FREE_RECOMMENDATIONS_LIMIT);
-  }, [isSubscribed, personalizedRecommendations]);
-
-  if (loading || subscriptionLoading) {
+  if (authLoading || (Boolean(user) && !checkInReady)) {
     return (
       <CalmScreen scroll={false}>
         <Text style={styles.loadingText}>{t('tips.loading')}</Text>
@@ -272,7 +179,7 @@ export default function TipsScreen() {
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
-          onRefresh={handleRefresh}
+          onRefresh={() => void onRefresh()}
           tintColor={THEME.colors.calm.lavenderDeep}
         />
       }
@@ -323,7 +230,6 @@ export default function TipsScreen() {
               emotionLabel={t(`sentir.emotions.${emotionData.id}` as TranslationKey)}
               energyLevel={energyLevel || 3}
               weekData={weekChartData}
-              loading={insightsLoading}
             />
 
             {categoryCounts ? (
@@ -374,7 +280,7 @@ export default function TipsScreen() {
               </TouchableOpacity>
             ) : null}
 
-            <TipsWeekChart />
+            <TipsWeekChart progressData={progressData} loading={insightsLoading} />
           </>
         ) : null}
 
