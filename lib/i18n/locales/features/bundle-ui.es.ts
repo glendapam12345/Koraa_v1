@@ -405,7 +405,8 @@ export const uiEs = {
     a11yActionHeroHint: 'Abre Hoy para ver tus focos del día',
     a11yActionHeroPauseHint: 'Abre una meditación breve para pausar',
     a11yParaMiLinkHint: 'Abre Para mí para ver patrones de la semana',
-    a11yMeditationSection: 'Meditación guiada, mañana o noche',
+    a11yMeditationSection: 'Meditación guiada, pausa de tres minutos',
+    a11yMeditationPauseHint: 'Abre una meditación breve de respiración',
   },
   paramiExtra: {
     a11yPeriodHint: 'Cambia el período del resumen',

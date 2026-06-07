@@ -18,7 +18,6 @@ import { MiniSparklineChart } from '@/components/yo/MiniSparklineChart';
 import { MiniEmotionBars } from '@/components/yo/MiniEmotionBars';
 import { MiniMoodTimeline } from '@/components/yo/MiniMoodTimeline';
 import { YoCheckInHistory } from '@/components/yo/YoCheckInHistory';
-import { FocusSessionCard } from '@/components/focus/FocusSessionCard';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { ParaMiMusaHeader, type ParaMiPeriodId } from '@/components/parami/ParaMiMusaHeader';
@@ -174,8 +173,6 @@ export default function ParaMiScreen() {
         hasEnoughData={hasPatternData}
         loading={loading}
       />
-
-      <FocusSessionCard />
 
       <Text style={styles.sectionTitle} accessibilityRole="header">
         {t('parami.patternsSectionTitle')}

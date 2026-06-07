@@ -404,7 +404,8 @@ export const uiEn = {
     a11yActionHeroHint: 'Opens Today to see your focus tasks',
     a11yActionHeroPauseHint: 'Opens a short meditation to pause',
     a11yParaMiLinkHint: 'Opens For me to see weekly patterns',
-    a11yMeditationSection: 'Guided meditation, morning or evening',
+    a11yMeditationSection: 'Guided meditation, three-minute pause',
+    a11yMeditationPauseHint: 'Opens a short breathing meditation',
   },
   paramiExtra: {
     a11yPeriodHint: 'Change the summary time period',

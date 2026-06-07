@@ -32,6 +32,7 @@ import { useHoyScreenLayout } from '@/hooks/useHoyScreenLayout';
 import { useStreak } from '@/hooks/today/useStreak';
 import { useHoyEmotionalMemory } from '@/hooks/useHoyEmotionalMemory';
 import { getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
+import { isHoyAfternoonNudgeWindow } from '@/lib/hoyDayFlowNudge';
 import { getTodayPriorityStats, isPriorityCompletedToday } from '@/lib/priorityProgress';
 import { useHoyDeleteTask, useHoyAllCompleteConfetti } from '@/hooks/useHoyTaskActions';
 import { useHoyPrioritization } from '@/hooks/useHoyPrioritization';
@@ -213,11 +214,27 @@ export default function TodayScreen() {
     Boolean(todayMood) &&
     priorityIncomplete.length > 0 &&
     completedPriorityToday.length === 0 &&
-    !loading;
+    !loading &&
+    isHoyAfternoonNudgeWindow() &&
+    showDayChangedCard;
 
   const openQuickRecheck = useCallback(() => {
     openRecheckCheckIn('hoy');
   }, []);
+
+  const handleRedistributeApplied = useCallback(() => {
+    void loadTasks();
+    showToast(t('hoy.lightenLoadCelebration'), 'success');
+    setShowConfetti(true);
+    if (confettiTimeoutRef.current) clearTimeout(confettiTimeoutRef.current);
+    confettiTimeoutRef.current = setTimeout(() => {
+      setShowConfetti(false);
+      confettiTimeoutRef.current = null;
+    }, 2800);
+    if (Platform.OS !== 'web') {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  }, [loadTasks, showToast, t]);
 
   const handleTaskCompleted = useCallback(
     (payload: TaskCompletedPayload) => {
@@ -479,10 +496,7 @@ export default function TodayScreen() {
         energyLevel={energyLevel}
         availableTime={time || 'Medio (2-4hrs)'}
         emotion={todayMood || 'tranquila'}
-        onRedistributeApplied={() => {
-          void loadTasks();
-          showToast(t('hoyExtra.datesUpdated'), 'success');
-        }}
+        onRedistributeApplied={handleRedistributeApplied}
         showQuickOnboarding={showQuickOnboarding}
         onCloseQuickOnboarding={() => setShowQuickOnboarding(false)}
       />

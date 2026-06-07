@@ -17,7 +17,9 @@ import { useI18n } from '@/contexts/I18nContext';
 import { TipsMoodHeader } from '@/components/tips/TipsMoodHeader';
 import { TipsActionHero } from '@/components/tips/TipsActionHero';
 import { TipsMeditationSection } from '@/components/tips/TipsMeditationSection';
+import { FocusSessionCard } from '@/components/focus/FocusSessionCard';
 import { getTipsActionHero } from '@/lib/tipsActionHero';
+import { getSituationalMeditationType } from '@/lib/meditationSituational';
 import { useHoyMeditation } from '@/hooks/useHoyMeditation';
 import { MeditationCircleSimple } from '@/components/MeditationCircleSimple';
 import { Toast } from '@/components/Toast';
@@ -184,10 +186,9 @@ export default function TipsScreen() {
   );
 
   const handlePauseNow = useCallback(() => {
-    const hour = new Date().getHours();
-    const type = hour < 17 && !morningMeditationDone ? 'morning' : 'evening';
+    const type = getSituationalMeditationType(morningMeditationDone, eveningMeditationDone);
     handleStartMeditation(type);
-  }, [handleStartMeditation, morningMeditationDone]);
+  }, [handleStartMeditation, morningMeditationDone, eveningMeditationDone]);
 
   const openCategory = useCallback(
     (category: TipCategoryId) => {
@@ -316,6 +317,8 @@ export default function TipsScreen() {
               onStartMorning={() => handleStartMeditation('morning')}
               onStartEvening={() => handleStartMeditation('evening')}
             />
+
+            <FocusSessionCard />
 
             {!hasPersonalizationProfile ? (
               <TouchableOpacity

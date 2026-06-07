@@ -289,7 +289,7 @@ export const extEn = {
     dayChangedTitle: 'Did something change since your check-in?',
     dayChangedBody: 'In about a minute, update how you feel and get a Today view that fits your afternoon.',
     dayChangedCta: 'Adjust priorities',
-    nothingDoneTitle: 'Haven’t moved on priorities yet?',
+    nothingDoneTitle: 'Your focus tasks are still here',
     nothingDoneBody: 'That’s okay. Reorganize based on how you feel now, or lighten your load for another day.',
     nothingDoneReorganize: 'Reorganize in 1 min',
     nothingDoneLighten: 'Lighten load',

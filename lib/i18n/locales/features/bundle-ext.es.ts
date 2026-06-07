@@ -290,7 +290,7 @@ export const extEs = {
     dayChangedTitle: '¿Cambió algo desde tu check-in?',
     dayChangedBody: 'En ~1 minuto puedes actualizar cómo te sientes y ver un Hoy que encaje con tu tarde.',
     dayChangedCta: 'Ajustar prioridades',
-    nothingDoneTitle: '¿No avanzaste con lo prioritario?',
+    nothingDoneTitle: 'Tus focos siguen aquí',
     nothingDoneBody: 'No pasa nada. Puedes reorganizar según cómo estás ahora o aliviar carga para otro día.',
     nothingDoneReorganize: 'Reorganizar en 1 min',
     nothingDoneLighten: 'Aliviar carga',

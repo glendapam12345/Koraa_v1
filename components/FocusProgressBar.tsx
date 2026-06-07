@@ -14,14 +14,12 @@ type FocusProgressBarProps = {
   stats: FocusProgressStats;
   style?: StyleProp<ViewStyle>;
   variant?: 'default' | 'prominent';
-  taskNames?: string[];
 };
 
 export function FocusProgressBar({
   stats,
   style,
   variant = 'default',
-  taskNames = [],
 }: FocusProgressBarProps) {
   const { t } = useI18n();
   const { done, total, ratio } = stats;
@@ -54,11 +52,6 @@ export function FocusProgressBar({
           style={[styles.fill, { width: `${Math.max(ratio * 100, done > 0 ? 8 : 4)}%` }]}
         />
       </View>
-      {prominent && taskNames.length > 0 && done < total ? (
-        <Text style={styles.taskNames} accessibilityRole="text">
-          {t('hoy.focusProgressNames', { names: taskNames.join(' · ') })}
-        </Text>
-      ) : null}
     </View>
   );
 }
@@ -92,12 +85,6 @@ const styles = StyleSheet.create({
   },
   trackProminent: {
     height: 10,
-  },
-  taskNames: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: 18,
   },
   fill: {
     height: '100%',

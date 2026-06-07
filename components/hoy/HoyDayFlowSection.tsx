@@ -25,11 +25,13 @@ export function HoyDayFlowSection({
         ? 'hoyDayFlow.unifiedBodyNothingDone'
         : 'hoyDayFlow.unifiedBodyDayChanged';
 
+  const canDismiss = showDayChangedCard || showNothingDoneCard;
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.title}>{t('hoyDayFlow.unifiedTitle')}</Text>
-        {showDayChangedCard ? (
+        {canDismiss ? (
           <TouchableOpacity
             onPress={onDismissDayChanged}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -44,7 +46,7 @@ export function HoyDayFlowSection({
 
       <Text style={styles.body}>{t(bodyKey)}</Text>
 
-      {showDayChangedCard ? (
+      {canDismiss ? (
         <TouchableOpacity
           style={styles.tertiaryBtn}
           onPress={onDismissDayChanged}

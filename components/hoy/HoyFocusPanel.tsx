@@ -176,7 +176,7 @@ export function HoyFocusPanel({
       ) : null}
 
       {!allFocusDone && priorityStats.total > 0 ? (
-        <FocusProgressBar stats={priorityStats} variant="prominent" taskNames={focusTaskNames} />
+        <FocusProgressBar stats={priorityStats} variant="prominent" />
       ) : null}
 
       <View style={styles.focusHeader}>
