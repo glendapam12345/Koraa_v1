@@ -8,11 +8,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { countTipsByCategory, getTipsDailyInsight } from '@/lib/tipsPersonalization';
 import type { TipCategoryId } from '@/lib/tipsTypes';
 import { TipsCategoryGrid } from '@/components/tips/TipsCategoryGrid';
-import { TipsWeekChart } from '@/components/tips/TipsWeekChart';
-import { TipsMoodEnergyCards } from '@/components/tips/TipsMoodEnergyCards';
 import { useCheckInInsightsData } from '@/hooks/useCheckInInsightsData';
 import { useTipsScreenData } from '@/hooks/useTipsScreenData';
-import { Lightbulb } from 'lucide-react-native';
+import { Lightbulb, ChevronRight } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { useI18n } from '@/contexts/I18nContext';
@@ -102,10 +100,10 @@ export default function TipsScreen() {
     ],
     [t],
   );
-  const { progressData, loading: insightsLoading, load: loadInsights } = useCheckInInsightsData(
+  const { progressData, load: loadInsights } = useCheckInInsightsData(
     monthNames,
     dayLabels,
-    { progressDays: 14, includeHistory: false },
+    { progressDays: 7, includeHistory: false },
   );
   const weekChartData = useMemo(() => progressData.slice(-7), [progressData]);
 
@@ -184,6 +182,12 @@ export default function TipsScreen() {
     () => (todayMood ? getTipsActionHero(tipsContext, weekChartData) : null),
     [todayMood, tipsContext, weekChartData],
   );
+
+  const handlePauseNow = useCallback(() => {
+    const hour = new Date().getHours();
+    const type = hour < 17 && !morningMeditationDone ? 'morning' : 'evening';
+    handleStartMeditation(type);
+  }, [handleStartMeditation, morningMeditationDone]);
 
   const openCategory = useCallback(
     (category: TipCategoryId) => {
@@ -264,27 +268,6 @@ export default function TipsScreen() {
               onPressEmotion={() => openRecheckCheckIn('tips_mood')}
             />
 
-            {actionHero ? (
-              <TipsActionHero
-                content={actionHero}
-                emotionLabel={t(`sentir.emotions.${emotionData.id}` as TranslationKey)}
-              />
-            ) : null}
-
-            <TipsMeditationSection
-              morningDone={morningMeditationDone}
-              eveningDone={eveningMeditationDone}
-              onStartMorning={() => handleStartMeditation('morning')}
-              onStartEvening={() => handleStartMeditation('evening')}
-            />
-
-            <TipsMoodEnergyCards
-              emotionEmoji={emotionData.emoji}
-              emotionLabel={t(`sentir.emotions.${emotionData.id}` as TranslationKey)}
-              energyLevel={energyLevel || 3}
-              weekData={weekChartData}
-            />
-
             {categoryCounts ? (
               <View accessibilityRole="summary" accessibilityLabel={t('tipsExtra.a11yCategoryGrid')}>
                 <Text style={styles.gridSectionTitle} accessibilityRole="header">
@@ -319,6 +302,21 @@ export default function TipsScreen() {
               </View>
             ) : null}
 
+            {actionHero ? (
+              <TipsActionHero
+                content={actionHero}
+                emotionLabel={t(`sentir.emotions.${emotionData.id}` as TranslationKey)}
+                onPausePress={handlePauseNow}
+              />
+            ) : null}
+
+            <TipsMeditationSection
+              morningDone={morningMeditationDone}
+              eveningDone={eveningMeditationDone}
+              onStartMorning={() => handleStartMeditation('morning')}
+              onStartEvening={() => handleStartMeditation('evening')}
+            />
+
             {!hasPersonalizationProfile ? (
               <TouchableOpacity
                 style={styles.profileHintCompact}
@@ -333,7 +331,20 @@ export default function TipsScreen() {
               </TouchableOpacity>
             ) : null}
 
-            <TipsWeekChart progressData={progressData} loading={insightsLoading} />
+            <TouchableOpacity
+              style={styles.paraMiLink}
+              onPress={() => router.push('/(tabs)/parami')}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={t('tips.paraMiLinkCta')}
+              accessibilityHint={t('tipsExtra.a11yParaMiLinkHint')}
+            >
+              <Text style={styles.paraMiLinkText}>{t('tips.paraMiLinkBody')}</Text>
+              <View style={styles.paraMiLinkRow}>
+                <Text style={styles.paraMiLinkCta}>{t('tips.paraMiLinkCta')}</Text>
+                <ChevronRight size={16} color={THEME.colors.calm.lavenderDeep} />
+              </View>
+            </TouchableOpacity>
           </>
         ) : null}
 
@@ -571,6 +582,27 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     lineHeight: 20,
     alignSelf: 'stretch',
+  },
+  paraMiLink: {
+    ...THEME.surfaces.panel,
+    padding: THEME.spacing.md,
+    gap: THEME.spacing.xs,
+    alignSelf: 'stretch',
+  },
+  paraMiLinkText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    lineHeight: 22,
+  },
+  paraMiLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  paraMiLinkCta: {
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.bold,
   },
   gridSectionTitle: {
     ...THEME.typography.sectionTitle,

@@ -4,12 +4,42 @@ import type { TipsUserContext } from '@/lib/tipsTypes';
 
 export type TipsActionHeroRoute = '/(tabs)' | '/(tabs)/semana';
 
+export type TipsActionHeroAction =
+  | { type: 'route'; route: TipsActionHeroRoute }
+  | { type: 'pause' };
+
 export type TipsActionHeroContent = {
   messageKey: TranslationKey;
   messageParams?: Record<string, string | number>;
   ctaKey: TranslationKey;
-  route: TipsActionHeroRoute;
+  action: TipsActionHeroAction;
 };
+
+const HEAVY_EMOTIONS = new Set(['abrumada', 'agotada', 'ansiosa']);
+
+function prefersPause(ctx: TipsUserContext): boolean {
+  const emotion = ctx.emotion.toLowerCase();
+  if (HEAVY_EMOTIONS.has(emotion)) return true;
+  return ctx.energyLevel <= 2;
+}
+
+function withAction(
+  content: Omit<TipsActionHeroContent, 'action' | 'ctaKey'>,
+  ctx: TipsUserContext,
+): TipsActionHeroContent {
+  if (prefersPause(ctx)) {
+    return {
+      ...content,
+      ctaKey: 'tips.actionHeroCtaPause',
+      action: { type: 'pause' },
+    };
+  }
+  return {
+    ...content,
+    ctaKey: 'tips.actionHeroCtaHoy',
+    action: { type: 'route', route: '/(tabs)' },
+  };
+}
 
 export function getTipsActionHero(
   ctx: TipsUserContext,
@@ -23,42 +53,36 @@ export function getTipsActionHero(
   const abrumadaDays = recentCheckIns.filter((d) => d.emotion?.toLowerCase() === 'abrumada').length;
 
   if (emotion === 'abrumada' && (energy <= 2 || lowEnergyDays >= 3 || abrumadaDays >= 2)) {
-    return {
-      messageKey: 'tips.actionHeroAbrumada',
-      messageParams: { days: Math.max(lowEnergyDays, abrumadaDays, 1) },
-      ctaKey: 'tips.actionHeroCtaHoy',
-      route: '/(tabs)',
-    };
+    return withAction(
+      {
+        messageKey: 'tips.actionHeroAbrumada',
+        messageParams: { days: Math.max(lowEnergyDays, abrumadaDays, 1) },
+      },
+      ctx,
+    );
   }
 
   if (emotion === 'enfocada' && energy >= 4) {
-    return {
-      messageKey: 'tips.actionHeroFocused',
-      ctaKey: 'tips.actionHeroCtaHoy',
-      route: '/(tabs)',
-    };
+    return withAction({ messageKey: 'tips.actionHeroFocused' }, ctx);
   }
 
   if (energy <= 2) {
-    return {
-      messageKey: 'tips.actionHeroLowEnergy',
-      ctaKey: 'tips.actionHeroCtaHoy',
-      route: '/(tabs)',
-    };
+    return withAction({ messageKey: 'tips.actionHeroLowEnergy' }, ctx);
   }
 
   if (energy >= 4) {
     return {
       messageKey: 'tips.actionHeroHighEnergy',
       ctaKey: 'tips.actionHeroCtaHoy',
-      route: '/(tabs)',
+      action: { type: 'route', route: '/(tabs)' },
     };
   }
 
-  return {
-    messageKey: 'tips.actionHeroDefault',
-    messageParams: { energy },
-    ctaKey: 'tips.actionHeroCtaHoy',
-    route: '/(tabs)',
-  };
+  return withAction(
+    {
+      messageKey: 'tips.actionHeroDefault',
+      messageParams: { energy },
+    },
+    ctx,
+  );
 }

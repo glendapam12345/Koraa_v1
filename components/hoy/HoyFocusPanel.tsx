@@ -171,7 +171,6 @@ export function HoyFocusPanel({
         <HoyDayFlowSection
           showDayChangedCard={showDayChangedCard}
           showNothingDoneCard={showNothingDoneCard}
-          focusTaskNames={focusTaskNames}
           onDismissDayChanged={onDismissDayChanged!}
         />
       ) : null}

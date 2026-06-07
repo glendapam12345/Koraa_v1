@@ -275,13 +275,13 @@ export const extEs = {
     retry: 'Reintentar',
   },
   hoyDayFlow: {
-    unifiedTitle: '¿Ajustamos tu tarde?',
+    unifiedTitle: '¿Quieres que Koraa reordene el resto del día?',
     unifiedBodyDayChanged:
-      'Pasó un rato desde tu check-in. En ~1 min puedes actualizar cómo te sientes y ver focos que encajen mejor.',
+      'Pasó un rato desde tu check-in. Si quieres, en ~1 min actualizas cómo te sientes y Koraa ajusta tus focos.',
     unifiedBodyNothingDone:
-      'Aún no marcaste focos como hechos. No pasa nada — puedes reorganizar o aliviar carga.',
+      'Tus focos siguen aquí cuando quieras. Sin prisa — puedes reorganizar o aliviar carga.',
     unifiedBodyBoth:
-      'Pasó un rato y tus focos siguen pendientes. Reorganiza en 1 min o alivia carga si hoy no da.',
+      'Pasó un rato y tus focos siguen aquí. Reorganiza en 1 min o alivia carga si hoy no da.',
     focusListLabel: 'Tus focos de hoy:',
     reorganizeCta: 'Ajustar prioridades en 1 min',
     lightenCta: 'Aliviar carga',

@@ -403,6 +403,8 @@ export const uiEs = {
     emptySecondaryTab: 'Hoy',
     emptySecondaryTrail: ' y registrar cómo te sientes',
     a11yActionHeroHint: 'Abre Hoy para ver tus focos del día',
+    a11yActionHeroPauseHint: 'Abre una meditación breve para pausar',
+    a11yParaMiLinkHint: 'Abre Para mí para ver patrones de la semana',
     a11yMeditationSection: 'Meditación guiada, mañana o noche',
   },
   paramiExtra: {

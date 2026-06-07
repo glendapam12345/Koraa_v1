@@ -9,15 +9,29 @@ import type { TipsActionHeroContent } from '@/lib/tipsActionHero';
 type TipsActionHeroProps = {
   content: TipsActionHeroContent;
   emotionLabel: string;
+  onPausePress?: () => void;
 };
 
-export function TipsActionHero({ content, emotionLabel }: TipsActionHeroProps) {
+export function TipsActionHero({ content, emotionLabel, onPausePress }: TipsActionHeroProps) {
   const { t } = useI18n();
 
   const messageParams = {
     emotion: emotionLabel,
     ...content.messageParams,
   };
+
+  const handlePress = () => {
+    if (content.action.type === 'pause') {
+      onPausePress?.();
+      return;
+    }
+    router.push(content.action.route);
+  };
+
+  const a11yHint =
+    content.action.type === 'pause'
+      ? t('tipsExtra.a11yActionHeroPauseHint')
+      : t('tipsExtra.a11yActionHeroHint');
 
   return (
     <LinearGradient
@@ -32,11 +46,11 @@ export function TipsActionHero({ content, emotionLabel }: TipsActionHeroProps) {
       <Text style={styles.message}>{t(content.messageKey, messageParams)}</Text>
       <TouchableOpacity
         style={styles.cta}
-        onPress={() => router.push(content.route)}
+        onPress={handlePress}
         activeOpacity={0.85}
         accessibilityRole="button"
         accessibilityLabel={t(content.ctaKey)}
-        accessibilityHint={t('tipsExtra.a11yActionHeroHint')}
+        accessibilityHint={a11yHint}
       >
         <Text style={styles.ctaText}>{t(content.ctaKey)}</Text>
         <ChevronRight size={18} color={THEME.colors.calm.lavenderDeep} />

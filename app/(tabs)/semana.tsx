@@ -16,13 +16,11 @@ import { router, useFocusEffect } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 import { PremiumTeaserCard } from '@/components/PremiumTeaserCard';
-import { FocusProgressBar } from '@/components/FocusProgressBar';
 import { SemanaCalendarGrid } from '@/components/semana/SemanaCalendarGrid';
 import { SemanaCalendarLegend } from '@/components/semana/SemanaCalendarLegend';
 import { SemanaWeekNav } from '@/components/semana/SemanaWeekNav';
 import { SemanaProjectFilter } from '@/components/semana/SemanaProjectFilter';
 import { SemanaDaySection } from '@/components/semana/SemanaDaySection';
-import { SemanaCheckInFab } from '@/components/semana/SemanaCheckInFab';
 import { SemanaTodayCheckInBanner } from '@/components/semana/SemanaTodayCheckInBanner';
 import { getTodayPriorityStats } from '@/lib/priorityProgress';
 import { getLocalDateString } from '@/lib/dateLocal';
@@ -77,7 +75,6 @@ export default function SemanaScreen() {
 
   const { weekTasks, checkInsByDate, projects, loading, loadWeekTasks, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast, locale);
   const { hasCheckInToday, refresh: refreshCheckInToday } = useHasCheckInToday(user?.id);
-  const showCheckInFab = hasCheckInToday === false;
   const { days: calendarDays, tasksByDate, loading: monthLoading, loadMonth } = useMonthCalendar(
     calendarYear,
     calendarMonth,
@@ -246,8 +243,6 @@ export default function SemanaScreen() {
     [todayWeekTasks],
   );
 
-  const weekIncludesToday = filteredWeekTasks.some(({ day }) => day.dateStr === todayStr);
-
   const exportableTasks = useMemo(() => {
     if (viewMode === 'calendar') {
       return Object.values(tasksByDate).flat();
@@ -268,7 +263,6 @@ export default function SemanaScreen() {
       <CalmScreen
         topInset="lg"
         gap={THEME.layout.sectionGapCompact}
-        contentStyle={showCheckInFab ? { paddingBottom: THEME.layout.floatingTabBarClearance + 56 } : undefined}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -302,11 +296,7 @@ export default function SemanaScreen() {
               </TouchableOpacity>
             </>
           }
-        >
-          {weekIncludesToday ? (
-            <FocusProgressBar stats={todayPriorityStats} style={styles.focusProgress} />
-          ) : null}
-        </ScreenHeader>
+        />
 
         <Text style={styles.intro}>{t('semana.intro')}</Text>
 
@@ -498,9 +488,6 @@ export default function SemanaScreen() {
         ) : null}
       </CalmScreen>
 
-      {showCheckInFab ? (
-        <SemanaCheckInFab onPress={() => router.push('/sentir')} />
-      ) : null}
     </View>
   );
 }

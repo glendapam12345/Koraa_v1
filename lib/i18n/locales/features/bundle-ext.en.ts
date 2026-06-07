@@ -274,13 +274,13 @@ export const extEn = {
     retry: 'Try again',
   },
   hoyDayFlow: {
-    unifiedTitle: 'Adjust your afternoon?',
+    unifiedTitle: 'Want Koraa to reorder the rest of your day?',
     unifiedBodyDayChanged:
-      'It’s been a while since your check-in. In ~1 min, update how you feel and get focus tasks that fit better.',
+      'Some time has passed since your check-in. If you want, in ~1 min you can update how you feel and Koraa will adjust your focus tasks.',
     unifiedBodyNothingDone:
-      'You haven’t checked off any focus tasks yet. That’s okay — reorganize or lighten your load.',
+      'Your focus tasks are still here whenever you are ready. No rush — you can reorganize or lighten your load.',
     unifiedBodyBoth:
-      'Time passed and your focus tasks are still pending. Reorganize in 1 min or lighten load if today’s tight.',
+      'Some time has passed and your focus tasks are still here. Reorganize in 1 min or lighten your load if today is not the day.',
     focusListLabel: 'Your focus tasks today:',
     reorganizeCta: 'Adjust priorities in 1 min',
     lightenCta: 'Lighten load',

@@ -6,14 +6,12 @@ import { useI18n } from '@/contexts/I18nContext';
 type HoyDayFlowSectionProps = {
   showDayChangedCard: boolean;
   showNothingDoneCard: boolean;
-  focusTaskNames?: string[];
   onDismissDayChanged: () => void;
 };
 
 export function HoyDayFlowSection({
   showDayChangedCard,
   showNothingDoneCard,
-  focusTaskNames = [],
   onDismissDayChanged,
 }: HoyDayFlowSectionProps) {
   const { t } = useI18n();
@@ -45,20 +43,6 @@ export function HoyDayFlowSection({
       </View>
 
       <Text style={styles.body}>{t(bodyKey)}</Text>
-
-      {showNothingDoneCard && focusTaskNames.length > 0 ? (
-        <View style={styles.focusListBlock}>
-          <Text style={styles.focusListLabel}>{t('hoyDayFlow.focusListLabel')}</Text>
-          {focusTaskNames.map((name) => (
-            <View key={name} style={styles.focusListRow}>
-              <View style={styles.focusBullet} />
-              <Text style={styles.focusListItem} numberOfLines={2}>
-                {name}
-              </Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
 
       {showDayChangedCard ? (
         <TouchableOpacity
