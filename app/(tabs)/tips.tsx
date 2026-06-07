@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { THEME } from '@/constants/theme';
 import { Tooltip } from '@/components/Tooltip';
@@ -18,13 +18,23 @@ import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 import { TipsMoodHeader } from '@/components/tips/TipsMoodHeader';
 import { TipsActionHero } from '@/components/tips/TipsActionHero';
+import { TipsMeditationSection } from '@/components/tips/TipsMeditationSection';
 import { getTipsActionHero } from '@/lib/tipsActionHero';
+import { useHoyMeditation } from '@/hooks/useHoyMeditation';
+import { MeditationCircleSimple } from '@/components/MeditationCircleSimple';
+import { Toast } from '@/components/Toast';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
 import { subscribeCheckInRefresh } from '@/lib/checkInRefresh';
 import type { TranslationKey } from '@/lib/i18n';
+
+const ConfettiCelebration = lazy(() =>
+  import('@/components/ConfettiCelebration')
+    .then((module) => ({ default: module.ConfettiCelebration }))
+    .catch(() => ({ default: () => null as any })),
+);
 
 const TIPS_TOOLTIP_SEEN_KEY = 'koraa_tips_tooltip_seen';
 const FREE_GENERIC_TIPS_LIMIT = 3;
@@ -59,6 +69,26 @@ export default function TipsScreen() {
     refresh: handleRefresh,
   } = useTipsScreenData(user?.id);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
+  const [showConfetti, setShowConfetti] = useState(false);
+  const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+  }, []);
+
+  const {
+    showMeditation,
+    setShowMeditation,
+    meditationType,
+    morningMeditationDone,
+    eveningMeditationDone,
+    loadMeditations,
+    handleMeditationComplete,
+    handleStartMeditation,
+  } = useHoyMeditation({ showToast, setShowConfetti, confettiTimeoutRef });
   const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
   const dayLabels = useMemo(
     () => [
@@ -83,8 +113,9 @@ export default function TipsScreen() {
     void Promise.all([
       loadTipsData(),
       user?.id ? loadInsights(user.id) : Promise.resolve(),
+      loadMeditations(),
     ]);
-  }, [loadTipsData, loadInsights, user?.id]);
+  }, [loadTipsData, loadInsights, loadMeditations, user?.id]);
 
   useFocusEffect(
     useCallback(() => {
@@ -119,8 +150,9 @@ export default function TipsScreen() {
     await Promise.all([
       handleRefresh(),
       user?.id ? loadInsights(user.id) : Promise.resolve(),
+      loadMeditations(),
     ]);
-  }, [handleRefresh, loadInsights, user?.id]);
+  }, [handleRefresh, loadInsights, loadMeditations, user?.id]);
 
   const getEmotionData = () => {
     return EMOTIONS.find(e => e.id === todayMood) || null;
@@ -239,6 +271,13 @@ export default function TipsScreen() {
               />
             ) : null}
 
+            <TipsMeditationSection
+              morningDone={morningMeditationDone}
+              eveningDone={eveningMeditationDone}
+              onStartMorning={() => handleStartMeditation('morning')}
+              onStartEvening={() => handleStartMeditation('evening')}
+            />
+
             <TipsMoodEnergyCards
               emotionEmoji={emotionData.emoji}
               emotionLabel={t(`sentir.emotions.${emotionData.id}` as TranslationKey)}
@@ -311,6 +350,25 @@ export default function TipsScreen() {
           }
         }}
       />
+
+      {showConfetti ? (
+        <Suspense fallback={null}>
+          <ConfettiCelebration />
+        </Suspense>
+      ) : null}
+
+      {toastMessage ? (
+        <Toast message={toastMessage} type={toastType} onHide={() => setToastMessage(null)} />
+      ) : null}
+
+      {showMeditation ? (
+        <MeditationCircleSimple
+          visible={showMeditation}
+          onComplete={handleMeditationComplete}
+          onClose={() => setShowMeditation(false)}
+          type={meditationType}
+        />
+      ) : null}
     </CalmScreen>
   );
 }

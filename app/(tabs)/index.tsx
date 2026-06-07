@@ -23,17 +23,14 @@ import { HoyQuickActions } from '@/components/hoy/HoyQuickActions';
 import { HoyTasksSection } from '@/components/hoy/HoyTasksSection';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { Task } from '@/components/tasks/TaskCard';
-import { RecommendationsSection } from '@/components/recommendations/RecommendationsSection';
 import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { HoyScreenOverlays } from '@/components/hoy/HoyScreenOverlays';
-import { HoyMeditationCard } from '@/components/hoy/HoyMeditationCard';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { useHoyScreenLayout } from '@/hooks/useHoyScreenLayout';
 import { useStreak } from '@/hooks/today/useStreak';
 import { useHoyEmotionalMemory } from '@/hooks/useHoyEmotionalMemory';
-import { useHoyMeditation } from '@/hooks/useHoyMeditation';
 import { getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
 import { getTodayPriorityStats, isPriorityCompletedToday } from '@/lib/priorityProgress';
 import { useHoyDeleteTask, useHoyAllCompleteConfetti } from '@/hooks/useHoyTaskActions';
@@ -135,17 +132,6 @@ export default function TodayScreen() {
 
   const { currentStreak, loadStreak } = useStreak(user?.id);
   const { emotionalMemoryInsights, loadEmotionalMemory } = useHoyEmotionalMemory(user?.id);
-  const {
-    showMeditation,
-    setShowMeditation,
-    meditationType,
-    morningMeditationDone,
-    eveningMeditationDone,
-    loadMeditations,
-    handleMeditationComplete,
-    handleStartMeditation,
-  } = useHoyMeditation({ showToast, setShowConfetti, confettiTimeoutRef });
-
   const {
     hoyLiteLayout,
     hoyLiteActive,
@@ -291,7 +277,6 @@ export default function TodayScreen() {
     loadTasks,
     loadTodayCheckIn,
     loadStreak,
-    loadMeditations,
     loadEmotionalMemory,
     clearToggleTimers,
     confettiTimeoutRef,
@@ -473,20 +458,6 @@ export default function TodayScreen() {
           </Suspense>
         ) : null}
 
-        {!loading && showSecondaryModulesEffective && hoyFocusFirst ? (
-          <HoyMeditationCard
-            morningDone={morningMeditationDone}
-            eveningDone={eveningMeditationDone}
-            onStartMorning={() => handleStartMeditation('morning')}
-            onStartEvening={() => handleStartMeditation('evening')}
-          />
-        ) : null}
-
-        {user && showSecondaryModulesEffective && hoyFocusFirst ? (
-          <View style={styles.recommendationsWrap}>
-            <RecommendationsSection userId={user.id} />
-          </View>
-        ) : null}
       </CalmScreen>
 
       <HoyScreenOverlays
@@ -514,10 +485,6 @@ export default function TodayScreen() {
         }}
         showQuickOnboarding={showQuickOnboarding}
         onCloseQuickOnboarding={() => setShowQuickOnboarding(false)}
-        showMeditation={showMeditation}
-        onCloseMeditation={() => setShowMeditation(false)}
-        meditationType={meditationType}
-        onMeditationComplete={handleMeditationComplete}
       />
     </View>
   );
@@ -537,10 +504,5 @@ const styles = StyleSheet.create({
   loadingText: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
-  },
-  recommendationsWrap: {
-    marginTop: THEME.spacing.xs,
-    marginBottom: THEME.spacing.xs,
-    paddingTop: 0,
   },
 });

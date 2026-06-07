@@ -21,7 +21,6 @@ type UseHoyScreenBootstrapOptions = {
   loadTasks: () => void | Promise<void>;
   loadTodayCheckIn: () => void | Promise<void>;
   loadStreak: () => void | Promise<void>;
-  loadMeditations: () => void | Promise<void>;
   loadEmotionalMemory: () => void | Promise<void>;
   clearToggleTimers: () => void;
   confettiTimeoutRef: RefObject<ReturnType<typeof setTimeout> | null>;
@@ -39,7 +38,6 @@ export function useHoyScreenBootstrap({
   loadTasks,
   loadTodayCheckIn,
   loadStreak,
-  loadMeditations,
   loadEmotionalMemory,
   clearToggleTimers,
   confettiTimeoutRef,
@@ -117,7 +115,6 @@ export function useHoyScreenBootstrap({
     void loadTodayCheckIn();
     void loadStreak();
     void loadProfileName();
-    loadMeditations();
     void loadEmotionalMemory();
 
     void (async () => {
@@ -157,7 +154,6 @@ export function useHoyScreenBootstrap({
     loadTodayCheckIn,
     loadStreak,
     loadProfileName,
-    loadMeditations,
     loadEmotionalMemory,
     clearToggleTimers,
     confettiTimeoutRef,
@@ -173,7 +169,6 @@ export function useHoyScreenBootstrap({
         loadTodayCheckIn(),
         loadStreak(),
         loadProfileName(),
-        loadMeditations(),
         loadEmotionalMemory(),
       ]);
     } catch (error) {
@@ -187,7 +182,6 @@ export function useHoyScreenBootstrap({
     loadTodayCheckIn,
     loadStreak,
     loadProfileName,
-    loadMeditations,
     loadEmotionalMemory,
     showToast,
     t,

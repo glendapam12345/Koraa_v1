@@ -4,42 +4,57 @@ import { ChevronRight, Info } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { showsSimplifiedMeditationNotice } from '@/lib/meditationEnvironment';
+import type { TranslationKey } from '@/lib/i18n';
 
-type HoyMeditationCardProps = {
+type MeditationMomentCardProps = {
   morningDone: boolean;
   eveningDone: boolean;
   onStartMorning: () => void;
   onStartEvening: () => void;
+  titleKey: TranslationKey;
+  titleAccentKey: TranslationKey;
+  subtitleKey: TranslationKey;
+  expoGoNoteKey: TranslationKey;
+  gradientColors?: readonly [string, string, ...string[]];
 };
 
-export function HoyMeditationCard({
+export function MeditationMomentCard({
   morningDone,
   eveningDone,
   onStartMorning,
   onStartEvening,
-}: HoyMeditationCardProps) {
+  titleKey,
+  titleAccentKey,
+  subtitleKey,
+  expoGoNoteKey,
+  gradientColors = [
+    THEME.colors.tint.blue.veryFaint,
+    THEME.colors.tint.pink.soft,
+    THEME.colors.fill[200],
+  ],
+}: MeditationMomentCardProps) {
   const { t } = useI18n();
   const showExpoGoNote = showsSimplifiedMeditationNotice();
 
   return (
     <View style={styles.meditationWrap}>
       <LinearGradient
-        colors={[THEME.colors.tint.blue.veryFaint, THEME.colors.tint.pink.soft, THEME.colors.fill[200]]}
+        colors={gradientColors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.meditationCard}
       >
         <View style={styles.meditationHeader}>
           <Text style={styles.meditationTitle}>
-            {t('hoy.calmMoment')}{' '}
-            <Text style={styles.meditationTitleAccent}>{t('hoy.calmMomentAccent')}</Text>
+            {t(titleKey)}{' '}
+            <Text style={styles.meditationTitleAccent}>{t(titleAccentKey)}</Text>
           </Text>
-          <Text style={styles.meditationSubtitle}>{t('commonExtra.meditationListen')}</Text>
+          <Text style={styles.meditationSubtitle}>{t(subtitleKey)}</Text>
         </View>
         {showExpoGoNote ? (
           <View style={styles.expoGoNote} accessibilityRole="text">
             <Info size={16} color={THEME.colors.gradient.blue} />
-            <Text style={styles.expoGoNoteText}>{t('hoy.meditationExpoGoNote')}</Text>
+            <Text style={styles.expoGoNoteText}>{t(expoGoNoteKey)}</Text>
           </View>
         ) : null}
         <View style={styles.meditationSingleCardInner}>
@@ -110,7 +125,6 @@ export function HoyMeditationCard({
 
 const styles = StyleSheet.create({
   meditationWrap: {
-    marginBottom: THEME.spacing.lg,
     borderRadius: THEME.borderRadius.rounded + 4,
     overflow: 'hidden',
     ...THEME.shadows.soft,

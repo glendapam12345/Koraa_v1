@@ -520,7 +520,7 @@ export const extEs = {
     goTasksHint: 'Abre Tareas para capturar nuevas pendientes',
     toggleExtraA11yShow: 'Mostrar secciones extra de Hoy',
     toggleExtraA11yHide: 'Ocultar secciones extra de Hoy',
-    toggleExtraHint: 'Controla módulos secundarios como meditación, resumen por proyecto y recomendaciones',
+    toggleExtraHint: 'Controla módulos secundarios como resumen por proyecto y memoria emocional',
     orderHide: 'Ocultar detalles del orden de tareas',
     orderShow: 'Ver detalles del orden de tareas',
     goFeelPrioritize: 'Ir a Hoy para registrar cómo te sientes y priorizar',

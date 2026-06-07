@@ -402,6 +402,7 @@ export const uiEn = {
     emptySecondaryTab: 'Today',
     emptySecondaryTrail: ' tab and log how you feel',
     a11yActionHeroHint: 'Opens Today to see your focus tasks',
+    a11yMeditationSection: 'Guided meditation, morning or evening',
   },
   paramiExtra: {
     a11yPeriodHint: 'Change the summary time period',

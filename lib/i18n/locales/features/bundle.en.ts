@@ -222,6 +222,10 @@ export const featuresEn = {
     profileHintCta: 'Complete your profile in Me',
     profileLinkShort: 'Go to Me to complete profile',
     actionHeroEyebrow: 'For you today',
+    meditationEyebrow: 'Calm',
+    meditationTitle: 'A moment',
+    meditationTitleAccent: 'for you',
+    meditationLead: 'Breathe. Morning or evening — choose when you need a pause.',
     actionHeroAbrumada:
       'You have felt overloaded several days. Today try fewer focus tasks — Koraa can do that for you.',
     actionHeroFocused: 'Good moment for your hardest task. It is at the top in Today.',
@@ -391,7 +395,7 @@ export const featuresEn = {
     lightenLoad: 'Lighten load',
     lightenLoadSub: 'Spread pending tasks across days based on your energy and time today',
     secondaryModulesHint:
-      'Meditation, projects, recommendations, and more detail on task order.',
+      'Projects, emotional memory, and more detail on task order.',
     allDoneSub:
       'You have no pending tasks. If you add something in Tasks, it will appear here prioritized by how you feel.',
     noTasksOtherDays:

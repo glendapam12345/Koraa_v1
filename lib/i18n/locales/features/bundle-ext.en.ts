@@ -519,7 +519,7 @@ export const extEn = {
     goTasksHint: 'Open Tasks to capture new items',
     toggleExtraA11yShow: 'Show extra Today sections',
     toggleExtraA11yHide: 'Hide extra Today sections',
-    toggleExtraHint: 'Controls secondary modules like meditation, project summary, and recommendations',
+    toggleExtraHint: 'Controls secondary modules like project summary and emotional memory',
     orderHide: 'Hide task order details',
     orderShow: 'View task order details',
     goFeelPrioritize: 'Go to Today to log how you feel and prioritize',

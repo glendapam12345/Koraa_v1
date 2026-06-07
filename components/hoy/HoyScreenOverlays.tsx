@@ -4,7 +4,6 @@ import { THEME } from '@/constants/theme';
 import { Toast } from '@/components/Toast';
 import { QuickOnboardingModal } from '@/components/onboarding/QuickOnboardingModal';
 import { RedistributeWorkloadModal } from '@/components/tasks/RedistributeWorkloadModal';
-import { MeditationCircleSimple } from '@/components/MeditationCircleSimple';
 import { useI18n } from '@/contexts/I18nContext';
 import type { Task } from '@/components/tasks/TaskCard';
 
@@ -42,10 +41,6 @@ export type HoyScreenOverlaysProps = {
   onRedistributeApplied: () => void;
   showQuickOnboarding: boolean;
   onCloseQuickOnboarding: () => void;
-  showMeditation: boolean;
-  onCloseMeditation: () => void;
-  meditationType: 'morning' | 'evening';
-  onMeditationComplete: () => void | Promise<void>;
 };
 
 export function HoyScreenOverlays({
@@ -70,10 +65,6 @@ export function HoyScreenOverlays({
   onRedistributeApplied,
   showQuickOnboarding,
   onCloseQuickOnboarding,
-  showMeditation,
-  onCloseMeditation,
-  meditationType,
-  onMeditationComplete,
 }: HoyScreenOverlaysProps) {
   const { t } = useI18n();
 
@@ -132,15 +123,6 @@ export function HoyScreenOverlays({
       ) : null}
 
       <QuickOnboardingModal visible={showQuickOnboarding} onClose={onCloseQuickOnboarding} />
-
-      {showMeditation ? (
-        <MeditationCircleSimple
-          visible={showMeditation}
-          onComplete={onMeditationComplete}
-          onClose={onCloseMeditation}
-          type={meditationType}
-        />
-      ) : null}
     </>
   );
 }

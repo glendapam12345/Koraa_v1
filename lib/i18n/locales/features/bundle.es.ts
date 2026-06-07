@@ -224,6 +224,10 @@ export const featuresEs = {
     profileHintCta: 'Completa tu perfil en Yo',
     profileLinkShort: 'Ir a Yo para completar perfil',
     actionHeroEyebrow: 'Para ti hoy',
+    meditationEyebrow: 'Calma',
+    meditationTitle: 'Un momento',
+    meditationTitleAccent: 'para ti',
+    meditationLead: 'Respira. Mañana o noche — elige cuándo necesitas pausa.',
     actionHeroAbrumada:
       'Llevas varios días abrumada. Hoy intenta reducir focos — Koraa ya puede hacerlo por ti.',
     actionHeroFocused: 'Buen momento para tu tarea más difícil. Está arriba en Hoy.',
@@ -392,7 +396,7 @@ export const featuresEs = {
     lightenLoad: 'Aliviar carga',
     lightenLoadSub: 'Reparte pendientes por días según tu energía y tiempo de hoy',
     secondaryModulesHint:
-      'Meditación, proyectos, recomendaciones y más detalle del orden de tareas.',
+      'Proyectos, memoria emocional y más detalle del orden de tareas.',
     allDoneSub:
       'No tienes tareas pendientes. Si añades algo en Tareas, aparecerá aquí priorizado según cómo te sientas.',
     noTasksOtherDays:
