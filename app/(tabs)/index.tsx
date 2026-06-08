@@ -131,7 +131,7 @@ export default function TodayScreen() {
     confettiTimeoutRef,
   });
 
-  const { currentStreak, loadStreak } = useStreak(user?.id);
+  const { loadStreak } = useStreak(user?.id);
   const { emotionalMemoryInsights, loadEmotionalMemory } = useHoyEmotionalMemory(user?.id);
   const {
     hoyLiteLayout,
@@ -384,7 +384,7 @@ export default function TodayScreen() {
           <HoyWelcomeHeader
             greeting={getGreeting}
             showUserActions={Boolean(user)}
-            currentStreak={currentStreak}
+            checkedInToday={Boolean(todayMood)}
           />
         ) : null}
 
@@ -438,7 +438,6 @@ export default function TodayScreen() {
             restOfDayExpanded={hoyRestOfDayExpanded}
             onCollapseRestOfDay={() => setShowSecondaryModules(false)}
             displayName={displayName}
-            currentStreak={currentStreak}
             coachSuggestion={explanation.suggestion}
             onOpenCalendar={() => router.push('/(tabs)/semana')}
             onShowMoreForToday={

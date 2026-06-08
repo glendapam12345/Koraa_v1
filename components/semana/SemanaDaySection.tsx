@@ -24,6 +24,7 @@ type SemanaDaySectionProps = {
   emotionId?: string | null;
   energyLevel?: number | null;
   focusCount?: number | null;
+  globalCheckInBannerVisible?: boolean;
   addTasksA11yLabel: string;
   addMoreA11yLabel: string;
 };
@@ -38,6 +39,7 @@ export function SemanaDaySection({
   emotionId = null,
   energyLevel = null,
   focusCount = null,
+  globalCheckInBannerVisible = false,
   addTasksA11yLabel,
   addMoreA11yLabel,
 }: SemanaDaySectionProps) {
@@ -54,7 +56,7 @@ export function SemanaDaySection({
     router.push('/(tabs)');
   };
 
-  type EmptyVariant = 'noCheckInToday' | 'lightDay' | 'default';
+  type EmptyVariant = 'noCheckInToday' | 'noCheckInTodaySoft' | 'lightDay' | 'default';
 
   const showHeavyDayBanner =
     isToday &&
@@ -65,7 +67,9 @@ export function SemanaDaySection({
     focusCount != null;
 
   const emptyVariant: EmptyVariant = (() => {
-    if (isToday && !hasCheckIn) return 'noCheckInToday';
+    if (isToday && !hasCheckIn) {
+      return globalCheckInBannerVisible ? 'noCheckInTodaySoft' : 'noCheckInToday';
+    }
     if (hasCheckIn && tasks.length === 0) return 'lightDay';
     return 'default';
   })();
@@ -77,6 +81,15 @@ export function SemanaDaySection({
       cta: t('semana.emptyTodayNoCheckInCta'),
       onPress: openHoy,
       a11y: t('semana.emptyTodayNoCheckInCta'),
+      showCta: true,
+    },
+    noCheckInTodaySoft: {
+      title: t('semana.emptyTodayNoCheckInSoft'),
+      hint: t('semana.emptyTodayNoCheckInSoftHint'),
+      cta: '',
+      onPress: openHoy,
+      a11y: t('semana.emptyTodayNoCheckInSoft'),
+      showCta: false,
     },
     lightDay: {
       title: t('semana.emptyLightDay'),
@@ -84,6 +97,7 @@ export function SemanaDaySection({
       cta: t('semana.addTasks'),
       onPress: navigateToVaciar,
       a11y: addTasksA11yLabel,
+      showCta: true,
     },
     default: {
       title: t('semana.emptyDay'),
@@ -91,6 +105,7 @@ export function SemanaDaySection({
       cta: t('semana.addTasks'),
       onPress: navigateToVaciar,
       a11y: addTasksA11yLabel,
+      showCta: true,
     },
   }[emptyVariant];
 
@@ -160,15 +175,21 @@ export function SemanaDaySection({
         {tasks.length === 0 ? (
           <View style={styles.emptyDay}>
             <Text style={styles.emptyDayEmoji}>
-              {emptyVariant === 'lightDay' ? '🌿' : emptyVariant === 'noCheckInToday' ? '💜' : '📅'}
+              {emptyVariant === 'lightDay'
+                ? '🌿'
+                : emptyVariant === 'noCheckInToday' || emptyVariant === 'noCheckInTodaySoft'
+                  ? '💜'
+                  : '📅'}
             </Text>
             <Text style={styles.emptyDayText}>{emptyCopy.title}</Text>
             <Text style={styles.emptyDayHint}>{emptyCopy.hint}</Text>
-            <CalmPrimaryButton
-              label={emptyCopy.cta}
-              onPress={emptyCopy.onPress}
-              accessibilityLabel={emptyCopy.a11y}
-            />
+            {emptyCopy.showCta ? (
+              <CalmPrimaryButton
+                label={emptyCopy.cta}
+                onPress={emptyCopy.onPress}
+                accessibilityLabel={emptyCopy.a11y}
+              />
+            ) : null}
           </View>
         ) : (
           <>

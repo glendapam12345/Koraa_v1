@@ -101,7 +101,6 @@ export type HoyTasksSectionProps = {
   restOfDayExpanded?: boolean;
   onCollapseRestOfDay?: () => void;
   displayName?: string;
-  currentStreak?: number;
   coachSuggestion?: string;
   onOpenCalendar?: () => void;
   onShowMoreForToday?: () => void;
@@ -163,7 +162,6 @@ export function HoyTasksSection({
   restOfDayExpanded = false,
   onCollapseRestOfDay,
   displayName = '',
-  currentStreak = 0,
   coachSuggestion = '',
   onOpenCalendar,
   onShowMoreForToday,
@@ -261,7 +259,6 @@ export function HoyTasksSection({
           userId={user?.id}
           locale={locale}
           displayName={displayName}
-          currentStreak={currentStreak}
           todayMood={todayMood}
           emotionLabel={todayEmotionLabel}
           energyLevel={energyLevel}

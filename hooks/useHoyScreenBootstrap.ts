@@ -90,7 +90,7 @@ export function useHoyScreenBootstrap({
       void loadEmotionalMemory();
       if (p.milestone) {
         setShowConfetti(true);
-        showToast(t('hoyPlanFallback.streakToast', { count: p.streak }), 'success');
+        showToast(t('hoyPlanFallback.streakToast'), 'success');
         if (confettiTimeoutRef.current) {
           clearTimeout(confettiTimeoutRef.current);
         }

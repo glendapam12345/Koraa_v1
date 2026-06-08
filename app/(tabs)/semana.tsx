@@ -379,6 +379,9 @@ export default function SemanaScreen() {
               emotionId={selectedDayEmotionId}
               energyLevel={selectedDayData?.energyLevel ?? null}
               focusCount={selectedDate === todayStr ? todayPriorityStats.total : null}
+              globalCheckInBannerVisible={
+                selectedDate === todayStr && hasCheckInToday === false
+              }
               addTasksA11yLabel={`${t('semana.addTasks')} ${selectedDayLabel}`}
               addMoreA11yLabel={`${t('semana.addMore')} ${selectedDayLabel}`}
             />
@@ -420,6 +423,7 @@ export default function SemanaScreen() {
               emotionId={dayCheckIn?.emotion?.toLowerCase() ?? null}
               energyLevel={dayCheckIn?.energy_level ?? null}
               focusCount={day.isToday ? todayPriorityStats.total : null}
+              globalCheckInBannerVisible={day.isToday && hasCheckInToday === false}
               addTasksA11yLabel={`${t('semana.addTasks')} ${dayLabel}`}
               addMoreA11yLabel={`${t('semana.addMore')} ${dayLabel}`}
             />

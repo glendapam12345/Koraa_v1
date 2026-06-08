@@ -2,31 +2,20 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
-import type { TranslationKey } from '@/lib/i18n';
 import { StreakAura } from '@/components/branding/StreakAura';
 import { KoraaBloomLogo } from '@/components/branding/KoraaBloomLogo';
-import {
-  getNextStreakMilestone,
-  getStreakAuraIntensity,
-  getStreakLevelKey,
-  getStreakRingProgress,
-} from '@/lib/streakLevel';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
 
 type YoStreakHeroProps = {
-  streak: number;
+  checkedInToday: boolean;
 };
 
-export function YoStreakHero({ streak }: YoStreakHeroProps) {
+export function YoStreakHero({ checkedInToday }: YoStreakHeroProps) {
   const { t } = useI18n();
-  const ringProgress = getStreakRingProgress(streak);
-  const nextMilestone = getNextStreakMilestone(streak);
-  const levelKey = getStreakLevelKey(streak) as TranslationKey;
-  const auraIntensity = getStreakAuraIntensity(streak);
 
   const onPress = () => {
-    if (streak > 0) {
+    if (checkedInToday) {
       router.push('/(tabs)/parami');
       return;
     }
@@ -39,45 +28,40 @@ export function YoStreakHero({ streak }: YoStreakHeroProps) {
       activeOpacity={0.85}
       accessibilityRole="button"
       accessibilityLabel={
-        streak > 0
-          ? t('yoExtra.a11yStreakHero', { count: streak, level: t(levelKey) })
-          : t('yo.streakEmpty')
+        checkedInToday ? t('yoExtra.a11yStreakHero') : t('yo.streakEmpty')
       }
-      accessibilityHint={streak > 0 ? t('yoExtra.a11yStreakHeroHint') : t('yoExtra.a11yStreakEmptyHint')}
+      accessibilityHint={
+        checkedInToday ? t('yoExtra.a11yStreakHeroHint') : t('yoExtra.a11yStreakEmptyHint')
+      }
     >
       <CalmCard style={styles.card}>
         <View style={styles.content}>
           <View style={styles.textBlock}>
             <Text style={styles.sectionLabel}>{t('yo.progressTitle')}</Text>
-            <Text style={styles.level}>{t(levelKey)}</Text>
-            {streak > 0 ? (
+            {checkedInToday ? (
               <>
-                <Text style={styles.streakLine}>
-                  <Text style={styles.streakCount}>{streak}</Text>{' '}
-                  {streak === 1 ? t('yo.streakDayOne') : t('yo.streakDayMany')}
-                </Text>
-                {streak < nextMilestone ? (
-                  <Text style={styles.milestoneHint}>
-                    {t('yoExtra.streakNextMilestone', { days: nextMilestone - streak })}
-                  </Text>
-                ) : null}
+                <Text style={styles.title}>{t('yo.returnedToday')}</Text>
+                <Text style={styles.sub}>{t('yo.returnedTodaySub')}</Text>
               </>
             ) : (
-              <Text style={styles.empty}>{t('yo.streakEmpty')}</Text>
+              <>
+                <Text style={styles.title}>{t('yo.returnInvite')}</Text>
+                <Text style={styles.sub}>{t('yo.returnInviteSub')}</Text>
+              </>
             )}
           </View>
 
           <View style={styles.ringWrap}>
-            <StreakAura intensity={auraIntensity} contentSize={56}>
+            <StreakAura intensity={checkedInToday ? 0.55 : 0.12} contentSize={56}>
               <View style={styles.ringOuter}>
                 <View
                   style={[
                     styles.ringFill,
-                    { height: `${Math.max(8, Math.round(ringProgress * 100))}%` },
+                    { height: checkedInToday ? '72%' : '12%' },
                   ]}
                 />
                 <View style={styles.ringInner}>
-                  <KoraaBloomLogo size={40} active={streak > 0} />
+                  <KoraaBloomLogo size={40} active={checkedInToday} />
                 </View>
               </View>
             </StreakAura>
@@ -108,26 +92,12 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  level: {
+  title: {
     ...THEME.typography.h3,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
   },
-  streakLine: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-  },
-  streakCount: {
-    ...THEME.typography.h2,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  milestoneHint: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.tertiary,
-    lineHeight: 18,
-  },
-  empty: {
+  sub: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
     lineHeight: 22,

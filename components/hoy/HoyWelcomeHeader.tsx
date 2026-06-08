@@ -1,20 +1,20 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
-import { Flame, CircleHelp, Settings } from 'lucide-react-native';
+import { Sparkles, CircleHelp, Settings } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 
 type HoyWelcomeHeaderProps = {
   greeting: string;
   showUserActions: boolean;
-  currentStreak: number;
+  checkedInToday: boolean;
 };
 
 export function HoyWelcomeHeader({
   greeting,
   showUserActions,
-  currentStreak,
+  checkedInToday,
 }: HoyWelcomeHeaderProps) {
   const { t } = useI18n();
 
@@ -25,35 +25,31 @@ export function HoyWelcomeHeader({
       </Text>
       {showUserActions ? (
         <View style={styles.welcomeActionsRow}>
-          {currentStreak > 0 ? (
-            <TouchableOpacity
-              style={styles.streakBadgeInline}
-              onPress={() => router.push('/(tabs)/yo')}
-              activeOpacity={0.75}
-              accessibilityRole="button"
-              accessibilityLabel={t('hoyPlanFallback.streakA11y', { count: currentStreak })}
-              accessibilityHint={t('hoyExtra.profileHint')}
+          <TouchableOpacity
+            style={checkedInToday ? styles.returnBadgeActive : styles.returnBadgeMuted}
+            onPress={() =>
+              checkedInToday ? router.push('/(tabs)/parami') : openRecheckCheckIn('hoy_streak')
+            }
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={
+              checkedInToday ? t('hoy.returnedTodayA11y') : t('hoy.returnInviteA11y')
+            }
+            accessibilityHint={checkedInToday ? t('hoyExtra.profileHint') : t('hoyExtra.noStreakHint')}
+          >
+            <Sparkles
+              size={14}
+              color={
+                checkedInToday ? THEME.colors.calm.lavenderDeep : THEME.colors.text.tertiary
+              }
+            />
+            <Text
+              style={checkedInToday ? styles.returnTextActive : styles.returnTextMuted}
+              numberOfLines={1}
             >
-              <Flame size={14} color={THEME.colors.gradient.pink} />
-              <Text style={styles.streakTextInline} numberOfLines={1}>
-                {currentStreak}
-              </Text>
-              <Text style={styles.streakDaysLabel}>{t('hoy.streakDays')}</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.streakBadgeMuted}
-              onPress={() => openRecheckCheckIn('hoy_streak')}
-              activeOpacity={0.75}
-              accessibilityRole="button"
-              accessibilityLabel={t('hoyExtra.noStreakA11y')}
-              accessibilityHint={t('hoyExtra.noStreakHint')}
-            >
-              <Flame size={14} color={THEME.colors.text.tertiary} />
-              <Text style={styles.streakTextMuted}>{t('hoy.streakLabel')}</Text>
-              <Text style={styles.streakTextMutedBold}>0</Text>
-            </TouchableOpacity>
-          )}
+              {checkedInToday ? t('hoy.returnedToday') : t('hoy.returnInvite')}
+            </Text>
+          </TouchableOpacity>
           <View style={styles.welcomeIconCluster}>
             <TouchableOpacity
               onPress={() => router.push('/help')}
@@ -78,9 +74,9 @@ export function HoyWelcomeHeader({
           </View>
         </View>
       ) : null}
-      {showUserActions ? (
-        <Text style={styles.streakHint} accessibilityRole="text">
-          {t('hoy.streakHint')}
+      {showUserActions && checkedInToday ? (
+        <Text style={styles.consistencyHint} accessibilityRole="text">
+          {t('hoy.consistencyHint')}
         </Text>
       ) : null}
     </View>
@@ -118,7 +114,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     width: '100%',
   },
-  streakBadgeInline: {
+  returnBadgeActive: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: THEME.colors.fill[200],
@@ -126,23 +122,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: 6,
     gap: 4,
-    flexShrink: 0,
+    flexShrink: 1,
+    maxWidth: '62%',
   },
-  streakTextInline: {
+  returnTextActive: {
     ...THEME.typography.caption,
-    color: THEME.colors.gradient.pink,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 15,
-    lineHeight: 20,
-    minWidth: 18,
-    textAlign: 'center',
+    fontSize: 13,
+    lineHeight: 18,
   },
-  streakDaysLabel: {
-    ...THEME.typography.meta,
-    color: THEME.colors.text.secondary,
-    marginLeft: 2,
-  },
-  streakBadgeMuted: {
+  returnBadgeMuted: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: THEME.colors.fill[200],
@@ -152,19 +142,16 @@ const styles = StyleSheet.create({
     gap: 4,
     borderWidth: 1,
     borderColor: THEME.colors.stroke[100],
+    flexShrink: 1,
+    maxWidth: '62%',
   },
-  streakTextMuted: {
+  returnTextMuted: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
     fontSize: 12,
+    lineHeight: 16,
   },
-  streakTextMutedBold: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-    fontSize: 13,
-  },
-  streakHint: {
+  consistencyHint: {
     ...THEME.typography.small,
     color: THEME.colors.accent.purple,
     lineHeight: 18,

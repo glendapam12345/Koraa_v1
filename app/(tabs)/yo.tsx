@@ -31,7 +31,7 @@ import { useYoProfile } from '@/hooks/useYoProfile';
 import { YoEditProfileModal } from '@/components/yo/YoEditProfileModal';
 import { YoMenuRow } from '@/components/yo/YoMenuRow';
 import { YoStreakHero } from '@/components/yo/YoStreakHero';
-import { useStreak } from '@/hooks/today/useStreak';
+import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
 import { subscribeCheckInRefresh } from '@/lib/checkInRefresh';
 
 export default function ProfileScreen() {
@@ -40,7 +40,7 @@ export default function ProfileScreen() {
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
-  const { currentStreak, loadStreak } = useStreak(user?.id);
+  const { hasCheckInToday, refresh: refreshCheckInToday } = useHasCheckInToday(user?.id);
 
   const profileState = useYoProfile({
     userId: user?.id,
@@ -79,22 +79,22 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     void loadProfile();
-    void loadStreak();
-  }, [loadProfile, loadStreak]);
+    void refreshCheckInToday();
+  }, [loadProfile, refreshCheckInToday]);
 
   useFocusEffect(
     useCallback(() => {
       void loadProfile();
-      void loadStreak();
-    }, [loadProfile, loadStreak]),
+      void refreshCheckInToday();
+    }, [loadProfile, refreshCheckInToday]),
   );
 
   useEffect(() => {
     return subscribeCheckInRefresh(() => {
       void loadProfile();
-      void loadStreak();
+      void refreshCheckInToday();
     });
-  }, [loadProfile, loadStreak]);
+  }, [loadProfile, refreshCheckInToday]);
 
   const displayName = useMemo(
     () =>
@@ -127,7 +127,7 @@ export default function ProfileScreen() {
     setRefreshing(true);
     try {
       await loadProfile();
-      await loadStreak();
+      await refreshCheckInToday();
     } catch (error) {
       logger.error('Error al refrescar:', error);
     } finally {
@@ -193,7 +193,7 @@ export default function ProfileScreen() {
           </CalmCard>
         ) : null}
 
-        <YoStreakHero streak={currentStreak} />
+        <YoStreakHero checkedInToday={hasCheckInToday === true} />
 
         <CalmCard style={styles.menuCard}>
           <YoMenuRow

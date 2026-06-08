@@ -24,7 +24,6 @@ type HoyFocusPanelProps = {
   userId?: string;
   locale: AppLocale;
   displayName: string;
-  currentStreak: number;
   todayMood: string;
   emotionLabel: string;
   energyLevel: number;
@@ -54,7 +53,6 @@ export function HoyFocusPanel({
   userId,
   locale,
   displayName,
-  currentStreak,
   emotionLabel,
   energyLevel,
   time = '',
@@ -135,7 +133,7 @@ export function HoyFocusPanel({
 
   const coachLine = coach?.body ?? t('hoy.focusCoachFallback');
   const hasMoreOptions =
-    !allFocusDone || nonFocusPending > 0 || Boolean(onShowMoreForToday) || currentStreak > 0;
+    !allFocusDone || nonFocusPending > 0 || Boolean(onShowMoreForToday);
 
   return (
     <View style={styles.root}>
@@ -357,19 +355,6 @@ export function HoyFocusPanel({
                 </Text>
               ) : null}
 
-              {currentStreak > 0 ? (
-                <TouchableOpacity
-                  onPress={() => router.push('/(tabs)/parami')}
-                  activeOpacity={0.75}
-                  accessibilityRole="link"
-                  accessibilityLabel={t('hoy.focusStreakTiny', { count: currentStreak })}
-                  style={styles.moreLink}
-                >
-                  <Text style={styles.moreLinkText}>
-                    {t('hoy.focusStreakTiny', { count: currentStreak })}
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
             </View>
           ) : null}
         </View>
