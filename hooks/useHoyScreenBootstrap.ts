@@ -21,7 +21,6 @@ type UseHoyScreenBootstrapOptions = {
   loadTasks: () => void | Promise<void>;
   loadTodayCheckIn: () => void | Promise<void>;
   loadStreak: () => void | Promise<void>;
-  loadEmotionalMemory: () => void | Promise<void>;
   clearToggleTimers: () => void;
   confettiTimeoutRef: RefObject<ReturnType<typeof setTimeout> | null>;
   backgroundLoadTimeoutRef: RefObject<ReturnType<typeof setTimeout> | null>;
@@ -38,7 +37,6 @@ export function useHoyScreenBootstrap({
   loadTasks,
   loadTodayCheckIn,
   loadStreak,
-  loadEmotionalMemory,
   clearToggleTimers,
   confettiTimeoutRef,
   backgroundLoadTimeoutRef,
@@ -87,7 +85,6 @@ export function useHoyScreenBootstrap({
     const unsub = subscribeCheckInCelebration((p) => {
       void loadStreak();
       void loadTodayCheckIn();
-      void loadEmotionalMemory();
       if (p.milestone) {
         setShowConfetti(true);
         showToast(t('hoyPlanFallback.streakToast'), 'success');
@@ -108,15 +105,13 @@ export function useHoyScreenBootstrap({
       }
     });
     return unsub;
-  }, [loadStreak, loadTodayCheckIn, loadEmotionalMemory, showToast, t, setShowConfetti, confettiTimeoutRef]);
+  }, [loadStreak, loadTodayCheckIn, showToast, t, setShowConfetti, confettiTimeoutRef]);
 
   useEffect(() => {
     void loadTasks();
     void loadTodayCheckIn();
     void loadStreak();
     void loadProfileName();
-    void loadEmotionalMemory();
-
     void (async () => {
       try {
         const { syncAll } = await import('@/lib/offlineStorage');
@@ -154,7 +149,6 @@ export function useHoyScreenBootstrap({
     loadTodayCheckIn,
     loadStreak,
     loadProfileName,
-    loadEmotionalMemory,
     clearToggleTimers,
     confettiTimeoutRef,
     backgroundLoadTimeoutRef,
@@ -169,7 +163,6 @@ export function useHoyScreenBootstrap({
         loadTodayCheckIn(),
         loadStreak(),
         loadProfileName(),
-        loadEmotionalMemory(),
       ]);
     } catch (error) {
       logger.error('Error al refrescar:', error);
@@ -182,7 +175,6 @@ export function useHoyScreenBootstrap({
     loadTodayCheckIn,
     loadStreak,
     loadProfileName,
-    loadEmotionalMemory,
     showToast,
     t,
   ]);

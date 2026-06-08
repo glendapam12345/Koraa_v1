@@ -16,10 +16,8 @@ import { useTaskActions } from '@/hooks/useTaskActions';
 import { useProgress } from '@/hooks/useProgress';
 import { normalizeCategoryKey } from '@/lib/i18n/categoryLabels';
 import { getCatalog } from '@/lib/i18n';
-import { HoyWelcomeHeader } from '@/components/hoy/HoyWelcomeHeader';
 import { HoyLiteBanner } from '@/components/hoy/HoyLiteBanner';
 import { HoyInicioView } from '@/components/hoy/HoyInicioView';
-import { HoyQuickActions } from '@/components/hoy/HoyQuickActions';
 import { HoyTasksSection } from '@/components/hoy/HoyTasksSection';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { Task } from '@/components/tasks/TaskCard';
@@ -30,13 +28,11 @@ import { HoyScreenOverlays } from '@/components/hoy/HoyScreenOverlays';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { useHoyScreenLayout } from '@/hooks/useHoyScreenLayout';
 import { useStreak } from '@/hooks/today/useStreak';
-import { useHoyEmotionalMemory } from '@/hooks/useHoyEmotionalMemory';
 import { getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
 import { isHoyAfternoonNudgeWindow } from '@/lib/hoyDayFlowNudge';
 import { getTodayPriorityStats, isPriorityCompletedToday } from '@/lib/priorityProgress';
 import { useHoyDeleteTask, useHoyAllCompleteConfetti } from '@/hooks/useHoyTaskActions';
 import { useHoyPrioritization } from '@/hooks/useHoyPrioritization';
-import { useHoyEmotionalContent } from '@/hooks/useHoyEmotionalContent';
 import { useHoyTaskExpansion } from '@/hooks/useHoyTaskExpansion';
 import { useHoyProjectsMap } from '@/hooks/useHoyProjectsMap';
 import { useHoyScreenBootstrap } from '@/hooks/useHoyScreenBootstrap';
@@ -59,7 +55,6 @@ export default function TodayScreen() {
     recheckSource?: string;
   }>();
   const [dismissedCelebration, setDismissedCelebration] = useState(false);
-  const [heroDetailsExpanded, setHeroDetailsExpanded] = useState(false);
   const [showRedistribute, setShowRedistribute] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -94,12 +89,6 @@ export default function TodayScreen() {
   const {
     expandedTasks,
     expandedDetailsTasks,
-    expandedSections,
-    setExpandedSections,
-    expandedProjectStepsTasks,
-    setExpandedProjectStepsTasks,
-    looseTasksExpanded,
-    onToggleLooseTasksExpanded,
     menuOpen,
     closeMenu,
     toggleMenu,
@@ -132,20 +121,12 @@ export default function TodayScreen() {
   });
 
   const { loadStreak } = useStreak(user?.id);
-  const { emotionalMemoryInsights, loadEmotionalMemory } = useHoyEmotionalMemory(user?.id);
   const {
     hoyLiteLayout,
-    hoyLiteActive,
     hoyPreFlowActive,
-    hoySetupMode,
-    hoyFocusFirst,
-    hoyCompactFocus,
     hoyRestOfDayExpanded,
     showSecondaryModules,
-    showSecondaryModulesEffective,
     showDayChangedCard,
-    taskFilter,
-    setTaskFilter,
     setShowSecondaryModules,
     handleOptOutHoyLite,
     handleDismissDayChangedCard,
@@ -190,11 +171,6 @@ export default function TodayScreen() {
       return !date || date === today;
     });
   }, [incompleteTasks]);
-
-  const displayedIncompleteTasks = useMemo(
-    () => (taskFilter === 'todas' ? incompleteTasks : incompleteTasksForToday),
-    [taskFilter, incompleteTasks, incompleteTasksForToday],
-  );
 
   const todayPriorityStats = useMemo(() => getTodayPriorityStats(tasks), [tasks]);
 
@@ -285,7 +261,7 @@ export default function TodayScreen() {
     onTaskCompleted: handleTaskCompleted,
   });
 
-  const { refreshing, handleRefresh, displayName, getGreeting } = useHoyScreenBootstrap({
+  const { refreshing, handleRefresh, displayName } = useHoyScreenBootstrap({
     user,
     t,
     showToast,
@@ -294,7 +270,6 @@ export default function TodayScreen() {
     loadTasks,
     loadTodayCheckIn,
     loadStreak,
-    loadEmotionalMemory,
     clearToggleTimers,
     confettiTimeoutRef,
     backgroundLoadTimeoutRef,
@@ -302,7 +277,7 @@ export default function TodayScreen() {
     setShowQuickOnboarding,
   });
 
-  const { explanation, focusSummaryLine, getTaskPriorityInsightForList } = useHoyPrioritization({
+  const { explanation } = useHoyPrioritization({
     tasks,
     incompleteTasks,
     todayMood,
@@ -314,27 +289,9 @@ export default function TodayScreen() {
     t,
   });
 
-  const {
-    emotionalClosure,
-    emotionalToneLine,
-    selectedEmotionalMemoryInsight,
-    emotionalCardsAnim,
-  } = useHoyEmotionalContent({
-    todayMood,
-    energyLevel,
-    tasks,
-    emotionalMemoryInsights,
-    t,
-  });
-
   const getCategoryColor = useCallback((category: string) => {
     const key = normalizeCategoryKey(category) ?? category.trim().toLowerCase();
     return THEME.colors.category[key as keyof typeof THEME.colors.category] ?? THEME.colors.text.secondary;
-  }, []);
-
-  const getEmotionColor = useCallback((emotion: string) => {
-    const key = emotion.toLowerCase();
-    return THEME.colors.emotionTint[key as keyof typeof THEME.colors.emotionTint] ?? THEME.colors.emotionTint.default;
   }, []);
 
   const handleToggleTask = async (taskId: string, isSubtask: boolean = false, parentTaskId?: string) => {
@@ -380,40 +337,18 @@ export default function TodayScreen() {
           />
         ) : null}
 
-        {!loading && !hoyPreFlowActive && !hoyFocusFirst ? (
-          <HoyWelcomeHeader
-            greeting={getGreeting}
-            showUserActions={Boolean(user)}
-            checkedInToday={Boolean(todayMood)}
-          />
-        ) : null}
-
-        {!loading && !hoyPreFlowActive ? (
+        {!loading && todayMood ? (
           <HoyTasksSection
             todayMood={todayMood}
             todayEmotionLabel={todayEmotionLabel}
             energyLevel={energyLevel}
             time={time}
             focusLevel={focusLevel}
-            focusSummaryLine={focusSummaryLine}
             todayPriorityStats={todayPriorityStats}
-            getEmotionColor={getEmotionColor}
             hoyLiteLayout={hoyLiteLayout}
-            showSecondaryModulesEffective={showSecondaryModulesEffective}
-            heroDetailsExpanded={heroDetailsExpanded}
-            onToggleHeroDetails={() => setHeroDetailsExpanded((e) => !e)}
-            explanation={explanation}
-            emotionalClosure={emotionalClosure}
-            emotionalToneLine={emotionalToneLine}
-            emotionalCardsAnim={emotionalCardsAnim}
-            selectedEmotionalMemoryInsight={selectedEmotionalMemoryInsight}
-            taskFilter={taskFilter}
-            onTaskFilterChange={setTaskFilter}
             user={user}
-            onShowRedistribute={() => setShowRedistribute(true)}
             tasks={tasks}
-            incompleteTasks={incompleteTasks}
-            displayedIncompleteTasks={displayedIncompleteTasks}
+            displayedIncompleteTasks={incompleteTasksForToday}
             incompleteTasksForToday={incompleteTasksForToday}
             projectsMap={projectsMap}
             getCategoryColor={getCategoryColor}
@@ -421,28 +356,18 @@ export default function TodayScreen() {
             expandedDetailsTasks={expandedDetailsTasks}
             menuOpen={menuOpen}
             onMenuPress={toggleMenu}
-            expandedSections={expandedSections}
-            onExpandedSectionsChange={setExpandedSections}
-            looseTasksExpanded={looseTasksExpanded}
-            onToggleLooseTasksExpanded={onToggleLooseTasksExpanded}
-            expandedProjectStepsTasks={expandedProjectStepsTasks}
-            onExpandedProjectStepsChange={setExpandedProjectStepsTasks}
             handleToggleTask={handleToggleTask}
             toggleTaskExpansion={toggleTaskExpansion}
             toggleDetailsExpansion={toggleDetailsExpansion}
             handleEditTask={handleEditTask}
             handleDeleteTask={handleDeleteTask}
             toggleTask={toggleTask}
-            getTaskPriorityInsightForList={getTaskPriorityInsightForList}
-            compactFocusLayout={hoyCompactFocus}
             restOfDayExpanded={hoyRestOfDayExpanded}
             onCollapseRestOfDay={() => setShowSecondaryModules(false)}
             displayName={displayName}
             coachSuggestion={explanation.suggestion}
             onOpenCalendar={() => router.push('/(tabs)/semana')}
-            onShowMoreForToday={
-              hoyFocusFirst && !showSecondaryModules ? handleShowMoreForHoy : undefined
-            }
+            onShowMoreForToday={!showSecondaryModules ? handleShowMoreForHoy : undefined}
             onDeleteTask={handleDeleteTask}
             onChangeEmotion={openQuickRecheck}
             showDayChangedCard={showDayChangedCard}
@@ -455,18 +380,9 @@ export default function TodayScreen() {
 
         {hoyLiteLayout ? <HoyLiteBanner onShowAll={() => void handleOptOutHoyLite()} /> : null}
 
-        {!loading && !hoySetupMode && !hoyFocusFirst ? (
-          <HoyQuickActions
-            showAddTasksPill={!todayMood || showSecondaryModules}
-            showSecondaryToggle={Boolean(todayMood) || !hoyLiteActive}
-            showSecondaryModules={showSecondaryModules}
-            onToggleSecondaryModules={() => setShowSecondaryModules((prev) => !prev)}
-          />
-        ) : null}
-
         {!loading &&
         todayMood &&
-        displayedIncompleteTasks.length === 0 &&
+        incompleteTasksForToday.length === 0 &&
         tasks.length > 0 &&
         !dismissedCelebration ? (
           <Suspense fallback={null}>

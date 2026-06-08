@@ -35,14 +35,6 @@ export function useHoyScreenLayout({
   const [hoyLiteLayout, setHoyLiteLayout] = useState<boolean | null>(null);
   const [showSecondaryModules, setShowSecondaryModules] = useState(false);
   const [showDayChangedCard, setShowDayChangedCard] = useState(false);
-  const [taskFilter, setTaskFilter] = useState<'hoy' | 'todas'>('hoy');
-
-  useEffect(() => {
-    if (hoyLiteLayout) {
-      setTaskFilter('hoy');
-    }
-  }, [hoyLiteLayout]);
-
   const handleOptOutHoyLite = useCallback(async () => {
     if (!userId) return;
     await optOutHoyLiteLayout(userId);
@@ -119,12 +111,7 @@ export function useHoyScreenLayout({
   }, [userId]);
 
   const hoyPreFlowActive = !loading && !todayMood;
-  const hoyLiteActive = hoyLiteLayout === true;
-  const hoySetupMode = hoyPreFlowActive || hoyLiteActive;
-  const hoyFocusFirst = Boolean(todayMood) && !hoyPreFlowActive;
-  const hoyCompactFocus = hoyFocusFirst;
-  const hoyRestOfDayExpanded = hoyFocusFirst && showSecondaryModules;
-  const showSecondaryModulesEffective = showSecondaryModules && !hoySetupMode;
+  const hoyRestOfDayExpanded = Boolean(todayMood) && showSecondaryModules;
 
   const handleShowMoreForHoy = useCallback(() => {
     setShowSecondaryModules(true);
@@ -144,17 +131,10 @@ export function useHoyScreenLayout({
 
   return {
     hoyLiteLayout,
-    hoyLiteActive,
     hoyPreFlowActive,
-    hoySetupMode,
-    hoyFocusFirst,
-    hoyCompactFocus,
     hoyRestOfDayExpanded,
     showSecondaryModules,
-    showSecondaryModulesEffective,
     showDayChangedCard,
-    taskFilter,
-    setTaskFilter,
     setShowSecondaryModules,
     handleOptOutHoyLite,
     handleDismissDayChangedCard,
