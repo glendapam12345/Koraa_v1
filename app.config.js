@@ -77,6 +77,7 @@ module.exports = {
           'Koraa usa tu calendario para agregar tareas con fecha como eventos.',
         NSCalendarsWriteOnlyAccessUsageDescription:
           'Koraa usa tu calendario para agregar tareas con fecha como eventos.',
+        LSApplicationQueriesSchemes: ['spotify', 'music'],
       },
     },
     android: {

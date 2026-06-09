@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -12,7 +12,6 @@ type HoyMoodHeroCardProps = {
   firstFocusTaskName?: string;
   coachLine: string;
   allFocusDone: boolean;
-  onPressFeel?: () => void;
 };
 
 export function HoyMoodHeroCard({
@@ -24,7 +23,6 @@ export function HoyMoodHeroCard({
   firstFocusTaskName,
   coachLine,
   allFocusDone,
-  onPressFeel,
 }: HoyMoodHeroCardProps) {
   const { t } = useI18n();
 
@@ -57,10 +55,7 @@ export function HoyMoodHeroCard({
         </View>
       </View>
       <Text style={styles.koraaLine}>{koraaLine}</Text>
-      <Text style={styles.coach}>{stepLine}</Text>
-      {onPressFeel ? (
-        <Text style={styles.tapHint}>{t('hoy.moodHeroTapHint')}</Text>
-      ) : null}
+      {stepLine ? <Text style={styles.coach}>{stepLine}</Text> : null}
     </>
   );
 
@@ -71,19 +66,7 @@ export function HoyMoodHeroCard({
       end={{ x: 1, y: 1 }}
       style={styles.card}
     >
-      {onPressFeel ? (
-        <TouchableOpacity
-          onPress={onPressFeel}
-          activeOpacity={0.9}
-          accessibilityRole="button"
-          accessibilityLabel={t('hoy.focusLinkFeel')}
-          accessibilityHint={t('hoy.moodHeroTapHint')}
-        >
-          {content}
-        </TouchableOpacity>
-      ) : (
-        content
-      )}
+      {content}
     </LinearGradient>
   );
 }
@@ -142,12 +125,5 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: THEME.colors.onGradientMuted,
     marginTop: THEME.spacing.xs,
-  },
-  tapHint: {
-    ...THEME.typography.caption,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
-    marginTop: THEME.spacing.sm,
-    textDecorationLine: 'underline',
   },
 });

@@ -30,7 +30,7 @@
     "verify:local": "npm run check:metro && npm run check:legacy && npm run check:supabase && npm run check:supabase:schema && npm run check:supabase:migrations && npm run check:calendar && npm run test:unit",
     "verify:all": "npx expo-doctor && npm run typecheck && npm run lint && npm run test",
     "supabase:email-otp-templates": "node scripts/update-supabase-otp-email-templates.mjs",
-    "deploy:hoy-coach": "supabase functions deploy hoy-coach --project-ref oucczxqlxsqoqvetmedm",
+    "deploy:hoy-coach": "npx supabase functions deploy hoy-coach --project-ref oucczxqlxsqoqvetmedm",
     "supabase:email_otp_templates": "node scripts/update-supabase-otp-email-templates.mjs",
     "test": "jest --config jest.config.js",
     "test:watch": "jest --watch",
@@ -68,6 +68,7 @@
     "expo-system-ui": "~6.0.7",
     "expo-updates": "~29.0.18",
     "expo-web-browser": "~15.0.11",
+    "image-size": "^1.2.1",
     "lucide-react-native": "^0.544.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
@@ -104,6 +105,6 @@
     "localtunnel": "^2.0.2",
     "react-test-renderer": "19.1.0",
     "ts-jest": "^29.4.6",
-    "typescript": "~5.9.2"
+    "typescript": "^5.9.3"
   }
 }

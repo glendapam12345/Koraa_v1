@@ -4,6 +4,7 @@ import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { getEmotionEmoji } from '@/lib/emotionalInsights';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
+import { openPaywall } from '@/lib/paywallNavigation';
 
 import type { TranslationKey } from '@/lib/i18n';
 
@@ -19,6 +20,8 @@ type YoCheckInHistoryProps = {
   isSubscribed: boolean;
   freeVisibleCount?: number;
   titleKey?: TranslationKey;
+  /** Ruta a la que volver tras cerrar paywall (p. ej. Para mí). */
+  paywallReturnTo?: string;
 };
 
 export function YoCheckInHistory({
@@ -26,6 +29,7 @@ export function YoCheckInHistory({
   isSubscribed,
   freeVisibleCount = 7,
   titleKey = 'yo.historyTitle',
+  paywallReturnTo,
 }: YoCheckInHistoryProps) {
   const { t } = useI18n();
   const visible = isSubscribed ? entries : entries.slice(0, freeVisibleCount);
@@ -73,7 +77,7 @@ export function YoCheckInHistory({
       ))}
       {hasMore ? (
         <TouchableOpacity
-          onPress={() => router.push('/paywall')}
+          onPress={() => openPaywall(router, paywallReturnTo)}
           activeOpacity={0.85}
           style={styles.moreBtn}
           accessibilityRole="button"

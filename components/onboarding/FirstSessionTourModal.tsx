@@ -6,7 +6,7 @@ import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { markFirstSessionTourSeen } from '@/lib/firstSessionTour';
 import { markFirstFlowLandingComplete } from '@/lib/firstSessionFlow';
-import { Edit3, Heart, Home, Sparkles } from 'lucide-react-native';
+import { Home, Calendar, Sparkles, User } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
 
 type Props = {
@@ -22,10 +22,10 @@ export function FirstSessionTourModal({ visible, userId, onFinished }: Props) {
 
   const steps = useMemo(
     () => [
-      { tabLabel: t('tabs.tasks'), title: t('tour.step1Title'), body: t('tour.step1Body'), Icon: Edit3 },
-      { tabLabel: t('tabs.today'), title: t('tour.step2Title'), body: t('tour.step2Body'), Icon: Heart },
-      { tabLabel: t('tabs.today'), title: t('tour.step3Title'), body: t('tour.step3Body'), Icon: Home },
-      { tabLabel: t('tour.step4TabLabel'), title: t('tour.step4Title'), body: t('tour.step4Body'), Icon: Sparkles },
+      { tabLabel: t('tabs.today'), title: t('tour.step1Title'), body: t('tour.step1Body'), Icon: Home },
+      { tabLabel: t('tabs.week'), title: t('tour.step2Title'), body: t('tour.step2Body'), Icon: Calendar },
+      { tabLabel: t('tabs.paraMi'), title: t('tour.step3Title'), body: t('tour.step3Body'), Icon: Sparkles },
+      { tabLabel: t('tabs.profile'), title: t('tour.step4Title'), body: t('tour.step4Body'), Icon: User },
     ],
     [t],
   );
@@ -38,7 +38,7 @@ export function FirstSessionTourModal({ visible, userId, onFinished }: Props) {
     await markFirstSessionTourSeen(userId);
     await markFirstFlowLandingComplete(userId);
     onFinished();
-    router.replace('/(tabs)/vaciar');
+    router.replace('/(tabs)');
   }, [userId, onFinished]);
 
   const handleNext = () => {

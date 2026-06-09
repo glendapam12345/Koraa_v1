@@ -18,7 +18,7 @@ const EMOTION_EMOJIS: Record<(typeof EMOTION_IDS)[number], string> = {
   ansiosa: '😰',
   motivada: '✨',
   abrumada: '🥺',
-  enfocada: '🎯',
+  enfocada: '🌿',
 };
 
 const TIME_OPTIONS: { id: string; labelKey: TranslationKey }[] = [

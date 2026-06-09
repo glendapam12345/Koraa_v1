@@ -1,14 +1,29 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { X, Pause, Play } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { trackFocusSession } from '@/lib/productAnalytics';
+import type { TranslationKey } from '@/lib/i18n';
 
-const DEFAULT_SECONDS = 25 * 60;
+const DURATION_OPTIONS = [5, 10, 25] as const;
+type DurationMinutes = (typeof DURATION_OPTIONS)[number];
+
+const DURATION_LABEL_KEYS: Record<DurationMinutes, TranslationKey> = {
+  5: 'focus.duration5',
+  10: 'focus.duration10',
+  25: 'focus.duration25',
+};
+
+function parseDurationMinutes(raw: string | string[] | undefined): DurationMinutes {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  const n = Number(value);
+  if (n === 10 || n === 25) return n;
+  return 5;
+}
 
 function formatTime(totalSec: number): string {
   const m = Math.floor(totalSec / 60);
@@ -19,7 +34,11 @@ function formatTime(totalSec: number): string {
 export default function FocusSessionScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
-  const [remaining, setRemaining] = useState(DEFAULT_SECONDS);
+  const { minutes: minutesParam } = useLocalSearchParams<{ minutes?: string }>();
+  const initialMinutes = parseDurationMinutes(minutesParam);
+  const [durationMinutes, setDurationMinutes] = useState<DurationMinutes>(initialMinutes);
+  const totalSeconds = durationMinutes * 60;
+  const [remaining, setRemaining] = useState(totalSeconds);
   const [running, setRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasStartedRef = useRef(false);
@@ -30,11 +49,18 @@ export default function FocusSessionScreen() {
   }, []);
 
   useEffect(() => {
+    setRemaining(durationMinutes * 60);
+    setRunning(false);
+    hasStartedRef.current = false;
+    hasCompletedRef.current = false;
+  }, [durationMinutes]);
+
+  useEffect(() => {
     if (remaining === 0 && hasStartedRef.current && !hasCompletedRef.current) {
       hasCompletedRef.current = true;
-      trackFocusSession('completed');
+      trackFocusSession('completed', { duration_minutes: durationMinutes });
     }
-  }, [remaining]);
+  }, [remaining, durationMinutes]);
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current) {
@@ -61,18 +87,21 @@ export default function FocusSessionScreen() {
     return clearTimer;
   }, [running, clearTimer]);
 
-  const progress = 1 - remaining / DEFAULT_SECONDS;
+  const progress = useMemo(() => 1 - remaining / totalSeconds, [remaining, totalSeconds]);
 
   const handleClose = useCallback(() => {
     if (remaining > 0 && hasStartedRef.current && !hasCompletedRef.current) {
-      trackFocusSession('abandoned', { remaining_seconds: remaining });
+      trackFocusSession('abandoned', {
+        remaining_seconds: remaining,
+        duration_minutes: durationMinutes,
+      });
     }
     router.back();
-  }, [remaining]);
+  }, [remaining, durationMinutes]);
 
   const handleToggleRunning = useCallback(() => {
     if (remaining === 0) {
-      setRemaining(DEFAULT_SECONDS);
+      setRemaining(totalSeconds);
       setRunning(false);
       hasStartedRef.current = false;
       hasCompletedRef.current = false;
@@ -83,13 +112,27 @@ export default function FocusSessionScreen() {
       const next = !wasRunning;
       if (next) {
         hasStartedRef.current = true;
-        trackFocusSession('started', { remaining_seconds: remaining });
+        trackFocusSession('started', {
+          remaining_seconds: remaining,
+          duration_minutes: durationMinutes,
+        });
       } else {
-        trackFocusSession('paused', { remaining_seconds: remaining });
+        trackFocusSession('paused', {
+          remaining_seconds: remaining,
+          duration_minutes: durationMinutes,
+        });
       }
       return next;
     });
-  }, [remaining]);
+  }, [remaining, totalSeconds, durationMinutes]);
+
+  const selectDuration = useCallback(
+    (minutes: DurationMinutes) => {
+      if (running) return;
+      setDurationMinutes(minutes);
+    },
+    [running],
+  );
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + THEME.spacing.sm }]}>
@@ -104,6 +147,29 @@ export default function FocusSessionScreen() {
 
       <Text style={styles.screenTitle}>{t('focus.sessionTitle')}</Text>
       <Text style={styles.mode}>{t('focus.sessionMode')}</Text>
+
+      <Text style={styles.durationLabel}>{t('focus.durationLabel')}</Text>
+      <View style={styles.durationRow}>
+        {DURATION_OPTIONS.map((minutes) => {
+          const selected = durationMinutes === minutes;
+          return (
+            <TouchableOpacity
+              key={minutes}
+              style={[styles.durationChip, selected && styles.durationChipSelected]}
+              onPress={() => selectDuration(minutes)}
+              disabled={running}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityState={{ selected, disabled: running }}
+              accessibilityLabel={t(DURATION_LABEL_KEYS[minutes])}
+            >
+              <Text style={[styles.durationChipText, selected && styles.durationChipTextSelected]}>
+                {t(DURATION_LABEL_KEYS[minutes])}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
       <View style={styles.ringOuter}>
         <LinearGradient
@@ -169,7 +235,46 @@ const styles = StyleSheet.create({
     ...THEME.typography.h2,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
-    marginBottom: THEME.spacing.xl,
+    marginBottom: THEME.spacing.md,
+    textAlign: 'center',
+  },
+  durationLabel: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: THEME.spacing.sm,
+    textAlign: 'center',
+  },
+  durationRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
+    marginBottom: THEME.spacing.lg,
+    alignSelf: 'stretch',
+  },
+  durationChip: {
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+  },
+  durationChipSelected: {
+    backgroundColor: THEME.colors.calm.lavender,
+    borderColor: THEME.colors.calm.lavenderDeep,
+  },
+  durationChipText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
+    textAlign: 'center',
+  },
+  durationChipTextSelected: {
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.bold,
   },
   ringOuter: {
     width: 260,

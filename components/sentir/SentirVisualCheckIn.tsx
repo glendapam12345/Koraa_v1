@@ -94,7 +94,7 @@ export function SentirVisualCheckIn({
   const canSubmit = Boolean(emotion && energy >= 1 && energy <= 5 && user);
   const embeddedSaveLabel = saveLabelKey
     ? t(saveLabelKey as never)
-    : t('sentir.visualCheckIn.generateFocos');
+    : t('sentir.visualCheckIn.seeWhatMatters');
 
   useEffect(() => {
     onDraftChange?.(Boolean(emotion) || energy !== 3);
@@ -332,13 +332,13 @@ export function SentirVisualCheckIn({
         ) : (
           <CalmPrimaryButton
             label={
-              embedded ? embeddedSaveLabel : t('sentir.visualCheckIn.generateFocos')
+              embedded ? embeddedSaveLabel : t('sentir.visualCheckIn.seeWhatMatters')
             }
             large={embedded}
             onPress={() => void handleSave()}
             disabled={!canSubmit}
             accessibilityLabel={
-              embedded ? embeddedSaveLabel : t('sentir.visualCheckIn.generateFocos')
+              embedded ? embeddedSaveLabel : t('sentir.visualCheckIn.seeWhatMatters')
             }
           />
         )}

@@ -13,18 +13,20 @@ import { useAuth } from '@/contexts/AuthContext';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   Settings,
-  CreditCard as Edit,
+  Edit,
   Folder,
   RotateCcw,
-  Sparkles,
+  Crown,
   ChevronRight,
 } from 'lucide-react-native';
 import { logger } from '@/lib/logger';
+import { openPaywall } from '@/lib/paywallNavigation';
 import { getDisplayName } from '@/lib/displayName';
 import * as Haptics from 'expo-haptics';
 import { useI18n } from '@/contexts/I18nContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
 import Constants from 'expo-constants';
 import { useYoProfile } from '@/hooks/useYoProfile';
@@ -154,6 +156,8 @@ export default function ProfileScreen() {
           />
         }
       >
+        <ScreenHeader title={t('tabs.profile')} subtitle={t('yo.spaceSubtitle')} />
+
         <CalmCard>
           <TouchableOpacity
             style={styles.header}
@@ -197,13 +201,6 @@ export default function ProfileScreen() {
 
         <CalmCard style={styles.menuCard}>
           <YoMenuRow
-            icon={<Sparkles size={22} color={THEME.colors.calm.lavenderDeep} />}
-            title={t('tabs.paraMi')}
-            subtitle={t('parami.subtitle')}
-            onPress={() => router.push('/(tabs)/parami')}
-            accessibilityLabel={t('tabs.paraMi')}
-          />
-          <YoMenuRow
             icon={<Edit size={22} color={THEME.colors.calm.lavenderDeep} />}
             title={t('yo.editProfile')}
             onPress={() => setShowEditProfile(true)}
@@ -220,10 +217,19 @@ export default function ProfileScreen() {
             accessibilityLabel={t('yoExtra.manageProjectsA11y')}
             accessibilityHint={t('yoExtra.manageProjectsHint')}
           />
+          <YoMenuRow
+            icon={<Crown size={22} color={THEME.colors.calm.lavenderDeep} />}
+            title={t('yo.subscription')}
+            subtitle={t('yo.subscriptionSub')}
+            onPress={() => openPaywall(router, '/(tabs)/yo')}
+            accessibilityLabel={t('yo.subscription')}
+            accessibilityHint={t('yoExtra.subscriptionHint')}
+          />
           <View style={styles.menuDivider} />
           <YoMenuRow
             icon={<Settings size={22} color={THEME.colors.calm.lavenderDeep} />}
             title={t('yo.settings')}
+            subtitle={t('yo.settingsSub')}
             onPress={() => router.push('/settings')}
             accessibilityLabel={t('yo.settings')}
             accessibilityHint={t('yoExtra.settingsHint')}

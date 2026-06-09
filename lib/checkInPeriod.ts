@@ -1,4 +1,4 @@
-import type { DayData } from '@/components/ProgressChart';
+import type { DayData } from '@/lib/checkInDayData';
 import type { ParaMiPeriodId } from '@/components/parami/ParaMiMusaHeader';
 
 export function periodDayCount(period: ParaMiPeriodId): number {

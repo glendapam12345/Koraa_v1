@@ -14,7 +14,7 @@ export function FocusSessionCard() {
       <View style={styles.row}>
         <View style={styles.timerRing}>
           <Timer size={28} color={THEME.colors.calm.lavenderDeep} />
-          <Text style={styles.timerText}>25</Text>
+          <Text style={styles.timerText}>5</Text>
         </View>
         <View style={styles.copy}>
           <Text style={styles.title}>{t('focus.sessionTitle')}</Text>
@@ -23,7 +23,7 @@ export function FocusSessionCard() {
       </View>
       <CalmPrimaryButton
         label={t('focus.sessionStart')}
-        onPress={() => router.push('/focus-session')}
+        onPress={() => router.push({ pathname: '/focus-session', params: { minutes: '5' } })}
         accessibilityLabel={t('focus.sessionCardA11y')}
         accessibilityHint={t('focus.sessionSub')}
       />

@@ -40,18 +40,6 @@ export async function resolvePostAuthGate(userId: string): Promise<PostAuthGateR
   }
 }
 
-/**
- * Devuelve la ruta tras login/sesión: welcome si el perfil no marcó onboarding, tabs si ya.
- * En error de lectura, fail-closed a welcome (usar resolvePostAuthGate en gates con retry).
- */
-export async function getPostAuthRoute(userId: string): Promise<PostAuthRoute> {
-  const result = await resolvePostAuthGate(userId);
-  if (result.status === 'error') {
-    return WELCOME_ROUTE;
-  }
-  return result.route;
-}
-
 export async function markOnboardingCompleted(userId: string): Promise<{ error: Error | null }> {
   try {
     const { error } = await supabase

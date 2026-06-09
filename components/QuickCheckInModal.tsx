@@ -14,7 +14,7 @@ const EMOTION_EMOJIS: Record<(typeof EMOTION_IDS)[number], string> = {
   ansiosa: '😰',
   motivada: '✨',
   abrumada: '🥺',
-  enfocada: '🎯',
+  enfocada: '🌿',
 };
 
 interface QuickCheckInModalProps {

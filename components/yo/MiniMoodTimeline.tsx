@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
-import type { DayData } from '@/components/ProgressChart';
+import type { DayData } from '@/lib/checkInDayData';
 import { getEmotionCalendarAccent } from '@/lib/emotionCalendarColors';
 
 type MiniMoodTimelineProps = {

@@ -1,4 +1,4 @@
-import type { DayData } from '@/components/ProgressChart';
+import type { DayData } from '@/lib/checkInDayData';
 import { getEmotionCalendarAccent } from '@/lib/emotionCalendarColors';
 
 export type EmotionMixItem = {

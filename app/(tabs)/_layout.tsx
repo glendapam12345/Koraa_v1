@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Tabs, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/constants/theme';
-import { Home, User, Calendar, Lightbulb, Sparkles } from 'lucide-react-native';
+import { Home, Calendar, Sparkles, User } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { resolvePostAuthGate } from '@/lib/onboardingGate';
 import { AppLoadingGate } from '@/components/AppLoadingGate';
@@ -95,11 +95,7 @@ export default function TabLayout() {
       const needsLanding = await shouldLandOnTasksFirst(userId);
       if (cancelled || !needsLanding) return;
 
-      const tourSeen = await hasSeenFirstSessionTour(userId);
       await markFirstFlowLandingComplete(userId);
-      if (cancelled || tourSeen) return;
-
-      router.replace('/(tabs)/vaciar');
     })();
     return () => {
       cancelled = true;
@@ -202,11 +198,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="tips"
           options={{
-            title: t('tabs.tips'),
-            tabBarAccessibilityLabel: t('tabs.a11yTipsOptional'),
-            tabBarIcon: ({ size, color }) => (
-              <Lightbulb size={size} color={color} />
-            ),
+            href: null,
           }}
         />
         <Tabs.Screen

@@ -16,14 +16,14 @@ const TIME_OPTIONS: { id: string; labelKey: TranslationKey }[] = [
 
 export default function TimeScreen() {
   const { t } = useI18n();
-  const { emotion, energy, from } = useLocalSearchParams<{ emotion: string; energy: string; from: string }>();
+  const { emotion, energy } = useLocalSearchParams<{ emotion: string; energy: string }>();
   const [selectedTime, setSelectedTime] = useState<string>('');
 
   const handleContinue = () => {
     if (selectedTime && emotion && energy) {
       router.push({
         pathname: '/onboarding/focus',
-        params: { emotion, energy, time: selectedTime, from: from || 'onboarding' },
+        params: { emotion, energy, time: selectedTime },
       });
     }
   };

@@ -1,24 +1,25 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Sparkles, CircleHelp, ChevronDown, ChevronUp, RefreshCw, Feather } from 'lucide-react-native';
+import { Sparkles, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
 import { THEME } from '@/constants/theme';
-import { FocusProgressBar } from '@/components/FocusProgressBar';
-import type { FocusProgressStats } from '@/components/FocusProgressBar';
+import type { FocusProgressStats } from '@/lib/focusProgressStats';
 import { HoyFocusTaskRow } from '@/components/hoy/HoyFocusTaskRow';
 import { HoyMoodHeroCard } from '@/components/hoy/HoyMoodHeroCard';
 import { HoyDayFlowSection } from '@/components/hoy/HoyDayFlowSection';
-import { HoyFocusScopeBanner } from '@/components/hoy/HoyFocusScopeBanner';
 import { KoraaLogicExplanation } from '@/components/hoy/KoraaLogicExplanation';
+import { HoySupportPanel } from '@/components/hoy/HoySupportPanel';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { useHoyCoachMessage } from '@/hooks/useHoyCoachMessage';
 import { getEmotionEmoji } from '@/lib/emotionEmoji';
-import { getFirstName } from '@/lib/displayName';
+import { isOverwhelmedState } from '@/lib/emotionalSafety';
 import { useI18n } from '@/contexts/I18nContext';
 import type { Task } from '@/components/tasks/TaskCard';
 import type { AppLocale } from '@/lib/i18n';
+
+const DEFAULT_MAX_STEPS = 2;
 
 type HoyFocusPanelProps = {
   userId?: string;
@@ -36,8 +37,8 @@ type HoyFocusPanelProps = {
   projectsMap: Record<string, { name: string; color?: string }>;
   onToggleTask: (taskId: string) => void;
   onOpenTask: (task: Task) => void;
-  onOpenCalendar: () => void;
-  onShowMoreForToday?: () => void;
+  restExpanded?: boolean;
+  onRestExpandedChange?: (open: boolean) => void;
   onDeleteTask?: (task: Task) => void;
   onChangeEmotion?: () => void;
   showDayChangedCard?: boolean;
@@ -45,8 +46,6 @@ type HoyFocusPanelProps = {
   onQuickRecheck?: () => void;
   onDismissDayChanged?: () => void;
   onLightenLoad?: () => void;
-  /** Día 2+: panel «Más opciones» abierto al entrar. */
-  initialMoreOpen?: boolean;
 };
 
 export function HoyFocusPanel({
@@ -65,8 +64,8 @@ export function HoyFocusPanel({
   projectsMap,
   onToggleTask,
   onOpenTask,
-  onOpenCalendar,
-  onShowMoreForToday,
+  restExpanded = false,
+  onRestExpandedChange,
   onDeleteTask,
   onChangeEmotion,
   showDayChangedCard = false,
@@ -74,27 +73,17 @@ export function HoyFocusPanel({
   onQuickRecheck,
   onDismissDayChanged,
   onLightenLoad,
-  initialMoreOpen = false,
 }: HoyFocusPanelProps) {
   const { t } = useI18n();
-  const [moreOpen, setMoreOpen] = useState(initialMoreOpen);
 
-  useEffect(() => {
-    if (initialMoreOpen) setMoreOpen(true);
-  }, [initialMoreOpen]);
+  const setRestExpanded = (open: boolean) => {
+    onRestExpandedChange?.(open);
+  };
 
-  const firstName = getFirstName(displayName);
   const emotionEmoji = getEmotionEmoji(todayMood);
   const nonFocusPending = Math.max(0, totalPending - focusTasks.length);
   const allFocusDone =
     priorityStats.total > 0 && priorityStats.done >= priorityStats.total;
-
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return t('hoy.greetingMorning');
-    if (hour < 18) return t('hoy.greetingAfternoon');
-    return t('hoy.greetingEvening');
-  }, [t]);
 
   const coachInput = {
     locale,
@@ -115,44 +104,41 @@ export function HoyFocusPanel({
     }
     openRecheckCheckIn('hoy_focus');
   };
-  const openFocusSession = () => router.push('/focus-session');
 
   const focusTaskNames = useMemo(
     () => focusTasks.filter((task) => !task.is_completed).map((task) => task.content.trim()).filter(Boolean),
     [focusTasks],
   );
   const firstFocusTaskName = focusTaskNames[0];
-  const activeFocusCount = focusTasks.filter((task) => !task.is_completed).length;
   const totalFocusCount = focusTasks.length;
+  const isOverwhelmed = isOverwhelmedState(todayMood, energyLevel);
+  const incompleteFocusTasks = focusTasks.filter((task) => !task.is_completed);
+  const maxVisibleSteps = isOverwhelmed ? 1 : DEFAULT_MAX_STEPS;
+  const hiddenInSection =
+    incompleteFocusTasks.length > maxVisibleSteps
+      ? incompleteFocusTasks.length - maxVisibleSteps
+      : 0;
+  const visibleFocusTasks = [
+    ...incompleteFocusTasks.slice(0, maxVisibleSteps),
+    ...focusTasks.filter((task) => task.is_completed),
+  ];
 
   const showDayFlowCard =
     (showDayChangedCard || showNothingDoneCard) &&
     Boolean(onQuickRecheck && onDismissDayChanged && onLightenLoad);
 
-  const showActionRow = Boolean(onQuickRecheck || onLightenLoad) && totalFocusCount + nonFocusPending > 0;
-
+  const showLightenInRest = Boolean(onLightenLoad) && (nonFocusPending > 0 || isOverwhelmed);
   const coachLine = coach?.body ?? t('hoy.focusCoachFallback');
-  const hasMoreOptions =
-    !allFocusDone || nonFocusPending > 0 || Boolean(onShowMoreForToday);
+
+  const hasRestContent =
+    hiddenInSection > 0 ||
+    showDayFlowCard ||
+    showLightenInRest ||
+    nonFocusPending > 0 ||
+    (focusTasks.length > 0 && Boolean(time && focusLevel));
 
   return (
     <View style={styles.root}>
-      <View style={styles.topRow}>
-        <Text style={styles.greeting}>
-          {t('hoy.focusGreeting', { greeting, name: firstName })}
-        </Text>
-        <TouchableOpacity
-          onPress={() => router.push('/help')}
-          style={styles.helpBtn}
-          activeOpacity={0.75}
-          accessibilityRole="button"
-          accessibilityLabel={t('hoyExtra.helpA11y')}
-          accessibilityHint={t('hoyExtra.helpHint')}
-        >
-          <CircleHelp size={THEME.sizes.iconStandard} color={THEME.colors.text.main} />
-        </TouchableOpacity>
-      </View>
-
       <HoyMoodHeroCard
         emotionEmoji={emotionEmoji}
         emotionLabel={emotionLabel}
@@ -162,44 +148,38 @@ export function HoyFocusPanel({
         firstFocusTaskName={firstFocusTaskName}
         coachLine={coachLine}
         allFocusDone={allFocusDone}
-        onPressFeel={openFeel}
       />
 
-      {showDayFlowCard ? (
-        <HoyDayFlowSection
-          showDayChangedCard={showDayChangedCard}
-          showNothingDoneCard={showNothingDoneCard}
-          onDismissDayChanged={onDismissDayChanged!}
-        />
-      ) : null}
+      <CalmPrimaryButton
+        label={t('hoy.heroUpdateCheckIn')}
+        onPress={openFeel}
+        variant="soft"
+        accessibilityLabel={t('hoy.heroUpdateCheckIn')}
+        accessibilityHint={t('hoy.focusReorganizeA11y')}
+      />
 
-      {!allFocusDone && priorityStats.total > 0 ? (
-        <FocusProgressBar stats={priorityStats} variant="prominent" />
-      ) : null}
+      <TouchableOpacity
+        onPress={() => router.push('/(tabs)/vaciar')}
+        activeOpacity={0.75}
+        accessibilityRole="link"
+        accessibilityLabel={t('hoy.captureTasksLink')}
+        style={styles.captureLink}
+      >
+        <Text style={styles.captureLinkText}>{t('hoy.captureTasksLink')}</Text>
+      </TouchableOpacity>
 
       <View style={styles.focusHeader}>
-        <Text style={styles.sectionTitle}>{t('hoy.focusTasksSection')}</Text>
+        <Text style={styles.sectionTitle}>
+          {focusTasks.length > 0 ? t('hoy.enoughForToday') : t('hoy.focusTasksSection')}
+        </Text>
         {focusTasks.length > 0 ? (
           <Text style={styles.sectionSub}>
-            {t('hoy.focusPanelSubtitle', {
-              count: activeFocusCount,
-              emotion: emotionLabel.toLowerCase(),
-            })}
+            {hiddenInSection > 0
+              ? t('hoy.oneSmallStep')
+              : t('hoy.focusListHint')}
           </Text>
         ) : null}
       </View>
-
-      {focusTasks.length > 0 && time && focusLevel ? (
-        <KoraaLogicExplanation
-          checkIn={{
-            energyLevel,
-            emotion: todayMood,
-            availableTime: time,
-            focusLevel,
-          }}
-          emotionLabel={emotionLabel}
-        />
-      ) : null}
 
       <CalmCard style={styles.focusCard}>
         {allFocusDone ? (
@@ -211,7 +191,7 @@ export function HoyFocusPanel({
         ) : focusTasks.length > 0 ? (
           <View style={styles.focusBlock}>
             <View style={styles.taskList}>
-              {focusTasks.map((task, index) => (
+              {visibleFocusTasks.map((task, index) => (
                 <HoyFocusTaskRow
                   key={task.id}
                   task={task}
@@ -225,7 +205,19 @@ export function HoyFocusPanel({
                 />
               ))}
             </View>
-            <Text style={styles.listHint}>{t('hoy.focusListHint')}</Text>
+            {hiddenInSection > 0 ? (
+              <TouchableOpacity
+                onPress={() => setRestExpanded(true)}
+                activeOpacity={0.85}
+                style={styles.moreStepsBtn}
+                accessibilityRole="button"
+                accessibilityLabel={t('hoy.seeMoreSteps', { count: hiddenInSection })}
+              >
+                <Text style={styles.moreStepsText}>
+                  {t('hoy.seeMoreSteps', { count: hiddenInSection })}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         ) : (
           <View style={styles.emptyBlock}>
@@ -240,119 +232,88 @@ export function HoyFocusPanel({
         )}
       </CalmCard>
 
-      {showActionRow ? (
-        <View style={styles.actionRow}>
-          {onQuickRecheck ? (
-            <TouchableOpacity
-              style={styles.actionPrimary}
-              onPress={onQuickRecheck}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel={t('hoy.focusReorganizeCta')}
-              accessibilityHint={t('hoy.focusReorganizeA11y')}
-            >
-              <RefreshCw size={18} color={THEME.colors.onGradient} />
-              <Text style={styles.actionPrimaryText}>{t('hoy.focusReorganizeCta')}</Text>
-            </TouchableOpacity>
-          ) : null}
-          {onLightenLoad && nonFocusPending > 0 ? (
-            <TouchableOpacity
-              style={styles.actionSecondary}
-              onPress={onLightenLoad}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel={t('hoy.focusLightenCta')}
-              accessibilityHint={t('hoy.focusLightenA11y')}
-            >
-              <Feather size={18} color={THEME.colors.calm.lavenderDeep} />
-              <Text style={styles.actionSecondaryText}>{t('hoy.focusLightenCta')}</Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
+      {todayMood && energyLevel > 0 ? (
+        <HoySupportPanel
+          userId={userId}
+          emotionKey={todayMood}
+          emotionLabel={emotionLabel}
+          energyLevel={energyLevel}
+        />
       ) : null}
 
-      {nonFocusPending > 0 ? (
-        <HoyFocusScopeBanner totalPending={totalPending} focusCount={totalFocusCount} />
-      ) : null}
-
-      {hasMoreOptions ? (
-        <View style={styles.moreWrap}>
+      {hasRestContent ? (
+        <View style={styles.restWrap}>
           <TouchableOpacity
-            onPress={() => setMoreOpen((o) => !o)}
+            onPress={() => setRestExpanded(!restExpanded)}
             activeOpacity={0.85}
-            style={styles.moreToggle}
+            style={styles.restToggle}
             accessibilityRole="button"
-            accessibilityState={{ expanded: moreOpen }}
-            accessibilityLabel={moreOpen ? t('hoy.focusMoreOptionsHide') : t('hoy.focusMoreOptions')}
+            accessibilityState={{ expanded: restExpanded }}
+            accessibilityLabel={restExpanded ? t('hoy.restOfTodayHide') : t('hoy.restOfTodayToggle')}
           >
-            <Text style={styles.moreToggleText}>
-              {moreOpen ? t('hoy.focusMoreOptionsHide') : t('hoy.focusMoreOptions')}
+            <Text style={styles.restToggleText}>
+              {restExpanded ? t('hoy.restOfTodayHide') : t('hoy.restOfTodayToggle')}
             </Text>
-            {moreOpen ? (
+            {restExpanded ? (
               <ChevronUp size={18} color={THEME.colors.calm.lavenderDeep} />
             ) : (
               <ChevronDown size={18} color={THEME.colors.calm.lavenderDeep} />
             )}
           </TouchableOpacity>
 
-          {moreOpen ? (
-            <View style={styles.morePanel}>
-              {!allFocusDone ? (
-                <CalmPrimaryButton
-                  label={t('hoy.focusStartSession')}
-                  onPress={openFocusSession}
-                  variant="soft"
+          {restExpanded ? (
+            <View style={styles.restPanel}>
+              {showDayFlowCard ? (
+                <HoyDayFlowSection
+                  showDayChangedCard={showDayChangedCard}
+                  showNothingDoneCard={showNothingDoneCard}
+                  onDismissDayChanged={onDismissDayChanged!}
+                  onQuickRecheck={onQuickRecheck}
+                  onLightenLoad={onLightenLoad}
                 />
               ) : null}
 
-              <TouchableOpacity
-                onPress={onOpenCalendar}
-                activeOpacity={0.75}
-                accessibilityRole="link"
-                accessibilityLabel={t('hoy.focusLinkCalendar')}
-                style={styles.moreLink}
-              >
-                <Text style={styles.moreLinkText}>{t('hoy.focusLinkCalendar')}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => router.push('/(tabs)/tips')}
-                activeOpacity={0.75}
-                accessibilityRole="link"
-                accessibilityLabel={t('hoy.focusLinkTips')}
-                style={styles.moreLink}
-              >
-                <Text style={styles.moreLinkText}>{t('hoy.focusLinkTips')}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => router.push('/settings')}
-                activeOpacity={0.75}
-                accessibilityRole="link"
-                accessibilityLabel={t('hoy.focusLinkReminders')}
-                style={styles.moreLink}
-              >
-                <Text style={styles.moreLinkText}>{t('hoy.focusLinkReminders')}</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.moreHint}>{t('hoy.focusDeviceCalendarHint')}</Text>
-
-              {onShowMoreForToday ? (
-                <TouchableOpacity
-                  onPress={onShowMoreForToday}
-                  activeOpacity={0.75}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('hoy.showMoreForToday')}
-                  style={styles.moreLink}
-                >
-                  <Text style={styles.moreLinkText}>{t('hoy.showMoreForTodayLink')}</Text>
-                </TouchableOpacity>
+              {hiddenInSection > 0 ? (
+                <View style={styles.extraStepsBlock}>
+                  {incompleteFocusTasks.slice(maxVisibleSteps).map((task, index) => (
+                    <HoyFocusTaskRow
+                      key={task.id}
+                      task={task}
+                      index={index + maxVisibleSteps}
+                      projectName={
+                        task.project_id ? projectsMap[task.project_id]?.name ?? null : null
+                      }
+                      onToggleComplete={() => onToggleTask(task.id)}
+                      onOpenDetails={() => onOpenTask(task)}
+                      onDelete={onDeleteTask ? () => onDeleteTask(task) : undefined}
+                    />
+                  ))}
+                </View>
               ) : null}
 
-              {nonFocusPending > 0 ? (
-                <Text style={styles.moreHint}>
-                  {t('hoy.focusMoreInCalendar', { count: nonFocusPending })}
-                </Text>
+              {showLightenInRest ? (
+                <>
+                  <CalmPrimaryButton
+                    label={t('hoy.focusLightenCta')}
+                    onPress={onLightenLoad!}
+                    variant="soft"
+                    accessibilityLabel={t('hoy.focusLightenCta')}
+                    accessibilityHint={t('hoy.focusLightenA11y')}
+                  />
+                  <Text style={styles.restHint}>{t('hoy.focusLightenSub')}</Text>
+                </>
+              ) : null}
+
+              {focusTasks.length > 0 && time && focusLevel ? (
+                <KoraaLogicExplanation
+                  checkIn={{
+                    energyLevel,
+                    emotion: todayMood,
+                    availableTime: time,
+                    focusLevel,
+                  }}
+                  emotionLabel={emotionLabel}
+                />
               ) : null}
 
             </View>
@@ -367,25 +328,15 @@ const styles = StyleSheet.create({
   root: {
     gap: THEME.spacing.md,
   },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: THEME.spacing.sm,
+  captureLink: {
+    alignSelf: 'center',
+    paddingVertical: THEME.spacing.xs,
   },
-  greeting: {
-    ...THEME.typography.h1,
-    fontSize: 32,
-    lineHeight: 38,
-    color: THEME.colors.text.main,
-    flex: 1,
-  },
-  helpBtn: {
-    padding: THEME.spacing.xs,
-    minWidth: THEME.sizes.touchTarget,
-    minHeight: THEME.sizes.touchTarget,
-    justifyContent: 'center',
-    alignItems: 'center',
+  captureLinkText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
+    textDecorationLine: 'underline',
   },
   focusHeader: {
     gap: 4,
@@ -410,12 +361,15 @@ const styles = StyleSheet.create({
   taskList: {
     gap: THEME.spacing.md,
   },
-  listHint: {
+  moreStepsBtn: {
+    alignSelf: 'center',
+    paddingVertical: THEME.spacing.xs,
+  },
+  moreStepsText: {
     ...THEME.typography.caption,
-    color: THEME.colors.text.metaOnFill,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginTop: THEME.spacing.xs,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.bold,
+    textDecorationLine: 'underline',
   },
   emptyBlock: {
     gap: THEME.spacing.xs,
@@ -447,49 +401,10 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     lineHeight: 22,
   },
-  actionRow: {
-    gap: THEME.spacing.sm,
-  },
-  actionPrimary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: THEME.spacing.xs,
-    minHeight: THEME.sizes.touchTarget,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.calm.lavenderDeep,
-    paddingHorizontal: THEME.spacing.md,
-  },
-  actionPrimaryText: {
-    ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.onGradient,
-    textAlign: 'center',
-    flexShrink: 1,
-  },
-  actionSecondary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: THEME.spacing.xs,
-    minHeight: THEME.sizes.touchTarget,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[100],
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.lavender,
-    paddingHorizontal: THEME.spacing.md,
-  },
-  actionSecondaryText: {
-    ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.calm.lavenderDeep,
-    textAlign: 'center',
-    flexShrink: 1,
-  },
-  moreWrap: {
+  restWrap: {
     gap: THEME.spacing.xs,
   },
-  moreToggle: {
+  restToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -498,28 +413,31 @@ const styles = StyleSheet.create({
     ...THEME.surfaces.panel,
     borderRadius: THEME.borderRadius.rounded,
   },
-  moreToggleText: {
+  restToggleText: {
     ...THEME.typography.body,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
   },
-  morePanel: {
+  restPanel: {
     gap: THEME.spacing.sm,
     ...THEME.surfaces.panel,
     padding: THEME.spacing.md,
     borderRadius: THEME.borderRadius.rounded,
   },
-  moreLink: {
+  extraStepsBlock: {
+    gap: THEME.spacing.md,
+  },
+  restLink: {
     alignSelf: 'center',
     paddingVertical: THEME.spacing.xs,
   },
-  moreLinkText: {
+  restLinkText: {
     ...THEME.typography.body,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
     textAlign: 'center',
   },
-  moreHint: {
+  restHint: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
     textAlign: 'center',

@@ -14,7 +14,7 @@ const EMOTIONS = [
   { id: 'ansiosa', emoji: '😰' },
   { id: 'motivada', emoji: '✨' },
   { id: 'abrumada', emoji: '🥺' },
-  { id: 'enfocada', emoji: '🎯' },
+  { id: 'enfocada', emoji: '🌿' },
 ] as const;
 
 export default function EmotionScreen() {
@@ -31,12 +31,9 @@ export default function EmotionScreen() {
 
   const handleContinue = () => {
     if (selectedEmotion) {
-      const rawFrom = typeof params.from === 'string' ? params.from : '';
-      const fromParam =
-        rawFrom === 'sentir' ? 'sentir' : rawFrom === 'quick' ? 'quick' : 'onboarding';
       router.push({
         pathname: '/onboarding/energy',
-        params: { emotion: selectedEmotion, from: fromParam },
+        params: { emotion: selectedEmotion },
       });
     }
   };

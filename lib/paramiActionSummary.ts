@@ -55,14 +55,14 @@ export function getParamiActiveSummary(
   };
 }
 
-export type InsightActionRoute = '/(tabs)' | '/(tabs)/tips';
+export type InsightActionRoute = '/(tabs)' | '/tips/mindset';
 
 export function getInsightAction(insight: EmotionalInsight): {
   route: InsightActionRoute;
   labelKey: 'parami.insightActionHoy' | 'parami.insightActionTips';
 } {
   if (insight.type === 'pattern') {
-    return { route: '/(tabs)/tips', labelKey: 'parami.insightActionTips' };
+    return { route: '/tips/mindset', labelKey: 'parami.insightActionTips' };
   }
   return { route: '/(tabs)', labelKey: 'parami.insightActionHoy' };
 }

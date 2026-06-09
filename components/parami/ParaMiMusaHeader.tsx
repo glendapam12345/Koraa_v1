@@ -1,23 +1,18 @@
 import { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Lock } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { openPaywall } from '@/lib/paywallNavigation';
 import { THEME } from '@/constants/theme';
 import { bleedScreenPaddingX } from '@/lib/screenLayout';
 import { useI18n } from '@/contexts/I18nContext';
-import type { DayData } from '@/components/ProgressChart';
-import { periodDayCount, slicePeriodData } from '@/lib/checkInPeriod';
-import { getParamiActiveSummary } from '@/lib/paramiActionSummary';
+import { periodDayCount } from '@/lib/checkInPeriod';
 
 export type ParaMiPeriodId = 'week' | 'twoWeeks' | 'month';
 
 type ParaMiMusaHeaderProps = {
-  firstName: string;
   isSubscribed: boolean;
-  progressData: DayData[];
-  todayEmotionLabel?: string;
-  todayEnergyLevel?: number;
   period: ParaMiPeriodId;
   onPeriodChange: (period: ParaMiPeriodId) => void;
 };
@@ -30,72 +25,42 @@ function formatShortDate(date: Date, locale: string): string {
   return `${day} ${m}`;
 }
 
-function energyLevelLabel(level: number, t: (k: 'parami.levelLow' | 'parami.levelMedium' | 'parami.levelHigh') => string) {
-  if (level <= 2) return t('parami.levelLow');
-  if (level >= 4) return t('parami.levelHigh');
-  return t('parami.levelMedium');
-}
-
 export function ParaMiMusaHeader({
-  firstName,
   isSubscribed,
-  progressData,
-  todayEmotionLabel,
-  todayEnergyLevel = 0,
   period,
   onPeriodChange,
 }: ParaMiMusaHeaderProps) {
   const { t, locale } = useI18n();
 
-  const periods: { id: ParaMiPeriodId; labelKey: 'parami.periodWeek' | 'parami.periodTwoWeeks' | 'parami.periodMonth'; premium: boolean }[] = [
+  const periods: {
+    id: ParaMiPeriodId;
+    labelKey: 'parami.periodWeek' | 'parami.periodTwoWeeks' | 'parami.periodMonth';
+    premium: boolean;
+  }[] = [
     { id: 'week', labelKey: 'parami.periodWeek', premium: false },
     { id: 'twoWeeks', labelKey: 'parami.periodTwoWeeks', premium: true },
     { id: 'month', labelKey: 'parami.periodMonth', premium: true },
   ];
 
   const daysBack = periodDayCount(period);
-  const periodData = useMemo(() => slicePeriodData(progressData, period), [progressData, period]);
 
-  const periodMeta = useMemo(() => {
+  const periodRangeLabel = useMemo(() => {
     const end = new Date();
     const start = new Date();
     start.setDate(end.getDate() - (daysBack - 1));
-    const withCheckIn = periodData.filter((d) => d.hasCheckIn);
-    const avgEnergy =
-      withCheckIn.length > 0
-        ? Math.round(
-            withCheckIn.reduce((sum, d) => sum + (d.energyLevel ?? 3), 0) / withCheckIn.length,
-          )
-        : todayEnergyLevel;
-    return {
-      rangeLabel: t('parami.periodRange', {
-        start: formatShortDate(start, locale),
-        end: formatShortDate(end, locale),
-        days: String(daysBack),
-      }),
-      energy: avgEnergy || todayEnergyLevel,
-      checkInCount: withCheckIn.length,
-    };
-  }, [daysBack, periodData, todayEnergyLevel, t, locale]);
-
-  const activeSummary = useMemo(
-    () => getParamiActiveSummary(periodData, todayEnergyLevel),
-    [periodData, todayEnergyLevel],
-  );
+    return t('parami.periodRange', {
+      start: formatShortDate(start, locale),
+      end: formatShortDate(end, locale),
+      days: String(daysBack),
+    });
+  }, [daysBack, t, locale]);
 
   const handlePeriodPress = (id: ParaMiPeriodId, premium: boolean) => {
     if (premium && !isSubscribed) {
-      router.push('/paywall');
+      openPaywall(router, '/(tabs)/parami');
       return;
     }
     onPeriodChange(id);
-  };
-
-  const moodLabel = todayEmotionLabel?.trim() || t('parami.balanceNoMood');
-  const energyLabel = periodMeta.energy > 0 ? energyLevelLabel(periodMeta.energy, t) : '—';
-
-  const openHeaderCta = () => {
-    router.push('/(tabs)');
   };
 
   return (
@@ -105,6 +70,11 @@ export function ParaMiMusaHeader({
       end={{ x: 1, y: 1 }}
       style={styles.hero}
     >
+      <Text style={styles.title} accessibilityRole="header">
+        {t('parami.headerTitle')}
+      </Text>
+      <Text style={styles.subtitle}>{t('parami.headerSubtitle')}</Text>
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -134,58 +104,7 @@ export function ParaMiMusaHeader({
         })}
       </ScrollView>
 
-      <Text style={styles.phaseTitle}>{t('parami.headerRhythmTitle', { name: firstName })}</Text>
-      <Text style={styles.phaseSub}>{periodMeta.rangeLabel}</Text>
-
-      <View
-        style={styles.balanceCard}
-        accessibilityRole="summary"
-        accessibilityLabel={t('paramiExtra.a11yActiveSummary', {
-          headline: t(activeSummary.headlineKey),
-          mood: moodLabel,
-          energy: energyLabel,
-        })}
-      >
-        <Text style={styles.activeHeadline}>{t(activeSummary.headlineKey)}</Text>
-
-        {activeSummary.checkInCount > 0 ? (
-          <Text style={styles.activeSubline}>
-            {t('parami.activeSubline', {
-              count: activeSummary.checkInCount,
-              level: activeSummary.avgEnergy,
-            })}
-          </Text>
-        ) : null}
-
-        <View style={styles.statRow}>
-          <View style={[styles.dot, styles.dotMood]} />
-          <Text style={styles.statText}>
-            {t('parami.moodLabel')}: {moodLabel}
-          </Text>
-        </View>
-        <View style={styles.statRow}>
-          <View style={[styles.dot, styles.dotEnergy]} />
-          <Text style={styles.statText}>
-            {t('parami.energyLabel')}: {energyLabel}
-          </Text>
-        </View>
-
-        {periodMeta.checkInCount === 0 && todayEnergyLevel <= 0 ? (
-          <Text style={styles.balanceHint}>{t('parami.noCheckInYet')}</Text>
-        ) : null}
-
-        <TouchableOpacity
-          style={styles.headerCta}
-          onPress={openHeaderCta}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel={t(activeSummary.ctaKey)}
-          accessibilityHint={t('paramiExtra.a11yHeaderCtaHint')}
-        >
-          <Text style={styles.headerCtaText}>{t(activeSummary.ctaKey)}</Text>
-        </TouchableOpacity>
-      </View>
-
+      <Text style={styles.periodRange}>{periodRangeLabel}</Text>
     </LinearGradient>
   );
 }
@@ -201,10 +120,23 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: THEME.borderRadius.xl,
     marginBottom: THEME.spacing.sm,
   },
+  title: {
+    ...THEME.typography.h2,
+    fontSize: 26,
+    color: THEME.colors.onGradient,
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: THEME.spacing.xs,
+  },
+  subtitle: {
+    ...THEME.typography.body,
+    color: THEME.colors.onGradientMuted,
+    lineHeight: 22,
+    marginBottom: THEME.spacing.md,
+  },
   pillsRow: {
     flexDirection: 'row',
     gap: THEME.spacing.xs,
-    paddingBottom: THEME.spacing.md,
+    paddingBottom: THEME.spacing.sm,
   },
   pill: {
     flexDirection: 'row',
@@ -240,74 +172,8 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
     marginLeft: 2,
   },
-  phaseTitle: {
-    ...THEME.typography.h2,
-    fontSize: 26,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
-    marginBottom: THEME.spacing.xs,
-  },
-  phaseSub: {
+  periodRange: {
     ...THEME.typography.caption,
     color: THEME.colors.onGradientFaint,
-    marginBottom: THEME.spacing.md,
-  },
-  balanceCard: {
-    backgroundColor: THEME.colors.parami.balanceCard,
-    borderRadius: THEME.borderRadius.xl,
-    padding: THEME.spacing.md,
-    borderWidth: 1,
-    borderColor: THEME.colors.surfaceOverlay.border,
-    gap: THEME.spacing.sm,
-  },
-  activeHeadline: {
-    ...THEME.typography.h2,
-    fontSize: 22,
-    lineHeight: 28,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  activeSubline: {
-    ...THEME.typography.body,
-    color: THEME.colors.onGradientMuted,
-    lineHeight: 22,
-  },
-  statRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.xs,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  dotMood: {
-    backgroundColor: THEME.colors.calm.lavenderDeep,
-  },
-  dotEnergy: {
-    backgroundColor: THEME.colors.semantic.success,
-  },
-  statText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.onGradientMuted,
-  },
-  balanceHint: {
-    ...THEME.typography.meta,
-    color: THEME.colors.onGradientFaint,
-  },
-  headerCta: {
-    marginTop: THEME.spacing.xs,
-    minHeight: THEME.sizes.touchTarget,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: THEME.spacing.md,
-  },
-  headerCtaText: {
-    ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.calm.lavenderDeep,
   },
 });

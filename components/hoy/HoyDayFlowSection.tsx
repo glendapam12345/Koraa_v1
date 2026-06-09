@@ -7,12 +7,16 @@ type HoyDayFlowSectionProps = {
   showDayChangedCard: boolean;
   showNothingDoneCard: boolean;
   onDismissDayChanged: () => void;
+  onQuickRecheck?: () => void;
+  onLightenLoad?: () => void;
 };
 
 export function HoyDayFlowSection({
   showDayChangedCard,
   showNothingDoneCard,
   onDismissDayChanged,
+  onQuickRecheck,
+  onLightenLoad,
 }: HoyDayFlowSectionProps) {
   const { t } = useI18n();
 
@@ -26,6 +30,7 @@ export function HoyDayFlowSection({
         : 'hoyDayFlow.unifiedBodyDayChanged';
 
   const canDismiss = showDayChangedCard || showNothingDoneCard;
+  const showActions = Boolean(onQuickRecheck || onLightenLoad);
 
   return (
     <View style={styles.card}>
@@ -45,6 +50,33 @@ export function HoyDayFlowSection({
       </View>
 
       <Text style={styles.body}>{t(bodyKey)}</Text>
+
+      {showActions ? (
+        <View style={styles.actions}>
+          {onQuickRecheck ? (
+            <TouchableOpacity
+              style={styles.primaryBtn}
+              onPress={onQuickRecheck}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={t('hoyDayFlow.reorganizeCta')}
+            >
+              <Text style={styles.primaryBtnText}>{t('hoyDayFlow.reorganizeCta')}</Text>
+            </TouchableOpacity>
+          ) : null}
+          {onLightenLoad ? (
+            <TouchableOpacity
+              style={styles.secondaryBtn}
+              onPress={onLightenLoad}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={t('hoyDayFlow.lightenCta')}
+            >
+              <Text style={styles.secondaryBtnText}>{t('hoyDayFlow.lightenCta')}</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      ) : null}
 
       {canDismiss ? (
         <TouchableOpacity
@@ -84,36 +116,6 @@ const styles = StyleSheet.create({
   body: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
-    lineHeight: 22,
-  },
-  focusListBlock: {
-    gap: THEME.spacing.xs,
-    paddingVertical: THEME.spacing.xs,
-    paddingHorizontal: THEME.spacing.sm,
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.standard,
-  },
-  focusListLabel: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  focusListRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: THEME.spacing.xs,
-  },
-  focusBullet: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: THEME.colors.gradient.blue,
-    marginTop: 7,
-  },
-  focusListItem: {
-    ...THEME.typography.body,
-    flex: 1,
-    color: THEME.colors.text.main,
     lineHeight: 22,
   },
   actions: {

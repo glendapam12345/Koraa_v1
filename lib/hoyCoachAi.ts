@@ -173,9 +173,23 @@ export async function fetchHoyCoachMessage(
       return local;
     }
 
-    await writeCache(key, coach);
-    if (__DEV__) logger.debug('[hoy-coach] OK (IA)');
-    return { ...coach, fromAi: true };
+    const source = (data as { source?: string })?.source;
+    const fromAi = source === 'openai';
+    if (__DEV__ && source === 'fallback') {
+      const code = (data as { code?: string })?.code;
+      const status = (data as { openaiStatus?: number })?.openaiStatus;
+      logger.warn(
+        '[hoy-coach] Fallback servidor',
+        code ?? 'unknown',
+        status ? `(OpenAI HTTP ${status})` : '',
+      );
+    }
+
+    if (fromAi) {
+      await writeCache(key, coach);
+      if (__DEV__) logger.debug('[hoy-coach] OK (IA)');
+    }
+    return { ...coach, fromAi };
   } catch (err) {
     await logInvokeFailure(err);
     return local;

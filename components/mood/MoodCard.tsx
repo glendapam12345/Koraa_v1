@@ -21,7 +21,7 @@ function getMoodEmoji(mood: string): string {
     ansiosa: '😰',
     motivada: '💪',
     abrumada: '😵',
-    enfocada: '🎯',
+    enfocada: '🌿',
   };
   return map[mood.toLowerCase()] ?? '💭';
 }

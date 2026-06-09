@@ -48,36 +48,15 @@ export function useTipsScreenData(userId: string | undefined) {
     }
   }, []);
 
-  const load = useCallback(async () => {
-    if (!userId) {
-      setCheckIn(EMPTY_CHECK_IN);
-      setUserProfile(null);
-      setCheckInReady(true);
-      return;
-    }
-
-    const today = getLocalDateString();
+  const loadProfile = useCallback(async (uid: string) => {
     try {
-      const [checkInRes, profileRes] = await Promise.all([
-        supabase
-          .from('daily_check_ins')
-          .select('emotion, energy_level, available_time, focus_level')
-          .eq('user_id', userId)
-          .eq('date', today)
-          .maybeSingle(),
-        fetchProfilePreferences(userId),
-      ]);
-
-      if (checkInRes.error) {
-        console.error('Error cargando check-in:', checkInRes.error);
-      } else {
-        applyCheckInRow(checkInRes.data);
-      }
-
+      const profileRes = await fetchProfilePreferences(uid);
       if (profileRes.error) {
         console.error('Error cargando perfil:', profileRes.error);
         setUserProfile(null);
-      } else if (profileRes.data) {
+        return;
+      }
+      if (profileRes.data) {
         setUserProfile({
           age: profileRes.data.age ?? undefined,
           favorite_activities: profileRes.data.favorite_activities,
@@ -88,15 +67,59 @@ export function useTipsScreenData(userId: string | undefined) {
         setUserProfile(null);
       }
     } catch (error) {
-      console.error('Error inesperado en Tips:', error);
+      console.error('Error inesperado cargando perfil Tips:', error);
+    }
+  }, []);
+
+  const loadCheckIn = useCallback(async () => {
+    if (!userId) {
+      setCheckIn(EMPTY_CHECK_IN);
+      setCheckInReady(true);
+      return;
+    }
+
+    const today = getLocalDateString();
+    try {
+      const { data, error } = await supabase
+        .from('daily_check_ins')
+        .select('emotion, energy_level, available_time, focus_level')
+        .eq('user_id', userId)
+        .eq('date', today)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error cargando check-in:', error);
+      } else {
+        applyCheckInRow(data);
+      }
+    } catch (error) {
+      console.error('Error inesperado en Tips check-in:', error);
     } finally {
       setCheckInReady(true);
     }
   }, [userId, applyCheckInRow]);
 
+  const load = useCallback(
+    async (options?: { includeProfile?: boolean }) => {
+      if (!userId) {
+        setCheckIn(EMPTY_CHECK_IN);
+        setUserProfile(null);
+        setCheckInReady(true);
+        return;
+      }
+
+      await loadCheckIn();
+
+      if (options?.includeProfile !== false) {
+        void loadProfile(userId);
+      }
+    },
+    [userId, loadCheckIn, loadProfile],
+  );
+
   const refresh = useCallback(async () => {
     setRefreshing(true);
-    await load();
+    await load({ includeProfile: true });
     setRefreshing(false);
   }, [load]);
 
@@ -106,6 +129,8 @@ export function useTipsScreenData(userId: string | undefined) {
     checkInReady,
     refreshing,
     load,
+    loadCheckIn,
+    loadProfile,
     refresh,
   };
-}
+};

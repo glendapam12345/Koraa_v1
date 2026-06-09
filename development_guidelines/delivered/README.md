@@ -42,6 +42,8 @@ Keep the same name as in `running/` when moving files here.
 
 ## Recently Completed
 
+- **2026-06-05_flow_audit_buttons_cleanup.md** (Jun 5, 2026) - Flow/button audit: 4-tab IA, onboarding loop fix, paywall return, tour, auth guard, deep cleanup + i18n prune
+- **2026-06-05_anti_pressure_ux_redesign.md** (Jun 5, 2026) - Anti-pressure voice, Hoy IA simplification, hidden tips/vaciar tabs
 - **confetti-toast-resumen.md** (Feb 10, 2026) - Added confetti animation, toast notifications, and daily summary card
 - **insights-automaticos-celebracion.md** (Feb 10, 2026) - Added automatic insights and celebration banner
 - **haptic-feedback-tareas.md** (Feb 10, 2026) - Added haptic feedback when completing tasks

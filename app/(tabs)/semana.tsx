@@ -22,6 +22,7 @@ import { SemanaWeekNav } from '@/components/semana/SemanaWeekNav';
 import { SemanaProjectFilter } from '@/components/semana/SemanaProjectFilter';
 import { SemanaDaySection } from '@/components/semana/SemanaDaySection';
 import { SemanaTodayCheckInBanner } from '@/components/semana/SemanaTodayCheckInBanner';
+import { Toast } from '@/components/Toast';
 import { getTodayPriorityStats } from '@/lib/priorityProgress';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
@@ -59,7 +60,7 @@ export default function SemanaScreen() {
   const { user } = useAuth();
   const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  void toastMessage; // used by showToast; Toast UI not rendered on this screen
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info');
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
   const todayStr = getLocalDateString();
   const todayDate = useMemo(() => new Date(), []);
@@ -69,7 +70,10 @@ export default function SemanaScreen() {
   const [selectedWeekStart, setSelectedWeekStart] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const showToast = useCallback(
-    (msg: string, _type: 'success' | 'error' | 'info' = 'info') => setToastMessage(msg),
+    (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
+      setToastMessage(msg);
+      setToastType(type);
+    },
     [],
   );
 
@@ -260,6 +264,9 @@ export default function SemanaScreen() {
 
   return (
     <View style={styles.container}>
+      {toastMessage ? (
+        <Toast message={toastMessage} type={toastType} onHide={() => setToastMessage(null)} />
+      ) : null}
       <CalmScreen
         topInset="lg"
         gap={THEME.layout.sectionGapCompact}
@@ -465,6 +472,7 @@ export default function SemanaScreen() {
           <PremiumTeaserCard
             title={t('semana.premiumTitle')}
             body={t('premiumTeaser.semanaBody', { days: FREE_VISIBLE_DAYS })}
+            paywallReturnTo="/(tabs)/semana"
           />
         )}
 

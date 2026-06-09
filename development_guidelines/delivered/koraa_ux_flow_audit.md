@@ -1,8 +1,10 @@
 # Auditoría de flujo UX — Koraa (claridad y facilidad de uso)
 
 **Fecha:** 2026-05-02  
-**Última actualización:** 2026-05-19  
-**Estado:** Done (implementación UX en código; validación en dispositivo pendiente del equipo)  
+**Última actualización:** 2026-06-05  
+**Estado:** Done (supersedido parcialmente por audit junio 2026 — ver abajo)
+
+> **Actualización 2026-06-05:** La app pasó de 6 tabs a **4 visibles** (Hoy, Calendario, Para mí, Tu espacio). Check-in principal embebido en Hoy; Consejos y Tareas ocultas. Auditoría completa de flujo, botones y limpieza: [2026-06-05_flow_audit_buttons_cleanup.md](./2026-06-05_flow_audit_buttons_cleanup.md). Gates auth/onboarding: [onboarding_gate_and_tabs_auth.md](./onboarding_gate_and_tabs_auth.md).  
 **Prioridad:** Alta (impacto en primera experiencia y retención)  
 **Relacionado con:** Navegación por pestañas, `FlowIndicator`, pantallas `vaciar`, `sentir`, `(tabs)/index` (Hoy), `help.tsx`, onboarding.
 

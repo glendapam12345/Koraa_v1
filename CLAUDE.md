@@ -8,11 +8,11 @@
 
 ### About This Project
 
-Koraa is a mobile-first wellness productivity app that prioritizes tasks based on emotional state. Users complete daily emotional check-ins (emotion, energy, time availability, focus level) and the app adapts task prioritization accordingly. The app features a "brain dump" interface for frictionless task capture and a beautiful, ethereal UI with gradient aesthetics.
+Koraa is a mobile-first **emotional wellness** app with gentle task support — not traditional productivity. Users complete daily check-ins (emotion, energy, time, mental clarity) and Koraa **suggests** a few steps for today (`qué importa hoy`), without pressure. Brain-dump capture in Tareas; ethereal UI with gradient aesthetics.
 
 **Project Type**: React Native mobile app with Expo, supporting iOS, Android, and Web
 
-**Primary Purpose**: Help users organize their day based on how they're feeling, rather than rigid to-do lists
+**Primary Purpose**: Help overwhelmed people feel slightly lighter at their own pace — steps, not rigid priorities
 
 **Tech Stack**:
 - **Language**: TypeScript 5.9.2 (strict mode enabled)
@@ -38,12 +38,12 @@ Koraa is a mobile-first wellness productivity app that prioritizes tasks based o
 │   ├── focus-session.tsx   # Pomodoro 25 min
 │   ├── settings.tsx, help.tsx, paywall.tsx
 │   ├── (tabs)/             # Tab navigation (auth-gated)
-│   │   ├── index.tsx       # Hoy — prioridades del día
+│   │   ├── index.tsx       # Hoy — check-in + pasos sugeridos
 │   │   ├── vaciar.tsx      # Tareas — captura (tab oculta en barra)
-│   │   ├── semana.tsx      # Semana — calendario
+│   │   ├── semana.tsx      # Calendario semanal
 │   │   ├── tips.tsx        # Consejos
 │   │   ├── parami.tsx      # Para mí — insights
-│   │   └── yo.tsx          # Perfil
+│   │   └── yo.tsx          # Tu espacio — premium, ajustes
 │   ├── onboarding/       # welcome → emotion/energy/time/focus
 │   └── tips/[category].tsx
 ├── components/
@@ -58,7 +58,9 @@ Koraa is a mobile-first wellness productivity app that prioritizes tasks based o
 └── app.config.js           # Única config Expo (sin app.json duplicado)
 ```
 
-**Flujo del día:** Tareas (vaciar) → Sentir (check-in) → Hoy (focos). La carpeta legacy `koraav2/` fue eliminada; `npm run check:legacy` evita reintroducirla.
+**Flujo del día:** Tareas (vaciar) → Check-in en Hoy → Pasos sugeridos en Hoy. Modal `/sentir` y onboarding `emotion→focus` son rutas alternativas. La carpeta legacy `koraav2/` fue eliminada; `npm run check:legacy` evita reintroducirla.
+
+**Voz anti-presión (copy):** Preferir *pasos sugeridos*, *qué importa hoy*, *suficiente para hoy*; evitar *prioridades*, *focos*, *productividad* en UI. Guía completa: [2026-06-05_anti_pressure_ux_redesign.md](development_guidelines/delivered/2026-06-05_anti_pressure_ux_redesign.md).
 
 ### Key Directories
 
@@ -92,7 +94,7 @@ The `development_guidelines/` directory organizes extended project context:
 
 See individual README files in each subdirectory for usage guidelines.
 
-**UX / flujo de usuario:** [koraa_ux_flow_audit.md](development_guidelines/delivered/koraa_ux_flow_audit.md). Expo Go: `npm run dev:cf` o `npm run dev:phone`.
+**UX / flujo de usuario:** [2026-06-05_flow_audit_buttons_cleanup.md](development_guidelines/delivered/2026-06-05_flow_audit_buttons_cleanup.md) (audit flujo + limpieza, 4 tabs). Histórico: [koraa_ux_flow_audit.md](development_guidelines/delivered/koraa_ux_flow_audit.md). **Rediseño anti-presión:** [2026-06-05_anti_pressure_ux_redesign.md](development_guidelines/delivered/2026-06-05_anti_pressure_ux_redesign.md). **Auth/onboarding gates:** [onboarding_gate_and_tabs_auth.md](development_guidelines/delivered/onboarding_gate_and_tabs_auth.md). Expo Go: `npm run dev:cf` o `npm run dev:phone`.
 
 **Design system (en curso):** [2026-05-19_design_system_unification.md](development_guidelines/running/2026-05-19_design_system_unification.md) — `CalmScreen`, `CalmCard`, `CalmPrimaryButton`, `ScreenHeader`, `THEME.surfaces.*`.
 

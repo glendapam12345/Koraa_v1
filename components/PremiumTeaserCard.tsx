@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ChevronRight, Crown } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { openPaywall } from '@/lib/paywallNavigation';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 
@@ -11,6 +12,8 @@ type PremiumTeaserCardProps = {
   onPress?: () => void;
   /** Texto opcional sobre qué incluye el plan gratis (p. ej. límites en Consejos). */
   freeLimitNote?: string;
+  /** Ruta a la que volver tras cerrar paywall. */
+  paywallReturnTo?: string;
 };
 
 export function PremiumTeaserCard({
@@ -19,6 +22,7 @@ export function PremiumTeaserCard({
   ctaLabel,
   onPress,
   freeLimitNote,
+  paywallReturnTo,
 }: PremiumTeaserCardProps) {
   const { t } = useI18n();
   const resolvedCta = ctaLabel ?? t('premiumTeaser.cta');
@@ -28,7 +32,7 @@ export function PremiumTeaserCard({
       onPress();
       return;
     }
-    router.push('/paywall');
+    openPaywall(router, paywallReturnTo);
   };
 
   return (

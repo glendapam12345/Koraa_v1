@@ -4,7 +4,7 @@ const EMOTION_EMOJIS = {
   ansiosa: '😰',
   motivada: '✨',
   abrumada: '🥺',
-  enfocada: '🎯',
+  enfocada: '🌿',
 } as const;
 
 export type EmotionId = keyof typeof EMOTION_EMOJIS;

@@ -34,7 +34,7 @@ const EMOTION_IDS = [
   { id: 'ansiosa', emoji: '😰' },
   { id: 'motivada', emoji: '✨' },
   { id: 'abrumada', emoji: '🥺' },
-  { id: 'enfocada', emoji: '🎯' },
+  { id: 'enfocada', emoji: '🌿' },
 ] as const;
 
 function navigateToHoyAfterCheckIn() {

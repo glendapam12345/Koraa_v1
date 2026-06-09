@@ -1,4 +1,4 @@
-import type { DayData } from '@/components/ProgressChart';
+import type { DayData } from '@/lib/checkInDayData';
 import type { TranslationKey } from '@/lib/i18n';
 import type { TipsUserContext } from '@/lib/tipsTypes';
 
@@ -51,12 +51,27 @@ export function getTipsActionHero(
   const recentCheckIns = weekData.filter((d) => d.hasCheckIn);
   const lowEnergyDays = recentCheckIns.filter((d) => (d.energyLevel ?? 3) <= 2).length;
   const abrumadaDays = recentCheckIns.filter((d) => d.emotion?.toLowerCase() === 'abrumada').length;
+  const sustainedHeavyWeek = lowEnergyDays >= 3 || abrumadaDays >= 2;
+  const heavyWeekDays = Math.max(lowEnergyDays, abrumadaDays, 1);
 
-  if (emotion === 'abrumada' && (energy <= 2 || lowEnergyDays >= 3 || abrumadaDays >= 2)) {
+  if (emotion === 'abrumada') {
     return withAction(
       {
         messageKey: 'tips.actionHeroAbrumada',
-        messageParams: { days: Math.max(lowEnergyDays, abrumadaDays, 1) },
+        messageParams: { days: heavyWeekDays },
+      },
+      ctx,
+    );
+  }
+
+  if (
+    (emotion === 'agotada' || emotion === 'ansiosa') &&
+    sustainedHeavyWeek
+  ) {
+    return withAction(
+      {
+        messageKey: 'tips.actionHeroAbrumada',
+        messageParams: { days: heavyWeekDays },
       },
       ctx,
     );

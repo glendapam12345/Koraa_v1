@@ -11,7 +11,12 @@ export type AnalyticsProps = Record<string, string | number | boolean | null | u
 
 function isMissingTableOrPolicy(error: { code?: string; message?: string }): boolean {
   const msg = error.message?.toLowerCase() ?? '';
-  return error.code === '42P01' || msg.includes('does not exist');
+  return (
+    error.code === '42P01' ||
+    error.code === 'PGRST205' ||
+    msg.includes('does not exist') ||
+    msg.includes('schema cache')
+  );
 }
 
 /**

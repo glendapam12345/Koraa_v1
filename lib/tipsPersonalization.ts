@@ -27,8 +27,21 @@ function scoreTip(tip: CatalogTipEntry, ctx: TipsUserContext): number {
   if (tip.maxEnergy != null && ctx.energyLevel > tip.maxEnergy) score -= 2;
 
   if (ctx.energyLevel <= 2 && tip.category === 'rest') score += 2;
-  if (ctx.energyLevel >= 4 && tip.category === 'productivity') score += 1;
   if (['ansiosa', 'abrumada'].includes(emotion) && tip.category === 'mindset') score += 2;
+  if (['ansiosa', 'abrumada', 'agotada'].includes(emotion) && tip.category === 'rest') score += 1;
+
+  if (
+    ctx.energyLevel >= 4 &&
+    tip.category === 'action' &&
+    ['motivada', 'enfocada', 'tranquila'].includes(emotion)
+  ) {
+    score += 1;
+  }
+
+  if (['ansiosa', 'abrumada', 'agotada'].includes(emotion) && tip.category === 'productivity') {
+    score -= 2;
+  }
+  if (ctx.energyLevel <= 2 && tip.category === 'productivity') score -= 1;
 
   return score;
 }
@@ -90,16 +103,16 @@ export function getCategoryLead(
       abrumada: 'Mucho encima es válido. Un paso mental a la vez.',
     },
     rest: {
-      default: 'Recuperar energía también es productivo.',
-      agotada: 'Con poca energía, el descanso es tu prioridad real.',
+      default: 'Recuperar también cuenta. Elige un tip suave.',
+      agotada: 'Con poca energía, el descanso puede ser lo más importante hoy.',
     },
     action: {
-      default: 'Acciones pequeñas que no te agobian.',
-      motivada: 'Buen momento para moverte — sin quemarte.',
+      default: 'Pasos pequeños que no te agobian.',
+      motivada: 'Si te apetece moverte — sin quemarte.',
     },
     productivity: {
-      default: 'Enfócate en poco y bien. Koraa ya eligió tus focos en Hoy.',
-      enfocada: 'Aprovecha el foco en tareas que importan de verdad.',
+      default: 'Qué importa hoy está en Hoy. Un paso basta.',
+      enfocada: 'Con claridad, una cosa que importe puede ser suficiente.',
     },
   };
 
@@ -112,16 +125,16 @@ export function getCategoryLead(
       abrumada: 'Feeling overloaded is valid. One mental step at a time.',
     },
     rest: {
-      default: 'Recovering energy is productive too.',
-      agotada: 'Low energy? Rest is your real priority.',
+      default: 'Resting counts too. Pick one gentle tip.',
+      agotada: 'Low energy? Rest may be the most important thing today.',
     },
     action: {
-      default: 'Small actions that do not overwhelm you.',
-      motivada: 'Good moment to move — without burning out.',
+      default: 'Small steps that do not overwhelm you.',
+      motivada: 'If you feel up to moving — without burning out.',
     },
     productivity: {
-      default: 'Focus on a little, done well. Koraa already picked your focus in Today.',
-      enfocada: 'Use your focus on what truly matters.',
+      default: 'What matters today lives in Today. One step is enough.',
+      enfocada: 'With clarity, one thing that matters can be enough.',
     },
   };
 
@@ -144,17 +157,17 @@ export function getTipsDailyInsight(
     default:
       'Tus consejos se adaptan a cómo te sientes hoy. Un tip a la vez basta.',
     agotada:
-      'Con poca energía suele ayudar priorizar descanso y una sola acción pequeña.',
+      'Con poca energía suele ayudar descansar primero y, si puedes, un paso pequeño.',
     tranquila:
       'En calma, pequeños pasos sostienen el ritmo sin presionarte.',
     ansiosa:
       'Cuando la mente va rápido, respirar y simplificar la lista suele aliviar.',
     motivada:
-      'Buen impulso: canalízalo en pocas tareas con impacto, no en hacerlo todo.',
+      'Buen impulso: canalízalo en una o dos cosas, no en hacerlo todo.',
     abrumada:
-      'Si te sientes abrumada, conviene aligerar: menos focos y más pausas.',
+      'Si te sientes abrumada, conviene aligerar: menos pasos y más pausas.',
     enfocada:
-      'Con claridad, conviene proteger el foco y posponer lo que no es esencial hoy.',
+      'Con claridad, protege este momento para una cosa que importe. El resto puede esperar.',
   };
 
   const en: Record<string, string> = {
@@ -167,11 +180,11 @@ export function getTipsDailyInsight(
     ansiosa:
       'When your mind races, breathing and a shorter list usually help.',
     motivada:
-      'Good momentum: channel it into a few high-impact tasks, not everything.',
+      'Good momentum: channel it into one or two things, not everything.',
     abrumada:
-      'Feeling overloaded is valid. Koraa suggests fewer focus tasks and more pauses.',
+      'Feeling overloaded is valid. Fewer steps and more pauses usually help.',
     enfocada:
-      'With clarity, protect your focus and defer what is not essential today.',
+      'With clarity, protect this moment for one thing that matters. The rest can wait.',
   };
 
   const table = locale === 'en' ? en : es;
@@ -188,5 +201,5 @@ export const TIP_CATEGORY_META: Record<
   mindset: { emoji: '🧘', gradient: ['#667eea', '#764ba2'] },
   rest: { emoji: '🌙', gradient: ['#30cfd0', '#330867'] },
   action: { emoji: '⚡', gradient: ['#fa709a', '#fee140'] },
-  productivity: { emoji: '🎯', gradient: ['#4A90E2', '#FF6B6B'] },
+  productivity: { emoji: '📋', gradient: ['#4A90E2', '#FF6B6B'] },
 };

@@ -24,6 +24,53 @@ type CoachResponse = {
   actionLine: string;
 };
 
+function buildFallbackCoach(locale: 'es' | 'en', payload: CoachRequest): CoachResponse {
+  const displayName = (payload.displayName ?? '').trim() || (locale === 'en' ? 'there' : 'amiga');
+  const emotionLabel = (payload.emotionLabel ?? '').trim() || (locale === 'en' ? 'steady' : 'constante');
+  const energyLevel = Math.min(5, Math.max(1, Number(payload.energyLevel) || 3));
+  const focusCount = Math.max(0, Number(payload.focusCount) || 0);
+  const suggestion = (payload.suggestion ?? '').trim();
+  const weekday =
+    (payload.weekday ?? '').trim() ||
+    new Date().toLocaleDateString(locale === 'en' ? 'en-US' : 'es-ES', { weekday: 'long' });
+  const e = (payload.emotionKey ?? '').toLowerCase();
+
+  const greeting =
+    locale === 'en'
+      ? `${displayName}, today is ${weekday}`
+      : `${displayName}, hoy es ${weekday}`;
+
+  const body =
+    locale === 'en'
+      ? `You're feeling ${emotionLabel.toLowerCase()} (energy ${energyLevel}/5).`
+      : `Te sientes ${emotionLabel.toLowerCase()} · energía ${energyLevel}/5.`;
+
+  let actionLine = suggestion;
+  if (!actionLine) {
+    if (energyLevel <= 2 || ['agotada', 'ansiosa', 'abrumada'].includes(e)) {
+      actionLine =
+        locale === 'en'
+          ? 'One gentle step and short breaks — no need to push.'
+          : 'Un paso suave y pausas cortas; no hace falta forzar.';
+    } else if (energyLevel >= 4) {
+      actionLine =
+        locale === 'en'
+          ? `Good energy today — ${focusCount > 0 ? 'start with the first suggested step' : 'capture tasks, then check in on Today'}.`
+          : `Buena energía hoy — ${focusCount > 0 ? 'empieza por el primer paso sugerido' : 'anota pendientes y haz check-in en Hoy'}.`;
+    } else {
+      actionLine =
+        locale === 'en'
+          ? 'Steady pace: 2–3 suggested steps may be enough for today.'
+          : 'Ritmo constante: con 2–3 pasos sugeridos puede bastar hoy.';
+    }
+  } else {
+    const prefix = locale === 'en' ? 'We suggest: ' : 'Te recomendamos: ';
+    actionLine = prefix + actionLine;
+  }
+
+  return { greeting, body, actionLine };
+}
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -33,16 +80,16 @@ function jsonResponse(body: unknown, status = 200) {
 
 function buildSystemPrompt(locale: 'es' | 'en'): string {
   if (locale === 'en') {
-    return `You are Koraa, a calm wellness coach for a task app. Tone: warm, brief, never pushy or guilt-inducing. No sarcasm. Max 1 short sentence per field. Respond ONLY with valid JSON: {"greeting":"...","body":"...","actionLine":"..."}. greeting: use their first name + weekday. body: reflect emotion and energy 1-5. actionLine: one gentle recommendation (can mention focus tasks count).`;
+    return `You are Koraa, a calm wellness coach for a task app. Tone: warm, brief, never pushy or guilt-inducing. No sarcasm. Max 1 short sentence per field. Respond ONLY with valid JSON: {"greeting":"...","body":"...","actionLine":"..."}. greeting: use their first name + weekday. body: reflect emotion and energy 1-5. actionLine: one gentle recommendation (can mention suggested steps count). Never use productivity, focus tasks, or guilt language.`;
   }
-  return `Eres Koraa, coach de bienestar en una app de tareas. Tono: cálido, breve, sin presión ni culpa. Sin sarcasmo. Máximo 1 frase corta por campo. Responde SOLO JSON válido: {"greeting":"...","body":"...","actionLine":"..."}. greeting: nombre + día de la semana. body: emoción y energía 1-5. actionLine: una recomendación suave (puede mencionar focos del día).`;
+  return `Eres Koraa, coach de bienestar en una app de tareas. Tono: cálido, breve, sin presión ni culpa. Sin sarcasmo. Máximo 1 frase corta por campo. Responde SOLO JSON válido: {"greeting":"...","body":"...","actionLine":"..."}. greeting: nombre + día de la semana. body: emoción y energía 1-5. actionLine: una recomendación suave (puede mencionar pasos sugeridos). Nunca uses productividad, focos ni culpa.`;
 }
 
 async function callOpenAI(
   apiKey: string,
   locale: 'es' | 'en',
   payload: CoachRequest,
-): Promise<CoachResponse | null> {
+): Promise<{ coach: CoachResponse | null; openaiStatus?: number; openaiError?: string }> {
   const userContent = JSON.stringify({
     locale,
     displayName: payload.displayName ?? '',
@@ -75,12 +122,14 @@ async function callOpenAI(
   if (!res.ok) {
     const errText = await res.text();
     console.error('OpenAI error', res.status, errText.slice(0, 400));
-    return null;
+    return { coach: null, openaiStatus: res.status, openaiError: errText.slice(0, 200) };
   }
 
   const data = await res.json();
   const raw = data?.choices?.[0]?.message?.content;
-  if (!raw || typeof raw !== 'string') return null;
+  if (!raw || typeof raw !== 'string') {
+    return { coach: null, openaiError: 'empty_completion' };
+  }
 
   try {
     const parsed = JSON.parse(raw) as CoachResponse;
@@ -90,15 +139,17 @@ async function callOpenAI(
       typeof parsed.actionLine === 'string'
     ) {
       return {
-        greeting: parsed.greeting.trim().slice(0, 200),
-        body: parsed.body.trim().slice(0, 280),
-        actionLine: parsed.actionLine.trim().slice(0, 280),
+        coach: {
+          greeting: parsed.greeting.trim().slice(0, 200),
+          body: parsed.body.trim().slice(0, 280),
+          actionLine: parsed.actionLine.trim().slice(0, 280),
+        },
       };
     }
   } catch {
     console.error('Invalid JSON from OpenAI');
   }
-  return null;
+  return { coach: null, openaiError: 'invalid_json' };
 }
 
 Deno.serve(async (req: Request) => {
@@ -117,14 +168,10 @@ Deno.serve(async (req: Request) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-  const openaiKey = Deno.env.get('OPENAI_API_KEY');
+  const openaiKey = Deno.env.get('OPENAI_API_KEY')?.trim();
 
   if (!supabaseUrl || !supabaseAnonKey) {
     return jsonResponse({ error: 'Server misconfigured' }, 500);
-  }
-
-  if (!openaiKey) {
-    return jsonResponse({ error: 'AI not configured', code: 'AI_DISABLED' }, 503);
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -149,9 +196,21 @@ Deno.serve(async (req: Request) => {
 
   const locale = payload.locale === 'en' ? 'en' : 'es';
 
-  const coach = await callOpenAI(openaiKey, locale, payload);
+  if (!openaiKey) {
+    const coach = buildFallbackCoach(locale, payload);
+    return jsonResponse({ coach, source: 'fallback', code: 'AI_DISABLED' });
+  }
+
+  const { coach, openaiStatus, openaiError } = await callOpenAI(openaiKey, locale, payload);
   if (!coach) {
-    return jsonResponse({ error: 'AI generation failed', code: 'AI_FAILED' }, 502);
+    console.warn('OpenAI fallback', { openaiStatus, openaiError });
+    const fallback = buildFallbackCoach(locale, payload);
+    return jsonResponse({
+      coach: fallback,
+      source: 'fallback',
+      code: 'AI_FAILED',
+      openaiStatus,
+    });
   }
 
   return jsonResponse({ coach, source: 'openai' });

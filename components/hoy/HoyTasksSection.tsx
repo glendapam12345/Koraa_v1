@@ -5,7 +5,7 @@ import { HoyFocusPanel } from '@/components/hoy/HoyFocusPanel';
 import { HoyRestOfDayPanel } from '@/components/hoy/HoyRestOfDayPanel';
 import { useI18n } from '@/contexts/I18nContext';
 import type { Task } from '@/components/tasks/TaskCard';
-import type { FocusProgressStats } from '@/components/FocusProgressBar';
+import type { FocusProgressStats } from '@/lib/focusProgressStats';
 
 export type HoyTasksSectionProps = {
   todayMood: string;
@@ -35,7 +35,6 @@ export type HoyTasksSectionProps = {
   onCollapseRestOfDay?: () => void;
   displayName?: string;
   coachSuggestion?: string;
-  onOpenCalendar: () => void;
   onShowMoreForToday?: () => void;
   onDeleteTask?: (task: Task) => void;
   onChangeEmotion?: () => void;
@@ -74,7 +73,6 @@ export function HoyTasksSection({
   onCollapseRestOfDay,
   displayName = '',
   coachSuggestion = '',
-  onOpenCalendar,
   onShowMoreForToday,
   onDeleteTask,
   onChangeEmotion,
@@ -120,8 +118,14 @@ export function HoyTasksSection({
         projectsMap={projectsMap}
         onToggleTask={(taskId) => void handleToggleTask(taskId)}
         onOpenTask={handleEditTask}
-        onOpenCalendar={onOpenCalendar}
-        onShowMoreForToday={restOfDayExpanded ? undefined : onShowMoreForToday}
+        restExpanded={restOfDayExpanded}
+        onRestExpandedChange={(open) => {
+          if (open) {
+            onShowMoreForToday?.();
+          } else {
+            onCollapseRestOfDay?.();
+          }
+        }}
         onDeleteTask={onDeleteTask}
         onChangeEmotion={onChangeEmotion}
         showDayChangedCard={showDayChangedCard}
@@ -129,7 +133,6 @@ export function HoyTasksSection({
         onQuickRecheck={onQuickRecheck}
         onDismissDayChanged={onDismissDayChanged}
         onLightenLoad={onLightenLoad}
-        initialMoreOpen={hoyLiteLayout === false}
       />
       {restOfDayExpanded && onCollapseRestOfDay ? (
         <HoyRestOfDayPanel

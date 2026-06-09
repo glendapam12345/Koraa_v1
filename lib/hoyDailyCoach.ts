@@ -51,18 +51,18 @@ export function buildHoyCoachMessage(input: HoyCoachInput): HoyCoachMessage {
     if (energyLevel <= 2 || ['agotada', 'ansiosa', 'abrumada'].includes(e)) {
       actionLine =
         locale === 'en'
-          ? 'We suggest one gentle focus and short breaks — no need to push.'
-          : 'Te recomendamos un foco suave y pausas cortas; no hace falta forzar.';
+          ? 'One gentle step and short breaks — no need to push.'
+          : 'Un paso suave y pausas cortas; no hace falta forzar.';
     } else if (energyLevel >= 4) {
       actionLine =
         locale === 'en'
-          ? `Good energy today — ${focusCount > 0 ? 'start with your top focus' : 'capture tasks then pick a focus'}.`
-          : `Buena energía hoy — ${focusCount > 0 ? 'empieza por tu foco principal' : 'anota pendientes y elige un foco'}.`;
+          ? `Good energy today — ${focusCount > 0 ? 'start with the first suggested step' : 'capture tasks, then check in on Today'}.`
+          : `Buena energía hoy — ${focusCount > 0 ? 'empieza por el primer paso sugerido' : 'anota pendientes y haz check-in en Hoy'}.`;
     } else {
       actionLine =
         locale === 'en'
-          ? 'Steady pace: 2–3 focus tasks are enough for today.'
-          : 'Ritmo constante: con 2–3 focos basta para hoy.';
+          ? 'Steady pace: 2–3 suggested steps may be enough for today.'
+          : 'Ritmo constante: con 2–3 pasos sugeridos puede bastar hoy.';
     }
   } else {
     const prefix = locale === 'en' ? 'We suggest: ' : 'Te recomendamos: ';

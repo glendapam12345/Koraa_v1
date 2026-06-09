@@ -9,7 +9,6 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { track } from '@/lib/analytics';
 import { fetchCurrentStreak, isStreakMilestone } from '@/lib/streak';
-import { markPrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
 import { publishCheckInCelebration } from '@/lib/checkInCelebration';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { markOnboardingCompleted } from '@/lib/onboardingGate';
@@ -25,7 +24,7 @@ const FOCUS_OPTIONS: { id: string; labelKey: TranslationKey }[] = [
 ];
 
 export default function FocusScreen() {
-  const { emotion, energy, time, from } = useLocalSearchParams<{ emotion: string; energy: string; time: string; from: string }>();
+  const { emotion, energy, time } = useLocalSearchParams<{ emotion: string; energy: string; time: string }>();
   const { user } = useAuth();
   const { t, locale } = useI18n();
   const [selectedFocus, setSelectedFocus] = useState<string>('');
@@ -255,13 +254,9 @@ export default function FocusScreen() {
       }
 
       void track('check_in_completed', {
-        source: typeof from === 'string' && from.length > 0 ? from : 'onboarding',
+        source: 'onboarding',
         offline: checkInSavedOffline,
       });
-
-      if (from === 'sentir' || from === 'quick') {
-        await markPrioritiesReadyToast();
-      }
 
       let celebrationAfterSync: { streak: number; milestone: boolean } | null = null;
       if (!checkInSavedOffline && user) {
@@ -275,16 +270,12 @@ export default function FocusScreen() {
 
       // En onboarding, mostrar paywall suave antes de tabs.
       try {
-        if (from === 'sentir' || from === 'quick') {
-          router.replace('/(tabs)');
-        } else {
-          const { error: onboardingError } = await markOnboardingCompleted(user.id);
-          if (onboardingError) {
-            showToast(t('onboarding.focus.closeOnboardingError'), 'error');
-            return;
-          }
-          router.replace({ pathname: '/paywall', params: { next: '/(tabs)', source: 'onboarding' } });
+        const { error: onboardingError } = await markOnboardingCompleted(user.id);
+        if (onboardingError) {
+          showToast(t('onboarding.focus.closeOnboardingError'), 'error');
+          return;
         }
+        router.replace({ pathname: '/paywall', params: { next: '/(tabs)', source: 'onboarding' } });
       } catch (navError) {
         console.error('Error en navegación:', navError);
         router.replace('/(tabs)');
@@ -343,15 +334,11 @@ export default function FocusScreen() {
 
       <View style={styles.footer}>
         <CalmPrimaryButton
-          label={isSaving ? t('onboarding.focus.saving') : from === 'sentir' ? t('onboarding.focus.fromSentirSave') : t('onboarding.focus.start')}
+          label={isSaving ? t('onboarding.focus.saving') : t('onboarding.focus.start')}
           onPress={handleContinue}
           disabled={!selectedFocus || isSaving}
           accessibilityLabel={
-            isSaving
-              ? t('onboarding.focus.saving')
-              : from === 'sentir'
-                ? t('onboarding.focus.fromSentirSave')
-                : t('onboarding.focus.start')
+            isSaving ? t('onboarding.focus.saving') : t('onboarding.focus.start')
           }
           accessibilityHint={t('onboardingA11y.continueFocusHint')}
           accessibilityState={{ disabled: !selectedFocus || isSaving, busy: isSaving }}

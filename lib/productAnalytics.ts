@@ -15,7 +15,7 @@ export type FocusSessionEvent = 'opened' | 'started' | 'paused' | 'completed' | 
 
 export function trackFocusSession(
   event: FocusSessionEvent,
-  props?: { remaining_seconds?: number },
+  props?: { remaining_seconds?: number; duration_minutes?: number },
 ): void {
   void track(`focus_session_${event}`, props);
 }

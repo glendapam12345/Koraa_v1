@@ -17,14 +17,14 @@ const ENERGY_LEVELS: { id: number; key: TranslationKey; bars: number }[] = [
 
 export default function EnergyScreen() {
   const { t } = useI18n();
-  const { emotion, from } = useLocalSearchParams<{ emotion: string; from: string }>();
+  const { emotion } = useLocalSearchParams<{ emotion: string }>();
   const [selectedEnergy, setSelectedEnergy] = useState<number>(0);
 
   const handleContinue = () => {
     if (selectedEnergy > 0 && emotion) {
       router.push({
         pathname: '/onboarding/time',
-        params: { emotion, energy: selectedEnergy.toString(), from: from || 'onboarding' },
+        params: { emotion, energy: selectedEnergy.toString() },
       });
     }
   };

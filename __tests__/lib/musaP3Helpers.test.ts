@@ -1,21 +1,5 @@
-import { getStreakLevelKey, getStreakRingProgress, getNextStreakMilestone } from '@/lib/streakLevel';
 import { periodDayCount, slicePeriodData } from '@/lib/checkInPeriod';
-import type { DayData } from '@/components/ProgressChart';
-
-describe('streakLevel', () => {
-  it('maps streak to level keys', () => {
-    expect(getStreakLevelKey(0)).toBe('yo.streakLevelStarting');
-    expect(getStreakLevelKey(7)).toBe('yo.streakLevelOnTrack');
-    expect(getStreakLevelKey(30)).toBe('yo.streakLevelAdvanced');
-    expect(getStreakLevelKey(90)).toBe('yo.streakLevelMaster');
-  });
-
-  it('computes ring progress toward next milestone', () => {
-    expect(getStreakRingProgress(0)).toBe(0);
-    expect(getStreakRingProgress(3)).toBeCloseTo(3 / 7);
-    expect(getNextStreakMilestone(7)).toBe(14);
-  });
-});
+import type { DayData } from '@/lib/checkInDayData';
 
 describe('checkInPeriod', () => {
   const sample: DayData[] = Array.from({ length: 30 }, (_, i) => ({

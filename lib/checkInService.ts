@@ -3,6 +3,8 @@ import { supabase } from '@/lib/supabase';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { prioritizeTasksIntelligently } from '@/lib/smartPrioritization';
 import { publishCheckInCelebration } from '@/lib/checkInCelebration';
+import { markOnboardingCompleted } from '@/lib/onboardingGate';
+import { logger } from '@/lib/logger';
 import { fetchCurrentStreak, isStreakMilestone } from '@/lib/streak';
 import type { AppLocale } from '@/lib/i18n';
 import type { Task } from '@/components/tasks/TaskCard';
@@ -142,6 +144,12 @@ export async function saveDailyCheckInAndPrioritize(input: DailyCheckInInput): P
     availableTime: input.availableTime,
     focusLevel: input.focusLevel,
     locale: input.locale,
+  });
+
+  void markOnboardingCompleted(input.userId).then(({ error }) => {
+    if (error) {
+      logger.debug('checkInService: onboarding mark failed', error.message);
+    }
   });
 
   let celebration: SaveCheckInResult['celebration'] = null;

@@ -46,12 +46,13 @@ export function TipGridCard({ tip, forYouLabel, onPress }: TipGridCardProps) {
 
 type TipDetailExpandedProps = {
   tip: ScoredTip;
+  eyebrow?: string;
   actionLabel?: string;
   onAction?: () => void;
 };
 
 /** Tarjeta expandida con el consejo completo */
-export function TipDetailExpanded({ tip, actionLabel, onAction }: TipDetailExpandedProps) {
+export function TipDetailExpanded({ tip, eyebrow, actionLabel, onAction }: TipDetailExpandedProps) {
   const { t } = useI18n();
 
   return (
@@ -63,14 +64,15 @@ export function TipDetailExpanded({ tip, actionLabel, onAction }: TipDetailExpan
         colors={[THEME.colors.tint.blue.veryFaint, THEME.colors.fill[100]]}
         style={styles.expanded}
       >
+        {eyebrow ? <Text style={styles.expandedEyebrow}>{eyebrow}</Text> : null}
         <Text style={styles.expandedEmoji} importantForAccessibility="no" accessibilityElementsHidden>
           {tip.emoji}
         </Text>
-      <Text style={styles.expandedTitle}>{tip.title}</Text>
-      <Text style={styles.expandedBody}>{tip.body}</Text>
-      {actionLabel && onAction ? (
-        <CalmPrimaryButton label={actionLabel} onPress={onAction} variant="soft" />
-      ) : null}
+        <Text style={styles.expandedTitle}>{tip.title}</Text>
+        <Text style={styles.expandedBody}>{tip.body}</Text>
+        {actionLabel && onAction ? (
+          <CalmPrimaryButton label={actionLabel} onPress={onAction} variant="soft" />
+        ) : null}
       </LinearGradient>
     </View>
   );
@@ -122,10 +124,15 @@ const styles = StyleSheet.create({
   expanded: {
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.lg,
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
     borderWidth: 1,
     borderColor: THEME.colors.tint.blue.border,
     gap: THEME.spacing.sm,
+  },
+  expandedEyebrow: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
   },
   expandedEmoji: {
     fontSize: 40,

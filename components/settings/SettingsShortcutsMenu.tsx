@@ -12,6 +12,7 @@ import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { SettingsRow } from '@/components/settings/SettingsRow';
 import { settingsScreenStyles as styles } from '@/components/settings/settingsScreenStyles';
+import { openPaywall } from '@/lib/paywallNavigation';
 
 type SettingsShortcutsMenuProps = {
   isLoading: boolean;
@@ -38,13 +39,13 @@ export function SettingsShortcutsMenu({
       <SettingsRow
         icon={<Crown size={22} color={THEME.colors.text.main} />}
         label={t('settings.managePremium')}
-        onPress={() => router.push('/paywall')}
+        onPress={() => openPaywall(router, '/settings')}
       />
 
       <SettingsRow
         icon={<PenLine size={22} color={THEME.colors.text.main} />}
         label={t('settings.editProfile')}
-        onPress={() => router.push('/(tabs)/yo?editProfile=1')}
+        onPress={() => router.push('/(tabs)/yo')}
       />
 
       <SettingsRow

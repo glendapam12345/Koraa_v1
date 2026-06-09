@@ -1,19 +1,17 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
-import { Text, StyleSheet, RefreshControl } from 'react-native';
+import { useMemo, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { useCheckInInsightsData } from '@/hooks/useCheckInInsightsData';
-import { useStreak } from '@/hooks/today/useStreak';
 import {
   buildEmotionMix,
   buildEnergySparkline,
   hasEnoughPatternData,
 } from '@/lib/checkInPatterns';
 import { slicePeriodData } from '@/lib/checkInPeriod';
-import { generateEmotionalInsights } from '@/lib/emotionalInsights';
 import { MiniSparklineChart } from '@/components/yo/MiniSparklineChart';
 import { MiniEmotionBars } from '@/components/yo/MiniEmotionBars';
 import { MiniMoodTimeline } from '@/components/yo/MiniMoodTimeline';
@@ -22,68 +20,18 @@ import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { ParaMiMusaHeader, type ParaMiPeriodId } from '@/components/parami/ParaMiMusaHeader';
 import { ParaMiMusaCard } from '@/components/parami/ParaMiMusaCard';
-import { ParaMiInsights } from '@/components/parami/ParaMiInsights';
 import { LockedChartPreview } from '@/components/parami/LockedChartPreview';
-import { getDisplayName, getFirstName } from '@/lib/displayName';
-import { fetchProfilePreferences } from '@/lib/profilePreferences';
-import { supabase } from '@/lib/supabase';
-import { getLocalDateString } from '@/lib/dateLocal';
-import type { TranslationKey } from '@/lib/i18n';
+import { openPaywall } from '@/lib/paywallNavigation';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
 const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
 
-const EMOTION_IDS = ['agotada', 'tranquila', 'ansiosa', 'motivada', 'abrumada', 'enfocada'] as const;
-
 export default function ParaMiScreen() {
   const { t, locale } = useI18n();
   const { user } = useAuth();
-  const [profileFullName, setProfileFullName] = useState<string | undefined>();
-  const [todayEmotion, setTodayEmotion] = useState<string>('');
-  const [todayEnergy, setTodayEnergy] = useState(0);
   const [period, setPeriod] = useState<ParaMiPeriodId>('week');
 
-  useEffect(() => {
-    if (!user?.id) return;
-    void fetchProfilePreferences(user.id).then(({ data }) => {
-      setProfileFullName(data?.full_name?.trim() || undefined);
-    });
-  }, [user?.id]);
-
-  const loadTodayCheckIn = useCallback(async () => {
-    if (!user?.id) return;
-    const { data } = await supabase
-      .from('daily_check_ins')
-      .select('emotion, energy_level')
-      .eq('user_id', user.id)
-      .eq('date', getLocalDateString())
-      .maybeSingle();
-    if (data?.emotion) {
-      setTodayEmotion(data.emotion);
-      setTodayEnergy(data.energy_level ?? 0);
-    } else {
-      setTodayEmotion('');
-      setTodayEnergy(0);
-    }
-  }, [user?.id]);
-
-  const displayName = getDisplayName(
-    { full_name: profileFullName, user_metadata: user?.user_metadata, email: user?.email },
-    t('yo.welcomeName'),
-  );
-  const firstName = getFirstName(displayName);
-
-  const todayEmotionLabel = useMemo(() => {
-    if (!todayEmotion) return undefined;
-    const id = todayEmotion.toLowerCase();
-    if (EMOTION_IDS.includes(id as (typeof EMOTION_IDS)[number])) {
-      return t(`sentir.emotions.${id}` as TranslationKey);
-    }
-    return todayEmotion;
-  }, [todayEmotion, t]);
-
   const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
-  const { currentStreak, loadStreak } = useStreak(user?.id);
   const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
   const dayLabels = useMemo(
     () => [
@@ -103,10 +51,8 @@ export default function ParaMiScreen() {
   const refresh = useCallback(() => {
     if (user?.id) {
       void load(user.id);
-      void loadTodayCheckIn();
-      void loadStreak();
     }
-  }, [user?.id, load, loadTodayCheckIn, loadStreak]);
+  }, [user?.id, load]);
 
   useFocusEffect(
     useCallback(() => {
@@ -119,17 +65,13 @@ export default function ParaMiScreen() {
   const emotionMix = useMemo(() => buildEmotionMix(periodData), [periodData]);
   const hasPatternData = useMemo(() => hasEnoughPatternData(periodData), [periodData]);
   const locked = !isSubscribed;
-  const insights = useMemo(
-    () => generateEmotionalInsights(periodData, currentStreak, locale),
-    [periodData, currentStreak, locale],
-  );
 
   const moodChart = locked ? (
     <LockedChartPreview variant="mood" />
   ) : hasPatternData ? (
     <MiniMoodTimeline days={periodData} />
   ) : (
-    <Text style={styles.placeholder}>{t('yo.patternsNeedData')}</Text>
+    <Text style={styles.placeholder}>{t('parami.patternsNeedCheckIns')}</Text>
   );
 
   const energyChart = locked ? (
@@ -137,7 +79,7 @@ export default function ParaMiScreen() {
   ) : hasPatternData ? (
     <MiniSparklineChart values={energySparkline} />
   ) : (
-    <Text style={styles.placeholder}>{t('yo.patternsNeedData')}</Text>
+    <Text style={styles.placeholder}>{t('parami.patternsNeedCheckIns')}</Text>
   );
 
   const emotionsChart = locked ? (
@@ -145,7 +87,7 @@ export default function ParaMiScreen() {
   ) : hasPatternData ? (
     <MiniEmotionBars items={emotionMix} />
   ) : (
-    <Text style={styles.placeholder}>{t('yo.patternsNeedData')}</Text>
+    <Text style={styles.placeholder}>{t('parami.patternsNeedCheckIns')}</Text>
   );
 
   return (
@@ -156,30 +98,10 @@ export default function ParaMiScreen() {
       }
     >
       <ParaMiMusaHeader
-        firstName={firstName}
         isSubscribed={isSubscribed}
-        progressData={progressData}
-        todayEmotionLabel={todayEmotionLabel}
-        todayEnergyLevel={todayEnergy}
         period={period}
         onPeriodChange={setPeriod}
       />
-
-      <Text style={styles.flowHint}>{t('parami.flowHint')}</Text>
-
-      <ParaMiInsights
-        insights={insights}
-        locked={locked}
-        hasEnoughData={hasPatternData}
-        loading={loading}
-      />
-
-      <Text style={styles.sectionTitle} accessibilityRole="header">
-        {t('parami.patternsSectionTitle')}
-      </Text>
-      {locked && !subscriptionLoading ? (
-        <Text style={styles.sectionSub}>{t('parami.chartsFreeNote')}</Text>
-      ) : null}
 
       <ParaMiMusaCard
         colors={[...THEME.colors.parami.moodCard]}
@@ -208,54 +130,73 @@ export default function ParaMiScreen() {
         {emotionsChart}
       </ParaMiMusaCard>
 
-      {locked && !subscriptionLoading ? (
-        <CalmPrimaryButton
-          label={t('parami.unlockCta')}
-          onPress={() => router.push('/paywall')}
-          accessibilityHint={t('paramiExtra.a11yUnlockHint')}
-        />
-      ) : null}
-
-      {!locked && !subscriptionLoading && !hasPatternData && !loading ? (
-        <Text style={styles.footerHint}>{t('parami.patternsNeedCheckIns')}</Text>
-      ) : null}
-
       <YoCheckInHistory
         entries={historyEntries}
         isSubscribed={isSubscribed}
         titleKey="parami.historyTitle"
+        paywallReturnTo="/(tabs)/parami"
       />
+
+      <View style={styles.tipsSoftSection}>
+        <Text style={styles.tipsSoftNote}>{t('parami.tipsSectionBody')}</Text>
+        <TouchableOpacity
+          onPress={() => router.push({ pathname: '/tips/[category]', params: { category: 'rest' } })}
+          activeOpacity={0.75}
+          accessibilityRole="link"
+          accessibilityLabel={t('parami.tipsSectionA11y')}
+        >
+          <Text style={styles.tipsSoftLink}>{t('parami.linkTips')}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {locked && !subscriptionLoading ? (
+        <View style={styles.premiumSection}>
+          <Text style={styles.premiumNote}>{t('parami.premiumSectionNote')}</Text>
+          <CalmPrimaryButton
+            label={t('parami.unlockCta')}
+            onPress={() => openPaywall(router, '/(tabs)/parami')}
+            variant="soft"
+            accessibilityHint={t('paramiExtra.a11yUnlockHint')}
+          />
+        </View>
+      ) : null}
     </CalmScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  flowHint: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    lineHeight: 20,
-  },
-  sectionTitle: {
-    ...THEME.typography.sectionTitle,
-    color: THEME.colors.text.main,
-    marginBottom: THEME.spacing.xs,
-  },
-  sectionSub: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-    lineHeight: 22,
-    marginBottom: THEME.spacing.xs,
-  },
   placeholder: {
     ...THEME.typography.caption,
     color: THEME.colors.onGradientMuted,
     textAlign: 'center',
   },
-  footerHint: {
+  tipsSoftSection: {
+    gap: THEME.spacing.xs,
+    alignItems: 'center',
+    paddingTop: THEME.spacing.sm,
+  },
+  tipsSoftNote: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
     textAlign: 'center',
-    lineHeight: 18,
-    marginTop: THEME.spacing.sm,
+    lineHeight: 20,
+  },
+  tipsSoftLink: {
+    ...THEME.typography.body,
+    color: THEME.colors.calm.lavenderDeep,
+    textDecorationLine: 'underline',
+  },
+  premiumSection: {
+    gap: THEME.spacing.sm,
+    marginTop: THEME.spacing.md,
+    paddingTop: THEME.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.fill[200],
+  },
+  premiumNote: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 20,
+    textAlign: 'center',
   },
 });

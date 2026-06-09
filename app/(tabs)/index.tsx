@@ -19,7 +19,7 @@ import { getCatalog } from '@/lib/i18n';
 import { HoyLiteBanner } from '@/components/hoy/HoyLiteBanner';
 import { HoyInicioView } from '@/components/hoy/HoyInicioView';
 import { HoyTasksSection } from '@/components/hoy/HoyTasksSection';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import type { Task } from '@/components/tasks/TaskCard';
 import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
 import { useAuth } from '@/contexts/AuthContext';
@@ -159,7 +159,7 @@ export default function TodayScreen() {
       ansiosa: '😰',
       motivada: '✨',
       abrumada: '🥺',
-      enfocada: '🎯',
+      enfocada: '🌿',
     };
     return ids.map((id) => ({ id, emoji: emojis[id], label: catalog[id] ?? id }));
   }, [locale]);
@@ -366,7 +366,6 @@ export default function TodayScreen() {
             onCollapseRestOfDay={() => setShowSecondaryModules(false)}
             displayName={displayName}
             coachSuggestion={explanation.suggestion}
-            onOpenCalendar={() => router.push('/(tabs)/semana')}
             onShowMoreForToday={!showSecondaryModules ? handleShowMoreForHoy : undefined}
             onDeleteTask={handleDeleteTask}
             onChangeEmotion={openQuickRecheck}

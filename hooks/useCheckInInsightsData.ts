@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { DayData } from '@/components/ProgressChart';
+import type { DayData } from '@/lib/checkInDayData';
 import type { YoHistoryEntry } from '@/components/yo/YoCheckInHistory';
 import { getLocalDateString } from '@/lib/dateLocal';
 

@@ -11,7 +11,7 @@ export const EMOTION_TIPS: Record<string, EmotionTip[]> = {
   agotada: [
     {
       id: 'agotada-1',
-      tip: 'Es momento de descansar. Prioriza solo 1-2 tareas esenciales hoy',
+      tip: 'Hoy puede ser un día corto: 1–2 cosas pequeñas bastan',
       category: 'rest',
     },
     {
@@ -21,12 +21,12 @@ export const EMOTION_TIPS: Record<string, EmotionTip[]> = {
     },
     {
       id: 'agotada-3',
-      tip: 'Recuerda: descansar también es productivo. No necesitas hacerlo todo',
+      tip: 'Descansar también cuenta. No necesitas hacerlo todo',
       category: 'mindset',
     },
     {
       id: 'agotada-4',
-      tip: 'Tareas pequeñas también cuentan. Empieza por la más fácil',
+      tip: 'Lo pequeño también vale. Empieza por lo más fácil',
       category: 'productivity',
     },
   ],
@@ -38,51 +38,51 @@ export const EMOTION_TIPS: Record<string, EmotionTip[]> = {
     },
     {
       id: 'ansiosa-2',
-      tip: 'Enfócate en una tarea a la vez. No necesitas hacerlo todo hoy',
+      tip: 'Una cosa a la vez. No necesitas hacerlo todo hoy',
       category: 'productivity',
     },
     {
       id: 'ansiosa-3',
-      tip: 'Las tareas pequeñas también cuentan. Empieza por la más fácil',
+      tip: 'Lo pequeño también vale. Empieza por lo más fácil',
       category: 'productivity',
     },
     {
       id: 'ansiosa-4',
-      tip: 'Divide las tareas grandes en pasos pequeños. Respira entre cada paso',
+      tip: 'Divide lo grande en pasos pequeños. Respira entre cada uno',
       category: 'action',
     },
   ],
   motivada: [
     {
       id: 'motivada-1',
-      tip: '¡Aprovecha esta energía! Prioriza tareas que requieren creatividad',
+      tip: 'Si te apetece, canaliza esta energía en una cosa que importe',
       category: 'productivity',
     },
     {
       id: 'motivada-2',
-      tip: 'Este es el momento perfecto para proyectos importantes',
+      tip: 'Buen momento para algo que te importe — sin apurarte',
       category: 'action',
     },
     {
       id: 'motivada-3',
-      tip: 'Equilibra: energía alta no significa hacerlo todo. Enfócate en lo esencial',
+      tip: 'Energía alta no significa hacerlo todo. Un paso basta',
       category: 'mindset',
     },
     {
       id: 'motivada-4',
-      tip: 'Mantén el ritmo pero no te agotes. Tómate pausas también',
+      tip: 'Mantén el ritmo pero no te agotes. Las pausas también cuentan',
       category: 'rest',
     },
   ],
   tranquila: [
     {
       id: 'tranquila-1',
-      tip: 'Aprovecha esta calma para tareas que requieren enfoque',
+      tip: 'Esta calma puede servir para una cosa que pida claridad',
       category: 'productivity',
     },
     {
       id: 'tranquila-2',
-      tip: 'Es un buen día para decisiones importantes',
+      tip: 'Buen día para una decisión pequeña, sin prisa',
       category: 'action',
     },
     {
@@ -92,19 +92,19 @@ export const EMOTION_TIPS: Record<string, EmotionTip[]> = {
     },
     {
       id: 'tranquila-4',
-      tip: 'Este estado es perfecto para tareas que requieren claridad mental',
+      tip: 'Con tranquilidad, una cosa con calma puede ser suficiente',
       category: 'productivity',
     },
   ],
   abrumada: [
     {
       id: 'abrumada-1',
-      tip: 'Respira. Divide las tareas grandes en pasos pequeños',
+      tip: 'Respira. Divide lo grande en pasos pequeños',
       category: 'mindset',
     },
     {
       id: 'abrumada-2',
-      tip: 'Prioriza solo lo esencial. El resto puede esperar',
+      tip: 'Solo lo esencial hoy. El resto puede esperar',
       category: 'productivity',
     },
     {
@@ -114,29 +114,29 @@ export const EMOTION_TIPS: Record<string, EmotionTip[]> = {
     },
     {
       id: 'abrumada-4',
-      tip: 'Empieza por la tarea más pequeña. Un paso a la vez',
+      tip: 'Empieza por lo más pequeño. Un paso a la vez',
       category: 'action',
     },
   ],
   enfocada: [
     {
       id: 'enfocada-1',
-      tip: 'Aprovecha este momento para tareas complejas',
+      tip: 'Si te apetece, podrías abordar algo un poco más profundo',
       category: 'productivity',
     },
     {
       id: 'enfocada-2',
-      tip: 'Mantén el foco. Evita distracciones',
+      tip: 'Protege este momento: menos interrupciones, más calma',
       category: 'action',
     },
     {
       id: 'enfocada-3',
-      tip: 'Este es tu momento de máximo rendimiento. Úsalo bien',
+      tip: 'Un paso con calma vale más que hacerlo todo de golpe',
       category: 'productivity',
     },
     {
       id: 'enfocada-4',
-      tip: 'Equilibra el trabajo con descansos. El enfoque sostenido es mejor',
+      tip: 'Alterna con descansos. El ritmo sostenible gana',
       category: 'rest',
     },
   ],

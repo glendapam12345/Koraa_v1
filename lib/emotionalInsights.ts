@@ -1,4 +1,4 @@
-import { DayData } from '@/components/ProgressChart';
+import type { DayData } from '@/lib/checkInDayData';
 import type { AppLocale } from '@/lib/i18n';
 import { getCatalog, translate } from '@/lib/i18n';
 
@@ -161,7 +161,7 @@ export function getEmotionEmoji(emotion: string): string {
     case 'tranquila':
       return '😌';
     case 'enfocada':
-      return '🎯';
+      return '🌿';
     case 'motivada':
       return '✨';
     case 'ansiosa':
