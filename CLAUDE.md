@@ -94,7 +94,7 @@ The `development_guidelines/` directory organizes extended project context:
 
 See individual README files in each subdirectory for usage guidelines.
 
-**UX / flujo de usuario:** [2026-06-05_flow_audit_buttons_cleanup.md](development_guidelines/delivered/2026-06-05_flow_audit_buttons_cleanup.md) (audit flujo + limpieza, 4 tabs). Histórico: [koraa_ux_flow_audit.md](development_guidelines/delivered/koraa_ux_flow_audit.md). **Rediseño anti-presión:** [2026-06-05_anti_pressure_ux_redesign.md](development_guidelines/delivered/2026-06-05_anti_pressure_ux_redesign.md). **Auth/onboarding gates:** [onboarding_gate_and_tabs_auth.md](development_guidelines/delivered/onboarding_gate_and_tabs_auth.md). Expo Go: `npm run dev:cf` o `npm run dev:phone`.
+**UX / flujo de usuario:** [2026-06-05_ux_audit_post_flow_cleanup.md](development_guidelines/delivered/2026-06-05_ux_audit_post_flow_cleanup.md) (audit UX jun 2026). Flujo + limpieza: [2026-06-05_flow_audit_buttons_cleanup.md](development_guidelines/delivered/2026-06-05_flow_audit_buttons_cleanup.md). Histórico: [koraa_ux_flow_audit.md](development_guidelines/delivered/koraa_ux_flow_audit.md). **Rediseño anti-presión:** [2026-06-05_anti_pressure_ux_redesign.md](development_guidelines/delivered/2026-06-05_anti_pressure_ux_redesign.md). **Auth/onboarding gates:** [onboarding_gate_and_tabs_auth.md](development_guidelines/delivered/onboarding_gate_and_tabs_auth.md). Expo Go: `npm run dev:cf` o `npm run dev:phone`.
 
 **Design system (en curso):** [2026-05-19_design_system_unification.md](development_guidelines/running/2026-05-19_design_system_unification.md) — `CalmScreen`, `CalmCard`, `CalmPrimaryButton`, `ScreenHeader`, `THEME.surfaces.*`.
 

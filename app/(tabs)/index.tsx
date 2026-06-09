@@ -17,6 +17,7 @@ import { useProgress } from '@/hooks/useProgress';
 import { normalizeCategoryKey } from '@/lib/i18n/categoryLabels';
 import { getCatalog } from '@/lib/i18n';
 import { HoyLiteBanner } from '@/components/hoy/HoyLiteBanner';
+import { HoyScreenHeader } from '@/components/hoy/HoyScreenHeader';
 import { HoyInicioView } from '@/components/hoy/HoyInicioView';
 import { HoyTasksSection } from '@/components/hoy/HoyTasksSection';
 import { useLocalSearchParams } from 'expo-router';
@@ -322,6 +323,12 @@ export default function TodayScreen() {
             <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
             <Text style={styles.loadingText}>{t('hoy.loading')}</Text>
           </View>
+        ) : (
+          <HoyScreenHeader />
+        )}
+
+        {!loading && hoyLiteLayout ? (
+          <HoyLiteBanner onShowAll={() => void handleOptOutHoyLite()} />
         ) : null}
 
         {!loading && hoyPreFlowActive ? (
@@ -376,8 +383,6 @@ export default function TodayScreen() {
             onLightenLoad={() => setShowRedistribute(true)}
           />
         ) : null}
-
-        {hoyLiteLayout ? <HoyLiteBanner onShowAll={() => void handleOptOutHoyLite()} /> : null}
 
         {!loading &&
         todayMood &&
