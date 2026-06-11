@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
 import { Toast } from '@/components/Toast';
 import { Focus } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
@@ -302,6 +303,7 @@ export default function FocusScreen() {
           </View>
         </View>
 
+        <OnboardingCheckInProgress step={4} />
         <Text style={styles.title}>{t('onboarding.focus.title')}</Text>
         <Text style={styles.titleAccent}>{t('onboarding.focus.titleAccent')}</Text>
         <Text style={styles.subtitle}>{t('onboarding.focus.subtitle')}</Text>

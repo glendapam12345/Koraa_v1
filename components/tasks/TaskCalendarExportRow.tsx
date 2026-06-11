@@ -1,6 +1,6 @@
 import { View, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
-import { AddToGoogleCalendarButton } from '@/components/tasks/AddToGoogleCalendarButton';
+import { AddToDeviceCalendarButton } from '@/components/tasks/AddToDeviceCalendarButton';
 
 type TaskCalendarExportRowProps = {
   taskId: string;
@@ -17,7 +17,7 @@ export function TaskCalendarExportRow({
 }: TaskCalendarExportRowProps) {
   return (
     <View style={[styles.row, variant === 'row' && styles.rowStack]}>
-      <AddToGoogleCalendarButton
+      <AddToDeviceCalendarButton
         taskId={taskId}
         title={title}
         scheduledDate={scheduledDate}

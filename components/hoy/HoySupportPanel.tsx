@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { ChevronRight, Wind, Moon, Pause } from 'lucide-react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { ChevronRight, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
@@ -13,6 +13,7 @@ import { useHoyMeditation } from '@/hooks/useHoyMeditation';
 import { getSituationalMeditationType } from '@/lib/meditationSituational';
 import { MeditationCircleSimple } from '@/components/MeditationCircleSimple';
 import { Toast } from '@/components/Toast';
+import { openTipsCategory as navigateToTipsCategory } from '@/lib/tipsNavigation';
 
 const WEEK_INSIGHT_DAYS = 7;
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
@@ -32,6 +33,7 @@ export function HoySupportPanel({
   energyLevel,
 }: HoySupportPanelProps) {
   const { t, locale } = useI18n();
+  const [expanded, setExpanded] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [, setShowConfetti] = useState(false);
@@ -112,21 +114,11 @@ export function HoySupportPanel({
       });
       return;
     }
-    router.push({
-      pathname: '/tips/[category]',
-      params: { category: 'mindset', emotion: emotionKey, energy: String(energyLevel) },
-    });
+    navigateToTipsCategory(router, 'mindset', { emotion: emotionKey, energyLevel });
   };
 
-  const startFocusPause = useCallback(() => {
-    router.push({ pathname: '/focus-session', params: { minutes: '5' } });
-  }, []);
-
   const openTipsCategory = (category: 'mindset' | 'rest') => {
-    router.push({
-      pathname: '/tips/[category]',
-      params: { category, emotion: emotionKey, energy: String(energyLevel) },
-    });
+    navigateToTipsCategory(router, category, { emotion: emotionKey, energyLevel });
   };
 
   const showSessionPrimary =
@@ -136,29 +128,29 @@ export function HoySupportPanel({
   return (
     <>
       <CalmCard style={styles.card}>
-        <Text style={styles.title}>{t('hoy.supportPanelTitle')}</Text>
-        <Text style={styles.message}>{t(content.messageKey, messageParams)}</Text>
+        <TouchableOpacity
+          onPress={() => setExpanded((open) => !open)}
+          activeOpacity={0.85}
+          style={styles.toggleRow}
+          accessibilityRole="button"
+          accessibilityState={{ expanded }}
+          accessibilityLabel={
+            expanded ? t('hoy.supportPanelHide') : t('hoy.supportPanelTitle')
+          }
+        >
+          <Text style={styles.title}>{t('hoy.supportPanelTitle')}</Text>
+          {expanded ? (
+            <ChevronUp size={18} color={THEME.colors.calm.lavenderDeep} />
+          ) : (
+            <ChevronDown size={18} color={THEME.colors.calm.lavenderDeep} />
+          )}
+        </TouchableOpacity>
 
-        <View style={styles.chipRow}>
-          <SupportChip
-            icon={<Wind size={16} color={THEME.colors.calm.lavenderDeep} />}
-            label={t('hoy.supportChipBreathe')}
-            onPress={() => openTipsCategory('mindset')}
-            a11y={t('hoy.supportChipBreatheA11y')}
-          />
-          <SupportChip
-            icon={<Moon size={16} color={THEME.colors.calm.lavenderDeep} />}
-            label={t('hoy.supportChipMeditate')}
-            onPress={startPauseMeditation}
-            a11y={t('hoy.supportChipMeditateA11y')}
-          />
-          <SupportChip
-            icon={<Pause size={16} color={THEME.colors.calm.lavenderDeep} />}
-            label={t('hoy.supportChipPause')}
-            onPress={startFocusPause}
-            a11y={t('hoy.supportChipPauseA11y')}
-          />
-        </View>
+        {!expanded ? (
+          <Text style={styles.collapsedHint}>{t('hoy.supportPanelCollapsedHint')}</Text>
+        ) : (
+          <>
+        <Text style={styles.message}>{t(content.messageKey, messageParams)}</Text>
 
         {showSessionPrimary ? (
           <CalmPrimaryButton
@@ -189,6 +181,8 @@ export function HoySupportPanel({
           <Text style={styles.moreTipsText}>{t('hoy.supportMoreTips')}</Text>
           <ChevronRight size={14} color={THEME.colors.text.secondary} />
         </TouchableOpacity>
+          </>
+        )}
       </CalmCard>
 
       {showMeditation ? (
@@ -207,31 +201,6 @@ export function HoySupportPanel({
   );
 }
 
-function SupportChip({
-  icon,
-  label,
-  onPress,
-  a11y,
-}: {
-  icon: ReactNode;
-  label: string;
-  onPress: () => void;
-  a11y: string;
-}) {
-  return (
-    <TouchableOpacity
-      style={styles.chip}
-      onPress={onPress}
-      activeOpacity={0.85}
-      accessibilityRole="button"
-      accessibilityLabel={a11y}
-    >
-      {icon}
-      <Text style={styles.chipLabel}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
 const styles = StyleSheet.create({
   card: {
     gap: THEME.spacing.sm,
@@ -239,38 +208,26 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.tint.blue.border,
     borderWidth: 1,
   },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: THEME.spacing.sm,
+  },
   title: {
     ...THEME.typography.sectionTitle,
-    fontSize: 17,
     color: THEME.colors.text.main,
+    flex: 1,
+  },
+  collapsedHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 20,
   },
   message: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
     lineHeight: 22,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: THEME.spacing.xs,
-    marginTop: THEME.spacing.xs,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.xs,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[100],
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.lavender,
-    minHeight: 36,
-  },
-  chipLabel: {
-    ...THEME.typography.caption,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.medium,
   },
   softCta: {
     flexDirection: 'row',

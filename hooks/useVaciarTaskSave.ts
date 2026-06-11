@@ -3,6 +3,10 @@ import { useI18n } from '@/contexts/I18nContext';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { logger } from '@/lib/logger';
 import {
+  promptDeviceCalendarPermission,
+  syncSavedTaskToDeviceCalendar,
+} from '@/lib/deviceCalendar';
+import {
   createVaciarTask,
   validateVaciarTaskDraft,
   type VaciarTaskDraft,
@@ -92,6 +96,22 @@ export function useVaciarTaskSave({
           await setTaskEffort(result.taskId, options.effortFeel);
         }
 
+        const calendarSync = await syncSavedTaskToDeviceCalendar({
+          taskId: result.taskId,
+          title: result.savedTitle,
+          scheduledDate: result.savedScheduledDate,
+          eventNotes: t('deviceCalendar.eventNotes'),
+        });
+
+        if (calendarSync === 'permission_denied') {
+          promptDeviceCalendarPermission({
+            permissionTitle: t('deviceCalendar.permissionTitle'),
+            permissionBody: t('deviceCalendar.permissionBody'),
+            cancel: t('deviceCalendar.cancel'),
+            openSettings: t('deviceCalendar.openSettings'),
+          });
+        }
+
         if (result.status === 'offline') {
           await onSaved({
             savedTitle: result.savedTitle,
@@ -118,16 +138,20 @@ export function useVaciarTaskSave({
         let toastMsg = result.hasSubtasks
           ? t('vaciarExtra.toastWithSubtasks', {
               count: result.subtaskCount,
-              priority: t('vaciarExtra.toastWithSubtasksSuccess'),
+              suffix: t('vaciarExtra.toastWithSubtasksSuccess'),
             })
           : result.savedScheduledDate
-            ? t('vaciarExtra.toastAddedWithDate', {
-                date: formatSavedDate(result.savedScheduledDate),
-              })
+            ? calendarSync === 'added'
+              ? t('vaciarExtra.toastAddedWithDateAndCalendar', {
+                  date: formatSavedDate(result.savedScheduledDate),
+                })
+              : t('vaciarExtra.toastAddedWithDate', {
+                  date: formatSavedDate(result.savedScheduledDate),
+                })
             : t('vaciarExtra.toastAdded');
 
         if (result.reprioritized) {
-          toastMsg = `${toastMsg} ${t('vaciar.reprioritizedToast')}`;
+          toastMsg = `${toastMsg} ${t('vaciar.suggestionsUpdatedToast')}`;
         } else if (!hasCheckInToday) {
           toastMsg = t('vaciarExtra.toastAddedGoFeel');
         }

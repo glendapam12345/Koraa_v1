@@ -10,6 +10,8 @@ type FlowStep = 'vaciar' | 'sentir' | 'accionar';
 
 interface FlowIndicatorProps {
   currentStep: FlowStep;
+  /** Ocultar upsell Premium (p. ej. en Tareas durante captura). */
+  showPremiumHint?: boolean;
 }
 
 const STEP_ROUTES: Record<FlowStep, string> = {
@@ -20,7 +22,7 @@ const STEP_ROUTES: Record<FlowStep, string> = {
 
 export type { FlowStep };
 
-/** Progreso del día: Tareas → Check-in en Hoy → focos en Hoy. */
+/** Progreso del día: Tareas → Check-in en Hoy → pasos sugeridos en Hoy. */
 export function resolveFlowStep(args: {
   hasCheckIn: boolean;
   hasTasks: boolean;
@@ -30,7 +32,7 @@ export function resolveFlowStep(args: {
   return 'sentir';
 }
 
-export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
+export function FlowIndicator({ currentStep, showPremiumHint = true }: FlowIndicatorProps) {
   const router = useRouter();
   const { isLoading: subscriptionLoading, isSubscribed } = useSubscription();
   const { t } = useI18n();
@@ -75,7 +77,7 @@ export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
   };
 
   return (
-    <View style={styles.wrapper}>
+    <View>
       <Text style={styles.caption}>{t('flow.caption')}</Text>
       <Text style={styles.captionSub}>{t('flow.captionSub')}</Text>
       <View style={styles.container}>
@@ -125,7 +127,7 @@ export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
         })}
       </View>
 
-      {!subscriptionLoading && !isSubscribed ? (
+      {showPremiumHint && !subscriptionLoading && !isSubscribed ? (
         <TouchableOpacity
           onPress={() => router.push('/paywall')}
           activeOpacity={0.75}
@@ -145,9 +147,6 @@ export function FlowIndicator({ currentStep }: FlowIndicatorProps) {
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    marginBottom: THEME.spacing.md,
-  },
   caption: {
     ...THEME.typography.small,
     fontFamily: THEME.fonts.heading.bold,

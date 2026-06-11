@@ -8,8 +8,10 @@ import { TIP_CATEGORY_META } from '@/lib/tipsPersonalization';
 type TipsCategoryCardProps = {
   category: TipCategoryId;
   label: string;
+  subtitle?: string;
   tipCount: number;
   tipsLabel: string;
+  countBadge?: string;
   cardWidth?: number;
   onPress: () => void;
 };
@@ -17,8 +19,10 @@ type TipsCategoryCardProps = {
 export function TipsCategoryCard({
   category,
   label,
+  subtitle,
   tipCount,
   tipsLabel,
+  countBadge,
   cardWidth = undefined,
   onPress,
 }: TipsCategoryCardProps) {
@@ -41,12 +45,19 @@ export function TipsCategoryCard({
         style={styles.card}
       >
         <Text style={styles.emoji}>{meta.emoji}</Text>
-        <Text style={styles.label} numberOfLines={2}>
-          {label}
-        </Text>
+        <View style={styles.labelBlock}>
+          <Text style={styles.label} numberOfLines={2}>
+            {label}
+          </Text>
+          {subtitle ? (
+            <Text style={styles.subtitle} numberOfLines={2}>
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
         <View style={styles.badge}>
           <Text style={styles.badgeText}>
-            {tipCount} {tipsLabel}
+            {countBadge ?? `${tipCount} ${tipsLabel}`}
           </Text>
         </View>
       </LinearGradient>
@@ -76,14 +87,25 @@ const styles = StyleSheet.create({
   emoji: {
     fontSize: 32,
   },
+  labelBlock: {
+    flex: 1,
+    justifyContent: 'center',
+    marginVertical: THEME.spacing.xs,
+    gap: 2,
+  },
   label: {
     ...THEME.typography.h3,
     fontSize: 15,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
     lineHeight: 20,
-    flex: 1,
-    marginVertical: THEME.spacing.xs,
+  },
+  subtitle: {
+    ...THEME.typography.meta,
+    fontSize: 11,
+    color: THEME.colors.onGradient,
+    opacity: 0.9,
+    lineHeight: 14,
   },
   badge: {
     alignSelf: 'flex-start',

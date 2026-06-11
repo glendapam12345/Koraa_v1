@@ -91,9 +91,7 @@ export function YoCheckInHistory({
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    marginBottom: THEME.spacing.md,
-  },
+  wrap: {},
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -101,11 +99,8 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.sm,
   },
   sectionLabel: {
-    ...THEME.typography.caption,
+    ...THEME.typography.sectionEyebrow,
     color: THEME.colors.text.secondary,
-    fontFamily: THEME.fonts.heading.bold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   limitHint: {
     ...THEME.typography.small,

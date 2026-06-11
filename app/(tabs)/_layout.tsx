@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Tabs, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/constants/theme';
-import { Home, Calendar, Sparkles, User } from 'lucide-react-native';
+import { Home, ListTodo, Calendar, Sparkles, User } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { resolvePostAuthGate } from '@/lib/onboardingGate';
 import { AppLoadingGate } from '@/components/AppLoadingGate';
@@ -154,7 +154,7 @@ export default function TabLayout() {
             ...THEME.shadows.soft,
           },
           tabBarLabelStyle: {
-            fontSize: 13,
+            fontSize: 11,
             fontFamily: THEME.fonts.heading.medium,
           },
         }}
@@ -166,6 +166,16 @@ export default function TabLayout() {
             tabBarAccessibilityLabel: flowTabLabels.today,
             tabBarIcon: ({ size, color }) => (
               <Home size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="vaciar"
+          options={{
+            title: t('tabs.tasks'),
+            tabBarAccessibilityLabel: flowTabLabels.tasks,
+            tabBarIcon: ({ size, color }) => (
+              <ListTodo size={size} color={color} />
             ),
           }}
         />
@@ -187,12 +197,6 @@ export default function TabLayout() {
             tabBarIcon: ({ size, color }) => (
               <Sparkles size={size} color={color} />
             ),
-          }}
-        />
-        <Tabs.Screen
-          name="vaciar"
-          options={{
-            href: null,
           }}
         />
         <Tabs.Screen

@@ -3,7 +3,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { MiniSparklineChart } from '@/components/yo/MiniSparklineChart';
-import { buildEnergySparkline } from '@/lib/checkInPatterns';
 import type { DayData } from '@/components/ProgressChart';
 import { MiniMoodTimeline } from '@/components/yo/MiniMoodTimeline';
 
@@ -21,8 +20,6 @@ export function TipsMoodEnergyCards({
   weekData,
 }: TipsMoodEnergyCardsProps) {
   const { t } = useI18n();
-  const sparkline = buildEnergySparkline(weekData);
-
   return (
     <View
       style={styles.wrap}
@@ -53,7 +50,7 @@ export function TipsMoodEnergyCards({
         <Text style={styles.energyToday}>
           {t('tips.energyToday', { level: energyLevel || 3 })}
         </Text>
-        <MiniSparklineChart values={sparkline} height={48} />
+        <MiniSparklineChart days={weekData} variant="onGradient" />
       </LinearGradient>
     </View>
   );

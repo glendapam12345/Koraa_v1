@@ -1,10 +1,10 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Lock, ChevronRight } from 'lucide-react-native';
+import { Lock } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { EmotionalInsight } from '@/lib/emotionalInsights';
-import { getInsightAction } from '@/lib/paramiActionSummary';
+import { openPaywall } from '@/lib/paywallNavigation';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
 
 type ParaMiInsightsProps = {
@@ -12,6 +12,7 @@ type ParaMiInsightsProps = {
   locked: boolean;
   hasEnoughData: boolean;
   loading: boolean;
+  paywallReturnTo?: string;
 };
 
 export function ParaMiInsights({
@@ -19,6 +20,7 @@ export function ParaMiInsights({
   locked,
   hasEnoughData,
   loading,
+  paywallReturnTo = '/(tabs)/parami',
 }: ParaMiInsightsProps) {
   const { t } = useI18n();
 
@@ -30,16 +32,11 @@ export function ParaMiInsights({
       accessibilityRole="summary"
       accessibilityLabel={t('paramiExtra.a11yInsightsSection')}
     >
-      <Text style={styles.title} accessibilityRole="header">
-        {t('parami.insightTitle')}
-      </Text>
-      <Text style={styles.lead}>{t('parami.insightLead')}</Text>
-
       {!hasEnoughData ? (
         <Text style={styles.empty}>{t('parami.noInsightYet')}</Text>
       ) : locked ? (
         <TouchableOpacity
-          onPress={() => router.push('/paywall')}
+          onPress={() => openPaywall(router, paywallReturnTo)}
           activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityLabel={t('paramiExtra.a11yInsightsLocked')}
@@ -55,29 +52,14 @@ export function ParaMiInsights({
         </TouchableOpacity>
       ) : (
         <View style={styles.list}>
-          {insights.map((insight, index) => {
-            const action = getInsightAction(insight);
-            return (
-              <CalmCard key={`${insight.type}-${index}`} style={styles.insightCard}>
-                <View style={styles.insightContent}>
-                  {insight.emoji ? <Text style={styles.emoji}>{insight.emoji}</Text> : null}
-                  <View style={styles.insightTextCol}>
-                    <Text style={styles.message}>{insight.message}</Text>
-                    <TouchableOpacity
-                      onPress={() => router.push(action.route)}
-                      activeOpacity={0.85}
-                      style={styles.actionRow}
-                      accessibilityRole="button"
-                      accessibilityLabel={t(action.labelKey)}
-                    >
-                      <Text style={styles.actionLabel}>{t(action.labelKey)}</Text>
-                      <ChevronRight size={16} color={THEME.colors.calm.lavenderDeep} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </CalmCard>
-            );
-          })}
+          {insights.map((insight, index) => (
+            <CalmCard key={`${insight.type}-${index}`} style={styles.insightCard}>
+              <View style={styles.insightContent}>
+                {insight.emoji ? <Text style={styles.emoji}>{insight.emoji}</Text> : null}
+                <Text style={styles.message}>{insight.message}</Text>
+              </View>
+            </CalmCard>
+          ))}
         </View>
       )}
     </View>
@@ -86,16 +68,7 @@ export function ParaMiInsights({
 
 const styles = StyleSheet.create({
   wrap: {
-    gap: THEME.spacing.sm,
-  },
-  title: {
-    ...THEME.typography.sectionTitle,
-    color: THEME.colors.text.main,
-  },
-  lead: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    lineHeight: 20,
+    gap: THEME.spacing.xs,
   },
   empty: {
     ...THEME.typography.body,
@@ -113,10 +86,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: THEME.spacing.sm,
   },
-  insightTextCol: {
-    flex: 1,
-    gap: THEME.spacing.xs,
-  },
   emoji: {
     fontSize: 22,
     marginTop: 2,
@@ -125,18 +94,7 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.text.main,
     lineHeight: 22,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 2,
-    paddingVertical: 2,
-  },
-  actionLabel: {
-    ...THEME.typography.caption,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.bold,
+    flex: 1,
   },
   lockedCard: {
     gap: THEME.spacing.xs,

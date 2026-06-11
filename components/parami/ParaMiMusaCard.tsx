@@ -1,14 +1,20 @@
 import type { ReactNode } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Lock } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
+import { openPaywall } from '@/lib/paywallNavigation';
 
 type ParaMiMusaCardProps = {
   colors: readonly [string, string];
   title: string;
   body: string;
   locked: boolean;
+  /** Altura del área de gráfica según periodo. */
+  chartSize?: 'week' | 'fortnight' | 'month';
+  paywallReturnTo?: string;
   children?: ReactNode;
 };
 
@@ -17,6 +23,8 @@ export function ParaMiMusaCard({
   title,
   body,
   locked,
+  chartSize = 'week',
+  paywallReturnTo = '/(tabs)/parami',
   children,
 }: ParaMiMusaCardProps) {
   const { t } = useI18n();
@@ -31,28 +39,39 @@ export function ParaMiMusaCard({
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.body}>{body}</Text>
         <View
-          style={styles.chartWrap}
-          importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}
-          accessibilityElementsHidden={locked}
+          style={[
+            styles.chartWrap,
+            chartSize === 'fortnight' && styles.chartWrapFortnight,
+            chartSize === 'month' && styles.chartWrapMonth,
+          ]}
         >
           <View style={locked ? styles.chartLocked : styles.chartOpen}>{children}</View>
+          {locked ? (
+            <TouchableOpacity
+              style={styles.lockOverlay}
+              onPress={() => openPaywall(router, paywallReturnTo)}
+              activeOpacity={0.9}
+              accessibilityRole="button"
+              accessibilityLabel={t('parami.patternUnlockA11y')}
+            >
+              <View style={styles.lockIconWrap}>
+                <Lock size={20} color={THEME.colors.calm.lavenderDeep} />
+              </View>
+              <Text style={styles.lockHint}>{t('parami.patternUnlockHint')}</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
-        {locked ? (
-          <Text style={styles.lockedFootnote}>{t('parami.lockedPremiumHint')}</Text>
-        ) : null}
       </LinearGradient>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    marginBottom: THEME.spacing.sm,
-  },
+  wrap: {},
   card: {
-    borderRadius: THEME.borderRadius.xl,
-    padding: THEME.spacing.lg,
-    minHeight: 200,
+    borderRadius: THEME.borderRadius.card,
+    padding: THEME.spacing.md,
+    minHeight: 168,
     overflow: 'hidden',
     ...THEME.shadows.card,
   },
@@ -76,14 +95,37 @@ const styles = StyleSheet.create({
     minHeight: 96,
     marginBottom: THEME.spacing.xs,
   },
+  chartWrapFortnight: {
+    minHeight: 168,
+  },
+  chartWrapMonth: {
+    minHeight: 248,
+  },
   chartLocked: {
     opacity: 0.55,
   },
   chartOpen: {},
-  lockedFootnote: {
-    ...THEME.typography.meta,
-    color: THEME.colors.onGradientFaint,
-    textAlign: 'center',
-    marginTop: THEME.spacing.xs,
+  lockOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
+    backgroundColor: 'rgba(0,0,0,0.12)',
+    borderRadius: THEME.borderRadius.standard,
+  },
+  lockIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: THEME.colors.fill[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  lockHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.onGradient,
+    fontFamily: THEME.fonts.heading.medium,
   },
 });

@@ -1,43 +1,39 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, RefreshControl } from 'react-native';
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, StyleSheet, RefreshControl, Keyboard } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
 import { THEME } from '@/constants/theme';
-import { Tooltip } from '@/components/Tooltip';
 import { Toast } from '@/components/Toast';
-import { TaskCaptureOrganize } from '@/components/tasks/TaskCaptureOrganize';
+import { VaciarCaptureForm } from '@/components/tasks/VaciarCaptureForm';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
-import { TasksFlowCard } from '@/components/tasks/TasksFlowCard';
-import { FlowIndicator, resolveFlowStep } from '@/components/FlowIndicator';
 import { useAuth } from '@/contexts/AuthContext';
-import { ProjectsLibraryLink } from '@/components/projects/ProjectsLibraryLink';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
+import { ProjectsLibraryPanel } from '@/components/projects/ProjectsLibraryPanel';
+import { VaciarTabSegments, type VaciarTabSegment } from '@/components/tasks/VaciarTabSegments';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
-import { X, ChevronDown, ChevronUp } from 'lucide-react-native';
-import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
 import { useVaciarHints } from '@/hooks/useVaciarHints';
 import { useVaciarTaskSave } from '@/hooks/useVaciarTaskSave';
-import { TaskEffortPicker } from '@/components/tasks/TaskEffortPicker';
+import { useTaskCaptureAi } from '@/hooks/useTaskCaptureAi';
+import { TaskCaptureAiPreview } from '@/components/tasks/TaskCaptureAiPreview';
+import { createTasksFromCapture } from '@/lib/createTasksFromCapture';
+import { getLocalDateString } from '@/lib/dateLocal';
 import type { TaskEffort } from '@/lib/taskPerceivedEffort';
 
 export default function VaciarScreen() {
   const { t, locale } = useI18n();
-  const { suggestion, date: dateParam, projectId: projectIdParam } = useLocalSearchParams<{
-    suggestion?: string;
-    date?: string;
-    projectId?: string;
-  }>();
+  const { suggestion, date: dateParam, projectId: projectIdParam, segment: segmentParam } =
+    useLocalSearchParams<{
+      suggestion?: string;
+      date?: string;
+      projectId?: string;
+      segment?: string;
+    }>();
+  const [segment, setSegment] = useState<VaciarTabSegment>('capture');
   const [taskInput, setTaskInput] = useState('');
-  const taskInputRef = useRef<TextInput>(null);
   const [hasSubtasks, setHasSubtasks] = useState(false);
   const [subtasks, setSubtasks] = useState<string[]>(['']);
-  const [recentTasks, setRecentTasks] = useState<string[]>([]);
-  const [optionalHintExpanded, setOptionalHintExpanded] = useState(false);
-  const [organizePanelExpanded, setOrganizePanelExpanded] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
   const [refreshing, setRefreshing] = useState(false);
@@ -48,9 +44,6 @@ export default function VaciarScreen() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [effortFeel, setEffortFeel] = useState<TaskEffort | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  void setShowDatePicker;
-  void showDatePicker;
   const [, setProjectCount] = useState<number | null>(null);
   const { user } = useAuth();
 
@@ -86,40 +79,27 @@ export default function VaciarScreen() {
   }, []);
 
   const { hasCheckInToday, refresh: refreshCheckInToday } = useHasCheckInToday(user?.id);
-  const {
-    hasTasks,
-    setHasTasks,
-    optionalHintDismissed,
-    flowCardDismissed,
-    dictateHintDismissed,
-    showTooltip,
-    setShowTooltip,
-    loadHintState,
-    dismissFlowCard,
-    dismissDictateHint,
-    dismissOptionalHint,
-  } = useVaciarHints(user?.id);
+  const { setHasTasks, loadHintState, dictateHintDismissed, dismissDictateHint } =
+    useVaciarHints(user?.id);
 
   const resetTaskForm = useCallback(() => {
     setTaskInput('');
     setHasSubtasks(false);
     setSubtasks(['']);
-    setAssignToProject(false);
-    setSelectedCategory('otros');
-    setSelectedProjectId(null);
-    setSelectedDate(null);
     setEffortFeel(null);
   }, []);
 
   const handleTaskSaved = useCallback(
-    async ({ savedTitle }: { savedTitle: string }) => {
+    async (_payload: { savedTitle: string }) => {
       setHasTasks(true);
-      setRecentTasks((prev) => [savedTitle, ...prev.slice(0, 4)]);
       resetTaskForm();
+      setAssignToProject(false);
+      setSelectedProjectId(null);
+      setSelectedCategory('otros');
+      setSelectedDate(null);
       await loadRecentTaskSuggestions();
-      if (showTooltip) setShowTooltip(false);
     },
-    [loadRecentTaskSuggestions, resetTaskForm, setHasTasks, setShowTooltip, showTooltip],
+    [loadRecentTaskSuggestions, resetTaskForm, setHasTasks],
   );
 
   const { isSaving, saveTask } = useVaciarTaskSave({
@@ -127,6 +107,77 @@ export default function VaciarScreen() {
     showToast,
     onSaved: handleTaskSaved,
   });
+
+  const { preview, isInterpreting, interpret, clearPreview } = useTaskCaptureAi();
+  const [isSavingCapture, setIsSavingCapture] = useState(false);
+
+  const formatPreviewDate = useCallback(
+    (dateStr: string | null) => {
+      if (!dateStr) return '';
+      const monthNames =
+        locale === 'en'
+          ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+          : ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+      const todayStr = getLocalDateString();
+      if (dateStr === todayStr) return t('components.today');
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      if (dateStr === getLocalDateString(tomorrow)) return t('components.tomorrow');
+      const day = dateStr.slice(8);
+      const month = monthNames[parseInt(dateStr.slice(5, 7), 10) - 1];
+      return `${day} ${month}`;
+    },
+    [locale, t],
+  );
+
+  const handleInterpretAi = useCallback(() => {
+    Keyboard.dismiss();
+    void interpret(taskInput);
+  }, [interpret, taskInput]);
+
+  const handleConfirmAiPreview = useCallback(async () => {
+    if (!preview) return;
+    setIsSavingCapture(true);
+    try {
+      const result = await createTasksFromCapture(preview, {
+        locale,
+        hasCheckInToday: Boolean(hasCheckInToday),
+      });
+      if (result.status === 'not_authenticated') {
+        showToast(t('errors.notAuthenticated'), 'error');
+        return;
+      }
+      if (result.status === 'error') {
+        showToast(t('errors.saveTaskFailed'), 'error');
+        return;
+      }
+      clearPreview();
+      await handleTaskSaved({ savedTitle: result.savedTitle });
+      const msg = t('vaciar.aiSavedBatch', { count: result.tasksCreated });
+      showToast(
+        result.reprioritized ? `${msg} ${t('vaciar.suggestionsUpdatedToast')}` : msg,
+        'success',
+      );
+    } catch (error) {
+      logger.error('Error guardando captura IA:', error);
+      showToast(t('errors.saveTaskFailed'), 'error');
+    } finally {
+      setIsSavingCapture(false);
+    }
+  }, [clearPreview, handleTaskSaved, hasCheckInToday, locale, preview, showToast, t]);
+
+  const handleApplyAiToForm = useCallback(() => {
+    if (!preview) return;
+    setTaskInput(preview.main_task.content);
+    setSelectedDate(preview.main_task.scheduled_date);
+    if (preview.main_task.effort) {
+      setEffortFeel(preview.main_task.effort);
+    }
+    clearPreview();
+    if (preview.prep_steps.length > 0) {
+      showToast(t('vaciar.aiApplyPartial'), 'info');
+    }
+  }, [clearPreview, preview, showToast, t]);
 
   // Pre-llenar input si hay sugerencia desde Tips; fecha desde Semana; proyecto desde detalle de proyecto
   useEffect(() => {
@@ -139,8 +190,20 @@ export default function VaciarScreen() {
     if (projectIdParam && typeof projectIdParam === 'string' && projectIdParam.length >= 10) {
       setAssignToProject(true);
       setSelectedProjectId(projectIdParam);
+      setSegment('capture');
+    }
+    if (suggestion || dateParam) {
+      setSegment('capture');
     }
   }, [suggestion, dateParam, projectIdParam]);
+
+  useEffect(() => {
+    if (segmentParam === 'projects') {
+      setSegment('projects');
+    } else if (segmentParam === 'capture') {
+      setSegment('capture');
+    }
+  }, [segmentParam]);
 
   const addSubtask = () => {
     // Validar límite máximo de subtareas
@@ -186,6 +249,7 @@ export default function VaciarScreen() {
   );
 
   const handleAddTask = () => {
+    Keyboard.dismiss();
     void saveTask(
       {
         content: taskInput,
@@ -219,27 +283,13 @@ export default function VaciarScreen() {
     }
   };
 
-  const showOrganizePanel = useMemo(
-    () =>
-      !flowCardDismissed ||
-      Boolean(user) ||
-      (hasTasks === false && !optionalHintDismissed) ||
-      (recentTaskSuggestions.length > 0 && !taskInput.trim()),
-    [
-      flowCardDismissed,
-      user,
-      hasTasks,
-      optionalHintDismissed,
-      recentTaskSuggestions.length,
-      taskInput,
-    ],
-  );
+  const isCaptureSegment = segment === 'capture';
+  const hasTaskText = Boolean(taskInput.trim());
+  const saveBlocked =
+    !hasTaskText || isSaving || (assignToProject && !selectedProjectId);
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
+    <View style={styles.container}>
       {/* Toast notification */}
       {toastMessage && (
         <Toast
@@ -249,191 +299,38 @@ export default function VaciarScreen() {
         />
       )}
 
-      <CalmScreen
-        topInset="lg"
-        gap={THEME.layout.sectionGap}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        contentStyle={{ paddingBottom: THEME.spacing.md }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={THEME.colors.calm.lavenderDeep}
+      <View style={styles.screenBody}>
+        <CalmScreen
+          scroll={!isCaptureSegment}
+          topInset={isCaptureSegment ? 'md' : 'lg'}
+          gap={isCaptureSegment ? THEME.spacing.sm : THEME.layout.tabSectionGap}
+          contentStyle={isCaptureSegment ? styles.captureContent : undefined}
+          keyboardShouldPersistTaps="always"
+          keyboardDismissMode="interactive"
+          refreshControl={
+            !isCaptureSegment ? (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={THEME.colors.calm.lavenderDeep}
+              />
+            ) : undefined
+          }
+        >
+        {!isCaptureSegment ? (
+          <ScreenHeader
+            title={t('projects.title')}
+            subtitle={t('projects.subtitle')}
           />
-        }
-      >
-        <ScreenHeader title={t('vaciar.title')} subtitle={t('vaciar.subtitle')} />
-        <Text style={styles.valueProp}>{t('vaciar.valueProp')}</Text>
-
-        <FlowIndicator
-          currentStep={resolveFlowStep({
-            hasCheckIn: hasCheckInToday === true,
-            hasTasks: hasTasks === true,
-          })}
-        />
-
-        {showOrganizePanel ? (
-          <View style={styles.organizePanelWrap}>
-            <TouchableOpacity
-              style={styles.organizePanelToggle}
-              onPress={() => setOrganizePanelExpanded((e) => !e)}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel={
-                organizePanelExpanded ? t('vaciar.organizePanelHide') : t('vaciar.organizePanelTitle')
-              }
-              accessibilityHint={t('vaciar.organizePanelHint')}
-              accessibilityState={{ expanded: organizePanelExpanded }}
-            >
-              <Text style={styles.organizePanelToggleText}>
-                {organizePanelExpanded ? t('vaciar.organizePanelHide') : t('vaciar.organizePanelTitle')}
-              </Text>
-              {organizePanelExpanded ? (
-                <ChevronUp size={20} color={THEME.colors.gradient.blue} />
-              ) : (
-                <ChevronDown size={20} color={THEME.colors.gradient.blue} />
-              )}
-            </TouchableOpacity>
-            {!organizePanelExpanded ? (
-              <Text style={styles.organizePanelCollapsedHint}>{t('vaciar.organizePanelHint')}</Text>
-            ) : null}
-            {organizePanelExpanded ? (
-              <View style={styles.organizePanelContent}>
-                {!flowCardDismissed ? (
-                  <TasksFlowCard onDismiss={() => void dismissFlowCard()} />
-                ) : null}
-                {user ? <ProjectsLibraryLink /> : null}
-                {hasTasks === false && !optionalHintDismissed ? (
-                  <View style={styles.optionalHintCard}>
-                    <TouchableOpacity
-                      style={styles.optionalHintHeader}
-                      onPress={() => setOptionalHintExpanded((e) => !e)}
-                      activeOpacity={0.75}
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        optionalHintExpanded
-                          ? t('vaciarExtra.a11yCollapseOptional')
-                          : t('vaciarExtra.a11yExpandOptional')
-                      }
-                    >
-                      <Text style={styles.optionalHintTitle}>{t('vaciar.optionalTitle')}</Text>
-                      {optionalHintExpanded ? (
-                        <ChevronUp size={20} color={THEME.colors.text.secondary} />
-                      ) : (
-                        <ChevronDown size={20} color={THEME.colors.text.secondary} />
-                      )}
-                    </TouchableOpacity>
-                    {optionalHintExpanded ? (
-                      <View style={styles.optionalHintBodyWrap}>
-                        <Text style={styles.optionalHintBody}>{t('vaciar.optionalBody')}</Text>
-                        <Text style={[styles.optionalHintBody, styles.optionalHintBodySecond]}>
-                          {t('vaciar.optionalBodySecond')}
-                        </Text>
-                        <TouchableOpacity
-                          onPress={() => void dismissOptionalHint()}
-                          style={styles.optionalHintDismissBtn}
-                          activeOpacity={0.75}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('vaciarExtra.a11yDismissOptional')}
-                        >
-                          <Text style={styles.optionalHintDismissText}>{t('vaciar.dismiss')}</Text>
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      <View style={styles.optionalHintCollapsedWrap}>
-                        <Text style={styles.optionalHintCollapsedLine}>{t('vaciar.optionalCollapsed')}</Text>
-                        <TouchableOpacity
-                          onPress={() => void dismissOptionalHint()}
-                          activeOpacity={0.75}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('vaciarExtra.a11yDismissOptional')}
-                        >
-                          <Text style={styles.optionalHintDismissTextCompact}>{t('vaciar.dismiss')}</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
-                ) : null}
-                {recentTaskSuggestions.length > 0 && !taskInput.trim() ? (
-                  <View style={styles.suggestionsContainer}>
-                    <Text style={styles.suggestionsTitle}>{t('vaciar.suggestionsTitle')}</Text>
-                    <View style={styles.suggestionsGrid}>
-                      {recentTaskSuggestions.map((suggestion, index) => (
-                        <TouchableOpacity
-                          key={index}
-                          style={styles.suggestionChip}
-                          onPress={() => setTaskInput(suggestion)}
-                          activeOpacity={0.7}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('vaciarExtra.a11yUseSuggestion', { suggestion })}
-                          accessibilityHint={t('vaciarExtra.a11yUseSuggestionHint')}
-                        >
-                          <Text style={styles.suggestionText}>{suggestion}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-                ) : null}
-              </View>
-            ) : null}
-          </View>
         ) : null}
 
-        {/* Banner: con tareas guardadas, el siguiente paso es Sentir */}
-        {hasTasks === true && hasCheckInToday === false && hasCheckInToday !== null ? (
-          <TouchableOpacity
-            style={styles.checkInLinkWrap}
-            onPress={() => router.push(CHECK_IN_ROUTE)}
-            activeOpacity={0.75}
-            accessibilityRole="link"
-            accessibilityLabel={t('vaciar.nextStepFeelLink')}
-            accessibilityHint={t('vaciarExtra.a11yNextStepFeelHint')}
-          >
-            <Text style={styles.checkInLink}>{t('vaciar.nextStepFeelLink')}</Text>
-          </TouchableOpacity>
-        ) : null}
+        {user ? <VaciarTabSegments value={segment} onChange={setSegment} /> : null}
 
-        <View style={styles.inputContainer}>
-          <TextInput
-            ref={taskInputRef}
-            style={styles.input}
-            value={taskInput}
-            onChangeText={setTaskInput}
-            placeholder={t('vaciar.placeholder')}
-            placeholderTextColor={THEME.colors.text.secondary}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-            maxLength={300}
-            accessibilityLabel={t('vaciarExtra.a11yTaskField')}
-            accessibilityHint={t('vaciarExtra.a11yTaskFieldHint')}
-          />
-        </View>
-
-        {taskInput.trim() ? (
-          <TaskEffortPicker value={effortFeel} onChange={setEffortFeel} />
-        ) : null}
-
-        {Platform.OS !== 'web' && !dictateHintDismissed ? (
-          <View style={styles.dictateHintRow}>
-            <Text style={styles.dictateHintText}>{t('vaciarExtra.dictateHint')}</Text>
-            <TouchableOpacity
-              onPress={() => void dismissDictateHint()}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={t('vaciarExtra.a11yDismissDictateHint')}
-            >
-              <X size={16} color={THEME.colors.text.secondary} />
-            </TouchableOpacity>
-          </View>
-        ) : null}
-
-        {taskInput.trim() && user ? (
-          <TaskCaptureOrganize
+        {segment === 'capture' && user ? (
+          <VaciarCaptureForm
             userId={user.id}
-            taskTitle={taskInput.trim()}
+            taskInput={taskInput}
+            onTaskInputChange={setTaskInput}
             assignToProject={assignToProject}
             onAssignToProjectChange={(value) => {
               setAssignToProject(value);
@@ -448,53 +345,68 @@ export default function VaciarScreen() {
             selectedCategory={selectedCategory}
             onCategoryChange={setSelectedCategory}
             selectedProjectId={selectedProjectId}
-            onProjectChange={setSelectedProjectId}
+            onProjectChange={(id) => {
+              setSelectedProjectId(id);
+              setAssignToProject(Boolean(id));
+              if (!id) {
+                setHasSubtasks(false);
+                setSubtasks(['']);
+              }
+            }}
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
             hasSubtasks={hasSubtasks}
-            onHasSubtasksChange={(value) => {
-              setHasSubtasks(value);
-              if (value) setSubtasks(['']);
-            }}
+            onHasSubtasksChange={setHasSubtasks}
             subtasks={subtasks}
             onSubtasksChange={setSubtasks}
             onAddSubtask={addSubtask}
             onRemoveSubtask={removeSubtask}
-            onBlurInput={() => taskInputRef.current?.blur()}
+            isSaving={isSaving}
+            saveBlocked={saveBlocked}
+            onSave={handleAddTask}
             onProjectError={(message) => showToast(message, 'error')}
             onProjectCreated={(name) =>
               showToast(t('vaciar.projectCreated', { name }), 'success')
             }
+            recentSuggestions={recentTaskSuggestions}
+            effortFeel={effortFeel}
+            onEffortChange={setEffortFeel}
+            onInterpretAi={handleInterpretAi}
+            isInterpreting={isInterpreting}
+            onVoiceNotice={(message) => showToast(message, 'info')}
+            dictateHintDismissed={dictateHintDismissed}
+            onDismissDictateHint={() => void dismissDictateHint()}
           />
-        ) : null}
-
-        <CalmPrimaryButton
-          label={isSaving ? t('vaciar.saving') : t('vaciar.saveTask')}
-          onPress={handleAddTask}
-          disabled={!taskInput.trim() || isSaving}
-          loading={isSaving}
-          accessibilityHint={t('vaciarExtra.a11ySaveTaskHint')}
-        />
-
-        {recentTasks.length > 0 && (
-          <View style={styles.recentContainer}>
-            <Text style={styles.recentTitle}>{t('vaciar.recentTitle')}</Text>
-            {recentTasks.map((task, index) => (
-              <View key={index} style={styles.recentItem}>
-                <Text style={styles.recentText}>{task}</Text>
-              </View>
-            ))}
-          </View>
+        ) : (
+          <ProjectsLibraryPanel
+            embedded
+            userId={user?.id}
+            onGoCapture={() => setSegment('capture')}
+            onAddTaskToProject={(projectId) => {
+              setSegment('capture');
+              if (projectId) {
+                setAssignToProject(true);
+                setSelectedProjectId(projectId);
+              } else {
+                setAssignToProject(false);
+                setSelectedProjectId(null);
+              }
+            }}
+          />
         )}
-      </CalmScreen>
+        </CalmScreen>
+      </View>
 
-      <Tooltip
-        visible={showTooltip}
-        title={t('vaciar.brainDumpTooltipTitle')}
-        message={t('vaciar.brainDumpTooltipMessage')}
-        onClose={() => setShowTooltip(false)}
+      <TaskCaptureAiPreview
+        visible={Boolean(preview)}
+        capture={preview}
+        isSaving={isSavingCapture}
+        onConfirm={() => void handleConfirmAiPreview()}
+        onApplyToForm={handleApplyAiToForm}
+        onClose={clearPreview}
+        formatDate={formatPreviewDate}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -502,6 +414,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: THEME.colors.calm.background,
+  },
+  screenBody: {
+    flex: 1,
+  },
+  captureContent: {
+    flex: 1,
   },
   valueProp: {
     ...THEME.typography.small,
@@ -800,9 +718,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     ...THEME.surfaces.elevated,
-    borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.md,
   },
   input: {
     ...THEME.typography.body,
@@ -810,13 +726,16 @@ const styles = StyleSheet.create({
     minHeight: 120,
     fontSize: 16,
   },
+  inputCompact: {
+    minHeight: 80,
+  },
   recentContainer: {
     marginTop: THEME.spacing.lg,
   },
   recentTitle: {
-    ...THEME.typography.h3,
+    ...THEME.typography.sectionTitle,
     color: THEME.colors.text.main,
-    marginBottom: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
   },
   recentItem: {
     ...THEME.surfaces.muted,
@@ -941,13 +860,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   suggestionsContainer: {
-    marginTop: THEME.spacing.sm,
-    marginBottom: THEME.spacing.md,
+    gap: THEME.spacing.xs,
   },
   suggestionsTitle: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.xs,
+    ...THEME.typography.sectionTitle,
+    fontSize: 16,
+    lineHeight: 22,
+    color: THEME.colors.text.main,
   },
   suggestionsGrid: {
     flexDirection: 'row',

@@ -13,7 +13,7 @@ export function unregisterOpenRecheck(): void {
 }
 
 /**
- * Abre el modal global de recheck si hay check-in hoy; si no, va a Sentir (primer check-in).
+ * Abre el modal global de recheck si hay check-in hoy; si no, va a Hoy (check-in embebido).
  * Fallback: param en Hoy si el provider aún no montó.
  */
 export function openRecheckCheckIn(source = 'unknown'): void {

@@ -16,15 +16,26 @@ import {
 import { TipDetailExpanded, TipGridCard } from '@/components/tips/TipGridCard';
 import { executeTipAction, getTipActionLabel } from '@/lib/tipActions';
 import { openPaywall } from '@/lib/paywallNavigation';
+import { tipsGoBack } from '@/lib/tipsNavigation';
 import { trackTipActionTapped, trackTipViewed, trackTipsCategoryOpened } from '@/lib/productAnalytics';
-
-const FREE_TIPS_LIMIT = 3;
+import {
+  FREE_TIPS_LIMIT,
+  getCatalogCountByCategory,
+  getLockedTipsInCategory,
+} from '@/lib/tipsAccess';
 
 const CATEGORY_KEYS: Record<TipCategoryId, TranslationKey> = {
   mindset: 'tips.categories.mindset',
   rest: 'tips.categories.rest',
   action: 'tips.categories.action',
   productivity: 'tips.categories.productivity',
+};
+
+const CATEGORY_SUBTITLE_KEYS: Record<TipCategoryId, TranslationKey> = {
+  mindset: 'tips.categorySubtitles.mindset',
+  rest: 'tips.categorySubtitles.rest',
+  action: 'tips.categorySubtitles.action',
+  productivity: 'tips.categorySubtitles.productivity',
 };
 
 const VALID: TipCategoryId[] = ['mindset', 'rest', 'action', 'productivity'];
@@ -112,7 +123,7 @@ export default function TipsCategoryScreen() {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => tipsGoBack(router)}
           style={styles.backBtn}
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
@@ -128,22 +139,29 @@ export default function TipsCategoryScreen() {
 
   const lead = getCategoryLead(category, ctx, locale);
   const showMoreToggle = gridTips.length > 0;
-  const lockedCount = !isSubscribed ? Math.max(0, allTips.length - FREE_TIPS_LIMIT) : 0;
+  const catalogTotal = getCatalogCountByCategory(locale)[category];
+  const lockedCount = getLockedTipsInCategory(category, locale, isSubscribed);
+  const visibleCount = isSubscribed ? catalogTotal : Math.min(catalogTotal, FREE_TIPS_LIMIT);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => tipsGoBack(router)}
           style={styles.backBtn}
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
         >
           <ChevronLeft size={28} color={THEME.colors.text.main} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1} accessibilityRole="header">
-          {t(CATEGORY_KEYS[category])}
-        </Text>
+        <View style={styles.headerTitleCol}>
+          <Text style={styles.headerTitle} numberOfLines={1} accessibilityRole="header">
+            {t(CATEGORY_KEYS[category])}
+          </Text>
+          <Text style={styles.headerSubtitle} numberOfLines={1}>
+            {t(CATEGORY_SUBTITLE_KEYS[category])}
+          </Text>
+        </View>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -153,6 +171,11 @@ export default function TipsCategoryScreen() {
       >
         <Text style={styles.lead}>{lead}</Text>
         <Text style={styles.optional}>{t('tips.categoryOptional')}</Text>
+        {!isSubscribed && lockedCount > 0 ? (
+          <Text style={styles.visibleCount}>
+            {t('tips.categoryVisibleCount', { visible: visibleCount, total: catalogTotal })}
+          </Text>
+        ) : null}
 
         {shownTip ? (
           renderExpanded(
@@ -214,7 +237,9 @@ export default function TipsCategoryScreen() {
 
         {lockedCount > 0 ? (
           <View style={styles.premiumBlock}>
-            <Text style={styles.premiumHint}>{t('tips.categoryPremiumHint')}</Text>
+            <Text style={styles.premiumHint}>
+              {t('tips.categoryPremiumHint', { count: lockedCount })}
+            </Text>
             <TouchableOpacity
               onPress={() =>
                 openPaywall(router, category ? `/tips/${category}` : undefined)
@@ -251,11 +276,20 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
   },
+  headerTitleCol: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
   headerTitle: {
     ...THEME.typography.h2,
-    flex: 1,
     textAlign: 'center',
     color: THEME.colors.text.main,
+  },
+  headerSubtitle: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
   },
   headerSpacer: {
     width: 44,
@@ -274,6 +308,13 @@ const styles = StyleSheet.create({
   optional: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
+    lineHeight: 20,
+    marginBottom: THEME.spacing.xs,
+  },
+  visibleCount: {
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
     lineHeight: 20,
     marginBottom: THEME.spacing.xs,
   },

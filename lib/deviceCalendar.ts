@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { requireOptionalNativeModule } from 'expo-modules-core';
 import { normalizeScheduledDate, parseLocalDateString } from '@/lib/dateLocal';
@@ -78,8 +78,12 @@ async function resolveWritableCalendarId(Calendar: CalendarModule): Promise<stri
   if (status !== 'granted') return null;
 
   if (Platform.OS === 'ios') {
-    const defaultCalendar = await Calendar.getDefaultCalendarAsync();
-    return defaultCalendar.id;
+    try {
+      const defaultCalendar = await Calendar.getDefaultCalendarAsync();
+      if (defaultCalendar?.id) return defaultCalendar.id;
+    } catch {
+      /* fallback to writable list below */
+    }
   }
 
   const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
@@ -132,9 +136,10 @@ export async function addTaskToDeviceCalendar(
 
   try {
     const startDate = parseLocalDateString(dateKey);
-    startDate.setHours(9, 0, 0, 0);
+    startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 1);
+    endDate.setHours(0, 0, 0, 0);
 
     const eventId = await Calendar.createEventAsync(calendarId, {
       title: trimmedTitle,
@@ -150,4 +155,47 @@ export async function addTaskToDeviceCalendar(
   } catch {
     return { ok: false, reason: 'error' };
   }
+}
+
+export type SyncSavedTaskToDeviceCalendarResult =
+  | 'added'
+  | 'skipped'
+  | 'permission_denied'
+  | 'failed';
+
+/** Tras guardar una tarea con fecha: crea el evento en el Calendario del dispositivo. */
+export async function syncSavedTaskToDeviceCalendar(input: {
+  taskId: string | undefined;
+  title: string;
+  scheduledDate: string | null;
+  eventNotes: string;
+}): Promise<SyncSavedTaskToDeviceCalendarResult> {
+  if (!input.taskId || !input.scheduledDate || !isDeviceCalendarSupported()) {
+    return 'skipped';
+  }
+
+  const result = await addTaskToDeviceCalendar({
+    taskId: input.taskId,
+    title: input.title,
+    scheduledDate: input.scheduledDate,
+    eventNotes: input.eventNotes,
+  });
+
+  if (result.ok || result.reason === 'already_added') return 'added';
+  if (result.reason === 'permission_denied') return 'permission_denied';
+  return 'failed';
+}
+
+type DeviceCalendarAlertCopy = {
+  permissionTitle: string;
+  permissionBody: string;
+  cancel: string;
+  openSettings: string;
+};
+
+export function promptDeviceCalendarPermission(copy: DeviceCalendarAlertCopy): void {
+  Alert.alert(copy.permissionTitle, copy.permissionBody, [
+    { text: copy.cancel, style: 'cancel' },
+    { text: copy.openSettings, onPress: () => void Linking.openSettings() },
+  ]);
 }

@@ -111,6 +111,7 @@ export function HoyRestOfDayPanel({
             onToggleProjectSteps={() => {}}
             onPressProject={(projectId) => router.push(`/project/${projectId}` as const)}
             uniformCard
+            hideCalendarExport
           />
         </View>
       )}
@@ -159,8 +160,9 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   title: {
-    ...THEME.typography.h3,
-    fontFamily: THEME.fonts.heading.bold,
+    ...THEME.typography.sectionTitle,
+    fontSize: 18,
+    lineHeight: 24,
     color: THEME.colors.text.main,
   },
   countLine: {
@@ -175,7 +177,7 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
+    borderRadius: THEME.borderRadius.card,
     padding: THEME.spacing.md,
   },
   emptyText: {

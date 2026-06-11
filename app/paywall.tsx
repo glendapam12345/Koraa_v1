@@ -6,6 +6,10 @@ export default function PaywallRoute() {
   const { next, source } = useLocalSearchParams<{ next?: string; source?: string }>();
 
   const goNext = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
     if (next && typeof next === 'string' && next.startsWith('/')) {
       router.replace(next as '/');
       return;

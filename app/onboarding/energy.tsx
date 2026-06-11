@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
 import { Battery } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
@@ -38,6 +39,7 @@ export default function EnergyScreen() {
           </View>
         </View>
 
+        <OnboardingCheckInProgress step={2} />
         <Text style={styles.title}>{t('onboarding.energy.title')}</Text>
         <Text style={styles.titleAccent}>{t('onboarding.energy.titleAccent')}</Text>
         <Text style={styles.subtitle}>{t('onboarding.energy.subtitle')}</Text>

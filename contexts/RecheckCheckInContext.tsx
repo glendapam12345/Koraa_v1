@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { router } from 'expo-router';
+import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { QuickRecheckInModal } from '@/components/QuickRecheckInModal';
 import { supabase } from '@/lib/supabase';
 import { getLocalDateString } from '@/lib/dateLocal';
@@ -81,7 +82,7 @@ function RecheckModalHost() {
     sourceRef.current = source;
     const checkIn = await fetchTodayCheckIn();
     if (!checkIn) {
-      router.push('/sentir');
+      router.replace(CHECK_IN_ROUTE);
       return;
     }
     void track('recheck_opened', { source });

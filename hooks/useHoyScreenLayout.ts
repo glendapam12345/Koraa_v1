@@ -115,19 +115,19 @@ export function useHoyScreenLayout({
 
   const handleShowMoreForHoy = useCallback(() => {
     setShowSecondaryModules(true);
+    showToast(t('hoy.liteExpandedToast'), 'info');
     setTimeout(() => {
       scrollRef.current?.scrollTo({ y: 280, animated: true });
     }, 150);
-  }, [scrollRef]);
+  }, [scrollRef, showToast, t]);
 
   useEffect(() => {
-    if (!userId) return;
-    if (hoyLiteLayout || hoyPreFlowActive) return;
+    if (!userId || hoyPreFlowActive) return;
     void AsyncStorage.setItem(
       `hoy_secondary_modules_${userId}_v1`,
       showSecondaryModules ? '1' : '0',
     );
-  }, [userId, showSecondaryModules, hoyLiteLayout, hoyPreFlowActive]);
+  }, [userId, showSecondaryModules, hoyPreFlowActive]);
 
   return {
     hoyLiteLayout,

@@ -70,20 +70,20 @@ export default function WelcomeScreen() {
         </View>
 
         <CalmPrimaryButton
-          label={t('onboarding.welcome.continue')}
-          onPress={() => router.push('/onboarding/intro2')}
-          accessibilityHint={t('onboardingA11y.welcomeContinueHint')}
+          label={t('onboarding.welcome.quickStart')}
+          onPress={() => router.push('/onboarding/emotion')}
+          accessibilityHint={t('onboarding.welcome.quickStartHint')}
         />
 
         <TouchableOpacity
-          style={styles.quickStartButton}
-          onPress={() => router.push('/onboarding/emotion')}
+          style={styles.secondaryButton}
+          onPress={() => router.push('/onboarding/intro2')}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel={t('onboarding.welcome.quickStart')}
-          accessibilityHint={t('onboarding.welcome.quickStartHint')}
+          accessibilityLabel={t('onboarding.welcome.seeHowItWorks')}
+          accessibilityHint={t('onboardingA11y.welcomeSeeHowHint')}
         >
-          <Text style={styles.quickStartText}>{t('onboarding.welcome.quickStart')}</Text>
+          <Text style={styles.secondaryText}>{t('onboarding.welcome.seeHowItWorks')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: THEME.spacing.sm,
   },
-  quickStartButton: {
+  secondaryButton: {
     marginTop: THEME.spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: THEME.colors.gradient.blue,
   },
-  quickStartText: {
+  secondaryText: {
     ...THEME.typography.body,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.bold,

@@ -28,13 +28,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import Constants from 'expo-constants';
 import { useYoProfile } from '@/hooks/useYoProfile';
 import { YoEditProfileModal } from '@/components/yo/YoEditProfileModal';
 import { YoMenuRow } from '@/components/yo/YoMenuRow';
-import { YoStreakHero } from '@/components/yo/YoStreakHero';
-import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
-import { subscribeCheckInRefresh } from '@/lib/checkInRefresh';
 
 export default function ProfileScreen() {
   const { t, locale } = useI18n();
@@ -42,7 +40,6 @@ export default function ProfileScreen() {
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
-  const { hasCheckInToday, refresh: refreshCheckInToday } = useHasCheckInToday(user?.id);
 
   const profileState = useYoProfile({
     userId: user?.id,
@@ -81,22 +78,13 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     void loadProfile();
-    void refreshCheckInToday();
-  }, [loadProfile, refreshCheckInToday]);
+  }, [loadProfile]);
 
   useFocusEffect(
     useCallback(() => {
       void loadProfile();
-      void refreshCheckInToday();
-    }, [loadProfile, refreshCheckInToday]),
+    }, [loadProfile]),
   );
-
-  useEffect(() => {
-    return subscribeCheckInRefresh(() => {
-      void loadProfile();
-      void refreshCheckInToday();
-    });
-  }, [loadProfile, refreshCheckInToday]);
 
   const displayName = useMemo(
     () =>
@@ -129,7 +117,6 @@ export default function ProfileScreen() {
     setRefreshing(true);
     try {
       await loadProfile();
-      await refreshCheckInToday();
     } catch (error) {
       logger.error('Error al refrescar:', error);
     } finally {
@@ -147,7 +134,8 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <CalmScreen
-        contentStyle={{ gap: THEME.layout.sectionGapCompact }}
+        topInset="lg"
+        gap={THEME.layout.tabSectionGap}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -185,19 +173,14 @@ export default function ProfileScreen() {
           <CalmCard style={styles.namePromptCard}>
             <Text style={styles.namePromptTitle}>{t('yo.namePromptTitle')}</Text>
             <Text style={styles.namePromptBody}>{t('yo.namePromptBody')}</Text>
-            <TouchableOpacity
+            <CalmPrimaryButton
+              label={t('yo.namePromptCta')}
               onPress={() => setShowEditProfile(true)}
-              activeOpacity={0.75}
-              accessibilityRole="button"
+              variant="soft"
               accessibilityLabel={t('yo.namePromptCta')}
-              style={styles.namePromptBtn}
-            >
-              <Text style={styles.namePromptBtnText}>{t('yo.namePromptCta')}</Text>
-            </TouchableOpacity>
+            />
           </CalmCard>
         ) : null}
-
-        <YoStreakHero checkedInToday={hasCheckInToday === true} />
 
         <CalmCard style={styles.menuCard}>
           <YoMenuRow
@@ -315,7 +298,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: THEME.borderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: THEME.colors.calm.lavender,
@@ -355,15 +338,6 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     lineHeight: 20,
-  },
-  namePromptBtn: {
-    alignSelf: 'flex-start',
-    marginTop: THEME.spacing.xs,
-  },
-  namePromptBtnText: {
-    ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.calm.lavenderDeep,
   },
   menuCard: {
     paddingVertical: THEME.spacing.xs,

@@ -1,5 +1,5 @@
 import type { DayData } from '@/lib/checkInDayData';
-import type { ParaMiPeriodId } from '@/components/parami/ParaMiMusaHeader';
+import type { ParaMiPeriodId } from '@/components/parami/ParaMiPeriodBar';
 
 export function periodDayCount(period: ParaMiPeriodId): number {
   if (period === 'month') return 30;
@@ -9,5 +9,8 @@ export function periodDayCount(period: ParaMiPeriodId): number {
 
 export function slicePeriodData(data: DayData[], period: ParaMiPeriodId): DayData[] {
   const days = periodDayCount(period);
-  return data.slice(-days);
+  if (data.length >= days) {
+    return data.slice(-days);
+  }
+  return data;
 }

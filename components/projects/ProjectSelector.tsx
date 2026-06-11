@@ -4,17 +4,7 @@ import { THEME } from '@/constants/theme';
 import { supabase, getSchemaSetupMessage } from '@/lib/supabase';
 import { FolderKanban, X, Plus } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
-
-const PROJECT_COLORS = [
-  THEME.colors.gradient.blue,
-  THEME.colors.gradient.pink,
-  '#8B5CF6',
-  '#14B8A6',
-  '#32CD32',
-  THEME.colors.category.personal,
-  '#FFA500',
-  '#00CED1',
-];
+import { PROJECT_COLORS } from '@/lib/projectColors';
 
 interface Project {
   id: string;
@@ -41,7 +31,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
   const [loading, setLoading] = useState(true);
   const [showNewProject, setShowNewProject] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newColor, setNewColor] = useState(PROJECT_COLORS[0]);
+  const [newColor, setNewColor] = useState<string>(PROJECT_COLORS[0]);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const newProjectInputRef = useRef<TextInput>(null);
@@ -82,6 +72,24 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
     };
     load();
   }, [userId, loadProjects]);
+
+  const autoSelectedForAssignRef = useRef(false);
+
+  useEffect(() => {
+    if (!assignMode) {
+      autoSelectedForAssignRef.current = false;
+      return;
+    }
+    if (
+      !loading &&
+      projects.length === 1 &&
+      selectedProjectId == null &&
+      !autoSelectedForAssignRef.current
+    ) {
+      autoSelectedForAssignRef.current = true;
+      onSelect(projects[0].id);
+    }
+  }, [assignMode, loading, onSelect, projects, selectedProjectId]);
 
   const handleCreateProject = async () => {
     const name = newName.trim();

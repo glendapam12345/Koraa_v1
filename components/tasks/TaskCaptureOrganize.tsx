@@ -6,18 +6,23 @@ import {
   ScrollView,
   TextInput,
   Keyboard,
+  Platform,
 } from 'react-native';
-import { FolderKanban, Plus, X, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { Plus, X, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { ProjectSelector } from '@/components/projects/ProjectSelector';
 import { DateSelector } from '@/components/tasks/DateSelector';
+import { TaskEffortPicker } from '@/components/tasks/TaskEffortPicker';
 import { categoryKeys, type CategoryKey } from '@/lib/i18n/locales/features/categories';
 import { getLocalDateString, getEndOfWeekLocalDateString } from '@/lib/dateLocal';
+import type { TaskEffort } from '@/lib/taskPerceivedEffort';
 
 const CATEGORY_OPTIONS: { key: CategoryKey }[] = categoryKeys.map((key) => ({ key }));
 
 type TaskCaptureOrganizeProps = {
+  /** Sin tarjeta extra: sección dentro de la pantalla de captura. */
+  embedded?: boolean;
   userId: string;
   taskTitle: string;
   assignToProject: boolean;
@@ -37,9 +42,12 @@ type TaskCaptureOrganizeProps = {
   onBlurInput?: () => void;
   onProjectError?: (message: string) => void;
   onProjectCreated?: (name: string) => void;
+  effortFeel?: TaskEffort | null;
+  onEffortChange?: (value: TaskEffort | null) => void;
 };
 
 export function TaskCaptureOrganize({
+  embedded = false,
   userId,
   taskTitle,
   assignToProject,
@@ -59,6 +67,8 @@ export function TaskCaptureOrganize({
   onBlurInput,
   onProjectError,
   onProjectCreated,
+  effortFeel = null,
+  onEffortChange,
 }: TaskCaptureOrganizeProps) {
   const { t } = useI18n();
   const today = getLocalDateString();
@@ -71,85 +81,41 @@ export function TaskCaptureOrganize({
     onSubtasksChange(next);
   };
 
+  const inProject = assignToProject && Boolean(selectedProjectId);
+
   return (
     <View
-      style={styles.card}
+      style={embedded ? styles.embedded : styles.card}
       accessibilityRole="summary"
       accessibilityLabel={t('vaciarExtra.a11yOrganizeCard')}
     >
-      <Text style={styles.cardTitle}>{t('vaciar.organizeCardTitle')}</Text>
-      <Text style={styles.cardSub}>{t('vaciar.organizeCardSub')}</Text>
+      {!embedded ? (
+        <>
+          <Text style={styles.cardTitle}>{t('vaciar.organizeCardTitle')}</Text>
+          <Text style={styles.cardSub}>{t('vaciar.organizeCardSub')}</Text>
+        </>
+      ) : null}
 
-      <Text style={styles.fieldLabel}>{t('vaciar.fieldProject')}</Text>
-      <View style={styles.segmentRow}>
-        <TouchableOpacity
-          style={[styles.segment, !assignToProject && styles.segmentActive]}
-          onPress={() => onAssignToProjectChange(false)}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityState={{ selected: !assignToProject }}
-          accessibilityLabel={t('vaciarExtra.a11yAssignNo')}
-        >
-          <Text style={[styles.segmentText, !assignToProject && styles.segmentTextActive]}>
-            {t('vaciar.looseTask')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.segment, assignToProject && styles.segmentActive]}
-          onPress={() => onAssignToProjectChange(true)}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityState={{ selected: assignToProject }}
-          accessibilityLabel={t('vaciarExtra.a11yAssignYes')}
-        >
-          <FolderKanban size={16} color={assignToProject ? THEME.colors.onGradient : THEME.colors.gradient.blue} />
-          <Text style={[styles.segmentText, assignToProject && styles.segmentTextActive]}>
-            {t('vaciar.inProject')}
-          </Text>
-        </TouchableOpacity>
+      <Text style={styles.fieldLabel}>{t('vaciar.fieldProjectOptional')}</Text>
+      <Text style={styles.fieldHint}>{t('vaciar.fieldProjectOptionalHint')}</Text>
+      <View style={styles.projectBlock}>
+        <ProjectSelector
+          selectedProjectId={selectedProjectId}
+          onSelect={(id) => {
+            onProjectChange(id);
+            onAssignToProjectChange(Boolean(id));
+          }}
+          userId={userId}
+          showLabel={false}
+          assignMode
+          onBeforeOpenModal={() => {
+            Keyboard.dismiss();
+            onBlurInput?.();
+          }}
+          onError={onProjectError}
+          onSuccess={onProjectCreated}
+        />
       </View>
-
-      {!assignToProject ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-          {CATEGORY_OPTIONS.map((opt) => {
-            const isSelected = selectedCategory === opt.key;
-            const color =
-              THEME.colors.category[opt.key as keyof typeof THEME.colors.category] ??
-              THEME.colors.text.secondary;
-            return (
-              <TouchableOpacity
-                key={opt.key}
-                style={[styles.chip, isSelected && { backgroundColor: color, borderColor: color }]}
-                onPress={() => onCategoryChange(opt.key)}
-                activeOpacity={0.85}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isSelected }}
-                accessibilityLabel={t('vaciarExtra.a11yCategory', { name: t(`categories.${opt.key}`) })}
-              >
-                <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                  {t(`categories.${opt.key}`)}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      ) : (
-        <View style={styles.projectBlock}>
-          <ProjectSelector
-            selectedProjectId={selectedProjectId}
-            onSelect={onProjectChange}
-            userId={userId}
-            showLabel
-            assignMode
-            onBeforeOpenModal={() => {
-              Keyboard.dismiss();
-              onBlurInput?.();
-            }}
-            onError={onProjectError}
-            onSuccess={onProjectCreated}
-          />
-        </View>
-      )}
 
       <Text style={styles.fieldLabel}>{t('vaciar.fieldDate')}</Text>
       <Text style={styles.fieldHint}>{t('vaciar.fieldDateHint')}</Text>
@@ -198,7 +164,47 @@ export function TaskCaptureOrganize({
         calendarTaskId={`capture-${selectedDate ?? 'none'}`}
       />
 
-      {assignToProject ? (
+      {onEffortChange ? (
+        <TaskEffortPicker value={effortFeel} onChange={onEffortChange} />
+      ) : null}
+
+      {!inProject ? (
+        <>
+          <Text style={styles.fieldLabel}>{t('vaciar.chooseCategory')}</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="always"
+            contentContainerStyle={styles.chipsRow}
+          >
+            {CATEGORY_OPTIONS.map((opt) => {
+              const isSelected = selectedCategory === opt.key;
+              const color =
+                THEME.colors.category[opt.key as keyof typeof THEME.colors.category] ??
+                THEME.colors.text.secondary;
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[styles.chip, isSelected && { backgroundColor: color, borderColor: color }]}
+                  onPress={() => onCategoryChange(opt.key)}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={t('vaciarExtra.a11yCategory', {
+                    name: t(`categories.${opt.key}`),
+                  })}
+                >
+                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                    {t(`categories.${opt.key}`)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </>
+      ) : null}
+
+      {inProject ? (
         <>
           <TouchableOpacity
             style={[styles.subtasksToggle, hasSubtasks && styles.subtasksToggleActive]}
@@ -262,19 +268,19 @@ export function TaskCaptureOrganize({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.rounded,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    ...THEME.surfaces.elevated,
     padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.md,
-    ...THEME.shadows.soft,
+  },
+  embedded: {
+    ...THEME.surfaces.elevated,
+    padding: THEME.spacing.md,
+    gap: 0,
   },
   cardTitle: {
-    ...THEME.typography.h3,
-    fontSize: 16,
+    ...THEME.typography.sectionTitle,
+    fontSize: 18,
+    lineHeight: 24,
     color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
     marginBottom: 4,
   },
   cardSub: {
@@ -349,6 +355,12 @@ const styles = StyleSheet.create({
   },
   projectBlock: {
     marginBottom: THEME.spacing.sm,
+    gap: THEME.spacing.xs,
+  },
+  projectRequiredHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.gradient.pink,
+    lineHeight: 18,
   },
   dateQuickRow: {
     flexDirection: 'row',
@@ -403,11 +415,13 @@ const styles = StyleSheet.create({
   },
   subtaskInput: {
     flex: 1,
-    ...THEME.typography.body,
+    fontSize: 16,
+    lineHeight: 24,
     backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.standard,
     padding: THEME.spacing.sm,
     color: THEME.colors.text.main,
+    ...(Platform.OS === 'android' ? { fontFamily: THEME.fonts.heading.medium } : {}),
   },
   addSubtaskBtn: {
     flexDirection: 'row',

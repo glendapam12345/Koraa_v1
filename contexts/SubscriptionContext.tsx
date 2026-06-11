@@ -6,10 +6,17 @@ import { ENTITLEMENT_ID } from '@/config/revenuecat';
 import { initializeRevenueCat } from '@/lib/revenuecat';
 import { logger } from '@/lib/logger';
 import { canProcessInAppPurchases } from '@/lib/subscriptionEnvironment';
+import {
+  getPremiumDevSimEnabled,
+  isPremiumDevSimAllowed,
+  subscribePremiumDevOverride,
+} from '@/lib/premiumDevOverride';
 
 type SubscriptionContextType = {
   isLoading: boolean;
   isSubscribed: boolean;
+  /** true cuando Premium viene de simulación dev (Expo Go), no de RevenueCat. */
+  isDevPremiumSim: boolean;
   customerInfo: CustomerInfo | null;
   currentOffering: PurchasesOffering | null;
   checkSubscription: () => Promise<boolean>;
@@ -24,10 +31,27 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const [isLoading, setIsLoading] = useState(true);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [currentOffering, setCurrentOffering] = useState<PurchasesOffering | null>(null);
+  const [devPremiumSim, setDevPremiumSim] = useState(false);
+
+  useEffect(() => {
+    if (!isPremiumDevSimAllowed()) return;
+    let cancelled = false;
+    void getPremiumDevSimEnabled().then((enabled) => {
+      if (!cancelled) setDevPremiumSim(enabled);
+    });
+    return subscribePremiumDevOverride(() => {
+      void getPremiumDevSimEnabled().then((enabled) => {
+        if (!cancelled) setDevPremiumSim(enabled);
+      });
+    });
+  }, []);
+
+  const isDevPremiumSim = isPremiumDevSimAllowed() && devPremiumSim;
 
   const isSubscribed = useMemo(() => {
+    if (isDevPremiumSim) return true;
     return !!customerInfo?.entitlements.active?.[ENTITLEMENT_ID];
-  }, [customerInfo]);
+  }, [customerInfo, isDevPremiumSim]);
 
   const checkSubscription = useCallback(async (): Promise<boolean> => {
     if (!canProcessInAppPurchases()) return false;
@@ -39,8 +63,6 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       return info.entitlements.active[ENTITLEMENT_ID] !== undefined;
     } catch (error) {
       logger.warn('No se pudo refrescar estado de suscripción:', error);
-      setCustomerInfo(null);
-      setCurrentOffering(null);
       return false;
     }
   }, []);
@@ -56,7 +78,6 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       return { success: info.entitlements.active[ENTITLEMENT_ID] !== undefined, error: null };
     } catch (error) {
       const message = error instanceof Error ? error.message : t('subscription.restoreFailed');
-      setCustomerInfo(null);
       return { success: false, error: message };
     }
   }, [t]);
@@ -99,6 +120,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       value={{
         isLoading,
         isSubscribed,
+        isDevPremiumSim,
         customerInfo,
         currentOffering,
         checkSubscription,

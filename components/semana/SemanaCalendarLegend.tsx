@@ -16,7 +16,7 @@ export function SemanaCalendarLegend() {
         accessibilityLabel={t('semana.calendarLegendA11y')}
       >
         <View style={styles.item}>
-          <View style={[styles.dot, { backgroundColor: THEME.colors.fill[200], borderWidth: 1, borderColor: THEME.colors.stroke[100] }]} />
+          <View style={[styles.dot, { backgroundColor: THEME.colors.fill[200], borderWidth: 1, borderColor: THEME.colors.calm.border }]} />
           <Text style={styles.label}>{t('semana.legendNoCheckIn')}</Text>
         </View>
         {CALENDAR_EMOTION_IDS.map((id) => (

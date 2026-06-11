@@ -1,10 +1,11 @@
 import { View, Text, Platform } from 'react-native';
 import { useI18n } from '@/contexts/I18nContext';
 import type { AppLocale } from '@/lib/i18n';
-import { GoogleCalendarConnectSection } from '@/components/settings/GoogleCalendarConnectSection';
 import { SettingsLanguageSection } from '@/components/settings/SettingsLanguageSection';
+import { AppleHealthConnectSection } from '@/components/settings/AppleHealthConnectSection';
 import { SettingsReminderSection } from '@/components/settings/SettingsReminderSection';
 import { SettingsHoyPreviewSection } from '@/components/settings/SettingsHoyPreviewSection';
+import { SettingsPremiumDevSection } from '@/components/settings/SettingsPremiumDevSection';
 import { SettingsShortcutsMenu } from '@/components/settings/SettingsShortcutsMenu';
 import { settingsScreenStyles as styles } from '@/components/settings/settingsScreenStyles';
 
@@ -20,6 +21,8 @@ type SettingsMenuProps = {
   onSimulateHoyDayTwo: () => void;
   resettingHoyPreview: boolean;
   simulatingHoyDayTwo: boolean;
+  devPremiumSim: boolean;
+  onToggleDevPremiumSim: (enabled: boolean) => void;
   userId?: string;
   isLoading: boolean;
   pendingAction: 'change-password' | 'delete-account' | null;
@@ -40,6 +43,8 @@ export function SettingsMenu({
   onSimulateHoyDayTwo,
   resettingHoyPreview,
   simulatingHoyDayTwo,
+  devPremiumSim,
+  onToggleDevPremiumSim,
   userId,
   isLoading,
   pendingAction,
@@ -79,13 +84,19 @@ export function SettingsMenu({
         />
       )}
 
-      <GoogleCalendarConnectSection />
+      <AppleHealthConnectSection />
 
       <SettingsHoyPreviewSection
         onResetFirstDay={onResetHoyFirstDay}
         onSimulateDayTwo={onSimulateHoyDayTwo}
         resetting={resettingHoyPreview}
         simulating={simulatingHoyDayTwo}
+        disabled={!userId}
+      />
+
+      <SettingsPremiumDevSection
+        enabled={devPremiumSim}
+        onToggle={(next) => void onToggleDevPremiumSim(next)}
         disabled={!userId}
       />
 

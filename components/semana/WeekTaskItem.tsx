@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
     marginTop: 2,
   },
   taskCheckCompleted: {

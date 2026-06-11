@@ -40,6 +40,8 @@ export default function SettingsScreen() {
     notifSaving,
     resettingHoyPreview,
     simulatingHoyDayTwo,
+    devPremiumSim,
+    handleToggleDevPremiumSim,
     resetState,
     applyNotificationPreset,
     handleResetHoyFirstDay,
@@ -97,6 +99,8 @@ export default function SettingsScreen() {
             onSimulateHoyDayTwo={handleSimulateHoyDayTwo}
             resettingHoyPreview={resettingHoyPreview}
             simulatingHoyDayTwo={simulatingHoyDayTwo}
+            devPremiumSim={devPremiumSim}
+            onToggleDevPremiumSim={(enabled) => void handleToggleDevPremiumSim(enabled)}
             userId={user?.id}
             isLoading={isLoading}
             pendingAction={pendingAction}

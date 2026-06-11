@@ -17,6 +17,12 @@ export function getStreakLevelKey(streak: number): StreakLevelKey {
   return 'yo.streakLevelStarting';
 }
 
+/** 0–1 progreso hacia una meta de racha elegida por la usuaria. */
+export function getStreakGoalProgress(streak: number, goalDays: number): number {
+  if (goalDays <= 0 || streak <= 0) return 0;
+  return Math.min(1, streak / goalDays);
+}
+
 /** 0–1 progreso hacia el siguiente hito de racha. */
 export function getStreakRingProgress(streak: number): number {
   if (streak <= 0) return 0;

@@ -28,7 +28,7 @@ type CalmScreenProps = {
   bottomInset?: boolean;
   /** Reserva espacio para la tab bar flotante (tabs). Desactivar en modales. */
   reserveFloatingTabBar?: boolean;
-  /** Alineado con tabs legacy: Hoy/Semana/Vaciar usan lg; Tips/Para mí/Yo usan md. */
+  /** Padding superior: todas las tabs usan `lg`. */
   topInset?: CalmScreenTopInset;
   keyboardShouldPersistTaps?: 'always' | 'never' | 'handled';
   keyboardDismissMode?: 'none' | 'on-drag' | 'interactive';
@@ -74,7 +74,11 @@ export const CalmScreen = forwardRef<ScrollViewType, CalmScreenProps>(function C
   );
 
   if (!scroll) {
-    return <View style={styles.root}>{body}</View>;
+    return (
+      <View style={styles.root}>
+        <View style={styles.fill}>{body}</View>
+      </View>
+    );
   }
 
   return (
@@ -102,4 +106,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   inner: {},
+  fill: {
+    flex: 1,
+  },
 });

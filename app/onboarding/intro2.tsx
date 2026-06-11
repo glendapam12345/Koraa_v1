@@ -78,7 +78,7 @@ export default function Intro2Screen() {
       <View style={styles.footer}>
         <CalmPrimaryButton
           label={t('onboarding.intro2.continue')}
-          onPress={() => router.push('/onboarding/intro3')}
+          onPress={() => router.push('/onboarding/how-it-works')}
           accessibilityHint={t('onboardingA11y.intro2ContinueHint')}
         />
         <TouchableOpacity

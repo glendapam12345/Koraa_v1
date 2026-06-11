@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     paddingBottom: THEME.spacing.lg,
     borderBottomLeftRadius: THEME.borderRadius.xl,
     borderBottomRightRadius: THEME.borderRadius.xl,
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 0,
   },
   title: {
     ...THEME.typography.h2,

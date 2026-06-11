@@ -6,7 +6,9 @@ import type { TipCategoryId } from '@/lib/tipsTypes';
 type TipsCategoryGridProps = {
   order: TipCategoryId[];
   labels: Record<TipCategoryId, string>;
+  subtitles?: Partial<Record<TipCategoryId, string>>;
   counts: Record<TipCategoryId, number>;
+  countBadges?: Partial<Record<TipCategoryId, string>>;
   tipsLabel: string;
   onPressCategory: (category: TipCategoryId) => void;
 };
@@ -14,7 +16,9 @@ type TipsCategoryGridProps = {
 export function TipsCategoryGrid({
   order,
   labels,
+  subtitles,
   counts,
+  countBadges,
   tipsLabel,
   onPressCategory,
 }: TipsCategoryGridProps) {
@@ -28,7 +32,9 @@ export function TipsCategoryGrid({
           <TipsCategoryCard
             category={category}
             label={labels[category]}
+            subtitle={subtitles?.[category]}
             tipCount={counts[category]}
+            countBadge={countBadges?.[category]}
             tipsLabel={tipsLabel}
             onPress={() => onPressCategory(category)}
           />

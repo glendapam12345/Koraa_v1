@@ -203,6 +203,14 @@ export const THEME = {
       lineHeight: 26,
       fontFamily: 'DMSans-Bold',
     } as TextStyle,
+    /** Etiqueta meta sobre bloques (historial, premium, racha). */
+    sectionEyebrow: {
+      fontSize: 12,
+      lineHeight: 16,
+      fontFamily: 'DMSans-Bold',
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+    } as TextStyle,
   },
 
   spacing: {
@@ -218,6 +226,8 @@ export const THEME = {
     screenPaddingX: 14,
     screenMaxWidth: 520,
     sectionGap: 20,
+    /** Espaciado estándar entre secciones en las 4 tabs visibles (24px). */
+    tabSectionGap: 24,
     /** Entre bloques en tabs con muchas tarjetas (Tips, Para mí). */
     sectionGapCompact: 12,
     /** Espacio extra sobre la tab bar flotante (altura ~64 + margen). */

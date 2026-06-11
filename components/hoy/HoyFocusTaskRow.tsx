@@ -4,8 +4,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Check, ChevronRight, FolderKanban, Trash2 } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
-import { TaskCalendarExportRow } from '@/components/tasks/TaskCalendarExportRow';
-import { getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
 import type { Task } from '@/components/tasks/TaskCard';
 
 type HoyFocusTaskRowProps = {
@@ -28,8 +26,6 @@ export function HoyFocusTaskRow({
   const { t } = useI18n();
   const completed = task.is_completed;
   const pulse = useRef(new Animated.Value(1)).current;
-  const calendarDate =
-    normalizeScheduledDate(task.scheduled_date) ?? getLocalDateString();
 
   useEffect(() => {
     if (!completed) return;
@@ -117,16 +113,6 @@ export function HoyFocusTaskRow({
             </Text>
           </View>
         ) : null}
-        {!completed ? (
-          <View style={styles.calendarRow}>
-            <TaskCalendarExportRow
-              taskId={task.id}
-              title={task.content}
-              scheduledDate={calendarDate}
-              variant="chip"
-            />
-          </View>
-        ) : null}
       </TouchableOpacity>
     </Animated.View>
   );
@@ -138,11 +124,11 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     gap: THEME.spacing.sm,
     backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.rounded,
+    borderRadius: THEME.borderRadius.card,
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.sm,
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
     ...THEME.shadows.soft,
   },
   rowCompleted: {
@@ -153,6 +139,10 @@ const styles = StyleSheet.create({
   },
   checkTouch: {
     alignSelf: 'center',
+    minWidth: THEME.sizes.touchTarget,
+    minHeight: THEME.sizes.touchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   checkRing: {
     width: 32,
@@ -216,9 +206,5 @@ const styles = StyleSheet.create({
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
     flex: 1,
-  },
-  calendarRow: {
-    marginTop: THEME.spacing.xs,
-    paddingLeft: 20,
   },
 });

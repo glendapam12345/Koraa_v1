@@ -32,6 +32,7 @@ interface TaskListProps {
   sectionCategory?: string;
   /** Tarjetas uniformes: leyenda solo "Pertenece a X", sin "Suelta" */
   uniformCard?: boolean;
+  hideCalendarExport?: boolean;
   /** Insight de priorización por id de tarea (Hoy + check-in). */
   getTaskPriorityInsight?: (taskId: string) => { whyUp: string[]; whyDown: string[] } | undefined;
 }
@@ -59,6 +60,7 @@ export function TaskList({
   sectionAccentColor,
   sectionCategory,
   uniformCard,
+  hideCalendarExport,
   getTaskPriorityInsight,
 }: TaskListProps) {
   return (
@@ -97,6 +99,7 @@ export function TaskList({
             sectionAccentColor={sectionAccentColor}
             sectionCategory={sectionCategory}
             uniformCard={uniformCard}
+            hideCalendarExport={hideCalendarExport}
             priorityWhyUp={priorityInsight?.whyUp}
             priorityWhyDown={priorityInsight?.whyDown}
           />

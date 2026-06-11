@@ -7,14 +7,23 @@ import { useI18n } from '@/contexts/I18nContext';
 type ProjectsLibraryLinkProps = {
   /** Margen inferior extra (p. ej. en Tareas antes del campo de captura). */
   marginBottom?: boolean;
+  /** Versión destacada arriba en Tareas. */
+  prominent?: boolean;
 };
 
-export function ProjectsLibraryLink({ marginBottom = true }: ProjectsLibraryLinkProps) {
+export function ProjectsLibraryLink({
+  marginBottom = true,
+  prominent = false,
+}: ProjectsLibraryLinkProps) {
   const { t } = useI18n();
 
   return (
     <TouchableOpacity
-      style={[styles.card, marginBottom && styles.cardWithMargin]}
+      style={[
+        styles.card,
+        prominent && styles.cardProminent,
+        marginBottom && styles.cardWithMargin,
+      ]}
       onPress={() => router.push('/proyectos')}
       activeOpacity={0.85}
       accessibilityRole="button"
@@ -37,16 +46,15 @@ export function ProjectsLibraryLink({ marginBottom = true }: ProjectsLibraryLink
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: THEME.borderRadius.rounded,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    backgroundColor: THEME.colors.fill[100],
-    ...THEME.shadows.card,
+    ...THEME.surfaces.elevated,
     overflow: 'hidden',
   },
-  cardWithMargin: {
-    marginBottom: THEME.spacing.md,
+  cardProminent: {
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
   },
+  cardWithMargin: {},
   inner: {
     flexDirection: 'row',
     alignItems: 'center',

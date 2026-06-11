@@ -1,60 +1,65 @@
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { Brain, CircleHelp } from 'lucide-react-native';
+import { CircleHelp } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
+import { HoyStreakPill } from '@/components/hoy/HoyStreakPill';
 import { useI18n } from '@/contexts/I18nContext';
 
-/** Cabecera de Hoy: título + acceso persistente a Tareas (tab oculta) y Ayuda. */
-export function HoyScreenHeader() {
+type HoyScreenHeaderProps = {
+  /** Ocultar subtítulo cuando la pantalla de inicio ya explica el flujo. */
+  showSubtitle?: boolean;
+  /** Check-in embebido: solo racha + ayuda, sin título de tab. */
+  minimal?: boolean;
+  streak?: number;
+  checkedInToday?: boolean;
+};
+
+/** Cabecera de Hoy: racha + ayuda. Tareas vive en la pestaña inferior. */
+export function HoyScreenHeader({
+  showSubtitle = true,
+  minimal = false,
+  streak = 0,
+  checkedInToday = false,
+}: HoyScreenHeaderProps) {
   const { t } = useI18n();
+
+  const trailing = (
+    <>
+      <HoyStreakPill streak={streak} checkedInToday={checkedInToday} />
+      <HeaderIconButton
+        onPress={() => router.push('/help')}
+        accessibilityLabel={t('settings.help')}
+      >
+        <CircleHelp size={22} color={THEME.colors.calm.lavenderDeep} />
+      </HeaderIconButton>
+    </>
+  );
+
+  if (minimal) {
+    return (
+      <View style={styles.minimalRow} accessibilityRole="toolbar">
+        {trailing}
+      </View>
+    );
+  }
 
   return (
     <ScreenHeader
       title={t('tabs.today')}
-      subtitle={t('hoy.headerSubtitle')}
-      trailing={
-        <View style={styles.trailing}>
-          <TouchableOpacity
-            onPress={() => router.push('/(tabs)/vaciar')}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityLabel={t('hoy.tasksCaptureA11y')}
-            accessibilityHint={t('hoy.tasksCaptureHint')}
-            style={[styles.iconButton, styles.iconButtonPlain]}
-          >
-            <Brain size={22} color={THEME.colors.calm.lavenderDeep} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push('/help')}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityLabel={t('settings.help')}
-            style={[styles.iconButton, styles.iconButtonPlain]}
-          >
-            <CircleHelp size={22} color={THEME.colors.calm.lavenderDeep} />
-          </TouchableOpacity>
-        </View>
-      }
+      subtitle={showSubtitle ? t('hoy.headerSubtitle') : undefined}
+      trailing={trailing}
     />
   );
 }
 
 const styles = StyleSheet.create({
-  trailing: {
+  minimalRow: {
     flexDirection: 'row',
-    gap: THEME.spacing.xs,
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: THEME.borderRadius.rounded,
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconButtonPlain: {
-    backgroundColor: THEME.colors.calm.card,
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
+    gap: THEME.spacing.xs,
+    alignSelf: 'stretch',
   },
 });

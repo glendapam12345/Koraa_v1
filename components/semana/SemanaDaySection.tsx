@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { Task } from '@/hooks/useTasks';
-import { WeekTaskItem } from '@/components/semana/WeekTaskItem';
+import { SemanaInteractiveTaskList } from '@/components/semana/SemanaInteractiveTaskList';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { getEmotionCalendarAccent, getEmotionCalendarFill } from '@/lib/emotionCalendarColors';
 
@@ -25,8 +25,12 @@ type SemanaDaySectionProps = {
   energyLevel?: number | null;
   focusCount?: number | null;
   globalCheckInBannerVisible?: boolean;
+  /** Oculta empty duplicado cuando ya hay banner global de check-in. */
+  suppressEmptyWhenGlobalBanner?: boolean;
   addTasksA11yLabel: string;
   addMoreA11yLabel: string;
+  onTasksChanged: () => void;
+  showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 };
 
 export function SemanaDaySection({
@@ -40,8 +44,11 @@ export function SemanaDaySection({
   energyLevel = null,
   focusCount = null,
   globalCheckInBannerVisible = false,
+  suppressEmptyWhenGlobalBanner = false,
   addTasksA11yLabel,
   addMoreA11yLabel,
+  onTasksChanged,
+  showToast,
 }: SemanaDaySectionProps) {
   const { t } = useI18n();
   const emotionAccent = emotionId ? getEmotionCalendarAccent(emotionId) : null;
@@ -173,6 +180,7 @@ export function SemanaDaySection({
       {renderHeader()}
       <View style={styles.dayBody}>
         {tasks.length === 0 ? (
+          suppressEmptyWhenGlobalBanner ? null : (
           <View style={styles.emptyDay}>
             <Text style={styles.emptyDayEmoji}>
               {emptyVariant === 'lightDay'
@@ -191,6 +199,7 @@ export function SemanaDaySection({
               />
             ) : null}
           </View>
+          )
         ) : (
           <>
             {showHeavyDayBanner ? (
@@ -207,24 +216,12 @@ export function SemanaDaySection({
                 <Text style={styles.heavyDayCta}>{t('semana.emptyHeavyDayCta')}</Text>
               </TouchableOpacity>
             ) : null}
-            <View style={styles.taskList}>
-              {tasks.map((task) => (
-                <WeekTaskItem
-                  key={task.id}
-                  task={task}
-                  projectName={
-                    task.project_id
-                      ? projectsMap[task.project_id]?.name || t('semana.projectFallback')
-                      : null
-                  }
-                  projectColor={
-                    task.project_id
-                      ? projectsMap[task.project_id]?.color || THEME.colors.gradient.blue
-                      : undefined
-                  }
-                />
-              ))}
-            </View>
+            <SemanaInteractiveTaskList
+              tasks={tasks}
+              projectsMap={projectsMap}
+              onTasksChanged={onTasksChanged}
+              showToast={showToast}
+            />
             <TouchableOpacity
               style={styles.addDayButtonOutlined}
               onPress={navigateToVaciar}
@@ -247,7 +244,6 @@ const styles = StyleSheet.create({
   daySection: {
     marginBottom: 0,
     ...THEME.surfaces.elevated,
-    borderRadius: THEME.borderRadius.rounded,
     padding: 0,
     overflow: 'hidden',
   },
@@ -291,8 +287,9 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
   },
   dayLabel: {
-    ...THEME.typography.h3,
-    fontSize: 16,
+    ...THEME.typography.sectionTitle,
+    fontSize: 18,
+    lineHeight: 24,
     color: THEME.colors.text.main,
     flex: 1,
   },
@@ -370,8 +367,5 @@ const styles = StyleSheet.create({
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
     fontSize: 13,
-  },
-  taskList: {
-    gap: THEME.spacing.xs,
   },
 });

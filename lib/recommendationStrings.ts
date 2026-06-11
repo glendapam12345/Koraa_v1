@@ -74,7 +74,7 @@ export const CONCRETE_BOOKS_ES = [
   },
   {
     title: 'Leer: El monje que vendió su Ferrari',
-    message: 'Fábula sobre prioridades y sentido de vida. Lectura ligera.',
+    message: 'Fábula sobre qué importa y sentido de vida. Lectura ligera.',
     suggestion: 'Leer El monje que vendió su Ferrari',
   },
   {

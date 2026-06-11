@@ -102,6 +102,8 @@ See individual README files in each subdirectory for usage guidelines.
 
 **Google Calendar (export tareas):** [GOOGLE_CALENDAR_API_SETUP.md](development_guidelines/learnings/GOOGLE_CALENDAR_API_SETUP.md). Coach IA opcional: [HOY_COACH_AI_EDGE_FUNCTION.md](development_guidelines/learnings/HOY_COACH_AI_EDGE_FUNCTION.md).
 
+**Dictado por voz (Tareas):** `expo-speech-recognition` en build nativo; Expo Go usa hint + micrófono del teclado. Ver [2026-06-08_task_voice_dictation.md](development_guidelines/delivered/2026-06-08_task_voice_dictation.md).
+
 **Microcopy errores/reintentos:** [2026-05-06_microcopy_error_retry_checklist.md](development_guidelines/delivered/2026-05-06_microcopy_error_retry_checklist.md).
 
 ---

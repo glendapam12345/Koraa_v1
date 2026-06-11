@@ -69,7 +69,11 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.impermanencecasaartisitca.koraav1',
-      buildNumber: '30',
+      buildNumber: '31',
+      entitlements: {
+        'com.apple.developer.healthkit': true,
+        'com.apple.developer.healthkit.access': [],
+      },
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         CFBundleDisplayName: 'Koraa',
@@ -77,7 +81,21 @@ module.exports = {
           'Koraa usa tu calendario para agregar tareas con fecha como eventos.',
         NSCalendarsWriteOnlyAccessUsageDescription:
           'Koraa usa tu calendario para agregar tareas con fecha como eventos.',
-        LSApplicationQueriesSchemes: ['spotify', 'music'],
+        LSApplicationQueriesSchemes: [
+          'spotify',
+          'music',
+          'mobilenotes',
+          'x-apple-notes',
+          'x-apple-reminderkit',
+          'x-apple-reminder',
+          'x-apple-health',
+          'messages',
+          'sms',
+          'maps',
+          'clock-alarm',
+          'clock-worldclock',
+          'clock-timer',
+        ],
       },
     },
     android: {
@@ -110,6 +128,24 @@ module.exports = {
         {
           color: '#6A8DFF',
           defaultChannel: 'default',
+        },
+      ],
+      [
+        'react-native-health',
+        {
+          healthSharePermission:
+            'Koraa lee tus horas de sueño en Salud para suavizar los pasos sugeridos — sin metas ni culpa.',
+          healthUpdatePermission:
+            'Koraa no guarda datos de sueño en Salud; solo los lee si tú lo permites.',
+        },
+      ],
+      [
+        'expo-speech-recognition',
+        {
+          microphonePermission:
+            'Koraa usa el micrófono solo para transcribir tareas que dictes — no guardamos grabaciones.',
+          speechRecognitionPermission:
+            'Koraa transcribe tu voz a texto cuando dictas una tarea en Tareas.',
         },
       ],
     ],

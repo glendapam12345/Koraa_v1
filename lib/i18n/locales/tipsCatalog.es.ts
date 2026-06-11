@@ -7,8 +7,8 @@ export type CatalogTipEntry = {
   title: string;
   body: string;
   emoji: string;
-  /** Abre Spotify, sesión suave en la app, etc. */
-  action?: TipAction;
+  /** App nativa o pantalla de Koraa que abre el consejo. */
+  action: TipAction;
   /** Emociones donde este tip encaja mejor */
   emotions?: string[];
   /** Energía 1–5 */
@@ -33,6 +33,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Historias mentales',
     body: '¿Qué historia te estás contando hoy? Escríbela en una frase y pregúntate si es del todo cierta.',
     emoji: '🧠',
+    action: 'notes',
     emotions: ['ansiosa', 'abrumada'],
   },
   {
@@ -50,7 +51,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Escribe y suelta',
     body: 'Dos minutos en notas: qué sientes, qué necesitas, qué puede esperar. Cierra y respira.',
     emoji: '📝',
-    action: 'reminders',
+    action: 'notes',
     emotions: ['abrumada', 'ansiosa'],
   },
   {
@@ -59,6 +60,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Sé amable contigo',
     body: 'Hoy no hace falta darte todo. Un paso pequeño ya cuenta.',
     emoji: '💗',
+    action: 'notes',
     emotions: ['agotada', 'abrumada'],
   },
   {
@@ -67,6 +69,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Sin redes al despertar',
     body: 'Si puedes, los primeros 15 minutos del día sin scroll. Sin culpa si no sale.',
     emoji: '📵',
+    action: 'clock',
     minEnergy: 1,
     maxEnergy: 3,
   },
@@ -76,6 +79,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Aterriza el día',
     body: 'Si te apetece, nombra 1–3 cosas pequeñas. El resto puede esperar sin culpa.',
     emoji: '🪨',
+    action: 'notes',
     emotions: ['enfocada', 'motivada', 'tranquila'],
   },
   {
@@ -84,6 +88,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Celebra lo hecho',
     body: 'Antes de seguir, reconoce una cosa que ya hiciste hoy, por pequeña que sea.',
     emoji: '✨',
+    action: 'notes',
     emotions: ['motivada', 'tranquila'],
   },
   // —— Descanso ——
@@ -93,6 +98,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Pausa de 5 minutos',
     body: 'Aleja la pantalla, estira cuello y hombros. Vuelve cuando quieras.',
     emoji: '☕',
+    action: 'clock',
     emotions: ['agotada', 'ansiosa'],
     maxEnergy: 2,
   },
@@ -102,6 +108,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Sueño importa',
     body: 'Si anoche dormiste poco, hoy pueden bastar 2 pasos pequeños. Koraa ya sugirió por ti.',
     emoji: '🌙',
+    action: 'health_sleep',
     emotions: ['agotada'],
     maxEnergy: 2,
   },
@@ -111,6 +118,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Descanso activo',
     body: 'Caminar 10 minutos cuenta como reset. No necesitas una hora libre.',
     emoji: '🚶‍♀️',
+    action: 'maps',
     minEnergy: 2,
     maxEnergy: 4,
   },
@@ -120,6 +128,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Señales de calma',
     body: 'Agua, luz suave, algo caliente. Pequeñas cosas que le dicen a tu cuerpo que está a salvo.',
     emoji: '🫖',
+    action: 'health',
     emotions: ['ansiosa', 'agotada'],
   },
   {
@@ -128,6 +137,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'No saltes comida',
     body: 'Algo simple y nutritivo puede ayudarte. No tiene que ser perfecto.',
     emoji: '🥣',
+    action: 'health',
     maxEnergy: 3,
   },
   {
@@ -139,6 +149,15 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     action: 'apple_music',
     emotions: ['agotada'],
   },
+  {
+    id: 'rest-7',
+    category: 'rest',
+    title: 'Soltar antes de dormir',
+    body: 'Si algo pesa, revisa tu horario de sueño en Salud y suéltalo por hoy. No hace falta resolverlo ahora.',
+    emoji: '🌙',
+    action: 'health_sleep',
+    emotions: ['agotada', 'ansiosa', 'abrumada'],
+  },
   // —— Acción suave ——
   {
     id: 'act-1',
@@ -146,6 +165,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Una cosa a la vez',
     body: 'Si te apetece, empieza por lo más pequeño. No hace falta terminarlo hoy.',
     emoji: '👣',
+    action: 'notes',
     emotions: ['ansiosa', 'abrumada'],
   },
   {
@@ -154,6 +174,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Pide ayuda',
     body: 'Un mensaje corto: «¿Puedes ayudarme con X?» A veces aligera más que hacerlo sola.',
     emoji: '🤝',
+    action: 'messages',
     emotions: ['abrumada', 'agotada'],
   },
   {
@@ -172,6 +193,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Mueve el cuerpo',
     body: 'Estiramientos o baile 5 min, si puedes. A veces el cuerpo se siente un poco más ligero.',
     emoji: '💃',
+    action: 'apple_music',
     emotions: ['motivada', 'tranquila'],
     minEnergy: 2,
   },
@@ -181,6 +203,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Decisión pequeña',
     body: 'Si algo te bloquea, elige la opción «suficientemente buena» en 2 minutos y avanza.',
     emoji: '🔀',
+    action: 'notes',
     emotions: ['ansiosa'],
   },
   {
@@ -189,7 +212,17 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Sal al aire',
     body: 'Luz natural unos minutos, si puedes. A veces ayuda a sentirse un poco más clara.',
     emoji: '🌤️',
+    action: 'maps',
     minEnergy: 2,
+  },
+  {
+    id: 'act-7',
+    category: 'action',
+    title: 'Aparta para mañana',
+    body: 'Si algo pesa hoy, anótalo en Recordatorios y suéltalo. No tienes que hacerlo ahora.',
+    emoji: '📋',
+    action: 'reminders',
+    emotions: ['abrumada', 'ansiosa', 'agotada'],
   },
   // —— Qué importa hoy ——
   {
@@ -198,6 +231,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Solo lo esencial',
     body: 'Mira los 2–5 pasos sugeridos en Hoy. El resto puede esperar — no es fracaso.',
     emoji: '🎯',
+    action: 'hoy',
     emotions: ['abrumada', 'agotada'],
   },
   {
@@ -206,6 +240,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Una cosa que importe',
     body: 'Con energía alta, elige una cosa que te importe. No hace falta hacerlo todo.',
     emoji: '💡',
+    action: 'hoy',
     emotions: ['motivada', 'enfocada'],
     minEnergy: 4,
   },
@@ -215,6 +250,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Partir en pedazos',
     body: 'Divide algo grande en pasos de 15 min. El primero basta para empezar.',
     emoji: '🧩',
+    action: 'notes',
     emotions: ['abrumada', 'ansiosa'],
   },
   {
@@ -223,6 +259,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Menos ruido',
     body: 'Silencia notificaciones un rato, si puedes. Una ventana, una lista, un paso.',
     emoji: '🔕',
+    action: 'focus_session',
     emotions: ['enfocada'],
     minEnergy: 3,
   },
@@ -232,6 +269,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Mensajes después',
     body: 'Correos y chats pueden esperar. Guarda energía para lo que te importe hoy.',
     emoji: '📬',
+    action: 'notes',
     minEnergy: 3,
   },
   {
@@ -240,6 +278,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Ritmo sostenible',
     body: 'Energía alta no significa hacerlo todo. Las pausas también cuentan.',
     emoji: '📅',
+    action: 'clock',
     emotions: ['motivada'],
     minEnergy: 4,
   },
@@ -249,6 +288,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Empieza fácil',
     body: 'Lo más simple ayuda a arrancar. Koraa ya lo tiene en tu lista.',
     emoji: '🚀',
+    action: 'hoy',
     emotions: ['agotada', 'ansiosa'],
     maxEnergy: 3,
   },
@@ -258,6 +298,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     title: 'Con calma',
     body: 'Con tranquilidad, una decisión pequeña puede ser suficiente por hoy.',
     emoji: '🌊',
+    action: 'health_mindfulness',
     emotions: ['tranquila'],
   },
 ];

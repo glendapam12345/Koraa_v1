@@ -141,11 +141,25 @@ export default function RootLayout() {
                   animation: 'slide_from_bottom',
                 }}
               />
+              <Stack.Screen
+                name="streak"
+                options={{
+                  presentation: 'modal',
+                  animation: 'slide_from_bottom',
+                }}
+              />
               <Stack.Screen name="paywall" />
               <Stack.Screen name="project/[id]" />
               <Stack.Screen name="proyectos" />
               <Stack.Screen name="tips" />
               <Stack.Screen name="focus-session" />
+              <Stack.Screen
+                name="emergency-kit"
+                options={{
+                  presentation: 'card',
+                  animation: 'slide_from_right',
+                }}
+              />
               <Stack.Screen name="+not-found" />
             </Stack>
               <StatusBar style="auto" />

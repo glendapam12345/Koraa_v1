@@ -16,6 +16,11 @@ import { scheduleDailyReminder, checkNotificationPermissions } from '@/hooks/use
 import { logger } from '@/lib/logger';
 import { getPasswordErrorKey } from '@/lib/passwordPolicy';
 import { resetHoyFirstDayPreview, simulateHoyDayTwo } from '@/lib/hoyLiteDay';
+import {
+  getPremiumDevSimEnabled,
+  isPremiumDevSimAllowed,
+  setPremiumDevSimEnabled,
+} from '@/lib/premiumDevOverride';
 
 export type SettingsStep =
   | 'menu'
@@ -42,6 +47,12 @@ export function useSettingsScreen() {
   const [notifSaving, setNotifSaving] = useState(false);
   const [resettingHoyPreview, setResettingHoyPreview] = useState(false);
   const [simulatingHoyDayTwo, setSimulatingHoyDayTwo] = useState(false);
+  const [devPremiumSim, setDevPremiumSim] = useState(false);
+
+  useEffect(() => {
+    if (!isPremiumDevSimAllowed()) return;
+    void getPremiumDevSimEnabled().then(setDevPremiumSim);
+  }, []);
 
   useEffect(() => {
     if (resendCooldown > 0) {
@@ -151,6 +162,24 @@ export function useSettingsScreen() {
       },
     ]);
   }, [router, t, user?.id]);
+
+  const handleToggleDevPremiumSim = useCallback(async (enabled: boolean) => {
+    if (!isPremiumDevSimAllowed()) return;
+    try {
+      await setPremiumDevSimEnabled(enabled);
+      setDevPremiumSim(enabled);
+      if (Platform.OS === 'ios' || Platform.OS === 'android') {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      Alert.alert(
+        enabled ? t('settings.devPremiumOnTitle') : t('settings.devPremiumOffTitle'),
+        enabled ? t('settings.devPremiumOnBody') : t('settings.devPremiumOffBody'),
+      );
+    } catch (e) {
+      logger.error('Error toggling dev Premium sim:', e);
+      Alert.alert(t('errors.generic'), t('common.retry'));
+    }
+  }, [t]);
 
   const selectLocale = useCallback(
     async (next: AppLocale) => {
@@ -336,6 +365,8 @@ export function useSettingsScreen() {
     notifSaving,
     resettingHoyPreview,
     simulatingHoyDayTwo,
+    devPremiumSim,
+    handleToggleDevPremiumSim,
     resetState,
     applyNotificationPreset,
     handleResetHoyFirstDay,

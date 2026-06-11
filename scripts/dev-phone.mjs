@@ -7,7 +7,16 @@
  */
 import { spawn } from 'node:child_process';
 import http from 'node:http';
+import { createRequire } from 'node:module';
 import localtunnel from 'localtunnel';
+import {
+  buildExpoGoUrlFromProxy,
+  buildExpoLoadingUrl,
+  writeDevTunnelState,
+} from './expo-go-url.mjs';
+
+const require = createRequire(import.meta.url);
+const qrcode = require('qrcode-terminal');
 
 const PORT = Number(process.env.REACT_NATIVE_PACKAGER_PORT || 8081);
 const tunnelOnly = process.argv.includes('--tunnel-only');
@@ -39,16 +48,19 @@ function waitForMetro(maxMs = 120_000) {
 }
 
 function printExpoGoInstructions(tunnelUrl) {
-  const host = new URL(tunnelUrl.startsWith('http') ? tunnelUrl : `https://${tunnelUrl}`).hostname;
-  const expUrl = `exp://${host}`;
+  const proxyUrl = tunnelUrl.startsWith('http') ? tunnelUrl : `https://${tunnelUrl}`;
+  const expUrl = buildExpoGoUrlFromProxy(proxyUrl);
+  const loadingUrl = buildExpoLoadingUrl(proxyUrl, 'ios');
+  writeDevTunnelState({ proxyUrl, expUrl, loadingUrl });
 
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('  📱 ABRE EN EXPO GO (URL manual)');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log(`\n  ${expUrl}\n`);
-  console.log('  1. Expo Go → Introducir URL');
-  console.log(`  2. Pega: ${expUrl}`);
-  console.log('  3. iOS: Ajustes → Expo Go → Red local → ON');
+  console.log('  📱 Expo Go');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  qrcode.generate(loadingUrl, { small: true });
+  console.log(`\n  ${loadingUrl}`);
+  console.log(`  Alternativa exp: ${expUrl}`);
+  console.log('  Escanea con Expo Go (pestaña Scan) o Cámara iOS.');
+  console.log('  iOS: Ajustes → Expo Go → Red local → ON');
   console.log('\n  No uses exp://172.20.x.x — esa red te bloquea.\n');
 }
 

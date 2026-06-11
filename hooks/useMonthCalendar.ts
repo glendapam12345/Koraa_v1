@@ -84,10 +84,18 @@ export function useMonthCalendar(
         }
       }
 
+      const allTasks = (tasksRes.data ?? []) as Task[];
+      const parentTasks = allTasks.filter((task) => !task.parent_task_id);
+      const subtasks = allTasks.filter((task) => task.parent_task_id);
+      const tasksWithSubtasks = parentTasks.map((parent) => ({
+        ...parent,
+        subtasks: subtasks.filter((st) => st.parent_task_id === parent.id),
+      }));
+
       const byDate: Record<string, Task[]> = {};
-      for (const task of (tasksRes.data ?? []) as Task[]) {
+      for (const task of tasksWithSubtasks) {
         const dateKey = normalizeScheduledDate(task.scheduled_date);
-        if (!dateKey || task.parent_task_id) continue;
+        if (!dateKey) continue;
         if (!byDate[dateKey]) byDate[dateKey] = [];
         byDate[dateKey].push({ ...task, scheduled_date: dateKey });
       }

@@ -1,11 +1,13 @@
 import { View, StyleSheet } from 'react-native';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { HoyFocusPanel } from '@/components/hoy/HoyFocusPanel';
 import { HoyRestOfDayPanel } from '@/components/hoy/HoyRestOfDayPanel';
 import { useI18n } from '@/contexts/I18nContext';
+import { useAppleHealthConnection } from '@/hooks/useAppleHealthConnection';
 import type { Task } from '@/components/tasks/TaskCard';
 import type { FocusProgressStats } from '@/lib/focusProgressStats';
+import { getHoyFocusTasks } from '@/lib/hoyFocusTasks';
 
 export type HoyTasksSectionProps = {
   todayMood: string;
@@ -14,10 +16,11 @@ export type HoyTasksSectionProps = {
   time: string;
   focusLevel: string;
   todayPriorityStats: FocusProgressStats;
-  hoyLiteLayout: boolean | null;
+  /** Primer día en Hoy sin módulos secundarios expandidos. */
+  compactLayout?: boolean;
+  onShowFullView?: () => void;
   user: { id: string } | null;
   tasks: Task[];
-  displayedIncompleteTasks: Task[];
   incompleteTasksForToday: Task[];
   projectsMap: Record<string, { name: string; color?: string }>;
   expandedTasks: Set<string>;
@@ -43,6 +46,9 @@ export type HoyTasksSectionProps = {
   onQuickRecheck?: () => void;
   onDismissDayChanged?: () => void;
   onLightenLoad?: () => void;
+  crisisMode?: boolean;
+  crisisSupportMessage?: string;
+  onOpenEmergencyKit?: () => void;
 };
 
 export function HoyTasksSection({
@@ -52,10 +58,10 @@ export function HoyTasksSection({
   time,
   focusLevel,
   todayPriorityStats,
-  hoyLiteLayout,
+  compactLayout = false,
+  onShowFullView,
   user,
   tasks,
-  displayedIncompleteTasks,
   incompleteTasksForToday,
   projectsMap,
   expandedTasks,
@@ -81,15 +87,20 @@ export function HoyTasksSection({
   onQuickRecheck,
   onDismissDayChanged,
   onLightenLoad,
+  crisisMode = false,
+  crisisSupportMessage,
+  onOpenEmergencyKit,
 }: HoyTasksSectionProps) {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
+  const health = useAppleHealthConnection(t);
+
+  const handleHealthConnect = useCallback(() => {
+    void health.connect();
+  }, [health]);
 
   const focusTasks = useMemo(
-    () =>
-      displayedIncompleteTasks.filter(
-        (task) => task.is_priority && !task.parent_task_id,
-      ),
-    [displayedIncompleteTasks],
+    () => getHoyFocusTasks(tasks, incompleteTasksForToday),
+    [tasks, incompleteTasksForToday],
   );
 
   const restOfDayTasks = useMemo(
@@ -133,8 +144,22 @@ export function HoyTasksSection({
         onQuickRecheck={onQuickRecheck}
         onDismissDayChanged={onDismissDayChanged}
         onLightenLoad={onLightenLoad}
+        compactLayout={compactLayout}
+        onShowFullView={onShowFullView}
+        shortSleep={health.shortSleep}
+        sleepCard={{
+          available: health.available,
+          connected: health.connected,
+          lastNightHours: health.lastNightHours,
+          shortSleep: health.shortSleep,
+          onConnect: handleHealthConnect,
+          onOpenSleep: () => void health.openSleep(),
+        }}
+        crisisMode={crisisMode}
+        crisisSupportMessage={crisisSupportMessage}
+        onOpenEmergencyKit={onOpenEmergencyKit}
       />
-      {restOfDayExpanded && onCollapseRestOfDay ? (
+      {!crisisMode && restOfDayExpanded && onCollapseRestOfDay ? (
         <HoyRestOfDayPanel
           tasks={tasks}
           restTasks={restOfDayTasks}
@@ -159,6 +184,6 @@ export function HoyTasksSection({
 
 const styles = StyleSheet.create({
   root: {
-    gap: THEME.spacing.sm,
+    gap: THEME.layout.tabSectionGap,
   },
 });

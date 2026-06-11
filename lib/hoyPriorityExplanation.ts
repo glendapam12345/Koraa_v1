@@ -84,8 +84,8 @@ export function buildHoyPriorityExplanation({
   } else if (energyLevel === 3) {
     message =
       priorityCount === 1
-        ? t('hoyPlanFallback.priorityOne', { count: priorityCount })
-        : t('hoyPlanFallback.priorityMany', { count: priorityCount });
+        ? t('hoyPlanFallback.stepsOne', { count: priorityCount })
+        : t('hoyPlanFallback.stepsMany', { count: priorityCount });
     reasoning = t('hoyPlanFallback.reasoningMid', { emotion: emotionLabel });
     suggestion = t('hoy.planSuggestMid');
   } else if (energyLevel >= 4) {

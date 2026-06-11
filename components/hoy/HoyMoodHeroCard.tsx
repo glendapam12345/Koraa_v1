@@ -12,6 +12,9 @@ type HoyMoodHeroCardProps = {
   firstFocusTaskName?: string;
   coachLine: string;
   allFocusDone: boolean;
+  /** Día 1 lite: menos texto en el hero. */
+  compact?: boolean;
+  crisisMode?: boolean;
 };
 
 export function HoyMoodHeroCard({
@@ -23,11 +26,18 @@ export function HoyMoodHeroCard({
   firstFocusTaskName,
   coachLine,
   allFocusDone,
+  compact = false,
+  crisisMode = false,
 }: HoyMoodHeroCardProps) {
   const { t } = useI18n();
 
-  const koraaLine =
-    focusCount > 0
+  const koraaLine = crisisMode
+    ? t('hoy.crisisMoodHero')
+    : compact
+    ? focusCount > 0
+      ? t('hoy.moodHeroLiteWithSteps', { count: focusCount })
+      : t('hoy.moodHeroLiteNoSteps')
+    : focusCount > 0
       ? restCount > 0
         ? t('hoy.moodHeroKoraaDid', {
             level: energyLevel,
@@ -37,25 +47,43 @@ export function HoyMoodHeroCard({
         : t('hoy.moodHeroKoraaDidNoRest', { level: energyLevel, count: focusCount })
       : t('hoy.moodHeroKoraaDidNoFocus', { level: energyLevel });
 
-  const stepLine =
+  const taskHint =
     firstFocusTaskName && !allFocusDone
       ? t('hoy.moodHeroFirstStep', { task: firstFocusTaskName })
-      : coachLine;
+      : null;
+
+  const coachAddsValue =
+    Boolean(coachLine) &&
+    !coachLineRepeatsMood(coachLine, emotionLabel, energyLevel) &&
+    coachLine !== koraaLine;
+
+  const detailLine = taskHint ?? (compact ? null : coachAddsValue ? coachLine : null);
+
+  const cardStyles = compact ? styles.cardCompact : styles.card;
+  const emojiStyle = compact ? styles.emojiCompact : styles.emoji;
 
   const content = (
     <>
       <Text style={styles.eyebrow}>{t('hoy.focusMoodLabel')}</Text>
       <View style={styles.moodRow}>
-        <Text style={styles.emoji} accessibilityLabel={emotionLabel}>
+        <Text style={emojiStyle} accessibilityLabel={emotionLabel}>
           {emotionEmoji}
         </Text>
         <View style={styles.moodTextCol}>
-          <Text style={styles.emotion}>{emotionLabel}</Text>
+          <Text style={styles.emotion} numberOfLines={1}>
+            {emotionLabel}
+          </Text>
           <Text style={styles.energy}>{t('hoy.moodHeroEnergy', { level: energyLevel })}</Text>
         </View>
       </View>
-      <Text style={styles.koraaLine}>{koraaLine}</Text>
-      {stepLine ? <Text style={styles.coach}>{stepLine}</Text> : null}
+      <Text style={styles.koraaLine} numberOfLines={compact ? 2 : 3}>
+        {koraaLine}
+      </Text>
+      {detailLine ? (
+        <Text style={styles.coach} numberOfLines={2}>
+          {detailLine}
+        </Text>
+      ) : null}
     </>
   );
 
@@ -64,66 +92,92 @@ export function HoyMoodHeroCard({
       colors={[THEME.colors.gradient.blue, THEME.colors.calm.lavenderDeep, THEME.colors.gradient.pink]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={styles.card}
+      style={cardStyles}
     >
       {content}
     </LinearGradient>
   );
 }
 
+function coachLineRepeatsMood(line: string, emotionLabel: string, energyLevel: number): boolean {
+  const lower = line.toLowerCase();
+  const emotion = emotionLabel.toLowerCase();
+  if (!lower.includes(emotion)) return false;
+  return (
+    lower.includes(`${energyLevel}/5`) ||
+    lower.includes(`energy ${energyLevel}`) ||
+    lower.includes(`energía ${energyLevel}`)
+  );
+}
+
 const styles = StyleSheet.create({
   card: {
-    borderRadius: THEME.borderRadius.xl,
-    padding: THEME.spacing.lg,
-    gap: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.rounded,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    gap: 4,
+    ...THEME.shadows.soft,
+  },
+  cardCompact: {
+    borderRadius: THEME.borderRadius.rounded,
+    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.sm,
+    gap: 2,
     ...THEME.shadows.soft,
   },
   eyebrow: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
+    fontSize: 11,
     color: THEME.colors.onGradientMuted,
     fontFamily: THEME.fonts.heading.bold,
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
   },
   moodRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: THEME.spacing.md,
-    marginTop: THEME.spacing.xs,
+    gap: THEME.spacing.sm,
+    marginTop: 2,
   },
   emoji: {
-    fontSize: 48,
-    lineHeight: 52,
+    fontSize: 36,
+    lineHeight: 40,
+  },
+  emojiCompact: {
+    fontSize: 30,
+    lineHeight: 34,
   },
   moodTextCol: {
     flex: 1,
-    gap: 2,
+    gap: 0,
   },
   emotion: {
-    ...THEME.typography.h2,
-    fontSize: 28,
-    lineHeight: 34,
+    ...THEME.typography.h3,
+    fontSize: 20,
+    lineHeight: 24,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.onGradient,
   },
   energy: {
-    ...THEME.typography.body,
-    fontSize: 16,
+    ...THEME.typography.caption,
+    fontSize: 13,
+    lineHeight: 18,
     color: THEME.colors.onGradientSoft,
     fontFamily: THEME.fonts.heading.medium,
   },
   koraaLine: {
-    ...THEME.typography.body,
-    fontSize: 16,
-    lineHeight: 24,
+    ...THEME.typography.caption,
+    fontSize: 14,
+    lineHeight: 20,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.medium,
-    marginTop: THEME.spacing.sm,
+    marginTop: 4,
   },
   coach: {
     ...THEME.typography.small,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 17,
     color: THEME.colors.onGradientMuted,
-    marginTop: THEME.spacing.xs,
+    marginTop: 2,
   },
 });

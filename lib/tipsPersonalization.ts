@@ -9,6 +9,7 @@ import type { AppLocale } from '@/lib/i18n';
 import { TIPS_CATALOG_ES, type CatalogTipEntry } from '@/lib/i18n/locales/tipsCatalog.es';
 import { TIPS_CATALOG_EN } from '@/lib/i18n/locales/tipsCatalog.en';
 import type { TipCategoryId, TipsUserContext } from '@/lib/tipsTypes';
+import { getCatalogCountByCategory } from '@/lib/tipsAccess';
 
 export type ScoredTip = CatalogTipEntry & { score: number; forYou?: boolean };
 
@@ -69,20 +70,12 @@ export function getTipsForCategory(
   return getPersonalizedTips(ctx, locale).filter((t) => t.category === category);
 }
 
+/** @deprecated Usa getDisplayTipsCountByCategory en lib/tipsAccess (respeta límite gratis). */
 export function countTipsByCategory(
-  ctx: TipsUserContext,
+  _ctx: TipsUserContext,
   locale: AppLocale = 'es',
 ): Record<TipCategoryId, number> {
-  const counts: Record<TipCategoryId, number> = {
-    mindset: 0,
-    rest: 0,
-    action: 0,
-    productivity: 0,
-  };
-  for (const tip of getPersonalizedTips(ctx, locale)) {
-    counts[tip.category] += 1;
-  }
-  return counts;
+  return getCatalogCountByCategory(locale);
 }
 
 /** Frase guía tipo Musa — adaptada al check-in (sin LLM). */

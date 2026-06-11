@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { EmotionCard } from '@/components/EmotionCard';
+import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
 import { Sparkles } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
@@ -47,9 +48,11 @@ export default function EmotionScreen() {
           </View>
         </View>
 
+        <OnboardingCheckInProgress step={1} />
         <Text style={styles.title}>{t('onboarding.emotion.title')}</Text>
         <Text style={styles.titleAccent}>{t('onboarding.emotion.titleAccent')}</Text>
         <Text style={styles.subtitle}>{t('onboarding.emotion.subtitle')}</Text>
+        <Text style={styles.checkInHint}>{t('onboarding.emotion.checkInHint')}</Text>
         <Text style={styles.inclusiveNote}>{t('sentir.inclusiveNote')}</Text>
 
         <View
@@ -116,6 +119,12 @@ const styles = StyleSheet.create({
   subtitle: {
     ...THEME.typography.h1,
     color: THEME.colors.text.main,
+    marginBottom: THEME.spacing.xs,
+  },
+  checkInHint: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    lineHeight: 22,
     marginBottom: THEME.spacing.sm,
   },
   inclusiveNote: {

@@ -59,9 +59,9 @@ export function HoyDayFlowSection({
               onPress={onQuickRecheck}
               activeOpacity={0.85}
               accessibilityRole="button"
-              accessibilityLabel={t('hoyDayFlow.reorganizeCta')}
+              accessibilityLabel={t('hoyDayFlow.updateCheckInCta')}
             >
-              <Text style={styles.primaryBtnText}>{t('hoyDayFlow.reorganizeCta')}</Text>
+              <Text style={styles.primaryBtnText}>{t('hoyDayFlow.updateCheckInCta')}</Text>
             </TouchableOpacity>
           ) : null}
           {onLightenLoad ? (

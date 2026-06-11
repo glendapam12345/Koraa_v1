@@ -11,6 +11,10 @@ type SemanaWeekNavProps = {
   onNext: () => void;
   prevA11yLabel: string;
   nextA11yLabel: string;
+  /** Copy suave cuando la navegación está limitada (plan free). */
+  hint?: string;
+  /** Al tocar flechas bloqueadas (plan free). */
+  onLockedNavPress?: () => void;
 };
 
 export function SemanaWeekNav({
@@ -21,18 +25,31 @@ export function SemanaWeekNav({
   onNext,
   prevA11yLabel,
   nextA11yLabel,
+  hint,
+  onLockedNavPress,
 }: SemanaWeekNavProps) {
   const { t } = useI18n();
 
+  const handlePrev = () => {
+    if (canGoPrev) onPrev();
+    else onLockedNavPress?.();
+  };
+
+  const handleNext = () => {
+    if (canGoNext) onNext();
+    else onLockedNavPress?.();
+  };
+
   return (
-    <View style={styles.root}>
+    <View style={styles.wrap}>
+      <View style={styles.root}>
       <TouchableOpacity
         style={[styles.button, !canGoPrev && styles.buttonDisabled]}
-        onPress={onPrev}
-        disabled={!canGoPrev}
+        onPress={handlePrev}
         activeOpacity={0.8}
         accessibilityRole="button"
         accessibilityLabel={prevA11yLabel}
+        accessibilityHint={!canGoPrev && hint ? hint : undefined}
       >
         <ChevronLeft
           size={22}
@@ -51,11 +68,11 @@ export function SemanaWeekNav({
 
       <TouchableOpacity
         style={[styles.button, !canGoNext && styles.buttonDisabled]}
-        onPress={onNext}
-        disabled={!canGoNext}
+        onPress={handleNext}
         activeOpacity={0.8}
         accessibilityRole="button"
         accessibilityLabel={nextA11yLabel}
+        accessibilityHint={!canGoNext && hint ? hint : undefined}
       >
         <Text style={[styles.buttonText, !canGoNext && styles.buttonTextDisabled]}>{t('semana.next')}</Text>
         <ChevronRight
@@ -63,17 +80,27 @@ export function SemanaWeekNav({
           color={canGoNext ? THEME.colors.gradient.blue : THEME.colors.text.secondary}
         />
       </TouchableOpacity>
+      </View>
+      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrap: {
+    gap: THEME.spacing.xs,
+  },
   root: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 0,
     gap: THEME.spacing.sm,
+  },
+  hint: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   button: {
     flexDirection: 'row',

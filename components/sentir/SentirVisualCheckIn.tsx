@@ -59,6 +59,8 @@ type SentirVisualCheckInProps = {
   hideAdvancedLink?: boolean;
   /** Muestra etiqueta «check-in rápido» (emoción + energía). */
   showQuickBadge?: boolean;
+  /** En Hoy: tarjeta gradiente más baja, sin badge ni subtítulo duplicado. */
+  compactEmbedded?: boolean;
   /** Clave i18n para el CTA al guardar (solo en modo embedded). */
   saveLabelKey?: string;
   onEmotionChange?: (emotionId: string) => void;
@@ -71,6 +73,7 @@ export function SentirVisualCheckIn({
   embedded = false,
   hideAdvancedLink = false,
   showQuickBadge = false,
+  compactEmbedded = false,
   saveLabelKey,
   onEmotionChange,
 }: SentirVisualCheckInProps) {
@@ -156,7 +159,7 @@ export function SentirVisualCheckIn({
 
   return (
     <View style={[styles.root, embedded && styles.rootEmbedded]}>
-      {showQuickBadge ? (
+      {showQuickBadge && !compactEmbedded ? (
         <View style={styles.badgeRow}>
           <Text style={styles.quickBadge}>{t('sentir.visualCheckIn.quickBadge')}</Text>
           <Text style={styles.quickBadgeSub}>{t('sentir.visualCheckIn.quickSubtitle')}</Text>
@@ -180,10 +183,19 @@ export function SentirVisualCheckIn({
           colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.heroEmbedded}
+          style={[styles.heroEmbedded, compactEmbedded && styles.heroEmbeddedCompact]}
         >
-          <Text style={styles.heroEmbeddedBubble}>{t('sentir.visualCheckIn.bubble')}</Text>
-          <Text style={styles.heroEmbeddedNote}>{t('sentir.visualCheckIn.gridSubtitle')}</Text>
+          <Text
+            style={[
+              styles.heroEmbeddedBubble,
+              compactEmbedded && styles.heroEmbeddedBubbleCompact,
+            ]}
+          >
+            {t('sentir.visualCheckIn.bubble')}
+          </Text>
+          {!compactEmbedded ? (
+            <Text style={styles.heroEmbeddedNote}>{t('sentir.visualCheckIn.gridSubtitle')}</Text>
+          ) : null}
         </LinearGradient>
       )}
 
@@ -385,12 +397,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: THEME.spacing.xs,
   },
+  heroEmbeddedCompact: {
+    padding: THEME.spacing.sm,
+    marginBottom: THEME.spacing.sm,
+    minHeight: 0,
+    borderRadius: THEME.borderRadius.rounded,
+  },
   heroEmbeddedBubble: {
     ...THEME.typography.h2,
     fontSize: 26,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
     textAlign: 'center',
+  },
+  heroEmbeddedBubbleCompact: {
+    fontSize: 20,
+    lineHeight: 26,
   },
   heroEmbeddedNote: {
     ...THEME.typography.body,

@@ -6,10 +6,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { ChevronLeft, CheckCircle2, Plus } from 'lucide-react-native';
+import { ChevronLeft, CheckCircle2, Plus, Pencil } from 'lucide-react-native';
 import type { Task } from '@/components/tasks/TaskCard';
 import { TaskList } from '@/components/tasks/TaskList';
+import { TaskEditModal } from '@/components/tasks/TaskEditModal';
+import { ProjectEditModal } from '@/components/projects/ProjectEditModal';
 import { useI18n } from '@/contexts/I18nContext';
+import { confirmDeleteProject, deleteProjectById } from '@/lib/deleteProject';
 
 export default function ProjectScreen() {
   const params = useLocalSearchParams<{ id: string }>();
@@ -24,6 +27,12 @@ export default function ProjectScreen() {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [expandedDetailsTasks, setExpandedDetailsTasks] = useState<Set<string>>(new Set());
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [editingProject, setEditingProject] = useState(false);
+  const [editProjectName, setEditProjectName] = useState('');
+  const [editProjectColor, setEditProjectColor] = useState<string>(THEME.colors.gradient.blue);
+  const [savingProject, setSavingProject] = useState(false);
 
   const isLoose = projectId === 'sin-proyecto';
 
@@ -163,6 +172,59 @@ export default function ProjectScreen() {
     [tasks, user, loadProjectAndTasks]
   );
 
+  useEffect(() => {
+    if (project && !isLoose) {
+      setEditProjectName(project.name);
+      setEditProjectColor(project.color);
+    }
+  }, [project, isLoose]);
+
+  const handleDeleteProject = useCallback(() => {
+    if (!projectId || isLoose || !project) return;
+    confirmDeleteProject(t, project.name, async () => {
+      const result = await deleteProjectById(projectId);
+      if (result.ok) {
+        setEditingProject(false);
+        router.back();
+      }
+    });
+  }, [isLoose, project, projectId, router, t]);
+
+  const handleSaveProjectEdit = useCallback(async () => {
+    if (!projectId || isLoose || !editProjectName.trim()) return;
+    setSavingProject(true);
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ name: editProjectName.trim(), color: editProjectColor })
+        .eq('id', projectId);
+      if (!error) {
+        setEditingProject(false);
+        loadProjectAndTasks();
+      }
+    } finally {
+      setSavingProject(false);
+    }
+  }, [editProjectColor, editProjectName, isLoose, loadProjectAndTasks, projectId]);
+
+  const handleEditTask = useCallback((task: Task) => {
+    setEditingTask(task);
+    setEditContent(task.content);
+    setMenuOpen(null);
+  }, []);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!editingTask || !editContent.trim()) return;
+    const { error } = await supabase
+      .from('tasks')
+      .update({ content: editContent.trim() })
+      .eq('id', editingTask.id);
+    if (!error) {
+      setEditingTask(null);
+      loadProjectAndTasks();
+    }
+  }, [editContent, editingTask, loadProjectAndTasks]);
+
   const handleDeleteTask = useCallback(
     (task: Task) => {
       const taskLabel = task.content.length > 40 ? `${task.content.slice(0, 40)}…` : task.content;
@@ -243,6 +305,16 @@ export default function ProjectScreen() {
                 })}
           </Text>
         </View>
+        {!isLoose ? (
+          <TouchableOpacity
+            onPress={() => setEditingProject(true)}
+            style={styles.headerEditBtn}
+            accessibilityRole="button"
+            accessibilityLabel={t('projects.renameProjectA11y', { name: project.name })}
+          >
+            <Pencil size={20} color={THEME.colors.gradient.blue} />
+          </TouchableOpacity>
+        ) : null}
       </View>
       <ScrollView
         style={styles.scroll}
@@ -270,7 +342,7 @@ export default function ProjectScreen() {
               onToggleExpansion={toggleExpansion}
               onToggleDetailsExpansion={toggleDetailsExpansion}
               onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
-              onEditTask={() => {}}
+              onEditTask={handleEditTask}
               onDeleteTask={handleDeleteTask}
               getCategoryColor={getCategoryColorCallback}
               onSubtaskToggle={() => {}}
@@ -296,7 +368,7 @@ export default function ProjectScreen() {
               onToggleExpansion={toggleExpansion}
               onToggleDetailsExpansion={toggleDetailsExpansion}
               onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
-              onEditTask={() => {}}
+              onEditTask={handleEditTask}
               onDeleteTask={handleDeleteTask}
               getCategoryColor={getCategoryColorCallback}
               onSubtaskToggle={() => {}}
@@ -342,6 +414,54 @@ export default function ProjectScreen() {
           </View>
         )}
       </ScrollView>
+
+      {tasks.length > 0 ? (
+        <TouchableOpacity
+          style={[styles.fab, { bottom: insets.bottom + THEME.spacing.lg }]}
+          onPress={() =>
+            isLoose
+              ? router.push('/(tabs)/vaciar')
+              : router.push({
+                  pathname: '/(tabs)/vaciar',
+                  params: { projectId: projectId as string, segment: 'capture' },
+                })
+          }
+          activeOpacity={0.9}
+          accessibilityRole="button"
+          accessibilityLabel={isLoose ? t('projectDetail.goTasksA11y') : t('projectDetail.addTaskA11y')}
+        >
+          <LinearGradient
+            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.fabGradient}
+          >
+            <Plus size={24} color={THEME.colors.onGradient} />
+          </LinearGradient>
+        </TouchableOpacity>
+      ) : null}
+
+      <TaskEditModal
+        visible={editingTask != null}
+        content={editContent}
+        onContentChange={setEditContent}
+        onSave={() => void handleSaveEdit()}
+        onClose={() => setEditingTask(null)}
+      />
+
+      {!isLoose ? (
+        <ProjectEditModal
+          visible={editingProject}
+          name={editProjectName}
+          color={editProjectColor}
+          onNameChange={setEditProjectName}
+          onColorChange={setEditProjectColor}
+          onSave={() => void handleSaveProjectEdit()}
+          onClose={() => setEditingProject(false)}
+          onDelete={handleDeleteProject}
+          saving={savingProject}
+        />
+      ) : null}
     </View>
   );
 }
@@ -371,6 +491,13 @@ const styles = StyleSheet.create({
   headerTextWrap: {
     flex: 1,
     minWidth: 0,
+  },
+  headerEditBtn: {
+    padding: THEME.spacing.xs,
+    minWidth: THEME.sizes.touchTarget,
+    minHeight: THEME.sizes.touchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     ...THEME.typography.h3,
@@ -422,6 +549,19 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     minWidth: 200,
     ...THEME.shadows.soft,
+  },
+  fab: {
+    position: 'absolute',
+    right: THEME.spacing.md,
+    borderRadius: 28,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
+  },
+  fabGradient: {
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyCtaGradient: {
     flexDirection: 'row',

@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Alert, ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { CalendarPlus } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -24,6 +25,7 @@ export function AddToGoogleCalendarButton({
   variant = 'chip',
 }: AddToGoogleCalendarButtonProps) {
   const { t } = useI18n();
+  const router = useRouter();
   const { user } = useAuth();
   const { configured, connected } = useGoogleCalendarConnection(user?.id);
   const [loading, setLoading] = useState(false);
@@ -32,10 +34,10 @@ export function AddToGoogleCalendarButton({
     (result: AddTaskToGoogleCalendarResult) => {
       if (result.ok) return;
       if (result.reason === 'not_connected') {
-        Alert.alert(
-          t('googleCalendar.notConnectedTitle'),
-          t('googleCalendar.notConnectedBody'),
-        );
+        Alert.alert(t('googleCalendar.notConnectedTitle'), t('googleCalendar.notConnectedBody'), [
+          { text: t('googleCalendar.cancel'), style: 'cancel' },
+          { text: t('googleCalendar.goToSettings'), onPress: () => router.push('/settings') },
+        ]);
         return;
       }
       if (result.reason === 'already_added') {
@@ -81,7 +83,7 @@ export function AddToGoogleCalendarButton({
       }
       Alert.alert(t('googleCalendar.errorTitle'), t('googleCalendar.errorBody'));
     },
-    [scheduledDate, t, taskId, title, user?.id],
+    [router, scheduledDate, t, taskId, title, user?.id],
   );
 
   const handlePress = useCallback(async () => {

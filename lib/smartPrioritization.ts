@@ -562,7 +562,7 @@ function getFocusShortLabel(focusLevel: string, locale: AppLocale): string {
   return translate(locale, 'smart.focusShortNormal');
 }
 
-/** Una línea compacta bajo el hero de Hoy (focos del día según check-in). */
+/** Una línea compacta bajo el hero de Hoy (pasos sugeridos según check-in). */
 export function buildHoyFocusSummaryLine(
   plan: PrioritizationPlan | null,
   checkIn: CheckInData,
@@ -578,7 +578,7 @@ export function buildHoyFocusSummaryLine(
 
   return translate(locale, 'hoy.focusSummaryLine', {
     count,
-    focos: count === 1 ? translate(locale, 'hoy.focusOne') : translate(locale, 'hoy.focusMany'),
+    steps: count === 1 ? translate(locale, 'hoy.focusOne') : translate(locale, 'hoy.focusMany'),
     n: checkIn.energyLevel,
     emotion: emotionLabel.toLowerCase(),
     time: getTimeShortLabel(checkIn.availableTime, locale),

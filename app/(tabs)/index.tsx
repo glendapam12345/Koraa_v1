@@ -7,7 +7,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { useState, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useState, useRef, useMemo, useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
 import { THEME } from '@/constants/theme';
 import { useCheckIn } from '@/hooks/useCheckIn';
@@ -38,12 +38,10 @@ import { useHoyTaskExpansion } from '@/hooks/useHoyTaskExpansion';
 import { useHoyProjectsMap } from '@/hooks/useHoyProjectsMap';
 import { useHoyScreenBootstrap } from '@/hooks/useHoyScreenBootstrap';
 import type { TaskCompletedPayload } from '@/hooks/useTaskActions';
-
-const NoPendingTasksCelebration = lazy(() =>
-  import('@/components/NoPendingTasksCelebration')
-    .then((module) => ({ default: module.NoPendingTasksCelebration }))
-    .catch(() => ({ default: () => null as any })),
-);
+import { NoPendingTasksCelebration } from '@/components/NoPendingTasksCelebration';
+import { HoyCrisisBanner } from '@/components/hoy/HoyCrisisBanner';
+import { useCrisisMode } from '@/hooks/useCrisisMode';
+import { router } from 'expo-router';
 
 export default function TodayScreen() {
   const { t, locale } = useI18n();
@@ -68,6 +66,21 @@ export default function TodayScreen() {
   }, []);
 
   const { user } = useAuth();
+  const { crisisModeActive, lastSession, dismissCrisisMode } = useCrisisMode();
+
+  const openEmergencyKitSession = useCallback(() => {
+    if (lastSession) {
+      router.push({
+        pathname: '/emergency-kit/session',
+        params: {
+          eventId: lastSession.eventId,
+          customText: lastSession.customText ?? '',
+        },
+      });
+      return;
+    }
+    router.push('/emergency-kit');
+  }, [lastSession]);
   const {
     todayMood,
     energyLevel,
@@ -121,7 +134,7 @@ export default function TodayScreen() {
     confettiTimeoutRef,
   });
 
-  const { loadStreak } = useStreak(user?.id);
+  const { currentStreak, loadStreak } = useStreak(user?.id);
   const {
     hoyLiteLayout,
     hoyPreFlowActive,
@@ -222,7 +235,7 @@ export default function TodayScreen() {
       if (payload.allPrioritiesDoneToday) {
         if (!allTasksComplete) {
           setShowConfetti(true);
-          showToast(t('hoy.allPrioritiesDone'), 'success');
+          showToast(t('hoy.allStepsDoneToast'), 'success');
           if (confettiTimeoutRef.current) clearTimeout(confettiTimeoutRef.current);
           confettiTimeoutRef.current = setTimeout(() => {
             setShowConfetti(false);
@@ -236,11 +249,11 @@ export default function TodayScreen() {
       }
 
       if (payload.isFirstPriorityToday) {
-        showToast(lowEnergy ? t('hoy.firstPriorityDoneLow') : t('hoy.firstPriorityDone'), 'success');
+        showToast(lowEnergy ? t('hoy.firstStepDoneLow') : t('hoy.firstStepDone'), 'success');
       } else if (payload.remainingPriorities === 1) {
         showToast(t('hoy.focusOneRemaining'), 'success');
       } else {
-        showToast(t('hoy.priorityDone'), 'success');
+        showToast(t('hoy.stepDoneToast'), 'success');
       }
 
       if (Platform.OS !== 'web') {
@@ -307,28 +320,46 @@ export default function TodayScreen() {
     <View style={styles.container}>
       <CalmScreen
         ref={scrollRef}
-        topInset="lg"
-        gap={THEME.layout.sectionGap}
+        topInset={hoyPreFlowActive ? 'md' : 'lg'}
+        gap={hoyPreFlowActive ? THEME.layout.sectionGapCompact : THEME.layout.tabSectionGap}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => void handleRefresh()}
-            tintColor={THEME.colors.gradient.blue}
-            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+            tintColor={THEME.colors.calm.lavenderDeep}
+            colors={[THEME.colors.calm.lavenderDeep, THEME.colors.gradient.pink]}
           />
         }
       >
+        <HoyScreenHeader
+          minimal={hoyPreFlowActive}
+          showSubtitle={!hoyPreFlowActive && !hoyLiteLayout}
+          streak={currentStreak}
+          checkedInToday={Boolean(todayMood)}
+        />
+
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
             <Text style={styles.loadingText}>{t('hoy.loading')}</Text>
           </View>
-        ) : (
-          <HoyScreenHeader />
-        )}
+        ) : null}
+
+        {!loading && crisisModeActive ? (
+          <HoyCrisisBanner
+            supportSnippet={lastSession?.response.supportMessage}
+            onDismiss={() => void dismissCrisisMode()}
+            onOpenKit={openEmergencyKitSession}
+          />
+        ) : null}
 
         {!loading && hoyLiteLayout ? (
-          <HoyLiteBanner onShowAll={() => void handleOptOutHoyLite()} />
+          <HoyLiteBanner
+            hasCheckIn={Boolean(todayMood)}
+            hasTasks={incompleteTasks.length > 0}
+            hasCompletedStep={todayPriorityStats.done > 0}
+            expanded={showSecondaryModules}
+          />
         ) : null}
 
         {!loading && hoyPreFlowActive ? (
@@ -337,6 +368,7 @@ export default function TodayScreen() {
             emotions={inicioEmotions}
             hasTasks={incompleteTasks.length > 0}
             pendingCount={incompleteTasks.length}
+            liteMode={Boolean(hoyLiteLayout)}
             onCheckInSaved={() => {
               void loadTodayCheckIn();
               void loadTasks();
@@ -352,10 +384,10 @@ export default function TodayScreen() {
             time={time}
             focusLevel={focusLevel}
             todayPriorityStats={todayPriorityStats}
-            hoyLiteLayout={hoyLiteLayout}
+            compactLayout={Boolean(hoyLiteLayout && !showSecondaryModules)}
+            onShowFullView={() => void handleOptOutHoyLite()}
             user={user}
             tasks={tasks}
-            displayedIncompleteTasks={incompleteTasksForToday}
             incompleteTasksForToday={incompleteTasksForToday}
             projectsMap={projectsMap}
             getCategoryColor={getCategoryColor}
@@ -376,22 +408,24 @@ export default function TodayScreen() {
             onShowMoreForToday={!showSecondaryModules ? handleShowMoreForHoy : undefined}
             onDeleteTask={handleDeleteTask}
             onChangeEmotion={openQuickRecheck}
-            showDayChangedCard={showDayChangedCard}
-            showNothingDoneCard={showNothingDoneCard}
+            showDayChangedCard={showDayChangedCard && !hoyLiteLayout && !crisisModeActive}
+            showNothingDoneCard={showNothingDoneCard && !hoyLiteLayout && !crisisModeActive}
             onQuickRecheck={openQuickRecheck}
             onDismissDayChanged={handleDismissDayChangedCard}
             onLightenLoad={() => setShowRedistribute(true)}
+            crisisMode={crisisModeActive}
+            crisisSupportMessage={lastSession?.response.supportMessage}
+            onOpenEmergencyKit={openEmergencyKitSession}
           />
         ) : null}
 
         {!loading &&
         todayMood &&
+        !crisisModeActive &&
         incompleteTasksForToday.length === 0 &&
         tasks.length > 0 &&
         !dismissedCelebration ? (
-          <Suspense fallback={null}>
-            <NoPendingTasksCelebration onDismiss={() => setDismissedCelebration(true)} />
-          </Suspense>
+          <NoPendingTasksCelebration onDismiss={() => setDismissedCelebration(true)} />
         ) : null}
 
       </CalmScreen>
@@ -429,10 +463,10 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.calm.background,
   },
   loadingContainer: {
-    paddingVertical: THEME.spacing.xl * 2,
+    paddingVertical: THEME.spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: THEME.spacing.md,
+    gap: THEME.spacing.sm,
   },
   loadingText: {
     ...THEME.typography.body,

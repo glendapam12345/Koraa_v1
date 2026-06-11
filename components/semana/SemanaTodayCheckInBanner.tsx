@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: THEME.spacing.sm,
     backgroundColor: THEME.colors.tint.blue.veryFaint,
-    borderRadius: THEME.borderRadius.rounded,
+    borderRadius: THEME.borderRadius.card,
     borderWidth: 1,
     borderColor: THEME.colors.tint.blue.border,
     padding: THEME.spacing.md,

@@ -3,12 +3,33 @@
  * Metro en 8081 + cloudflared + EXPO_PACKAGER_PROXY_URL (Expo Go en celular).
  * Uso: npm run dev:cf
  */
-import { spawn } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
 import http from 'node:http';
-import { execSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+import {
+  buildExpoGoUrlFromProxy,
+  buildExpoLoadingUrl,
+  getTunnelHostname,
+  writeDevTunnelState,
+  isTunnelReachable,
+  checkTunnelDns,
+} from './expo-go-url.mjs';
+
+const require = createRequire(import.meta.url);
+const qrcode = require('qrcode-terminal');
 
 const PORT = 8081;
 const CLOUDFLARED = process.env.CLOUDFLARED_PATH || 'cloudflared';
+const EXPO_CLI = new URL('../node_modules/expo/bin/cli', import.meta.url).pathname;
+
+function assertSupportedNode() {
+  const major = Number(process.versions.node.split('.')[0]);
+  if (major >= 23) {
+    console.error('\n❌ Node', process.versions.node, 'no es compatible con Expo SDK 54.');
+    console.error('   Usa Node 20 LTS: nvm use 20\n');
+    process.exit(1);
+  }
+}
 
 function killPort(port) {
   try {
@@ -22,10 +43,14 @@ function killPort(port) {
   }
 }
 
-function waitForMetro(maxMs = 120_000) {
+function waitForMetro(isExpoDead, maxMs = 120_000) {
   return new Promise((resolve, reject) => {
     const start = Date.now();
     const tick = () => {
+      if (isExpoDead()) {
+        reject(new Error('Expo terminó antes de que Metro respondiera'));
+        return;
+      }
       const req = http.get(`http://127.0.0.1:${PORT}/status`, (res) => {
         res.resume();
         if (res.statusCode === 200) resolve();
@@ -38,8 +63,15 @@ function waitForMetro(maxMs = 120_000) {
       });
     };
     const schedule = () => {
-      if (Date.now() - start > maxMs) reject(new Error('Metro no arrancó'));
-      else setTimeout(tick, 600);
+      if (isExpoDead()) {
+        reject(new Error('Expo terminó antes de que Metro respondiera'));
+        return;
+      }
+      if (Date.now() - start > maxMs) {
+        reject(new Error('Metro no arrancó en 2 min. Usa Node 20 LTS (ver .nvmrc).'));
+        return;
+      }
+      setTimeout(tick, 600);
     };
     tick();
   });
@@ -78,19 +110,56 @@ function startCloudflared() {
 }
 
 function startExpo(proxyUrl) {
-  return spawn('npx', ['expo', 'start', '--port', String(PORT), '--lan'], {
-    env: {
-      ...process.env,
-      EXPO_PACKAGER_PROXY_URL: proxyUrl,
-      REACT_NATIVE_PACKAGER_PORT: String(PORT),
-      EXPO_NO_TELEMETRY: '1',
+  return spawn(
+    process.execPath,
+    [EXPO_CLI, 'start', '--port', String(PORT), '--lan'],
+    {
+      env: {
+        ...process.env,
+        EXPO_PACKAGER_PROXY_URL: proxyUrl,
+        REACT_NATIVE_PACKAGER_PORT: String(PORT),
+        EXPO_NO_TELEMETRY: '1',
+      },
+      // Pipe: evita el QR de Expo (exp:// sin puerto) que rompe en iOS.
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: false,
     },
-    stdio: 'inherit',
-    shell: false,
-  });
+  );
+}
+
+function printDnsFix() {
+  console.log('\n  🔧 ARREGLO DNS (causa habitual del error en iPhone):');
+  console.log('     Ajustes → Wi‑Fi → (i) tu red → Configurar DNS → Manual');
+  console.log('     Añade: 1.1.1.1 y 8.8.8.8 → Guardar → reintenta el QR');
+  console.log('\n  O más fiable: hotspot del iPhone + en la Mac: npm run dev:lan\n');
+}
+
+function printConnectionHelp({ proxyUrl, expUrl, loadingUrl, tunnelOk, dns }) {
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('  📱 CONECTAR EXPO GO');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  if (dns && dns.publicOk && !dns.localOk) {
+    console.log('\n  ⚠️  Tu Mac no resuelve el host del túnel (el iPhone en la misma Wi‑Fi tampoco).');
+    printDnsFix();
+  }
+  if (!tunnelOk) {
+    console.log('\n  ⚠️  El túnel aún no responde. Espera 10–20 s y ejecuta: npm run dev:qr');
+    console.log('  Si sigue fallando: hotspot del iPhone + npm run dev:lan\n');
+  }
+  console.log('\n  Escanea SOLO este QR (HTTPS) desde Expo Go → Scan:\n');
+  qrcode.generate(loadingUrl, { small: true });
+  console.log(`\n  ${loadingUrl}`);
+  console.log('\n  No uses el QR exp:// de arriba si Expo lo mostró — suele fallar.');
+  console.log('\n  URL manual en Expo Go (pegar):');
+  console.log(`  ${loadingUrl}`);
+  console.log('\n  • Deja ESTA terminal abierta (si cierras, el QR deja de funcionar).');
+  console.log('  • iOS: Ajustes → Expo Go → Red local → ON');
+  console.log('  • Otra terminal: npm run dev:qr');
+  console.log(`  • Túnel: ${proxyUrl}\n`);
 }
 
 async function main() {
+  assertSupportedNode();
   console.log('Liberando puerto 8081…');
   killPort(PORT);
   killPort(8082);
@@ -105,16 +174,26 @@ async function main() {
   }
 
   const proxyUrl = tunnel.url;
-  const expUrl = `exp://${new URL(proxyUrl).hostname}`;
+  const expUrl = buildExpoGoUrlFromProxy(proxyUrl);
+  const loadingUrl = buildExpoLoadingUrl(proxyUrl, 'ios');
+  writeDevTunnelState({ proxyUrl, expUrl, loadingUrl });
 
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('  Túnel:', proxyUrl);
-  console.log('  Expo Go (escanear QR o enlace en Notas):');
-  console.log(' ', expUrl);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-  console.log('Iniciando Metro en 8081 (no uses el puerto 8082)…\n');
+  console.log('Iniciando Metro en 8081…\n');
 
   const expo = startExpo(proxyUrl);
+  let expoExited = false;
+
+  expo.stdout?.on('data', (chunk) => process.stdout.write(chunk));
+  expo.stderr?.on('data', (chunk) => process.stderr.write(chunk));
+  expo.on('exit', (code) => {
+    expoExited = true;
+    if (code && code !== 0) {
+      console.error(`\nExpo terminó con código ${code}`);
+    }
+  });
 
   const cleanup = () => {
     try {
@@ -134,17 +213,25 @@ async function main() {
     process.exit(0);
   });
 
-  expo.on('exit', () => {
-    try {
-      tunnel.proc.kill('SIGTERM');
-    } catch {
-      /* ignore */
-    }
-  });
-
   try {
-    await waitForMetro();
-    console.log('\n✅ Listo. Escanea el QR (debe mostrar trycloudflare.com, sin :8081).\n');
+    await waitForMetro(() => expoExited);
+    if (expoExited) {
+      throw new Error('Expo terminó antes de que Metro respondiera');
+    }
+    console.log('\n✅ Metro OK en localhost:8081.');
+    const hostname = getTunnelHostname(proxyUrl);
+    const dns = await checkTunnelDns(hostname);
+    const tunnelOk = await isTunnelReachable(proxyUrl, 45_000);
+    if (tunnelOk) {
+      console.log('✅ Túnel verificado.');
+    } else {
+      console.log('\n⚠️  El túnel tarda en estar listo (o la red lo bloquea).');
+      console.log('   Prueba npm run dev:qr en 15 s, o hotspot + npm run dev:lan\n');
+    }
+    if (dns.publicOk && !dns.localOk) {
+      console.log('⚠️  DNS local: no resuelve el túnel (error típico en iPhone: hostname not found).');
+    }
+    printConnectionHelp({ proxyUrl, expUrl, loadingUrl, tunnelOk, dns });
   } catch (e) {
     console.error(e instanceof Error ? e.message : e);
     cleanup();

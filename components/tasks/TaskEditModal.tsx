@@ -133,13 +133,15 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.xs,
   },
   editInput: {
-    ...THEME.typography.body,
+    fontSize: 16,
+    lineHeight: 24,
     color: THEME.colors.text.main,
     backgroundColor: THEME.colors.fill[200],
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     minHeight: 100,
     marginBottom: THEME.spacing.md,
+    ...(Platform.OS === 'android' ? { fontFamily: THEME.fonts.heading.medium } : {}),
   },
   modalActions: {
     flexDirection: 'row',

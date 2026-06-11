@@ -13,6 +13,7 @@ import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGoogleCalendarConnection } from '@/hooks/useGoogleCalendarConnection';
+import { GoogleCalendarHowItWorks } from '@/components/tasks/GoogleCalendarHowItWorks';
 
 export function GoogleCalendarConnectSection() {
   const { t } = useI18n();
@@ -88,7 +89,8 @@ export function GoogleCalendarConnectSection() {
           <CalendarDays size={20} color={THEME.colors.gradient.blue} />
           <Text style={styles.title}>{t('googleCalendar.sectionTitle')}</Text>
         </View>
-        <Text style={styles.hint}>{t('googleCalendar.notConfiguredHint')}</Text>
+        <GoogleCalendarHowItWorks />
+        <Text style={[styles.hint, styles.hintSpaced]}>{t('googleCalendar.notConfiguredHint')}</Text>
       </View>
     );
   }
@@ -101,7 +103,8 @@ export function GoogleCalendarConnectSection() {
         <CalendarDays size={20} color={THEME.colors.gradient.blue} />
         <Text style={styles.title}>{t('googleCalendar.sectionTitle')}</Text>
       </View>
-      <Text style={styles.hint}>
+      {!connected ? <GoogleCalendarHowItWorks /> : null}
+      <Text style={[styles.hint, !connected && styles.hintSpaced]}>
         {connected && email
           ? t('googleCalendar.connectedHint', { email })
           : t('googleCalendar.disconnectedHint')}
@@ -155,6 +158,9 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     lineHeight: 20,
     marginBottom: THEME.spacing.sm,
+  },
+  hintSpaced: {
+    marginTop: THEME.spacing.xs,
   },
   btn: {
     alignItems: 'center',

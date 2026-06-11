@@ -42,6 +42,7 @@ Keep the same name as in `running/` when moving files here.
 
 ## Recently Completed
 
+- **2026-06-08_task_voice_dictation.md** (Jun 8, 2026) - Dictado por voz en Tareas (`expo-speech-recognition`); hint teclado en Expo Go
 - **2026-06-05_ux_audit_post_flow_cleanup.md** (Jun 5, 2026) - UX audit post-cleanup; Hoy header for Tasks, delete checkin-summary, lite banner order
 - **2026-06-05_flow_audit_buttons_cleanup.md** (Jun 5, 2026) - Flow/button audit: 4-tab IA, onboarding loop fix, paywall return, tour, auth guard, deep cleanup + i18n prune
 - **2026-06-05_anti_pressure_ux_redesign.md** (Jun 5, 2026) - Anti-pressure voice, Hoy IA simplification, hidden tips/vaciar tabs

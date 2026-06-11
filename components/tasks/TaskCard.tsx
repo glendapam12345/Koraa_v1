@@ -88,6 +88,8 @@ interface TaskCardProps {
   sectionCategory?: string;
   /** Tarjeta uniforme: leyenda solo si proyecto "Pertenece a X"; si no, nada */
   uniformCard?: boolean;
+  /** Oculta exportar al Calendario del dispositivo. */
+  hideCalendarExport?: boolean;
   /** Por qué Koraa subió esta tarea en prioridad (check-in del día). */
   priorityWhyUp?: string[];
   /** Por qué quedó más abajo (tareas cercanas al foco del día). */
@@ -121,6 +123,7 @@ export function TaskCard({
   sectionAccentColor,
   sectionCategory,
   uniformCard = false,
+  hideCalendarExport = false,
   priorityWhyUp,
   priorityWhyDown,
 }: TaskCardProps) {
@@ -318,7 +321,14 @@ export function TaskCard({
                   : t('taskCard.markCompleted', { task: taskContentLabel })
               }
             >
-              {task.is_completed && <View style={styles.taskCheckboxChecked} />}
+              {task.is_completed && (
+                <View
+                  style={[
+                    styles.taskCheckboxChecked,
+                    uniformCard && styles.taskCheckboxCheckedUniform,
+                  ]}
+                />
+              )}
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -354,9 +364,9 @@ export function TaskCard({
             <View
               style={styles.priorityWhyBlock}
               accessibilityRole="text"
-              accessibilityLabel={`${t('hoy.taskWhyUp')}: ${priorityWhyUp!.join('. ')}`}
+              accessibilityLabel={`${t('hoy.stepWhySuggested')}: ${priorityWhyUp!.join('. ')}`}
             >
-              <Text style={styles.priorityWhyLabel}>{t('hoy.taskWhyUp')}</Text>
+              <Text style={styles.priorityWhyLabel}>{t('hoy.stepWhySuggested')}</Text>
               {priorityWhyUp!.map((line, i) => (
                 <Text key={`up-${i}`} style={styles.priorityWhyLine}>
                   • {line}
@@ -365,37 +375,40 @@ export function TaskCard({
             </View>
           )}
           {uniformCard ? (
-            <View style={styles.metaRowSimple}>
-              {showDate ? (
-                <View style={styles.dateRow}>
-                  <View style={styles.dateChip}>
-                    <Calendar size={12} color={THEME.colors.text.secondary} />
-                    <Text style={styles.dateChipText} numberOfLines={1}>
-                      {dateLine}
-                    </Text>
+            <View style={styles.metaRowUniform}>
+              <View style={styles.metaRowUniformMain}>
+                {showDate ? (
+                  <View style={styles.dateRow}>
+                    <View style={styles.dateChip}>
+                      <Calendar size={12} color={THEME.colors.text.secondary} />
+                      <Text style={styles.dateChipText} numberOfLines={1}>
+                        {dateLine}
+                      </Text>
+                    </View>
+                    {!task.is_completed && task.scheduled_date && !hideCalendarExport ? (
+                      <TaskCalendarExportRow
+                        taskId={task.id}
+                        title={task.content}
+                        scheduledDate={task.scheduled_date}
+                      />
+                    ) : null}
                   </View>
-                  {!task.is_completed && task.scheduled_date ? (
-                    <TaskCalendarExportRow
-                      taskId={task.id}
-                      title={task.content}
-                      scheduledDate={task.scheduled_date}
-                    />
-                  ) : null}
-                </View>
-              ) : null}
-              {showProjectLegend && (
-                <Text style={styles.metaLine} numberOfLines={1}>
-                  {t('hoyExtra.projectColon', { name: projectName })}
-                </Text>
-              )}
-              {hasSubtasks && !showProjectLegend && (
-                <Text style={styles.metaLine} numberOfLines={1}>
-                  {t('taskCard.stepsProgress', { done: completedSubtasks, total: totalSubtasks })}
-                </Text>
-              )}
-              {(showProjectLegend || hasDetails || hasProjectSteps || hasSubtasks) && onToggleDetailsExpand && (
+                ) : null}
+                {showProjectLegend ? (
+                  <Text style={styles.metaLineCompact} numberOfLines={1}>
+                    {t('hoyExtra.projectColon', { name: projectName })}
+                  </Text>
+                ) : null}
+                {hasSubtasks && !showProjectLegend ? (
+                  <Text style={styles.metaLineCompact} numberOfLines={1}>
+                    {t('taskCard.stepsProgress', { done: completedSubtasks, total: totalSubtasks })}
+                  </Text>
+                ) : null}
+              </View>
+              {(showProjectLegend || hasDetails || hasProjectSteps || hasSubtasks) &&
+              onToggleDetailsExpand ? (
                 <TouchableOpacity
-                  style={styles.verMasRow}
+                  style={styles.metaRowUniformAction}
                   onPress={onToggleDetailsExpand}
                   activeOpacity={0.7}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -411,7 +424,7 @@ export function TaskCard({
                     <ChevronRight size={16} color={THEME.colors.text.secondary} />
                   )}
                 </TouchableOpacity>
-              )}
+              ) : null}
             </View>
           ) : (
             <View style={styles.metaRow}>
@@ -443,7 +456,7 @@ export function TaskCard({
                       {dateLine}
                     </Text>
                   </View>
-                  {!task.is_completed && task.scheduled_date ? (
+                  {!task.is_completed && task.scheduled_date && !hideCalendarExport ? (
                     <TaskCalendarExportRow
                       taskId={task.id}
                       title={task.content}
@@ -551,10 +564,10 @@ export function TaskCard({
           ) : null}
           {task.is_priority && !task.is_completed && (
             <View style={styles.detailsRow}>
-              <Text style={styles.detailsLabel}>{t('taskCardExtra.priority')}</Text>
+              <Text style={styles.detailsLabel}>{t('taskCardExtra.suggestedStepLabel')}</Text>
               <View style={[styles.detailsChip, { backgroundColor: THEME.colors.gradient.blue + '28' }]}>
                 <Text style={[styles.detailsChipText, { color: THEME.colors.gradient.blue }]}>
-                  {t('taskCardExtra.priorityHigh')}
+                  {t('taskCardExtra.suggestedStepToday')}
                 </Text>
               </View>
             </View>
@@ -581,9 +594,9 @@ export function TaskCard({
             <View
               style={styles.priorityWhyBlockDown}
               accessibilityRole="text"
-              accessibilityLabel={`${t('hoy.taskWhyDown')}: ${priorityWhyDown!.join('. ')}`}
+              accessibilityLabel={`${t('hoy.stepWhyWait')}: ${priorityWhyDown!.join('. ')}`}
             >
-              <Text style={styles.priorityWhyLabelDown}>{t('hoy.taskWhyDown')}</Text>
+              <Text style={styles.priorityWhyLabelDown}>{t('hoy.stepWhyWait')}</Text>
               {priorityWhyDown!.map((line, i) => (
                 <Text key={`down-${i}`} style={styles.priorityWhyLineDown}>
                   • {line}
@@ -732,20 +745,22 @@ const styles = StyleSheet.create({
     borderLeftWidth: 0,
   },
   taskCardAligned: {
-    marginLeft: -24,
-    marginRight: -24,
-    paddingLeft: 24,
-    paddingRight: 24,
+    paddingHorizontal: THEME.spacing.sm,
   },
   leftColumnAligned: {
-    width: 0,
-    gap: 0,
+    width: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   taskCheckboxAligned: {
-    marginLeft: -24,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2.5,
   },
   taskContentAligned: {
-    /* Texto alineado con el título de sección (# Tareas) */
+    flex: 1,
+    minWidth: 0,
   },
   sueltaLabel: {
     ...THEME.typography.meta,
@@ -882,17 +897,39 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 6,
   },
-  metaRowSimple: {
+  metaRowUniform: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: THEME.spacing.sm,
+    marginTop: 6,
+    width: '100%',
+  },
+  metaRowUniformMain: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 6,
+    gap: THEME.spacing.xs,
+    minWidth: 0,
+  },
+  metaRowUniformAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 0,
+    marginLeft: THEME.spacing.xs,
   },
   metaLine: {
     ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
     flex: 1,
+    minWidth: 0,
+  },
+  metaLineCompact: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.secondary,
+    flexShrink: 1,
     minWidth: 0,
   },
   priorityWhyBlock: {
@@ -930,11 +967,6 @@ const styles = StyleSheet.create({
     ...THEME.typography.meta,
     color: THEME.colors.text.tertiary,
     lineHeight: 18,
-  },
-  verMasRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
   },
   verMasText: {
     ...THEME.typography.small,
@@ -1027,6 +1059,11 @@ const styles = StyleSheet.create({
     height: 14,
     borderRadius: 7,
     backgroundColor: THEME.colors.gradient.blue,
+  },
+  taskCheckboxCheckedUniform: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
   },
   taskContent: {
     flex: 1,
