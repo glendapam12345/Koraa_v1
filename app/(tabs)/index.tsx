@@ -42,9 +42,6 @@ import { NoPendingTasksCelebration } from '@/components/NoPendingTasksCelebratio
 import { HoyCrisisBanner } from '@/components/hoy/HoyCrisisBanner';
 import { HoyFlowLegend } from '@/components/hoy/HoyFlowLegend';
 import { useCrisisMode } from '@/hooks/useCrisisMode';
-import { router } from 'expo-router';
-import { useSubscription } from '@/contexts/SubscriptionContext';
-import { openEmergencyKit } from '@/lib/emergencyKitNavigation';
 import { HoySupportPanel } from '@/components/hoy/HoySupportPanel';
 
 export default function TodayScreen() {
@@ -70,12 +67,7 @@ export default function TodayScreen() {
   }, []);
 
   const { user } = useAuth();
-  const { crisisModeActive, lastSession, dismissCrisisMode } = useCrisisMode();
-  const { isSubscribed } = useSubscription();
-
-  const openEmergencyKitSession = useCallback(() => {
-    openEmergencyKit(isSubscribed, lastSession, router);
-  }, [isSubscribed, lastSession]);
+  const { crisisModeActive, dismissCrisisMode } = useCrisisMode();
   const {
     todayMood,
     energyLevel,
@@ -353,11 +345,7 @@ export default function TodayScreen() {
         ) : null}
 
         {!loading && crisisModeActive ? (
-          <HoyCrisisBanner
-            supportSnippet={lastSession?.response.supportMessage}
-            onDismiss={() => void dismissCrisisMode()}
-            onOpenKit={openEmergencyKitSession}
-          />
+          <HoyCrisisBanner onDismiss={() => void dismissCrisisMode()} />
         ) : null}
 
         {!loading && hoyLiteLayout ? (
@@ -421,8 +409,6 @@ export default function TodayScreen() {
             onDismissDayChanged={handleDismissDayChangedCard}
             onLightenLoad={() => setShowRedistribute(true)}
             crisisMode={crisisModeActive}
-            crisisSupportMessage={lastSession?.response.supportMessage}
-            onOpenEmergencyKit={openEmergencyKitSession}
           />
         ) : null}
 

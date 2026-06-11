@@ -4,6 +4,7 @@ import type { AppLocale } from '@/lib/i18n';
 import { SettingsLanguageSection } from '@/components/settings/SettingsLanguageSection';
 import { AppleHealthConnectSection } from '@/components/settings/AppleHealthConnectSection';
 import { SettingsReminderSection } from '@/components/settings/SettingsReminderSection';
+import { SettingsCareModeSection } from '@/components/settings/SettingsCareModeSection';
 import { SettingsHoyPreviewSection } from '@/components/settings/SettingsHoyPreviewSection';
 import { SettingsPremiumDevSection } from '@/components/settings/SettingsPremiumDevSection';
 import { SettingsShortcutsMenu } from '@/components/settings/SettingsShortcutsMenu';
@@ -85,6 +86,8 @@ export function SettingsMenu({
       )}
 
       <AppleHealthConnectSection />
+
+      <SettingsCareModeSection />
 
       <SettingsHoyPreviewSection
         onResetFirstDay={onResetHoyFirstDay}

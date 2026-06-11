@@ -60,10 +60,8 @@ type HoyFocusPanelProps = {
     onConnect: () => void;
     onOpenSleep: () => void;
   };
-  /** Emergency Kit: menos presión de pasos y tareas. */
+  /** Emergency Kit: oculta pasos sugeridos en Hoy. */
   crisisMode?: boolean;
-  crisisSupportMessage?: string;
-  onOpenEmergencyKit?: () => void;
 };
 
 export function HoyFocusPanel({
@@ -96,8 +94,6 @@ export function HoyFocusPanel({
   shortSleep = false,
   sleepCard,
   crisisMode = false,
-  crisisSupportMessage,
-  onOpenEmergencyKit,
 }: HoyFocusPanelProps) {
   const { t } = useI18n();
   const [extraFocusExpanded, setExtraFocusExpanded] = useState(false);
@@ -157,9 +153,7 @@ export function HoyFocusPanel({
     Boolean(onLightenLoad) &&
     totalPending > 0 &&
     !showAfternoonNudge;
-  const coachLine = crisisMode
-    ? crisisSupportMessage?.trim() || t('hoy.crisisCoachLine')
-    : coach?.body ?? t('hoy.focusCoachFallback');
+  const coachLine = coach?.body ?? t('hoy.focusCoachFallback');
   const showRestOfDayLink =
     !crisisMode &&
     !compactLayout &&
@@ -179,7 +173,6 @@ export function HoyFocusPanel({
         coachLine={coachLine}
         allFocusDone={allFocusDone}
         compact={compactLayout}
-        crisisMode={crisisMode}
       />
 
       <CalmPrimaryButton
@@ -213,17 +206,14 @@ export function HoyFocusPanel({
         />
       ) : null}
 
+      {!crisisMode ? (
       <View style={styles.focusHeader}>
         <Text style={styles.sectionTitle}>
-          {crisisMode
-            ? t('hoy.crisisStepsTitle')
-            : focusTasks.length > 0
-              ? t('hoy.enoughForToday')
-              : t('hoy.focusTasksSection')}
+          {focusTasks.length > 0
+            ? t('hoy.enoughForToday')
+            : t('hoy.focusTasksSection')}
         </Text>
-        {crisisMode ? (
-          <Text style={styles.sectionSub}>{t('hoy.crisisStepsSubtitle')}</Text>
-        ) : focusTasks.length > 0 ? (
+        {focusTasks.length > 0 ? (
           <Text style={styles.sectionSub}>
             {hiddenInSection > 0
               ? t('hoy.oneSmallStep')
@@ -231,22 +221,11 @@ export function HoyFocusPanel({
           </Text>
         ) : null}
       </View>
+      ) : null}
 
+      {!crisisMode ? (
       <CalmCard style={styles.focusCard}>
-        {crisisMode ? (
-          <View style={styles.emptyBlock}>
-            <Text style={styles.emptyTitle}>{t('hoy.crisisStepsHiddenTitle')}</Text>
-            <Text style={styles.emptyBody}>{t('hoy.crisisStepsHiddenBody')}</Text>
-            {onOpenEmergencyKit ? (
-              <CalmPrimaryButton
-                label={t('hoy.crisisOpenKitCta')}
-                onPress={onOpenEmergencyKit}
-                variant="soft"
-                accessibilityHint={t('hoy.crisisBannerCtaHint')}
-              />
-            ) : null}
-          </View>
-        ) : allFocusDone ? (
+        {allFocusDone ? (
           <View style={styles.celebration}>
             <Sparkles size={28} color={THEME.colors.calm.lavenderDeep} />
             <Text style={styles.celebrationTitle}>{t('hoy.focusAllDoneTitle')}</Text>
@@ -297,6 +276,7 @@ export function HoyFocusPanel({
           </View>
         )}
       </CalmCard>
+      ) : null}
 
       {showLightenLoad ? (
         <HoyLightenLoadCard

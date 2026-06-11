@@ -47,8 +47,6 @@ export type HoyTasksSectionProps = {
   onDismissDayChanged?: () => void;
   onLightenLoad?: () => void;
   crisisMode?: boolean;
-  crisisSupportMessage?: string;
-  onOpenEmergencyKit?: () => void;
 };
 
 export function HoyTasksSection({
@@ -88,8 +86,6 @@ export function HoyTasksSection({
   onDismissDayChanged,
   onLightenLoad,
   crisisMode = false,
-  crisisSupportMessage,
-  onOpenEmergencyKit,
 }: HoyTasksSectionProps) {
   const { locale, t } = useI18n();
   const health = useAppleHealthConnection(t);
@@ -175,8 +171,6 @@ export function HoyTasksSection({
           onOpenSleep: () => void health.openSleep(),
         }}
         crisisMode={crisisMode}
-        crisisSupportMessage={crisisSupportMessage}
-        onOpenEmergencyKit={onOpenEmergencyKit}
       />
       {!crisisMode && restOfDayExpanded && onCollapseRestOfDay ? (
         <HoyRestOfDayPanel

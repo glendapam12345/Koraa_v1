@@ -634,6 +634,7 @@ export const extEn = {
   },
   emergencyKit: {
     premiumLabel: 'Premium',
+    entryLockedA11y: 'Unlock Emergency Kit',
     entryTitle: '🌧 Emergency Kit',
     entrySubtitle: "When life feels overwhelming, let's take care of you.",
     entryCta: 'Open Emergency Kit',

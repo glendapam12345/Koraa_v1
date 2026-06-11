@@ -14,7 +14,6 @@ type HoyMoodHeroCardProps = {
   allFocusDone: boolean;
   /** Día 1 lite: menos texto en el hero. */
   compact?: boolean;
-  crisisMode?: boolean;
 };
 
 export function HoyMoodHeroCard({
@@ -27,13 +26,10 @@ export function HoyMoodHeroCard({
   coachLine,
   allFocusDone,
   compact = false,
-  crisisMode = false,
 }: HoyMoodHeroCardProps) {
   const { t } = useI18n();
 
-  const koraaLine = crisisMode
-    ? t('hoy.crisisMoodHero')
-    : compact
+  const koraaLine = compact
     ? focusCount > 0
       ? t('hoy.moodHeroLiteWithSteps', { count: focusCount })
       : t('hoy.moodHeroLiteNoSteps')
