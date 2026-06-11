@@ -22,6 +22,9 @@ import { ParaMiMusaCard } from '@/components/parami/ParaMiMusaCard';
 import { ParaMiPatternCard } from '@/components/parami/ParaMiPatternCard';
 import { ParaMiTipsSection } from '@/components/parami/ParaMiTipsSection';
 import { ParaMiInsights } from '@/components/parami/ParaMiInsights';
+import { ParaMiPatternInsightCard } from '@/components/parami/ParaMiPatternInsightCard';
+import { useParamiPatternInsight } from '@/hooks/useParamiPatternInsight';
+import type { ParamiPatternInput } from '@/lib/paramiPatternInsight';
 import { LockedChartPreview } from '@/components/parami/LockedChartPreview';
 import { PremiumBadge } from '@/components/premium/PremiumBadge';
 import { EmergencyKitEntryCard } from '@/components/emergencyKit/EmergencyKitEntryCard';
@@ -97,6 +100,22 @@ export default function ParaMiScreen() {
 
   const showPremiumLocked = !subscriptionLoading && !isSubscribed;
 
+  const patternInput = useMemo((): ParamiPatternInput | null => {
+    if (!hasInsightData) return null;
+    return {
+      locale,
+      period,
+      days: periodData,
+      emotionMix,
+    };
+  }, [hasInsightData, locale, period, periodData, emotionMix]);
+
+  const { insight: patternInsight, loading: patternInsightLoading } = useParamiPatternInsight(
+    user?.id,
+    patternInput,
+    hasInsightData,
+  );
+
   const moodChart = showPremiumLocked ? (
     <LockedChartPreview variant="mood" />
   ) : (
@@ -142,6 +161,8 @@ export default function ParaMiScreen() {
         loading={loading}
         paywallReturnTo="/(tabs)/parami"
       />
+
+      <ParaMiPatternInsightCard insight={patternInsight} loading={patternInsightLoading} />
 
       <View style={styles.patternsSection}>
         <ParaMiMusaCard

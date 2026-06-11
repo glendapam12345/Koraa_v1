@@ -3,7 +3,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { openEmergencyKit } from '@/lib/emergencyKitNavigation';
+import { useCrisisMode } from '@/hooks/useCrisisMode';
 
 type EmergencyKitEntryCardProps = {
   /** Tarjeta más pequeña para Para mí (debajo de consejos). */
@@ -12,6 +15,13 @@ type EmergencyKitEntryCardProps = {
 
 export function EmergencyKitEntryCard({ compact = false }: EmergencyKitEntryCardProps) {
   const { t } = useI18n();
+  const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
+  const { lastSession } = useCrisisMode();
+
+  const handleOpen = () => {
+    if (subscriptionLoading) return;
+    openEmergencyKit(isSubscribed, lastSession, router);
+  };
 
   return (
     <View
@@ -33,7 +43,8 @@ export function EmergencyKitEntryCard({ compact = false }: EmergencyKitEntryCard
         </Text>
         <CalmPrimaryButton
           label={t('emergencyKit.entryCta')}
-          onPress={() => router.push('/emergency-kit')}
+          onPress={handleOpen}
+          disabled={subscriptionLoading}
           variant="soft"
           large={!compact}
           accessibilityHint={t('emergencyKit.entryCtaHint')}

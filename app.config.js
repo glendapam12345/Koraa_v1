@@ -72,6 +72,7 @@ module.exports = {
       buildNumber: '31',
       entitlements: {
         'com.apple.developer.healthkit': true,
+        // Tipos concretos en runtime (react-native-health SleepAnalysis); [] = permisos por uso en app.
         'com.apple.developer.healthkit.access': [],
       },
       infoPlist: {

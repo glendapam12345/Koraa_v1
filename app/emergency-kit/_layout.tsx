@@ -1,7 +1,9 @@
 import { Stack } from 'expo-router';
+import { EmergencyKitPremiumGate } from '@/components/emergencyKit/EmergencyKitPremiumGate';
 
 export default function EmergencyKitLayout() {
   return (
+    <EmergencyKitPremiumGate>
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen
@@ -11,5 +13,6 @@ export default function EmergencyKitLayout() {
         }}
       />
     </Stack>
+    </EmergencyKitPremiumGate>
   );
 }

@@ -42,6 +42,9 @@ import { NoPendingTasksCelebration } from '@/components/NoPendingTasksCelebratio
 import { HoyCrisisBanner } from '@/components/hoy/HoyCrisisBanner';
 import { useCrisisMode } from '@/hooks/useCrisisMode';
 import { router } from 'expo-router';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { openEmergencyKit } from '@/lib/emergencyKitNavigation';
+import { HoySupportPanel } from '@/components/hoy/HoySupportPanel';
 
 export default function TodayScreen() {
   const { t, locale } = useI18n();
@@ -67,20 +70,11 @@ export default function TodayScreen() {
 
   const { user } = useAuth();
   const { crisisModeActive, lastSession, dismissCrisisMode } = useCrisisMode();
+  const { isSubscribed } = useSubscription();
 
   const openEmergencyKitSession = useCallback(() => {
-    if (lastSession) {
-      router.push({
-        pathname: '/emergency-kit/session',
-        params: {
-          eventId: lastSession.eventId,
-          customText: lastSession.customText ?? '',
-        },
-      });
-      return;
-    }
-    router.push('/emergency-kit');
-  }, [lastSession]);
+    openEmergencyKit(isSubscribed, lastSession, router);
+  }, [isSubscribed, lastSession]);
   const {
     todayMood,
     energyLevel,
@@ -422,6 +416,19 @@ export default function TodayScreen() {
         {!loading &&
         todayMood &&
         !crisisModeActive &&
+        (!hoyLiteLayout || showSecondaryModules) ? (
+          <HoySupportPanel
+            userId={user?.id}
+            emotionKey={todayMood}
+            emotionLabel={todayEmotionLabel}
+            energyLevel={energyLevel}
+          />
+        ) : null}
+
+        {!loading &&
+        todayMood &&
+        !crisisModeActive &&
+        !hoyLiteLayout &&
         incompleteTasksForToday.length === 0 &&
         tasks.length > 0 &&
         !dismissedCelebration ? (
