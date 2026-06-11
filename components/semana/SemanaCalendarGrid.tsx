@@ -18,9 +18,18 @@ type SemanaCalendarGridProps = {
   days: CalendarDayData[];
   selectedDate: string | null;
   onSelectDate: (dateStr: string) => void;
+  /** Plan gratis: solo estas fechas son seleccionables. */
+  selectableDateKeys?: Set<string> | null;
+  onLockedDatePress?: () => void;
 };
 
-export function SemanaCalendarGrid({ days, selectedDate, onSelectDate }: SemanaCalendarGridProps) {
+export function SemanaCalendarGrid({
+  days,
+  selectedDate,
+  onSelectDate,
+  selectableDateKeys = null,
+  onLockedDatePress,
+}: SemanaCalendarGridProps) {
   const { t } = useI18n();
   const weeks: CalendarDayData[][] = [];
   for (let i = 0; i < days.length; i += 7) {
@@ -52,6 +61,10 @@ export function SemanaCalendarGrid({ days, selectedDate, onSelectDate }: SemanaC
               hasCheckIn && day.emotion
                 ? t(`sentir.emotions.${day.emotion.toLowerCase()}` as 'sentir.emotions.tranquila')
                 : null;
+            const isLocked =
+              selectableDateKeys != null &&
+              day.inCurrentMonth &&
+              !selectableDateKeys.has(day.dateStr);
 
             return (
               <TouchableOpacity
@@ -62,8 +75,15 @@ export function SemanaCalendarGrid({ days, selectedDate, onSelectDate }: SemanaC
                   !day.inCurrentMonth && styles.cellOutside,
                   day.isToday && styles.cellToday,
                   selected && styles.cellSelected,
+                  isLocked && styles.cellLocked,
                 ]}
-                onPress={() => onSelectDate(day.dateStr)}
+                onPress={() => {
+                  if (isLocked) {
+                    onLockedDatePress?.();
+                    return;
+                  }
+                  onSelectDate(day.dateStr);
+                }}
                 activeOpacity={0.85}
                 accessibilityRole="button"
                 accessibilityLabel={
@@ -158,6 +178,9 @@ const styles = StyleSheet.create({
   cellSelected: {
     borderColor: THEME.colors.gradient.pink,
     borderWidth: 2,
+  },
+  cellLocked: {
+    opacity: 0.55,
   },
   todayTag: {
     ...THEME.typography.small,

@@ -780,6 +780,9 @@ export const en: DeepStrings<typeof es> = {
     terms: 'Terms',
     privacy: 'Privacy',
     purchaseError: 'Purchase could not be completed',
+    purchaseActivatingTitle: 'Activating Premium…',
+    purchaseActivatingBody:
+      'Your purchase went through, but Premium is not active yet. Wait a moment and tap Restore purchases, or try again.',
     purchaseSuccessTitle: 'Premium activated!',
     purchaseSuccessBody: 'Calendar, tips, and For Me are now unlocked.',
     restoredTitle: 'Purchases restored',

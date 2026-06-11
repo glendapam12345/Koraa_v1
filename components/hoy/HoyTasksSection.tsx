@@ -1,4 +1,4 @@
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Alert } from 'react-native';
 import { useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { HoyFocusPanel } from '@/components/hoy/HoyFocusPanel';
@@ -94,9 +94,28 @@ export function HoyTasksSection({
   const { locale, t } = useI18n();
   const health = useAppleHealthConnection(t);
 
-  const handleHealthConnect = useCallback(() => {
-    void health.connect();
-  }, [health]);
+  const handleHealthConnect = useCallback(async () => {
+    const result = await health.connect();
+    if (result.ok) {
+      const body = result.healthKit
+        ? t('appleHealth.connectSuccessBodyHealthKit')
+        : t('appleHealth.connectSuccessBody');
+      Alert.alert(t('appleHealth.connectSuccessTitle'), body);
+      return;
+    }
+    if (result.reason === 'unavailable') {
+      Alert.alert(t('appleHealth.unavailableTitle'), t('appleHealth.unavailableBody'));
+      return;
+    }
+    if (result.reason === 'permission_denied') {
+      Alert.alert(
+        t('appleHealth.permissionDeniedTitle'),
+        t('appleHealth.permissionDeniedBody'),
+      );
+      return;
+    }
+    Alert.alert(t('appleHealth.connectErrorTitle'), t('appleHealth.connectErrorBody'));
+  }, [health, t]);
 
   const focusTasks = useMemo(
     () => getHoyFocusTasks(tasks, incompleteTasksForToday),

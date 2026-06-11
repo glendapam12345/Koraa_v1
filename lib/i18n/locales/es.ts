@@ -781,6 +781,9 @@ export const es = {
     terms: 'Términos',
     privacy: 'Privacidad',
     purchaseError: 'No se pudo completar la compra',
+    purchaseActivatingTitle: 'Activando Premium…',
+    purchaseActivatingBody:
+      'La compra se registró, pero Premium aún no aparece activo. Espera un momento y toca «Restaurar compras», o inténtalo de nuevo.',
     purchaseSuccessTitle: '¡Premium activado!',
     purchaseSuccessBody: 'Calendario, consejos y Para mí ya están desbloqueados.',
     restoredTitle: 'Compras restauradas',

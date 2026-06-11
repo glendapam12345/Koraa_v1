@@ -35,6 +35,7 @@ import { openPaywall } from '@/lib/paywallNavigation';
 import {
   FREE_CALENDAR_VISIBLE_DAYS,
   getFreeVisibleWeekTasks,
+  isDateInFreeVisibleRange,
 } from '@/lib/semanaFreePlan';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
@@ -229,13 +230,30 @@ export default function SemanaScreen() {
 
   const visibleWeekSlice = useMemo(() => {
     if (isSubscribed) {
-      return { visible: filteredWeekTasks, hiddenCount: 0 };
+      return { visible: filteredWeekTasks, hiddenCount: 0, visibleDateKeys: null as Set<string> | null };
     }
-    return getFreeVisibleWeekTasks(filteredWeekTasks, FREE_CALENDAR_VISIBLE_DAYS);
+    const { visible, hiddenCount } = getFreeVisibleWeekTasks(
+      filteredWeekTasks,
+      FREE_CALENDAR_VISIBLE_DAYS,
+    );
+    return {
+      visible,
+      hiddenCount,
+      visibleDateKeys: new Set(visible.map(({ day }) => day.dateStr)),
+    };
   }, [isSubscribed, filteredWeekTasks]);
 
   const visibleWeekTasks = visibleWeekSlice.visible;
   const hiddenWeekDayCount = visibleWeekSlice.hiddenCount;
+  const freeVisibleDateKeys = visibleWeekSlice.visibleDateKeys;
+
+  useEffect(() => {
+    if (!freeVisibleDateKeys || freeVisibleDateKeys.has(selectedDate)) return;
+    const fallback = freeVisibleDateKeys.has(todayStr)
+      ? todayStr
+      : [...freeVisibleDateKeys][0];
+    if (fallback) setSelectedDate(fallback);
+  }, [freeVisibleDateKeys, selectedDate, todayStr]);
 
   const handleLockedNavPress = useCallback(() => {
     openPaywall(router, '/(tabs)/semana');
@@ -245,7 +263,8 @@ export default function SemanaScreen() {
     () => calendarDays.find((d) => d.dateStr === selectedDate),
     [calendarDays, selectedDate],
   );
-  const selectedDayTasks = tasksByDate[selectedDate] ?? [];
+  const selectedDayUnlocked = isDateInFreeVisibleRange(selectedDate, freeVisibleDateKeys);
+  const selectedDayTasks = selectedDayUnlocked ? (tasksByDate[selectedDate] ?? []) : [];
   const selectedDayLabel = formatDayLabel(selectedDate, monthNames);
   const selectedDayCheckInLabel = useMemo(() => {
     const checkIn = selectedDayData?.emotion
@@ -267,11 +286,20 @@ export default function SemanaScreen() {
   );
 
   const exportableTasks = useMemo(() => {
-    if (viewMode === 'calendar') {
-      return Object.values(tasksByDate).flat();
+    if (isSubscribed) {
+      if (viewMode === 'calendar') {
+        return Object.values(tasksByDate).flat();
+      }
+      return filteredWeekTasks.flatMap(({ tasks }) => tasks);
     }
-    return filteredWeekTasks.flatMap(({ tasks }) => tasks);
-  }, [viewMode, tasksByDate, filteredWeekTasks]);
+    if (viewMode === 'calendar') {
+      if (!freeVisibleDateKeys) return [];
+      return Object.entries(tasksByDate)
+        .filter(([dateStr]) => freeVisibleDateKeys.has(dateStr))
+        .flatMap(([, tasks]) => tasks);
+    }
+    return visibleWeekTasks.flatMap(({ tasks }) => tasks);
+  }, [viewMode, tasksByDate, filteredWeekTasks, isSubscribed, freeVisibleDateKeys, visibleWeekTasks]);
 
   const handleExportTasks = useCallback(async () => {
     if (exportableTasks.length === 0) {
@@ -381,6 +409,8 @@ export default function SemanaScreen() {
                   days={calendarDays}
                   selectedDate={selectedDate}
                   onSelectDate={setSelectedDate}
+                  selectableDateKeys={freeVisibleDateKeys}
+                  onLockedDatePress={handleLockedNavPress}
                 />
               </View>
             )}
@@ -406,6 +436,10 @@ export default function SemanaScreen() {
               onTasksChanged={handleTasksChanged}
               showToast={showToast}
             />
+
+            {!isSubscribed && hiddenWeekDayCount > 0 ? (
+              <SemanaFreeLimitCard hiddenDayCount={hiddenWeekDayCount} />
+            ) : null}
           </>
         ) : (
           <>

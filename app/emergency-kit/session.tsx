@@ -1,39 +1,64 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Heart, Sparkles } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { EmergencyKitBackHeader } from '@/components/emergencyKit/EmergencyKitBackHeader';
-import type { EmergencyKitSessionState } from '@/lib/emergencyKit/types';
+import type {
+  EmergencyKitEventId,
+  EmergencyKitModuleId,
+  EmergencyKitSessionState,
+} from '@/lib/emergencyKit/types';
 import { EmergencyKitModuleSection } from '@/components/emergencyKit/EmergencyKitModuleSection';
 import { EmergencyKitAddItemModal } from '@/components/emergencyKit/EmergencyKitAddItemModal';
 import { useEmergencyKit } from '@/hooks/useEmergencyKit';
-import type { EmergencyKitEventId, EmergencyKitModuleId } from '@/lib/emergencyKit/types';
+import { EMERGENCY_KIT_EVENTS } from '@/lib/emergencyKit/events';
+
+function resolveEventId(raw?: string): EmergencyKitEventId {
+  if (raw && EMERGENCY_KIT_EVENTS.some((event) => event.id === raw)) {
+    return raw as EmergencyKitEventId;
+  }
+  return 'other';
+}
 
 export default function EmergencyKitSessionScreen() {
   const { t } = useI18n();
   const params = useLocalSearchParams<{ eventId?: string; customText?: string }>();
-  const eventId = (params.eventId ?? 'other') as EmergencyKitEventId;
+  const eventId = useMemo(() => resolveEventId(params.eventId), [params.eventId]);
   const customText = typeof params.customText === 'string' ? params.customText : undefined;
 
   const { items, sessionLoading, startSession, addItem, deleteItem } = useEmergencyKit();
   const [sessionReady, setSessionReady] = useState(false);
+  const [sessionError, setSessionError] = useState(false);
   const [response, setResponse] = useState<EmergencyKitSessionState | null>(null);
   const [addModule, setAddModule] = useState<EmergencyKitModuleId | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
-  const startedRef = useRef(false);
+  const loadSession = useCallback(async () => {
+    setSessionError(false);
+    setSessionReady(false);
+    try {
+      const session = await startSession(eventId, customText || undefined);
+      if (!session?.response) {
+        setSessionError(true);
+        setResponse(null);
+      } else {
+        setResponse(session);
+      }
+    } catch {
+      setSessionError(true);
+      setResponse(null);
+    } finally {
+      setSessionReady(true);
+    }
+  }, [startSession, eventId, customText]);
 
   useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
-    void (async () => {
-      const session = await startSession(eventId, customText || undefined);
-      setResponse(session);
-      setSessionReady(true);
-    })();
-  }, [startSession, eventId, customText]);
+    void loadSession();
+  }, [loadSession, loadAttempt]);
 
   const ai = response?.response;
   const moduleOrder = useMemo(
@@ -41,13 +66,38 @@ export default function EmergencyKitSessionScreen() {
     [ai?.prioritizedModules],
   );
 
-  if (!sessionReady || sessionLoading || !ai) {
+  if (!sessionReady || sessionLoading) {
     return (
       <CalmScreen topInset="lg">
         <View style={styles.loading}>
           <ActivityIndicator size="large" color={THEME.colors.calm.lavenderDeep} />
           <Text style={styles.loadingText}>{t('emergencyKit.sessionLoading')}</Text>
         </View>
+      </CalmScreen>
+    );
+  }
+
+  if (sessionError || !ai) {
+    return (
+      <CalmScreen topInset="lg" gap={THEME.layout.sectionGapCompact}>
+        <EmergencyKitBackHeader
+          title={t('emergencyKit.sessionTitle')}
+          subtitle={t(`emergencyKit.events.${eventId}`)}
+        />
+        <View style={styles.errorCard}>
+          <Text style={styles.errorTitle}>{t('emergencyKit.sessionErrorTitle')}</Text>
+          <Text style={styles.errorBody}>{t('emergencyKit.sessionErrorBody')}</Text>
+        </View>
+        <CalmPrimaryButton
+          label={t('emergencyKit.sessionRetry')}
+          onPress={() => setLoadAttempt((n) => n + 1)}
+          variant="default"
+        />
+        <CalmPrimaryButton
+          label={t('emergencyKit.sessionGoBack')}
+          onPress={() => router.back()}
+          variant="soft"
+        />
       </CalmScreen>
     );
   }
@@ -130,6 +180,20 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
     textAlign: 'center',
+  },
+  errorCard: {
+    ...THEME.surfaces.elevated,
+    padding: THEME.spacing.md,
+    gap: THEME.spacing.xs,
+  },
+  errorTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+  },
+  errorBody: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    lineHeight: 22,
   },
   crisisBanner: {
     flexDirection: 'row',

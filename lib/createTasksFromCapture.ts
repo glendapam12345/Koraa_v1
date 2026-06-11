@@ -52,6 +52,15 @@ export async function createTasksFromCapture(
 
     if (error || !data?.id) {
       logger.error('Error guardando tarea desde captura IA:', error);
+      if (insertedIds.length > 0) {
+        const { error: rollbackError } = await supabase
+          .from('tasks')
+          .delete()
+          .in('id', insertedIds);
+        if (rollbackError) {
+          logger.error('Error revirtiendo captura IA parcial:', rollbackError);
+        }
+      }
       return { status: 'error' };
     }
 

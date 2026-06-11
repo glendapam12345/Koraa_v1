@@ -1,4 +1,9 @@
-import { getFreeVisibleWeekTasks, FREE_CALENDAR_VISIBLE_DAYS } from '@/lib/semanaFreePlan';
+import {
+  getFreeVisibleDateKeys,
+  getFreeVisibleWeekTasks,
+  FREE_CALENDAR_VISIBLE_DAYS,
+  isDateInFreeVisibleRange,
+} from '@/lib/semanaFreePlan';
 import type { DayTasks } from '@/hooks/useWeekTasks';
 
 function day(dateStr: string, isToday = false): DayTasks {
@@ -44,5 +49,21 @@ describe('semanaFreePlan', () => {
     const { visible, hiddenCount } = getFreeVisibleWeekTasks(shortWeek, FREE_CALENDAR_VISIBLE_DAYS);
     expect(visible).toHaveLength(2);
     expect(hiddenCount).toBe(0);
+  });
+
+  it('exposes visible date keys for calendar gating', () => {
+    const { visibleDateKeys, hiddenCount } = getFreeVisibleDateKeys(week, 3);
+    expect([...visibleDateKeys]).toEqual(['2026-06-05', '2026-06-06', '2026-06-07']);
+    expect(hiddenCount).toBe(4);
+  });
+
+  it('isDateInFreeVisibleRange allows all dates when unrestricted', () => {
+    expect(isDateInFreeVisibleRange('2026-06-01', null)).toBe(true);
+  });
+
+  it('isDateInFreeVisibleRange blocks dates outside free window', () => {
+    const { visibleDateKeys } = getFreeVisibleDateKeys(week, 3);
+    expect(isDateInFreeVisibleRange('2026-06-01', visibleDateKeys)).toBe(false);
+    expect(isDateInFreeVisibleRange('2026-06-05', visibleDateKeys)).toBe(true);
   });
 });

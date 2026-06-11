@@ -8,6 +8,7 @@ import type { FocusProgressStats } from '@/lib/focusProgressStats';
 import { HoyFocusTaskRow } from '@/components/hoy/HoyFocusTaskRow';
 import { HoyMoodHeroCard } from '@/components/hoy/HoyMoodHeroCard';
 import { HoySleepCard } from '@/components/hoy/HoySleepCard';
+import { HoyDayFlowSection } from '@/components/hoy/HoyDayFlowSection';
 import { HoyLightenLoadCard } from '@/components/hoy/HoyLightenLoadCard';
 import { HoyLitePeekCard } from '@/components/hoy/HoyLitePeekCard';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
@@ -149,8 +150,13 @@ export function HoyFocusPanel({
     return incompleteFocusTasks.slice(0, maxVisibleSteps);
   }, [extraFocusExpanded, hiddenInSection, incompleteFocusTasks, maxVisibleSteps]);
 
+  const showAfternoonNudge = showDayChangedCard || showNothingDoneCard;
   const showLightenLoad =
-    !crisisMode && !compactLayout && Boolean(onLightenLoad) && totalPending > 0;
+    !crisisMode &&
+    !compactLayout &&
+    Boolean(onLightenLoad) &&
+    totalPending > 0 &&
+    !showAfternoonNudge;
   const coachLine = crisisMode
     ? crisisSupportMessage?.trim() || t('hoy.crisisCoachLine')
     : coach?.body ?? t('hoy.focusCoachFallback');
@@ -194,6 +200,16 @@ export function HoyFocusPanel({
           shortSleep={sleepCard.shortSleep}
           onConnect={sleepCard.onConnect}
           onOpenSleep={sleepCard.onOpenSleep}
+        />
+      ) : null}
+
+      {showAfternoonNudge && onDismissDayChanged ? (
+        <HoyDayFlowSection
+          showDayChangedCard={showDayChangedCard}
+          showNothingDoneCard={showNothingDoneCard}
+          onDismissDayChanged={onDismissDayChanged}
+          onQuickRecheck={onQuickRecheck}
+          onLightenLoad={onLightenLoad}
         />
       ) : null}
 

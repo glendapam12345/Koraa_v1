@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import type { PurchasesPackage } from 'react-native-purchases';
+import { PURCHASES_ERROR_CODE, type PurchasesPackage } from 'react-native-purchases';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Check, Crown, X } from 'lucide-react-native';
 import { getPrivacyPolicyUrl, getTermsOfServiceUrl } from '@/constants/legalUrls';
@@ -112,9 +112,18 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
       const subscribed = await checkSubscription();
       if (subscribed) {
         Alert.alert(t('paywall.purchaseSuccessTitle'), t('paywall.purchaseSuccessBody'));
+        onPurchaseCompleted?.();
+        return;
       }
-      onPurchaseCompleted?.();
-    } catch {
+      Alert.alert(t('paywall.purchaseActivatingTitle'), t('paywall.purchaseActivatingBody'));
+    } catch (e: unknown) {
+      const err = e as { code?: string; userCancelled?: boolean };
+      if (
+        err.userCancelled === true ||
+        err.code === PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR
+      ) {
+        return;
+      }
       Alert.alert(t('paywall.purchaseError'), t('common.retry'));
     } finally {
       setIsPurchasing(false);
