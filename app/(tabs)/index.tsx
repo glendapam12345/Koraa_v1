@@ -40,6 +40,7 @@ import { useHoyScreenBootstrap } from '@/hooks/useHoyScreenBootstrap';
 import type { TaskCompletedPayload } from '@/hooks/useTaskActions';
 import { NoPendingTasksCelebration } from '@/components/NoPendingTasksCelebration';
 import { HoyCrisisBanner } from '@/components/hoy/HoyCrisisBanner';
+import { HoyFlowLegend } from '@/components/hoy/HoyFlowLegend';
 import { useCrisisMode } from '@/hooks/useCrisisMode';
 import { router } from 'expo-router';
 import { useSubscription } from '@/contexts/SubscriptionContext';
@@ -331,6 +332,18 @@ export default function TodayScreen() {
           streak={currentStreak}
           checkedInToday={Boolean(todayMood)}
         />
+
+        {!loading && !crisisModeActive ? (
+          <HoyFlowLegend
+            currentStep={
+              todayMood
+                ? 'focus'
+                : incompleteTasks.length > 0
+                  ? 'feel'
+                  : 'tasks'
+            }
+          />
+        ) : null}
 
         {loading ? (
           <View style={styles.loadingContainer}>

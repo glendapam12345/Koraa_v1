@@ -4,16 +4,16 @@ import { THEME } from '@/constants/theme';
 export const settingsScreenStyles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.background,
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: THEME.spacing.sm,
+    paddingHorizontal: THEME.layout.screenPaddingX,
     paddingVertical: THEME.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.stroke[100],
+    borderBottomColor: THEME.colors.calm.border,
   },
   backHit: {
     padding: THEME.spacing.xs,

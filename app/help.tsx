@@ -2,7 +2,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Alert,
   Linking,
@@ -11,7 +10,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCallback, useMemo, useState } from 'react';
 import { useI18n } from '@/contexts/I18nContext';
-import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { THEME } from '@/constants/theme';
 import {
@@ -19,9 +17,12 @@ import {
   getTermsOfServiceUrl,
   getSupportMailtoUrl,
 } from '@/constants/legalUrls';
-import { ChevronLeft, ChevronDown, ChevronRight, ExternalLink, Mail } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react-native';
 import { ScreenIntroCard } from '@/components/ui/ScreenIntroCard';
+import { CalmScreen } from '@/components/ui/calm/CalmScreen';
+import { CalmCard } from '@/components/ui/calm/CalmCard';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { EmergencyKitBackHeader } from '@/components/emergencyKit/EmergencyKitBackHeader';
 
 type FaqItem = {
   id: string;
@@ -81,7 +82,7 @@ export default function HelpScreen() {
       return;
     }
     await Linking.openURL(mailto);
-  }, []);
+  }, [t]);
 
   const toggleFaq = useCallback((id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
@@ -89,26 +90,14 @@ export default function HelpScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
-        >
-          <ChevronLeft size={28} color={THEME.colors.text.main} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {t('help.title')}
-        </Text>
-        <View style={styles.headerSpacer} />
+      <View style={styles.headerWrap}>
+        <EmergencyKitBackHeader title={t('help.title')} />
       </View>
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + THEME.spacing.xl }]}
-        showsVerticalScrollIndicator={false}
+      <CalmScreen
+        topInset="md"
+        gap={THEME.layout.tabSectionGap}
+        contentStyle={{ paddingBottom: insets.bottom + THEME.spacing.xl }}
       >
         <ScreenIntroCard>{t('help.intro')}</ScreenIntroCard>
 
@@ -116,7 +105,7 @@ export default function HelpScreen() {
         {faqItems.map((item) => {
           const open = expandedId === item.id;
           return (
-            <View key={item.id} style={styles.faqCard}>
+            <CalmCard key={item.id} style={styles.faqCard}>
               <TouchableOpacity
                 style={styles.faqRow}
                 onPress={() => toggleFaq(item.id)}
@@ -133,17 +122,19 @@ export default function HelpScreen() {
                 )}
               </TouchableOpacity>
               {open ? <Text style={styles.faqAnswer}>{item.answer}</Text> : null}
-            </View>
+            </CalmCard>
           );
         })}
 
-        <View style={styles.plansCard}>
+        <CalmCard style={styles.plansCard}>
           <Text style={styles.sectionTitle}>{t('help.plansTitle')}</Text>
           <Text style={styles.plansSubtitle}>{t('help.plansFreeTitle')}</Text>
           <Text style={styles.plansBullets}>{t('help.plansFreeBullets')}</Text>
-          <Text style={[styles.plansSubtitle, styles.plansSubtitleSpaced]}>{t('help.plansPremiumTitle')}</Text>
+          <Text style={[styles.plansSubtitle, styles.plansSubtitleSpaced]}>
+            {t('help.plansPremiumTitle')}
+          </Text>
           <Text style={styles.plansBullets}>{t('help.plansPremiumBullets')}</Text>
-        </View>
+        </CalmCard>
 
         <Text style={styles.sectionTitle}>{t('help.legalTitle')}</Text>
         <Text style={styles.legalHint}>{t('help.legalHint')}</Text>
@@ -153,7 +144,7 @@ export default function HelpScreen() {
           onPress={() => openLegalUrl(getPrivacyPolicyUrl, t('help.privacy'))}
           activeOpacity={0.75}
         >
-          <ExternalLink size={20} color={THEME.colors.gradient.blue} />
+          <ExternalLink size={20} color={THEME.colors.calm.lavenderDeep} />
           <Text style={styles.linkRowText}>{t('help.privacy')}</Text>
         </TouchableOpacity>
 
@@ -162,22 +153,16 @@ export default function HelpScreen() {
           onPress={() => openLegalUrl(getTermsOfServiceUrl, t('help.terms'))}
           activeOpacity={0.75}
         >
-          <ExternalLink size={20} color={THEME.colors.gradient.blue} />
+          <ExternalLink size={20} color={THEME.colors.calm.lavenderDeep} />
           <Text style={styles.linkRowText}>{t('help.terms')}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.supportButton} onPress={openSupportEmail} activeOpacity={0.85}>
-          <LinearGradient
-            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.supportGradient}
-          >
-            <Mail size={20} color={THEME.colors.fill[100]} />
-            <Text style={styles.supportButtonText}>{t('help.contactSupport')}</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </ScrollView>
+        <CalmPrimaryButton
+          label={t('help.contactSupport')}
+          onPress={() => void openSupportEmail()}
+          large
+        />
+      </CalmScreen>
     </View>
   );
 }
@@ -185,59 +170,22 @@ export default function HelpScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: THEME.spacing.sm,
-    paddingBottom: THEME.spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.stroke[100],
-  },
-  backButton: {
-    padding: THEME.spacing.xs,
-    minWidth: 44,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    ...THEME.typography.h2,
-    flex: 1,
-    textAlign: 'center',
-    color: THEME.colors.text.main,
-  },
-  headerSpacer: {
-    width: 44,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: THEME.spacing.lg,
-  },
-  intro: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.lg,
-    lineHeight: 24,
+  headerWrap: {
+    paddingHorizontal: THEME.layout.screenPaddingX,
+    paddingBottom: THEME.spacing.xs,
   },
   sectionTitle: {
     ...THEME.typography.h3,
     fontSize: 18,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
-    marginBottom: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
   },
   faqCard: {
-    backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.rounded,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    marginBottom: THEME.spacing.sm,
+    padding: 0,
     overflow: 'hidden',
-    ...THEME.shadows.soft,
   },
   faqRow: {
     flexDirection: 'row',
@@ -260,12 +208,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   plansCard: {
-    marginBottom: THEME.spacing.lg,
-    padding: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.fill[200],
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    gap: THEME.spacing.xs,
   },
   plansSubtitle: {
     ...THEME.typography.caption,
@@ -285,13 +228,8 @@ const styles = StyleSheet.create({
   legalHint: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
     lineHeight: 20,
-  },
-  legalHintMono: {
-    fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
-    fontSize: 12,
-    color: THEME.colors.text.main,
   },
   linkRow: {
     flexDirection: 'row',
@@ -299,31 +237,11 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.sm,
     paddingVertical: THEME.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.stroke[100],
+    borderBottomColor: THEME.colors.calm.border,
   },
   linkRowText: {
     ...THEME.typography.body,
-    color: THEME.colors.gradient.blue,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
-  },
-  supportButton: {
-    marginTop: THEME.spacing.lg,
-    borderRadius: THEME.borderRadius.rounded,
-    overflow: 'hidden',
-    minHeight: THEME.sizes.touchTarget,
-    ...THEME.shadows.card,
-  },
-  supportGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.md,
-    paddingHorizontal: THEME.spacing.lg,
-  },
-  supportButtonText: {
-    ...THEME.typography.body,
-    color: THEME.colors.fill[100],
-    fontFamily: THEME.fonts.heading.bold,
   },
 });

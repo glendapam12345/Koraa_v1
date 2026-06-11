@@ -81,7 +81,7 @@ export default function SettingsScreen() {
       <ScrollView
         accessibilityLabel={t('settingsA11y.screen')}
         contentContainerStyle={{
-          paddingHorizontal: THEME.spacing.md,
+          paddingHorizontal: THEME.layout.screenPaddingX,
           paddingBottom: insets.bottom + THEME.spacing.lg,
         }}
         keyboardShouldPersistTaps="handled"

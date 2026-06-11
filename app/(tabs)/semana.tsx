@@ -24,7 +24,6 @@ import { SemanaTodayCheckInBanner } from '@/components/semana/SemanaTodayCheckIn
 import { SemanaFreePlanBanner } from '@/components/semana/SemanaFreePlanBanner';
 import { SemanaFreeLimitCard } from '@/components/semana/SemanaFreeLimitCard';
 import { Toast } from '@/components/Toast';
-import { getTodayPriorityStats } from '@/lib/priorityProgress';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
@@ -275,16 +274,6 @@ export default function SemanaScreen() {
 
   const selectedDayEmotionId = selectedDayData?.emotion?.toLowerCase() ?? null;
 
-  const todayWeekTasks = useMemo(() => {
-    const todayDay = filteredWeekTasks.find(({ day }) => day.dateStr === todayStr);
-    return todayDay?.tasks ?? [];
-  }, [filteredWeekTasks, todayStr]);
-
-  const todayPriorityStats = useMemo(
-    () => getTodayPriorityStats(todayWeekTasks),
-    [todayWeekTasks],
-  );
-
   const exportableTasks = useMemo(() => {
     if (isSubscribed) {
       if (viewMode === 'calendar') {
@@ -424,7 +413,7 @@ export default function SemanaScreen() {
               checkInChipText={selectedDayCheckInLabel}
               emotionId={selectedDayEmotionId}
               energyLevel={selectedDayData?.energyLevel ?? null}
-              focusCount={selectedDate === todayStr ? todayPriorityStats.total : null}
+              focusCount={null}
               globalCheckInBannerVisible={
                 selectedDate === todayStr && hasCheckInToday === false
               }
@@ -479,7 +468,7 @@ export default function SemanaScreen() {
               checkInChipText={formatCheckInChip(dayCheckIn, t)}
               emotionId={dayCheckIn?.emotion?.toLowerCase() ?? null}
               energyLevel={dayCheckIn?.energy_level ?? null}
-              focusCount={day.isToday ? todayPriorityStats.total : null}
+              focusCount={null}
               globalCheckInBannerVisible={day.isToday && hasCheckInToday === false}
               suppressEmptyWhenGlobalBanner={day.isToday && hasCheckInToday === false}
               addTasksA11yLabel={`${t('semana.addTasks')} ${dayLabel}`}
