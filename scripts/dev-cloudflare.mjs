@@ -5,6 +5,7 @@
  */
 import { spawn, execSync } from 'node:child_process';
 import http from 'node:http';
+import localtunnel from 'localtunnel';
 import { createRequire } from 'node:module';
 import {
   buildExpoGoUrlFromProxy,
@@ -13,6 +14,7 @@ import {
   writeDevTunnelState,
   isTunnelReachable,
   checkTunnelDns,
+  parseCloudflaredTunnelUrl,
 } from './expo-go-url.mjs';
 
 const require = createRequire(import.meta.url);
@@ -43,9 +45,12 @@ function killPort(port) {
   }
 }
 
-function waitForMetro(isExpoDead, maxMs = 120_000) {
+const METRO_START_TIMEOUT_MS = 600_000;
+
+function waitForMetro(isExpoDead, maxMs = METRO_START_TIMEOUT_MS) {
   return new Promise((resolve, reject) => {
     const start = Date.now();
+    let lastProgressLog = start;
     const tick = () => {
       if (isExpoDead()) {
         reject(new Error('Expo terminó antes de que Metro respondiera'));
@@ -67,8 +72,19 @@ function waitForMetro(isExpoDead, maxMs = 120_000) {
         reject(new Error('Expo terminó antes de que Metro respondiera'));
         return;
       }
-      if (Date.now() - start > maxMs) {
-        reject(new Error('Metro no arrancó en 2 min. Usa Node 20 LTS (ver .nvmrc).'));
+      const elapsed = Date.now() - start;
+      if (elapsed - lastProgressLog >= 30_000) {
+        lastProgressLog = elapsed;
+        const mins = Math.floor(elapsed / 60_000);
+        const secs = Math.floor((elapsed % 60_000) / 1000);
+        console.log(`  ⏳ Esperando Metro… ${mins}m ${secs}s (la 1.ª vez puede tardar 3–5 min)`);
+      }
+      if (elapsed > maxMs) {
+        reject(
+          new Error(
+            `Metro no arrancó en ${Math.round(maxMs / 60_000)} min. Prueba: npm run dev:fresh y Node 20 LTS (ver .nvmrc).`,
+          ),
+        );
         return;
       }
       setTimeout(tick, 600);
@@ -79,6 +95,7 @@ function waitForMetro(isExpoDead, maxMs = 120_000) {
 
 function startCloudflared() {
   return new Promise((resolve, reject) => {
+    console.log('  (puede tardar 15–40 s; si falla, probamos otro túnel…)\n');
     const proc = spawn(
       CLOUDFLARED,
       ['tunnel', '--url', `http://127.0.0.1:${PORT}`],
@@ -87,11 +104,13 @@ function startCloudflared() {
 
     let buf = '';
     const onData = (c) => {
-      buf += c.toString();
-      const m = buf.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/i);
-      if (m) {
+      const chunk = c.toString();
+      buf += chunk;
+      process.stderr.write(chunk);
+      const url = parseCloudflaredTunnelUrl(buf);
+      if (url) {
         clearTimeout(timer);
-        resolve({ url: m[0], proc });
+        resolve({ url, proc });
       }
     };
 
@@ -105,8 +124,29 @@ function startCloudflared() {
     const timer = setTimeout(() => {
       proc.kill('SIGTERM');
       reject(new Error('cloudflared timeout'));
-    }, 90_000);
+    }, 120_000);
   });
+}
+
+async function openLocaltunnel() {
+  const tunnel = await Promise.race([
+    localtunnel({ port: PORT }),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('localtunnel timeout')), 90_000),
+    ),
+  ]);
+  return { url: tunnel.url, proc: { kill: () => tunnel.close() } };
+}
+
+async function openPublicTunnel() {
+  try {
+    return await startCloudflared();
+  } catch (err) {
+    console.log(`\ncloudflared: ${err instanceof Error ? err.message : err}`);
+  }
+
+  console.log('\nIntentando localtunnel…');
+  return openLocaltunnel();
 }
 
 function startExpo(proxyUrl) {
@@ -164,10 +204,10 @@ async function main() {
   killPort(PORT);
   killPort(8082);
 
-  console.log('Iniciando cloudflared…');
+  console.log('Iniciando túnel…');
   let tunnel;
   try {
-    tunnel = await startCloudflared();
+    tunnel = await openPublicTunnel();
   } catch (e) {
     console.error('❌', e instanceof Error ? e.message : e);
     process.exit(1);
@@ -181,7 +221,8 @@ async function main() {
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('  Túnel:', proxyUrl);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-  console.log('Iniciando Metro en 8081…\n');
+  console.log('Iniciando Metro en 8081…');
+  console.log('  (la 1.ª vez puede tardar varios minutos; no cierres esta terminal)\n');
 
   const expo = startExpo(proxyUrl);
   let expoExited = false;

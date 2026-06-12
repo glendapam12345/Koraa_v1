@@ -14,22 +14,27 @@ export function HoyFlowLegend({ currentStep }: HoyFlowLegendProps) {
   const { t } = useI18n();
 
   const labels: Record<FlowLegendStep, string> = {
-    tasks: t('tabs.tasks'),
-    feel: t('flow.stepCheckInLabel'),
-    focus: t('flow.stepTodayShort'),
+    tasks: t('flow.stepTasksShort'),
+    feel: t('flow.stepFeelShort'),
+    focus: t('flow.stepFocusShort'),
   };
 
   const currentIndex = STEP_ORDER.indexOf(currentStep);
 
   return (
-    <View style={styles.wrap} accessibilityRole="text">
-      <Text style={styles.caption}>{t('hoy.flowLegendCaption')}</Text>
-      <View style={styles.row}>
-        {STEP_ORDER.map((step, index) => {
-          const isCurrent = step === currentStep;
-          const isDone = index < currentIndex;
-          return (
-            <View key={step} style={styles.stepCol}>
+    <View
+      style={styles.wrap}
+      accessibilityRole="text"
+      accessibilityLabel={t('hoy.flowLegendA11y', { step: labels[currentStep] })}
+    >
+      {STEP_ORDER.map((step, index) => {
+        const isCurrent = step === currentStep;
+        const isDone = index < currentIndex;
+        const isLast = index === STEP_ORDER.length - 1;
+
+        return (
+          <View key={step} style={styles.stepGroup}>
+            <View style={styles.stepInline}>
               <View
                 style={[
                   styles.dot,
@@ -48,41 +53,53 @@ export function HoyFlowLegend({ currentStep }: HoyFlowLegendProps) {
                 {labels[step]}
               </Text>
             </View>
-          );
-        })}
-      </View>
+            {!isLast ? <View style={[styles.connector, isDone && styles.connectorDone]} /> : null}
+          </View>
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    gap: THEME.spacing.xs,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
-  },
-  caption: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    textAlign: 'center',
-  },
-  row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: THEME.spacing.xs,
-  },
-  stepCol: {
-    flex: 1,
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'center',
+    alignSelf: 'center',
+    gap: 2,
+    paddingVertical: 6,
+    paddingHorizontal: THEME.spacing.sm,
+    backgroundColor: THEME.colors.fill[200],
+    borderRadius: THEME.borderRadius.pill,
+  },
+  stepGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
     minWidth: 0,
   },
-  dot: {
+  stepInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    maxWidth: 108,
+  },
+  connector: {
     width: 10,
-    height: 10,
-    borderRadius: 5,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: THEME.colors.stroke[100],
+    marginHorizontal: 2,
+  },
+  connectorDone: {
+    backgroundColor: THEME.colors.calm.lavenderDeep,
+    opacity: 0.45,
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
     backgroundColor: THEME.colors.stroke[100],
   },
   dotDone: {
@@ -90,13 +107,12 @@ const styles = StyleSheet.create({
   },
   dotCurrent: {
     backgroundColor: THEME.colors.gradient.blue,
-    transform: [{ scale: 1.15 }],
   },
   label: {
     ...THEME.typography.meta,
-    fontSize: 11,
+    fontSize: 10,
     color: THEME.colors.text.tertiary,
-    textAlign: 'center',
+    flexShrink: 1,
   },
   labelDone: {
     color: THEME.colors.text.secondary,

@@ -1,10 +1,7 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Lock } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { View, Text, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { EmotionalInsight } from '@/lib/emotionalInsights';
-import { openPaywall } from '@/lib/paywallNavigation';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
 
 type ParaMiInsightsProps = {
@@ -25,6 +22,7 @@ export function ParaMiInsights({
   const { t } = useI18n();
 
   if (loading) return null;
+  if (locked) return null;
 
   return (
     <View
@@ -34,22 +32,6 @@ export function ParaMiInsights({
     >
       {!hasEnoughData ? (
         <Text style={styles.empty}>{t('parami.noInsightYet')}</Text>
-      ) : locked ? (
-        <TouchableOpacity
-          onPress={() => openPaywall(router, paywallReturnTo)}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel={t('paramiExtra.a11yInsightsLocked')}
-          accessibilityHint={t('paramiExtra.a11yUnlockHint')}
-        >
-          <CalmCard style={styles.lockedCard}>
-            <View style={styles.lockedRow}>
-              <Lock size={18} color={THEME.colors.calm.lavenderDeep} />
-              <Text style={styles.lockedTitle}>{t('parami.insightsLockedTitle')}</Text>
-            </View>
-            <Text style={styles.lockedBody}>{t('parami.insightsLockedBody')}</Text>
-          </CalmCard>
-        </TouchableOpacity>
       ) : (
         <View style={styles.list}>
           {insights.map((insight, index) => (
@@ -95,25 +77,5 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     lineHeight: 22,
     flex: 1,
-  },
-  lockedCard: {
-    gap: THEME.spacing.xs,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
-    borderColor: THEME.colors.tint.blue.border,
-  },
-  lockedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.xs,
-  },
-  lockedTitle: {
-    ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-  },
-  lockedBody: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    lineHeight: 20,
   },
 });

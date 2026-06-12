@@ -325,14 +325,10 @@ export default function TodayScreen() {
           checkedInToday={Boolean(todayMood)}
         />
 
-        {!loading && !crisisModeActive ? (
+        {!loading && !crisisModeActive && !todayMood ? (
           <HoyFlowLegend
             currentStep={
-              todayMood
-                ? 'focus'
-                : incompleteTasks.length > 0
-                  ? 'feel'
-                  : 'tasks'
+              incompleteTasks.length > 0 ? 'feel' : 'tasks'
             }
           />
         ) : null}

@@ -172,7 +172,7 @@ export function HoyTasksSection({
         }}
         crisisMode={crisisMode}
       />
-      {!crisisMode && restOfDayExpanded && onCollapseRestOfDay ? (
+      {restOfDayExpanded && onCollapseRestOfDay ? (
         <HoyRestOfDayPanel
           tasks={tasks}
           restTasks={restOfDayTasks}

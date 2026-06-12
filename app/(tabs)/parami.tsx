@@ -5,6 +5,7 @@ import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { getCatalog } from '@/lib/i18n';
 import { useCheckInInsightsData } from '@/hooks/useCheckInInsightsData';
 import {
   buildEmotionMix,
@@ -116,6 +117,26 @@ export default function ParaMiScreen() {
     hasInsightData,
   );
 
+  const patternStats = useMemo(() => {
+    const checkIns = periodData.filter((day) => day.hasCheckIn);
+    const top = emotionMix[0];
+    const emotions = getCatalog(locale).sentir.emotions as Record<string, string>;
+    const avgEnergy =
+      checkIns.length > 0
+        ? Math.round(
+            (checkIns.reduce((sum, d) => sum + (d.energyLevel ?? 0), 0) / checkIns.length) * 10,
+          ) / 10
+        : 0;
+
+    return {
+      checkInCount: checkIns.length,
+      topEmotionId: top?.id,
+      topEmotionLabel: top ? emotions[top.id.toLowerCase()] ?? top.id : undefined,
+      topEmotionCount: top?.count,
+      avgEnergy,
+    };
+  }, [periodData, emotionMix, locale]);
+
   const moodChart = showPremiumLocked ? (
     <LockedChartPreview variant="mood" />
   ) : (
@@ -162,7 +183,11 @@ export default function ParaMiScreen() {
         paywallReturnTo="/(tabs)/parami"
       />
 
-      <ParaMiPatternInsightCard insight={patternInsight} loading={patternInsightLoading} />
+      <ParaMiPatternInsightCard
+        insight={patternInsight}
+        stats={patternStats}
+        loading={patternInsightLoading}
+      />
 
       <View style={styles.patternsSection}>
         <ParaMiMusaCard

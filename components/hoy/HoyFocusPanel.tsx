@@ -16,6 +16,7 @@ import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { useHoyCoachMessage } from '@/hooks/useHoyCoachMessage';
 import { getEmotionEmoji } from '@/lib/emotionEmoji';
 import { isOverwhelmedState } from '@/lib/emotionalSafety';
+import { CARE_MODE_MAX_FOCUS_STEPS, getCareModeTaskCounts } from '@/lib/hoyCareMode';
 import { useI18n } from '@/contexts/I18nContext';
 import type { Task } from '@/components/tasks/TaskCard';
 import type { AppLocale } from '@/lib/i18n';
@@ -60,7 +61,7 @@ type HoyFocusPanelProps = {
     onConnect: () => void;
     onOpenSleep: () => void;
   };
-  /** Emergency Kit: oculta pasos sugeridos en Hoy. */
+  /** Emergency Kit: suaviza pasos sugeridos (1 visible, el resto puede esperar). */
   crisisMode?: boolean;
 };
 
@@ -134,7 +135,11 @@ export function HoyFocusPanel({
   const firstFocusTaskName = focusTaskNames[0];
   const totalFocusCount = incompleteFocusTasks.length;
   const isOverwhelmed = isOverwhelmedState(todayMood, energyLevel);
-  const maxVisibleSteps = crisisMode ? 0 : isOverwhelmed || shortSleep ? 1 : DEFAULT_MAX_STEPS;
+  const maxVisibleSteps = crisisMode
+    ? CARE_MODE_MAX_FOCUS_STEPS
+    : isOverwhelmed || shortSleep
+      ? 1
+      : DEFAULT_MAX_STEPS;
   const hiddenInSection =
     incompleteFocusTasks.length > maxVisibleSteps
       ? incompleteFocusTasks.length - maxVisibleSteps
@@ -154,10 +159,13 @@ export function HoyFocusPanel({
     totalPending > 0 &&
     !showAfternoonNudge;
   const coachLine = coach?.body ?? t('hoy.focusCoachFallback');
+  const careCounts = crisisMode ? getCareModeTaskCounts(totalFocusCount, nonFocusPending) : null;
+  const moodFocusCount = careCounts?.visibleFocus ?? totalFocusCount;
+  const moodRestCount = careCounts?.waitingCount ?? nonFocusPending;
+  const restLinkCount = careCounts?.waitingCount ?? nonFocusPending;
   const showRestOfDayLink =
-    !crisisMode &&
     !compactLayout &&
-    nonFocusPending > 0 &&
+    restLinkCount > 0 &&
     !restExpanded &&
     Boolean(onRestExpandedChange);
 
@@ -167,9 +175,9 @@ export function HoyFocusPanel({
         emotionEmoji={emotionEmoji}
         emotionLabel={emotionLabel}
         energyLevel={energyLevel}
-        focusCount={crisisMode ? 0 : totalFocusCount}
-        restCount={crisisMode ? 0 : nonFocusPending}
-        firstFocusTaskName={crisisMode ? undefined : firstFocusTaskName}
+        focusCount={moodFocusCount}
+        restCount={moodRestCount}
+        firstFocusTaskName={firstFocusTaskName}
         coachLine={coachLine}
         allFocusDone={allFocusDone}
         compact={compactLayout}
@@ -206,7 +214,6 @@ export function HoyFocusPanel({
         />
       ) : null}
 
-      {!crisisMode ? (
       <View style={styles.focusHeader}>
         <Text style={styles.sectionTitle}>
           {focusTasks.length > 0
@@ -215,15 +222,15 @@ export function HoyFocusPanel({
         </Text>
         {focusTasks.length > 0 ? (
           <Text style={styles.sectionSub}>
-            {hiddenInSection > 0
-              ? t('hoy.oneSmallStep')
-              : t('hoy.focusListHint')}
+            {crisisMode
+              ? t('hoy.careModeFocusHint')
+              : hiddenInSection > 0
+                ? t('hoy.oneSmallStep')
+                : t('hoy.focusListHint')}
           </Text>
         ) : null}
       </View>
-      ) : null}
 
-      {!crisisMode ? (
       <CalmCard style={styles.focusCard}>
         {allFocusDone ? (
           <View style={styles.celebration}>
@@ -248,7 +255,7 @@ export function HoyFocusPanel({
                 />
               ))}
             </View>
-            {hiddenInSection > 0 && !extraFocusExpanded ? (
+            {hiddenInSection > 0 && !extraFocusExpanded && !crisisMode ? (
               <TouchableOpacity
                 onPress={() => setExtraFocusExpanded(true)}
                 activeOpacity={0.85}
@@ -276,7 +283,6 @@ export function HoyFocusPanel({
           </View>
         )}
       </CalmCard>
-      ) : null}
 
       {showLightenLoad ? (
         <HoyLightenLoadCard
@@ -299,9 +305,19 @@ export function HoyFocusPanel({
           activeOpacity={0.85}
           style={styles.restOfDayLink}
           accessibilityRole="button"
-          accessibilityLabel={t('hoy.showMoreForTodayLink')}
+          accessibilityLabel={
+            crisisMode
+              ? t('hoy.careModeRestLinkA11y', { count: restLinkCount })
+              : t('hoy.showMoreForTodayLink')
+          }
         >
-          <Text style={styles.restOfDayLinkText}>{t('hoy.showMoreForTodayLink')}</Text>
+          <Text style={styles.restOfDayLinkText}>
+            {crisisMode
+              ? restLinkCount === 1
+                ? t('hoy.careModeRestLinkOne', { count: restLinkCount })
+                : t('hoy.careModeRestLinkMany', { count: restLinkCount })
+              : t('hoy.showMoreForTodayLink')}
+          </Text>
           <ChevronRight size={18} color={THEME.colors.calm.lavenderDeep} />
         </TouchableOpacity>
       ) : null}
