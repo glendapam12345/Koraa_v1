@@ -29,6 +29,9 @@ yarn-error.*
 .DS_Store
 *.pem
 
+# supabase cli cache (version pin; no commitear)
+supabase/.temp/
+
 # local env files
 .env*.local
 .env
