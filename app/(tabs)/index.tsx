@@ -316,7 +316,7 @@ export default function TodayScreen() {
 
         {!loading && crisisModeActive ? (
           <HoyCrisisBanner
-            onDismiss={() => void dismissCrisisMode()}
+            onDismiss={() => setCareModeSheet('deactivate')}
             onLearnMore={() => setCareModeGuideOpen(true)}
           />
         ) : null}

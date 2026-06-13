@@ -8,6 +8,7 @@ import type { FocusProgressStats } from '@/lib/focusProgressStats';
 import { HoyFocusTaskRow } from '@/components/hoy/HoyFocusTaskRow';
 import { HoyMoodHeroCard } from '@/components/hoy/HoyMoodHeroCard';
 import { HoySleepCard } from '@/components/hoy/HoySleepCard';
+import { HoySupportPanel } from '@/components/hoy/HoySupportPanel';
 import { HoyLightenLoadCard } from '@/components/hoy/HoyLightenLoadCard';
 import { HoyLitePeekCard } from '@/components/hoy/HoyLitePeekCard';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
@@ -147,7 +148,9 @@ export function HoyFocusPanel({
     !compactLayout &&
     Boolean(onLightenLoad) &&
     totalPending > 0;
-  const coachLine = coach?.body ?? t('hoy.focusCoachFallback');
+  const coachLine = crisisMode
+    ? t('hoy.crisisCoachLine')
+    : coach?.body ?? t('hoy.focusCoachFallback');
   const careCounts = crisisMode ? getCareModeTaskCounts(totalFocusCount, nonFocusPending) : null;
   const moodFocusCount = careCounts?.visibleFocus ?? totalFocusCount;
   const moodRestCount = careCounts?.waitingCount ?? nonFocusPending;
@@ -170,20 +173,21 @@ export function HoyFocusPanel({
         coachLine={coachLine}
         allFocusDone={allFocusDone}
         compact={compactLayout}
+        crisisMode={crisisMode}
         onPress={openFeel}
       />
 
-      {!compactLayout && todayMood && energyLevel > 0 && sleepCard ? (
-        <HoySleepCard
-          energyLevel={energyLevel}
-          emotionKey={todayMood}
-          available={sleepCard.available}
-          connected={sleepCard.connected}
-          lastNightHours={sleepCard.lastNightHours}
-          shortSleep={sleepCard.shortSleep}
-          onConnect={sleepCard.onConnect}
-          onOpenSleep={sleepCard.onOpenSleep}
-        />
+      {!compactLayout ? (
+        <TouchableOpacity
+          onPress={openFeel}
+          activeOpacity={0.85}
+          style={styles.recheckCta}
+          accessibilityRole="button"
+          accessibilityLabel={t('hoy.focusUpdateCheckInCta')}
+          accessibilityHint={t('hoy.focusUpdateCheckInA11y')}
+        >
+          <Text style={styles.recheckCtaText}>{t('hoy.focusUpdateCheckInCta')}</Text>
+        </TouchableOpacity>
       ) : null}
 
       <View style={styles.focusHeader}>
@@ -256,6 +260,28 @@ export function HoyFocusPanel({
         )}
       </CalmCard>
 
+      {!compactLayout ? (
+        <HoySupportPanel
+          userId={userId}
+          emotionKey={todayMood}
+          emotionLabel={emotionLabel}
+          energyLevel={energyLevel}
+        />
+      ) : null}
+
+      {!compactLayout && todayMood && energyLevel > 0 && sleepCard ? (
+        <HoySleepCard
+          energyLevel={energyLevel}
+          emotionKey={todayMood}
+          available={sleepCard.available}
+          connected={sleepCard.connected}
+          lastNightHours={sleepCard.lastNightHours}
+          shortSleep={sleepCard.shortSleep}
+          onConnect={sleepCard.onConnect}
+          onOpenSleep={sleepCard.onOpenSleep}
+        />
+      ) : null}
+
       {showLightenLoad ? (
         <HoyLightenLoadCard
           onPress={onLightenLoad!}
@@ -300,6 +326,19 @@ export function HoyFocusPanel({
 const styles = StyleSheet.create({
   root: {
     gap: THEME.layout.tabSectionGap,
+  },
+  recheckCta: {
+    alignSelf: 'flex-start',
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+    paddingHorizontal: THEME.spacing.xs,
+    marginTop: -THEME.spacing.xs,
+  },
+  recheckCtaText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
+    textDecorationLine: 'underline',
   },
   focusHeader: {
     gap: 4,

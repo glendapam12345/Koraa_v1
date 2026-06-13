@@ -16,6 +16,8 @@ type HoyMoodHeroCardProps = {
   compact?: boolean;
   /** Abre recheck-in sin botón duplicado en Hoy. */
   onPress?: () => void;
+  /** Modo cuidado: copy emocional distinto en el hero. */
+  crisisMode?: boolean;
 };
 
 export function HoyMoodHeroCard({
@@ -29,10 +31,13 @@ export function HoyMoodHeroCard({
   allFocusDone,
   compact = false,
   onPress,
+  crisisMode = false,
 }: HoyMoodHeroCardProps) {
   const { t } = useI18n();
 
-  const koraaLine = compact
+  const koraaLine = crisisMode
+    ? t('hoy.crisisMoodHero')
+    : compact
     ? focusCount > 0
       ? t('hoy.moodHeroLiteWithSteps', { count: focusCount })
       : t('hoy.moodHeroLiteNoSteps')

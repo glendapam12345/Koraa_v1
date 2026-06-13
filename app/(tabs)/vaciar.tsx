@@ -322,7 +322,13 @@ export default function VaciarScreen() {
             title={t('projects.title')}
             subtitle={t('projects.subtitle')}
           />
-        ) : null}
+        ) : (
+          <ScreenHeader
+            title={t('vaciar.title')}
+            subtitle={t('vaciar.captureHint')}
+            compact
+          />
+        )}
 
         {user ? <VaciarTabSegments value={segment} onChange={setSegment} /> : null}
 

@@ -24,7 +24,8 @@ export function HoyCrisisBanner({ onDismiss, onLearnMore }: HoyCrisisBannerProps
             <Text style={styles.title}>{t('hoy.crisisBannerTitle')}</Text>
             <TouchableOpacity
               onPress={onDismiss}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={styles.dismissBtn}
               accessibilityRole="button"
               accessibilityLabel={t('hoy.crisisBannerDismiss')}
             >
@@ -33,7 +34,8 @@ export function HoyCrisisBanner({ onDismiss, onLearnMore }: HoyCrisisBannerProps
           </View>
           <TouchableOpacity
             onPress={onLearnMore}
-            hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.learnMoreBtn}
             accessibilityRole="button"
             accessibilityLabel={t('hoy.careModeHowItWorks')}
             accessibilityHint={t('hoy.careModeHowItWorksHint')}
@@ -82,6 +84,15 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.calm.lavenderDeep,
     textDecorationLine: 'underline',
+  },
+  dismissBtn: {
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+    paddingHorizontal: THEME.spacing.xs,
+  },
+  learnMoreBtn: {
+    minHeight: 36,
+    justifyContent: 'center',
   },
   dismiss: {
     ...THEME.typography.caption,
