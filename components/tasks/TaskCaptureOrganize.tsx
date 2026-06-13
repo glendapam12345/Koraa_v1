@@ -115,10 +115,27 @@ export function TaskCaptureOrganize({
           onError={onProjectError}
           onSuccess={onProjectCreated}
         />
+        {inProject ? (
+          <TouchableOpacity
+            style={styles.clearProjectChip}
+            onPress={() => {
+              onProjectChange(null);
+              onAssignToProjectChange(false);
+            }}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={t('vaciar.clearProjectA11y')}
+          >
+            <X size={14} color={THEME.colors.text.secondary} />
+            <Text style={styles.clearProjectText}>{t('vaciar.clearProject')}</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <Text style={styles.fieldLabel}>{t('vaciar.fieldDate')}</Text>
-      <Text style={styles.fieldHint}>{t('vaciar.fieldDateHint')}</Text>
+      <Text style={styles.fieldHint}>
+        {inProject ? t('vaciar.fieldDateHintInProject') : t('vaciar.fieldDateHint')}
+      </Text>
       <View style={styles.dateQuickRow}>
         <TouchableOpacity
           style={[styles.dateChip, selectedDate === today && styles.dateChipActive]}
@@ -356,6 +373,24 @@ const styles = StyleSheet.create({
   projectBlock: {
     marginBottom: THEME.spacing.sm,
     gap: THEME.spacing.xs,
+  },
+  clearProjectChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[200],
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+    minHeight: 36,
+  },
+  clearProjectText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
   },
   projectRequiredHint: {
     ...THEME.typography.small,

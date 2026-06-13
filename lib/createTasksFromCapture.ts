@@ -20,7 +20,7 @@ export type CreateTasksFromCaptureResult =
 
 export async function createTasksFromCapture(
   capture: TaskCaptureResult,
-  options: { locale: AppLocale; hasCheckInToday: boolean },
+  options: { locale: AppLocale; hasCheckInToday: boolean; projectId?: string | null },
 ): Promise<CreateTasksFromCaptureResult> {
   const {
     data: { user },
@@ -44,7 +44,7 @@ export async function createTasksFromCapture(
         is_priority: false,
         is_completed: false,
         parent_task_id: null,
-        project_id: null,
+        project_id: options.projectId ?? null,
         scheduled_date: row.scheduled_date,
       })
       .select('id')

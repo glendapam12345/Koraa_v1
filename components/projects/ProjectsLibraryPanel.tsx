@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import {
@@ -21,6 +21,7 @@ import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 import { useProjectsLibrary } from '@/hooks/useProjectsLibrary';
 import { ProjectExpandableCard } from '@/components/projects/ProjectExpandableCard';
+import { ProjectCreateModal } from '@/components/projects/ProjectCreateModal';
 
 type ProjectsLibraryPanelProps = {
   userId: string | undefined;
@@ -37,6 +38,7 @@ export function ProjectsLibraryPanel({
   onAddTaskToProject,
 }: ProjectsLibraryPanelProps) {
   const { t } = useI18n();
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const {
     projects,
     looseCount,
@@ -89,12 +91,10 @@ export function ProjectsLibraryPanel({
         <Text style={styles.emptyText}>{t('projects.emptyBody')}</Text>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={goCapture}
+          onPress={() => setShowCreateModal(true)}
           activeOpacity={0.8}
           accessibilityRole="button"
-          accessibilityLabel={
-            embedded ? t('vaciar.segmentGoCaptureA11y') : t('projects.goTasksA11y')
-          }
+          accessibilityLabel={t('projects.createProjectA11y')}
         >
           <LinearGradient
             colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
@@ -102,10 +102,21 @@ export function ProjectsLibraryPanel({
             end={{ x: 1, y: 0 }}
             style={styles.addButtonGradient}
           >
-            <Text style={styles.addButtonText}>
-              {embedded ? t('vaciar.segmentGoCapture') : t('projects.goTasks')}
-            </Text>
+            <Text style={styles.addButtonText}>{t('projects.createProjectCta')}</Text>
           </LinearGradient>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.secondaryEmptyBtn}
+          onPress={goCapture}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={
+            embedded ? t('vaciar.segmentGoCaptureA11y') : t('projects.goTasksA11y')
+          }
+        >
+          <Text style={styles.secondaryEmptyBtnText}>
+            {embedded ? t('vaciar.segmentGoCapture') : t('projects.goTasks')}
+          </Text>
         </TouchableOpacity>
         {!embedded ? (
           <TouchableOpacity
@@ -147,16 +158,33 @@ export function ProjectsLibraryPanel({
         ) : null}
         <TouchableOpacity
           style={styles.addProjectSection}
+          onPress={() => setShowCreateModal(true)}
+          activeOpacity={0.88}
+          accessibilityRole="button"
+          accessibilityLabel={t('projects.createProjectA11y')}
+        >
+          <View style={styles.addProjectIconWrap}>
+            <FolderKanban size={22} color={THEME.colors.gradient.blue} strokeWidth={2.2} />
+          </View>
+          <View style={styles.addProjectTextWrap}>
+            <Text style={styles.addProjectTitle}>{t('projects.createProjectCta')}</Text>
+            <Text style={styles.addProjectHint}>{t('projects.createProjectHint')}</Text>
+          </View>
+          <ChevronRight size={20} color={THEME.colors.gradient.blue} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.addTaskSection}
           onPress={goCapture}
           activeOpacity={0.88}
           accessibilityRole="button"
           accessibilityLabel={t('projects.addA11y')}
         >
           <View style={styles.addProjectIconWrap}>
-            <Plus size={22} color={THEME.colors.gradient.blue} strokeWidth={2.2} />
+            <Plus size={22} color={THEME.colors.gradient.pink} strokeWidth={2.2} />
           </View>
           <View style={styles.addProjectTextWrap}>
-            <Text style={styles.addProjectTitle}>{t('projects.addSection')}</Text>
+            <Text style={styles.addProjectTitle}>{t('projects.addTaskCta')}</Text>
             <Text style={styles.addProjectHint}>{t('projects.addHint')}</Text>
           </View>
           <ChevronRight size={20} color={THEME.colors.gradient.blue} />
@@ -203,24 +231,48 @@ export function ProjectsLibraryPanel({
     );
 
   if (embedded) {
-    return <View style={styles.embeddedWrap}>{body}</View>;
+    return (
+      <View style={styles.embeddedWrap}>
+        {body}
+        {userId ? (
+          <ProjectCreateModal
+            visible={showCreateModal}
+            userId={userId}
+            onClose={() => setShowCreateModal(false)}
+            onCreated={() => void reload()}
+            existingNames={projects.map((p) => p.name)}
+          />
+        ) : null}
+      </View>
+    );
   }
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={refresh}
-          tintColor={THEME.colors.gradient.blue}
+    <>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refresh}
+            tintColor={THEME.colors.gradient.blue}
+          />
+        }
+      >
+        {body}
+      </ScrollView>
+      {userId ? (
+        <ProjectCreateModal
+          visible={showCreateModal}
+          userId={userId}
+          onClose={() => setShowCreateModal(false)}
+          onCreated={() => void reload()}
+          existingNames={projects.map((p) => p.name)}
         />
-      }
-    >
-      {body}
-    </ScrollView>
+      ) : null}
+    </>
   );
 }
 
@@ -280,14 +332,25 @@ const styles = StyleSheet.create({
   addProjectSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.rounded,
-    paddingVertical: THEME.spacing.md,
-    paddingHorizontal: THEME.spacing.sm,
-    marginBottom: THEME.spacing.md + 4,
-    borderWidth: 1,
-    borderColor: THEME.colors.tint.blue.border,
     gap: THEME.spacing.sm,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
+    ...THEME.shadows.soft,
+  },
+  addTaskSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.stroke[100],
     ...THEME.shadows.soft,
   },
   addProjectIconWrap: {
@@ -363,6 +426,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.onGradient,
+  },
+  secondaryEmptyBtn: {
+    marginTop: THEME.spacing.md,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.lg,
+  },
+  secondaryEmptyBtnText: {
+    ...THEME.typography.body,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
   },
   backLink: {
     marginTop: THEME.spacing.md + 4,

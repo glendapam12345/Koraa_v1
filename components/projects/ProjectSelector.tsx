@@ -1,15 +1,19 @@
-import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, TextInput, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
 import { THEME } from '@/constants/theme';
-import { supabase, getSchemaSetupMessage } from '@/lib/supabase';
-import { FolderKanban, X, Plus } from 'lucide-react-native';
+import { supabase } from '@/lib/supabase';
+import { FolderKanban, X, Plus, Calendar } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
+import { ProjectCreateForm } from '@/components/projects/ProjectCreateForm';
 import { PROJECT_COLORS } from '@/lib/projectColors';
+import { createProjectForUser, createProjectErrorMessage } from '@/lib/createProject';
+import { formatProjectDueDate } from '@/lib/projectProgress';
 
 interface Project {
   id: string;
   name: string;
   color: string;
+  due_date?: string | null;
 }
 
 interface ProjectSelectorProps {
@@ -20,21 +24,30 @@ interface ProjectSelectorProps {
   showLabel?: boolean;
   onError?: (message: string) => void;
   onSuccess?: (projectName: string) => void;
-  /** Cuando true, el usuario ya eligió "Sí" a proyecto: mostrar "Elige un proyecto" y poner "Ninguno" al final del modal */
+  /** En captura: el modal prioriza elegir o crear proyecto; «sin proyecto» sigue disponible arriba. */
   assignMode?: boolean;
 }
 
-export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeOpenModal, showLabel = true, onError, onSuccess, assignMode = false }: ProjectSelectorProps) {
-  const { t } = useI18n();
+export function ProjectSelector({
+  selectedProjectId,
+  onSelect,
+  userId,
+  onBeforeOpenModal,
+  showLabel = true,
+  onError,
+  onSuccess,
+  assignMode = false,
+}: ProjectSelectorProps) {
+  const { t, locale } = useI18n();
   const [projects, setProjects] = useState<Project[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showNewProject, setShowNewProject] = useState(false);
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState<string>(PROJECT_COLORS[0]);
+  const [newDueDate, setNewDueDate] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const newProjectInputRef = useRef<TextInput>(null);
   const [keyboardPad, setKeyboardPad] = useState(0);
 
   useEffect(() => {
@@ -51,7 +64,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
   const loadProjects = useCallback(async () => {
     const { data, error } = await supabase
       .from('projects')
-      .select('id, name, color')
+      .select('id, name, color, due_date')
       .eq('user_id', userId)
       .order('priority', { ascending: false });
     if (error) {
@@ -70,64 +83,35 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
         setLoading(false);
       }
     };
-    load();
+    void load();
   }, [userId, loadProjects]);
 
-  const autoSelectedForAssignRef = useRef(false);
-
-  useEffect(() => {
-    if (!assignMode) {
-      autoSelectedForAssignRef.current = false;
-      return;
-    }
-    if (
-      !loading &&
-      projects.length === 1 &&
-      selectedProjectId == null &&
-      !autoSelectedForAssignRef.current
-    ) {
-      autoSelectedForAssignRef.current = true;
-      onSelect(projects[0].id);
-    }
-  }, [assignMode, loading, onSelect, projects, selectedProjectId]);
-
   const handleCreateProject = async () => {
-    const name = newName.trim();
-    if (!name) {
-      setFormError(t('components.projectNameRequired'));
-      return;
-    }
-    if (name.length < 2) {
-      setFormError(t('components.projectNameMin'));
-      return;
-    }
-    const alreadyExists = projects.some((p) => p.name.trim().toLowerCase() === name.toLowerCase());
-    if (alreadyExists) {
-      setFormError(t('components.projectDuplicate'));
-      return;
-    }
-
-    setFormError(null);
     setSaving(true);
-    const { data, error } = await supabase
-      .from('projects')
-      .insert({ user_id: userId, name, color: newColor })
-      .select('id, name, color')
-      .single();
+    setFormError(null);
+    const result = await createProjectForUser({
+      userId,
+      name: newName,
+      color: newColor,
+      dueDateRaw: newDueDate,
+      existingNames: projects.map((p) => p.name),
+      locale,
+    });
     setSaving(false);
-    if (error) {
-      const schemaType = getSchemaSetupMessage(error);
-      const message = schemaType === 'projects_table'
-        ? t('components.projectCreateSchemaError')
-        : t('components.projectCreateError');
+
+    if (!result.ok) {
+      const message = createProjectErrorMessage(result.reason, locale);
       setFormError(message);
       onError?.(message);
       return;
     }
-    setProjects((prev) => [data as Project, ...prev]);
+
+    const data = result.project;
+    setProjects((prev) => [data, ...prev]);
     onSelect(data.id);
     setNewName('');
     setNewColor(PROJECT_COLORS[0]);
+    setNewDueDate('');
     setFormError(null);
     setShowNewProject(false);
     setShowModal(false);
@@ -135,10 +119,18 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
   };
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
+  const selectedDueLabel = selectedProject
+    ? formatProjectDueDate(selectedProject.due_date ?? null, locale)
+    : null;
+
+  const closeModal = () => {
+    Keyboard.dismiss();
+    setShowModal(false);
+  };
 
   return (
     <View style={styles.container}>
-      {showLabel && <Text style={styles.label}>{t('projectSelectorExtra.optionalLabel')}</Text>}
+      {showLabel ? <Text style={styles.label}>{t('projectSelectorExtra.optionalLabel')}</Text> : null}
       <TouchableOpacity
         style={[styles.selector, selectedProject && styles.selectorWithProject]}
         onPress={() => {
@@ -151,9 +143,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
         accessibilityLabel={
           selectedProject
             ? t('projectSelectorExtra.a11ySelector', { name: selectedProject.name })
-            : assignMode
-              ? t('projectSelectorExtra.a11yChoose')
-              : t('projectSelectorExtra.a11yLoose')
+            : t('projectSelectorExtra.a11yChooseOptional')
         }
       >
         {selectedProject ? (
@@ -167,15 +157,25 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
             <View style={styles.selectedProjectInfo}>
               <Text style={styles.selectedProjectLabel}>{t('projectSelectorExtra.label')}</Text>
               <Text style={styles.selectorText}>{selectedProject.name}</Text>
-              <Text style={styles.selectedColorHint}>{t('projectSelectorExtra.colorHint')}</Text>
+              {selectedDueLabel ? (
+                <View style={styles.dueRow}>
+                  <Calendar size={12} color={THEME.colors.text.secondary} />
+                  <Text style={styles.dueText}>
+                    {t('projectsUi.dueDate', { date: selectedDueLabel })}
+                  </Text>
+                </View>
+              ) : null}
             </View>
           </View>
         ) : (
           <View style={styles.selectedRow}>
             <FolderKanban size={20} color={THEME.colors.gradient.blue} />
-            <Text style={[styles.selectorText, styles.placeholderText]}>
-              {assignMode ? t('components.chooseProject') : t('components.projectLooseHint')}
-            </Text>
+            <View style={styles.placeholderWrap}>
+              <Text style={[styles.selectorText, styles.placeholderText]}>
+                {t('projectSelectorExtra.chooseOptional')}
+              </Text>
+              <Text style={styles.placeholderSub}>{t('projectSelectorExtra.chooseOptionalSub')}</Text>
+            </View>
           </View>
         )}
       </TouchableOpacity>
@@ -184,19 +184,16 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
         visible={showModal}
         transparent
         animationType="slide"
-        onRequestClose={() => { Keyboard.dismiss(); setShowModal(false); }}
+        onRequestClose={closeModal}
         onShow={() => {
           Keyboard.dismiss();
           setShowNewProject(false);
           setNewName('');
+          setNewDueDate('');
           setFormError(null);
         }}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => { Keyboard.dismiss(); setShowModal(false); }}
-        >
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={closeModal}>
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
@@ -204,9 +201,11 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
           >
             <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{assignMode ? t('components.chooseProject') : t('components.projectModalAssign')}</Text>
+                <Text style={styles.modalTitle}>
+                  {assignMode ? t('components.chooseProject') : t('components.projectModalAssign')}
+                </Text>
                 <TouchableOpacity
-                  onPress={() => { Keyboard.dismiss(); setShowModal(false); }}
+                  onPress={closeModal}
                   style={styles.modalClose}
                   accessibilityLabel={t('components.closeA11y')}
                 >
@@ -226,71 +225,69 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode="on-drag"
               >
-                {!assignMode && (
-                  <Text style={styles.modalSectionHint}>{t('projectSelectorExtra.modalHint')}</Text>
-                )}
-                {!assignMode && (
-                  <TouchableOpacity
-                    style={[
-                      styles.optionRow,
-                      styles.optionRowFirst,
-                      selectedProjectId == null && styles.optionRowSelected,
-                    ]}
-                    onPress={() => {
-                      onSelect(null);
-                      setShowModal(false);
-                    }}
-                    activeOpacity={0.7}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('projectSelectorExtra.a11yLooseOption')}
-                    accessibilityState={{ selected: selectedProjectId == null }}
-                  >
-                    <FolderKanban
-                      size={22}
-                      color={
-                        selectedProjectId == null
-                          ? THEME.colors.gradient.blue
-                          : THEME.colors.text.secondary
-                      }
-                    />
-                    <View style={styles.optionTextWrap}>
-                      <Text
-                        style={[
-                          styles.optionText,
-                          selectedProjectId == null && styles.optionTextSelected,
-                        ]}
-                      >
-                        {t('components.looseTasks')}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.optionSubtext,
-                          selectedProjectId == null && styles.optionSubtextOnSelected,
-                        ]}
-                      >
-                        {t('projectSelectorExtra.noProjectShort')}
-                      </Text>
-                    </View>
-                    {selectedProjectId == null && <Text style={styles.optionCheck}>✓</Text>}
-                  </TouchableOpacity>
-                )}
+                <Text style={styles.modalSectionHint}>{t('projectSelectorExtra.modalHint')}</Text>
+
+                <TouchableOpacity
+                  style={[
+                    styles.optionRow,
+                    styles.optionRowFirst,
+                    selectedProjectId == null && styles.optionRowSelected,
+                  ]}
+                  onPress={() => {
+                    onSelect(null);
+                    closeModal();
+                  }}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('projectSelectorExtra.a11yLooseOption')}
+                  accessibilityState={{ selected: selectedProjectId == null }}
+                >
+                  <FolderKanban
+                    size={22}
+                    color={
+                      selectedProjectId == null
+                        ? THEME.colors.gradient.blue
+                        : THEME.colors.text.secondary
+                    }
+                  />
+                  <View style={styles.optionTextWrap}>
+                    <Text
+                      style={[
+                        styles.optionText,
+                        selectedProjectId == null && styles.optionTextSelected,
+                      ]}
+                    >
+                      {t('components.looseTasks')}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.optionSubtext,
+                        selectedProjectId == null && styles.optionSubtextOnSelected,
+                      ]}
+                    >
+                      {t('projectSelectorExtra.noProjectShort')}
+                    </Text>
+                  </View>
+                  {selectedProjectId == null ? <Text style={styles.optionCheck}>✓</Text> : null}
+                </TouchableOpacity>
 
                 {loading ? (
                   <Text style={styles.loadingText}>{t('components.loadingProjects')}</Text>
                 ) : (
                   <>
-                    {projects.length > 0 && (
+                    {projects.length > 0 ? (
                       <Text style={styles.modalSectionTitle}>{t('projectSelectorExtra.myProjects')}</Text>
-                    )}
+                    ) : null}
                     {projects.map((p) => {
                       const selected = selectedProjectId === p.id;
+                      const dueLabel = formatProjectDueDate(p.due_date ?? null, locale);
                       return (
                         <TouchableOpacity
                           key={p.id}
                           style={[styles.optionRow, selected && styles.optionRowSelected]}
                           onPress={() => {
                             onSelect(p.id);
-                            setShowModal(false);
+                            closeModal();
                           }}
                           activeOpacity={0.7}
                           accessibilityRole="button"
@@ -305,111 +302,43 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                               { backgroundColor: p.color || THEME.colors.gradient.blue },
                             ]}
                           />
-                          <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
-                            {p.name}
-                          </Text>
+                          <View style={styles.optionTextWrap}>
+                            <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
+                              {p.name}
+                            </Text>
+                            {dueLabel ? (
+                              <Text style={styles.optionSubtext}>
+                                {t('projectsUi.dueDate', { date: dueLabel })}
+                              </Text>
+                            ) : null}
+                          </View>
                           {selected ? <Text style={styles.optionCheck}>✓</Text> : null}
                         </TouchableOpacity>
                       );
                     })}
-                    {assignMode && (
-                      <TouchableOpacity
-                        style={[
-                          styles.optionRow,
-                          styles.optionRowNone,
-                          selectedProjectId == null && styles.optionRowSelected,
-                        ]}
-                        onPress={() => {
-                          onSelect(null);
-                          setShowModal(false);
-                        }}
-                        activeOpacity={0.7}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('projectSelectorExtra.a11yNone')}
-                        accessibilityState={{ selected: selectedProjectId == null }}
-                      >
-                        <FolderKanban
-                          size={22}
-                          color={
-                            selectedProjectId == null
-                              ? THEME.colors.gradient.blue
-                              : THEME.colors.text.tertiary
-                          }
-                        />
-                        <View style={styles.optionTextWrap}>
-                          <Text
-                            style={[
-                              styles.optionText,
-                              selectedProjectId == null && styles.optionTextSelected,
-                            ]}
-                          >
-                            {t('projectSelectorExtra.noneAssign')}
-                          </Text>
-                        </View>
-                        {selectedProjectId == null ? <Text style={styles.optionCheck}>✓</Text> : null}
-                      </TouchableOpacity>
-                    )}
+
                     {showNewProject ? (
                       <View style={styles.newProjectForm}>
-                        <Text style={styles.newProjectFormTitle}>{t('projectSelectorExtra.newTitle')}</Text>
-                        <Text style={styles.newProjectLabel}>{t('projectSelectorExtra.nameLabel')}</Text>
-                        <TextInput
-                          ref={newProjectInputRef}
-                          style={styles.newProjectInput}
-                          value={newName}
-                          onChangeText={(value) => {
-                            setNewName(value);
+                        <ProjectCreateForm
+                          name={newName}
+                          color={newColor}
+                          dueDate={newDueDate}
+                          error={formError}
+                          saving={saving}
+                          onNameChange={(v) => {
+                            setNewName(v);
                             if (formError) setFormError(null);
                           }}
-                          placeholder={t('projectSelectorExtra.namePlaceholder')}
-                          placeholderTextColor={THEME.colors.text.secondary}
-                          onSubmitEditing={handleCreateProject}
-                          returnKeyType="done"
+                          onColorChange={setNewColor}
+                          onDueDateChange={setNewDueDate}
+                          onCancel={() => {
+                            setShowNewProject(false);
+                            setNewName('');
+                            setNewDueDate('');
+                            Keyboard.dismiss();
+                          }}
+                          onSubmit={() => void handleCreateProject()}
                         />
-                        <Text style={styles.newProjectLabel}>{t('projectSelectorExtra.colorLabel')}</Text>
-                        <Text style={styles.newProjectColorHint}>
-                          {t('projectSelectorExtra.colorSelected', { color: newColor })}
-                        </Text>
-                        <View style={styles.colorRow}>
-                          {PROJECT_COLORS.map((c, i) => (
-                            <TouchableOpacity
-                              key={`project-color-${i}`}
-                              style={[
-                                styles.colorOption,
-                                { backgroundColor: c },
-                                newColor === c && styles.colorOptionSelected,
-                              ]}
-                              onPress={() => setNewColor(c)}
-                              accessibilityRole="button"
-                              accessibilityLabel={t('projectSelectorExtra.a11yColor', {
-                                color: String(i + 1),
-                                selected: newColor === c ? t('commonExtra.selectedSuffix') : '',
-                              })}
-                            />
-                          ))}
-                        </View>
-                        {formError ? <Text style={styles.newProjectError}>{formError}</Text> : null}
-                        <View style={styles.newProjectButtons}>
-                          <TouchableOpacity
-                            style={styles.newProjectCancel}
-                            onPress={() => {
-                              setShowNewProject(false);
-                              setNewName('');
-                              Keyboard.dismiss();
-                            }}
-                          >
-                            <Text style={styles.newProjectCancelText}>{t('common.cancel')}</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.newProjectSave, saving && styles.newProjectSaveDisabled]}
-                            onPress={handleCreateProject}
-                            disabled={saving || !newName.trim()}
-                          >
-                            <Text style={styles.newProjectSaveText}>
-                              {saving ? t('components.creatingProject') : t('components.createProject')}
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
                       </View>
                     ) : (
                       <TouchableOpacity
@@ -417,13 +346,15 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
                         onPress={() => {
                           setShowNewProject(true);
                           setFormError(null);
-                          setTimeout(() => newProjectInputRef.current?.focus(), 220);
                         }}
                         accessibilityRole="button"
                         accessibilityLabel={t('projectSelectorExtra.createNew')}
                       >
                         <Plus size={20} color={THEME.colors.gradient.blue} />
-                        <Text style={styles.addProjectText}>{t('projectSelectorExtra.createNew')}</Text>
+                        <View style={styles.addProjectTextWrap}>
+                          <Text style={styles.addProjectText}>{t('projectSelectorExtra.createNew')}</Text>
+                          <Text style={styles.addProjectSub}>{t('projects.createProjectFormHint')}</Text>
+                        </View>
                       </TouchableOpacity>
                     )}
                   </>
@@ -439,7 +370,7 @@ export function ProjectSelector({ selectedProjectId, onSelect, userId, onBeforeO
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: THEME.spacing.md,
+    marginBottom: 0,
   },
   label: {
     ...THEME.typography.caption,
@@ -452,6 +383,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
     borderWidth: 1,
     borderColor: THEME.colors.stroke[100],
+    minHeight: THEME.sizes.touchTarget,
   },
   selectorWithProject: {
     paddingLeft: THEME.spacing.xs,
@@ -473,16 +405,22 @@ const styles = StyleSheet.create({
   },
   selectedProjectInfo: {
     flex: 1,
+    justifyContent: 'center',
+    gap: 2,
   },
   selectedProjectLabel: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
-    marginBottom: 2,
   },
-  selectedColorHint: {
-    ...THEME.typography.meta,
-    color: THEME.colors.text.secondary,
+  dueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     marginTop: 2,
+  },
+  dueText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
   },
   colorDot: {
     width: 16,
@@ -493,8 +431,18 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.text.main,
   },
+  placeholderWrap: {
+    flex: 1,
+    gap: 2,
+  },
   placeholderText: {
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  placeholderSub: {
+    ...THEME.typography.small,
     color: THEME.colors.text.secondary,
+    lineHeight: 18,
   },
   modalOverlay: {
     flex: 1,
@@ -515,6 +463,7 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     marginBottom: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.xs,
+    lineHeight: 18,
   },
   modalSectionTitle: {
     ...THEME.typography.caption,
@@ -563,12 +512,6 @@ const styles = StyleSheet.create({
   optionRowFirst: {
     backgroundColor: THEME.colors.fill[200],
   },
-  optionRowNone: {
-    marginTop: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: THEME.colors.stroke[100],
-  },
   optionTextWrap: {
     flex: 1,
   },
@@ -608,96 +551,35 @@ const styles = StyleSheet.create({
   },
   addProjectRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: THEME.spacing.sm,
     paddingVertical: THEME.spacing.md,
     paddingHorizontal: THEME.spacing.sm,
     marginTop: THEME.spacing.sm,
     borderTopWidth: 1,
     borderTopColor: THEME.colors.stroke[100],
+    minHeight: THEME.sizes.touchTarget,
+  },
+  addProjectTextWrap: {
+    flex: 1,
+    gap: 2,
   },
   addProjectText: {
     ...THEME.typography.body,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
   },
+  addProjectSub: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+  },
   newProjectForm: {
     marginTop: THEME.spacing.md,
     padding: THEME.spacing.md,
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.standard,
-  },
-  newProjectFormTitle: {
-    ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-    marginBottom: THEME.spacing.sm,
-  },
-  newProjectLabel: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.xs,
-  },
-  newProjectInput: {
-    ...THEME.typography.body,
-    backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.standard,
-    padding: THEME.spacing.sm,
-    marginBottom: THEME.spacing.sm,
-    color: THEME.colors.text.main,
-  },
-  colorRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: THEME.spacing.sm,
-    marginBottom: THEME.spacing.md,
-  },
-  newProjectColorHint: {
-    ...THEME.typography.small,
-    fontSize: 12,
-    color: THEME.colors.text.tertiary,
-    marginBottom: THEME.spacing.xs,
-  },
-  colorOption: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  colorOptionSelected: {
-    borderColor: THEME.colors.text.main,
-  },
-  newProjectError: {
-    ...THEME.typography.small,
-    color: THEME.colors.semantic.danger,
-    marginBottom: THEME.spacing.sm,
-  },
-  newProjectButtons: {
-    flexDirection: 'row',
-    gap: THEME.spacing.sm,
-    justifyContent: 'flex-end',
-  },
-  newProjectCancel: {
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
-  },
-  newProjectCancelText: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-  },
-  newProjectSave: {
-    backgroundColor: THEME.colors.gradient.blue,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.lg,
-    borderRadius: THEME.borderRadius.standard,
-  },
-  newProjectSaveDisabled: {
-    opacity: 0.6,
-  },
-  newProjectSaveText: {
-    ...THEME.typography.body,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
   },
 });

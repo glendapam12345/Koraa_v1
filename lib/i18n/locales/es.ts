@@ -825,7 +825,7 @@ export const es = {
     rhythmChipPause: 'Pausa',
     rhythmMoreTips: 'Más consejos en Para mí',
     rhythmMoreTipsA11y: 'Abrir la pestaña Para mí con más consejos y apoyo',
-    planAddTasksCta: 'Añadir en Tareas',
+    planAddTasksCta: 'Añadir tareas',
     planAddTasksHint: 'Abre la pestaña Tareas para capturar algo más',
   },
   resetPassword: {

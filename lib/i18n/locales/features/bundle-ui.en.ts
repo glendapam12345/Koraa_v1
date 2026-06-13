@@ -218,8 +218,10 @@ export const uiEn = {
   projectSelectorExtra: {
     optionalLabel: 'Project (optional)',
     label: 'Project',
-    colorHint: 'Color: shown in Today',
-    modalHint: 'Optional. If you skip a project, the task stays loose and appears in Today.',
+    chooseOptional: 'No project for now',
+    chooseOptionalSub: 'Tap to choose or create one',
+    a11yChooseOptional: 'Choose or create project, optional',
+    modalHint: 'Optional. Without a project, the task stays loose and appears in Hoy.',
     a11ySelector: 'Project: {{name}}',
     a11yChoose: 'Choose a project',
     a11yLoose: 'Loose tasks',

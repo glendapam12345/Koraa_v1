@@ -145,6 +145,7 @@ export default function VaciarScreen() {
       const result = await createTasksFromCapture(preview, {
         locale,
         hasCheckInToday: Boolean(hasCheckInToday),
+        projectId: assignToProject ? selectedProjectId : null,
       });
       if (result.status === 'not_authenticated') {
         showToast(t('errors.notAuthenticated'), 'error');
@@ -167,7 +168,7 @@ export default function VaciarScreen() {
     } finally {
       setIsSavingCapture(false);
     }
-  }, [clearPreview, handleTaskSaved, hasCheckInToday, locale, preview, showToast, t]);
+  }, [assignToProject, clearPreview, handleTaskSaved, hasCheckInToday, locale, preview, selectedProjectId, showToast, t]);
 
   const handleApplyAiToForm = useCallback(() => {
     if (!preview) return;

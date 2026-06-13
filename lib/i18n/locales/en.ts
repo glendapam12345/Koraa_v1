@@ -824,7 +824,7 @@ export const en: DeepStrings<typeof es> = {
     rhythmChipPause: 'Pause',
     rhythmMoreTips: 'More tips in For me',
     rhythmMoreTipsA11y: 'Open the For me tab for more tips and support',
-    planAddTasksCta: 'Add in Tasks',
+    planAddTasksCta: 'Add tasks',
     planAddTasksHint: 'Open the Tasks tab to capture something else',
   },
   resetPassword: {

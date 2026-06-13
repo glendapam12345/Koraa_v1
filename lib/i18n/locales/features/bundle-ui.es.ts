@@ -220,8 +220,10 @@ export const uiEs = {
   projectSelectorExtra: {
     optionalLabel: 'Proyecto (opcional)',
     label: 'Proyecto',
-    colorHint: 'Color: aplicado en Hoy',
-    modalHint: 'Es opcional. Si no eliges proyecto, la tarea queda suelta y aparece en Hoy.',
+    chooseOptional: 'Sin proyecto por ahora',
+    chooseOptionalSub: 'Toca para elegir o crear uno',
+    a11yChooseOptional: 'Elegir o crear proyecto, opcional',
+    modalHint: 'Es opcional. Sin proyecto, la tarea queda suelta y aparece en Hoy.',
     a11ySelector: 'Proyecto: {{name}}',
     a11yChoose: 'Elige un proyecto',
     a11yLoose: 'Tareas sueltas',
