@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Sparkles, Leaf, Heart } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
@@ -49,7 +49,7 @@ export function ParaMiPatternInsightCard({
     >
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Sparkles size={14} color={THEME.colors.calm.lavenderDeep} />
+          <Sparkles size={12} color={THEME.colors.calm.lavenderDeep} />
           <Text style={styles.eyebrow}>{t('parami.patternInsightEyebrow')}</Text>
         </View>
         {insight.fromAi ? (
@@ -60,11 +60,7 @@ export function ParaMiPatternInsightCard({
       </View>
 
       {stats && stats.checkInCount > 0 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.statsRow}
-        >
+        <View style={styles.statsRow}>
           <View style={styles.statChip}>
             <Text style={styles.statValue}>{stats.checkInCount}</Text>
             <Text style={styles.statLabel}>{t('parami.patternStatCheckIns')}</Text>
@@ -86,32 +82,28 @@ export function ParaMiPatternInsightCard({
               <Text style={styles.statLabel}>{t('parami.patternStatEnergy')}</Text>
             </View>
           ) : null}
-        </ScrollView>
+        </View>
       ) : null}
 
       <View style={styles.tiles}>
         <View style={styles.tile}>
           <View style={styles.tileHeader}>
             <View style={[styles.tileIcon, styles.tileIconPattern]}>
-              <Heart size={14} color={THEME.colors.calm.lavenderDeep} />
+              <Heart size={12} color={THEME.colors.calm.lavenderDeep} />
             </View>
             <Text style={styles.tileLabel}>{t('parami.patternInsightPatternLabel')}</Text>
           </View>
-          <Text style={styles.tileBody} numberOfLines={3}>
-            {insight.patternNote}
-          </Text>
+          <Text style={styles.tileBody}>{insight.patternNote}</Text>
         </View>
 
         <View style={styles.tile}>
           <View style={styles.tileHeader}>
             <View style={[styles.tileIcon, styles.tileIconTip]}>
-              <Leaf size={14} color={THEME.colors.gradient.blue} />
+              <Leaf size={12} color={THEME.colors.gradient.blue} />
             </View>
             <Text style={styles.tileLabel}>{t('parami.patternInsightTipLabel')}</Text>
           </View>
-          <Text style={styles.tileBody} numberOfLines={3}>
-            {insight.gentleTip}
-          </Text>
+          <Text style={styles.tileBody}>{insight.gentleTip}</Text>
         </View>
       </View>
     </LinearGradient>
@@ -124,9 +116,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.sm,
-    gap: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.standard,
+    padding: THEME.spacing.xs,
+    gap: 6,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
     ...THEME.shadows.soft,
@@ -144,15 +136,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eyebrow: {
-    ...THEME.typography.meta,
+    ...THEME.typography.sectionEyebrow,
     color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.bold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
   },
   aiPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: THEME.borderRadius.pill,
     backgroundColor: 'rgba(255,255,255,0.75)',
   },
@@ -163,42 +152,42 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: THEME.spacing.xs,
     paddingVertical: 2,
   },
   statChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: THEME.spacing.sm,
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
     borderRadius: THEME.borderRadius.pill,
     backgroundColor: 'rgba(255,255,255,0.85)',
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
   },
   statEmoji: {
-    fontSize: 16,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 16,
   },
   statValue: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
-    maxWidth: 88,
+    flexShrink: 1,
   },
   statLabel: {
     ...THEME.typography.meta,
     color: THEME.colors.text.tertiary,
   },
   tiles: {
-    flexDirection: 'row',
-    gap: THEME.spacing.xs,
+    gap: 4,
   },
   tile: {
-    flex: 1,
-    gap: 6,
-    padding: THEME.spacing.xs,
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
     borderRadius: THEME.borderRadius.standard,
     backgroundColor: 'rgba(255,255,255,0.72)',
   },
@@ -208,9 +197,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tileIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -221,14 +210,16 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.tint.blue.veryFaint,
   },
   tileLabel: {
-    ...THEME.typography.meta,
-    fontFamily: THEME.fonts.heading.bold,
+    ...THEME.typography.sectionEyebrow,
+    fontSize: 11,
+    textTransform: 'none',
+    letterSpacing: 0,
     color: THEME.colors.text.main,
     flex: 1,
   },
   tileBody: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-    lineHeight: 17,
+    lineHeight: 16,
   },
 });

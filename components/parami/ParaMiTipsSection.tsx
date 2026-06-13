@@ -94,11 +94,13 @@ const styles = StyleSheet.create({
   },
   title: {
     ...THEME.typography.sectionTitle,
+    fontSize: 17,
+    lineHeight: 22,
     color: THEME.colors.text.main,
   },
   lead: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-    lineHeight: 20,
+    lineHeight: 18,
   },
 });

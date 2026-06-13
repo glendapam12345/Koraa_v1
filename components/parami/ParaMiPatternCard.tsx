@@ -55,7 +55,7 @@ export function ParaMiPatternCard({
               accessibilityLabel={t('parami.patternUnlockA11y')}
             >
               <View style={styles.lockIconWrap}>
-                <Lock size={20} color={THEME.colors.calm.lavenderDeep} />
+                <Lock size={16} color={THEME.colors.calm.lavenderDeep} />
               </View>
               <Text style={styles.lockHint}>{t('parami.patternUnlockHint')}</Text>
             </TouchableOpacity>
@@ -68,16 +68,19 @@ export function ParaMiPatternCard({
 
 const styles = StyleSheet.create({
   card: {
-    gap: THEME.spacing.xs,
+    gap: 6,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.sm,
   },
   title: {
-    ...THEME.typography.sectionTitle,
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
   },
   body: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   empty: {
     ...THEME.typography.body,
@@ -87,14 +90,14 @@ const styles = StyleSheet.create({
   },
   chartWrap: {
     position: 'relative',
-    minHeight: 72,
-    marginTop: THEME.spacing.xs,
+    minHeight: 56,
+    marginTop: 4,
   },
   chartWrapFortnight: {
-    minHeight: 168,
+    minHeight: 80,
   },
   chartWrapMonth: {
-    minHeight: 248,
+    minHeight: 96,
   },
   chartDimmed: {
     opacity: 0.45,
@@ -108,9 +111,9 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.standard,
   },
   lockIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: THEME.colors.fill[100],
     alignItems: 'center',
     justifyContent: 'center',
@@ -118,7 +121,7 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.calm.border,
   },
   lockHint: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
   },

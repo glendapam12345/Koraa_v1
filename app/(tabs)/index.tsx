@@ -30,8 +30,7 @@ import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { useHoyScreenLayout } from '@/hooks/useHoyScreenLayout';
 import { useStreak } from '@/hooks/today/useStreak';
 import { getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
-import { isHoyAfternoonNudgeWindow } from '@/lib/hoyDayFlowNudge';
-import { getTodayPriorityStats, isPriorityCompletedToday } from '@/lib/priorityProgress';
+import { getTodayPriorityStats } from '@/lib/priorityProgress';
 import { useHoyDeleteTask, useHoyAllCompleteConfetti } from '@/hooks/useHoyTaskActions';
 import { useHoyPrioritization } from '@/hooks/useHoyPrioritization';
 import { useHoyTaskExpansion } from '@/hooks/useHoyTaskExpansion';
@@ -40,9 +39,9 @@ import { useHoyScreenBootstrap } from '@/hooks/useHoyScreenBootstrap';
 import type { TaskCompletedPayload } from '@/hooks/useTaskActions';
 import { NoPendingTasksCelebration } from '@/components/NoPendingTasksCelebration';
 import { HoyCrisisBanner } from '@/components/hoy/HoyCrisisBanner';
-import { HoyFlowLegend } from '@/components/hoy/HoyFlowLegend';
+import { CareModeGuideSheet } from '@/components/hoy/CareModeGuideSheet';
+import { CareModeSheet } from '@/components/hoy/CareModeSheet';
 import { useCrisisMode } from '@/hooks/useCrisisMode';
-import { HoySupportPanel } from '@/components/hoy/HoySupportPanel';
 
 export default function TodayScreen() {
   const { t, locale } = useI18n();
@@ -56,6 +55,9 @@ export default function TodayScreen() {
   }>();
   const [dismissedCelebration, setDismissedCelebration] = useState(false);
   const [showRedistribute, setShowRedistribute] = useState(false);
+  const [careModeSheet, setCareModeSheet] = useState<'activate' | 'deactivate' | null>(null);
+  const [careModeGuideOpen, setCareModeGuideOpen] = useState(false);
+  const [careModeBusy, setCareModeBusy] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backgroundLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -67,7 +69,7 @@ export default function TodayScreen() {
   }, []);
 
   const { user } = useAuth();
-  const { crisisModeActive, dismissCrisisMode } = useCrisisMode();
+  const { crisisModeActive, dismissCrisisMode, activateCrisisMode, lastSession } = useCrisisMode();
   const {
     todayMood,
     energyLevel,
@@ -127,10 +129,8 @@ export default function TodayScreen() {
     hoyPreFlowActive,
     hoyRestOfDayExpanded,
     showSecondaryModules,
-    showDayChangedCard,
     setShowSecondaryModules,
     handleOptOutHoyLite,
-    handleDismissDayChangedCard,
     handleShowMoreForHoy,
   } = useHoyScreenLayout({
     userId: user?.id,
@@ -174,26 +174,6 @@ export default function TodayScreen() {
   }, [incompleteTasks]);
 
   const todayPriorityStats = useMemo(() => getTodayPriorityStats(tasks), [tasks]);
-
-  const priorityIncomplete = useMemo(
-    () => incompleteTasks.filter((task) => task.is_priority),
-    [incompleteTasks],
-  );
-
-  const completedPriorityToday = useMemo(() => {
-    const today = getLocalDateString();
-    return tasks.filter(
-      (task) => task.is_priority && !task.parent_task_id && isPriorityCompletedToday(task, today),
-    );
-  }, [tasks]);
-
-  const showNothingDoneCard =
-    Boolean(todayMood) &&
-    priorityIncomplete.length > 0 &&
-    completedPriorityToday.length === 0 &&
-    !loading &&
-    isHoyAfternoonNudgeWindow() &&
-    showDayChangedCard;
 
   const openQuickRecheck = useCallback(() => {
     openRecheckCheckIn('hoy');
@@ -323,15 +303,9 @@ export default function TodayScreen() {
           showSubtitle={!hoyPreFlowActive && !hoyLiteLayout}
           streak={currentStreak}
           checkedInToday={Boolean(todayMood)}
+          crisisModeActive={crisisModeActive}
+          onCareModePress={() => setCareModeSheet(crisisModeActive ? 'deactivate' : 'activate')}
         />
-
-        {!loading && !crisisModeActive && !todayMood ? (
-          <HoyFlowLegend
-            currentStep={
-              incompleteTasks.length > 0 ? 'feel' : 'tasks'
-            }
-          />
-        ) : null}
 
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -341,7 +315,10 @@ export default function TodayScreen() {
         ) : null}
 
         {!loading && crisisModeActive ? (
-          <HoyCrisisBanner onDismiss={() => void dismissCrisisMode()} />
+          <HoyCrisisBanner
+            onDismiss={() => void dismissCrisisMode()}
+            onLearnMore={() => setCareModeGuideOpen(true)}
+          />
         ) : null}
 
         {!loading && hoyLiteLayout ? (
@@ -399,24 +376,8 @@ export default function TodayScreen() {
             onShowMoreForToday={!showSecondaryModules ? handleShowMoreForHoy : undefined}
             onDeleteTask={handleDeleteTask}
             onChangeEmotion={openQuickRecheck}
-            showDayChangedCard={showDayChangedCard && !hoyLiteLayout && !crisisModeActive}
-            showNothingDoneCard={showNothingDoneCard && !hoyLiteLayout && !crisisModeActive}
-            onQuickRecheck={openQuickRecheck}
-            onDismissDayChanged={handleDismissDayChangedCard}
             onLightenLoad={() => setShowRedistribute(true)}
             crisisMode={crisisModeActive}
-          />
-        ) : null}
-
-        {!loading &&
-        todayMood &&
-        !crisisModeActive &&
-        (!hoyLiteLayout || showSecondaryModules) ? (
-          <HoySupportPanel
-            userId={user?.id}
-            emotionKey={todayMood}
-            emotionLabel={todayEmotionLabel}
-            energyLevel={energyLevel}
           />
         ) : null}
 
@@ -454,6 +415,34 @@ export default function TodayScreen() {
         onRedistributeApplied={handleRedistributeApplied}
         showQuickOnboarding={showQuickOnboarding}
         onCloseQuickOnboarding={() => setShowQuickOnboarding(false)}
+      />
+
+      <CareModeSheet
+        visible={careModeSheet !== null}
+        mode={careModeSheet ?? 'activate'}
+        onClose={() => setCareModeSheet(null)}
+        onConfirm={() => {
+          void (async () => {
+            setCareModeBusy(true);
+            try {
+              if (careModeSheet === 'activate') {
+                await activateCrisisMode();
+              } else {
+                await dismissCrisisMode();
+              }
+              setCareModeSheet(null);
+            } finally {
+              setCareModeBusy(false);
+            }
+          })();
+        }}
+        loading={careModeBusy}
+      />
+
+      <CareModeGuideSheet
+        visible={careModeGuideOpen}
+        onClose={() => setCareModeGuideOpen(false)}
+        lastSession={lastSession}
       />
     </View>
   );

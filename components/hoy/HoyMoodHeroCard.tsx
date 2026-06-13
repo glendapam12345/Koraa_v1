@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -14,6 +14,8 @@ type HoyMoodHeroCardProps = {
   allFocusDone: boolean;
   /** Día 1 lite: menos texto en el hero. */
   compact?: boolean;
+  /** Abre recheck-in sin botón duplicado en Hoy. */
+  onPress?: () => void;
 };
 
 export function HoyMoodHeroCard({
@@ -26,6 +28,7 @@ export function HoyMoodHeroCard({
   coachLine,
   allFocusDone,
   compact = false,
+  onPress,
 }: HoyMoodHeroCardProps) {
   const { t } = useI18n();
 
@@ -84,14 +87,26 @@ export function HoyMoodHeroCard({
   );
 
   return (
-    <LinearGradient
-      colors={[THEME.colors.gradient.blue, THEME.colors.calm.lavenderDeep, THEME.colors.gradient.pink]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={cardStyles}
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      style={({ pressed }) => [
+        styles.pressable,
+        pressed && onPress ? styles.pressablePressed : null,
+      ]}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={onPress ? t('hoy.heroUpdateCheckIn') : undefined}
+      accessibilityHint={onPress ? t('hoy.focusUpdateCheckInA11y') : undefined}
     >
-      {content}
-    </LinearGradient>
+      <LinearGradient
+        colors={[THEME.colors.gradient.blue, THEME.colors.calm.lavenderDeep, THEME.colors.gradient.pink]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={cardStyles}
+      >
+        {content}
+      </LinearGradient>
+    </Pressable>
   );
 }
 
@@ -107,6 +122,13 @@ function coachLineRepeatsMood(line: string, emotionLabel: string, energyLevel: n
 }
 
 const styles = StyleSheet.create({
+  pressable: {
+    width: '100%',
+    borderRadius: THEME.borderRadius.rounded,
+  },
+  pressablePressed: {
+    opacity: 0.92,
+  },
   card: {
     borderRadius: THEME.borderRadius.rounded,
     paddingVertical: THEME.spacing.sm,

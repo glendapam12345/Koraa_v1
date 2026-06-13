@@ -41,10 +41,6 @@ export type HoyTasksSectionProps = {
   onShowMoreForToday?: () => void;
   onDeleteTask?: (task: Task) => void;
   onChangeEmotion?: () => void;
-  showDayChangedCard?: boolean;
-  showNothingDoneCard?: boolean;
-  onQuickRecheck?: () => void;
-  onDismissDayChanged?: () => void;
   onLightenLoad?: () => void;
   crisisMode?: boolean;
 };
@@ -80,10 +76,6 @@ export function HoyTasksSection({
   onShowMoreForToday,
   onDeleteTask,
   onChangeEmotion,
-  showDayChangedCard = false,
-  showNothingDoneCard = false,
-  onQuickRecheck,
-  onDismissDayChanged,
   onLightenLoad,
   crisisMode = false,
 }: HoyTasksSectionProps) {
@@ -154,10 +146,6 @@ export function HoyTasksSection({
         }}
         onDeleteTask={onDeleteTask}
         onChangeEmotion={onChangeEmotion}
-        showDayChangedCard={showDayChangedCard}
-        showNothingDoneCard={showNothingDoneCard}
-        onQuickRecheck={onQuickRecheck}
-        onDismissDayChanged={onDismissDayChanged}
         onLightenLoad={onLightenLoad}
         compactLayout={compactLayout}
         onShowFullView={onShowFullView}

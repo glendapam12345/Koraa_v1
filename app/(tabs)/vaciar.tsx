@@ -12,7 +12,6 @@ import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { HoyFlowLegend } from '@/components/hoy/HoyFlowLegend';
 import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
 import { useVaciarHints } from '@/hooks/useVaciarHints';
 import { useVaciarTaskSave } from '@/hooks/useVaciarTaskSave';
@@ -326,8 +325,6 @@ export default function VaciarScreen() {
         ) : null}
 
         {user ? <VaciarTabSegments value={segment} onChange={setSegment} /> : null}
-
-        {user && segment === 'capture' ? <HoyFlowLegend currentStep="tasks" /> : null}
 
         {segment === 'capture' && user ? (
           <VaciarCaptureForm

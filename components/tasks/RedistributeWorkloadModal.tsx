@@ -122,7 +122,7 @@ export function RedistributeWorkloadModal({
       return;
     }
     setProjects((data as ProjectRow[]) || []);
-  }, [userId]);
+  }, [userId, locale]);
 
   useEffect(() => {
     if (visible && userId) {

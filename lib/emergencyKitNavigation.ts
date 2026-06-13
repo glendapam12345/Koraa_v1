@@ -5,18 +5,24 @@ import type { EmergencyKitSessionState } from '@/lib/emergencyKit/types';
 
 type RouterPush = Pick<Router, 'push'>;
 
+type OpenEmergencyKitOptions = {
+  /** Si true y hay sesión guardada, abre la sesión anterior sin pasar por selección. */
+  resume?: boolean;
+};
+
 /** Abre Emergency Kit si hay Premium; si no, paywall con retorno a /emergency-kit. */
 export function openEmergencyKit(
   isSubscribed: boolean,
   lastSession: EmergencyKitSessionState | null | undefined,
   router: RouterPush = defaultRouter,
+  options?: OpenEmergencyKitOptions,
 ): void {
   if (!isSubscribed) {
     openPaywall(router, '/emergency-kit');
     return;
   }
 
-  if (lastSession) {
+  if (options?.resume && lastSession) {
     router.push({
       pathname: '/emergency-kit/session',
       params: {

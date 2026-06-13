@@ -101,7 +101,7 @@ export default function TipsCategoryScreen() {
     if (category && shownTip) {
       trackTipViewed(category, shownTip.id);
     }
-  }, [category, shownTip?.id]);
+  }, [category, shownTip]);
 
   const renderExpanded = (tip: ScoredTip, eyebrow?: string) => (
     <TipDetailExpanded

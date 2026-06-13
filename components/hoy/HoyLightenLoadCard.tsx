@@ -72,14 +72,14 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   title: {
-    ...THEME.typography.body,
-    fontSize: 16,
+    ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
+    flex: 1,
   },
   sub: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-    lineHeight: 18,
+    lineHeight: 16,
   },
 });

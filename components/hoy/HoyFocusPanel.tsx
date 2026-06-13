@@ -8,7 +8,6 @@ import type { FocusProgressStats } from '@/lib/focusProgressStats';
 import { HoyFocusTaskRow } from '@/components/hoy/HoyFocusTaskRow';
 import { HoyMoodHeroCard } from '@/components/hoy/HoyMoodHeroCard';
 import { HoySleepCard } from '@/components/hoy/HoySleepCard';
-import { HoyDayFlowSection } from '@/components/hoy/HoyDayFlowSection';
 import { HoyLightenLoadCard } from '@/components/hoy/HoyLightenLoadCard';
 import { HoyLitePeekCard } from '@/components/hoy/HoyLitePeekCard';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
@@ -43,10 +42,6 @@ type HoyFocusPanelProps = {
   onRestExpandedChange?: (open: boolean) => void;
   onDeleteTask?: (task: Task) => void;
   onChangeEmotion?: () => void;
-  showDayChangedCard?: boolean;
-  showNothingDoneCard?: boolean;
-  onQuickRecheck?: () => void;
-  onDismissDayChanged?: () => void;
   onLightenLoad?: () => void;
   /** Primer día en Hoy: menos secciones; el peek explica qué hay guardado. */
   compactLayout?: boolean;
@@ -85,10 +80,6 @@ export function HoyFocusPanel({
   onRestExpandedChange,
   onDeleteTask,
   onChangeEmotion,
-  showDayChangedCard = false,
-  showNothingDoneCard = false,
-  onQuickRecheck,
-  onDismissDayChanged,
   onLightenLoad,
   compactLayout = false,
   onShowFullView,
@@ -151,13 +142,11 @@ export function HoyFocusPanel({
     return incompleteFocusTasks.slice(0, maxVisibleSteps);
   }, [extraFocusExpanded, hiddenInSection, incompleteFocusTasks, maxVisibleSteps]);
 
-  const showAfternoonNudge = showDayChangedCard || showNothingDoneCard;
   const showLightenLoad =
     !crisisMode &&
     !compactLayout &&
     Boolean(onLightenLoad) &&
-    totalPending > 0 &&
-    !showAfternoonNudge;
+    totalPending > 0;
   const coachLine = coach?.body ?? t('hoy.focusCoachFallback');
   const careCounts = crisisMode ? getCareModeTaskCounts(totalFocusCount, nonFocusPending) : null;
   const moodFocusCount = careCounts?.visibleFocus ?? totalFocusCount;
@@ -181,14 +170,7 @@ export function HoyFocusPanel({
         coachLine={coachLine}
         allFocusDone={allFocusDone}
         compact={compactLayout}
-      />
-
-      <CalmPrimaryButton
-        label={t('hoy.heroUpdateCheckIn')}
         onPress={openFeel}
-        variant="soft"
-        accessibilityLabel={t('hoy.heroUpdateCheckIn')}
-        accessibilityHint={t('hoy.focusUpdateCheckInA11y')}
       />
 
       {!compactLayout && todayMood && energyLevel > 0 && sleepCard ? (
@@ -201,16 +183,6 @@ export function HoyFocusPanel({
           shortSleep={sleepCard.shortSleep}
           onConnect={sleepCard.onConnect}
           onOpenSleep={sleepCard.onOpenSleep}
-        />
-      ) : null}
-
-      {showAfternoonNudge && onDismissDayChanged ? (
-        <HoyDayFlowSection
-          showDayChangedCard={showDayChangedCard}
-          showNothingDoneCard={showNothingDoneCard}
-          onDismissDayChanged={onDismissDayChanged}
-          onQuickRecheck={onQuickRecheck}
-          onLightenLoad={onLightenLoad}
         />
       ) : null}
 

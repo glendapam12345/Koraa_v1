@@ -19,7 +19,7 @@ import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { logger } from '@/lib/logger';
-import { useNotifications, scheduleDailyReminder } from '@/hooks/useNotifications';
+import { useNotifications, scheduleActiveReminders } from '@/hooks/useNotifications';
 import { AnalyticsScreenTracker } from '@/components/AnalyticsScreenTracker';
 import { RecheckCheckInProvider } from '@/contexts/RecheckCheckInContext';
 import { initializeRevenueCat } from '@/lib/revenuecat';
@@ -49,7 +49,7 @@ export default function RootLayout() {
 
     // Pequeño delay para asegurar que el usuario esté autenticado
     const timer = setTimeout(() => {
-      scheduleDailyReminder().catch(err => {
+      scheduleActiveReminders().catch(err => {
         logger.debug('Error programando notificaciones (no crítico):', err);
       });
     }, 2000);

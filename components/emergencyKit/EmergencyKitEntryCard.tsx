@@ -67,14 +67,33 @@ export function EmergencyKitEntryCard({ compact = false }: EmergencyKitEntryCard
             </TouchableOpacity>
           </View>
         ) : (
-          <CalmPrimaryButton
-            label={t('emergencyKit.entryCta')}
-            onPress={handleOpen}
-            disabled={subscriptionLoading}
-            variant="soft"
-            large={!compact}
-            accessibilityHint={t('emergencyKit.entryCtaHint')}
-          />
+          <View style={styles.actions}>
+            <CalmPrimaryButton
+              label={t('emergencyKit.entryCta')}
+              onPress={handleOpen}
+              disabled={subscriptionLoading}
+              variant="soft"
+              large={!compact}
+              accessibilityHint={t('emergencyKit.entryCtaHint')}
+            />
+            {lastSession ? (
+              <TouchableOpacity
+                onPress={() => openEmergencyKit(isSubscribed, lastSession, router, { resume: true })}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={t('emergencyKit.resumeSessionA11y', {
+                  event: t(`emergencyKit.events.${lastSession.eventId}`),
+                })}
+                style={styles.resumeLink}
+              >
+                <Text style={styles.resumeText}>
+                  {t('emergencyKit.resumeSession', {
+                    event: t(`emergencyKit.events.${lastSession.eventId}`),
+                  })}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
         )}
       </LinearGradient>
     </View>
@@ -154,5 +173,19 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.medium,
     textAlign: 'center',
     paddingHorizontal: THEME.spacing.sm,
+  },
+  actions: {
+    gap: THEME.spacing.xs,
+  },
+  resumeLink: {
+    alignItems: 'center',
+    minHeight: 40,
+    justifyContent: 'center',
+  },
+  resumeText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.onGradient,
+    fontFamily: THEME.fonts.heading.medium,
+    textDecorationLine: 'underline',
   },
 });

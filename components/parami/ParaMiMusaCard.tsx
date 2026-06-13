@@ -55,7 +55,7 @@ export function ParaMiMusaCard({
               accessibilityLabel={t('parami.patternUnlockA11y')}
             >
               <View style={styles.lockIconWrap}>
-                <Lock size={20} color={THEME.colors.calm.lavenderDeep} />
+                <Lock size={16} color={THEME.colors.calm.lavenderDeep} />
               </View>
               <Text style={styles.lockHint}>{t('parami.patternUnlockHint')}</Text>
             </TouchableOpacity>
@@ -70,36 +70,35 @@ const styles = StyleSheet.create({
   wrap: {},
   card: {
     borderRadius: THEME.borderRadius.card,
-    padding: THEME.spacing.md,
-    minHeight: 168,
+    padding: THEME.spacing.sm,
+    minHeight: 120,
     overflow: 'hidden',
     ...THEME.shadows.card,
   },
   title: {
-    ...THEME.typography.h2,
-    fontSize: 22,
-    color: THEME.colors.onGradient,
+    ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.onGradient,
     textAlign: 'center',
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 2,
   },
   body: {
-    ...THEME.typography.body,
+    ...THEME.typography.meta,
     color: THEME.colors.onGradientMuted,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: THEME.spacing.sm,
+    lineHeight: 16,
+    marginBottom: 6,
   },
   chartWrap: {
     position: 'relative',
-    minHeight: 96,
-    marginBottom: THEME.spacing.xs,
+    minHeight: 64,
+    marginBottom: 0,
   },
   chartWrapFortnight: {
-    minHeight: 168,
+    minHeight: 88,
   },
   chartWrapMonth: {
-    minHeight: 248,
+    minHeight: 104,
   },
   chartLocked: {
     opacity: 0.55,
@@ -114,9 +113,9 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.standard,
   },
   lockIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: THEME.colors.fill[100],
     alignItems: 'center',
     justifyContent: 'center',
@@ -124,7 +123,7 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.calm.border,
   },
   lockHint: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.medium,
   },

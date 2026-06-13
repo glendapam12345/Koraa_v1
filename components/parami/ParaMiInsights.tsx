@@ -17,7 +17,6 @@ export function ParaMiInsights({
   locked,
   hasEnoughData,
   loading,
-  paywallReturnTo = '/(tabs)/parami',
 }: ParaMiInsightsProps) {
   const { t } = useI18n();
 
@@ -33,16 +32,23 @@ export function ParaMiInsights({
       {!hasEnoughData ? (
         <Text style={styles.empty}>{t('parami.noInsightYet')}</Text>
       ) : (
-        <View style={styles.list}>
+        <CalmCard style={styles.card}>
           {insights.map((insight, index) => (
-            <CalmCard key={`${insight.type}-${index}`} style={styles.insightCard}>
-              <View style={styles.insightContent}>
-                {insight.emoji ? <Text style={styles.emoji}>{insight.emoji}</Text> : null}
-                <Text style={styles.message}>{insight.message}</Text>
-              </View>
-            </CalmCard>
+            <View
+              key={`${insight.type}-${index}`}
+              style={[styles.row, index > 0 ? styles.rowDivider : null]}
+            >
+              {insight.emoji ? (
+                <Text style={styles.emoji} accessibilityElementsHidden importantForAccessibility="no">
+                  {insight.emoji}
+                </Text>
+              ) : (
+                <View style={styles.emojiSpacer} />
+              )}
+              <Text style={styles.message}>{insight.message}</Text>
+            </View>
           ))}
-        </View>
+        </CalmCard>
       )}
     </View>
   );
@@ -53,29 +59,39 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.xs,
   },
   empty: {
-    ...THEME.typography.body,
+    ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    lineHeight: 22,
+    lineHeight: 20,
   },
-  list: {
-    gap: THEME.spacing.sm,
+  card: {
+    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.sm,
+    gap: 0,
   },
-  insightCard: {
-    paddingVertical: THEME.spacing.sm,
-  },
-  insightContent: {
+  row: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: THEME.spacing.sm,
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    minHeight: 40,
+    paddingVertical: 6,
+  },
+  rowDivider: {
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.fill[200],
   },
   emoji: {
-    fontSize: 22,
-    marginTop: 2,
+    fontSize: 16,
+    lineHeight: 20,
+    width: 22,
+    textAlign: 'center',
+  },
+  emojiSpacer: {
+    width: 22,
   },
   message: {
-    ...THEME.typography.body,
+    ...THEME.typography.caption,
     color: THEME.colors.text.main,
-    lineHeight: 22,
+    lineHeight: 18,
     flex: 1,
   },
 });

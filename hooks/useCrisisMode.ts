@@ -4,7 +4,9 @@ import {
   clearCrisisMode,
   isCrisisModeActive,
   loadLastSession,
+  setCrisisMode,
 } from '@/lib/emergencyKit/storage';
+import { scheduleActiveReminders } from '@/hooks/useNotifications';
 import type { EmergencyKitSessionState } from '@/lib/emergencyKit/types';
 
 export function useCrisisMode() {
@@ -29,6 +31,13 @@ export function useCrisisMode() {
   const dismiss = useCallback(async () => {
     await clearCrisisMode();
     setActive(false);
+    void scheduleActiveReminders();
+  }, []);
+
+  const activate = useCallback(async () => {
+    await setCrisisMode(true);
+    setActive(true);
+    void scheduleActiveReminders();
   }, []);
 
   return {
@@ -37,5 +46,6 @@ export function useCrisisMode() {
     loading,
     refresh,
     dismissCrisisMode: dismiss,
+    activateCrisisMode: activate,
   };
 }

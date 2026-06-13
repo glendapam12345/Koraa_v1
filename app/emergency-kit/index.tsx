@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Platform } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, Platform, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -8,12 +8,18 @@ import { EmergencyKitBackHeader } from '@/components/emergencyKit/EmergencyKitBa
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { EmergencyKitEventCard } from '@/components/emergencyKit/EmergencyKitEventCard';
 import { EMERGENCY_KIT_EVENTS } from '@/lib/emergencyKit/events';
-import type { EmergencyKitEventId } from '@/lib/emergencyKit/types';
+import { loadLastSession } from '@/lib/emergencyKit/storage';
+import type { EmergencyKitEventId, EmergencyKitSessionState } from '@/lib/emergencyKit/types';
 
 export default function EmergencyKitCheckInScreen() {
   const { t } = useI18n();
   const [selected, setSelected] = useState<EmergencyKitEventId | null>(null);
   const [customText, setCustomText] = useState('');
+  const [lastSession, setLastSession] = useState<EmergencyKitSessionState | null>(null);
+
+  useEffect(() => {
+    void loadLastSession().then(setLastSession);
+  }, []);
 
   const canContinue = selected !== null && (selected !== 'other' || customText.trim().length > 0);
 
@@ -28,12 +34,40 @@ export default function EmergencyKitCheckInScreen() {
     });
   };
 
+  const handleResume = () => {
+    if (!lastSession) return;
+    router.push({
+      pathname: '/emergency-kit/session',
+      params: {
+        eventId: lastSession.eventId,
+        customText: lastSession.customText ?? '',
+      },
+    });
+  };
+
   return (
     <CalmScreen topInset="lg" gap={THEME.layout.sectionGapCompact}>
       <EmergencyKitBackHeader
         title={t('emergencyKit.checkInTitle')}
         subtitle={t('emergencyKit.checkInSubtitle')}
       />
+
+      {lastSession ? (
+        <TouchableOpacity
+          style={styles.resumeCard}
+          onPress={handleResume}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={t('emergencyKit.resumeSessionA11y', {
+            event: t(`emergencyKit.events.${lastSession.eventId}`),
+          })}
+        >
+          <Text style={styles.resumeLabel}>{t('emergencyKit.resumeSession', {
+            event: t(`emergencyKit.events.${lastSession.eventId}`),
+          })}</Text>
+          <Text style={styles.resumeHint}>{t('emergencyKit.resumeSessionHint')}</Text>
+        </TouchableOpacity>
+      ) : null}
 
       <View style={styles.grid}>
         {EMERGENCY_KIT_EVENTS.map((event) => (
@@ -86,6 +120,24 @@ export default function EmergencyKitCheckInScreen() {
 }
 
 const styles = StyleSheet.create({
+  resumeCard: {
+    ...THEME.surfaces.muted,
+    padding: THEME.spacing.sm,
+    gap: 4,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  resumeLabel: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+  },
+  resumeHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

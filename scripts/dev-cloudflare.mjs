@@ -12,7 +12,8 @@ import {
   buildExpoLoadingUrl,
   getTunnelHostname,
   writeDevTunnelState,
-  isTunnelReachable,
+  waitForTunnelReachable,
+  warmUpMetroBundle,
   checkTunnelDns,
   parseCloudflaredTunnelUrl,
 } from './expo-go-url.mjs';
@@ -174,13 +175,18 @@ function printDnsFix() {
   console.log('\n  O más fiable: hotspot del iPhone + en la Mac: npm run dev:lan\n');
 }
 
-function printConnectionHelp({ proxyUrl, expUrl, loadingUrl, tunnelOk, dns }) {
+function printConnectionHelp({ proxyUrl, expUrl, loadingUrl, tunnelOk, bundleOk, dns }) {
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('  📱 CONECTAR EXPO GO');
+  console.log(bundleOk && tunnelOk ? '  📱 LISTO — escanea en Expo Go' : '  📱 CONECTAR EXPO GO');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   if (dns && dns.publicOk && !dns.localOk) {
     console.log('\n  ⚠️  Tu Mac no resuelve el host del túnel (el iPhone en la misma Wi‑Fi tampoco).');
     printDnsFix();
+  }
+  if (!bundleOk) {
+    console.log(
+      '\n  ⚠️  El bundle no terminó de compilar. No escanees aún; espera o usa Reload JS en Expo Go.',
+    );
   }
   if (!tunnelOk) {
     console.log('\n  ⚠️  El túnel aún no responde. Espera 10–20 s y ejecuta: npm run dev:qr');
@@ -261,8 +267,34 @@ async function main() {
     }
     console.log('\n✅ Metro OK en localhost:8081.');
     const hostname = getTunnelHostname(proxyUrl);
-    const dns = await checkTunnelDns(hostname);
-    const tunnelOk = await isTunnelReachable(proxyUrl, 45_000);
+    console.log(
+      '\n⏳ Preparando conexión (bundle iOS + túnel; la 1.ª vez puede tardar 3–8 min)…',
+    );
+
+    const [bundleResult, tunnelOk, dns] = await Promise.all([
+      warmUpMetroBundle(PORT, {
+        maxMs: 600_000,
+        onProgress: (seconds) => {
+          process.stdout.write(`\r  Compilando bundle iOS… ${seconds}s`);
+        },
+      }),
+      waitForTunnelReachable(proxyUrl, 120_000),
+      checkTunnelDns(hostname),
+    ]);
+
+    process.stdout.write('\n');
+
+    const bundleOk = bundleResult.ok;
+    if (bundleOk) {
+      console.log(
+        `✅ Bundle listo (${Math.round(bundleResult.bytes / 1024)} KB en ${Math.round(bundleResult.elapsedMs / 1000)}s).`,
+      );
+    } else if (bundleResult.timedOut) {
+      console.log('⚠️  Bundle tardó más de 10 min. Si Expo Go falla, espera y pulsa Reload JS.');
+    } else {
+      console.log('⚠️  No se pudo precompilar el bundle. Revisa errores de Metro arriba.');
+    }
+
     if (tunnelOk) {
       console.log('✅ Túnel verificado.');
     } else {
@@ -272,7 +304,7 @@ async function main() {
     if (dns.publicOk && !dns.localOk) {
       console.log('⚠️  DNS local: no resuelve el túnel (error típico en iPhone: hostname not found).');
     }
-    printConnectionHelp({ proxyUrl, expUrl, loadingUrl, tunnelOk, dns });
+    printConnectionHelp({ proxyUrl, expUrl, loadingUrl, tunnelOk, bundleOk, dns });
   } catch (e) {
     console.error(e instanceof Error ? e.message : e);
     cleanup();

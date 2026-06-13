@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, router } from 'expo-router';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { TaskCard, type Task } from '@/components/tasks/TaskCard';
 import { TaskEditModal } from '@/components/tasks/TaskEditModal';

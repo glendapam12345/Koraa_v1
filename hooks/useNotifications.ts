@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { type AppLocale, translate } from '@/lib/i18n';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
+import { isCrisisModeActive } from '@/lib/emergencyKit/storage';
 
 const LOCALE_STORAGE_KEY = 'koraa_app_locale_v1';
 
@@ -34,6 +35,7 @@ Notifications.setNotificationHandler({
 type Subscription = { remove: () => void };
 const DAILY_REMINDER_TYPE = 'daily_checkin_reminder';
 const RECHECK_REMINDER_TYPE = 'recheck_reminder';
+const CARE_MODE_REMINDER_TYPE = 'care_mode_checkin_reminder';
 
 const RECHECK_HOURS_AFTER_CHECKIN = 3;
 
@@ -66,6 +68,11 @@ export function useNotifications() {
           router.push(CHECK_IN_ROUTE);
         });
       }
+      if (notificationData?.type === CARE_MODE_REMINDER_TYPE) {
+        import('expo-router').then(({ router }) => {
+          router.push(CHECK_IN_ROUTE);
+        });
+      }
       if (notificationData?.type === RECHECK_REMINDER_TYPE) {
         import('@/lib/recheckCheckInBridge').then(({ openRecheckCheckIn }) => {
           openRecheckCheckIn('notification');
@@ -86,6 +93,8 @@ export function useNotifications() {
 
   return {
     scheduleDailyReminder,
+    scheduleCareModeReminder,
+    scheduleActiveReminders,
     scheduleRecheckReminder,
     cancelAllNotifications,
     checkNotificationPermissions,
@@ -170,6 +179,55 @@ async function registerForPushNotificationsAsync() {
   return token;
 }
 
+/** Programa el recordatorio adecuado según si el modo cuidado está activo. */
+export async function scheduleActiveReminders(localeOverride?: AppLocale) {
+  if (Platform.OS === 'web') return;
+
+  const crisisActive = await isCrisisModeActive();
+  if (crisisActive) {
+    await cancelNotificationsByType(DAILY_REMINDER_TYPE);
+    await scheduleCareModeReminder(localeOverride);
+    return;
+  }
+
+  await cancelNotificationsByType(CARE_MODE_REMINDER_TYPE);
+  await scheduleDailyReminder(localeOverride);
+}
+
+/** Recordatorio diario suave mientras el modo cuidado está activo. */
+export async function scheduleCareModeReminder(localeOverride?: AppLocale) {
+  if (Platform.OS === 'web') return;
+
+  try {
+    await cancelNotificationsByType(CARE_MODE_REMINDER_TYPE);
+
+    const crisisActive = await isCrisisModeActive();
+    if (!crisisActive) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { hour: reminderHour, minute: reminderMinute } = await getDailyReminderTime();
+    const locale = localeOverride ?? (await getStoredLocale());
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: translate(locale, 'hooks.careModeNotifTitle'),
+        body: translate(locale, 'hooks.careModeNotifBody'),
+        sound: true,
+        data: { type: CARE_MODE_REMINDER_TYPE },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour: reminderHour,
+        minute: reminderMinute,
+      } as Notifications.DailyTriggerInput,
+    });
+  } catch (error) {
+    console.error('Error programando recordatorio de modo cuidado:', error);
+  }
+}
+
 /** Reprograma el recordatorio diario (p. ej. tras cambiar idioma en Ajustes). */
 export async function scheduleDailyReminder(localeOverride?: AppLocale) {
   if (Platform.OS === 'web') {
@@ -178,6 +236,11 @@ export async function scheduleDailyReminder(localeOverride?: AppLocale) {
   }
 
   try {
+    if (await isCrisisModeActive()) {
+      await scheduleCareModeReminder(localeOverride);
+      return;
+    }
+
     // Cancelar solo recordatorios diarios de check-in, no todas las notificaciones.
     await cancelNotificationsByType(DAILY_REMINDER_TYPE);
 
@@ -240,6 +303,7 @@ export async function cancelAllNotifications() {
   }
   await cancelNotificationsByType(DAILY_REMINDER_TYPE);
   await cancelNotificationsByType(RECHECK_REMINDER_TYPE);
+  await cancelNotificationsByType(CARE_MODE_REMINDER_TYPE);
 }
 
 // Verificar permisos de notificación

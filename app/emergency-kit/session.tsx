@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Heart, Sparkles } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
@@ -108,6 +108,17 @@ export default function EmergencyKitSessionScreen() {
         title={t('emergencyKit.sessionTitle')}
         subtitle={t(`emergencyKit.events.${eventId}`)}
       />
+
+      <TouchableOpacity
+        onPress={() => router.push('/emergency-kit')}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel={t('emergencyKit.changeSituation')}
+        accessibilityHint={t('emergencyKit.changeSituationHint')}
+        style={styles.changeLink}
+      >
+        <Text style={styles.changeLinkText}>{t('emergencyKit.changeSituation')}</Text>
+      </TouchableOpacity>
 
       {ai.crisisMode ? (
         <View style={styles.crisisBanner}>
@@ -277,5 +288,16 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     flex: 1,
     lineHeight: 22,
+  },
+  changeLink: {
+    alignSelf: 'flex-start',
+    minHeight: 36,
+    justifyContent: 'center',
+  },
+  changeLinkText: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.calm.lavenderDeep,
+    textDecorationLine: 'underline',
   },
 });

@@ -5,6 +5,7 @@ import { THEME } from '@/constants/theme';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { HoyStreakPill } from '@/components/hoy/HoyStreakPill';
+import { HoyCareModeToggle } from '@/components/hoy/HoyCareModeToggle';
 import { useI18n } from '@/contexts/I18nContext';
 
 type HoyScreenHeaderProps = {
@@ -14,6 +15,8 @@ type HoyScreenHeaderProps = {
   minimal?: boolean;
   streak?: number;
   checkedInToday?: boolean;
+  crisisModeActive?: boolean;
+  onCareModePress?: () => void;
 };
 
 /** Cabecera de Hoy: racha + ayuda. Tareas vive en la pestaña inferior. */
@@ -22,11 +25,16 @@ export function HoyScreenHeader({
   minimal = false,
   streak = 0,
   checkedInToday = false,
+  crisisModeActive = false,
+  onCareModePress,
 }: HoyScreenHeaderProps) {
   const { t } = useI18n();
 
   const trailing = (
     <>
+      {onCareModePress ? (
+        <HoyCareModeToggle active={crisisModeActive} onPress={onCareModePress} />
+      ) : null}
       <HoyStreakPill streak={streak} checkedInToday={checkedInToday} />
       <HeaderIconButton
         onPress={() => router.push('/help')}

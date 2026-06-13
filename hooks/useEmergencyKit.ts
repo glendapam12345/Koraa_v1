@@ -11,6 +11,7 @@ import {
   saveLastSession,
   setCrisisMode,
 } from '@/lib/emergencyKit/storage';
+import { scheduleActiveReminders } from '@/hooks/useNotifications';
 import type {
   ComfortItem,
   EmergencyKitAiResponse,
@@ -60,6 +61,7 @@ export function useEmergencyKit() {
           savedIds
         );
         await setCrisisMode(response.crisisMode);
+        void scheduleActiveReminders(locale === 'en' ? 'en' : 'es');
         const session: EmergencyKitSessionState = {
           eventId,
           customText,

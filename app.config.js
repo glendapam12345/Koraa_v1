@@ -45,6 +45,9 @@ const revenueCatApiKeyAndroid = firstTrimmed(
 const privacyPolicyUrl = firstTrimmed(process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL);
 const termsOfServiceUrl = firstTrimmed(process.env.EXPO_PUBLIC_TERMS_OF_SERVICE_URL);
 
+const enableOtaUpdates =
+  process.env.EAS_BUILD_PROFILE === 'production' || process.env.EAS_BUILD === 'true';
+
 requireForRelease('EXPO_PUBLIC_SUPABASE_URL', supabaseUrl);
 requireForRelease('EXPO_PUBLIC_SUPABASE_ANON_KEY', supabaseAnonKey);
 requireForRelease('EXPO_PUBLIC_REVENUECAT_API_KEY_IOS', revenueCatApiKeyIOS);
@@ -62,6 +65,7 @@ module.exports = {
     userInterfaceStyle: 'automatic',
     updates: {
       url: 'https://u.expo.dev/ef96554d-08d3-4cb6-a5fe-4217d7295541',
+      enabled: enableOtaUpdates,
     },
     runtimeVersion: {
       policy: 'appVersion',
@@ -69,7 +73,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.impermanencecasaartisitca.koraav1',
-      buildNumber: '31',
+      buildNumber: '32',
       entitlements: {
         'com.apple.developer.healthkit': true,
         // Tipos concretos en runtime (react-native-health SleepAnalysis); [] = permisos por uso en app.
@@ -82,6 +86,10 @@ module.exports = {
           'Koraa usa tu calendario para agregar tareas con fecha como eventos.',
         NSCalendarsWriteOnlyAccessUsageDescription:
           'Koraa usa tu calendario para agregar tareas con fecha como eventos.',
+        NSPhotoLibraryUsageDescription:
+          'Koraa puede acceder a fotos que elijas para tu kit de calma en Emergency Kit — solo cuando tú lo pidas.',
+        NSPhotoLibraryAddUsageDescription:
+          'Koraa puede guardar en tu biblioteca una imagen que elijas para tu kit de calma — solo cuando tú lo pidas.',
         LSApplicationQueriesSchemes: [
           'spotify',
           'music',

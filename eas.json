@@ -16,7 +16,10 @@
       }
     },
     "production": {
-      "environment": "production"
+      "environment": "production",
+      "env": {
+        "EAS_SKIP_AUTO_FINGERPRINT": "1"
+      }
     }
   },
   "submit": {
