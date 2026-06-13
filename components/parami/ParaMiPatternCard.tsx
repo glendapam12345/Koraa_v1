@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Lock } from 'lucide-react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { openPaywall } from '@/lib/paywallNavigation';
+import { PremiumLockOverlay } from '@/components/premium/PremiumLockOverlay';
 
 type ParaMiPatternCardProps = {
   title: string;
@@ -47,18 +47,12 @@ export function ParaMiPatternCard({
         >
           <View style={locked ? styles.chartDimmed : undefined}>{children}</View>
           {locked ? (
-            <TouchableOpacity
-              style={styles.lockOverlay}
+            <PremiumLockOverlay
               onPress={() => openPaywall(router, paywallReturnTo)}
-              activeOpacity={0.9}
-              accessibilityRole="button"
               accessibilityLabel={t('parami.patternUnlockA11y')}
-            >
-              <View style={styles.lockIconWrap}>
-                <Lock size={16} color={THEME.colors.calm.lavenderDeep} />
-              </View>
-              <Text style={styles.lockHint}>{t('parami.patternUnlockHint')}</Text>
-            </TouchableOpacity>
+              hint={t('parami.patternUnlockHint')}
+              tone="surface"
+            />
           ) : null}
         </View>
       )}
@@ -101,28 +95,5 @@ const styles = StyleSheet.create({
   },
   chartDimmed: {
     opacity: 0.45,
-  },
-  lockOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: THEME.spacing.xs,
-    backgroundColor: 'rgba(248, 245, 252, 0.55)',
-    borderRadius: THEME.borderRadius.standard,
-  },
-  lockIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: THEME.colors.fill[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
-  },
-  lockHint: {
-    ...THEME.typography.meta,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.medium,
   },
 });

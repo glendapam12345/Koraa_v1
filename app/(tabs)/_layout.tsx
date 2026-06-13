@@ -154,7 +154,7 @@ export default function TabLayout() {
             ...THEME.shadows.soft,
           },
           tabBarLabelStyle: {
-            fontSize: 11,
+            fontSize: 12,
             fontFamily: THEME.fonts.heading.medium,
           },
         }}

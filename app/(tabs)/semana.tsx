@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, RefreshControl } from 'react-native';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +28,7 @@ import { getLocalDateString } from '@/lib/dateLocal';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { CalmSegmentedControl } from '@/components/ui/calm/CalmSegmentedControl';
 import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { subscribeCheckInRefresh } from '@/lib/checkInRefresh';
 import { openPaywall } from '@/lib/paywallNavigation';
@@ -333,44 +334,23 @@ export default function SemanaScreen() {
           <SemanaFreePlanBanner viewMode={viewMode} />
         ) : null}
 
-        <View style={styles.viewToggle}>
-          <TouchableOpacity
-            style={[styles.viewToggleChip, viewMode === 'calendar' && styles.viewToggleChipActive]}
-            onPress={() => setViewMode('calendar')}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityState={{ selected: viewMode === 'calendar' }}
-            accessibilityLabel={t('semana.viewCalendar')}
-            accessibilityHint={t('semanaExtra.a11yViewCalendarHint')}
-          >
-            <Text
-              style={[
-                styles.viewToggleText,
-                viewMode === 'calendar' && styles.viewToggleTextActive,
-              ]}
-            >
-              {t('semana.viewCalendar')}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.viewToggleChip, viewMode === 'list' && styles.viewToggleChipActive]}
-            onPress={() => setViewMode('list')}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityState={{ selected: viewMode === 'list' }}
-            accessibilityLabel={t('semana.viewList')}
-            accessibilityHint={t('semanaExtra.a11yViewListHint')}
-          >
-            <Text
-              style={[
-                styles.viewToggleText,
-                viewMode === 'list' && styles.viewToggleTextActive,
-              ]}
-            >
-              {t('semana.viewList')}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <CalmSegmentedControl
+          segments={[
+            {
+              id: 'calendar' as const,
+              label: t('semana.viewCalendar'),
+              accessibilityLabel: t('semana.viewCalendar'),
+            },
+            {
+              id: 'list' as const,
+              label: t('semana.viewList'),
+              accessibilityLabel: t('semana.viewList'),
+            },
+          ]}
+          value={viewMode}
+          onChange={setViewMode}
+          variant="accent"
+        />
 
         {viewMode === 'calendar' ? (
           <>
@@ -555,36 +535,6 @@ const styles = StyleSheet.create({
   },
   focusProgress: {
     marginTop: THEME.spacing.sm,
-  },
-  viewToggle: {
-    flexDirection: 'row',
-    gap: THEME.spacing.xs,
-    backgroundColor: THEME.colors.calm.card,
-    borderRadius: THEME.borderRadius.pill,
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
-    padding: 4,
-  },
-  viewToggleChip: {
-    flex: 1,
-    borderRadius: THEME.borderRadius.pill,
-    paddingVertical: THEME.spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  viewToggleChipActive: {
-    backgroundColor: THEME.colors.calm.lavenderDeep,
-  },
-  viewToggleText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    textAlign: 'center',
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  viewToggleTextActive: {
-    ...THEME.typography.caption,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
   },
   calendarSection: {
     marginBottom: 0,

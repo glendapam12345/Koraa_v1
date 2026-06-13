@@ -166,6 +166,7 @@ export default function ParaMiScreen() {
       <ScreenHeader
         compact
         title={t('parami.headerTitle')}
+        subtitle={t('parami.headerSubtitle')}
         trailing={isSubscribed && !subscriptionLoading ? <PremiumBadge /> : undefined}
       />
 

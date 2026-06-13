@@ -1,8 +1,12 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
+import { Lock } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { EmotionalInsight } from '@/lib/emotionalInsights';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { openPaywall } from '@/lib/paywallNavigation';
 
 type ParaMiInsightsProps = {
   insights: EmotionalInsight[];
@@ -17,11 +21,35 @@ export function ParaMiInsights({
   locked,
   hasEnoughData,
   loading,
+  paywallReturnTo = '/(tabs)/parami',
 }: ParaMiInsightsProps) {
   const { t } = useI18n();
 
   if (loading) return null;
-  if (locked) return null;
+
+  if (locked) {
+    return (
+      <View
+        style={styles.wrap}
+        accessibilityRole="summary"
+        accessibilityLabel={`${t('parami.insightsLockedTitle')}. ${t('parami.insightsLockedBody')}`}
+      >
+        <CalmCard style={styles.lockedCard}>
+          <View style={styles.lockedHeader}>
+            <Lock size={18} color={THEME.colors.calm.lavenderDeep} />
+            <Text style={styles.lockedTitle}>{t('parami.insightsLockedTitle')}</Text>
+          </View>
+          <Text style={styles.lockedBody}>{t('parami.insightsLockedBody')}</Text>
+          <CalmPrimaryButton
+            label={t('parami.patternUnlockHint')}
+            onPress={() => openPaywall(router, paywallReturnTo)}
+            variant="soft"
+            accessibilityHint={t('paramiExtra.a11yUnlockHint')}
+          />
+        </CalmCard>
+      </View>
+    );
+  }
 
   return (
     <View
@@ -57,6 +85,25 @@ export function ParaMiInsights({
 const styles = StyleSheet.create({
   wrap: {
     gap: THEME.spacing.xs,
+  },
+  lockedCard: {
+    gap: THEME.spacing.sm,
+  },
+  lockedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+  },
+  lockedTitle: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    flex: 1,
+  },
+  lockedBody: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 20,
   },
   empty: {
     ...THEME.typography.caption,

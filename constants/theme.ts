@@ -121,6 +121,10 @@ export const THEME = {
       energyCard: ['#4A90E2', '#6BB6FF'] as const,
       symptomsCard: ['#FF6B6B', '#7B61A8'] as const,
     },
+    /** Emergency Kit entry card */
+    emergencyKit: {
+      card: ['#6B5B95', '#9B8EC4', '#C4B5E8'] as const,
+    },
     /** Emotion check-in tints (soft background per emotion) */
     emotionTint: {
       enfocada: 'rgba(74, 144, 226, 0.15)',

@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Lock } from 'lucide-react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { openPaywall } from '@/lib/paywallNavigation';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { periodDayCount } from '@/lib/checkInPeriod';
+import { CalmSegmentedControl } from '@/components/ui/calm/CalmSegmentedControl';
 
 export type ParaMiPeriodId = 'week' | 'twoWeeks' | 'month';
 
@@ -53,8 +53,16 @@ export function ParaMiPeriodBar({
     });
   }, [daysBack, t, locale]);
 
-  const handlePeriodPress = (id: ParaMiPeriodId, premium: boolean) => {
-    if (premium && !isSubscribed) {
+  const segments = periods.map(({ id, labelKey, premium }) => ({
+    id,
+    label: t(labelKey),
+    accessibilityLabel: t(labelKey),
+    locked: premium && !isSubscribed,
+  }));
+
+  const handleChange = (id: ParaMiPeriodId) => {
+    const meta = periods.find((p) => p.id === id);
+    if (meta?.premium && !isSubscribed) {
       openPaywall(router, '/(tabs)/parami');
       return;
     }
@@ -63,36 +71,13 @@ export function ParaMiPeriodBar({
 
   return (
     <View style={styles.wrap}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.pillsRow}
-      >
-        {periods.map(({ id, labelKey, premium }) => {
-          const selected = period === id;
-          const locked = premium && !isSubscribed;
-          return (
-            <TouchableOpacity
-              key={id}
-              onPress={() => handlePeriodPress(id, premium)}
-              activeOpacity={0.85}
-              style={[styles.pill, selected && styles.pillSelected]}
-              accessibilityRole="button"
-              accessibilityLabel={t(labelKey)}
-              accessibilityHint={locked ? t('paramiExtra.a11yPeriodLockedHint') : t('paramiExtra.a11yPeriodHint')}
-              accessibilityState={{ selected }}
-            >
-              {locked ? (
-                <Lock
-                  size={13}
-                  color={selected ? THEME.colors.calm.lavenderDeep : THEME.colors.text.secondary}
-                />
-              ) : null}
-              <Text style={[styles.pillText, selected && styles.pillTextSelected]}>{t(labelKey)}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      <CalmSegmentedControl
+        segments={segments}
+        value={period}
+        onChange={handleChange}
+        variant="chip"
+        scrollable
+      />
       <Text style={styles.periodRange}>{periodRangeLabel}</Text>
     </View>
   );
@@ -101,34 +86,6 @@ export function ParaMiPeriodBar({
 const styles = StyleSheet.create({
   wrap: {
     gap: THEME.spacing.xs,
-  },
-  pillsRow: {
-    flexDirection: 'row',
-    gap: THEME.spacing.xs,
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: 6,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.calm.card,
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
-    gap: 6,
-  },
-  pillSelected: {
-    backgroundColor: THEME.colors.calm.lavender,
-    borderColor: THEME.colors.calm.lavenderDeep,
-  },
-  pillText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  pillTextSelected: {
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.bold,
   },
   periodRange: {
     ...THEME.typography.caption,

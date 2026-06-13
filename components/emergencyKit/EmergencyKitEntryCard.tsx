@@ -1,11 +1,11 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Lock } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { PremiumLockOverlay } from '@/components/premium/PremiumLockOverlay';
 import { openEmergencyKit } from '@/lib/emergencyKitNavigation';
 import { openPaywall } from '@/lib/paywallNavigation';
 import { useCrisisMode } from '@/hooks/useCrisisMode';
@@ -39,7 +39,7 @@ export function EmergencyKitEntryCard({ compact = false }: EmergencyKitEntryCard
       }`}
     >
       <LinearGradient
-        colors={['#6B5B95', '#9B8EC4', '#C4B5E8']}
+        colors={[...THEME.colors.emergencyKit.card]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.card, compact && styles.cardCompact]}
@@ -52,19 +52,13 @@ export function EmergencyKitEntryCard({ compact = false }: EmergencyKitEntryCard
         {locked ? (
           <View style={[styles.lockedArea, compact && styles.lockedAreaCompact]}>
             <View style={styles.lockedPreview} />
-            <TouchableOpacity
-              style={styles.lockOverlay}
+            <PremiumLockOverlay
               onPress={handleUnlock}
-              activeOpacity={0.9}
-              accessibilityRole="button"
               accessibilityLabel={t('emergencyKit.entryLockedA11y')}
-              accessibilityHint={t('paramiExtra.a11yUnlockHint')}
-            >
-              <View style={styles.lockIconWrap}>
-                <Lock size={20} color={THEME.colors.calm.lavenderDeep} />
-              </View>
-              <Text style={styles.lockHint}>{t('parami.patternUnlockHint')}</Text>
-            </TouchableOpacity>
+              hint={t('parami.patternUnlockHint')}
+              iconSize={20}
+              tone="gradient"
+            />
           </View>
         ) : (
           <View style={styles.actions}>
@@ -148,31 +142,6 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.pill,
     backgroundColor: 'rgba(255,255,255,0.12)',
     opacity: 0.55,
-  },
-  lockOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: THEME.spacing.xs,
-    backgroundColor: 'rgba(0,0,0,0.12)',
-    borderRadius: THEME.borderRadius.standard,
-  },
-  lockIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: THEME.colors.fill[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
-  },
-  lockHint: {
-    ...THEME.typography.caption,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.medium,
-    textAlign: 'center',
-    paddingHorizontal: THEME.spacing.sm,
   },
   actions: {
     gap: THEME.spacing.xs,
