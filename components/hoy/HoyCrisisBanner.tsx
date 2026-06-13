@@ -17,32 +17,38 @@ export function HoyCrisisBanner({ onDismiss, onLearnMore }: HoyCrisisBannerProps
       accessibilityRole="summary"
       accessibilityLabel={t('hoy.crisisBannerTitle')}
     >
-      <View style={styles.row}>
-        <Heart size={16} color={THEME.colors.calm.lavenderDeep} fill={THEME.colors.calm.lavender} />
-        <View style={styles.textCol}>
-          <View style={styles.titleRow}>
-            <Text style={styles.title}>{t('hoy.crisisBannerTitle')}</Text>
-            <TouchableOpacity
-              onPress={onDismiss}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              style={styles.dismissBtn}
-              accessibilityRole="button"
-              accessibilityLabel={t('hoy.crisisBannerDismiss')}
-            >
-              <Text style={styles.dismiss}>{t('hoy.crisisBannerDismissShort')}</Text>
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity
-            onPress={onLearnMore}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={styles.learnMoreBtn}
-            accessibilityRole="button"
-            accessibilityLabel={t('hoy.careModeHowItWorks')}
-            accessibilityHint={t('hoy.careModeHowItWorksHint')}
-          >
-            <Text style={styles.learnMore}>{t('hoy.careModeHowItWorks')}</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.pill}>
+        <Heart
+          size={14}
+          color={THEME.colors.calm.lavenderDeep}
+          fill={THEME.colors.calm.lavenderDeep}
+        />
+        <Text style={styles.title} numberOfLines={1}>
+          {t('hoy.crisisBannerTitle')}
+        </Text>
+        <Text style={styles.dot} accessibilityElementsHidden>
+          ·
+        </Text>
+        <TouchableOpacity
+          onPress={onLearnMore}
+          hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          accessibilityRole="button"
+          accessibilityLabel={t('hoy.careModeHowItWorks')}
+          accessibilityHint={t('hoy.careModeHowItWorksHint')}
+        >
+          <Text style={styles.learnMore}>{t('hoy.careModeHowItWorksShort')}</Text>
+        </TouchableOpacity>
+        <Text style={styles.dot} accessibilityElementsHidden>
+          ·
+        </Text>
+        <TouchableOpacity
+          onPress={onDismiss}
+          hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          accessibilityRole="button"
+          accessibilityLabel={t('hoy.crisisBannerDismiss')}
+        >
+          <Text style={styles.dismiss}>{t('hoy.crisisBannerDismissShort')}</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -50,52 +56,44 @@ export function HoyCrisisBanner({ onDismiss, onLearnMore }: HoyCrisisBannerProps
 
 const styles = StyleSheet.create({
   wrap: {
-    alignSelf: 'stretch',
+    alignSelf: 'flex-end',
+    maxWidth: '100%',
   },
-  row: {
+  pill: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: THEME.spacing.xs,
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: THEME.colors.calm.lavender,
     borderRadius: THEME.borderRadius.pill,
-    paddingVertical: THEME.spacing.xs,
+    paddingVertical: 6,
     paddingHorizontal: THEME.spacing.sm,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
   },
-  textCol: {
-    flex: 1,
-    gap: 4,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: THEME.spacing.xs,
-  },
   title: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
+    fontSize: 12,
+    lineHeight: 16,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
-    flex: 1,
+    flexShrink: 1,
+  },
+  dot: {
+    ...THEME.typography.meta,
+    fontSize: 12,
+    color: THEME.colors.text.tertiary,
   },
   learnMore: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
+    fontSize: 12,
+    lineHeight: 16,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.calm.lavenderDeep,
-    textDecorationLine: 'underline',
-  },
-  dismissBtn: {
-    minHeight: THEME.sizes.touchTarget,
-    justifyContent: 'center',
-    paddingHorizontal: THEME.spacing.xs,
-  },
-  learnMoreBtn: {
-    minHeight: 36,
-    justifyContent: 'center',
   },
   dismiss: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
+    fontSize: 12,
+    lineHeight: 16,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.calm.lavenderDeep,
   },

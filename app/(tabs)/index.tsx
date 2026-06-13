@@ -38,7 +38,6 @@ import { useHoyProjectsMap } from '@/hooks/useHoyProjectsMap';
 import { useHoyScreenBootstrap } from '@/hooks/useHoyScreenBootstrap';
 import type { TaskCompletedPayload } from '@/hooks/useTaskActions';
 import { NoPendingTasksCelebration } from '@/components/NoPendingTasksCelebration';
-import { HoyCrisisBanner } from '@/components/hoy/HoyCrisisBanner';
 import { CareModeGuideSheet } from '@/components/hoy/CareModeGuideSheet';
 import { CareModeSheet } from '@/components/hoy/CareModeSheet';
 import { useCrisisMode } from '@/hooks/useCrisisMode';
@@ -305,6 +304,8 @@ export default function TodayScreen() {
           checkedInToday={Boolean(todayMood)}
           crisisModeActive={crisisModeActive}
           onCareModePress={() => setCareModeSheet(crisisModeActive ? 'deactivate' : 'activate')}
+          onCareModeDismiss={() => setCareModeSheet('deactivate')}
+          onCareModeLearnMore={() => setCareModeGuideOpen(true)}
         />
 
         {loading ? (
@@ -312,13 +313,6 @@ export default function TodayScreen() {
             <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
             <Text style={styles.loadingText}>{t('hoy.loading')}</Text>
           </View>
-        ) : null}
-
-        {!loading && crisisModeActive ? (
-          <HoyCrisisBanner
-            onDismiss={() => setCareModeSheet('deactivate')}
-            onLearnMore={() => setCareModeGuideOpen(true)}
-          />
         ) : null}
 
         {!loading && hoyLiteLayout ? (

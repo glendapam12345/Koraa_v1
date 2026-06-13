@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Sparkles, ChevronRight } from 'lucide-react-native';
+import { Sparkles, ChevronRight, RefreshCw } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
 import { THEME } from '@/constants/theme';
@@ -8,7 +8,6 @@ import type { FocusProgressStats } from '@/lib/focusProgressStats';
 import { HoyFocusTaskRow } from '@/components/hoy/HoyFocusTaskRow';
 import { HoyMoodHeroCard } from '@/components/hoy/HoyMoodHeroCard';
 import { HoySleepCard } from '@/components/hoy/HoySleepCard';
-import { HoySupportPanel } from '@/components/hoy/HoySupportPanel';
 import { HoyLightenLoadCard } from '@/components/hoy/HoyLightenLoadCard';
 import { HoyLitePeekCard } from '@/components/hoy/HoyLitePeekCard';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
@@ -178,16 +177,38 @@ export function HoyFocusPanel({
       />
 
       {!compactLayout ? (
-        <TouchableOpacity
-          onPress={openFeel}
-          activeOpacity={0.85}
-          style={styles.recheckCta}
-          accessibilityRole="button"
-          accessibilityLabel={t('hoy.focusUpdateCheckInCta')}
-          accessibilityHint={t('hoy.focusUpdateCheckInA11y')}
-        >
-          <Text style={styles.recheckCtaText}>{t('hoy.focusUpdateCheckInCta')}</Text>
-        </TouchableOpacity>
+        <View style={styles.postHeroCluster}>
+          {todayMood && energyLevel > 0 && sleepCard ? (
+            <HoySleepCard
+              energyLevel={energyLevel}
+              emotionKey={todayMood}
+              available={sleepCard.available}
+              connected={sleepCard.connected}
+              lastNightHours={sleepCard.lastNightHours}
+              shortSleep={sleepCard.shortSleep}
+              onConnect={sleepCard.onConnect}
+              onOpenSleep={sleepCard.onOpenSleep}
+            />
+          ) : null}
+
+          <TouchableOpacity
+            onPress={openFeel}
+            activeOpacity={0.85}
+            style={styles.recheckCard}
+            accessibilityRole="button"
+            accessibilityLabel={t('hoy.focusUpdateCheckInCta')}
+            accessibilityHint={t('hoy.focusUpdateCheckInA11y')}
+          >
+            <View style={styles.recheckIconWrap}>
+              <RefreshCw size={16} color={THEME.colors.calm.lavenderDeep} />
+            </View>
+            <View style={styles.recheckTextCol}>
+              <Text style={styles.recheckQuestion}>{t('hoy.focusUpdateCheckInQuestion')}</Text>
+              <Text style={styles.recheckAction}>{t('hoy.focusUpdateCheckInAction')}</Text>
+            </View>
+            <ChevronRight size={18} color={THEME.colors.calm.lavenderDeep} />
+          </TouchableOpacity>
+        </View>
       ) : null}
 
       <View style={styles.focusHeader}>
@@ -260,28 +281,6 @@ export function HoyFocusPanel({
         )}
       </CalmCard>
 
-      {!compactLayout ? (
-        <HoySupportPanel
-          userId={userId}
-          emotionKey={todayMood}
-          emotionLabel={emotionLabel}
-          energyLevel={energyLevel}
-        />
-      ) : null}
-
-      {!compactLayout && todayMood && energyLevel > 0 && sleepCard ? (
-        <HoySleepCard
-          energyLevel={energyLevel}
-          emotionKey={todayMood}
-          available={sleepCard.available}
-          connected={sleepCard.connected}
-          lastNightHours={sleepCard.lastNightHours}
-          shortSleep={sleepCard.shortSleep}
-          onConnect={sleepCard.onConnect}
-          onOpenSleep={sleepCard.onOpenSleep}
-        />
-      ) : null}
-
       {showLightenLoad ? (
         <HoyLightenLoadCard
           onPress={onLightenLoad!}
@@ -327,18 +326,46 @@ const styles = StyleSheet.create({
   root: {
     gap: THEME.layout.tabSectionGap,
   },
-  recheckCta: {
-    alignSelf: 'flex-start',
-    minHeight: THEME.sizes.touchTarget,
-    justifyContent: 'center',
-    paddingHorizontal: THEME.spacing.xs,
+  postHeroCluster: {
+    gap: THEME.spacing.sm,
     marginTop: -THEME.spacing.xs,
   },
-  recheckCtaText: {
+  recheckCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    backgroundColor: THEME.colors.calm.card,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    minHeight: THEME.sizes.touchTarget,
+  },
+  recheckIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+  },
+  recheckTextCol: {
+    flex: 1,
+    gap: 2,
+  },
+  recheckQuestion: {
     ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+  },
+  recheckAction: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.medium,
-    textDecorationLine: 'underline',
+    lineHeight: 20,
   },
   focusHeader: {
     gap: 4,
