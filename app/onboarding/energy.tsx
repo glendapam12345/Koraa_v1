@@ -1,9 +1,10 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
+import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
 import { Battery } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
@@ -31,20 +32,29 @@ export default function EnergyScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.iconContainer}>
-          <View style={styles.iconCircle}>
-            <Battery size={32} color={THEME.colors.gradient.pink} />
-          </View>
+    <OnboardingScreenShell
+      footer={
+        <CalmPrimaryButton
+          label={t('onboarding.energy.continue')}
+          onPress={handleContinue}
+          disabled={selectedEnergy === 0}
+          accessibilityLabel={t('onboarding.energy.continue')}
+          accessibilityHint={t('onboardingA11y.continueEnergyHint')}
+        />
+      }
+    >
+      <View style={onboardingTypography.iconContainer}>
+        <View style={onboardingTypography.iconCircle}>
+          <Battery size={32} color={THEME.colors.gradient.pink} />
         </View>
+      </View>
 
-        <OnboardingCheckInProgress step={2} />
-        <Text style={styles.title}>{t('onboarding.energy.title')}</Text>
-        <Text style={styles.titleAccent}>{t('onboarding.energy.titleAccent')}</Text>
-        <Text style={styles.subtitle}>{t('onboarding.energy.subtitle')}</Text>
+      <OnboardingCheckInProgress step={2} />
+      <Text style={onboardingTypography.title}>{t('onboarding.energy.title')}</Text>
+      <Text style={onboardingTypography.titleAccent}>{t('onboarding.energy.titleAccent')}</Text>
+      <Text style={onboardingTypography.subtitle}>{t('onboarding.energy.subtitle')}</Text>
 
-        <View style={styles.optionsContainer} accessibilityRole="radiogroup">
+      <View style={styles.optionsContainer} accessibilityRole="radiogroup">
           {ENERGY_LEVELS.map((level) => (
             <TouchableOpacity
               key={level.id}
@@ -80,62 +90,17 @@ export default function EnergyScreen() {
             </TouchableOpacity>
           ))}
         </View>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <CalmPrimaryButton
-          label={t('onboarding.energy.continue')}
-          onPress={handleContinue}
-          disabled={selectedEnergy === 0}
-          accessibilityLabel={t('onboarding.energy.continue')}
-          accessibilityHint={t('onboardingA11y.continueEnergyHint')}
-        />
-      </View>
-    </View>
+    </OnboardingScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: THEME.colors.fill[100],
-  },
-  content: {
-    padding: THEME.spacing.lg,
-    paddingTop: THEME.spacing.xl * 2,
-  },
-  iconContainer: {
-    alignItems: 'flex-end',
-    marginBottom: THEME.spacing.xl,
-  },
-  iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: THEME.colors.fill[200],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    ...THEME.typography.h1,
-    color: THEME.colors.text.main,
-  },
-  titleAccent: {
-    ...THEME.typography.h1,
-    fontFamily: THEME.fonts.accent.italic,
-    color: THEME.colors.text.main,
-  },
-  subtitle: {
-    ...THEME.typography.h1,
-    color: THEME.colors.text.main,
-    marginBottom: THEME.spacing.lg,
-  },
   optionsContainer: {
     gap: THEME.spacing.sm,
     marginTop: THEME.spacing.md,
   },
   option: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     flexDirection: 'row',
@@ -170,9 +135,5 @@ const styles = StyleSheet.create({
   },
   optionTextSelected: {
     fontFamily: THEME.fonts.heading.bold,
-  },
-  footer: {
-    padding: THEME.spacing.lg,
-    paddingBottom: THEME.spacing.xl,
   },
 });

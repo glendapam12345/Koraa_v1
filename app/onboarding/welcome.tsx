@@ -1,8 +1,9 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
 import { Sparkles, ArrowDown } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { markOnboardingCompleted } from '@/lib/onboardingGate';
@@ -29,93 +30,82 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.iconContainer}>
-          <View style={styles.iconCircle}>
-            <Sparkles size={32} color={THEME.colors.gradient.blue} />
+    <OnboardingScreenShell>
+      <View style={styles.iconContainer}>
+        <View style={styles.iconCircle}>
+          <Sparkles size={32} color={THEME.colors.gradient.blue} />
+        </View>
+      </View>
+
+      <Text style={styles.title}>{t('onboarding.welcome.title')}</Text>
+      <Text style={styles.titleAccent}>{t('onboarding.welcome.titleAccent')}</Text>
+      <Text style={styles.subtitle}>{t('onboarding.welcome.subtitle')}</Text>
+
+      <Text style={styles.description}>{t('onboarding.welcome.description')}</Text>
+
+      <View style={styles.exampleContainer}>
+        <View style={styles.exampleCard}>
+          <View style={styles.exampleHeader}>
+            <Text style={styles.exampleEmoji}>😔</Text>
+            <Text style={styles.exampleTitle}>{t('onboarding.welcome.exampleExhausted')}</Text>
           </View>
+          <Text style={styles.exampleSubtitle}>{t('onboarding.welcome.exampleEnergy', { n: 2 })}</Text>
+          <View style={styles.exampleDivider} />
+          <Text style={styles.exampleResult}>{t('onboarding.welcome.exampleResultLow')}</Text>
         </View>
 
-        <Text style={styles.title}>{t('onboarding.welcome.title')}</Text>
-        <Text style={styles.titleAccent}>{t('onboarding.welcome.titleAccent')}</Text>
-        <Text style={styles.subtitle}>{t('onboarding.welcome.subtitle')}</Text>
-
-        <Text style={styles.description}>{t('onboarding.welcome.description')}</Text>
-
-        <View style={styles.exampleContainer}>
-          <View style={styles.exampleCard}>
-            <View style={styles.exampleHeader}>
-              <Text style={styles.exampleEmoji}>😔</Text>
-              <Text style={styles.exampleTitle}>{t('onboarding.welcome.exampleExhausted')}</Text>
-            </View>
-            <Text style={styles.exampleSubtitle}>{t('onboarding.welcome.exampleEnergy', { n: 2 })}</Text>
-            <View style={styles.exampleDivider} />
-            <Text style={styles.exampleResult}>{t('onboarding.welcome.exampleResultLow')}</Text>
-          </View>
-
-          <View style={styles.arrowDown}>
-            <ArrowDown size={20} color={THEME.colors.text.secondary} />
-          </View>
-
-          <View style={styles.exampleCard}>
-            <View style={styles.exampleHeader}>
-              <Text style={styles.exampleEmoji}>✨</Text>
-              <Text style={styles.exampleTitle}>{t('onboarding.welcome.exampleMotivated')}</Text>
-            </View>
-            <Text style={styles.exampleSubtitle}>{t('onboarding.welcome.exampleEnergy', { n: 5 })}</Text>
-            <View style={styles.exampleDivider} />
-            <Text style={styles.exampleResult}>{t('onboarding.welcome.exampleResultHigh')}</Text>
-          </View>
+        <View style={styles.arrowDown}>
+          <ArrowDown size={20} color={THEME.colors.text.secondary} />
         </View>
 
-        <CalmPrimaryButton
-          label={t('onboarding.welcome.quickStart')}
-          onPress={() => router.push('/onboarding/emotion')}
-          accessibilityHint={t('onboarding.welcome.quickStartHint')}
-        />
+        <View style={styles.exampleCard}>
+          <View style={styles.exampleHeader}>
+            <Text style={styles.exampleEmoji}>✨</Text>
+            <Text style={styles.exampleTitle}>{t('onboarding.welcome.exampleMotivated')}</Text>
+          </View>
+          <Text style={styles.exampleSubtitle}>{t('onboarding.welcome.exampleEnergy', { n: 5 })}</Text>
+          <View style={styles.exampleDivider} />
+          <Text style={styles.exampleResult}>{t('onboarding.welcome.exampleResultHigh')}</Text>
+        </View>
+      </View>
 
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={() => router.push('/onboarding/intro2')}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel={t('onboarding.welcome.seeHowItWorks')}
-          accessibilityHint={t('onboardingA11y.welcomeSeeHowHint')}
-        >
-          <Text style={styles.secondaryText}>{t('onboarding.welcome.seeHowItWorks')}</Text>
-        </TouchableOpacity>
+      <CalmPrimaryButton
+        label={t('onboarding.welcome.quickStart')}
+        onPress={() => router.push('/onboarding/emotion')}
+        accessibilityHint={t('onboarding.welcome.quickStartHint')}
+      />
 
-        <TouchableOpacity
-          style={styles.skipButton}
-          onPress={() => void handleSkipIntro()}
-          disabled={skipLoading}
-          accessibilityRole="button"
-          accessibilityLabel={t('onboarding.welcome.skip')}
-          accessibilityHint={t('onboardingA11y.skipIntroHint')}
-          accessibilityState={{ disabled: skipLoading, busy: skipLoading }}
-        >
-          {skipLoading ? (
-            <ActivityIndicator color={THEME.colors.text.secondary} />
-          ) : (
-            <Text style={styles.skipText}>{t('onboarding.welcome.skip')}</Text>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
-    </View>
+      <TouchableOpacity
+        style={styles.secondaryButton}
+        onPress={() => router.push('/onboarding/intro2')}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel={t('onboarding.welcome.seeHowItWorks')}
+        accessibilityHint={t('onboardingA11y.welcomeSeeHowHint')}
+      >
+        <Text style={styles.secondaryText}>{t('onboarding.welcome.seeHowItWorks')}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.skipButton}
+        onPress={() => void handleSkipIntro()}
+        disabled={skipLoading}
+        accessibilityRole="button"
+        accessibilityLabel={t('onboarding.welcome.skip')}
+        accessibilityHint={t('onboardingA11y.skipIntroHint')}
+        accessibilityState={{ disabled: skipLoading, busy: skipLoading }}
+      >
+        {skipLoading ? (
+          <ActivityIndicator color={THEME.colors.text.secondary} />
+        ) : (
+          <Text style={styles.skipText}>{t('onboarding.welcome.skip')}</Text>
+        )}
+      </TouchableOpacity>
+    </OnboardingScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: THEME.colors.fill[100],
-  },
-  content: {
-    padding: THEME.spacing.lg,
-    paddingTop: THEME.spacing.xl * 2,
-    paddingBottom: THEME.spacing.xl,
-  },
   iconContainer: {
     alignItems: 'center',
     marginBottom: THEME.spacing.lg,
@@ -124,42 +114,40 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.card,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
   },
   title: {
-    ...THEME.typography.h1,
-    color: THEME.colors.text.main,
+    ...onboardingTypography.title,
     textAlign: 'center',
   },
   titleAccent: {
-    ...THEME.typography.h1,
-    fontFamily: THEME.fonts.accent.italic,
-    color: THEME.colors.text.main,
+    ...onboardingTypography.titleAccent,
     textAlign: 'center',
     marginBottom: THEME.spacing.xs,
   },
   subtitle: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
+    ...onboardingTypography.subtitle,
     textAlign: 'center',
     marginBottom: THEME.spacing.md,
   },
   description: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
+    ...onboardingTypography.body,
     textAlign: 'center',
-    lineHeight: 24,
     marginBottom: THEME.spacing.lg,
   },
   exampleContainer: {
     marginBottom: THEME.spacing.lg,
   },
   exampleCard: {
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
   },
   exampleHeader: {
     flexDirection: 'row',
@@ -181,7 +169,7 @@ const styles = StyleSheet.create({
   },
   exampleDivider: {
     height: 1,
-    backgroundColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.calm.border,
     marginVertical: THEME.spacing.sm,
   },
   exampleResult: {
@@ -211,6 +199,8 @@ const styles = StyleSheet.create({
   skipButton: {
     marginTop: THEME.spacing.sm,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: THEME.sizes.touchTarget,
     padding: THEME.spacing.sm,
   },
   skipText: {

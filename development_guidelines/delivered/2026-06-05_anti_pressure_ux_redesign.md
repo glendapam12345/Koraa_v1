@@ -37,16 +37,17 @@ Este entregable unifica copy, jerarquía visual y responsabilidades de tabs bajo
 
 ---
 
-## Arquitectura de tabs (4 visibles)
+## Arquitectura de tabs (5 visibles)
 
 | Tab | Ruta | Rol |
 |-----|------|-----|
 | **Hoy** | `/(tabs)/index` | «¿Qué hacer en los próximos 5 min?» — hero, 1–2 pasos, apoyo unificado |
+| **Tareas** | `/(tabs)/vaciar` | Captura brain-dump; primer paso del flujo diario |
 | **Calendario** | `/(tabs)/semana` | Vista semanal; sin presión de llenar el mes |
 | **Para mí** | `/(tabs)/parami` | Insights, musa, memoria emocional |
 | **Tu espacio** | `/(tabs)/yo` | Premium, ajustes, cuenta |
 
-**Ocultas en barra:** `vaciar` (Tareas), `tips` (Consejos). La biblioteca de tips sigue en `app/tips/[category].tsx` (stack); acceso desde Hoy (`HoySupportPanel`) y Para mí.
+**Oculta en barra:** `tips` (Consejos). La biblioteca de tips sigue en `app/tips/[category].tsx` (stack); acceso desde Hoy (`HoySupportPanel`) y Para mí.
 
 Configuración: `app/(tabs)/_layout.tsx`.
 
@@ -83,9 +84,9 @@ Post-guardado: siempre aterriza en **Hoy** (`/(tabs)`).
 Jerarquía en 4 bloques (`HoyFocusPanel`):
 
 1. **Hero** — estado emocional + copy del coach (`HoyMoodHeroCard`, solo lectura)
-2. **Esto podría ser suficiente** — máx. 2 pasos (1 si abrumada); CTA «Actualizar cómo me siento»
-3. **Si necesitas apoyo** — `HoySupportPanel`: chips Respirar / Meditar / Pausa + CTA contextual + enlace a tips
-4. **Ver el resto de hoy** (colapsado) — pasos extra, aliviar carga, lógica Koraa, calendario
+2. **Esto podría ser suficiente** — máx. 2 pasos (1 si abrumada); CTA «Actualizar cómo me siento» visible bajo el hero
+3. **Si necesitas apoyo** — `HoySupportPanel` montado **debajo de los pasos** (no entre hero y pasos): chips Respirar / Meditar / Pausa + CTA contextual + enlace a tips
+4. **Ver el resto de hoy** (colapsado) — pasos extra, aliviar carga, calendario
 
 Lógica contextual: `lib/hoyContextualSupport.ts` (patrones de 7 días). Componente `HoyContextualSupport` reemplazado por `HoySupportPanel`.
 
@@ -109,7 +110,7 @@ Copy i18n: `bundle*.ts`, `bundle-ext*.ts`, `es.ts` / `en.ts` (`hoy.*`, `smart.*`
 ### Onboarding, paywall, vaciar, tour
 
 - Copy alineado en `bundle*.ts`, `bundle-ui*.ts`
-- **Tour 4 tabs (2026-06-05):** Hoy → Calendario → Para mí → Tu espacio; termina en `/(tabs)` — ver [2026-06-05_flow_audit_buttons_cleanup.md](./2026-06-05_flow_audit_buttons_cleanup.md)
+- **Tour 5 tabs (2026-06):** Hoy → Tareas → Calendario → Para mí → Tu espacio; termina en `/(tabs)` — ver [2026-06-05_flow_audit_buttons_cleanup.md](./2026-06-05_flow_audit_buttons_cleanup.md)
 - **Paywall con retorno:** `lib/paywallNavigation.ts` → param `next`
 
 ---

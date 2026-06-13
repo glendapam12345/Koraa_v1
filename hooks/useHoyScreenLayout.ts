@@ -4,10 +4,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
 import { resolveHoyLiteLayout, optOutHoyLiteLayout } from '@/lib/hoyLiteDay';
-import {
-  dismissDayChangedCard,
-  shouldShowDayChangedCard,
-} from '@/lib/hoyDayFlowDismiss';
 import { consumePrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
 
 type ToastFn = (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -34,7 +30,6 @@ export function useHoyScreenLayout({
   const { t } = useI18n();
   const [hoyLiteLayout, setHoyLiteLayout] = useState<boolean | null>(null);
   const [showSecondaryModules, setShowSecondaryModules] = useState(false);
-  const [showDayChangedCard, setShowDayChangedCard] = useState(false);
   const handleOptOutHoyLite = useCallback(async () => {
     if (!userId) return;
     await optOutHoyLiteLayout(userId);
@@ -91,25 +86,6 @@ export function useHoyScreenLayout({
     }, [userId, loadTodayCheckIn, loadTasks, showToast, t]),
   );
 
-  useEffect(() => {
-    if (!userId || !todayMood) {
-      setShowDayChangedCard(false);
-      return;
-    }
-    let cancelled = false;
-    void shouldShowDayChangedCard(userId).then((show) => {
-      if (!cancelled) setShowDayChangedCard(show);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [userId, todayMood]);
-
-  const handleDismissDayChangedCard = useCallback(() => {
-    if (userId) void dismissDayChangedCard(userId);
-    setShowDayChangedCard(false);
-  }, [userId]);
-
   const hoyPreFlowActive = !loading && !todayMood;
   const hoyRestOfDayExpanded = Boolean(todayMood) && showSecondaryModules;
 
@@ -134,10 +110,8 @@ export function useHoyScreenLayout({
     hoyPreFlowActive,
     hoyRestOfDayExpanded,
     showSecondaryModules,
-    showDayChangedCard,
     setShowSecondaryModules,
     handleOptOutHoyLite,
-    handleDismissDayChangedCard,
     handleShowMoreForHoy,
   };
 }

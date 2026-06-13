@@ -1,9 +1,10 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
+import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
 import { Clock } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
@@ -30,20 +31,29 @@ export default function TimeScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.iconContainer}>
-          <View style={styles.iconCircle}>
-            <Clock size={32} color={THEME.colors.gradient.blue} />
-          </View>
+    <OnboardingScreenShell
+      footer={
+        <CalmPrimaryButton
+          label={t('onboarding.time.continue')}
+          onPress={handleContinue}
+          disabled={!selectedTime}
+          accessibilityLabel={t('onboarding.time.continue')}
+          accessibilityHint={t('onboardingA11y.continueTimeHint')}
+        />
+      }
+    >
+      <View style={onboardingTypography.iconContainer}>
+        <View style={onboardingTypography.iconCircle}>
+          <Clock size={32} color={THEME.colors.gradient.blue} />
         </View>
+      </View>
 
-        <OnboardingCheckInProgress step={3} />
-        <Text style={styles.title}>{t('onboarding.time.title')}</Text>
-        <Text style={styles.titleAccent}>{t('onboarding.time.titleAccent')}</Text>
-        <Text style={styles.subtitle}>{t('onboarding.time.subtitle')}</Text>
+      <OnboardingCheckInProgress step={3} />
+      <Text style={onboardingTypography.title}>{t('onboarding.time.title')}</Text>
+      <Text style={onboardingTypography.titleAccent}>{t('onboarding.time.titleAccent')}</Text>
+      <Text style={onboardingTypography.subtitle}>{t('onboarding.time.subtitle')}</Text>
 
-        <View style={styles.optionsContainer} accessibilityRole="radiogroup">
+      <View style={styles.optionsContainer} accessibilityRole="radiogroup">
           {TIME_OPTIONS.map((option) => (
             <TouchableOpacity
               key={option.id}
@@ -67,62 +77,17 @@ export default function TimeScreen() {
             </TouchableOpacity>
           ))}
         </View>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <CalmPrimaryButton
-          label={t('onboarding.time.continue')}
-          onPress={handleContinue}
-          disabled={!selectedTime}
-          accessibilityLabel={t('onboarding.time.continue')}
-          accessibilityHint={t('onboardingA11y.continueTimeHint')}
-        />
-      </View>
-    </View>
+    </OnboardingScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: THEME.colors.fill[100],
-  },
-  content: {
-    padding: THEME.spacing.lg,
-    paddingTop: THEME.spacing.xl * 2,
-  },
-  iconContainer: {
-    alignItems: 'flex-end',
-    marginBottom: THEME.spacing.xl,
-  },
-  iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: THEME.colors.fill[200],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    ...THEME.typography.h1,
-    color: THEME.colors.text.main,
-  },
-  titleAccent: {
-    ...THEME.typography.h1,
-    fontFamily: THEME.fonts.accent.italic,
-    color: THEME.colors.text.main,
-  },
-  subtitle: {
-    ...THEME.typography.h1,
-    color: THEME.colors.text.main,
-    marginBottom: THEME.spacing.lg,
-  },
   optionsContainer: {
     gap: THEME.spacing.sm,
     marginTop: THEME.spacing.md,
   },
   option: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     minHeight: THEME.sizes.touchTarget,
@@ -139,9 +104,5 @@ const styles = StyleSheet.create({
   },
   optionTextSelected: {
     fontFamily: THEME.fonts.heading.bold,
-  },
-  footer: {
-    padding: THEME.spacing.lg,
-    paddingBottom: THEME.spacing.xl,
   },
 });

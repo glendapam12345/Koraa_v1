@@ -16,16 +16,17 @@ export const settingsScreenStyles = StyleSheet.create({
     borderBottomColor: THEME.colors.calm.border,
   },
   backHit: {
-    padding: THEME.spacing.xs,
-    width: 44,
+    width: THEME.sizes.touchTarget,
+    height: THEME.sizes.touchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   topTitle: {
-    ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
+    ...THEME.typography.h3,
     color: THEME.colors.text.main,
   },
   topRight: {
-    width: 44,
+    width: THEME.sizes.touchTarget,
   },
   section: {
     ...THEME.typography.small,
@@ -46,7 +47,9 @@ export const settingsScreenStyles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: THEME.spacing.sm + 2,
     paddingHorizontal: THEME.spacing.sm,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
     borderRadius: THEME.borderRadius.rounded,
     marginBottom: THEME.spacing.xs,
   },
@@ -184,6 +187,8 @@ export const settingsScreenStyles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: THEME.spacing.xs + 2,
     borderRadius: THEME.borderRadius.pill,
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
     ...THEME.surfaces.chip,
   },
   chipActive: {

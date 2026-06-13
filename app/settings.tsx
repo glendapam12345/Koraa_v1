@@ -66,7 +66,6 @@ export default function SettingsScreen() {
         <Pressable
           onPress={handleBack}
           style={styles.backHit}
-          hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel={step === 'menu' ? t('settingsA11y.back') : t('settingsA11y.backToMenu')}
         >

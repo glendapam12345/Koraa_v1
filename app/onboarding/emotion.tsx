@@ -1,10 +1,11 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useState, useEffect } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { EmotionCard } from '@/components/EmotionCard';
 import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
+import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
 import { Sparkles } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
@@ -40,40 +41,8 @@ export default function EmotionScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.iconContainer}>
-          <View style={styles.iconCircle}>
-            <Sparkles size={32} color={THEME.colors.gradient.blue} />
-          </View>
-        </View>
-
-        <OnboardingCheckInProgress step={1} />
-        <Text style={styles.title}>{t('onboarding.emotion.title')}</Text>
-        <Text style={styles.titleAccent}>{t('onboarding.emotion.titleAccent')}</Text>
-        <Text style={styles.subtitle}>{t('onboarding.emotion.subtitle')}</Text>
-        <Text style={styles.checkInHint}>{t('onboarding.emotion.checkInHint')}</Text>
-        <Text style={styles.inclusiveNote}>{t('sentir.inclusiveNote')}</Text>
-
-        <View
-          style={styles.emotionsGrid}
-          accessibilityRole="radiogroup"
-          accessibilityLabel={t('sentirExtra.emotionGroupA11y')}
-        >
-          {EMOTIONS.map((emotion) => (
-            <View key={emotion.id} style={styles.emotionWrapper}>
-              <EmotionCard
-                emoji={emotion.emoji}
-                label={t(`sentir.emotions.${emotion.id}` as TranslationKey)}
-                selected={selectedEmotion === emotion.id}
-                onPress={() => setSelectedEmotion(emotion.id)}
-              />
-            </View>
-          ))}
-        </View>
-      </ScrollView>
-
-      <View style={styles.footer}>
+    <OnboardingScreenShell
+      footer={
         <CalmPrimaryButton
           label={t('onboarding.emotion.continue')}
           onPress={handleContinue}
@@ -81,50 +50,44 @@ export default function EmotionScreen() {
           accessibilityLabel={t('onboarding.emotion.continue')}
           accessibilityHint={t('onboardingA11y.continueEmotionHint')}
         />
+      }
+    >
+      <View style={onboardingTypography.iconContainer}>
+        <View style={onboardingTypography.iconCircle}>
+          <Sparkles size={32} color={THEME.colors.gradient.blue} />
+        </View>
       </View>
-    </View>
+
+      <OnboardingCheckInProgress step={1} />
+      <Text style={onboardingTypography.title}>{t('onboarding.emotion.title')}</Text>
+      <Text style={onboardingTypography.titleAccent}>{t('onboarding.emotion.titleAccent')}</Text>
+      <Text style={onboardingTypography.subtitle}>{t('onboarding.emotion.subtitle')}</Text>
+      <Text style={styles.checkInHint}>{t('onboarding.emotion.checkInHint')}</Text>
+      <Text style={styles.inclusiveNote}>{t('sentir.inclusiveNote')}</Text>
+
+      <View
+        style={styles.emotionsGrid}
+        accessibilityRole="radiogroup"
+        accessibilityLabel={t('sentirExtra.emotionGroupA11y')}
+      >
+        {EMOTIONS.map((emotion) => (
+          <View key={emotion.id} style={styles.emotionWrapper}>
+            <EmotionCard
+              emoji={emotion.emoji}
+              label={t(`sentir.emotions.${emotion.id}` as TranslationKey)}
+              selected={selectedEmotion === emotion.id}
+              onPress={() => setSelectedEmotion(emotion.id)}
+            />
+          </View>
+        ))}
+      </View>
+    </OnboardingScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: THEME.colors.fill[100],
-  },
-  content: {
-    padding: THEME.spacing.lg,
-    paddingTop: THEME.spacing.xl * 2,
-  },
-  iconContainer: {
-    alignItems: 'flex-end',
-    marginBottom: THEME.spacing.xl,
-  },
-  iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: THEME.colors.fill[200],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    ...THEME.typography.h1,
-    color: THEME.colors.text.main,
-  },
-  titleAccent: {
-    ...THEME.typography.h1,
-    fontFamily: THEME.fonts.accent.italic,
-    color: THEME.colors.text.main,
-  },
-  subtitle: {
-    ...THEME.typography.h1,
-    color: THEME.colors.text.main,
-    marginBottom: THEME.spacing.xs,
-  },
   checkInHint: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-    lineHeight: 22,
+    ...onboardingTypography.body,
     marginBottom: THEME.spacing.sm,
   },
   inclusiveNote: {
@@ -142,9 +105,5 @@ const styles = StyleSheet.create({
   emotionWrapper: {
     width: '50%',
     paddingBottom: THEME.spacing.xs,
-  },
-  footer: {
-    padding: THEME.spacing.lg,
-    paddingBottom: THEME.spacing.xl,
   },
 });
