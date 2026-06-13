@@ -13,6 +13,8 @@ import { useI18n } from '@/contexts/I18nContext';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
+import { useFocusedProject } from '@/hooks/useFocusedProject';
+import { FocusedProjectBanner } from '@/components/projects/FocusedProjectBanner';
 import { useVaciarHints } from '@/hooks/useVaciarHints';
 import { useVaciarTaskSave } from '@/hooks/useVaciarTaskSave';
 import { useTaskCaptureAi } from '@/hooks/useTaskCaptureAi';
@@ -79,6 +81,7 @@ export default function VaciarScreen() {
   }, []);
 
   const { hasCheckInToday, refresh: refreshCheckInToday } = useHasCheckInToday(user?.id);
+  const { focusedProject, refresh: refreshFocusedProject, clearFocus } = useFocusedProject(user?.id);
   const { setHasTasks, loadHintState, dictateHintDismissed, dismissDictateHint } =
     useVaciarHints(user?.id);
 
@@ -245,7 +248,8 @@ export default function VaciarScreen() {
       void refreshCheckInToday();
       void loadHintState();
       void loadProjectCount();
-    }, [loadProjectCount, refreshCheckInToday, loadHintState]),
+      void refreshFocusedProject();
+    }, [loadProjectCount, refreshCheckInToday, loadHintState, refreshFocusedProject]),
   );
 
   const handleAddTask = () => {
@@ -271,6 +275,7 @@ export default function VaciarScreen() {
       await Promise.all([
         refreshCheckInToday(),
         loadHintState(),
+        refreshFocusedProject(),
       ]);
       // Intentar sincronizar datos offline
       const { syncAll } = await import('@/lib/offlineStorage');
@@ -331,6 +336,13 @@ export default function VaciarScreen() {
         )}
 
         {user ? <VaciarTabSegments value={segment} onChange={setSegment} /> : null}
+
+        {user && focusedProject ? (
+          <FocusedProjectBanner
+            project={focusedProject}
+            onClearFocus={() => void clearFocus()}
+          />
+        ) : null}
 
         {segment === 'capture' && user ? (
           <VaciarCaptureForm

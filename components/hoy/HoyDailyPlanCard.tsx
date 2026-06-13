@@ -1,14 +1,16 @@
 import type { ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Target, ChevronRight, ChevronDown } from 'lucide-react-native';
+import { Target, Clock, ChevronRight, ChevronDown } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { HoyGentleRhythmStrip } from '@/components/hoy/HoyGentleRhythmStrip';
-import { buildHoyDailyPlan } from '@/lib/hoyDailyPlan';
 
 type HoyDailyPlanCardProps = {
   stepCount: number;
+  waitingCount: number;
   crisisMode: boolean;
   energyLevel: number;
   prioritiesDone: number;
@@ -17,11 +19,15 @@ type HoyDailyPlanCardProps = {
   prioritiesExpanded?: boolean;
   onTogglePriorities?: () => void;
   prioritiesSlot?: ReactNode;
+  waitingExpanded?: boolean;
+  onToggleWaiting?: () => void;
+  waitingSlot?: ReactNode;
   footerSlot?: ReactNode;
 };
 
 export function HoyDailyPlanCard({
   stepCount,
+  waitingCount,
   crisisMode,
   energyLevel,
   prioritiesDone,
@@ -30,17 +36,26 @@ export function HoyDailyPlanCard({
   prioritiesExpanded = false,
   onTogglePriorities,
   prioritiesSlot,
+  waitingExpanded = false,
+  onToggleWaiting,
+  waitingSlot,
   footerSlot,
 }: HoyDailyPlanCardProps) {
   const { t } = useI18n();
-  const rows = buildHoyDailyPlan();
 
-  const subtitle =
+  const prioritiesSubtitle =
     stepCount > 0
       ? prioritiesExpanded
         ? t('hoy.planPrioritiesSubOpen')
         : t('hoy.planPrioritiesSub')
       : t('hoy.planPrioritiesSubEmpty');
+
+  const waitingSubtitle =
+    waitingCount > 0
+      ? waitingExpanded
+        ? t('hoy.planWaitingSubOpen')
+        : t('hoy.planWaitingSub', { count: waitingCount })
+      : t('hoy.planWaitingSubEmpty');
 
   return (
     <CalmCard style={styles.card}>
@@ -52,35 +67,48 @@ export function HoyDailyPlanCard({
       </View>
 
       <View style={styles.rows}>
-        {rows.map((row, index) => (
-          <View key={`${row.kind}-${index}`}>
-            <TouchableOpacity
-              style={[styles.row, prioritiesExpanded && styles.rowExpanded]}
-              onPress={() => onTogglePriorities?.()}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel={t('hoy.planPrioritiesA11y', { count: Math.max(stepCount, 0) })}
-              accessibilityState={{ expanded: prioritiesExpanded }}
-            >
-              <View style={[styles.iconWrap, styles.prioritiesIcon]}>
-                <Target size={20} color={THEME.colors.calm.lavenderDeep} />
-              </View>
-              <View style={styles.rowText}>
-                <Text style={styles.rowTitle}>{t('hoy.planPrioritiesTitle')}</Text>
-                <Text style={styles.rowSub}>{subtitle}</Text>
-              </View>
-              {prioritiesExpanded ? (
-                <ChevronDown size={18} color={THEME.colors.calm.lavenderDeep} />
-              ) : (
-                <ChevronRight size={18} color={THEME.colors.calm.lavenderDeep} />
+        <View>
+          <PlanRow
+            icon={<Target size={20} color={THEME.colors.calm.lavenderDeep} />}
+            iconBg={THEME.colors.calm.lavender}
+            title={t('hoy.planPrioritiesTitle')}
+            subtitle={prioritiesSubtitle}
+            expanded={prioritiesExpanded}
+            onPress={() => onTogglePriorities?.()}
+            a11y={t('hoy.planPrioritiesA11y', { count: Math.max(stepCount, 0) })}
+          />
+          {prioritiesExpanded && prioritiesSlot ? (
+            <View style={styles.expandSlot}>{prioritiesSlot}</View>
+          ) : null}
+        </View>
+
+        <View>
+          <PlanRow
+            icon={<Clock size={20} color={THEME.colors.text.secondary} />}
+            iconBg={THEME.colors.fill[200]}
+            title={t('hoy.planWaitingTitle')}
+            subtitle={waitingSubtitle}
+            expanded={waitingExpanded}
+            onPress={() => onToggleWaiting?.()}
+            a11y={t('hoy.planWaitingA11y', { count: waitingCount })}
+          />
+          {waitingExpanded ? (
+            <View style={styles.expandSlot}>
+              {waitingSlot ?? (
+                <Text style={styles.waitingEmpty}>{t('hoy.planWaitingSubEmpty')}</Text>
               )}
-            </TouchableOpacity>
-            {prioritiesExpanded && prioritiesSlot ? (
-              <View style={styles.expandSlot}>{prioritiesSlot}</View>
-            ) : null}
-          </View>
-        ))}
+            </View>
+          ) : null}
+        </View>
       </View>
+
+      <CalmPrimaryButton
+        label={t('hoy.planAddTasksCta')}
+        onPress={() => router.push('/(tabs)/vaciar')}
+        variant="soft"
+        accessibilityHint={t('hoy.planAddTasksHint')}
+        style={styles.addTasksBtn}
+      />
 
       <HoyGentleRhythmStrip
         crisisMode={crisisMode}
@@ -92,6 +120,46 @@ export function HoyDailyPlanCard({
 
       {footerSlot ? <View style={styles.footerSlot}>{footerSlot}</View> : null}
     </CalmCard>
+  );
+}
+
+function PlanRow({
+  icon,
+  iconBg,
+  title,
+  subtitle,
+  expanded,
+  onPress,
+  a11y,
+}: {
+  icon: ReactNode;
+  iconBg: string;
+  title: string;
+  subtitle: string;
+  expanded: boolean;
+  onPress: () => void;
+  a11y: string;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.row, expanded && styles.rowExpanded]}
+      onPress={onPress}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={a11y}
+      accessibilityState={{ expanded }}
+    >
+      <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>{icon}</View>
+      <View style={styles.rowText}>
+        <Text style={styles.rowTitle}>{title}</Text>
+        <Text style={styles.rowSub}>{subtitle}</Text>
+      </View>
+      {expanded ? (
+        <ChevronDown size={18} color={THEME.colors.calm.lavenderDeep} />
+      ) : (
+        <ChevronRight size={18} color={THEME.colors.calm.lavenderDeep} />
+      )}
+    </TouchableOpacity>
   );
 }
 
@@ -141,9 +209,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  prioritiesIcon: {
-    backgroundColor: THEME.colors.calm.lavender,
-  },
   rowText: {
     flex: 1,
     gap: 2,
@@ -163,6 +228,16 @@ const styles = StyleSheet.create({
   expandSlot: {
     marginTop: THEME.spacing.xs,
     gap: THEME.spacing.xs,
+  },
+  waitingEmpty: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+  },
+  addTasksBtn: {
+    marginTop: THEME.spacing.xs,
   },
   footerSlot: {
     gap: THEME.spacing.xs,

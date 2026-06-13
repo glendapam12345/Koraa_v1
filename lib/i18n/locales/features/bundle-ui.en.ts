@@ -124,6 +124,9 @@ export const uiEn = {
     completed: 'Completed · {{count}} {{tasks}}',
     noTasks: 'No tasks',
     withDate: '{{count}} with date',
+    dueDate: 'Due: {{date}}',
+    progressPercent: '{{percent}}% of project',
+    progressDetail: '{{done}} of {{total}} steps',
   },
   premiumTeaser: {
     optional: 'Optional',

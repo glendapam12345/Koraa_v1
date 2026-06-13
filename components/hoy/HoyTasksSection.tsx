@@ -115,20 +115,17 @@ export function HoyTasksSection({
     [tasks, incompleteTasksForToday],
   );
 
-  const restOfDayTasks = useMemo(
-    () =>
-      incompleteTasksForToday.filter(
-        (task) => !task.is_priority || Boolean(task.parent_task_id),
-      ),
-    [incompleteTasksForToday],
+  const focusTaskIds = useMemo(() => new Set(focusTasks.map((task) => task.id)), [focusTasks]);
+
+  /** Pendientes de hoy que no están en el plan principal (pueden esperar). */
+  const waitingTasks = useMemo(
+    () => incompleteTasksForToday.filter((task) => !focusTaskIds.has(task.id)),
+    [focusTaskIds, incompleteTasksForToday],
   );
 
-  const waitingPreviewLabels = useMemo(
-    () => restOfDayTasks.map((task) => task.content.trim()).filter(Boolean).slice(0, 3),
-    [restOfDayTasks],
-  );
+  const restOfDayTasks = waitingTasks;
 
-  const visibleWaitingTasks = useMemo(() => restOfDayTasks.slice(0, 5), [restOfDayTasks]);
+  const visibleWaitingTasks = useMemo(() => waitingTasks.slice(0, 5), [waitingTasks]);
 
   const waitingTasksSlot = useMemo(
     () =>
@@ -199,7 +196,7 @@ export function HoyTasksSection({
           onOpenSleep: () => void health.openSleep(),
         }}
         crisisMode={crisisMode}
-        waitingPreviewLabels={waitingPreviewLabels}
+        waitingCount={waitingTasks.length}
         waitingTasksSlot={waitingTasksSlot}
         onCareModeDismiss={onCareModeDismiss}
         onCareModeLearnMore={onCareModeLearnMore}

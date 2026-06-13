@@ -126,6 +126,9 @@ export const uiEs = {
     completed: 'Completado · {{count}} {{tasks}}',
     noTasks: 'Sin tareas',
     withDate: '{{count}} con fecha',
+    dueDate: 'Entrega: {{date}}',
+    progressPercent: '{{percent}}% del proyecto',
+    progressDetail: '{{done}} de {{total}} pasos',
   },
   premiumTeaser: {
     optional: 'Opcional',

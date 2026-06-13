@@ -8,7 +8,6 @@ import type { FocusProgressStats } from '@/lib/focusProgressStats';
 import { HoyFocusTaskRow } from '@/components/hoy/HoyFocusTaskRow';
 import { HoyMoodHeroCard } from '@/components/hoy/HoyMoodHeroCard';
 import { HoyDailyPlanCard } from '@/components/hoy/HoyDailyPlanCard';
-import { HoyWaitingSection } from '@/components/hoy/HoyWaitingSection';
 import { HoyCrisisBanner } from '@/components/hoy/HoyCrisisBanner';
 import { HoyLightenLoadCard } from '@/components/hoy/HoyLightenLoadCard';
 import { HoyLitePeekCard } from '@/components/hoy/HoyLitePeekCard';
@@ -60,10 +59,10 @@ type HoyFocusPanelProps = {
   };
   /** Emergency Kit: suaviza pasos sugeridos (1 visible, el resto puede esperar). */
   crisisMode?: boolean;
-  /** Hasta 3 nombres de tareas que pueden esperar (vista previa). */
-  waitingPreviewLabels?: string[];
   /** Filas interactivas de tareas que pueden esperar. */
   waitingTasksSlot?: ReactNode;
+  /** Tareas fuera del plan principal de hoy. */
+  waitingCount?: number;
   onCareModeDismiss?: () => void;
   onCareModeLearnMore?: () => void;
 };
@@ -94,14 +93,15 @@ export function HoyFocusPanel({
   shortSleep = false,
   sleepCard,
   crisisMode = false,
-  waitingPreviewLabels = [],
   waitingTasksSlot,
+  waitingCount,
   onCareModeDismiss,
   onCareModeLearnMore,
 }: HoyFocusPanelProps) {
   const { t } = useI18n();
   const [extraFocusExpanded, setExtraFocusExpanded] = useState(false);
   const [stepsExpanded, setStepsExpanded] = useState(true);
+  const [waitingExpanded, setWaitingExpanded] = useState(false);
 
   const emotionEmoji = getEmotionEmoji(todayMood);
   const incompleteFocusTasks = useMemo(
@@ -166,10 +166,14 @@ export function HoyFocusPanel({
   const careCounts = crisisMode ? getCareModeTaskCounts(totalFocusCount, nonFocusPending) : null;
   const moodFocusCount = careCounts?.visibleFocus ?? totalFocusCount;
   const moodRestCount = careCounts?.waitingCount ?? nonFocusPending;
-  const restLinkCount = careCounts?.waitingCount ?? nonFocusPending;
+  const restLinkCount = waitingCount ?? careCounts?.waitingCount ?? nonFocusPending;
   const togglePriorities = () => {
     setStepsExpanded((open) => !open);
     setExtraFocusExpanded(true);
+  };
+
+  const toggleWaiting = () => {
+    setWaitingExpanded((open) => !open);
   };
 
   const prioritiesSlot =
@@ -203,6 +207,8 @@ export function HoyFocusPanel({
         ) : null}
       </>
     ) : null;
+
+  const planWaitingSlot = waitingTasksSlot ?? null;
 
   const planFooterSlot = allFocusDone ? (
     <View style={styles.celebration}>
@@ -261,6 +267,7 @@ export function HoyFocusPanel({
       {!compactLayout ? (
         <HoyDailyPlanCard
           stepCount={incompleteFocusTasks.length}
+          waitingCount={restLinkCount}
           crisisMode={crisisMode}
           energyLevel={energyLevel}
           prioritiesDone={priorityStats.done}
@@ -269,16 +276,10 @@ export function HoyFocusPanel({
           prioritiesExpanded={stepsExpanded}
           onTogglePriorities={togglePriorities}
           prioritiesSlot={prioritiesSlot}
+          waitingExpanded={waitingExpanded}
+          onToggleWaiting={toggleWaiting}
+          waitingSlot={planWaitingSlot}
           footerSlot={planFooterSlot}
-        />
-      ) : null}
-
-      {!compactLayout ? (
-        <HoyWaitingSection
-          count={restLinkCount}
-          crisisMode={crisisMode}
-          previewLabels={waitingPreviewLabels}
-          tasksSlot={waitingTasksSlot}
         />
       ) : null}
 

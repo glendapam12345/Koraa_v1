@@ -6,6 +6,7 @@ export type ProjectLibraryItem = {
   id: string;
   name: string;
   color: string;
+  dueDate: string | null;
   taskCount: number;
   incompleteCount: number;
   withDateCount: number;
@@ -44,7 +45,7 @@ export function useProjectsLibrary(userId: string | undefined) {
 
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
-        .select('id, name, color')
+        .select('id, name, color, due_date')
         .eq('user_id', userId)
         .order('priority', { ascending: false });
 
@@ -53,7 +54,12 @@ export function useProjectsLibrary(userId: string | undefined) {
         return;
       }
 
-      const list = (projectsData || []) as { id: string; name: string; color: string }[];
+      const list = (projectsData || []) as {
+        id: string;
+        name: string;
+        color: string;
+        due_date?: string | null;
+      }[];
       const byProject: Record<string, { total: number; incomplete: number; withDate: number }> = {};
       for (const p of list) {
         byProject[p.id] = { total: 0, incomplete: 0, withDate: 0 };
@@ -91,7 +97,10 @@ export function useProjectsLibrary(userId: string | undefined) {
 
       setProjects(
         list.map((p) => ({
-          ...p,
+          id: p.id,
+          name: p.name,
+          color: p.color,
+          dueDate: p.due_date ?? null,
           taskCount: byProject[p.id]?.total ?? 0,
           incompleteCount: byProject[p.id]?.incomplete ?? 0,
           withDateCount: byProject[p.id]?.withDate ?? 0,

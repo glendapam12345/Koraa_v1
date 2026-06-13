@@ -25,9 +25,10 @@ describe('hoyGentleRhythm', () => {
     expect(state.hintKey).toBe('afterStep');
   });
 
-  it('shows only breathe in care mode', () => {
+  it('shows all chips in care mode with breathe highlighted', () => {
     const state = getGentleRhythmState({ ...base, crisisMode: true });
-    expect(state.visibleChips).toEqual(['breathe']);
+    expect(state.visibleChips).toEqual(['breathe', 'meditate', 'pause']);
+    expect(state.highlightedChip).toBe('breathe');
     expect(state.hintKey).toBe('care');
   });
 

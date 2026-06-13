@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Wind, Moon, Pause, Check } from 'lucide-react-native';
+import { Wind, Moon, Pause, Check, ChevronRight, Sparkles } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -14,6 +14,8 @@ import {
   type RhythmChipId,
   type RhythmHintKey,
 } from '@/lib/hoyGentleRhythm';
+
+const BREAK_COUNT = 2;
 
 type HoyGentleRhythmStripProps = {
   crisisMode: boolean;
@@ -109,6 +111,10 @@ export function HoyGentleRhythmStrip({
     router.push({ pathname: '/focus-session', params: { minutes: '5' } });
   };
 
+  const openParaMi = () => {
+    router.push('/(tabs)/parami');
+  };
+
   const onChipPress = (id: RhythmChipId) => {
     switch (id) {
       case 'breathe':
@@ -130,9 +136,11 @@ export function HoyGentleRhythmStrip({
       <View style={styles.wrap}>
         <View style={styles.header}>
           <Text style={styles.title}>{t('hoy.rhythmTitle')}</Text>
+          <Text style={styles.countLine}>{t('hoy.rhythmSubCount', { count: BREAK_COUNT })}</Text>
           <Text style={styles.subtitle}>{t(HINT_KEYS[rhythm.hintKey])}</Text>
         </View>
-        <View style={styles.chips}>
+
+        <View style={styles.chipsRow}>
           {rhythm.visibleChips.map((chipId) => (
             <RhythmChip
               key={chipId}
@@ -145,6 +153,18 @@ export function HoyGentleRhythmStrip({
             />
           ))}
         </View>
+
+        <TouchableOpacity
+          style={styles.moreTipsRow}
+          onPress={openParaMi}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={t('hoy.rhythmMoreTipsA11y')}
+        >
+          <Sparkles size={16} color={THEME.colors.calm.lavenderDeep} />
+          <Text style={styles.moreTipsText}>{t('hoy.rhythmMoreTips')}</Text>
+          <ChevronRight size={16} color={THEME.colors.calm.lavenderDeep} />
+        </TouchableOpacity>
       </View>
 
       {showMeditation ? (
@@ -186,7 +206,7 @@ function RhythmChip({
       style={[
         styles.chip,
         highlighted && styles.chipHighlighted,
-        done && styles.chipDone,
+        done && !highlighted && styles.chipDone,
       ]}
       onPress={onPress}
       activeOpacity={0.85}
@@ -218,7 +238,7 @@ function RhythmChip({
 const styles = StyleSheet.create({
   wrap: {
     gap: THEME.spacing.xs,
-    paddingTop: THEME.spacing.xs,
+    paddingTop: THEME.spacing.sm,
     borderTopWidth: 1,
     borderTopColor: THEME.colors.calm.border,
   },
@@ -226,35 +246,38 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   title: {
-    ...THEME.typography.caption,
+    ...THEME.typography.body,
     fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+  },
+  countLine: {
+    ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    lineHeight: 18,
   },
   subtitle: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
     lineHeight: 18,
   },
-  chips: {
+  chipsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: THEME.spacing.xs,
     marginTop: THEME.spacing.xs,
   },
   chip: {
-    flexDirection: 'row',
+    flex: 1,
+    flexDirection: 'column',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.xs,
-    borderRadius: THEME.borderRadius.pill,
+    paddingHorizontal: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.rounded,
     backgroundColor: THEME.colors.calm.card,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
     minHeight: THEME.sizes.touchTarget,
-    justifyContent: 'center',
   },
   chipHighlighted: {
     backgroundColor: THEME.colors.tint.blue.veryFaint,
@@ -262,12 +285,15 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   chipDone: {
-    opacity: 0.85,
+    borderColor: THEME.colors.calm.lavenderDeep,
   },
   chipLabel: {
     ...THEME.typography.caption,
+    fontSize: 11,
+    lineHeight: 14,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.secondary,
+    textAlign: 'center',
   },
   chipLabelHighlighted: {
     fontFamily: THEME.fonts.heading.bold,
@@ -275,5 +301,18 @@ const styles = StyleSheet.create({
   },
   chipLabelDone: {
     color: THEME.colors.calm.lavenderDeep,
+  },
+  moreTipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.xs,
+    minHeight: THEME.sizes.touchTarget,
+  },
+  moreTipsText: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+    flex: 1,
   },
 });

@@ -27,8 +27,11 @@ import { supabase } from '@/lib/supabase';
 import { useI18n } from '@/contexts/I18nContext';
 import { TaskEditModal } from '@/components/tasks/TaskEditModal';
 import { ProjectEditModal } from '@/components/projects/ProjectEditModal';
+import { ProjectMetaRow } from '@/components/projects/ProjectMetaRow';
+import { ProjectFocusCta } from '@/components/projects/ProjectFocusCta';
 import type { ProjectLibraryItem } from '@/hooks/useProjectsLibrary';
 import { confirmDeleteProject, deleteProjectById } from '@/lib/deleteProject';
+import { normalizeDueDateInput } from '@/lib/projectProgress';
 
 type TaskPreview = {
   id: string;
@@ -61,6 +64,7 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
   const [editingProject, setEditingProject] = useState(false);
   const [editName, setEditName] = useState(project?.name ?? '');
   const [editColor, setEditColor] = useState(project?.color ?? THEME.colors.gradient.blue);
+  const [editDueDate, setEditDueDate] = useState(project?.dueDate ?? '');
   const [savingProject, setSavingProject] = useState(false);
 
   const loadTasks = useCallback(async () => {
@@ -96,6 +100,7 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
     if (project) {
       setEditName(project.name);
       setEditColor(project.color || THEME.colors.gradient.blue);
+      setEditDueDate(project.dueDate ?? '');
     }
   }, [project]);
 
@@ -162,9 +167,14 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
     if (!project || !editName.trim()) return;
     setSavingProject(true);
     try {
+      const dueDate = normalizeDueDateInput(editDueDate);
       const { error } = await supabase
         .from('projects')
-        .update({ name: editName.trim(), color: editColor })
+        .update({
+          name: editName.trim(),
+          color: editColor,
+          due_date: dueDate,
+        })
         .eq('id', project.id);
       if (!error) {
         setEditingProject(false);
@@ -248,6 +258,14 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
               </View>
             ) : null}
           </View>
+          {!isLoose && project ? (
+            <ProjectMetaRow
+              taskCount={project.taskCount}
+              incompleteCount={project.incompleteCount}
+              dueDate={project.dueDate}
+              accentColor={project.color || THEME.colors.gradient.blue}
+            />
+          ) : null}
         </TouchableOpacity>
         <TouchableOpacity
           onPress={toggleExpanded}
@@ -270,6 +288,17 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
       {expanded ? (
         <View style={styles.tasksPanel}>
           <View style={styles.tasksActions}>
+            {!isLoose && project ? (
+              <View style={styles.focusCtaWrap}>
+                <ProjectFocusCta
+                  userId={userId}
+                  projectId={project.id}
+                  projectName={project.name}
+                  incompleteCount={project.incompleteCount}
+                  onFocused={onChanged}
+                />
+              </View>
+            ) : null}
             <TouchableOpacity
               style={styles.actionChip}
               onPress={() => onAddTask?.(isLoose ? null : project!.id)}
@@ -380,8 +409,10 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
           visible={editingProject}
           name={editName}
           color={editColor}
+          dueDate={editDueDate}
           onNameChange={setEditName}
           onColorChange={setEditColor}
+          onDueDateChange={setEditDueDate}
           onSave={() => void saveProjectEdit()}
           onClose={() => setEditingProject(false)}
           onDelete={handleDeleteProject}
@@ -493,6 +524,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: THEME.spacing.xs,
     marginBottom: THEME.spacing.xs,
+  },
+  focusCtaWrap: {
+    width: '100%',
   },
   actionChip: {
     flexDirection: 'row',

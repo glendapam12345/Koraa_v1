@@ -11,8 +11,11 @@ import type { Task } from '@/components/tasks/TaskCard';
 import { TaskList } from '@/components/tasks/TaskList';
 import { TaskEditModal } from '@/components/tasks/TaskEditModal';
 import { ProjectEditModal } from '@/components/projects/ProjectEditModal';
+import { ProjectMetaRow } from '@/components/projects/ProjectMetaRow';
+import { ProjectFocusCta } from '@/components/projects/ProjectFocusCta';
 import { useI18n } from '@/contexts/I18nContext';
 import { confirmDeleteProject, deleteProjectById } from '@/lib/deleteProject';
+import { normalizeDueDateInput } from '@/lib/projectProgress';
 
 export default function ProjectScreen() {
   const params = useLocalSearchParams<{ id: string }>();
@@ -21,7 +24,7 @@ export default function ProjectScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { t } = useI18n();
-  const [project, setProject] = useState<{ name: string; color: string } | null>(null);
+  const [project, setProject] = useState<{ name: string; color: string; dueDate: string | null } | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
@@ -32,6 +35,7 @@ export default function ProjectScreen() {
   const [editingProject, setEditingProject] = useState(false);
   const [editProjectName, setEditProjectName] = useState('');
   const [editProjectColor, setEditProjectColor] = useState<string>(THEME.colors.gradient.blue);
+  const [editProjectDueDate, setEditProjectDueDate] = useState('');
   const [savingProject, setSavingProject] = useState(false);
 
   const isLoose = projectId === 'sin-proyecto';
@@ -44,7 +48,7 @@ export default function ProjectScreen() {
     setLoading(true);
     try {
       if (isLoose) {
-        setProject({ name: t('projectDetail.looseName'), color: THEME.colors.text.tertiary });
+        setProject({ name: t('projectDetail.looseName'), color: THEME.colors.text.tertiary, dueDate: null });
 
         const { data: tasksData, error: tasksError } = await supabase
           .from('tasks')
@@ -76,7 +80,7 @@ export default function ProjectScreen() {
       } else {
         const { data: projectData, error: projectError } = await supabase
           .from('projects')
-          .select('name, color')
+          .select('name, color, due_date')
           .eq('id', projectId)
           .eq('user_id', user.id)
           .single();
@@ -87,7 +91,11 @@ export default function ProjectScreen() {
           setLoading(false);
           return;
         }
-        setProject({ name: projectData.name, color: projectData.color ?? THEME.colors.gradient.blue });
+        setProject({
+          name: projectData.name,
+          color: projectData.color ?? THEME.colors.gradient.blue,
+          dueDate: projectData.due_date ?? null,
+        });
 
         const { data: tasksData, error: tasksError } = await supabase
           .from('tasks')
@@ -176,6 +184,7 @@ export default function ProjectScreen() {
     if (project && !isLoose) {
       setEditProjectName(project.name);
       setEditProjectColor(project.color);
+      setEditProjectDueDate(project.dueDate ?? '');
     }
   }, [project, isLoose]);
 
@@ -194,9 +203,14 @@ export default function ProjectScreen() {
     if (!projectId || isLoose || !editProjectName.trim()) return;
     setSavingProject(true);
     try {
+      const dueDate = normalizeDueDateInput(editProjectDueDate);
       const { error } = await supabase
         .from('projects')
-        .update({ name: editProjectName.trim(), color: editProjectColor })
+        .update({
+          name: editProjectName.trim(),
+          color: editProjectColor,
+          due_date: dueDate,
+        })
         .eq('id', projectId);
       if (!error) {
         setEditingProject(false);
@@ -205,7 +219,7 @@ export default function ProjectScreen() {
     } finally {
       setSavingProject(false);
     }
-  }, [editProjectColor, editProjectName, isLoose, loadProjectAndTasks, projectId]);
+  }, [editProjectColor, editProjectDueDate, editProjectName, isLoose, loadProjectAndTasks, projectId]);
 
   const handleEditTask = useCallback((task: Task) => {
     setEditingTask(task);
@@ -328,6 +342,24 @@ export default function ProjectScreen() {
             <Text style={styles.completedBannerSub}>{t('projectDetail.completedBannerSub')}</Text>
           </View>
         )}
+
+        {!isLoose && user ? (
+          <View style={styles.metaSection}>
+            <ProjectMetaRow
+              taskCount={tasks.length}
+              incompleteCount={incompleteTasks.length}
+              dueDate={project.dueDate}
+              accentColor={project.color}
+            />
+            <ProjectFocusCta
+              userId={user.id}
+              projectId={projectId}
+              projectName={project.name}
+              incompleteCount={incompleteTasks.length}
+              onFocused={loadProjectAndTasks}
+            />
+          </View>
+        ) : null}
 
         {incompleteTasks.length > 0 && (
           <>
@@ -454,8 +486,10 @@ export default function ProjectScreen() {
           visible={editingProject}
           name={editProjectName}
           color={editProjectColor}
+          dueDate={editProjectDueDate}
           onNameChange={setEditProjectName}
           onColorChange={setEditProjectColor}
+          onDueDateChange={setEditProjectDueDate}
           onSave={() => void handleSaveProjectEdit()}
           onClose={() => setEditingProject(false)}
           onDelete={handleDeleteProject}
@@ -514,6 +548,15 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: THEME.spacing.md,
+  },
+  metaSection: {
+    gap: THEME.spacing.sm,
+    marginBottom: THEME.spacing.md,
+    padding: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
   },
   loadingText: {
     ...THEME.typography.body,

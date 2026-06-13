@@ -45,7 +45,7 @@ export function getGentleRhythmState({
 
   if (allFocusDone && prioritiesTotal > 0) {
     return {
-      visibleChips: crisisMode ? ['breathe'] : ALL_CHIPS,
+      visibleChips: ALL_CHIPS,
       highlightedChip: null,
       hintKey: 'allDone',
       doneChips,
@@ -54,7 +54,7 @@ export function getGentleRhythmState({
 
   if (crisisMode || energyLevel <= 2) {
     return {
-      visibleChips: ['breathe'],
+      visibleChips: ALL_CHIPS,
       highlightedChip: 'breathe',
       hintKey: 'care',
       doneChips,

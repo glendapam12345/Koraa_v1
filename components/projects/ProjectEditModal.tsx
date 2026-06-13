@@ -17,8 +17,10 @@ type ProjectEditModalProps = {
   visible: boolean;
   name: string;
   color: string;
+  dueDate?: string;
   onNameChange: (value: string) => void;
   onColorChange: (value: string) => void;
+  onDueDateChange?: (value: string) => void;
   onSave: () => void;
   onClose: () => void;
   onDelete?: () => void;
@@ -29,8 +31,10 @@ export function ProjectEditModal({
   visible,
   name,
   color,
+  dueDate = '',
   onNameChange,
   onColorChange,
+  onDueDateChange,
   onSave,
   onClose,
   onDelete,
@@ -82,6 +86,23 @@ export function ProjectEditModal({
               />
             ))}
           </View>
+
+          {onDueDateChange ? (
+            <>
+              <Text style={styles.label}>{t('projects.dueDateLabel')}</Text>
+              <TextInput
+                style={styles.input}
+                value={dueDate}
+                onChangeText={onDueDateChange}
+                placeholder={t('projects.dueDatePlaceholder')}
+                placeholderTextColor={THEME.colors.text.tertiary}
+                keyboardType="numbers-and-punctuation"
+                maxLength={10}
+                accessibilityLabel={t('projects.dueDateA11y')}
+              />
+              <Text style={styles.hint}>{t('projects.dueDateHint')}</Text>
+            </>
+          ) : null}
 
           {onDelete ? (
             <TouchableOpacity
@@ -172,6 +193,11 @@ const styles = StyleSheet.create({
   },
   colorOptionSelected: {
     borderColor: THEME.colors.text.main,
+  },
+  hint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.tertiary,
+    marginTop: 4,
   },
   deleteBtn: {
     marginTop: THEME.spacing.lg,

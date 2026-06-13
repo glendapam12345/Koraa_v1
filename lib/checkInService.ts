@@ -4,6 +4,7 @@ import { getLocalDateString } from '@/lib/dateLocal';
 import { prioritizeTasksIntelligently } from '@/lib/smartPrioritization';
 import { publishCheckInCelebration } from '@/lib/checkInCelebration';
 import { markOnboardingCompleted } from '@/lib/onboardingGate';
+import { getFocusedProjectId } from '@/lib/focusedProjectStorage';
 import { logger } from '@/lib/logger';
 import { fetchCurrentStreak, isStreakMilestone } from '@/lib/streak';
 import type { AppLocale } from '@/lib/i18n';
@@ -38,6 +39,13 @@ export async function prioritizeTasksForCheckIn(
 
   if (tasksError || !tasks?.length) return;
 
+  const focusedProjectId = await getFocusedProjectId(userId);
+  const scopedTasks = focusedProjectId
+    ? tasks.filter((task: Task) => task.project_id === focusedProjectId)
+    : tasks;
+
+  if (!scopedTasks.length) return;
+
   const previousPriorityTaskIds = tasks
     .filter((task: { is_priority: boolean }) => task.is_priority)
     .map((task: { id: string }) => task.id);
@@ -48,7 +56,9 @@ export async function prioritizeTasksForCheckIn(
   tasks.forEach((task: Task) => {
     const taskWithSubtasks = { ...task, subtasks: [] as Task[] };
     tasksMap.set(task.id, taskWithSubtasks);
-    if (!task.parent_task_id) mainTasks.push(taskWithSubtasks);
+    if (!task.parent_task_id && scopedTasks.some((st: Task) => st.id === task.id)) {
+      mainTasks.push(taskWithSubtasks);
+    }
   });
 
   tasks.forEach((task: Task) => {
