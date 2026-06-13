@@ -25,8 +25,8 @@ export function HoyMoodHeroCard({
   emotionLabel,
   energyLevel,
   focusCount,
-  restCount,
-  firstFocusTaskName,
+  restCount: _restCount,
+  firstFocusTaskName: _firstFocusTaskName,
   coachLine,
   allFocusDone,
   compact = false,
@@ -38,23 +38,12 @@ export function HoyMoodHeroCard({
   const koraaLine = crisisMode
     ? t('hoy.crisisMoodHero')
     : compact
-    ? focusCount > 0
-      ? t('hoy.moodHeroLiteWithSteps', { count: focusCount })
-      : t('hoy.moodHeroLiteNoSteps')
-    : focusCount > 0
-      ? restCount > 0
-        ? t('hoy.moodHeroKoraaDid', {
-            level: energyLevel,
-            count: focusCount,
-            rest: restCount,
-          })
-        : t('hoy.moodHeroKoraaDidNoRest', { level: energyLevel, count: focusCount })
-      : t('hoy.moodHeroKoraaDidNoFocus', { level: energyLevel });
+      ? focusCount > 0
+        ? t('hoy.moodHeroLiteWithSteps', { count: focusCount })
+        : t('hoy.moodHeroLiteNoSteps')
+      : t('hoy.moodHeroPlanLead');
 
-  const taskHint =
-    firstFocusTaskName && !allFocusDone
-      ? t('hoy.moodHeroFirstStep', { task: firstFocusTaskName })
-      : null;
+  const taskHint = null;
 
   const coachAddsValue =
     Boolean(coachLine) &&

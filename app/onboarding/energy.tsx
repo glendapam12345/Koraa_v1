@@ -107,6 +107,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: THEME.spacing.sm,
     minHeight: THEME.sizes.touchTarget,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
     ...THEME.shadows.soft,
   },
   optionSelected: {

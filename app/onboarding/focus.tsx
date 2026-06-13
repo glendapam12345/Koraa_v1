@@ -370,6 +370,8 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
     minHeight: THEME.sizes.touchTarget,
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
     ...THEME.shadows.soft,
   },
   optionSelected: {

@@ -6,7 +6,6 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { HoyStreakPill } from '@/components/hoy/HoyStreakPill';
 import { HoyCareModeToggle } from '@/components/hoy/HoyCareModeToggle';
-import { HoyCrisisBanner } from '@/components/hoy/HoyCrisisBanner';
 import { useI18n } from '@/contexts/I18nContext';
 
 type HoyScreenHeaderProps = {
@@ -18,8 +17,6 @@ type HoyScreenHeaderProps = {
   checkedInToday?: boolean;
   crisisModeActive?: boolean;
   onCareModePress?: () => void;
-  onCareModeDismiss?: () => void;
-  onCareModeLearnMore?: () => void;
 };
 
 /** Cabecera de Hoy: racha + ayuda. Tareas vive en la pestaña inferior. */
@@ -30,8 +27,6 @@ export function HoyScreenHeader({
   checkedInToday = false,
   crisisModeActive = false,
   onCareModePress,
-  onCareModeDismiss,
-  onCareModeLearnMore,
 }: HoyScreenHeaderProps) {
   const { t } = useI18n();
 
@@ -63,16 +58,7 @@ export function HoyScreenHeader({
       title={t('tabs.today')}
       subtitle={showSubtitle ? t('hoy.headerSubtitle') : undefined}
       trailing={trailing}
-    >
-      {crisisModeActive && onCareModeDismiss && onCareModeLearnMore ? (
-        <View style={styles.careBannerRow}>
-          <HoyCrisisBanner
-            onDismiss={onCareModeDismiss}
-            onLearnMore={onCareModeLearnMore}
-          />
-        </View>
-      ) : null}
-    </ScreenHeader>
+    />
   );
 }
 
@@ -83,9 +69,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: THEME.spacing.xs,
     alignSelf: 'stretch',
-  },
-  careBannerRow: {
-    alignSelf: 'flex-end',
-    marginTop: -THEME.spacing.xs,
   },
 });

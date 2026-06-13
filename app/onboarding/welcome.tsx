@@ -30,9 +30,44 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <OnboardingScreenShell>
-      <View style={styles.iconContainer}>
-        <View style={styles.iconCircle}>
+    <OnboardingScreenShell
+      footer={
+        <>
+          <CalmPrimaryButton
+            label={t('onboarding.welcome.quickStart')}
+            onPress={() => router.push('/onboarding/emotion')}
+            accessibilityHint={t('onboarding.welcome.quickStartHint')}
+          />
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => router.push('/onboarding/intro2')}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={t('onboarding.welcome.seeHowItWorks')}
+            accessibilityHint={t('onboardingA11y.welcomeSeeHowHint')}
+          >
+            <Text style={styles.secondaryText}>{t('onboarding.welcome.seeHowItWorks')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.skipButton}
+            onPress={() => void handleSkipIntro()}
+            disabled={skipLoading}
+            accessibilityRole="button"
+            accessibilityLabel={t('onboarding.welcome.skip')}
+            accessibilityHint={t('onboardingA11y.skipIntroHint')}
+            accessibilityState={{ disabled: skipLoading, busy: skipLoading }}
+          >
+            {skipLoading ? (
+              <ActivityIndicator color={THEME.colors.text.secondary} />
+            ) : (
+              <Text style={styles.skipText}>{t('onboarding.welcome.skip')}</Text>
+            )}
+          </TouchableOpacity>
+        </>
+      }
+    >
+      <View style={onboardingTypography.iconContainer}>
+        <View style={onboardingTypography.iconCircle}>
           <Sparkles size={32} color={THEME.colors.gradient.blue} />
         </View>
       </View>
@@ -68,58 +103,11 @@ export default function WelcomeScreen() {
           <Text style={styles.exampleResult}>{t('onboarding.welcome.exampleResultHigh')}</Text>
         </View>
       </View>
-
-      <CalmPrimaryButton
-        label={t('onboarding.welcome.quickStart')}
-        onPress={() => router.push('/onboarding/emotion')}
-        accessibilityHint={t('onboarding.welcome.quickStartHint')}
-      />
-
-      <TouchableOpacity
-        style={styles.secondaryButton}
-        onPress={() => router.push('/onboarding/intro2')}
-        activeOpacity={0.85}
-        accessibilityRole="button"
-        accessibilityLabel={t('onboarding.welcome.seeHowItWorks')}
-        accessibilityHint={t('onboardingA11y.welcomeSeeHowHint')}
-      >
-        <Text style={styles.secondaryText}>{t('onboarding.welcome.seeHowItWorks')}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.skipButton}
-        onPress={() => void handleSkipIntro()}
-        disabled={skipLoading}
-        accessibilityRole="button"
-        accessibilityLabel={t('onboarding.welcome.skip')}
-        accessibilityHint={t('onboardingA11y.skipIntroHint')}
-        accessibilityState={{ disabled: skipLoading, busy: skipLoading }}
-      >
-        {skipLoading ? (
-          <ActivityIndicator color={THEME.colors.text.secondary} />
-        ) : (
-          <Text style={styles.skipText}>{t('onboarding.welcome.skip')}</Text>
-        )}
-      </TouchableOpacity>
     </OnboardingScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  iconContainer: {
-    alignItems: 'center',
-    marginBottom: THEME.spacing.lg,
-  },
-  iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: THEME.colors.calm.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
-  },
   title: {
     ...onboardingTypography.title,
     textAlign: 'center',
@@ -148,6 +136,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
+    ...THEME.shadows.soft,
   },
   exampleHeader: {
     flexDirection: 'row',

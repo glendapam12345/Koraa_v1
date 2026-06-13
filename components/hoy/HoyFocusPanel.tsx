@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Sparkles, ChevronRight, RefreshCw } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -7,7 +7,9 @@ import { THEME } from '@/constants/theme';
 import type { FocusProgressStats } from '@/lib/focusProgressStats';
 import { HoyFocusTaskRow } from '@/components/hoy/HoyFocusTaskRow';
 import { HoyMoodHeroCard } from '@/components/hoy/HoyMoodHeroCard';
-import { HoySleepCard } from '@/components/hoy/HoySleepCard';
+import { HoyDailyPlanCard } from '@/components/hoy/HoyDailyPlanCard';
+import { HoyWaitingSection } from '@/components/hoy/HoyWaitingSection';
+import { HoyCrisisBanner } from '@/components/hoy/HoyCrisisBanner';
 import { HoyLightenLoadCard } from '@/components/hoy/HoyLightenLoadCard';
 import { HoyLitePeekCard } from '@/components/hoy/HoyLitePeekCard';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
@@ -58,6 +60,12 @@ type HoyFocusPanelProps = {
   };
   /** Emergency Kit: suaviza pasos sugeridos (1 visible, el resto puede esperar). */
   crisisMode?: boolean;
+  /** Hasta 3 nombres de tareas que pueden esperar (vista previa). */
+  waitingPreviewLabels?: string[];
+  /** Filas interactivas de tareas que pueden esperar. */
+  waitingTasksSlot?: ReactNode;
+  onCareModeDismiss?: () => void;
+  onCareModeLearnMore?: () => void;
 };
 
 export function HoyFocusPanel({
@@ -86,9 +94,14 @@ export function HoyFocusPanel({
   shortSleep = false,
   sleepCard,
   crisisMode = false,
+  waitingPreviewLabels = [],
+  waitingTasksSlot,
+  onCareModeDismiss,
+  onCareModeLearnMore,
 }: HoyFocusPanelProps) {
   const { t } = useI18n();
   const [extraFocusExpanded, setExtraFocusExpanded] = useState(false);
+  const [stepsExpanded, setStepsExpanded] = useState(true);
 
   const emotionEmoji = getEmotionEmoji(todayMood);
   const incompleteFocusTasks = useMemo(
@@ -154,14 +167,61 @@ export function HoyFocusPanel({
   const moodFocusCount = careCounts?.visibleFocus ?? totalFocusCount;
   const moodRestCount = careCounts?.waitingCount ?? nonFocusPending;
   const restLinkCount = careCounts?.waitingCount ?? nonFocusPending;
-  const showRestOfDayLink =
-    !compactLayout &&
-    restLinkCount > 0 &&
-    !restExpanded &&
-    Boolean(onRestExpandedChange);
+  const togglePriorities = () => {
+    setStepsExpanded((open) => !open);
+    setExtraFocusExpanded(true);
+  };
+
+  const prioritiesSlot =
+    incompleteFocusTasks.length > 0 ? (
+      <>
+        <View style={styles.taskList}>
+          {visibleFocusTasks.map((task, index) => (
+            <HoyFocusTaskRow
+              key={task.id}
+              task={task}
+              index={index}
+              projectName={task.project_id ? projectsMap[task.project_id]?.name ?? null : null}
+              onToggleComplete={() => onToggleTask(task.id)}
+              onOpenDetails={() => onOpenTask(task)}
+              onDelete={onDeleteTask ? () => onDeleteTask(task) : undefined}
+            />
+          ))}
+        </View>
+        {hiddenInSection > 0 && !extraFocusExpanded && !crisisMode ? (
+          <TouchableOpacity
+            onPress={() => setExtraFocusExpanded(true)}
+            activeOpacity={0.85}
+            style={styles.moreStepsBtn}
+            accessibilityRole="button"
+            accessibilityLabel={t('hoy.seeMoreSteps', { count: hiddenInSection })}
+          >
+            <Text style={styles.moreStepsText}>
+              {t('hoy.seeMoreSteps', { count: hiddenInSection })}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+      </>
+    ) : null;
+
+  const planFooterSlot = allFocusDone ? (
+    <View style={styles.celebration}>
+      <Sparkles size={28} color={THEME.colors.calm.lavenderDeep} />
+      <Text style={styles.celebrationTitle}>{t('hoy.focusAllDoneTitle')}</Text>
+      <Text style={styles.celebrationBody}>{t('hoy.focusAllDoneBody')}</Text>
+    </View>
+  ) : null;
 
   return (
     <View style={styles.root}>
+      {crisisMode && onCareModeDismiss && onCareModeLearnMore ? (
+        <HoyCrisisBanner
+          fullWidth
+          onDismiss={onCareModeDismiss}
+          onLearnMore={onCareModeLearnMore}
+        />
+      ) : null}
+
       <HoyMoodHeroCard
         emotionEmoji={emotionEmoji}
         emotionLabel={emotionLabel}
@@ -178,19 +238,6 @@ export function HoyFocusPanel({
 
       {!compactLayout ? (
         <View style={styles.postHeroCluster}>
-          {todayMood && energyLevel > 0 && sleepCard ? (
-            <HoySleepCard
-              energyLevel={energyLevel}
-              emotionKey={todayMood}
-              available={sleepCard.available}
-              connected={sleepCard.connected}
-              lastNightHours={sleepCard.lastNightHours}
-              shortSleep={sleepCard.shortSleep}
-              onConnect={sleepCard.onConnect}
-              onOpenSleep={sleepCard.onOpenSleep}
-            />
-          ) : null}
-
           <TouchableOpacity
             onPress={openFeel}
             activeOpacity={0.85}
@@ -211,75 +258,50 @@ export function HoyFocusPanel({
         </View>
       ) : null}
 
-      <View style={styles.focusHeader}>
-        <Text style={styles.sectionTitle}>
-          {focusTasks.length > 0
-            ? t('hoy.enoughForToday')
-            : t('hoy.focusTasksSection')}
-        </Text>
-        {focusTasks.length > 0 ? (
-          <Text style={styles.sectionSub}>
-            {crisisMode
-              ? t('hoy.careModeFocusHint')
-              : hiddenInSection > 0
-                ? t('hoy.oneSmallStep')
-                : t('hoy.focusListHint')}
-          </Text>
-        ) : null}
-      </View>
+      {!compactLayout ? (
+        <HoyDailyPlanCard
+          stepCount={incompleteFocusTasks.length}
+          crisisMode={crisisMode}
+          energyLevel={energyLevel}
+          prioritiesDone={priorityStats.done}
+          prioritiesTotal={priorityStats.total}
+          allFocusDone={allFocusDone}
+          prioritiesExpanded={stepsExpanded}
+          onTogglePriorities={togglePriorities}
+          prioritiesSlot={prioritiesSlot}
+          footerSlot={planFooterSlot}
+        />
+      ) : null}
 
-      <CalmCard style={styles.focusCard}>
-        {allFocusDone ? (
-          <View style={styles.celebration}>
-            <Sparkles size={28} color={THEME.colors.calm.lavenderDeep} />
-            <Text style={styles.celebrationTitle}>{t('hoy.focusAllDoneTitle')}</Text>
-            <Text style={styles.celebrationBody}>{t('hoy.focusAllDoneBody')}</Text>
-          </View>
-        ) : focusTasks.length > 0 ? (
-          <View style={styles.focusBlock}>
-            <View style={styles.taskList}>
-              {visibleFocusTasks.map((task, index) => (
-                <HoyFocusTaskRow
-                  key={task.id}
-                  task={task}
-                  index={index}
-                  projectName={
-                    task.project_id ? projectsMap[task.project_id]?.name ?? null : null
-                  }
-                  onToggleComplete={() => onToggleTask(task.id)}
-                  onOpenDetails={() => onOpenTask(task)}
-                  onDelete={onDeleteTask ? () => onDeleteTask(task) : undefined}
-                />
-              ))}
+      {!compactLayout ? (
+        <HoyWaitingSection
+          count={restLinkCount}
+          crisisMode={crisisMode}
+          previewLabels={waitingPreviewLabels}
+          tasksSlot={waitingTasksSlot}
+        />
+      ) : null}
+
+      {compactLayout ? (
+        <CalmCard style={styles.focusCard}>
+          {allFocusDone ? (
+            planFooterSlot
+          ) : focusTasks.length > 0 ? (
+            <View style={styles.focusBlock}>{prioritiesSlot}</View>
+          ) : (
+            <View style={styles.emptyBlock}>
+              <Text style={styles.emptyTitle}>{t('hoy.focusEmptyTitle')}</Text>
+              <Text style={styles.emptyBody}>{t('hoy.focusEmptyBody')}</Text>
+              <CalmPrimaryButton
+                label={t('hoy.focusGoTasksCta')}
+                onPress={() => router.push('/(tabs)/vaciar')}
+                variant="soft"
+                accessibilityHint={t('hoy.focusGoTasksHint')}
+              />
             </View>
-            {hiddenInSection > 0 && !extraFocusExpanded && !crisisMode ? (
-              <TouchableOpacity
-                onPress={() => setExtraFocusExpanded(true)}
-                activeOpacity={0.85}
-                style={styles.moreStepsBtn}
-                accessibilityRole="button"
-                accessibilityLabel={t('hoy.seeMoreSteps', { count: hiddenInSection })}
-              >
-                <Text style={styles.moreStepsText}>
-                  {t('hoy.seeMoreSteps', { count: hiddenInSection })}
-                </Text>
-              </TouchableOpacity>
-            ) : null}
-          </View>
-        ) : (
-          <View style={styles.emptyBlock}>
-            <Text style={styles.emptyTitle}>{t('hoy.focusEmptyTitle')}</Text>
-            <Text style={styles.emptyBody}>{t('hoy.focusEmptyBody')}</Text>
-            <Text style={styles.emptyTabHint}>{t('hoy.focusEmptyTasksTab')}</Text>
-            <CalmPrimaryButton
-              label={t('hoy.focusGoTasksCta')}
-              onPress={() => router.push('/(tabs)/vaciar')}
-              variant="soft"
-              accessibilityHint={t('hoy.focusGoTasksHint')}
-            />
-          </View>
-        )}
-      </CalmCard>
+          )}
+        </CalmCard>
+      ) : null}
 
       {showLightenLoad ? (
         <HoyLightenLoadCard
@@ -294,29 +316,6 @@ export function HoyFocusPanel({
           onShowMoreForToday={() => onRestExpandedChange(true)}
           onShowFullView={onShowFullView}
         />
-      ) : null}
-
-      {showRestOfDayLink ? (
-        <TouchableOpacity
-          onPress={() => onRestExpandedChange?.(true)}
-          activeOpacity={0.85}
-          style={styles.restOfDayLink}
-          accessibilityRole="button"
-          accessibilityLabel={
-            crisisMode
-              ? t('hoy.careModeRestLinkA11y', { count: restLinkCount })
-              : t('hoy.showMoreForTodayLink')
-          }
-        >
-          <Text style={styles.restOfDayLinkText}>
-            {crisisMode
-              ? restLinkCount === 1
-                ? t('hoy.careModeRestLinkOne', { count: restLinkCount })
-                : t('hoy.careModeRestLinkMany', { count: restLinkCount })
-              : t('hoy.showMoreForTodayLink')}
-          </Text>
-          <ChevronRight size={18} color={THEME.colors.calm.lavenderDeep} />
-        </TouchableOpacity>
       ) : null}
     </View>
   );

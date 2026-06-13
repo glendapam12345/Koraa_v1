@@ -304,8 +304,6 @@ export default function TodayScreen() {
           checkedInToday={Boolean(todayMood)}
           crisisModeActive={crisisModeActive}
           onCareModePress={() => setCareModeSheet(crisisModeActive ? 'deactivate' : 'activate')}
-          onCareModeDismiss={() => setCareModeSheet('deactivate')}
-          onCareModeLearnMore={() => setCareModeGuideOpen(true)}
         />
 
         {loading ? (
@@ -372,6 +370,8 @@ export default function TodayScreen() {
             onChangeEmotion={openQuickRecheck}
             onLightenLoad={() => setShowRedistribute(true)}
             crisisMode={crisisModeActive}
+            onCareModeDismiss={() => setCareModeSheet('deactivate')}
+            onCareModeLearnMore={() => setCareModeGuideOpen(true)}
           />
         ) : null}
 

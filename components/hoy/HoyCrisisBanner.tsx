@@ -6,18 +6,20 @@ import { useI18n } from '@/contexts/I18nContext';
 type HoyCrisisBannerProps = {
   onDismiss: () => void;
   onLearnMore: () => void;
+  /** Ocupa todo el ancho cuando va al inicio del contenido de Hoy. */
+  fullWidth?: boolean;
 };
 
-export function HoyCrisisBanner({ onDismiss, onLearnMore }: HoyCrisisBannerProps) {
+export function HoyCrisisBanner({ onDismiss, onLearnMore, fullWidth = false }: HoyCrisisBannerProps) {
   const { t } = useI18n();
 
   return (
     <View
-      style={styles.wrap}
+      style={[styles.wrap, fullWidth && styles.wrapFull]}
       accessibilityRole="summary"
       accessibilityLabel={t('hoy.crisisBannerTitle')}
     >
-      <View style={styles.pill}>
+      <View style={[styles.pill, fullWidth && styles.pillFull]}>
         <Heart
           size={14}
           color={THEME.colors.calm.lavenderDeep}
@@ -59,6 +61,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     maxWidth: '100%',
   },
+  wrapFull: {
+    alignSelf: 'stretch',
+  },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -69,6 +74,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.sm,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
+  },
+  pillFull: {
+    borderRadius: THEME.borderRadius.rounded,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    justifyContent: 'center',
+    flexWrap: 'wrap',
   },
   title: {
     ...THEME.typography.meta,

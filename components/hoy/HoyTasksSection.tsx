@@ -2,6 +2,7 @@ import { View, StyleSheet, Alert } from 'react-native';
 import { useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { HoyFocusPanel } from '@/components/hoy/HoyFocusPanel';
+import { HoyFocusTaskRow } from '@/components/hoy/HoyFocusTaskRow';
 import { HoyRestOfDayPanel } from '@/components/hoy/HoyRestOfDayPanel';
 import { useI18n } from '@/contexts/I18nContext';
 import { useAppleHealthConnection } from '@/hooks/useAppleHealthConnection';
@@ -43,6 +44,8 @@ export type HoyTasksSectionProps = {
   onChangeEmotion?: () => void;
   onLightenLoad?: () => void;
   crisisMode?: boolean;
+  onCareModeDismiss?: () => void;
+  onCareModeLearnMore?: () => void;
 };
 
 export function HoyTasksSection({
@@ -78,6 +81,8 @@ export function HoyTasksSection({
   onChangeEmotion,
   onLightenLoad,
   crisisMode = false,
+  onCareModeDismiss,
+  onCareModeLearnMore,
 }: HoyTasksSectionProps) {
   const { locale, t } = useI18n();
   const health = useAppleHealthConnection(t);
@@ -116,6 +121,41 @@ export function HoyTasksSection({
         (task) => !task.is_priority || Boolean(task.parent_task_id),
       ),
     [incompleteTasksForToday],
+  );
+
+  const waitingPreviewLabels = useMemo(
+    () => restOfDayTasks.map((task) => task.content.trim()).filter(Boolean).slice(0, 3),
+    [restOfDayTasks],
+  );
+
+  const visibleWaitingTasks = useMemo(() => restOfDayTasks.slice(0, 5), [restOfDayTasks]);
+
+  const waitingTasksSlot = useMemo(
+    () =>
+      visibleWaitingTasks.length > 0 ? (
+        <View style={styles.waitingList}>
+          {visibleWaitingTasks.map((task, index) => (
+            <HoyFocusTaskRow
+              key={task.id}
+              task={task}
+              index={index}
+              projectName={
+                task.project_id ? projectsMap[task.project_id]?.name ?? null : null
+              }
+              onToggleComplete={() => void handleToggleTask(task.id)}
+              onOpenDetails={() => handleEditTask(task)}
+              onDelete={onDeleteTask ? () => onDeleteTask(task) : undefined}
+            />
+          ))}
+        </View>
+      ) : null,
+    [
+      handleEditTask,
+      handleToggleTask,
+      onDeleteTask,
+      projectsMap,
+      visibleWaitingTasks,
+    ],
   );
 
   return (
@@ -159,8 +199,12 @@ export function HoyTasksSection({
           onOpenSleep: () => void health.openSleep(),
         }}
         crisisMode={crisisMode}
+        waitingPreviewLabels={waitingPreviewLabels}
+        waitingTasksSlot={waitingTasksSlot}
+        onCareModeDismiss={onCareModeDismiss}
+        onCareModeLearnMore={onCareModeLearnMore}
       />
-      {restOfDayExpanded && onCollapseRestOfDay ? (
+      {compactLayout && restOfDayExpanded && onCollapseRestOfDay ? (
         <HoyRestOfDayPanel
           tasks={tasks}
           restTasks={restOfDayTasks}
@@ -186,5 +230,8 @@ export function HoyTasksSection({
 const styles = StyleSheet.create({
   root: {
     gap: THEME.layout.tabSectionGap,
+  },
+  waitingList: {
+    gap: THEME.spacing.sm,
   },
 });

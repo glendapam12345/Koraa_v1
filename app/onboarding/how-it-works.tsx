@@ -6,7 +6,7 @@ import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingHighlightCard } from '@/components/onboarding/OnboardingHighlightCard';
 import { OnboardingProgressDots } from '@/components/onboarding/OnboardingProgressDots';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
-import { PenTool, Heart, Sparkles } from 'lucide-react-native';
+import { PenTool, Heart, Sparkles, Route } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { markOnboardingCompleted } from '@/lib/onboardingGate';
 import { useI18n } from '@/contexts/I18nContext';
@@ -58,6 +58,12 @@ export default function HowItWorksScreen() {
         </>
       }
     >
+      <View style={onboardingTypography.iconContainer}>
+        <View style={onboardingTypography.iconCircle}>
+          <Route size={32} color={THEME.colors.gradient.blue} />
+        </View>
+      </View>
+
       <Text style={onboardingTypography.title}>{t('onboarding.howItWorks.title')}</Text>
       <Text style={onboardingTypography.titleAccent}>{t('onboarding.howItWorks.titleAccent')}</Text>
       <Text style={onboardingTypography.subtitle}>{t('onboarding.howItWorks.subtitle')}</Text>
