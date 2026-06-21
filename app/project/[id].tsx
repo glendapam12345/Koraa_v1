@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
@@ -13,9 +13,28 @@ import { TaskEditModal } from '@/components/tasks/TaskEditModal';
 import { ProjectEditModal } from '@/components/projects/ProjectEditModal';
 import { ProjectMetaRow } from '@/components/projects/ProjectMetaRow';
 import { ProjectFocusCta } from '@/components/projects/ProjectFocusCta';
+import {
+  ProjectQuickAddTaskModal,
+  type ProjectQuickAddTarget,
+} from '@/components/projects/ProjectQuickAddTaskModal';
+import { Toast } from '@/components/Toast';
 import { useI18n } from '@/contexts/I18nContext';
+import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
 import { confirmDeleteProject, deleteProjectById } from '@/lib/deleteProject';
+import { fetchProjectById, fetchUserProjects } from '@/lib/projectDueDateSchema';
 import { normalizeDueDateInput } from '@/lib/projectProgress';
+import { TaskMoveProjectModal } from '@/components/tasks/TaskMoveProjectModal';
+import {
+  getNextWeekDateString,
+  getTomorrowDateString,
+  moveTaskToProject,
+  rescheduleTask,
+} from '@/lib/taskReplan';
+import { getProjectEmoji } from '@/lib/projectEmoji';
+import {
+  resolveProjectLifeAreaKey,
+  type LifeAreaKey,
+} from '@/lib/lifeAreas/lifeAreaCatalog';
 
 export default function ProjectScreen() {
   const params = useLocalSearchParams<{ id: string }>();
@@ -24,7 +43,12 @@ export default function ProjectScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { t } = useI18n();
-  const [project, setProject] = useState<{ name: string; color: string; dueDate: string | null } | null>(null);
+  const [project, setProject] = useState<{
+    name: string;
+    color: string;
+    dueDate: string | null;
+    lifeAreaKey: LifeAreaKey;
+  } | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
@@ -36,19 +60,29 @@ export default function ProjectScreen() {
   const [editProjectName, setEditProjectName] = useState('');
   const [editProjectColor, setEditProjectColor] = useState<string>(THEME.colors.gradient.blue);
   const [editProjectDueDate, setEditProjectDueDate] = useState('');
+  const [editProjectLifeAreaKey, setEditProjectLifeAreaKey] = useState<LifeAreaKey>('other');
   const [savingProject, setSavingProject] = useState(false);
+  const [quickAddTarget, setQuickAddTarget] = useState<ProjectQuickAddTarget | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [moveTaskTarget, setMoveTaskTarget] = useState<Task | null>(null);
+  const [allProjects, setAllProjects] = useState<{ id: string; name: string; color: string }[]>(
+    [],
+  );
+  const hasLoadedRef = useRef(false);
 
+  const { hasCheckInToday } = useHasCheckInToday(user?.id);
   const isLoose = projectId === 'sin-proyecto';
 
-  const loadProjectAndTasks = useCallback(async () => {
+  const loadProjectAndTasks = useCallback(async (options?: { silent?: boolean }) => {
     if (!user || !projectId) {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    const silent = Boolean(options?.silent && hasLoadedRef.current);
+    if (!silent) setLoading(true);
     try {
       if (isLoose) {
-        setProject({ name: t('projectDetail.looseName'), color: THEME.colors.text.tertiary, dueDate: null });
+        setProject({ name: t('projectDetail.looseName'), color: THEME.colors.text.tertiary, dueDate: null, lifeAreaKey: 'personal' });
 
         const { data: tasksData, error: tasksError } = await supabase
           .from('tasks')
@@ -65,25 +99,39 @@ export default function ProjectScreen() {
           return;
         }
 
-        const { data: subtasksData } = await supabase
-          .from('tasks')
-          .select('*')
-          .eq('user_id', user.id)
-          .not('parent_task_id', 'is', null)
-          .order('created_at', { ascending: true });
+        const parentIds = (tasksData ?? []).map((task) => task.id);
+        let subtasksData: Task[] = [];
+        if (parentIds.length > 0) {
+          const { data } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('user_id', user.id)
+            .in('parent_task_id', parentIds)
+            .order('created_at', { ascending: true });
+          subtasksData = (data as Task[]) ?? [];
+        }
 
         const tasksWithSubtasks = (tasksData ?? []).map((task: Task) => ({
           ...task,
-          subtasks: (subtasksData ?? []).filter((st: Task) => st.parent_task_id === task.id),
+          subtasks: subtasksData.filter((st: Task) => st.parent_task_id === task.id),
         }));
         setTasks(tasksWithSubtasks);
+        hasLoadedRef.current = true;
       } else {
-        const { data: projectData, error: projectError } = await supabase
-          .from('projects')
-          .select('name, color, due_date')
-          .eq('id', projectId)
-          .eq('user_id', user.id)
-          .single();
+        const [projectResult, tasksResult] = await Promise.all([
+          fetchProjectById(user.id, projectId),
+          supabase
+            .from('tasks')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('project_id', projectId)
+            .is('parent_task_id', null)
+            .order('is_priority', { ascending: false })
+            .order('created_at', { ascending: true }),
+        ]);
+
+        const { data: projectData, error: projectError } = projectResult;
+        const { data: tasksData, error: tasksError } = tasksResult;
 
         if (projectError || !projectData) {
           setProject(null);
@@ -95,16 +143,8 @@ export default function ProjectScreen() {
           name: projectData.name,
           color: projectData.color ?? THEME.colors.gradient.blue,
           dueDate: projectData.due_date ?? null,
+          lifeAreaKey: resolveProjectLifeAreaKey(projectData.life_area_key, projectData.name),
         });
-
-        const { data: tasksData, error: tasksError } = await supabase
-          .from('tasks')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('project_id', projectId)
-          .is('parent_task_id', null)
-          .order('is_priority', { ascending: false })
-          .order('created_at', { ascending: true });
 
         if (tasksError) {
           setTasks([]);
@@ -112,18 +152,24 @@ export default function ProjectScreen() {
           return;
         }
 
-        const { data: subtasksData } = await supabase
-          .from('tasks')
-          .select('*')
-          .eq('user_id', user.id)
-          .not('parent_task_id', 'is', null)
-          .order('created_at', { ascending: true });
+        const parentIds = (tasksData ?? []).map((task) => task.id);
+        let subtasksData: Task[] = [];
+        if (parentIds.length > 0) {
+          const { data } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('user_id', user.id)
+            .in('parent_task_id', parentIds)
+            .order('created_at', { ascending: true });
+          subtasksData = (data as Task[]) ?? [];
+        }
 
         const tasksWithSubtasks = (tasksData ?? []).map((task: Task) => ({
           ...task,
-          subtasks: (subtasksData ?? []).filter((st: Task) => st.parent_task_id === task.id),
+          subtasks: subtasksData.filter((st: Task) => st.parent_task_id === task.id),
         }));
         setTasks(tasksWithSubtasks);
+        hasLoadedRef.current = true;
       }
     } catch {
       setProject(null);
@@ -133,9 +179,104 @@ export default function ProjectScreen() {
     }
   }, [user, projectId, isLoose, t]);
 
+  const openQuickAdd = useCallback(() => {
+    if (isLoose) {
+      setQuickAddTarget({ mode: 'loose' });
+      return;
+    }
+    if (!project || !projectId) return;
+    setQuickAddTarget({
+      mode: 'project',
+      id: projectId,
+      name: project.name,
+      color: project.color,
+    });
+  }, [isLoose, project, projectId]);
+
+  const handleQuickAddSaved = useCallback(
+    ({ title, projectName }: { title: string; projectName?: string }) => {
+      void loadProjectAndTasks({ silent: true });
+      const message = projectName
+        ? t('projects.quickAddSuccess', { title, name: projectName })
+        : t('projects.quickAddSuccessLoose', { title });
+      setToastMessage(message);
+    },
+    [loadProjectAndTasks, t],
+  );
+
   useEffect(() => {
+    hasLoadedRef.current = false;
     loadProjectAndTasks();
   }, [loadProjectAndTasks]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    void (async () => {
+      const { data } = await fetchUserProjects(user.id);
+      setAllProjects(
+        (data ?? []).map((entry) => ({
+          id: entry.id,
+          name: entry.name,
+          color: entry.color ?? THEME.colors.gradient.blue,
+        })),
+      );
+    })();
+  }, [user?.id]);
+
+  const handleMoveTomorrow = useCallback(
+    async (task: Task) => {
+      const { error } = await rescheduleTask(task.id, getTomorrowDateString());
+      if (error) return;
+      setToastMessage(t('tasks.replanMovedTomorrow'));
+      loadProjectAndTasks({ silent: true });
+    },
+    [loadProjectAndTasks, t],
+  );
+
+  const handleMoveNextWeek = useCallback(
+    async (task: Task) => {
+      const { error } = await rescheduleTask(task.id, getNextWeekDateString());
+      if (error) return;
+      setToastMessage(t('tasks.replanMovedNextWeek'));
+      loadProjectAndTasks({ silent: true });
+    },
+    [loadProjectAndTasks, t],
+  );
+
+  const handleOpenMoveProject = useCallback((task: Task) => {
+    setMoveTaskTarget(task);
+  }, []);
+
+  const handleConfirmMoveProject = useCallback(
+    async (nextProjectId: string | null) => {
+      if (!moveTaskTarget) return;
+      const { error } = await moveTaskToProject(moveTaskTarget.id, nextProjectId);
+      if (error) return;
+      const projectName =
+        nextProjectId == null
+          ? t('projectsUi.looseTitle')
+          : allProjects.find((entry) => entry.id === nextProjectId)?.name ?? '';
+      setMoveTaskTarget(null);
+      setToastMessage(t('tasks.replanMovedProject', { name: projectName }));
+      if (nextProjectId && nextProjectId !== projectId) {
+        router.replace(`/project/${nextProjectId}` as const);
+        return;
+      }
+      if (nextProjectId === null && !isLoose) {
+        router.replace('/project/sin-proyecto');
+        return;
+      }
+      loadProjectAndTasks({ silent: true });
+    },
+    [allProjects, isLoose, loadProjectAndTasks, moveTaskTarget, projectId, router, t],
+  );
+
+  const replanProps = {
+    enableReplanSwipe: true,
+    onMoveTomorrow: handleMoveTomorrow,
+    onMoveNextWeek: handleMoveNextWeek,
+    onMoveProject: handleOpenMoveProject,
+  };
 
   const incompleteTasks = tasks.filter((t) => !t.is_completed);
   const completedTasks = tasks.filter((t) => t.is_completed);
@@ -185,6 +326,7 @@ export default function ProjectScreen() {
       setEditProjectName(project.name);
       setEditProjectColor(project.color);
       setEditProjectDueDate(project.dueDate ?? '');
+      setEditProjectLifeAreaKey(project.lifeAreaKey);
     }
   }, [project, isLoose]);
 
@@ -210,6 +352,7 @@ export default function ProjectScreen() {
           name: editProjectName.trim(),
           color: editProjectColor,
           due_date: dueDate,
+          life_area_key: editProjectLifeAreaKey,
         })
         .eq('id', projectId);
       if (!error) {
@@ -219,7 +362,7 @@ export default function ProjectScreen() {
     } finally {
       setSavingProject(false);
     }
-  }, [editProjectColor, editProjectDueDate, editProjectName, isLoose, loadProjectAndTasks, projectId]);
+  }, [editProjectColor, editProjectDueDate, editProjectLifeAreaKey, editProjectName, isLoose, loadProjectAndTasks, projectId]);
 
   const handleEditTask = useCallback((task: Task) => {
     setEditingTask(task);
@@ -303,7 +446,10 @@ export default function ProjectScreen() {
           <ChevronLeft size={24} color={THEME.colors.text.main} />
         </TouchableOpacity>
         <View style={styles.headerTextWrap}>
-          <Text style={styles.headerTitle} numberOfLines={1}>{project.name}</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {!isLoose ? `${getProjectEmoji(project.name)} ` : ''}
+            {project.name}
+          </Text>
           <Text style={styles.headerSubtitle} numberOfLines={1}>
             {allDone
               ? t('projectDetail.completed', {
@@ -326,7 +472,7 @@ export default function ProjectScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('projects.renameProjectA11y', { name: project.name })}
           >
-            <Pencil size={20} color={THEME.colors.gradient.blue} />
+            <Pencil size={20} color={THEME.colors.calm.lavenderDeep} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -381,6 +527,7 @@ export default function ProjectScreen() {
               getProjectInfo={() => ({ label: project.name, color: project.color })}
               hideProjectLabel={true}
               sectionAccentColor={project.color}
+              {...replanProps}
             />
           </>
         )}
@@ -407,6 +554,7 @@ export default function ProjectScreen() {
               getProjectInfo={() => ({ label: project.name, color: project.color })}
               hideProjectLabel={true}
               sectionAccentColor={project.color}
+              {...replanProps}
             />
           </>
         )}
@@ -421,14 +569,7 @@ export default function ProjectScreen() {
             </Text>
             <TouchableOpacity
               style={styles.emptyCta}
-              onPress={() =>
-                isLoose
-                  ? router.push('/(tabs)/vaciar')
-                  : router.push({
-                      pathname: '/(tabs)/vaciar',
-                      params: { projectId: projectId as string },
-                    })
-              }
+              onPress={openQuickAdd}
               activeOpacity={0.88}
               accessibilityRole="button"
               accessibilityLabel={isLoose ? t('projectDetail.goTasksA11y') : t('projectDetail.addTaskA11y')}
@@ -450,14 +591,7 @@ export default function ProjectScreen() {
       {tasks.length > 0 ? (
         <TouchableOpacity
           style={[styles.fab, { bottom: insets.bottom + THEME.spacing.lg }]}
-          onPress={() =>
-            isLoose
-              ? router.push('/(tabs)/vaciar')
-              : router.push({
-                  pathname: '/(tabs)/vaciar',
-                  params: { projectId: projectId as string, segment: 'capture' },
-                })
-          }
+          onPress={openQuickAdd}
           activeOpacity={0.9}
           accessibilityRole="button"
           accessibilityLabel={isLoose ? t('projectDetail.goTasksA11y') : t('projectDetail.addTaskA11y')}
@@ -487,14 +621,48 @@ export default function ProjectScreen() {
           name={editProjectName}
           color={editProjectColor}
           dueDate={editProjectDueDate}
+          lifeAreaKey={editProjectLifeAreaKey}
           onNameChange={setEditProjectName}
           onColorChange={setEditProjectColor}
           onDueDateChange={setEditProjectDueDate}
+          onLifeAreaChange={setEditProjectLifeAreaKey}
           onSave={() => void handleSaveProjectEdit()}
           onClose={() => setEditingProject(false)}
           onDelete={handleDeleteProject}
           saving={savingProject}
         />
+      ) : null}
+
+      <ProjectQuickAddTaskModal
+        visible={quickAddTarget != null}
+        target={quickAddTarget}
+        hasCheckInToday={Boolean(hasCheckInToday)}
+        onClose={() => setQuickAddTarget(null)}
+        onSaved={handleQuickAddSaved}
+        onOpenFullCapture={(id) => {
+          setQuickAddTarget(null);
+          router.push({
+            pathname: '/(tabs)/vaciar',
+            params: id ? { projectId: id, segment: 'capture' } : { segment: 'capture' },
+          });
+        }}
+      />
+
+      <TaskMoveProjectModal
+        visible={moveTaskTarget != null}
+        taskTitle={moveTaskTarget?.content ?? ''}
+        currentProjectId={isLoose ? null : projectId ?? null}
+        projects={allProjects.map((entry) => ({
+          id: entry.id,
+          name: entry.name,
+          color: entry.color,
+        }))}
+        onSelect={(nextProjectId) => void handleConfirmMoveProject(nextProjectId)}
+        onClose={() => setMoveTaskTarget(null)}
+      />
+
+      {toastMessage ? (
+        <Toast message={toastMessage} onHide={() => setToastMessage(null)} />
       ) : null}
     </View>
   );
@@ -503,7 +671,7 @@ export default function ProjectScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
   },
   centered: {
     justifyContent: 'center',
@@ -516,7 +684,7 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.sm,
     borderLeftWidth: 5,
     borderLeftColor: THEME.colors.gradient.blue,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
   },
   backButton: {
     padding: THEME.spacing.xs,
@@ -534,8 +702,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    ...THEME.typography.h3,
-    fontSize: 18,
+    ...THEME.typography.subheading,
     color: THEME.colors.text.main,
   },
   headerSubtitle: {
@@ -554,9 +721,9 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.md,
     padding: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    backgroundColor: THEME.colors.calm.mist,
     borderWidth: 1,
-    borderColor: THEME.colors.tint.blue.border,
+    borderColor: THEME.colors.calm.border,
   },
   loadingText: {
     ...THEME.typography.body,

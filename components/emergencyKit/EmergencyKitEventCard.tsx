@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.calm.lavender,
   },
   emoji: {
-    fontSize: 28,
+    fontSize: THEME.typography.displayEmoji.fontSize,
   },
   label: {
     ...THEME.typography.caption,

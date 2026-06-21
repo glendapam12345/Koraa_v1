@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: THEME.spacing.md,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
   },
@@ -121,8 +121,8 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
   } as TextStyle,
   textLarge: {
-    fontSize: 17,
-  },
+    ...THEME.typography.cardTitle,
+  } as TextStyle,
   disabled: {
     opacity: 0.5,
   },

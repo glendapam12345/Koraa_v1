@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   emoji: {
-    fontSize: 20,
+    fontSize: THEME.typography.displayEmojiSm.fontSize,
     lineHeight: 24,
   },
   title: {
@@ -156,8 +156,7 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
   },
   titleCard: {
-    fontSize: 18,
-    fontFamily: THEME.fonts.heading.bold,
+    ...THEME.typography.subheading,
   },
   wrapperCard: {
     marginBottom: THEME.spacing.sm,
@@ -170,19 +169,18 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: THEME.borderRadius.standard,
     borderTopRightRadius: THEME.borderRadius.standard,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.stroke[100],
+    borderBottomColor: THEME.colors.calm.border,
   },
   contentSegment: {
     alignItems: 'center',
   },
   titleSegment: {
-    fontSize: 20,
-    fontFamily: THEME.fonts.heading.bold,
+    ...THEME.typography.sectionTitle,
     color: THEME.colors.text.main,
     letterSpacing: 0.2,
   },
   subtitleSegment: {
-    fontSize: 13,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
     marginTop: 2,
   },

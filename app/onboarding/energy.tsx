@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 24,
     borderRadius: 4,
-    backgroundColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.calm.border,
   },
   barActive: {
     backgroundColor: THEME.colors.text.secondary,

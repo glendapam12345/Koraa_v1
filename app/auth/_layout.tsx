@@ -22,7 +22,7 @@ export default function AuthLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: THEME.colors.fill[100] },
+        contentStyle: { backgroundColor: THEME.colors.calm.background },
       }}
     >
       <Stack.Screen name="index" />

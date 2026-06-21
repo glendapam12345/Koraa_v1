@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.xs,
     paddingLeft: THEME.spacing.sm,
     borderLeftWidth: 2,
-    borderLeftColor: THEME.colors.fill[200],
+    borderLeftColor: THEME.colors.calm.border,
   },
   subtaskRow: {
     flexDirection: 'row',

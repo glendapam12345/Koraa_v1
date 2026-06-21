@@ -2,6 +2,12 @@ import { useCallback, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { interpretTaskCapture } from '@/lib/taskCaptureAi';
+import type { ProjectForMatch } from '@/lib/batchProjectMatch';
+import {
+  applyFallbackDateToCapture,
+  isMultiTaskListInput,
+  parseTaskCaptureLocally,
+} from '@/lib/taskCaptureParseLocal';
 import type { TaskCaptureResult } from '@/lib/taskCaptureTypes';
 
 type UseTaskCaptureAiArgs = {
@@ -16,7 +22,7 @@ export function useTaskCaptureAi({ energyLevel, emotionKey }: UseTaskCaptureAiAr
   const [isInterpreting, setIsInterpreting] = useState(false);
 
   const interpret = useCallback(
-    async (rawText: string) => {
+    async (rawText: string, options?: { projects?: ProjectForMatch[] }) => {
       const trimmed = rawText.trim();
       if (!trimmed) return null;
       setIsInterpreting(true);
@@ -26,6 +32,7 @@ export function useTaskCaptureAi({ energyLevel, emotionKey }: UseTaskCaptureAiAr
           locale,
           energyLevel,
           emotionKey,
+          projects: options?.projects,
         });
         setPreview(result);
         return result;
@@ -36,6 +43,21 @@ export function useTaskCaptureAi({ energyLevel, emotionKey }: UseTaskCaptureAiAr
     [emotionKey, energyLevel, locale, user?.id],
   );
 
+  /** Vista previa local (comas / renglones) sin IA en la nube. */
+  const previewLocalList = useCallback(
+    (rawText: string, fallbackDate: string | null) => {
+      const trimmed = rawText.trim();
+      if (!trimmed || !isMultiTaskListInput(trimmed, locale)) return null;
+      const capture = applyFallbackDateToCapture(
+        parseTaskCaptureLocally(trimmed, locale),
+        fallbackDate,
+      );
+      setPreview(capture);
+      return capture;
+    },
+    [locale],
+  );
+
   const clearPreview = useCallback(() => {
     setPreview(null);
   }, []);
@@ -44,6 +66,7 @@ export function useTaskCaptureAi({ energyLevel, emotionKey }: UseTaskCaptureAiAr
     preview,
     isInterpreting,
     interpret,
+    previewLocalList,
     clearPreview,
   };
 }

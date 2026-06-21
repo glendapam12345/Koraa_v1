@@ -61,7 +61,7 @@ export function TipDetailExpanded({ tip, eyebrow, actionLabel, onAction }: TipDe
       accessibilityLabel={t('tipsExtra.a11yTipExpanded', { title: tip.title, body: tip.body })}
     >
       <LinearGradient
-        colors={[THEME.colors.tint.blue.veryFaint, THEME.colors.fill[100]]}
+        colors={[THEME.colors.tint.blue.veryFaint, THEME.colors.calm.card]}
         style={styles.expanded}
       >
         {eyebrow ? <Text style={styles.expandedEyebrow}>{eyebrow}</Text> : null}
@@ -105,13 +105,12 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   forYouText: {
-    ...THEME.typography.meta,
+    ...THEME.typography.micro,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 10,
   },
   emoji: {
-    fontSize: 28,
+    fontSize: THEME.typography.displayEmoji.fontSize,
     marginBottom: THEME.spacing.xs,
   },
   title: {

@@ -368,7 +368,7 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -404,13 +404,13 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: THEME.colors.calm.border,
     borderRadius: THEME.borderRadius.rounded,
     paddingHorizontal: THEME.spacing.sm,
     height: THEME.sizes.inputHeight,
     ...THEME.typography.body,
     color: THEME.colors.text.main,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.card,
   },
   error: {
     ...THEME.typography.caption,
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
   },
   successRoot: {
     flex: 1,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.background,
     justifyContent: 'center',
     paddingHorizontal: THEME.spacing.lg,
   },

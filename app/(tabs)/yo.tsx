@@ -304,8 +304,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.calm.lavender,
   },
   avatarText: {
-    ...THEME.typography.h2,
-    fontSize: 22,
+    ...THEME.typography.titleCompact,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
   },
@@ -319,8 +318,7 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
   },
   headerEditHintText: {
-    ...THEME.typography.small,
-    fontSize: 13,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
   },
   namePromptCard: {

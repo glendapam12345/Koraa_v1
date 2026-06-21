@@ -55,6 +55,6 @@ const styles = StyleSheet.create({
   },
   text: {
     ...THEME.typography.body,
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
   },
 });

@@ -32,7 +32,7 @@ export function FlowGuideCard() {
 
 const styles = StyleSheet.create({
   flowGuideCard: {
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.lg,
     marginBottom: THEME.spacing.lg,
@@ -72,8 +72,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   flowArrowText: {
-    ...THEME.typography.h2,
+    ...THEME.typography.sectionTitle,
     color: THEME.colors.text.secondary,
-    fontSize: 20,
   },
 });

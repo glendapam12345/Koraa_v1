@@ -13,13 +13,18 @@ const errorMappings: ErrorMapping[] = [
   { pattern: 'user not found', messageEs: 'No hay una cuenta con este correo', messageEn: 'No account found with this email' },
   {
     pattern: 'password should be at least',
-    messageEs: 'La contraseña debe tener al menos 8 caracteres, una letra y un número.',
-    messageEn: 'Password must be at least 8 characters with a letter and a number.',
+    messageEs: 'La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.',
+    messageEn: 'Password must be at least 8 characters with an uppercase letter, a lowercase letter, and a number.',
   },
   {
     pattern: 'password is too weak',
-    messageEs: 'Contraseña débil. Usa al menos 8 caracteres, una letra y un número.',
-    messageEn: 'Weak password. Use at least 8 characters, a letter, and a number.',
+    messageEs: 'Contraseña débil. Usa al menos 8 caracteres, una mayúscula, una minúscula y un número.',
+    messageEn: 'Weak password. Use at least 8 characters, an uppercase letter, a lowercase letter, and a number.',
+  },
+  {
+    pattern: 'uppercase',
+    messageEs: 'Incluye al menos una mayúscula en tu contraseña.',
+    messageEn: 'Include at least one uppercase letter in your password.',
   },
   {
     pattern: 'password has been found in an online data breach',

@@ -83,7 +83,7 @@ export const settingsScreenStyles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.calm.border,
     marginVertical: THEME.spacing.md,
   },
   stepBlock: {
@@ -126,13 +126,13 @@ export const settingsScreenStyles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: THEME.colors.calm.border,
     borderRadius: THEME.borderRadius.rounded,
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: 14,
     ...THEME.typography.body,
     color: THEME.colors.text.main,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.card,
     marginBottom: THEME.spacing.sm,
   },
   resendWrap: {
@@ -159,7 +159,7 @@ export const settingsScreenStyles = StyleSheet.create({
     marginBottom: THEME.spacing.md,
     paddingBottom: THEME.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.stroke[100],
+    borderBottomColor: THEME.colors.calm.border,
   },
   panelSectionHeader: {
     flexDirection: 'row',

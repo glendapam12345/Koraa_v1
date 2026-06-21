@@ -16,6 +16,9 @@ interface DateSelectorProps {
   calendarTaskTitle?: string;
   /** Id estable para evitar duplicados al agregar desde el formulario. */
   calendarTaskId?: string;
+  /** Solo fila compacta para abrir calendario (sin etiqueta duplicada). */
+  compact?: boolean;
+  hideLabel?: boolean;
 }
 
 function getNextDays(count: number): string[] {
@@ -48,6 +51,8 @@ export function DateSelector({
   onSelect,
   calendarTaskTitle: _calendarTaskTitle,
   calendarTaskId: _calendarTaskId = 'draft-task',
+  compact = false,
+  hideLabel = false,
 }: DateSelectorProps) {
   const { t, locale } = useI18n();
   const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
@@ -89,21 +94,31 @@ export function DateSelector({
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>{t('components.dateOptional')}</Text>
+    <View style={[styles.container, compact && styles.containerCompact]}>
+      {!hideLabel ? <Text style={styles.label}>{t('components.dateOptional')}</Text> : null}
       <TouchableOpacity
-        style={styles.selector}
+        style={[styles.selector, compact && styles.selectorCompact]}
         onPress={openModal}
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel={t('components.pickDateA11y')}
         accessibilityHint={t('components.pickDateHint')}
       >
-        <Calendar size={20} color={THEME.colors.gradient.blue} />
-        <Text style={styles.selectorText}>{displayLabel}</Text>
+        <Calendar size={compact ? 18 : 20} color={THEME.colors.gradient.blue} />
+        <View style={styles.selectorTextWrap}>
+          <Text style={[styles.selectorText, compact && styles.selectorTextCompact]}>
+            {compact ? t('vaciar.taskDatePickOther') : displayLabel}
+          </Text>
+          {compact && selectedDate ? (
+            <Text style={styles.selectorSubtext}>{displayLabel}</Text>
+          ) : null}
+        </View>
+        {compact ? (
+          <Text style={styles.selectorChevron}>›</Text>
+        ) : null}
       </TouchableOpacity>
 
-      {selectedDate ? (
+      {selectedDate && !compact ? (
         <Text style={styles.calendarHint}>{t('deviceCalendar.draftDateHint')}</Text>
       ) : null}
 
@@ -113,15 +128,15 @@ export function DateSelector({
         animationType="slide"
         onRequestClose={() => setShowModal(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowModal(false)}
-          accessibilityRole="button"
-          accessibilityLabel={t('components.closeDatePickerA11y')}
-          accessibilityHint={t('components.closeDatePickerHint')}
-        >
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowModal(false)}
+            accessibilityRole="button"
+            accessibilityLabel={t('components.closeDatePickerA11y')}
+          />
+          <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('components.pickDateTitle')}</Text>
               <TouchableOpacity
@@ -191,7 +206,7 @@ export function DateSelector({
               ))}
             </ScrollView>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );
@@ -200,6 +215,9 @@ export function DateSelector({
 const styles = StyleSheet.create({
   container: {
     marginBottom: THEME.spacing.md,
+  },
+  containerCompact: {
+    marginBottom: 0,
   },
   label: {
     ...THEME.typography.caption,
@@ -210,25 +228,50 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: THEME.spacing.sm,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
+  },
+  selectorCompact: {
+    backgroundColor: THEME.colors.calm.card,
+    minHeight: THEME.sizes.touchTarget,
+  },
+  selectorTextWrap: {
+    flex: 1,
+    gap: 2,
   },
   selectorText: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
   },
+  selectorTextCompact: {
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  selectorSubtext: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+  },
+  selectorChevron: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.secondary,
+    lineHeight: 22,
+  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: THEME.colors.overlayLight,
+    backgroundColor: THEME.colors.overlay,
     justifyContent: 'flex-end',
   },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
   modalContent: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderTopLeftRadius: THEME.borderRadius.rounded * 2,
     borderTopRightRadius: THEME.borderRadius.rounded * 2,
+    borderTopWidth: 1,
+    borderColor: THEME.colors.calm.border,
     maxHeight: '70%',
   },
   modalHeader: {
@@ -237,7 +280,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: THEME.spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.stroke[100],
+    borderBottomColor: THEME.colors.calm.border,
   },
   modalTitle: {
     ...THEME.typography.h3,
@@ -288,7 +331,7 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
   },
   nativePickerWrap: {
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.standard,
     paddingHorizontal: THEME.spacing.sm,
     marginBottom: THEME.spacing.sm,

@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.medium,
   },
   otherInput: {
-    fontSize: 16,
+    ...THEME.typography.body,
     lineHeight: 24,
     backgroundColor: THEME.surfaces.muted.backgroundColor,
     borderRadius: THEME.borderRadius.rounded,
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'android' ? { fontFamily: THEME.fonts.heading.medium } : {}),
   },
   otherInputShort: {
-    fontSize: 16,
+    ...THEME.typography.body,
     lineHeight: 24,
     backgroundColor: THEME.surfaces.muted.backgroundColor,
     borderRadius: THEME.borderRadius.rounded,

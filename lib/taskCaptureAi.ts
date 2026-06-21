@@ -8,6 +8,7 @@ import { getLocalDateString } from '@/lib/dateLocal';
 import { logger } from '@/lib/logger';
 import type { AppLocale } from '@/lib/i18n';
 import { parseTaskCaptureLocally } from '@/lib/taskCaptureParseLocal';
+import type { ProjectForMatch } from '@/lib/batchProjectMatch';
 import type { ParsedCaptureTask, TaskCaptureEffort, TaskCaptureResult } from '@/lib/taskCaptureTypes';
 
 function isAiEnabled(): boolean {
@@ -21,7 +22,7 @@ function isValidEffort(value: unknown): value is TaskCaptureEffort {
   return value === 'light' || value === 'medium' || value === 'heavy';
 }
 
-function parseTaskRow(raw: unknown): ParsedCaptureTask | null {
+function parseTaskRow(raw: unknown, validProjectIds?: Set<string>): ParsedCaptureTask | null {
   if (!raw || typeof raw !== 'object') return null;
   const row = raw as Record<string, unknown>;
   const content = typeof row.content === 'string' ? row.content.trim() : '';
@@ -33,21 +34,27 @@ function parseTaskRow(raw: unknown): ParsedCaptureTask | null {
         ? null
         : null;
   const effort = isValidEffort(row.effort) ? row.effort : null;
-  return { content: content.slice(0, 300), scheduled_date: scheduled, effort };
+  const rawProjectId = typeof row.project_id === 'string' ? row.project_id.trim() : null;
+  const project_id =
+    rawProjectId && validProjectIds && validProjectIds.has(rawProjectId) ? rawProjectId : null;
+  return { content: content.slice(0, 300), scheduled_date: scheduled, effort, project_id };
 }
 
-function parseCapturePayload(data: unknown): TaskCaptureResult | null {
+function parseCapturePayload(
+  data: unknown,
+  validProjectIds?: Set<string>,
+): TaskCaptureResult | null {
   if (!data || typeof data !== 'object') return null;
   const root = data as Record<string, unknown>;
   const capture = root.capture ?? root;
   if (!capture || typeof capture !== 'object') return null;
   const cap = capture as Record<string, unknown>;
-  const main = parseTaskRow(cap.main_task);
+  const main = parseTaskRow(cap.main_task, validProjectIds);
   if (!main) return null;
   const summary = typeof cap.summary === 'string' ? cap.summary.trim().slice(0, 400) : '';
   const prepRaw = Array.isArray(cap.prep_steps) ? cap.prep_steps : [];
   const prep_steps = prepRaw
-    .map(parseTaskRow)
+    .map((row) => parseTaskRow(row, validProjectIds))
     .filter((row): row is ParsedCaptureTask => row !== null)
     .slice(0, 5);
   return {
@@ -84,6 +91,8 @@ export type InterpretTaskCaptureInput = {
   locale: AppLocale;
   energyLevel?: number;
   emotionKey?: string;
+  /** Proyectos existentes para que la IA sugiera agrupación por paso. */
+  projects?: ProjectForMatch[];
 };
 
 /**
@@ -105,6 +114,12 @@ export async function interpretTaskCapture(
       return local;
     }
 
+    const projects = (input.projects ?? [])
+      .filter((p) => p.id && p.name?.trim())
+      .map((p) => ({ id: p.id, name: p.name.trim().slice(0, 80) }))
+      .slice(0, 40);
+    const validProjectIds = new Set(projects.map((p) => p.id));
+
     const { data, error } = await supabase.functions.invoke('task-capture-ai', {
       body: {
         locale: input.locale,
@@ -112,6 +127,7 @@ export async function interpretTaskCapture(
         today: getLocalDateString(),
         energyLevel: input.energyLevel ?? null,
         emotionKey: input.emotionKey ?? null,
+        projects,
       },
     });
 
@@ -120,7 +136,7 @@ export async function interpretTaskCapture(
       return local;
     }
 
-    const parsed = parseCapturePayload(data);
+    const parsed = parseCapturePayload(data, validProjectIds);
     if (!parsed) {
       if (__DEV__) logger.warn('[task-capture-ai] Invalid response:', data);
       return local;

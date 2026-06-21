@@ -87,9 +87,11 @@ export function FirstSessionTourModal({ visible, userId, onFinished }: Props) {
 const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: THEME.colors.overlayLight, justifyContent: 'flex-end' },
   card: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderTopLeftRadius: THEME.borderRadius.rounded * 2,
     borderTopRightRadius: THEME.borderRadius.rounded * 2,
+    borderTopWidth: 1,
+    borderColor: THEME.colors.calm.border,
     padding: THEME.spacing.lg,
     paddingTop: THEME.spacing.xl,
   },
@@ -110,7 +112,7 @@ const styles = StyleSheet.create({
   title: { ...THEME.typography.h2, color: THEME.colors.text.main, textAlign: 'center', marginBottom: THEME.spacing.sm },
   body: { ...THEME.typography.body, color: THEME.colors.text.secondary, textAlign: 'center', lineHeight: 24, marginBottom: THEME.spacing.lg },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: THEME.spacing.xs, marginBottom: THEME.spacing.lg },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: THEME.colors.stroke[100] },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: THEME.colors.calm.border },
   dotActive: { backgroundColor: THEME.colors.gradient.blue, width: 24 },
   cta: { marginBottom: THEME.spacing.sm },
   skipButton: { marginBottom: THEME.spacing.xs },

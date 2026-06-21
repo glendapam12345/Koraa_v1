@@ -151,8 +151,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   stepTitle: {
-    ...THEME.typography.h3,
-    fontSize: 16,
+    ...THEME.typography.body,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
     flex: 1,

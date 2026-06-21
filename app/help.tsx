@@ -177,8 +177,7 @@ const styles = StyleSheet.create({
     paddingBottom: THEME.spacing.xs,
   },
   sectionTitle: {
-    ...THEME.typography.h3,
-    fontSize: 18,
+    ...THEME.typography.subheading,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
     marginBottom: THEME.spacing.xs,

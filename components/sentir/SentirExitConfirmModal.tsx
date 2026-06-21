@@ -50,7 +50,7 @@ export function SentirExitConfirmModal({ visible, onStay, onLeave }: SentirExitC
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: THEME.colors.overlayLight,
     justifyContent: 'center',
     paddingHorizontal: THEME.layout.screenPaddingX,
   },

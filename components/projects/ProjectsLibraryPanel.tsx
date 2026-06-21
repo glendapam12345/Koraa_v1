@@ -7,38 +7,90 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-import {
-  FolderKanban,
-  ChevronRight,
-  Plus,
-  Heart,
-} from 'lucide-react-native';
+import { FolderKanban, ChevronRight, Plus, Heart } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 import { useProjectsLibrary } from '@/hooks/useProjectsLibrary';
-import { ProjectExpandableCard } from '@/components/projects/ProjectExpandableCard';
+import { ProjectLibraryCard } from '@/components/projects/ProjectLibraryCard';
+import { ProjectsByAreaSection } from '@/components/projects/ProjectsByAreaSection';
+import { AdaptiveExperienceProjectsCta } from '@/components/tasks/experience/AdaptiveExperienceProjectsCta';
 import { ProjectCreateModal } from '@/components/projects/ProjectCreateModal';
+import {
+  ProjectQuickAddTaskModal,
+  type ProjectQuickAddTarget,
+} from '@/components/projects/ProjectQuickAddTaskModal';
+import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
 
 type ProjectsLibraryPanelProps = {
   userId: string | undefined;
-  /** En pestaña Tareas: sin ScrollView propio; CTAs vuelven a Capturar. */
   embedded?: boolean;
+  /** Vista simplificada en tab Tareas → Áreas (sin banners ni filtros extra). */
+  areasFirst?: boolean;
+  /** Evita query duplicada de check-in cuando el padre ya la tiene (p. ej. tab Tareas). */
+  hasCheckInToday?: boolean | null;
   onGoCapture?: () => void;
-  onAddTaskToProject?: (projectId: string | null) => void;
+  /** Abre captura completa (categoría, pasos…) con proyecto preseleccionado. */
+  onOpenFullCapture?: (projectId: string | null) => void;
+  onProjectCreated?: (name: string) => void;
+  onTaskSaved?: (message: string) => void;
 };
+
+type LibraryActionRowProps = {
+  icon: ReactNode;
+  title: string;
+  hint: string;
+  onPress: () => void;
+  accessibilityLabel: string;
+  variant?: 'create' | 'task';
+};
+
+function LibraryActionRow({
+  icon,
+  title,
+  hint,
+  onPress,
+  accessibilityLabel,
+  variant = 'task',
+}: LibraryActionRowProps) {
+  return (
+    <TouchableOpacity
+      style={[styles.actionRow, variant === 'create' && styles.actionRowCreate]}
+      onPress={onPress}
+      activeOpacity={0.88}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+    >
+      <View style={[styles.actionIcon, variant === 'create' && styles.actionIconCreate]}>{icon}</View>
+      <View style={styles.actionTextWrap}>
+        <Text style={styles.actionTitle}>{title}</Text>
+        {hint ? <Text style={styles.actionHint}>{hint}</Text> : null}
+      </View>
+      <ChevronRight size={20} color={THEME.colors.calm.lavenderDeep} />
+    </TouchableOpacity>
+  );
+}
 
 export function ProjectsLibraryPanel({
   userId,
   embedded = false,
+  areasFirst = false,
+  hasCheckInToday: externalCheckInToday,
   onGoCapture,
-  onAddTaskToProject,
+  onOpenFullCapture,
+  onProjectCreated,
+  onTaskSaved,
 }: ProjectsLibraryPanelProps) {
   const { t } = useI18n();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createProjectAreaKey, setCreateProjectAreaKey] = useState<LifeAreaKey | undefined>(
+    undefined,
+  );
+  const [quickAddTarget, setQuickAddTarget] = useState<ProjectQuickAddTarget | null>(null);
+  const [projectFilter, setProjectFilter] = useState<'all' | 'withDate' | 'noDate'>('all');
   const {
     projects,
     looseCount,
@@ -49,13 +101,23 @@ export function ProjectsLibraryPanel({
     refreshing,
     refresh,
     reload,
-  } = useProjectsLibrary(userId);
+  } = useProjectsLibrary(userId, { hasCheckInToday: externalCheckInToday });
 
   useFocusEffect(
     useCallback(() => {
-      if (embedded) void reload();
+      if (embedded) reload(true);
     }, [embedded, reload]),
   );
+
+  const filteredProjects = useMemo(() => {
+    if (projectFilter === 'withDate') {
+      return projects.filter((project) => Boolean(project.dueDate));
+    }
+    if (projectFilter === 'noDate') {
+      return projects.filter((project) => !project.dueDate);
+    }
+    return projects;
+  }, [projectFilter, projects]);
 
   const goCapture = useCallback(() => {
     if (embedded && onGoCapture) {
@@ -64,6 +126,40 @@ export function ProjectsLibraryPanel({
     }
     router.push('/(tabs)/vaciar');
   }, [embedded, onGoCapture]);
+
+  const openQuickAdd = useCallback(
+    (projectId: string | null) => {
+      if (projectId == null) {
+        setQuickAddTarget({ mode: 'loose' });
+        return;
+      }
+      const project = projects.find((p) => p.id === projectId);
+      if (!project) return;
+      setQuickAddTarget({
+        mode: 'project',
+        id: project.id,
+        name: project.name,
+        color: project.color,
+      });
+    },
+    [projects],
+  );
+
+  const handleQuickAddSaved = useCallback(
+    ({ title, projectName }: { title: string; projectName?: string }) => {
+      reload(true);
+      const message = projectName
+        ? t('projects.quickAddSuccess', { title, name: projectName })
+        : t('projects.quickAddSuccessLoose', { title });
+      onTaskSaved?.(message);
+    },
+    [onTaskSaved, reload, t],
+  );
+
+  const openCreateProjectModal = useCallback((areaKey?: LifeAreaKey) => {
+    setCreateProjectAreaKey(areaKey);
+    setShowCreateModal(true);
+  }, []);
 
   if (!userId) {
     return (
@@ -76,16 +172,16 @@ export function ProjectsLibraryPanel({
   const body =
     loading ? (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
+        <ActivityIndicator size="large" color={THEME.colors.calm.lavenderDeep} />
         <Text style={styles.loadingText}>{t('projects.loading')}</Text>
       </View>
-    ) : projects.length === 0 && looseCount === 0 ? (
-      <View style={styles.empty}>
+    ) : projects.length === 0 && looseCount === 0 && !areasFirst ? (
+      <View style={[styles.empty, embedded && styles.emptyEmbedded]}>
         <LinearGradient
-          colors={[THEME.colors.tint.blue.veryFaint, THEME.colors.tint.pink.soft]}
+          colors={[THEME.colors.calm.mist, THEME.colors.calm.blush]}
           style={styles.emptyIconWrap}
         >
-          <FolderKanban size={48} color={THEME.colors.gradient.blue} strokeWidth={1.5} />
+          <FolderKanban size={48} color={THEME.colors.calm.lavenderDeep} strokeWidth={1.5} />
         </LinearGradient>
         <Text style={styles.emptyTitle}>{t('projects.emptyTitle')}</Text>
         <Text style={styles.emptyText}>{t('projects.emptyBody')}</Text>
@@ -131,7 +227,11 @@ export function ProjectsLibraryPanel({
       </View>
     ) : (
       <>
-        {!loading && totalIncomplete > 0 ? (
+        {embedded && onGoCapture && !areasFirst ? (
+          <AdaptiveExperienceProjectsCta onOpenCapture={onGoCapture} />
+        ) : null}
+
+        {!areasFirst && !loading && totalIncomplete > 0 ? (
           <View style={styles.inventoryBanner}>
             <Text style={styles.inventorySummary}>
               {hasCheckInToday
@@ -151,81 +251,102 @@ export function ProjectsLibraryPanel({
               >
                 <Heart size={16} color={THEME.colors.gradient.pink} />
                 <Text style={styles.inventoryFeelText}>{t('projects.inventoryGoFeel')}</Text>
-                <ChevronRight size={16} color={THEME.colors.gradient.blue} />
+                <ChevronRight size={16} color={THEME.colors.calm.lavenderDeep} />
               </TouchableOpacity>
             ) : null}
           </View>
         ) : null}
-        <TouchableOpacity
-          style={styles.addProjectSection}
-          onPress={() => setShowCreateModal(true)}
-          activeOpacity={0.88}
-          accessibilityRole="button"
-          accessibilityLabel={t('projects.createProjectA11y')}
-        >
-          <View style={styles.addProjectIconWrap}>
-            <FolderKanban size={22} color={THEME.colors.gradient.blue} strokeWidth={2.2} />
-          </View>
-          <View style={styles.addProjectTextWrap}>
-            <Text style={styles.addProjectTitle}>{t('projects.createProjectCta')}</Text>
-            <Text style={styles.addProjectHint}>{t('projects.createProjectHint')}</Text>
-          </View>
-          <ChevronRight size={20} color={THEME.colors.gradient.blue} />
-        </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.addTaskSection}
-          onPress={goCapture}
-          activeOpacity={0.88}
-          accessibilityRole="button"
-          accessibilityLabel={t('projects.addA11y')}
-        >
-          <View style={styles.addProjectIconWrap}>
-            <Plus size={22} color={THEME.colors.gradient.pink} strokeWidth={2.2} />
-          </View>
-          <View style={styles.addProjectTextWrap}>
-            <Text style={styles.addProjectTitle}>{t('projects.addTaskCta')}</Text>
-            <Text style={styles.addProjectHint}>{t('projects.addHint')}</Text>
-          </View>
-          <ChevronRight size={20} color={THEME.colors.gradient.blue} />
-        </TouchableOpacity>
+        <View style={[styles.actionsCard, areasFirst && styles.actionsCardCompact]}>
+          {!areasFirst ? (
+            <Text style={styles.actionsCardLabel}>{t('projects.libraryActionsTitle')}</Text>
+          ) : null}
+          <LibraryActionRow
+            variant="create"
+            icon={<Plus size={22} color={THEME.colors.calm.lavenderDeep} strokeWidth={2.2} />}
+            title={t('projects.createProjectCta')}
+            hint={areasFirst ? '' : t('projects.createProjectHint')}
+            onPress={() => openCreateProjectModal()}
+            accessibilityLabel={t('projects.createProjectA11y')}
+          />
+          <View style={styles.actionDivider} />
+          <LibraryActionRow
+            icon={<Plus size={22} color={THEME.colors.gradient.pink} strokeWidth={2.2} />}
+            title={t('projects.addTaskCta')}
+            hint={areasFirst ? '' : t('projects.addHint')}
+            onPress={() => openQuickAdd(null)}
+            accessibilityLabel={t('projects.addA11y')}
+          />
+          {areasFirst ? (
+            <Text style={styles.areasHint}>{t('projects.areasHint')}</Text>
+          ) : null}
+        </View>
 
         {looseCount > 0 ? (
-          <View style={styles.looseSection}>
-            {projects.length > 0 && (
-              <View style={styles.sectionLabelRow}>
-                <View style={styles.sectionLabelLine} />
-                <Text style={styles.sectionLabel}>{t('projects.looseSection')}</Text>
-              </View>
-            )}
-            <ProjectExpandableCard
+          <View style={styles.listSection}>
+            <Text style={styles.sectionLabel}>{t('projects.looseSection')}</Text>
+            <ProjectLibraryCard
               mode="loose"
               looseCount={looseCount}
-              userId={userId!}
-              onAddTask={onAddTaskToProject}
-              onChanged={reload}
+              userId={userId}
+              onAddTask={openQuickAdd}
             />
           </View>
         ) : null}
-        {projects.length > 0 ? (
-          <>
-            {looseCount > 0 && (
-              <View style={styles.sectionLabelRow}>
-                <View style={styles.sectionLabelLine} />
-                <Text style={styles.sectionLabel}>{t('projectsUi.sectionTitle')}</Text>
+
+        {projects.length > 0 || areasFirst ? (
+          <View style={styles.listSection}>
+            {!areasFirst ? (
+              <View style={styles.filterRow}>
+                {(['all', 'withDate', 'noDate'] as const).map((filter) => (
+                  <TouchableOpacity
+                    key={filter}
+                    style={[
+                      styles.filterPill,
+                      projectFilter === filter && styles.filterPillActive,
+                    ]}
+                    onPress={() => setProjectFilter(filter)}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: projectFilter === filter }}
+                  >
+                    <Text
+                      style={[
+                        styles.filterPillText,
+                        projectFilter === filter && styles.filterPillTextActive,
+                      ]}
+                    >
+                      {t(`projects.filter.${filter}`)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-            )}
-            {projects.map((project) => (
-              <ProjectExpandableCard
-                key={project.id}
-                mode="project"
-                project={project}
-                userId={userId!}
-                onAddTask={onAddTaskToProject}
-                onChanged={reload}
+            ) : null}
+            {!areasFirst && looseCount > 0 ? (
+              <Text style={styles.sectionLabel}>{t('projectsUi.sectionTitle')}</Text>
+            ) : null}
+            {areasFirst || projectFilter === 'all' ? (
+              <ProjectsByAreaSection
+                projects={filteredProjects}
+                userId={userId}
+                onAddTask={openQuickAdd}
+                onCreateProjectInArea={(areaKey) => openCreateProjectModal(areaKey)}
+                onEditAreas={goCapture}
+                hideExplainer={areasFirst}
+                showAllAreas={areasFirst}
               />
-            ))}
-          </>
+            ) : (
+              filteredProjects.map((project) => (
+                <ProjectLibraryCard
+                  key={project.id}
+                  mode="project"
+                  project={project}
+                  userId={userId}
+                  onAddTask={openQuickAdd}
+                />
+              ))
+            )}
+          </View>
         ) : null}
       </>
     );
@@ -234,15 +355,28 @@ export function ProjectsLibraryPanel({
     return (
       <View style={styles.embeddedWrap}>
         {body}
-        {userId ? (
-          <ProjectCreateModal
-            visible={showCreateModal}
-            userId={userId}
-            onClose={() => setShowCreateModal(false)}
-            onCreated={() => void reload()}
-            existingNames={projects.map((p) => p.name)}
-          />
-        ) : null}
+        <ProjectCreateModal
+          visible={showCreateModal}
+          userId={userId}
+          initialLifeAreaKey={createProjectAreaKey}
+          onClose={() => {
+            setShowCreateModal(false);
+            setCreateProjectAreaKey(undefined);
+          }}
+          onCreated={(project) => {
+            void reload();
+            onProjectCreated?.(project.name);
+          }}
+          existingNames={projects.map((p) => p.name)}
+        />
+        <ProjectQuickAddTaskModal
+          visible={quickAddTarget != null}
+          target={quickAddTarget}
+          hasCheckInToday={Boolean(hasCheckInToday)}
+          onClose={() => setQuickAddTarget(null)}
+          onSaved={handleQuickAddSaved}
+          onOpenFullCapture={onOpenFullCapture}
+        />
       </View>
     );
   }
@@ -257,21 +391,34 @@ export function ProjectsLibraryPanel({
           <RefreshControl
             refreshing={refreshing}
             onRefresh={refresh}
-            tintColor={THEME.colors.gradient.blue}
+            tintColor={THEME.colors.calm.lavenderDeep}
           />
         }
       >
         {body}
       </ScrollView>
-      {userId ? (
-        <ProjectCreateModal
-          visible={showCreateModal}
-          userId={userId}
-          onClose={() => setShowCreateModal(false)}
-          onCreated={() => void reload()}
-          existingNames={projects.map((p) => p.name)}
-        />
-      ) : null}
+      <ProjectCreateModal
+        visible={showCreateModal}
+        userId={userId}
+        initialLifeAreaKey={createProjectAreaKey}
+        onClose={() => {
+          setShowCreateModal(false);
+          setCreateProjectAreaKey(undefined);
+        }}
+        onCreated={(project) => {
+          void reload();
+          onProjectCreated?.(project.name);
+        }}
+        existingNames={projects.map((p) => p.name)}
+      />
+      <ProjectQuickAddTaskModal
+        visible={quickAddTarget != null}
+        target={quickAddTarget}
+        hasCheckInToday={Boolean(hasCheckInToday)}
+        onClose={() => setQuickAddTarget(null)}
+        onSaved={handleQuickAddSaved}
+        onOpenFullCapture={onOpenFullCapture}
+      />
     </>
   );
 }
@@ -279,14 +426,15 @@ export function ProjectsLibraryPanel({
 const styles = StyleSheet.create({
   embeddedWrap: {
     width: '100%',
+    gap: THEME.spacing.sm,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: THEME.spacing.md,
-    paddingTop: THEME.spacing.md + 4,
-    paddingBottom: THEME.spacing.xl + THEME.spacing.sm,
+    paddingTop: THEME.spacing.md,
+    paddingBottom: THEME.spacing.xl,
   },
   centered: {
     justifyContent: 'center',
@@ -294,12 +442,9 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.xl,
   },
   inventoryBanner: {
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
-    borderRadius: THEME.borderRadius.rounded,
-    borderWidth: 1,
-    borderColor: THEME.colors.tint.blue.border,
+    ...THEME.surfaces.panel,
     padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
   },
   inventorySummary: {
     ...THEME.typography.caption,
@@ -320,61 +465,120 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.sm,
     paddingTop: THEME.spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: THEME.colors.tint.blue.border,
+    borderTopColor: THEME.colors.calm.border,
     minHeight: THEME.sizes.touchTarget,
   },
   inventoryFeelText: {
     ...THEME.typography.caption,
-    color: THEME.colors.gradient.blue,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
     flex: 1,
   },
-  addProjectSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.sm,
+  actionsCard: {
+    ...THEME.surfaces.elevated,
     padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.fill[100],
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    ...THEME.shadows.soft,
-  },
-  addTaskSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: THEME.spacing.sm,
-    padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.fill[100],
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    ...THEME.shadows.soft,
   },
-  addProjectIconWrap: {
+  actionsCardCompact: {
+    paddingVertical: THEME.spacing.sm,
+    marginBottom: THEME.spacing.sm,
+  },
+  actionsCardLabel: {
+    ...THEME.typography.meta,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 2,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    minHeight: THEME.sizes.touchTarget,
+  },
+  actionRowCreate: {
+    paddingVertical: 2,
+  },
+  actionIcon: {
     width: 44,
     height: 44,
     borderRadius: THEME.borderRadius.standard,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    backgroundColor: THEME.colors.calm.mist,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addProjectTextWrap: {
+  actionIconCreate: {
+    backgroundColor: THEME.colors.calm.lavender,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  actionTextWrap: {
     flex: 1,
     minWidth: 0,
+    gap: 2,
   },
-  addProjectTitle: {
+  actionTitle: {
     ...THEME.typography.body,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
   },
-  addProjectHint: {
+  actionHint: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
-    marginTop: 4,
     lineHeight: 18,
+  },
+  actionDivider: {
+    height: 1,
+    backgroundColor: THEME.colors.calm.border,
+    marginVertical: 2,
+  },
+  areasHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  listSection: {
+    gap: THEME.spacing.sm,
+    marginBottom: THEME.spacing.md,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.xs,
+    marginBottom: THEME.spacing.xs,
+  },
+  filterPill: {
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: 8,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.calm.mist,
+    minHeight: 36,
+    justifyContent: 'center',
+  },
+  filterPillActive: {
+    backgroundColor: THEME.colors.calm.lavender,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.lavenderDeep,
+  },
+  filterPillText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
+    lineHeight: 16,
+  },
+  filterPillTextActive: {
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  sectionLabel: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.secondary,
+    marginBottom: 2,
+    paddingHorizontal: 2,
   },
   loadingText: {
     ...THEME.typography.body,
@@ -386,44 +590,45 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.xl,
     paddingHorizontal: THEME.spacing.lg,
   },
+  emptyEmbedded: {
+    ...THEME.surfaces.elevated,
+    paddingVertical: THEME.spacing.lg,
+    borderRadius: THEME.borderRadius.rounded,
+  },
   emptyIconWrap: {
     width: 100,
     height: 100,
     borderRadius: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: THEME.spacing.md + 4,
+    marginBottom: THEME.spacing.md,
     overflow: 'hidden',
   },
   emptyTitle: {
     ...THEME.typography.h3,
-    fontSize: 22,
     color: THEME.colors.text.main,
-    marginTop: THEME.spacing.sm,
     textAlign: 'center',
   },
   emptyText: {
     ...THEME.typography.body,
-    fontSize: 15,
     color: THEME.colors.text.secondary,
     marginTop: THEME.spacing.sm,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
     paddingHorizontal: THEME.spacing.sm,
   },
   addButton: {
-    marginTop: THEME.spacing.xl + 4,
+    marginTop: THEME.spacing.lg,
     borderRadius: THEME.borderRadius.pill,
     overflow: 'hidden',
     ...THEME.shadows.soft,
   },
   addButtonGradient: {
-    paddingVertical: THEME.spacing.sm + 6,
-    paddingHorizontal: THEME.spacing.xl + 8,
+    paddingVertical: THEME.spacing.sm + 4,
+    paddingHorizontal: THEME.spacing.xl,
   },
   addButtonText: {
     ...THEME.typography.body,
-    fontSize: 16,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.onGradient,
   },
@@ -434,151 +639,15 @@ const styles = StyleSheet.create({
   },
   secondaryEmptyBtnText: {
     ...THEME.typography.body,
-    color: THEME.colors.gradient.blue,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
   },
   backLink: {
-    marginTop: THEME.spacing.md + 4,
+    marginTop: THEME.spacing.md,
     paddingVertical: THEME.spacing.xs,
   },
   backLinkText: {
     ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.rounded,
-    marginBottom: THEME.spacing.sm + 4,
-    paddingVertical: THEME.spacing.md + 2,
-    paddingRight: THEME.spacing.sm,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    ...THEME.shadows.card,
-  },
-  looseSection: {
-    marginBottom: THEME.spacing.md + 4,
-  },
-  sectionLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: THEME.spacing.xs + 2,
-    gap: THEME.spacing.xs,
-  },
-  sectionLabelLine: {
-    width: 4,
-    height: 14,
-    borderRadius: 2,
-    backgroundColor: THEME.colors.gradient.blue,
-    opacity: 0.6,
-  },
-  sectionLabel: {
-    ...THEME.typography.small,
-    fontSize: 13,
-    fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.text.secondary,
-    letterSpacing: 0.3,
-  },
-  cardLoose: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: THEME.borderRadius.rounded,
-    paddingVertical: THEME.spacing.md + 4,
-    paddingRight: THEME.spacing.sm,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    overflow: 'hidden',
-    ...THEME.shadows.soft,
-  },
-  cardLooseGradient: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  colorBarLoose: {
-    width: 4,
-    height: '100%',
-    minHeight: 56,
-    borderTopLeftRadius: THEME.borderRadius.standard,
-    borderBottomLeftRadius: THEME.borderRadius.standard,
-    marginRight: THEME.spacing.sm,
-  },
-  cardLooseIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: THEME.borderRadius.standard + 2,
-    backgroundColor: THEME.colors.fill[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: THEME.spacing.sm,
-    ...THEME.shadows.card,
-  },
-  cardLooseTitle: {
-    ...THEME.typography.body,
-    fontSize: 17,
-    fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.text.main,
-  },
-  cardLooseHint: {
-    ...THEME.typography.small,
-    fontSize: 12,
-    color: THEME.colors.text.tertiary,
-    marginTop: 4,
-  },
-  cardLooseMeta: {
-    ...THEME.typography.small,
-    fontSize: 13,
-    color: THEME.colors.text.secondary,
-    marginTop: 4,
-  },
-  colorBar: {
-    width: 5,
-    height: '100%',
-    minHeight: 48,
-    borderTopLeftRadius: THEME.borderRadius.standard,
-    borderBottomLeftRadius: THEME.borderRadius.standard,
-    marginRight: THEME.spacing.sm,
-  },
-  cardContent: {
-    flex: 1,
-    minWidth: 0,
-  },
-  cardTitle: {
-    ...THEME.typography.body,
-    fontSize: 17,
-    fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.text.main,
-  },
-  cardMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: THEME.spacing.xs,
-    marginTop: 6,
-  },
-  cardMetaText: {
-    ...THEME.typography.small,
-    fontSize: 13,
-    color: THEME.colors.text.secondary,
-  },
-  cardMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  cardMetaTextDone: {
-    ...THEME.typography.small,
-    fontSize: 13,
-    color: THEME.colors.semantic.success,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  dateBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  dateBadgeText: {
-    ...THEME.typography.small,
-    fontSize: 12,
     color: THEME.colors.text.secondary,
   },
 });

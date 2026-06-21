@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderTopLeftRadius: THEME.borderRadius.rounded,
     borderTopRightRadius: THEME.borderRadius.rounded,
     maxHeight: '78%',

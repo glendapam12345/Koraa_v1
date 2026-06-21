@@ -11,6 +11,7 @@ export function detectCategory(content: string): string {
     'deadline', 'presentación', 'reporte', 'email', 'llamada', 'videollamada',
     'tarea del trabajo', 'jornada', 'horario', 'colaborador', 'meeting',
     'entregable', 'código', 'desarrollo', 'diseño', 'marketing', 'ventas',
+    'pitch', 'inversor', 'investor', 'fundraising',
     'work', 'office', 'meeting', 'project', 'client', 'boss', 'team',
     'presentation', 'report', 'call', 'zoom', 'deliverable', 'code',
     'development', 'design', 'sales',

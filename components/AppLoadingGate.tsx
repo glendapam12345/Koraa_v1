@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.background,
     paddingHorizontal: THEME.spacing.lg,
     gap: THEME.spacing.md,
   },
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.lg,
     paddingVertical: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     justifyContent: 'center',
   },
   retryText: {

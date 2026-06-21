@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.overlay,
   },
   sheet: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderTopLeftRadius: THEME.borderRadius.card,
     borderTopRightRadius: THEME.borderRadius.card,
     padding: THEME.spacing.md,
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     paddingBottom: THEME.spacing.sm,
   },
   input: {
-    fontSize: 16,
+    ...THEME.typography.body,
     lineHeight: 24,
     backgroundColor: THEME.surfaces.muted.backgroundColor,
     borderRadius: THEME.borderRadius.standard,

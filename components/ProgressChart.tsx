@@ -214,14 +214,12 @@ const styles = StyleSheet.create({
   barEmpty: {
     width: BAR_WIDTH,
     borderRadius: THEME.borderRadius.standard / 2,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     minHeight: 6,
   },
   label: {
-    ...THEME.typography.small,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-    fontSize: 11,
-    lineHeight: 14,
     textAlign: 'center',
     minWidth: DAY_LABEL_MIN_WIDTH,
     paddingHorizontal: 2,

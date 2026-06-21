@@ -1,11 +1,11 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { Lock } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
-import { PremiumLockOverlay } from '@/components/premium/PremiumLockOverlay';
 import { openEmergencyKit } from '@/lib/emergencyKitNavigation';
 import { openPaywall } from '@/lib/paywallNavigation';
 import { useCrisisMode } from '@/hooks/useCrisisMode';
@@ -50,16 +50,19 @@ export function EmergencyKitEntryCard({ compact = false }: EmergencyKitEntryCard
         </Text>
 
         {locked ? (
-          <View style={[styles.lockedArea, compact && styles.lockedAreaCompact]}>
-            <View style={styles.lockedPreview} />
-            <PremiumLockOverlay
-              onPress={handleUnlock}
-              accessibilityLabel={t('emergencyKit.entryLockedA11y')}
-              hint={t('parami.patternUnlockHint')}
-              iconSize={20}
-              tone="gradient"
-            />
-          </View>
+          <TouchableOpacity
+            style={[styles.lockedCta, compact && styles.lockedCtaCompact]}
+            onPress={handleUnlock}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={t('emergencyKit.entryLockedA11y')}
+            accessibilityHint={t('paramiExtra.a11yUnlockHint')}
+          >
+            <Lock size={compact ? 14 : 16} color={THEME.colors.onGradient} />
+            <Text style={[styles.lockedCtaText, compact && styles.lockedCtaTextCompact]}>
+              {t('emergencyKit.entryLockedCta')}
+            </Text>
+          </TouchableOpacity>
         ) : (
           <View style={styles.actions}>
             <CalmPrimaryButton
@@ -110,11 +113,10 @@ const styles = StyleSheet.create({
   title: {
     ...THEME.typography.h2,
     fontSize: 24,
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
   },
   titleCompact: {
-    ...THEME.typography.h3,
-    fontSize: 18,
+    ...THEME.typography.subheading,
     lineHeight: 24,
   },
   subtitle: {
@@ -128,20 +130,31 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 0,
   },
-  lockedArea: {
-    position: 'relative',
-    minHeight: THEME.sizes.touchTarget + THEME.spacing.sm,
-    marginTop: THEME.spacing.xs,
-  },
-  lockedAreaCompact: {
-    minHeight: THEME.sizes.touchTarget,
-    marginTop: 0,
-  },
-  lockedPreview: {
-    minHeight: THEME.sizes.touchTarget,
+  lockedCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    opacity: 0.55,
+    backgroundColor: THEME.colors.surfaceOverlay.washLight,
+    borderWidth: 1,
+    borderColor: THEME.colors.surfaceOverlay.glassBorderFaint,
+    minHeight: THEME.sizes.touchTarget,
+  },
+  lockedCtaCompact: {
+    alignSelf: 'stretch',
+    paddingVertical: 10,
+  },
+  lockedCtaText: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.onGradient,
+  },
+  lockedCtaTextCompact: {
+    ...THEME.typography.small,
   },
   actions: {
     gap: THEME.spacing.xs,

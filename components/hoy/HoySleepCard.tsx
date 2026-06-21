@@ -13,6 +13,7 @@ import { executeTipAction } from '@/lib/tipActions';
 import { openTipsCategory as navigateToTipsCategory } from '@/lib/tipsNavigation';
 import { useHoyMeditation } from '@/hooks/useHoyMeditation';
 import { getSituationalMeditationType } from '@/lib/meditationSituational';
+import { QuickBreathModal } from '@/components/hoy/QuickBreathModal';
 import { MeditationCircleSimple } from '@/components/MeditationCircleSimple';
 import { Toast } from '@/components/Toast';
 
@@ -47,6 +48,7 @@ export function HoySleepCard({
   onOpenSleep,
 }: HoySleepCardProps) {
   const { t } = useI18n();
+  const [showBreath, setShowBreath] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [, setShowConfetti] = useState(false);
@@ -83,12 +85,17 @@ export function HoySleepCard({
   }, [t]);
 
   const openBreathe = useCallback(() => {
-    navigateToTipsCategory(router, 'mindset', { emotion: emotionKey, energyLevel });
-  }, [emotionKey, energyLevel]);
+    setShowBreath(true);
+  }, []);
 
   const startPause = useCallback(() => {
-    router.push({ pathname: '/focus-session', params: { minutes: '5' } });
+    router.push({ pathname: '/focus-session', params: { mode: 'pause', minutes: '5' } });
   }, []);
+
+  const handleBreathComplete = useCallback(() => {
+    setShowBreath(false);
+    showToast(t('meditation.breatheDoneToast'));
+  }, [showToast, t]);
 
   const openMoreTips = useCallback(() => {
     const category = period === 'evening' ? 'rest' : 'mindset';
@@ -183,6 +190,14 @@ export function HoySleepCard({
         </TouchableOpacity>
       ) : null}
 
+      {showBreath ? (
+        <QuickBreathModal
+          visible={showBreath}
+          onComplete={handleBreathComplete}
+          onClose={() => setShowBreath(false)}
+        />
+      ) : null}
+
       {showMeditation ? (
         <MeditationCircleSimple
           visible={showMeditation}
@@ -250,8 +265,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   title: {
-    ...THEME.typography.caption,
-    fontSize: 13,
+    ...THEME.typography.meta,
     lineHeight: 17,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.medium,
@@ -264,8 +278,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   moreTipsText: {
-    ...THEME.typography.meta,
-    fontSize: 11,
+    ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     fontFamily: THEME.fonts.heading.medium,
   },
@@ -282,21 +295,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: THEME.spacing.xs,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderWidth: 1,
-    borderColor: THEME.colors.calm.lavender,
+    borderColor: THEME.colors.calm.border,
     minHeight: THEME.sizes.touchTarget,
     justifyContent: 'center',
   },
   miniLabel: {
-    ...THEME.typography.meta,
-    fontSize: 11,
+    ...THEME.typography.small,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
   },
   healthLink: {
-    ...THEME.typography.meta,
-    fontSize: 11,
+    ...THEME.typography.small,
     lineHeight: 15,
     color: THEME.colors.text.secondary,
     textDecorationLine: 'underline',

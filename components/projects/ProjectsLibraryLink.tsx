@@ -4,6 +4,8 @@ import { ChevronRight, FolderKanban } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 
+const UI_ACCENT = THEME.colors.calm.lavenderDeep;
+
 type ProjectsLibraryLinkProps = {
   /** Margen inferior extra (p. ej. en Tareas antes del campo de captura). */
   marginBottom?: boolean;
@@ -32,13 +34,13 @@ export function ProjectsLibraryLink({
     >
       <View style={styles.inner}>
         <View style={styles.iconWrap}>
-          <FolderKanban size={22} color={THEME.colors.gradient.blue} strokeWidth={1.8} />
+          <FolderKanban size={22} color={UI_ACCENT} strokeWidth={1.8} />
         </View>
         <View style={styles.textWrap}>
           <Text style={styles.title}>{t('projects.libraryTitle')}</Text>
           <Text style={styles.hint}>{t('projects.librarySub')}</Text>
         </View>
-        <ChevronRight size={22} color={THEME.colors.gradient.blue} strokeWidth={2} />
+        <ChevronRight size={22} color={UI_ACCENT} strokeWidth={2} />
       </View>
     </TouchableOpacity>
   );
@@ -51,8 +53,8 @@ const styles = StyleSheet.create({
   },
   cardProminent: {
     borderWidth: 1,
-    borderColor: THEME.colors.tint.blue.border,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderColor: THEME.colors.calm.border,
+    backgroundColor: THEME.colors.calm.mist,
   },
   cardWithMargin: {},
   inner: {
@@ -65,7 +67,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: THEME.borderRadius.standard + 2,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    backgroundColor: THEME.colors.calm.lavender,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: THEME.spacing.sm,
@@ -76,13 +78,11 @@ const styles = StyleSheet.create({
   },
   title: {
     ...THEME.typography.body,
-    fontSize: 16,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
   },
   hint: {
     ...THEME.typography.small,
-    fontSize: 12,
     color: THEME.colors.text.secondary,
     marginTop: 2,
   },

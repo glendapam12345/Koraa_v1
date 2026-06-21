@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   track: {
     height: 6,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     overflow: 'hidden',
   },
   trackProminent: {

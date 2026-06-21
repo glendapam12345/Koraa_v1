@@ -81,8 +81,10 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.lg,
   },
   modalContent: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
     padding: THEME.spacing.xl,
     width: '100%',
     maxWidth: 400,
@@ -126,11 +128,11 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     backgroundColor: THEME.colors.gradient.blue,
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
     textAlign: 'center',
     lineHeight: 32,
+    ...THEME.typography.body,
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 16,
     marginRight: THEME.spacing.sm,
   },
   stepContent: {
@@ -159,8 +161,7 @@ const styles = StyleSheet.create({
   },
   startButtonText: {
     ...THEME.typography.body,
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 16,
   },
 });

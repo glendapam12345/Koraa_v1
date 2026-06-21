@@ -72,9 +72,12 @@ export async function createVaciarTask(
   if (!user) return { status: 'not_authenticated' };
 
   const trimmed = draft.content.trim();
-  const detectedCategory = detectCategory(trimmed);
   const categoryToSave =
-    draft.assignToProject === false ? draft.selectedCategory : detectedCategory || 'otros';
+    draft.selectedCategory === ''
+      ? draft.assignToProject
+        ? detectCategory(trimmed) || 'otros'
+        : ''
+      : draft.selectedCategory || detectCategory(trimmed) || 'otros';
   const projectIdToSave = draft.assignToProject === true ? draft.selectedProjectId : null;
   const validSubtasks = draft.hasSubtasks ? draft.subtasks.filter((st) => st.trim()) : [];
   const subtaskCount = validSubtasks.length;

@@ -47,7 +47,7 @@ export default function ProyectosScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.background,
   },
   centered: {
     justifyContent: 'center',
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     paddingTop: THEME.spacing.xs,
     paddingBottom: THEME.spacing.sm + 4,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.stroke[100],
+    borderBottomColor: THEME.colors.calm.border,
   },
   headerRow: {
     flexDirection: 'row',
@@ -74,13 +74,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    ...THEME.typography.h3,
-    fontSize: 22,
+    ...THEME.typography.titleCompact,
     color: THEME.colors.text.main,
   },
   headerSubtitle: {
-    ...THEME.typography.small,
-    fontSize: 13,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
     marginTop: 4,
     letterSpacing: 0.2,

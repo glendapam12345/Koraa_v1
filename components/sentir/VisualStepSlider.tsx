@@ -80,8 +80,7 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.sm,
   },
   labelLarge: {
-    ...THEME.typography.body,
-    fontSize: 17,
+    ...THEME.typography.cardTitle,
     marginBottom: THEME.spacing.md,
   },
   trackOuter: {
@@ -119,9 +118,9 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     borderWidth: 2,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
   },
   stepDotLarge: {
     width: 20,
@@ -144,7 +143,8 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.sm,
   },
   valueLabelLarge: {
-    fontSize: 18,
+    fontSize: THEME.typography.subheading.fontSize,
+    lineHeight: THEME.typography.subheading.lineHeight,
     marginTop: THEME.spacing.md,
   },
 });

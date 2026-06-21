@@ -28,12 +28,12 @@ export function ValueCard({ title, value, icon, message, highlight }: ValueCardP
 
 const styles = StyleSheet.create({
   valueCard: {
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
     ...THEME.shadows.soft,
   },
   valueHeader: {

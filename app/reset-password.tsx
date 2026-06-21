@@ -296,13 +296,13 @@ export default function ResetPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.background,
   },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.background,
     padding: THEME.spacing.lg,
   },
   loadingText: {
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: THEME.spacing.md,
@@ -350,7 +350,9 @@ const styles = StyleSheet.create({
   input: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
     borderRadius: THEME.borderRadius.standard,
     padding: THEME.spacing.sm,
     height: THEME.sizes.inputHeight,

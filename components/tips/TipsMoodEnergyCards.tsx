@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.sm,
   },
   emoji: {
-    fontSize: 28,
+    fontSize: THEME.typography.displayEmoji.fontSize,
   },
   todayLabel: {
     ...THEME.typography.h3,

@@ -121,8 +121,8 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
   },
   chipTextSelected: {
+    ...THEME.typography.meta,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 13,
   },
 });

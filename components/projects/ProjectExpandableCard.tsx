@@ -31,7 +31,9 @@ import { ProjectMetaRow } from '@/components/projects/ProjectMetaRow';
 import { ProjectFocusCta } from '@/components/projects/ProjectFocusCta';
 import type { ProjectLibraryItem } from '@/hooks/useProjectsLibrary';
 import { confirmDeleteProject, deleteProjectById } from '@/lib/deleteProject';
+import { getProjectEmoji } from '@/lib/projectEmoji';
 import { normalizeDueDateInput } from '@/lib/projectProgress';
+import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
 
 type TaskPreview = {
   id: string;
@@ -49,6 +51,8 @@ type ProjectExpandableCardProps = {
   | { mode: 'loose'; looseCount: number }
 );
 
+const UI_ACCENT = THEME.colors.calm.lavenderDeep;
+
 export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
   const { userId, onChanged, onAddTask } = props;
   const isLoose = props.mode === 'loose';
@@ -65,6 +69,7 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
   const [editName, setEditName] = useState(project?.name ?? '');
   const [editColor, setEditColor] = useState(project?.color ?? THEME.colors.gradient.blue);
   const [editDueDate, setEditDueDate] = useState(project?.dueDate ?? '');
+  const [editLifeAreaKey, setEditLifeAreaKey] = useState<LifeAreaKey>(project?.lifeAreaKey ?? 'other');
   const [savingProject, setSavingProject] = useState(false);
 
   const loadTasks = useCallback(async () => {
@@ -174,6 +179,7 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
           name: editName.trim(),
           color: editColor,
           due_date: dueDate,
+          life_area_key: editLifeAreaKey,
         })
         .eq('id', project.id);
       if (!error) {
@@ -197,7 +203,7 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
       <View style={[styles.card, isLoose && styles.cardLooseOuter]}>
         {isLoose ? (
           <LinearGradient
-            colors={[THEME.colors.tint.blue.veryFaint, THEME.colors.tint.pink.soft]}
+            colors={[THEME.colors.calm.mist, THEME.colors.calm.blush]}
             style={styles.cardLooseGradient}
           />
         ) : null}
@@ -219,15 +225,18 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
         >
           {isLoose ? (
             <View style={styles.looseTitleRow}>
-              <List size={18} color={THEME.colors.gradient.blue} />
+              <List size={18} color={UI_ACCENT} />
               <Text style={styles.cardTitle} numberOfLines={1}>
                 {displayTitle}
               </Text>
             </View>
           ) : (
-            <Text style={styles.cardTitle} numberOfLines={1}>
-              {displayTitle}
-            </Text>
+            <View style={styles.titleRow}>
+              <Text style={styles.projectEmoji}>{getProjectEmoji(project!.name)}</Text>
+              <Text style={styles.cardTitle} numberOfLines={1}>
+                {displayTitle}
+              </Text>
+            </View>
           )}
           <View style={styles.cardMeta}>
             {!isLoose && project!.incompleteCount === 0 && project!.taskCount > 0 ? (
@@ -268,6 +277,19 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
           ) : null}
         </TouchableOpacity>
         <TouchableOpacity
+          onPress={() => onAddTask?.(isLoose ? null : project!.id)}
+          style={styles.quickAddBtn}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={
+            isLoose
+              ? t('projects.addA11y')
+              : t('projects.addTaskToProjectA11y', { name: project!.name })
+          }
+        >
+          <Plus size={20} color={UI_ACCENT} strokeWidth={2.2} />
+        </TouchableOpacity>
+        <TouchableOpacity
           onPress={toggleExpanded}
           style={styles.expandBtn}
           accessibilityRole="button"
@@ -278,9 +300,9 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
           }
         >
           {expanded ? (
-            <ChevronUp size={22} color={THEME.colors.gradient.blue} />
+            <ChevronUp size={22} color={UI_ACCENT} />
           ) : (
-            <ChevronDown size={22} color={THEME.colors.gradient.blue} />
+            <ChevronDown size={22} color={UI_ACCENT} />
           )}
         </TouchableOpacity>
       </View>
@@ -305,7 +327,7 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
               activeOpacity={0.85}
               accessibilityRole="button"
             >
-              <Plus size={16} color={THEME.colors.gradient.blue} />
+              <Plus size={16} color={UI_ACCENT} />
               <Text style={styles.actionChipText}>{t('projects.addTaskToProject')}</Text>
             </TouchableOpacity>
             {!isLoose ? (
@@ -317,7 +339,7 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
                   accessibilityRole="button"
                   accessibilityLabel={t('projects.renameProjectA11y', { name: project!.name })}
                 >
-                  <Pencil size={16} color={THEME.colors.gradient.blue} />
+                  <Pencil size={16} color={UI_ACCENT} />
                   <Text style={styles.actionChipText}>{t('projects.renameProject')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -337,7 +359,7 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
           </View>
 
           {loadingTasks ? (
-            <ActivityIndicator color={THEME.colors.gradient.blue} style={styles.tasksLoading} />
+            <ActivityIndicator color={UI_ACCENT} style={styles.tasksLoading} />
           ) : tasks.length === 0 ? (
             <Text style={styles.tasksEmpty}>{t('projects.noTasksInProject')}</Text>
           ) : (
@@ -370,7 +392,7 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
                     hitSlop={8}
                     accessibilityRole="button"
                   >
-                    <Pencil size={16} color={THEME.colors.gradient.blue} />
+                    <Pencil size={16} color={UI_ACCENT} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleDeleteTask(task)}
@@ -391,7 +413,7 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
             accessibilityRole="button"
           >
             <Text style={styles.openFullLinkText}>{t('projects.openFullProject')}</Text>
-            <ChevronRight size={16} color={THEME.colors.gradient.blue} />
+            <ChevronRight size={16} color={UI_ACCENT} />
           </TouchableOpacity>
         </View>
       ) : null}
@@ -410,9 +432,11 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
           name={editName}
           color={editColor}
           dueDate={editDueDate}
+          lifeAreaKey={editLifeAreaKey}
           onNameChange={setEditName}
           onColorChange={setEditColor}
           onDueDateChange={setEditDueDate}
+          onLifeAreaChange={setEditLifeAreaKey}
           onSave={() => void saveProjectEdit()}
           onClose={() => setEditingProject(false)}
           onDelete={handleDeleteProject}
@@ -430,12 +454,12 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.rounded,
     paddingVertical: THEME.spacing.md + 2,
     paddingRight: THEME.spacing.xs,
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
     overflow: 'hidden',
     ...THEME.shadows.card,
   },
@@ -462,9 +486,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  projectEmoji: {
+    fontSize: THEME.typography.displayEmojiMd.fontSize,
+    lineHeight: 26,
+    width: 28,
+    textAlign: 'center',
+  },
   cardTitle: {
-    ...THEME.typography.body,
-    fontSize: 17,
+    ...THEME.typography.cardTitle,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
     flex: 1,
@@ -477,8 +511,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   cardMetaText: {
-    ...THEME.typography.small,
-    fontSize: 13,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
   },
   cardMetaRow: {
@@ -487,8 +520,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   cardMetaTextDone: {
-    ...THEME.typography.small,
-    fontSize: 13,
+    ...THEME.typography.meta,
     color: THEME.colors.semantic.success,
     fontFamily: THEME.fonts.heading.medium,
   },
@@ -499,10 +531,16 @@ const styles = StyleSheet.create({
   },
   dateBadgeText: {
     ...THEME.typography.small,
-    fontSize: 12,
     color: THEME.colors.text.secondary,
   },
   expandBtn: {
+    padding: THEME.spacing.sm,
+    minWidth: THEME.sizes.touchTarget,
+    minHeight: THEME.sizes.touchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickAddBtn: {
     padding: THEME.spacing.sm,
     minWidth: THEME.sizes.touchTarget,
     minHeight: THEME.sizes.touchTarget,
@@ -514,9 +552,9 @@ const styles = StyleSheet.create({
     marginLeft: THEME.spacing.sm,
     padding: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    backgroundColor: THEME.colors.calm.mist,
     borderWidth: 1,
-    borderColor: THEME.colors.tint.blue.border,
+    borderColor: THEME.colors.calm.border,
     gap: THEME.spacing.xs,
   },
   tasksActions: {
@@ -535,14 +573,14 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
   },
   actionChipText: {
     ...THEME.typography.small,
     fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.gradient.blue,
+    color: UI_ACCENT,
   },
   actionChipDanger: {
     color: THEME.colors.semantic.danger,
@@ -561,7 +599,7 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.xs,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: THEME.colors.stroke[100],
+    borderBottomColor: THEME.colors.calm.border,
   },
   taskText: {
     ...THEME.typography.small,
@@ -587,7 +625,7 @@ const styles = StyleSheet.create({
   },
   openFullLinkText: {
     ...THEME.typography.small,
-    color: THEME.colors.gradient.blue,
+    color: UI_ACCENT,
     fontFamily: THEME.fonts.heading.medium,
   },
 });

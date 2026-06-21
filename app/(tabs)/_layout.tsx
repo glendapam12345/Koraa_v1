@@ -154,8 +154,7 @@ export default function TabLayout() {
             ...THEME.shadows.soft,
           },
           tabBarLabelStyle: {
-            fontSize: 12,
-            fontFamily: THEME.fonts.heading.medium,
+            ...THEME.typography.small,
           },
         }}
       >
@@ -177,6 +176,12 @@ export default function TabLayout() {
             tabBarIcon: ({ size, color }) => (
               <ListTodo size={size} color={color} />
             ),
+          }}
+        />
+        <Tabs.Screen
+          name="frentes"
+          options={{
+            href: null,
           }}
         />
         <Tabs.Screen

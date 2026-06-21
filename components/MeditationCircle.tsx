@@ -218,7 +218,7 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
             onPress={onClose}
             activeOpacity={0.7}
           >
-            <X size={24} color={THEME.colors.fill[100]} />
+            <X size={24} color={THEME.colors.onGradient} />
           </TouchableOpacity>
 
           <View style={styles.content}>
@@ -247,7 +247,7 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
                   cx={CIRCLE_SIZE / 2}
                   cy={CIRCLE_SIZE / 2}
                   r={RADIUS}
-                  stroke={THEME.colors.fill[100]}
+                  stroke={THEME.colors.onGradient}
                   strokeWidth={STROKE_WIDTH}
                   fill="none"
                   strokeDasharray={CIRCUMFERENCE}
@@ -271,7 +271,7 @@ export function MeditationCircle({ visible, onComplete, onClose, type }: Meditat
                     end={{ x: 1, y: 1 }}
                     style={styles.logoBackground}
                   >
-                    <Sparkles size={80} color={THEME.colors.fill[100]} strokeWidth={1.5} />
+                    <Sparkles size={80} color={THEME.colors.onGradient} strokeWidth={1.5} />
                   </LinearGradient>
                 )}
               </Animated.View>
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...THEME.typography.h2,
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
     textAlign: 'center',
     marginBottom: THEME.spacing.xs,
   },
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   timerText: {
     fontSize: 96,
     fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
     lineHeight: 96,
   },
   timerLabel: {
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     marginTop: -THEME.spacing.xs,
   },
   startButton: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     paddingHorizontal: THEME.spacing.xl * 2,
     paddingVertical: THEME.spacing.md,
     borderRadius: THEME.borderRadius.pill,
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   },
   instructionText: {
     ...THEME.typography.h2,
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
     marginBottom: THEME.spacing.xs,
     fontFamily: THEME.fonts.heading.bold,
   },

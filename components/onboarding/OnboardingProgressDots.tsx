@@ -43,9 +43,9 @@ const styles = StyleSheet.create({
     width: 32,
     height: 4,
     borderRadius: 2,
-    backgroundColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.calm.border,
   },
   dotActive: {
-    backgroundColor: THEME.colors.gradient.blue,
+    backgroundColor: THEME.colors.calm.lavenderDeep,
   },
 });

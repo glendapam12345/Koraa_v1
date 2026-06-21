@@ -58,7 +58,10 @@ function extractDueDate(
   if (/\b(pasado mañana|day after tomorrow)\b/.test(lower)) {
     return {
       date: addDays(now, 2),
-      cleaned: text.replace(/\b(pasado mañana|day after tomorrow)\b/gi, '').replace(/\s+/g, ' ').trim(),
+      cleaned: text
+        .replace(/\b(pasado mañana|day after tomorrow)\b/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim(),
     };
   }
 
@@ -103,6 +106,15 @@ function inferEffort(text: string): ParsedCaptureTask['effort'] {
   return 'medium';
 }
 
+function cleanSegmentTitle(raw: string): string {
+  return raw
+    .replace(/^(tengo|necesito|debo|me falta|hay que)\s+/i, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^[,.\-–:]+|[,.\-–:]+$/g, '')
+    .trim();
+}
+
 function cleanTitle(raw: string): string {
   return raw
     .replace(
@@ -115,6 +127,55 @@ function cleanTitle(raw: string): string {
     .trim();
 }
 
+function splitIntoSegments(text: string, locale: AppLocale): string[] {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+
+  const newlineParts = trimmed
+    .split(/\n+/)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 3);
+  if (newlineParts.length > 1) return newlineParts;
+
+  const numberedParts = trimmed
+    .split(/(?:^|\s)\d+[\.\)]\s+/)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 3);
+  if (numberedParts.length > 1) return numberedParts;
+
+  const listPattern =
+    locale === 'en'
+      ? /\s+and\s+|;\s*|\s*,\s+(?=[A-Za-z])/i
+      : /\s+y\s+|;\s*|\s*,\s+(?=[A-Za-zÁÉÍÓÚáéíóúÑñ])/i;
+
+  const listParts = trimmed
+    .split(listPattern)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 3);
+  if (listParts.length > 1) return listParts;
+
+  return [trimmed];
+}
+
+function segmentToTask(
+  segment: string,
+  fallbackDate: string | null,
+  fallbackEffort: ParsedCaptureTask['effort'],
+  locale: AppLocale,
+  now: Date,
+): ParsedCaptureTask {
+  const { date, cleaned } = extractDueDate(segment, locale, now);
+  let content = cleanSegmentTitle(cleaned);
+  if (!content || content.length < 3) {
+    content = segment.trim().slice(0, 120);
+  }
+  return {
+    content,
+    scheduled_date: date ?? fallbackDate,
+    effort: inferEffort(segment) ?? fallbackEffort,
+  };
+}
+
 function buildPrepSteps(
   title: string,
   dueDate: string,
@@ -123,10 +184,8 @@ function buildPrepSteps(
 ): ParsedCaptureTask[] {
   if (dueDate <= todayStr) return [];
 
-  const draftLabel =
-    locale === 'en' ? `Draft: ${title}` : `Borrador: ${title}`;
-  const reviewLabel =
-    locale === 'en' ? `Review: ${title}` : `Revisar: ${title}`;
+  const draftLabel = locale === 'en' ? `Draft: ${title}` : `Borrador: ${title}`;
+  const reviewLabel = locale === 'en' ? `Review: ${title}` : `Revisar: ${title}`;
 
   const due = new Date(
     Number(dueDate.slice(0, 4)),
@@ -151,8 +210,105 @@ function buildPrepSteps(
   ];
 }
 
+function buildSummary(
+  locale: AppLocale,
+  taskCount: number,
+  date: string | null,
+  prepCount: number,
+): string {
+  if (locale === 'en') {
+    if (taskCount > 1) {
+      return date
+        ? `Separated into ${taskCount} steps for ${date}.`
+        : `Separated into ${taskCount} loose steps.`;
+    }
+    if (date && prepCount > 0) {
+      return `Main step for ${date}, with ${prepCount} gentle prep steps.`;
+    }
+    if (date) return `One step for ${date}.`;
+    return 'One loose step — add a date if it helps.';
+  }
+
+  if (taskCount > 1) {
+    return date
+      ? `Separado en ${taskCount} pasos para el ${date}.`
+      : `Separado en ${taskCount} pasos sueltos.`;
+  }
+  if (date && prepCount > 0) {
+    return `Paso principal para el ${date}, con ${prepCount} pasos suaves de preparación.`;
+  }
+  if (date) return `Un paso para el ${date}.`;
+  return 'Un paso suelto — puedes añadir fecha si te ayuda.';
+}
+
+export function isUserListCapture(capture: TaskCaptureResult): boolean {
+  if (capture.prep_steps.length === 0) return false;
+  return !capture.prep_steps.some((step) =>
+    /^(borrador|draft|revisar|review):/i.test(step.content.trim()),
+  );
+}
+
+export function applyFormEffortToCapture(
+  capture: TaskCaptureResult,
+  effort: 'light' | 'medium' | 'heavy' | null,
+): TaskCaptureResult {
+  if (!effort) return capture;
+  const withEffort = (task: ParsedCaptureTask): ParsedCaptureTask => ({
+    ...task,
+    effort: task.effort ?? effort,
+  });
+  return {
+    ...capture,
+    main_task: withEffort(capture.main_task),
+    prep_steps: capture.prep_steps.map(withEffort),
+  };
+}
+
+/** Cuenta pasos si el texto es una lista (comas / renglones), no prep steps automáticos. */
+export function getMultiTaskListCount(rawInput: string, locale: AppLocale): number {
+  const trimmed = rawInput.trim();
+  if (!trimmed) return 0;
+  const { cleaned } = extractDueDate(trimmed, locale);
+  const segments = splitIntoSegments(cleaned, locale);
+  return segments.length > 1 ? segments.length : 0;
+}
+
+export function isMultiTaskListInput(rawInput: string, locale: AppLocale): boolean {
+  return getMultiTaskListCount(rawInput, locale) > 1;
+}
+
+/** Títulos detectados en vivo para vista previa mínima (solo listas). */
+export function getCapturePreviewLines(rawInput: string, locale: AppLocale): string[] {
+  const trimmed = rawInput.trim();
+  if (!trimmed) return [];
+  const { cleaned } = extractDueDate(trimmed, locale);
+  const segments = splitIntoSegments(cleaned, locale);
+  if (segments.length <= 1) return [];
+  return segments
+    .map((segment) => cleanTitle(segment) || segment.trim())
+    .filter((line) => line.length >= 2)
+    .slice(0, 12);
+}
+
+/** Aplica fecha del formulario a pasos sin fecha propia. */
+export function applyFallbackDateToCapture(
+  capture: TaskCaptureResult,
+  fallbackDate: string | null,
+): TaskCaptureResult {
+  const withDate = (task: ParsedCaptureTask): ParsedCaptureTask => ({
+    ...task,
+    scheduled_date: task.scheduled_date ?? fallbackDate,
+  });
+  return {
+    ...capture,
+    main_task: withDate(capture.main_task),
+    prep_steps: capture.prep_steps.map(withDate),
+    fromAi: false,
+  };
+}
+
 /**
- * Parser local (sin OpenAI): extrae fecha, título y pasos sugeridos de texto libre.
+ * Parser local (sin OpenAI): separa listas, extrae fechas y sugiere pasos de preparación.
  */
 export function parseTaskCaptureLocally(
   rawInput: string,
@@ -161,8 +317,22 @@ export function parseTaskCaptureLocally(
 ): TaskCaptureResult {
   const trimmed = rawInput.trim();
   const todayStr = getLocalDateString(now);
-  const { date, cleaned } = extractDueDate(trimmed, locale, now);
-  const effort = inferEffort(trimmed);
+  const { date: globalDate, cleaned } = extractDueDate(trimmed, locale, now);
+  const globalEffort = inferEffort(trimmed);
+  const segments = splitIntoSegments(cleaned, locale);
+
+  if (segments.length > 1) {
+    const tasks = segments.map((segment) =>
+      segmentToTask(segment, globalDate, globalEffort, locale, now),
+    );
+    const [main_task, ...prep_steps] = tasks;
+    return {
+      summary: buildSummary(locale, tasks.length, globalDate, 0),
+      main_task,
+      prep_steps,
+      fromAi: false,
+    };
+  }
 
   let title = cleanTitle(cleaned);
   if (!title || title.length < 3) {
@@ -171,24 +341,17 @@ export function parseTaskCaptureLocally(
 
   const main_task: ParsedCaptureTask = {
     content: title,
-    scheduled_date: date,
-    effort,
+    scheduled_date: globalDate,
+    effort: globalEffort,
   };
 
   const prep_steps =
-    date && effort === 'heavy' ? buildPrepSteps(title, date, todayStr, locale) : [];
-
-  const summary =
-    locale === 'en'
-      ? date
-        ? `Main step for ${date}${prep_steps.length ? `, with ${prep_steps.length} gentle prep steps` : ''}.`
-        : 'One loose task — add a date if you like.'
-      : date
-        ? `Paso principal para el ${date}${prep_steps.length ? `, con ${prep_steps.length} pasos suaves de preparación` : ''}.`
-        : 'Una tarea suelta — puedes añadir fecha si quieres.';
+    globalDate && globalEffort === 'heavy'
+      ? buildPrepSteps(title, globalDate, todayStr, locale)
+      : [];
 
   return {
-    summary,
+    summary: buildSummary(locale, 1, globalDate, prep_steps.length),
     main_task,
     prep_steps,
     fromAi: false,

@@ -138,12 +138,8 @@ const styles = StyleSheet.create({
     ...THEME.shadows.soft,
   },
   eyebrow: {
-    ...THEME.typography.meta,
-    fontSize: 11,
+    ...THEME.typography.sectionEyebrow,
     color: THEME.colors.onGradientMuted,
-    fontFamily: THEME.fonts.heading.bold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   moodRow: {
     flexDirection: 'row',
@@ -164,22 +160,19 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   emotion: {
-    ...THEME.typography.h3,
-    fontSize: 20,
+    ...THEME.typography.sectionTitle,
     lineHeight: 24,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.onGradient,
   },
   energy: {
-    ...THEME.typography.caption,
-    fontSize: 13,
+    ...THEME.typography.meta,
     lineHeight: 18,
     color: THEME.colors.onGradientSoft,
     fontFamily: THEME.fonts.heading.medium,
   },
   koraaLine: {
     ...THEME.typography.caption,
-    fontSize: 14,
     lineHeight: 20,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.medium,
@@ -187,7 +180,6 @@ const styles = StyleSheet.create({
   },
   coach: {
     ...THEME.typography.small,
-    fontSize: 12,
     lineHeight: 17,
     color: THEME.colors.onGradientMuted,
     marginTop: 2,

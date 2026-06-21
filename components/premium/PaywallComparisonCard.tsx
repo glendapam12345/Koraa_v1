@@ -65,7 +65,7 @@ export function PaywallComparisonCard({ isSubscribed = false }: PaywallCompariso
 const styles = StyleSheet.create({
   card: {
     gap: THEME.spacing.sm,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderColor: THEME.colors.calm.border,
   },
   title: {

@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
+import { QuickBreathModal } from '@/components/hoy/QuickBreathModal';
 import { MeditationCircleSimple } from '@/components/MeditationCircleSimple';
 import { Toast } from '@/components/Toast';
 import { useHoyMeditation } from '@/hooks/useHoyMeditation';
@@ -53,6 +54,7 @@ export function HoyGentleRhythmStrip({
   allFocusDone,
 }: HoyGentleRhythmStripProps) {
   const { t } = useI18n();
+  const [showBreath, setShowBreath] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [, setShowConfetti] = useState(false);
@@ -99,7 +101,7 @@ export function HoyGentleRhythmStrip({
   );
 
   const openBreathe = () => {
-    router.push({ pathname: '/focus-session', params: { minutes: '5' } });
+    setShowBreath(true);
   };
 
   const openMeditate = () => {
@@ -108,7 +110,12 @@ export function HoyGentleRhythmStrip({
   };
 
   const openPause = () => {
-    router.push({ pathname: '/focus-session', params: { minutes: '5' } });
+    router.push({ pathname: '/focus-session', params: { mode: 'pause', minutes: '10' } });
+  };
+
+  const handleBreathComplete = () => {
+    setShowBreath(false);
+    showToast(t('meditation.breatheDoneToast'));
   };
 
   const openParaMi = () => {
@@ -166,6 +173,14 @@ export function HoyGentleRhythmStrip({
           <ChevronRight size={16} color={THEME.colors.calm.lavenderDeep} />
         </TouchableOpacity>
       </View>
+
+      {showBreath ? (
+        <QuickBreathModal
+          visible={showBreath}
+          onComplete={handleBreathComplete}
+          onClose={() => setShowBreath(false)}
+        />
+      ) : null}
 
       {showMeditation ? (
         <MeditationCircleSimple
@@ -288,9 +303,7 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.calm.lavenderDeep,
   },
   chipLabel: {
-    ...THEME.typography.caption,
-    fontSize: 11,
-    lineHeight: 14,
+    ...THEME.typography.small,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.secondary,
     textAlign: 'center',

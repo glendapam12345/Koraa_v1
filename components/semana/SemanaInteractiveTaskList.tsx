@@ -9,6 +9,7 @@ import { normalizeCategoryKey } from '@/lib/i18n/categoryLabels';
 import { useHoyTaskExpansion } from '@/hooks/useHoyTaskExpansion';
 import { useTaskActions } from '@/hooks/useTaskActions';
 import { useHoyDeleteTask } from '@/hooks/useHoyTaskActions';
+import { useTaskPlanEdit } from '@/hooks/useTaskPlanEdit';
 
 type ProjectInfo = {
   name: string;
@@ -50,9 +51,6 @@ export function SemanaInteractiveTaskList({
     closeMenu,
     toggleMenu,
     editingTask,
-    setEditingTask,
-    editContent,
-    setEditContent,
     toggleDetailsExpansion,
     toggleTaskExpansion,
     handleEditTask,
@@ -60,7 +58,7 @@ export function SemanaInteractiveTaskList({
     setMenuOpen,
   } = useHoyTaskExpansion();
 
-  const { toggleTask, handleSaveEdit: persistEdit, clearToggleTimers } = useTaskActions({
+  const { toggleTask, clearToggleTimers } = useTaskActions({
     tasks: localTasks,
     setTasks: setLocalTasks,
     loadTasks: reloadTasks,
@@ -123,10 +121,48 @@ export function SemanaInteractiveTaskList({
     [projectsMap, t],
   );
 
-  const handleSaveEdit = useCallback(async () => {
-    await persistEdit(editingTask, editContent, setEditingTask, setEditContent);
-    reloadTasks();
-  }, [persistEdit, editingTask, editContent, setEditingTask, setEditContent, reloadTasks]);
+  const editProjects = useMemo(
+    () =>
+      Object.entries(projectsMap).map(([id, meta]) => ({
+        id,
+        name: meta.name,
+      })),
+    [projectsMap],
+  );
+
+  const { saving: planEditSaving, savePlan } = useTaskPlanEdit({
+    onError: (message) => showToast(message, 'error'),
+    onSaved: (taskId, payload) => {
+      setLocalTasks((prev) =>
+        prev.map((task) =>
+          task.id === taskId
+            ? {
+                ...task,
+                content: payload.content,
+                scheduled_date: payload.scheduledDate,
+                project_id: payload.projectId,
+              }
+            : task,
+        ),
+      );
+      closeEditTask();
+      showToast(t('hooks.taskUpdated'), 'success');
+      void reloadTasks();
+    },
+  });
+
+  const handleSavePlanEdit = useCallback(
+    async (payload: Parameters<typeof savePlan>[0]) => {
+      await savePlan(payload);
+    },
+    [savePlan],
+  );
+
+  const handleDeleteEditingTask = useCallback(async () => {
+    if (!editingTask) return;
+    await handleDeleteTask(editingTask);
+    closeEditTask();
+  }, [closeEditTask, editingTask, handleDeleteTask]);
 
   return (
     <View style={styles.wrap} pointerEvents="box-none">
@@ -178,9 +214,11 @@ export function SemanaInteractiveTaskList({
       {editingTask ? (
         <TaskEditModal
           visible={editingTask !== null}
-          content={editContent}
-          onContentChange={setEditContent}
-          onSave={() => void handleSaveEdit()}
+          task={editingTask}
+          projects={editProjects}
+          onSavePlan={handleSavePlanEdit}
+          onDelete={handleDeleteEditingTask}
+          saving={planEditSaving}
           onClose={closeEditTask}
         />
       ) : null}

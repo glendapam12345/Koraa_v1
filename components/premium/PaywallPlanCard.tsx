@@ -105,9 +105,9 @@ export function PaywallPlanCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderWidth: 1,
-    borderColor: THEME.colors.fill[200],
+    borderColor: THEME.colors.calm.border,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     gap: THEME.spacing.xs,
@@ -132,7 +132,9 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.pill,
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: 4,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
   },
   recommendedBadgeText: {
     ...THEME.typography.meta,
@@ -143,7 +145,7 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.pill,
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: 4,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
   },
   flexBadgeText: {
     ...THEME.typography.meta,
@@ -205,8 +207,8 @@ const styles = StyleSheet.create({
   ctaPreview: {
     minHeight: THEME.sizes.touchTarget,
     borderWidth: 1,
-    borderColor: THEME.colors.fill[200],
-    backgroundColor: THEME.colors.fill[200],
+    borderColor: THEME.colors.calm.border,
+    backgroundColor: THEME.colors.calm.mist,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: THEME.spacing.md,

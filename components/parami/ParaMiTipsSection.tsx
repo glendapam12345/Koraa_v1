@@ -90,12 +90,10 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.sm,
     paddingTop: THEME.spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: THEME.colors.fill[200],
+    borderTopColor: THEME.colors.calm.border,
   },
   title: {
     ...THEME.typography.sectionTitle,
-    fontSize: 17,
-    lineHeight: 22,
     color: THEME.colors.text.main,
   },
   lead: {

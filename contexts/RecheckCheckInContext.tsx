@@ -7,14 +7,16 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { router } from 'expo-router';
-import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { QuickRecheckInModal } from '@/components/QuickRecheckInModal';
 import { supabase } from '@/lib/supabase';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { logger } from '@/lib/logger';
 import { track } from '@/lib/analytics';
 import { publishCheckInRefresh } from '@/lib/checkInRefresh';
+import {
+  DEFAULT_CHECK_IN_FOCUS,
+  DEFAULT_CHECK_IN_TIME,
+} from '@/lib/checkInDefaults';
 import {
   openRecheckCheckIn,
   registerOpenRecheck,
@@ -73,20 +75,28 @@ async function fetchTodayCheckIn(): Promise<CheckInSnapshot | null> {
   }
 }
 
+function normalizeCheckInSnapshot(snapshot: CheckInSnapshot | null): CheckInSnapshot {
+  return {
+    emotion: snapshot?.emotion ?? '',
+    energy: snapshot?.energy && snapshot.energy >= 1 ? snapshot.energy : 3,
+    time: snapshot?.time?.trim() ? snapshot.time : DEFAULT_CHECK_IN_TIME,
+    focus: snapshot?.focus?.trim() ? snapshot.focus : DEFAULT_CHECK_IN_FOCUS,
+  };
+}
+
 function RecheckModalHost() {
   const [visible, setVisible] = useState(false);
+  const [firstCheckIn, setFirstCheckIn] = useState(false);
   const [initial, setInitial] = useState<CheckInSnapshot | null>(null);
   const sourceRef = useRef('unknown');
 
   const openRecheck = useCallback(async (source = 'unknown') => {
     sourceRef.current = source;
     const checkIn = await fetchTodayCheckIn();
-    if (!checkIn) {
-      router.replace(CHECK_IN_ROUTE);
-      return;
-    }
-    void track('recheck_opened', { source });
-    setInitial(checkIn);
+    const isFirstCheckIn = !checkIn?.emotion;
+    setFirstCheckIn(isFirstCheckIn);
+    void track(isFirstCheckIn ? 'check_in_opened' : 'recheck_opened', { source });
+    setInitial(normalizeCheckInSnapshot(checkIn));
     setVisible(true);
   }, []);
 
@@ -96,10 +106,12 @@ function RecheckModalHost() {
   }, [openRecheck]);
 
   const handleComplete = useCallback(() => {
-    void track('recheck_completed', { source: sourceRef.current });
+    void track(firstCheckIn ? 'check_in_completed' : 'recheck_completed', {
+      source: sourceRef.current,
+    });
     publishCheckInRefresh();
     setVisible(false);
-  }, []);
+  }, [firstCheckIn]);
 
   const handleClose = useCallback(() => {
     setVisible(false);
@@ -107,13 +119,14 @@ function RecheckModalHost() {
 
   return (
     <QuickRecheckInModal
-      visible={visible && Boolean(initial)}
+      visible={visible && initial != null}
+      firstCheckIn={firstCheckIn}
       onClose={handleClose}
       onComplete={handleComplete}
       initialEmotion={initial?.emotion ?? ''}
-      initialEnergy={initial?.energy ?? 0}
-      initialTime={initial?.time ?? ''}
-      initialFocus={initial?.focus ?? ''}
+      initialEnergy={initial?.energy ?? 3}
+      initialTime={initial?.time ?? DEFAULT_CHECK_IN_TIME}
+      initialFocus={initial?.focus ?? DEFAULT_CHECK_IN_FOCUS}
     />
   );
 }

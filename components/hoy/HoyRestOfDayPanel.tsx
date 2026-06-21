@@ -160,8 +160,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   title: {
-    ...THEME.typography.sectionTitle,
-    fontSize: 18,
+    ...THEME.typography.subheading,
     lineHeight: 24,
     color: THEME.colors.text.main,
   },
@@ -176,7 +175,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   emptyCard: {
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.card,
     padding: THEME.spacing.md,
   },

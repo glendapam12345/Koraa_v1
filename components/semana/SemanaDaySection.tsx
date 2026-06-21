@@ -287,8 +287,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
   },
   dayLabel: {
-    ...THEME.typography.sectionTitle,
-    fontSize: 18,
+    ...THEME.typography.subheading,
     lineHeight: 24,
     color: THEME.colors.text.main,
     flex: 1,
@@ -363,9 +362,8 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.xs,
   },
   addDayButtonTextOutlined: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
-    fontSize: 13,
   },
 });

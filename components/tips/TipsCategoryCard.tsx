@@ -94,18 +94,15 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   label: {
-    ...THEME.typography.h3,
-    fontSize: 15,
+    ...THEME.typography.screenSubtitle,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
     lineHeight: 20,
   },
   subtitle: {
     ...THEME.typography.meta,
-    fontSize: 11,
     color: THEME.colors.onGradient,
     opacity: 0.9,
-    lineHeight: 14,
   },
   badge: {
     alignSelf: 'flex-start',

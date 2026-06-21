@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.lg,
   },
   emptyState: {
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.xl,
     alignItems: 'center',

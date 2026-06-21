@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -11,6 +12,7 @@ import {
 import { Plus, X, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
+import { CalmSegmentedControl } from '@/components/ui/calm/CalmSegmentedControl';
 import { ProjectSelector } from '@/components/projects/ProjectSelector';
 import { DateSelector } from '@/components/tasks/DateSelector';
 import { TaskEffortPicker } from '@/components/tasks/TaskEffortPicker';
@@ -71,6 +73,7 @@ export function TaskCaptureOrganize({
   onEffortChange,
 }: TaskCaptureOrganizeProps) {
   const { t } = useI18n();
+  const [requestProjectOpen, setRequestProjectOpen] = useState(false);
   const today = getLocalDateString();
   const weekEnd = getEndOfWeekLocalDateString();
   const isThisWeekSelected = selectedDate === weekEnd && selectedDate !== today;
@@ -96,90 +99,121 @@ export function TaskCaptureOrganize({
         </>
       ) : null}
 
-      <Text style={styles.fieldLabel}>{t('vaciar.fieldProjectOptional')}</Text>
-      <Text style={styles.fieldHint}>{t('vaciar.fieldProjectOptionalHint')}</Text>
-      <View style={styles.projectBlock}>
-        <ProjectSelector
-          selectedProjectId={selectedProjectId}
-          onSelect={(id) => {
-            onProjectChange(id);
-            onAssignToProjectChange(Boolean(id));
-          }}
-          userId={userId}
-          showLabel={false}
-          assignMode
-          onBeforeOpenModal={() => {
-            Keyboard.dismiss();
-            onBlurInput?.();
-          }}
-          onError={onProjectError}
-          onSuccess={onProjectCreated}
-        />
-        {inProject ? (
-          <TouchableOpacity
-            style={styles.clearProjectChip}
-            onPress={() => {
-              onProjectChange(null);
-              onAssignToProjectChange(false);
+      <Text style={styles.fieldLabel}>{t('vaciar.fieldProject')}</Text>
+      <Text style={styles.fieldHint}>{t('vaciar.fieldProjectHint')}</Text>
+
+      <CalmSegmentedControl
+        variant="accent"
+        value={assignToProject ? 'project' : 'loose'}
+        onChange={(mode) => {
+          if (mode === 'loose') {
+            onAssignToProjectChange(false);
+            onProjectChange(null);
+            return;
+          }
+          onAssignToProjectChange(true);
+          if (!selectedProjectId) {
+            setRequestProjectOpen(true);
+          }
+        }}
+        segments={[
+          {
+            id: 'loose',
+            label: t('vaciar.looseTask'),
+            accessibilityLabel: t('vaciar.looseTask'),
+          },
+          {
+            id: 'project',
+            label: t('vaciar.inProject'),
+            accessibilityLabel: t('vaciar.inProject'),
+          },
+        ]}
+      />
+
+      {assignToProject ? (
+        <View style={styles.projectBlock}>
+          <ProjectSelector
+            selectedProjectId={selectedProjectId}
+            onSelect={(id) => {
+              onProjectChange(id);
             }}
+            userId={userId}
+            showLabel={false}
+            assignMode
+            requestOpen={requestProjectOpen}
+            onRequestOpenHandled={() => setRequestProjectOpen(false)}
+            onBeforeOpenModal={() => {
+              Keyboard.dismiss();
+              onBlurInput?.();
+            }}
+            onError={onProjectError}
+            onSuccess={onProjectCreated}
+          />
+          {!selectedProjectId ? (
+            <Text style={styles.projectRequiredHint}>{t('vaciar.projectRequiredHint')}</Text>
+          ) : null}
+        </View>
+      ) : null}
+
+      <View style={styles.sectionDivider} />
+
+      <View style={styles.datePanel}>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.fieldLabelInline}>{t('vaciar.fieldDate')}</Text>
+          <View style={styles.optionalBadge}>
+            <Text style={styles.optionalBadgeText}>{t('vaciar.fieldDateOptionalBadge')}</Text>
+          </View>
+        </View>
+        <Text style={styles.fieldHint}>
+          {inProject ? t('vaciar.fieldDateHintInProject') : t('vaciar.fieldDateHint')}
+        </Text>
+        <View style={styles.dateQuickRow}>
+          <TouchableOpacity
+            style={[styles.dateChip, selectedDate === today && styles.dateChipActive]}
+            onPress={() => onDateChange(today)}
             activeOpacity={0.85}
             accessibilityRole="button"
-            accessibilityLabel={t('vaciar.clearProjectA11y')}
+            accessibilityState={{ selected: selectedDate === today }}
+            accessibilityLabel={t('vaciarExtra.a11yDateToday')}
           >
-            <X size={14} color={THEME.colors.text.secondary} />
-            <Text style={styles.clearProjectText}>{t('vaciar.clearProject')}</Text>
+            <Text style={[styles.dateChipText, selectedDate === today && styles.dateChipTextActive]}>
+              {t('vaciar.whenToday')}
+            </Text>
           </TouchableOpacity>
-        ) : null}
+          <TouchableOpacity
+            style={[styles.dateChip, isThisWeekSelected && styles.dateChipActive]}
+            onPress={() => onDateChange(weekEnd)}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityState={{ selected: isThisWeekSelected }}
+            accessibilityLabel={t('vaciarExtra.a11yDateThisWeek')}
+          >
+            <Text style={[styles.dateChipText, isThisWeekSelected && styles.dateChipTextActive]}>
+              {t('vaciar.whenThisWeek')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.dateChip, selectedDate === null && styles.dateChipActive]}
+            onPress={() => onDateChange(null)}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityState={{ selected: selectedDate === null }}
+            accessibilityLabel={t('vaciarExtra.a11yDateNoRush')}
+          >
+            <Text style={[styles.dateChipText, selectedDate === null && styles.dateChipTextActive]}>
+              {t('vaciar.whenNoRush')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <DateSelector
+          compact
+          hideLabel
+          selectedDate={selectedDate}
+          onSelect={onDateChange}
+          calendarTaskTitle={taskTitle}
+          calendarTaskId={`capture-${selectedDate ?? 'none'}`}
+        />
       </View>
-
-      <Text style={styles.fieldLabel}>{t('vaciar.fieldDate')}</Text>
-      <Text style={styles.fieldHint}>
-        {inProject ? t('vaciar.fieldDateHintInProject') : t('vaciar.fieldDateHint')}
-      </Text>
-      <View style={styles.dateQuickRow}>
-        <TouchableOpacity
-          style={[styles.dateChip, selectedDate === today && styles.dateChipActive]}
-          onPress={() => onDateChange(today)}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityState={{ selected: selectedDate === today }}
-          accessibilityLabel={t('vaciarExtra.a11yDateToday')}
-        >
-          <Text style={[styles.dateChipText, selectedDate === today && styles.dateChipTextActive]}>
-            {t('vaciar.whenToday')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.dateChip, isThisWeekSelected && styles.dateChipActive]}
-          onPress={() => onDateChange(weekEnd)}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityState={{ selected: isThisWeekSelected }}
-          accessibilityLabel={t('vaciarExtra.a11yDateThisWeek')}
-        >
-          <Text style={[styles.dateChipText, isThisWeekSelected && styles.dateChipTextActive]}>
-            {t('vaciar.whenThisWeek')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.dateChip, selectedDate === null && styles.dateChipActive]}
-          onPress={() => onDateChange(null)}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityState={{ selected: selectedDate === null }}
-          accessibilityLabel={t('vaciarExtra.a11yDateNoRush')}
-        >
-          <Text style={[styles.dateChipText, selectedDate === null && styles.dateChipTextActive]}>
-            {t('vaciar.whenNoRush')}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <DateSelector
-        selectedDate={selectedDate}
-        onSelect={onDateChange}
-        calendarTaskTitle={taskTitle}
-        calendarTaskId={`capture-${selectedDate ?? 'none'}`}
-      />
 
       {onEffortChange ? (
         <TaskEffortPicker value={effortFeel} onChange={onEffortChange} />
@@ -289,13 +323,10 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
   },
   embedded: {
-    ...THEME.surfaces.elevated,
-    padding: THEME.spacing.md,
-    gap: 0,
+    gap: THEME.spacing.xs,
   },
   cardTitle: {
-    ...THEME.typography.sectionTitle,
-    fontSize: 18,
+    ...THEME.typography.subheading,
     lineHeight: 24,
     color: THEME.colors.text.main,
     marginBottom: 4,
@@ -313,42 +344,16 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.xs,
     marginTop: THEME.spacing.xs,
   },
+  fieldLabelInline: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.bold,
+  },
   fieldHint: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     marginBottom: THEME.spacing.xs,
     lineHeight: 18,
-  },
-  segmentRow: {
-    flexDirection: 'row',
-    gap: THEME.spacing.sm,
-    marginBottom: THEME.spacing.sm,
-  },
-  segment: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.pill,
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    backgroundColor: THEME.colors.fill[200],
-    minHeight: THEME.sizes.touchTarget,
-  },
-  segmentActive: {
-    backgroundColor: THEME.colors.gradient.blue,
-    borderColor: THEME.colors.gradient.blue,
-  },
-  segmentText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  segmentTextActive: {
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
   },
   chipsRow: {
     gap: THEME.spacing.xs,
@@ -359,8 +364,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: THEME.borderRadius.pill,
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    backgroundColor: THEME.colors.fill[200],
+    borderColor: THEME.colors.calm.border,
+    backgroundColor: THEME.colors.calm.mist,
   },
   chipText: {
     ...THEME.typography.small,
@@ -371,56 +376,76 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
   },
   projectBlock: {
+    marginTop: THEME.spacing.sm,
     marginBottom: THEME.spacing.sm,
     gap: THEME.spacing.xs,
   },
-  clearProjectChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[200],
-    borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    minHeight: 36,
-  },
-  clearProjectText: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    fontFamily: THEME.fonts.heading.medium,
-  },
   projectRequiredHint: {
     ...THEME.typography.small,
-    color: THEME.colors.gradient.pink,
+    color: THEME.colors.text.secondary,
     lineHeight: 18,
+    fontStyle: 'italic',
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: THEME.colors.calm.border,
+    marginVertical: THEME.spacing.md,
+  },
+  datePanel: {
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
+    gap: THEME.spacing.xs,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    flexWrap: 'wrap',
+  },
+  optionalBadge: {
+    paddingHorizontal: THEME.spacing.xs,
+    paddingVertical: 2,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.calm.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  optionalBadgeText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
   },
   dateQuickRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: THEME.spacing.sm,
-    marginBottom: THEME.spacing.sm,
+    gap: THEME.spacing.xs,
+    marginTop: THEME.spacing.xs,
+    marginBottom: THEME.spacing.xs,
   },
   dateChip: {
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: THEME.spacing.xs,
     borderRadius: THEME.borderRadius.pill,
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    backgroundColor: THEME.colors.fill[200],
+    borderColor: THEME.colors.calm.border,
+    backgroundColor: THEME.colors.calm.card,
+    minHeight: 36,
+    justifyContent: 'center',
   },
   dateChipActive: {
-    borderColor: THEME.colors.gradient.pink,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    backgroundColor: THEME.colors.calm.lavender,
   },
   dateChipText: {
     ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
   },
   dateChipTextActive: {
-    color: THEME.colors.gradient.blue,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
   },
   subtasksToggle: {
@@ -450,9 +475,10 @@ const styles = StyleSheet.create({
   },
   subtaskInput: {
     flex: 1,
-    fontSize: 16,
-    lineHeight: 24,
-    backgroundColor: THEME.colors.fill[200],
+    ...THEME.typography.body,
+    backgroundColor: THEME.colors.calm.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
     borderRadius: THEME.borderRadius.standard,
     padding: THEME.spacing.sm,
     color: THEME.colors.text.main,

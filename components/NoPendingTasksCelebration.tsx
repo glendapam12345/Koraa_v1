@@ -1,8 +1,8 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-import { PartyPopper } from 'lucide-react-native';
+import { CheckCircle2 } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
+import { CalmCard } from '@/components/ui/calm/CalmCard';
 
 interface NoPendingTasksCelebrationProps {
   onDismiss: () => void;
@@ -13,12 +13,14 @@ export function NoPendingTasksCelebration({ onDismiss }: NoPendingTasksCelebrati
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.card}
-      >
+      <CalmCard style={styles.card}>
+        <View style={styles.iconContainer}>
+          <CheckCircle2 size={18} color={THEME.colors.calm.lavenderDeep} />
+        </View>
+
+        <Text style={styles.title}>{t('celebration.title')}</Text>
+        <Text style={styles.message}>{t('celebration.message')}</Text>
+
         <TouchableOpacity
           style={styles.dismissButton}
           onPress={onDismiss}
@@ -26,75 +28,52 @@ export function NoPendingTasksCelebration({ onDismiss }: NoPendingTasksCelebrati
           accessibilityRole="button"
           accessibilityLabel={t('celebration.dismiss')}
         >
-          <LinearGradient
-            colors={[THEME.colors.surfaceOverlay.strong, THEME.colors.surfaceOverlay.light]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.dismissButtonGradient}
-          >
-            <Text style={styles.dismissButtonText}>{t('celebration.dismiss')}</Text>
-          </LinearGradient>
+          <Text style={styles.dismissButtonText}>{t('celebration.dismiss')}</Text>
         </TouchableOpacity>
-
-        <View style={styles.iconContainer}>
-          <PartyPopper size={48} color={THEME.colors.fill[100]} />
-        </View>
-
-        <Text style={styles.title}>{t('celebration.title')}</Text>
-        <Text style={styles.message}>{t('celebration.message')}</Text>
-      </LinearGradient>
+      </CalmCard>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: THEME.spacing.lg,
+    marginBottom: THEME.spacing.sm,
   },
   card: {
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.xl,
-    alignItems: 'center',
-    ...THEME.shadows.soft,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    alignItems: 'flex-start',
+    gap: 6,
+    borderColor: THEME.colors.calm.border,
   },
   iconContainer: {
-    marginBottom: THEME.spacing.md,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderWidth: 1,
+    borderColor: THEME.colors.tint.blue.border,
   },
   title: {
-    ...THEME.typography.h2,
-    color: THEME.colors.fill[100],
-    textAlign: 'center',
-    marginBottom: THEME.spacing.sm,
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
   },
   message: {
-    ...THEME.typography.body,
-    color: THEME.colors.fill[100],
-    textAlign: 'center',
-    lineHeight: 22,
-    opacity: 0.95,
-    fontSize: 14,
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
   },
   dismissButton: {
-    alignSelf: 'center',
-    marginTop: THEME.spacing.md,
-    ...THEME.shadows.soft,
-  },
-  dismissButtonGradient: {
-    borderRadius: THEME.borderRadius.pill,
-    paddingVertical: THEME.spacing.md,
-    paddingHorizontal: THEME.spacing.xl,
-    borderWidth: 2,
-    borderColor: THEME.colors.surfaceOverlay.borderMedium,
-    minWidth: 140,
-    alignItems: 'center',
+    minHeight: THEME.sizes.touchTarget,
     justifyContent: 'center',
+    marginTop: 2,
   },
   dismissButtonText: {
-    ...THEME.typography.body,
-    color: THEME.colors.onGradient,
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 15,
-    letterSpacing: 0.5,
   },
 });

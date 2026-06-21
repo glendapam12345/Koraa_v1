@@ -145,7 +145,8 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.xs,
   },
   exampleEmoji: {
-    fontSize: 24,
+    fontSize: THEME.typography.h3.fontSize,
+    lineHeight: THEME.typography.h3.lineHeight,
   },
   exampleTitle: {
     ...THEME.typography.h3,

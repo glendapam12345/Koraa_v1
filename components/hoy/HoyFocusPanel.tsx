@@ -1,25 +1,33 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Sparkles, ChevronRight, RefreshCw } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
 import { THEME } from '@/constants/theme';
 import type { FocusProgressStats } from '@/lib/focusProgressStats';
 import { HoyFocusTaskRow } from '@/components/hoy/HoyFocusTaskRow';
-import { HoyMoodHeroCard } from '@/components/hoy/HoyMoodHeroCard';
 import { HoyDailyPlanCard } from '@/components/hoy/HoyDailyPlanCard';
+import { HoyFeelHero } from '@/components/hoy/HoyFeelHero';
 import { HoyCrisisBanner } from '@/components/hoy/HoyCrisisBanner';
-import { HoyLightenLoadCard } from '@/components/hoy/HoyLightenLoadCard';
+import { HoyAttentionCard } from '@/components/hoy/HoyAttentionCard';
 import { HoyLitePeekCard } from '@/components/hoy/HoyLitePeekCard';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
-import { useHoyCoachMessage } from '@/hooks/useHoyCoachMessage';
 import { getEmotionEmoji } from '@/lib/emotionEmoji';
 import { isOverwhelmedState } from '@/lib/emotionalSafety';
 import { CARE_MODE_MAX_FOCUS_STEPS, getCareModeTaskCounts } from '@/lib/hoyCareMode';
 import { useI18n } from '@/contexts/I18nContext';
 import type { Task } from '@/components/tasks/TaskCard';
 import type { AppLocale } from '@/lib/i18n';
+import type { HoyAttentionPlan } from '@/lib/hoyAttentionPlan';
+import type { ProjectProgressMap } from '@/hooks/useHoyFocusTaskMeta';
+import type { TaskPlanningMeta } from '@/lib/taskPlanningMeta';
+import {
+  buildFocusTaskDeadline,
+  formatFocusTaskDuration,
+  getFocusTaskEstimatedMinutes,
+  resolveFocusTaskAreaLabel,
+  type HoyProjectInfo,
+} from '@/lib/hoy/focusTaskDisplay';
 
 const DEFAULT_MAX_STEPS = 2;
 
@@ -33,17 +41,19 @@ type HoyFocusPanelProps = {
   time?: string;
   focusLevel?: string;
   coachSuggestion: string;
+  attentionPlan?: HoyAttentionPlan | null;
   priorityStats: FocusProgressStats;
   focusTasks: Task[];
   totalPending: number;
-  projectsMap: Record<string, { name: string; color?: string }>;
+  projectsMap: Record<string, HoyProjectInfo>;
+  projectProgress: ProjectProgressMap;
+  planningMeta: Record<string, TaskPlanningMeta>;
   onToggleTask: (taskId: string) => void;
   onOpenTask: (task: Task) => void;
   restExpanded?: boolean;
   onRestExpandedChange?: (open: boolean) => void;
   onDeleteTask?: (task: Task) => void;
   onChangeEmotion?: () => void;
-  onLightenLoad?: () => void;
   /** Primer día en Hoy: menos secciones; el peek explica qué hay guardado. */
   compactLayout?: boolean;
   onShowFullView?: () => void;
@@ -63,6 +73,8 @@ type HoyFocusPanelProps = {
   waitingTasksSlot?: ReactNode;
   /** Tareas fuera del plan principal de hoy. */
   waitingCount?: number;
+  /** Paso 3 opcional: reorganizar semana cuando cambió el día. */
+  reorganizeSlot?: ReactNode;
   onCareModeDismiss?: () => void;
   onCareModeLearnMore?: () => void;
 };
@@ -77,17 +89,19 @@ export function HoyFocusPanel({
   focusLevel = '',
   todayMood,
   coachSuggestion,
+  attentionPlan = null,
   priorityStats,
   focusTasks,
   totalPending,
   projectsMap,
+  projectProgress,
+  planningMeta,
   onToggleTask,
   onOpenTask,
   restExpanded = false,
   onRestExpandedChange,
   onDeleteTask,
   onChangeEmotion,
-  onLightenLoad,
   compactLayout = false,
   onShowFullView,
   shortSleep = false,
@@ -95,6 +109,7 @@ export function HoyFocusPanel({
   crisisMode = false,
   waitingTasksSlot,
   waitingCount,
+  reorganizeSlot,
   onCareModeDismiss,
   onCareModeLearnMore,
 }: HoyFocusPanelProps) {
@@ -112,18 +127,6 @@ export function HoyFocusPanel({
   const allFocusDone =
     priorityStats.total > 0 && priorityStats.done >= priorityStats.total;
 
-  const coachInput = {
-    locale,
-    displayName,
-    emotionKey: todayMood,
-    emotionLabel,
-    energyLevel,
-    suggestion: coachSuggestion,
-    focusCount: incompleteFocusTasks.length,
-  };
-
-  const { coach } = useHoyCoachMessage(userId, coachInput);
-
   const openFeel = () => {
     if (onChangeEmotion) {
       onChangeEmotion();
@@ -132,12 +135,8 @@ export function HoyFocusPanel({
     openRecheckCheckIn('hoy_focus');
   };
 
-  const focusTaskNames = useMemo(
-    () => incompleteFocusTasks.map((task) => task.content.trim()).filter(Boolean),
-    [incompleteFocusTasks],
-  );
-  const firstFocusTaskName = focusTaskNames[0];
-  const totalFocusCount = incompleteFocusTasks.length;
+  const hasCheckIn = Boolean(todayMood);
+
   const isOverwhelmed = isOverwhelmedState(todayMood, energyLevel);
   const maxVisibleSteps = crisisMode
     ? CARE_MODE_MAX_FOCUS_STEPS
@@ -155,17 +154,7 @@ export function HoyFocusPanel({
     return incompleteFocusTasks.slice(0, maxVisibleSteps);
   }, [extraFocusExpanded, hiddenInSection, incompleteFocusTasks, maxVisibleSteps]);
 
-  const showLightenLoad =
-    !crisisMode &&
-    !compactLayout &&
-    Boolean(onLightenLoad) &&
-    totalPending > 0;
-  const coachLine = crisisMode
-    ? t('hoy.crisisCoachLine')
-    : coach?.body ?? t('hoy.focusCoachFallback');
-  const careCounts = crisisMode ? getCareModeTaskCounts(totalFocusCount, nonFocusPending) : null;
-  const moodFocusCount = careCounts?.visibleFocus ?? totalFocusCount;
-  const moodRestCount = careCounts?.waitingCount ?? nonFocusPending;
+  const careCounts = crisisMode ? getCareModeTaskCounts(incompleteFocusTasks.length, nonFocusPending) : null;
   const restLinkCount = waitingCount ?? careCounts?.waitingCount ?? nonFocusPending;
   const togglePriorities = () => {
     setStepsExpanded((open) => !open);
@@ -176,21 +165,38 @@ export function HoyFocusPanel({
     setWaitingExpanded((open) => !open);
   };
 
+  const renderFocusTaskRow = (task: Task, index: number) => {
+    const project = task.project_id ? projectsMap[task.project_id] : undefined;
+    const minutes = getFocusTaskEstimatedMinutes(task, planningMeta[task.id]);
+    const deadline = buildFocusTaskDeadline(task, project, locale, t);
+    const progress = task.project_id ? projectProgress[task.project_id] : undefined;
+
+    return (
+      <HoyFocusTaskRow
+        key={task.id}
+        content={task.content}
+        completed={task.is_completed}
+        index={index}
+        durationLabel={formatFocusTaskDuration(minutes)}
+        deadlineLabel={deadline?.label ?? null}
+        deadlineUrgent={deadline?.urgent ?? false}
+        projectId={task.project_id ?? null}
+        projectName={project?.name ?? null}
+        projectColor={project?.color ?? THEME.colors.gradient.blue}
+        projectPercent={progress?.percent ?? null}
+        areaLabel={resolveFocusTaskAreaLabel(project)}
+        onToggleComplete={() => onToggleTask(task.id)}
+        onOpenDetails={() => onOpenTask(task)}
+        onDelete={onDeleteTask ? () => onDeleteTask(task) : undefined}
+      />
+    );
+  };
+
   const prioritiesSlot =
     incompleteFocusTasks.length > 0 ? (
       <>
         <View style={styles.taskList}>
-          {visibleFocusTasks.map((task, index) => (
-            <HoyFocusTaskRow
-              key={task.id}
-              task={task}
-              index={index}
-              projectName={task.project_id ? projectsMap[task.project_id]?.name ?? null : null}
-              onToggleComplete={() => onToggleTask(task.id)}
-              onOpenDetails={() => onOpenTask(task)}
-              onDelete={onDeleteTask ? () => onDeleteTask(task) : undefined}
-            />
-          ))}
+          {visibleFocusTasks.map((task, index) => renderFocusTaskRow(task, index))}
         </View>
         {hiddenInSection > 0 && !extraFocusExpanded && !crisisMode ? (
           <TouchableOpacity
@@ -210,14 +216,6 @@ export function HoyFocusPanel({
 
   const planWaitingSlot = waitingTasksSlot ?? null;
 
-  const planFooterSlot = allFocusDone ? (
-    <View style={styles.celebration}>
-      <Sparkles size={28} color={THEME.colors.calm.lavenderDeep} />
-      <Text style={styles.celebrationTitle}>{t('hoy.focusAllDoneTitle')}</Text>
-      <Text style={styles.celebrationBody}>{t('hoy.focusAllDoneBody')}</Text>
-    </View>
-  ) : null;
-
   return (
     <View style={styles.root}>
       {crisisMode && onCareModeDismiss && onCareModeLearnMore ? (
@@ -228,40 +226,14 @@ export function HoyFocusPanel({
         />
       ) : null}
 
-      <HoyMoodHeroCard
-        emotionEmoji={emotionEmoji}
-        emotionLabel={emotionLabel}
-        energyLevel={energyLevel}
-        focusCount={moodFocusCount}
-        restCount={moodRestCount}
-        firstFocusTaskName={firstFocusTaskName}
-        coachLine={coachLine}
-        allFocusDone={allFocusDone}
-        compact={compactLayout}
-        crisisMode={crisisMode}
-        onPress={openFeel}
-      />
-
-      {!compactLayout ? (
-        <View style={styles.postHeroCluster}>
-          <TouchableOpacity
-            onPress={openFeel}
-            activeOpacity={0.85}
-            style={styles.recheckCard}
-            accessibilityRole="button"
-            accessibilityLabel={t('hoy.focusUpdateCheckInCta')}
-            accessibilityHint={t('hoy.focusUpdateCheckInA11y')}
-          >
-            <View style={styles.recheckIconWrap}>
-              <RefreshCw size={16} color={THEME.colors.calm.lavenderDeep} />
-            </View>
-            <View style={styles.recheckTextCol}>
-              <Text style={styles.recheckQuestion}>{t('hoy.focusUpdateCheckInQuestion')}</Text>
-              <Text style={styles.recheckAction}>{t('hoy.focusUpdateCheckInAction')}</Text>
-            </View>
-            <ChevronRight size={18} color={THEME.colors.calm.lavenderDeep} />
-          </TouchableOpacity>
-        </View>
+      {!compactLayout && !crisisMode ? (
+        <HoyFeelHero
+          hasCheckIn={hasCheckIn}
+          emotionEmoji={emotionEmoji}
+          emotionLabel={emotionLabel}
+          energyLevel={energyLevel}
+          onUpdateFeel={openFeel}
+        />
       ) : null}
 
       {!compactLayout ? (
@@ -273,51 +245,83 @@ export function HoyFocusPanel({
           prioritiesDone={priorityStats.done}
           prioritiesTotal={priorityStats.total}
           allFocusDone={allFocusDone}
+          hasCheckIn={hasCheckIn}
           prioritiesExpanded={stepsExpanded}
           onTogglePriorities={togglePriorities}
           prioritiesSlot={prioritiesSlot}
           waitingExpanded={waitingExpanded}
           onToggleWaiting={toggleWaiting}
           waitingSlot={planWaitingSlot}
-          footerSlot={planFooterSlot}
+        />
+      ) : null}
+
+      {!compactLayout && !crisisMode && reorganizeSlot ? reorganizeSlot : null}
+
+      {!compactLayout && attentionPlan && !crisisMode && !allFocusDone ? (
+        <HoyAttentionCard plan={attentionPlan} />
+      ) : null}
+
+      {!compactLayout && !crisisMode ? (
+        <CalmPrimaryButton
+          label={t('hoy.focusUnloadTitle')}
+          onPress={() => router.push('/(tabs)/vaciar')}
+          variant="soft"
+          accessibilityLabel={t('tabs.brainDumpA11y')}
+          accessibilityHint={t('hoy.focusUnloadSub')}
         />
       ) : null}
 
       {compactLayout ? (
-        <CalmCard style={styles.focusCard}>
-          {allFocusDone ? (
-            planFooterSlot
-          ) : focusTasks.length > 0 ? (
-            <View style={styles.focusBlock}>{prioritiesSlot}</View>
-          ) : (
-            <View style={styles.emptyBlock}>
-              <Text style={styles.emptyTitle}>{t('hoy.focusEmptyTitle')}</Text>
-              <Text style={styles.emptyBody}>{t('hoy.focusEmptyBody')}</Text>
-              <CalmPrimaryButton
-                label={t('hoy.focusGoTasksCta')}
-                onPress={() => router.push('/(tabs)/vaciar')}
-                variant="soft"
-                accessibilityHint={t('hoy.focusGoTasksHint')}
-              />
-            </View>
-          )}
-        </CalmCard>
+        <>
+          {!crisisMode ? (
+            <HoyFeelHero
+              hasCheckIn={hasCheckIn}
+              emotionEmoji={emotionEmoji}
+              emotionLabel={emotionLabel}
+              energyLevel={energyLevel}
+              onUpdateFeel={openFeel}
+            />
+          ) : null}
+
+          <CalmCard style={styles.focusCard}>
+            {allFocusDone ? (
+              <Text style={styles.doneInline}>{t('hoy.planPrioritiesSubAllDone')}</Text>
+            ) : focusTasks.length > 0 ? (
+              <View style={styles.focusBlock}>{prioritiesSlot}</View>
+            ) : (
+              <View style={styles.emptyBlock}>
+                <Text style={styles.emptyTitle}>{t('hoy.focusEmptyTitle')}</Text>
+                <Text style={styles.emptyBody}>{t('hoy.focusEmptyBody')}</Text>
+                <CalmPrimaryButton
+                  label={t('hoy.focusGoTasksCta')}
+                  onPress={() => router.push('/(tabs)/vaciar')}
+                  variant="soft"
+                  accessibilityHint={t('hoy.focusGoTasksHint')}
+                />
+              </View>
+            )}
+          </CalmCard>
+
+          {!crisisMode ? (
+            <CalmPrimaryButton
+              label={t('hoy.focusUnloadTitle')}
+              onPress={() => router.push('/(tabs)/vaciar')}
+              variant="soft"
+              accessibilityLabel={t('tabs.brainDumpA11y')}
+              accessibilityHint={t('hoy.focusUnloadSub')}
+            />
+          ) : null}
+
+          {onShowFullView && onRestExpandedChange ? (
+            <HoyLitePeekCard
+              restCount={nonFocusPending}
+              onShowMoreForToday={() => onRestExpandedChange(true)}
+              onShowFullView={onShowFullView}
+            />
+          ) : null}
+        </>
       ) : null}
 
-      {showLightenLoad ? (
-        <HoyLightenLoadCard
-          onPress={onLightenLoad!}
-          emphasized={isOverwhelmed || nonFocusPending > 0}
-        />
-      ) : null}
-
-      {compactLayout && onShowFullView && onRestExpandedChange ? (
-        <HoyLitePeekCard
-          restCount={nonFocusPending}
-          onShowMoreForToday={() => onRestExpandedChange(true)}
-          onShowFullView={onShowFullView}
-        />
-      ) : null}
     </View>
   );
 }
@@ -409,21 +413,9 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.medium,
     marginTop: THEME.spacing.xs,
   },
-  celebration: {
-    alignItems: 'center',
-    gap: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.sm,
-  },
-  celebrationTitle: {
-    ...THEME.typography.h3,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-    textAlign: 'center',
-  },
-  celebrationBody: {
+  emptyBody: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
-    textAlign: 'center',
     lineHeight: 22,
   },
   emptyTitle: {
@@ -431,10 +423,12 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
   },
-  emptyBody: {
-    ...THEME.typography.body,
+  doneInline: {
+    ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    lineHeight: 22,
+    lineHeight: 20,
+    textAlign: 'center',
+    paddingVertical: THEME.spacing.xs,
   },
   restOfDayLink: {
     flexDirection: 'row',

@@ -91,7 +91,7 @@ export function MoodCard({ todayMood, energyLevel, availableTime, focusLevel, on
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.md,
     paddingVertical: THEME.spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: THEME.colors.stroke[100],
+    borderTopColor: THEME.colors.calm.border,
   },
   stat: {
     alignItems: 'center',

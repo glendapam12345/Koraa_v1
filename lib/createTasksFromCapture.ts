@@ -20,7 +20,13 @@ export type CreateTasksFromCaptureResult =
 
 export async function createTasksFromCapture(
   capture: TaskCaptureResult,
-  options: { locale: AppLocale; hasCheckInToday: boolean; projectId?: string | null },
+  options: {
+    locale: AppLocale;
+    hasCheckInToday: boolean;
+    projectId?: string | null;
+    defaultCategory?: string;
+    defaultEffort?: 'light' | 'medium' | 'heavy' | null;
+  },
 ): Promise<CreateTasksFromCaptureResult> {
   const {
     data: { user },
@@ -34,7 +40,11 @@ export async function createTasksFromCapture(
 
   for (const row of rows) {
     const content = row.content.trim();
-    const category = detectCategory(content) || 'otros';
+    const category =
+      options.projectId != null
+        ? detectCategory(content) || 'otros'
+        : (options.defaultCategory ?? detectCategory(content)) || 'otros';
+    const effort = row.effort ?? options.defaultEffort ?? null;
     const { data, error } = await supabase
       .from('tasks')
       .insert({
@@ -65,8 +75,8 @@ export async function createTasksFromCapture(
     }
 
     insertedIds.push(data.id);
-    if (row.effort) {
-      await setTaskEffort(data.id, row.effort);
+    if (effort) {
+      await setTaskEffort(data.id, effort);
     }
   }
 

@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.sm,
   },
   emoji: {
-    fontSize: 28,
+    fontSize: THEME.typography.displayEmoji.fontSize,
   },
   statusLine: {
     ...THEME.typography.body,

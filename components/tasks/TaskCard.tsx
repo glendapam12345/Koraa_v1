@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native
 import { RectButton, Swipeable } from 'react-native-gesture-handler';
 import { THEME } from '@/constants/theme';
 import { getCategoryEmoji } from '@/constants/emojis';
-import { ChevronDown, ChevronRight, Check, Pencil, Trash2, Calendar } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, Check, Pencil, Trash2, Calendar, FolderInput } from 'lucide-react-native';
 import { TaskCalendarExportRow } from '@/components/tasks/TaskCalendarExportRow';
 import { useI18n } from '@/contexts/I18nContext';
 import { categoryLabel } from '@/lib/i18n/categoryLabels';
@@ -94,6 +94,10 @@ interface TaskCardProps {
   priorityWhyUp?: string[];
   /** Por qué quedó más abajo (tareas cercanas al foco del día). */
   priorityWhyDown?: string[];
+  /** Swipe izquierdo: replanificar (mañana, semana, mover proyecto). */
+  onMoveTomorrow?: () => void;
+  onMoveNextWeek?: () => void;
+  onMoveProject?: () => void;
 }
 
 export function TaskCard({
@@ -126,6 +130,9 @@ export function TaskCard({
   hideCalendarExport = false,
   priorityWhyUp,
   priorityWhyDown,
+  onMoveTomorrow,
+  onMoveNextWeek,
+  onMoveProject,
 }: TaskCardProps) {
   const { t, locale } = useI18n();
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
@@ -227,7 +234,7 @@ export function TaskCard({
             : t('taskCard.markComplete', { task: taskContentLabel })
         }
       >
-        <Check size={22} color={THEME.colors.fill[100]} strokeWidth={2.5} />
+        <Check size={22} color={THEME.colors.onGradient} strokeWidth={2.5} />
         <Text style={styles.swipeActionLabel} numberOfLines={1}>
           {task.is_completed ? t('taskCard.pending') : t('taskCard.complete')}
         </Text>
@@ -238,7 +245,7 @@ export function TaskCard({
         accessibilityRole="button"
         accessibilityLabel={t('taskCard.editTask', { task: taskContentLabel })}
       >
-        <Pencil size={20} color={THEME.colors.fill[100]} strokeWidth={2} />
+        <Pencil size={20} color={THEME.colors.onGradient} strokeWidth={2} />
         <Text style={styles.swipeActionLabel} numberOfLines={1}>{t('taskCard.edit')}</Text>
       </RectButton>
       <RectButton
@@ -247,9 +254,55 @@ export function TaskCard({
         accessibilityRole="button"
         accessibilityLabel={t('taskCard.deleteTask', { task: taskContentLabel })}
       >
-        <Trash2 size={20} color={THEME.colors.fill[100]} strokeWidth={2} />
+        <Trash2 size={20} color={THEME.colors.onGradient} strokeWidth={2} />
         <Text style={styles.swipeActionLabel} numberOfLines={1}>{t('taskCard.delete')}</Text>
       </RectButton>
+    </View>
+  );
+
+  const showReplanSwipe = Boolean(onMoveTomorrow || onMoveNextWeek || onMoveProject);
+
+  const renderLeftActions = () => (
+    <View style={styles.swipeActionsRow}>
+      {onMoveTomorrow ? (
+        <RectButton
+          style={[styles.swipeActionBtn, styles.swipeActionBtnWide, styles.swipeActionTomorrow]}
+          onPress={() => handleSwipeAction(onMoveTomorrow)}
+          accessibilityRole="button"
+          accessibilityLabel={t('tasks.replanTomorrowA11y', { task: taskContentLabel })}
+        >
+          <Calendar size={20} color={THEME.colors.onGradient} strokeWidth={2} />
+          <Text style={styles.swipeActionLabel} numberOfLines={1}>
+            {t('tasks.replanTomorrow')}
+          </Text>
+        </RectButton>
+      ) : null}
+      {onMoveNextWeek ? (
+        <RectButton
+          style={[styles.swipeActionBtn, styles.swipeActionBtnWide, styles.swipeActionNextWeek]}
+          onPress={() => handleSwipeAction(onMoveNextWeek)}
+          accessibilityRole="button"
+          accessibilityLabel={t('tasks.replanNextWeekA11y', { task: taskContentLabel })}
+        >
+          <Calendar size={20} color={THEME.colors.onGradient} strokeWidth={2} />
+          <Text style={styles.swipeActionLabel} numberOfLines={1}>
+            {t('tasks.replanNextWeek')}
+          </Text>
+        </RectButton>
+      ) : null}
+      {onMoveProject ? (
+        <RectButton
+          style={[styles.swipeActionBtn, styles.swipeActionBtnWide, styles.swipeActionMove]}
+          onPress={() => handleSwipeAction(onMoveProject)}
+          accessibilityRole="button"
+          accessibilityLabel={t('tasks.replanMoveProjectA11y', { task: taskContentLabel })}
+        >
+          <FolderInput size={20} color={THEME.colors.onGradient} strokeWidth={2} />
+          <Text style={styles.swipeActionLabel} numberOfLines={1}>
+            {t('tasks.replanMove')}
+          </Text>
+        </RectButton>
+      ) : null}
     </View>
   );
 
@@ -258,9 +311,12 @@ export function TaskCard({
       <Swipeable
         ref={swipeableRef}
         renderRightActions={renderRightActions}
+        renderLeftActions={showReplanSwipe ? renderLeftActions : undefined}
         friction={2}
         rightThreshold={40}
+        leftThreshold={40}
         overshootRight={false}
+        overshootLeft={false}
       >
         <View
           style={[
@@ -718,28 +774,34 @@ const styles = StyleSheet.create({
   swipeActionDelete: {
     backgroundColor: THEME.colors.semantic.danger,
   },
+  swipeActionTomorrow: {
+    backgroundColor: THEME.colors.calm.lavenderDeep,
+  },
+  swipeActionNextWeek: {
+    backgroundColor: THEME.colors.gradient.blue,
+  },
+  swipeActionMove: {
+    backgroundColor: THEME.colors.gradient.pink,
+  },
   swipeActionLabel: {
     ...THEME.typography.meta,
     fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
     textAlign: 'center',
   },
   taskCard: {
-    backgroundColor: THEME.colors.fill[100],
-    borderRadius: THEME.borderRadius.rounded,
+    ...THEME.surfaces.elevated,
     paddingHorizontal: 14,
     paddingVertical: 16,
     minHeight: 72,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    ...THEME.shadows.card,
     position: 'relative',
     overflow: 'hidden',
   },
   taskCardProject: {
     borderLeftWidth: 5,
-    backgroundColor: THEME.colors.fill[100],
   },
   taskCardSuelta: {
     borderLeftWidth: 0,
@@ -777,10 +839,10 @@ const styles = StyleSheet.create({
   },
   contextBadgeSueltas: {
     borderLeftColor: THEME.colors.text.tertiary,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
   },
   contextBadgeEmoji: {
-    fontSize: 12,
+    ...THEME.typography.small,
   },
   contextBadgeText: {
     ...THEME.typography.meta,
@@ -810,7 +872,7 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.xs,
     paddingLeft: THEME.spacing.sm,
     borderLeftWidth: 3,
-    borderLeftColor: THEME.colors.gradient.blue + '50',
+    borderLeftColor: THEME.colors.tint.blue.border,
   },
   projectStepsTitle: {
     ...THEME.typography.small,
@@ -838,9 +900,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   projectStepText: {
-    flex: 1,
-    ...THEME.typography.body,
-    fontSize: 14,
+    ...THEME.typography.caption,
     color: THEME.colors.text.main,
   },
   projectStepTextCompleted: {
@@ -868,7 +928,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   categoryChipEmoji: {
-    fontSize: 12,
+    ...THEME.typography.small,
   },
   categoryChipText: {
     ...THEME.typography.meta,
@@ -955,7 +1015,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: THEME.borderRadius.standard,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     gap: 4,
   },
   priorityWhyLabelDown: {
@@ -970,7 +1030,6 @@ const styles = StyleSheet.create({
   },
   verMasText: {
     ...THEME.typography.small,
-    fontSize: 12,
     color: THEME.colors.text.secondary,
   },
   projectBadge: {
@@ -991,7 +1050,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
   },
   projectBadgeEmoji: {
-    fontSize: 12,
+    ...THEME.typography.small,
   },
   projectBadgeText: {
     ...THEME.typography.meta,
@@ -1028,10 +1087,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   priorityNumberText: {
-    ...THEME.typography.body,
-    color: THEME.colors.fill[100],
+    ...THEME.typography.meta,
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 13,
   },
   taskCardCompleted: {
     opacity: 0.6,
@@ -1071,9 +1129,8 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   taskText: {
-    ...THEME.typography.body,
+    ...THEME.typography.screenSubtitle,
     color: THEME.colors.text.main,
-    fontSize: 15,
     lineHeight: 20,
     flex: 1,
     minWidth: 0,
@@ -1101,7 +1158,7 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.xs,
   },
   subtaskCard: {
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.standard,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -1139,9 +1196,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   subtaskText: {
-    ...THEME.typography.body,
+    ...THEME.typography.caption,
     color: THEME.colors.text.main,
-    fontSize: 14,
   },
   subtaskTextCompleted: {
     textDecorationLine: 'line-through',
@@ -1156,7 +1212,7 @@ const styles = StyleSheet.create({
     height: 3,
     flex: 1,
     minWidth: 0,
-    backgroundColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.calm.border,
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -1190,7 +1246,7 @@ const styles = StyleSheet.create({
     color: THEME.colors.gradient.blue,
   },
   detailsPanel: {
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.standard,
     padding: THEME.spacing.sm,
     marginTop: THEME.spacing.xs,
@@ -1227,7 +1283,7 @@ const styles = StyleSheet.create({
     maxWidth: 180,
   },
   detailsChipEmoji: {
-    fontSize: 14,
+    fontSize: THEME.typography.caption.fontSize,
   },
   detailsChipText: {
     ...THEME.typography.meta,

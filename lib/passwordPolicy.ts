@@ -4,6 +4,7 @@ export const PASSWORD_MIN_LENGTH = 8;
 export type PasswordErrorKey =
   | 'password.empty'
   | 'password.tooShort'
+  | 'password.needsUppercase'
   | 'password.needsLetter'
   | 'password.needsNumber';
 
@@ -12,7 +13,8 @@ export function getPasswordErrorKey(password: string): PasswordErrorKey | null {
   const value = password;
   if (!value.trim()) return 'password.empty';
   if (value.length < PASSWORD_MIN_LENGTH) return 'password.tooShort';
-  if (!/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/.test(value)) return 'password.needsLetter';
+  if (!/[A-ZÁÉÍÓÚÑ]/.test(value)) return 'password.needsUppercase';
+  if (!/[a-záéíóúñ]/.test(value)) return 'password.needsLetter';
   if (!/\d/.test(value)) return 'password.needsNumber';
   return null;
 }

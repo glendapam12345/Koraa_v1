@@ -24,6 +24,7 @@ import {
   type RedistributionResult,
 } from '@/lib/redistributeWorkload';
 import { useI18n } from '@/contexts/I18nContext';
+import { fetchUserProjects } from '@/lib/projectDueDateSchema';
 
 type ProjectRow = { id: string; name: string; color: string; due_date: string | null };
 
@@ -38,12 +39,6 @@ type Props = {
   emotion: string;
   onApplied: () => void;
 };
-
-function isMissingDueDateColumnError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  const maybeMessage = 'message' in error ? String(error.message || '') : '';
-  return maybeMessage.toLowerCase().includes('column projects.due_date does not exist');
-}
 
 export function RedistributeWorkloadModal({
   visible,
@@ -87,41 +82,18 @@ export function RedistributeWorkloadModal({
     setLoadingProjects(true);
     setProjectsLoadError(null);
     setSupportsProjectDueDate(true);
-    const { data, error: err } = await supabase
-      .from('projects')
-      .select('id, name, color, due_date')
-      .eq('user_id', userId)
-      .order('priority', { ascending: false });
 
-    if (err && isMissingDueDateColumnError(err)) {
-      // Compatibilidad: algunas BDs todavía no tienen projects.due_date.
-      const { data: fallbackData, error: fallbackErr } = await supabase
-        .from('projects')
-        .select('id, name, color')
-        .eq('user_id', userId)
-        .order('priority', { ascending: false });
-      setLoadingProjects(false);
-      if (fallbackErr) {
-        setProjects([]);
-        setProjectsLoadError(getErrorMessage(fallbackErr, locale));
-        return;
-      }
-      setSupportsProjectDueDate(false);
-      const normalized = ((fallbackData as Omit<ProjectRow, 'due_date'>[]) || []).map((p) => ({
-        ...p,
-        due_date: null,
-      }));
-      setProjects(normalized);
-      return;
-    }
-
+    const { data, supportsDueDate, error: err } = await fetchUserProjects(userId);
     setLoadingProjects(false);
+
     if (err) {
       setProjects([]);
       setProjectsLoadError(getErrorMessage(err, locale));
       return;
     }
-    setProjects((data as ProjectRow[]) || []);
+
+    setSupportsProjectDueDate(supportsDueDate);
+    setProjects(data);
   }, [userId, locale]);
 
   useEffect(() => {
@@ -302,14 +274,14 @@ export function RedistributeWorkloadModal({
                     style={[styles.segBtn, mode === 'project' && styles.segBtnOn]}
                     onPress={() => setMode('project')}
                   >
-                    <FolderKanban size={18} color={mode === 'project' ? THEME.colors.fill[100] : THEME.colors.text.secondary} />
+                    <FolderKanban size={18} color={mode === 'project' ? THEME.colors.onGradient : THEME.colors.text.secondary} />
                     <Text style={[styles.segText, mode === 'project' && styles.segTextOn]}>{t('redistribute.byProject')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.segBtn, mode === 'loose' && styles.segBtnOn]}
                     onPress={() => setMode('loose')}
                   >
-                    <Layers size={18} color={mode === 'loose' ? THEME.colors.fill[100] : THEME.colors.text.secondary} />
+                    <Layers size={18} color={mode === 'loose' ? THEME.colors.onGradient : THEME.colors.text.secondary} />
                     <Text style={[styles.segText, mode === 'loose' && styles.segTextOn]}>{t('redistribute.loose')}</Text>
                   </TouchableOpacity>
                 </View>
@@ -446,7 +418,7 @@ export function RedistributeWorkloadModal({
                     style={styles.btnPrimary}
                   >
                     {saving ? (
-                      <ActivityIndicator color={THEME.colors.fill[100]} />
+                      <ActivityIndicator color={THEME.colors.onGradient} />
                     ) : (
                       <Text style={styles.btnPrimaryText}>{t('redistribute.apply')}</Text>
                     )}
@@ -479,7 +451,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderTopLeftRadius: THEME.borderRadius.rounded,
     borderTopRightRadius: THEME.borderRadius.rounded,
     maxHeight: Platform.OS === 'web' ? '90%' : '88%',
@@ -491,11 +463,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: THEME.spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.stroke[100],
+    borderBottomColor: THEME.colors.calm.border,
   },
   title: {
-    ...THEME.typography.h2,
-    fontSize: 20,
+    ...THEME.typography.sectionTitle,
     color: THEME.colors.text.main,
   },
   closeBtn: { padding: THEME.spacing.xs },
@@ -519,11 +490,11 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
   },
   segBtnOn: { backgroundColor: THEME.colors.gradient.blue },
   segText: { ...THEME.typography.small, color: THEME.colors.text.main, fontFamily: THEME.fonts.heading.medium },
-  segTextOn: { color: THEME.colors.fill[100] },
+  segTextOn: { color: THEME.colors.onGradient },
   label: {
     ...THEME.typography.body,
     fontFamily: THEME.fonts.heading.medium,
@@ -554,16 +525,16 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.pill,
     backgroundColor: THEME.colors.gradient.blue,
   },
-  retryBtnText: { ...THEME.typography.small, color: THEME.colors.fill[100], fontFamily: THEME.fonts.heading.medium },
+  retryBtnText: { ...THEME.typography.small, color: THEME.colors.onGradient, fontFamily: THEME.fonts.heading.medium },
   chipsScroll: { marginBottom: THEME.spacing.md },
   chip: {
     paddingVertical: 10,
     paddingHorizontal: THEME.spacing.md,
     marginRight: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
     maxWidth: 200,
   },
   chipOn: { borderColor: THEME.colors.gradient.blue, backgroundColor: THEME.colors.tint.blue.veryLight },
@@ -571,11 +542,11 @@ const styles = StyleSheet.create({
   chipSub: { ...THEME.typography.caption, color: THEME.colors.text.secondary, marginTop: 2 },
   input: {
     ...THEME.typography.body,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
     marginBottom: THEME.spacing.sm,
   },
   switchRow: {
@@ -591,11 +562,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: THEME.spacing.md,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
   },
   horizonChipOn: { backgroundColor: THEME.colors.gradient.blue },
   horizonText: { ...THEME.typography.small, color: THEME.colors.text.main },
-  horizonTextOn: { color: THEME.colors.fill[100], fontFamily: THEME.fonts.heading.medium },
+  horizonTextOn: { color: THEME.colors.onGradient, fontFamily: THEME.fonts.heading.medium },
   errBox: {
     backgroundColor: THEME.colors.errorSurface,
     padding: THEME.spacing.md,
@@ -621,7 +592,7 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.sm,
     paddingVertical: THEME.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.stroke[100],
+    borderBottomColor: THEME.colors.calm.border,
   },
   previewDate: { flex: 1, ...THEME.typography.body, color: THEME.colors.text.main },
   previewCount: { ...THEME.typography.small, color: THEME.colors.text.secondary },
@@ -635,7 +606,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: THEME.spacing.md,
     borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     alignItems: 'center',
   },
   btnSecondaryText: { ...THEME.typography.body, color: THEME.colors.text.main },
@@ -648,7 +619,7 @@ const styles = StyleSheet.create({
   },
   btnPrimaryText: {
     ...THEME.typography.body,
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
 });

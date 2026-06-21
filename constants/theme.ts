@@ -1,44 +1,64 @@
 import { TextStyle, ViewStyle } from 'react-native';
 
+/** Single source for calm palette — used by colors.calm and surfaces.* */
+const CALM = {
+  background: '#F8F5FC',
+  card: '#FFFFFF',
+  lavender: '#EDE6FA',
+  lavenderDeep: '#7B61A8',
+  blush: '#F9EEF5',
+  mist: '#F0EBF8',
+  border: '#E6DDF2',
+} as const;
+
+const SHADOW_CARD = {
+  shadowColor: '#000000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.04,
+  shadowRadius: 8,
+  elevation: 2,
+} as const;
+
 export const THEME = {
   colors: {
+    /** @deprecated Prefer `calm.card` — legacy alias */
     fill: {
-      100: '#FFFFFF',
-      200: '#F4F4F7',
+      100: CALM.card,
+      /** @deprecated Prefer `calm.mist` */
+      200: CALM.mist,
     },
     /** Fondo y acentos suaves (calma / mascota Ellie) */
-    calm: {
-      background: '#F8F5FC',
-      card: '#FFFFFF',
-      lavender: '#EDE6FA',
-      lavenderDeep: '#7B61A8',
-      blush: '#F9EEF5',
-      mist: '#F0EBF8',
-      border: '#E6DDF2',
-    },
+    calm: CALM,
+    /** @deprecated Prefer `calm.border` */
     stroke: {
-      100: '#E0E0E0',
+      100: CALM.border,
     },
     text: {
       main: '#121212',
       secondary: '#595959',
       /** Iconos y decoración. En párrafos largos preferir `secondary` o `metaOnFill`. */
       tertiary: '#707070',
-      /** Meta legible sobre fill[200] (~4.5:1 WCAG AA a 13px). */
+      /** Meta legible sobre calm.mist (~4.5:1 WCAG AA a 13px). */
       metaOnFill: '#595959',
     },
     gradient: {
       blue: '#4A90E2',
       pink: '#FF6B6B',
     },
+    /** @deprecated Prefer `calm.mist` */
     background: {
-      secondary: '#F4F4F7',
+      secondary: CALM.mist,
     },
-    border: '#E0E0E0',
+    /** @deprecated Prefer `calm.border` */
+    border: CALM.border,
     /** Overlay for modals and backdrops */
     overlay: 'rgba(0, 0, 0, 0.5)',
     overlayStrong: 'rgba(0, 0, 0, 0.7)',
     overlayLight: 'rgba(0, 0, 0, 0.4)',
+    /** Light dark scrim on glass cards */
+    scrimLight: 'rgba(0, 0, 0, 0.18)',
+    /** Semi-opaque calm background wash */
+    calmScrim: 'rgba(248, 245, 252, 0.92)',
     /** Text/icon on gradient buttons and dark surfaces */
     onGradient: '#FFFFFF',
     onGradientSoft: 'rgba(255, 255, 255, 0.95)',
@@ -56,13 +76,29 @@ export const THEME = {
       border: 'rgba(255, 255, 255, 0.3)',
       borderMedium: 'rgba(255, 255, 255, 0.5)',
       borderStrong: 'rgba(255, 255, 255, 0.4)',
+      /** Frosted glass fills on gradient cards */
+      glass: 'rgba(255, 255, 255, 0.55)',
+      glassLight: 'rgba(255, 255, 255, 0.45)',
+      glassHeavy: 'rgba(255, 255, 255, 0.75)',
+      glassOpaque: 'rgba(255, 255, 255, 0.92)',
+      glassBorder: 'rgba(255, 255, 255, 0.65)',
+      glassBorderLight: 'rgba(255, 255, 255, 0.85)',
+      glassBorderSoft: 'rgba(255, 255, 255, 0.6)',
+      glassBorderFaint: 'rgba(255, 255, 255, 0.35)',
+      wash: 'rgba(255, 255, 255, 0.28)',
+      washLight: 'rgba(255, 255, 255, 0.22)',
+      washStrong: 'rgba(255, 255, 255, 0.38)',
     },
     /** Semantic: success, danger (use for errors/destructive) */
     semantic: {
       success: '#4CAF50',
+      successSoft: 'rgba(39, 174, 96, 0.12)',
       danger: '#FF6B6B',
       dangerSoft: 'rgba(255, 107, 107, 0.08)',
       dangerBorder: 'rgba(255, 107, 107, 0.19)',
+      warn: '#D4A017',
+      warnSoft: 'rgba(255, 193, 7, 0.12)',
+      warnBorder: 'rgba(255, 152, 0, 0.35)',
     },
     /** Category colors for tasks (Hogar, Trabajo, etc.) */
     category: {
@@ -97,6 +133,8 @@ export const THEME = {
       yellow: '#FFD700',
       orange: '#FFA500',
       purple: '#6C5CE7',
+      /** Vision / priority star in week planner */
+      star: '#F5C842',
     },
     /** Chart/confetti palette (array for graphs and celebrations) */
     chartPalette: ['#6BB6FF', '#4A90E2', '#52C9A2', '#2E9D7A', '#FFD93D', '#FFB84D', '#FF9F66', '#FF7F50', '#FF6B6B', '#E55555', '#B794F6', '#9B7EDE'] as const,
@@ -124,6 +162,17 @@ export const THEME = {
     /** Emergency Kit entry card */
     emergencyKit: {
       card: ['#6B5B95', '#9B8EC4', '#C4B5E8'] as const,
+    },
+    /** Carousel slot gradients (Tips / recommendations — one pair per slot) */
+    carousel: {
+      slotGradients: [
+        ['#4A90E2', '#5B8FD9'],
+        ['#FF6B6B', '#E85D75'],
+        ['#3EB489', '#4A90E2'],
+        ['#9B59B6', '#9B7EDE'],
+        ['#F4A261', '#FFA500'],
+        ['#2A9D8F', '#48CAE4'],
+      ] as const,
     },
     /** Emotion check-in tints (soft background per emotion) */
     emotionTint: {
@@ -190,6 +239,18 @@ export const THEME = {
       fontFamily: 'DMSans-Medium',
       color: '#595959',
     } as TextStyle,
+    /** Compact labels (chips, calendar cells, chart footnotes). */
+    micro: {
+      fontSize: 10,
+      lineHeight: 12,
+      fontFamily: 'DMSans-Medium',
+    } as TextStyle,
+    /** Smallest axis labels (sparklines, mini charts). */
+    tiny: {
+      fontSize: 9,
+      lineHeight: 12,
+      fontFamily: 'DMSans-Medium',
+    } as TextStyle,
     /** Título principal de tab (Hoy, Tips, Semana, Vaciar). */
     screenTitle: {
       fontSize: 28,
@@ -207,6 +268,18 @@ export const THEME = {
       lineHeight: 26,
       fontFamily: 'DMSans-Bold',
     } as TextStyle,
+    /** Título de tarjeta o bloque intermedio (entre caption y sectionTitle). */
+    cardTitle: {
+      fontSize: 17,
+      lineHeight: 22,
+      fontFamily: 'DMSans-Bold',
+    } as TextStyle,
+    /** Subtítulo destacado en filas, headers compactos, iconos + texto. */
+    subheading: {
+      fontSize: 18,
+      lineHeight: 24,
+      fontFamily: 'DMSans-Bold',
+    } as TextStyle,
     /** Etiqueta meta sobre bloques (historial, premium, racha). */
     sectionEyebrow: {
       fontSize: 12,
@@ -214,6 +287,27 @@ export const THEME = {
       fontFamily: 'DMSans-Bold',
       letterSpacing: 0.5,
       textTransform: 'uppercase',
+    } as TextStyle,
+    /** Título compacto de pantalla (22px — entre sectionTitle y h3). */
+    titleCompact: {
+      fontSize: 22,
+      lineHeight: 28,
+      fontFamily: 'DMSans-Bold',
+    } as TextStyle,
+    /** Emoji grande (mood cards, tips hero). */
+    displayEmoji: {
+      fontSize: 28,
+      lineHeight: 34,
+    } as TextStyle,
+    /** Emoji mediano (frentes, proyectos, chips). */
+    displayEmojiMd: {
+      fontSize: 22,
+      lineHeight: 28,
+    } as TextStyle,
+    /** Emoji pequeño (filas, iconos inline). */
+    displayEmojiSm: {
+      fontSize: 20,
+      lineHeight: 26,
     } as TextStyle,
   },
 
@@ -241,45 +335,41 @@ export const THEME = {
   /** Tarjetas y paneles reutilizables — preferir sobre estilos locales en cada pantalla. */
   surfaces: {
     elevated: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: CALM.card,
       borderRadius: 20,
       borderWidth: 1,
-      borderColor: '#E6DDF2',
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.04,
-      shadowRadius: 8,
-      elevation: 2,
+      borderColor: CALM.border,
+      ...SHADOW_CARD,
     } as ViewStyle,
     muted: {
-      backgroundColor: '#F4F4F7',
+      backgroundColor: CALM.mist,
       borderRadius: 16,
     } as ViewStyle,
     tinted: {
-      backgroundColor: '#EDE6FA',
+      backgroundColor: CALM.lavender,
       borderRadius: 20,
       borderWidth: 1,
-      borderColor: '#E6DDF2',
+      borderColor: CALM.border,
     } as ViewStyle,
     /** Chips inactivos (filtros, pills). */
     chip: {
-      backgroundColor: '#F4F4F7',
+      backgroundColor: CALM.mist,
       borderRadius: 24,
       borderWidth: 1,
-      borderColor: '#E6DDF2',
+      borderColor: CALM.border,
     } as ViewStyle,
     /** Chips activos/seleccionados (filtros Semana, toggles). */
     chipSelected: {
-      backgroundColor: '#7B61A8',
+      backgroundColor: CALM.lavenderDeep,
       borderRadius: 24,
       borderWidth: 0,
     } as ViewStyle,
     /** Paneles secundarios colapsables (hints, bloques vacíos). */
     panel: {
-      backgroundColor: '#F4F4F7',
+      backgroundColor: CALM.mist,
       borderRadius: 16,
       borderWidth: 1,
-      borderColor: '#E6DDF2',
+      borderColor: CALM.border,
     } as ViewStyle,
   },
 
@@ -303,11 +393,15 @@ export const THEME = {
       elevation: 3,
     },
     card: {
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.04,
-      shadowRadius: 8,
-      elevation: 2,
+      ...SHADOW_CARD,
+    },
+    /** Active capture / listening state (lavenderDeep glow) */
+    lavenderGlow: {
+      shadowColor: CALM.lavenderDeep,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.12,
+      shadowRadius: 12,
+      elevation: 3,
     },
   },
 

@@ -32,6 +32,7 @@ type CalmScreenProps = {
   topInset?: CalmScreenTopInset;
   keyboardShouldPersistTaps?: 'always' | 'never' | 'handled';
   keyboardDismissMode?: 'none' | 'on-drag' | 'interactive';
+  automaticallyAdjustKeyboardInsets?: boolean;
 };
 
 export const CalmScreen = forwardRef<ScrollViewType, CalmScreenProps>(function CalmScreen(
@@ -46,6 +47,7 @@ export const CalmScreen = forwardRef<ScrollViewType, CalmScreenProps>(function C
     topInset = 'md',
     keyboardShouldPersistTaps,
     keyboardDismissMode,
+    automaticallyAdjustKeyboardInsets = false,
   },
   ref,
 ) {
@@ -89,6 +91,7 @@ export const CalmScreen = forwardRef<ScrollViewType, CalmScreenProps>(function C
         refreshControl={refreshControl}
         keyboardShouldPersistTaps={keyboardShouldPersistTaps}
         keyboardDismissMode={keyboardDismissMode}
+        automaticallyAdjustKeyboardInsets={automaticallyAdjustKeyboardInsets}
         contentContainerStyle={styles.scrollGrow}
       >
         {body}

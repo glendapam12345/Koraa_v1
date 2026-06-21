@@ -168,10 +168,10 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: THEME.spacing.md,
     padding: THEME.spacing.md,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.rounded,
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
   },
   header: {
     flexDirection: 'row',
@@ -180,8 +180,7 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.xs,
   },
   title: {
-    ...THEME.typography.h3,
-    fontSize: 16,
+    ...THEME.typography.body,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
   },
@@ -207,9 +206,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.md,
   },
   btnConnected: {
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
   },
   btnDisabled: {
     opacity: 0.7,

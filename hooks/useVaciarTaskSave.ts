@@ -54,7 +54,10 @@ export function useVaciarTaskSave({
   );
 
   const saveTask = useCallback(
-    async (draft: VaciarTaskDraft, options?: { effortFeel?: TaskEffort | null }) => {
+    async (
+      draft: VaciarTaskDraft,
+      options?: { effortFeel?: TaskEffort | null; reliefCapture?: boolean; suppressToast?: boolean },
+    ) => {
       const validation = validateVaciarTaskDraft(draft);
       if (validation === 'empty') {
         showToast(t('vaciar.enterTask'), 'info');
@@ -140,7 +143,9 @@ export function useVaciarTaskSave({
               count: result.subtaskCount,
               suffix: t('vaciarExtra.toastWithSubtasksSuccess'),
             })
-          : result.savedScheduledDate
+          : options?.reliefCapture
+            ? `${t('vaciar.releaseConfirmOne')}\n${t('vaciar.releaseRelief')}`
+            : result.savedScheduledDate
             ? calendarSync === 'added'
               ? t('vaciarExtra.toastAddedWithDateAndCalendar', {
                   date: formatSavedDate(result.savedScheduledDate),
@@ -164,7 +169,9 @@ export function useVaciarTaskSave({
           hasSubtasks: result.hasSubtasks,
         });
 
-        showToast(toastMsg, result.reprioritized || !hasCheckInToday ? 'info' : 'success');
+        if (!options?.suppressToast) {
+          showToast(toastMsg, result.reprioritized || !hasCheckInToday ? 'info' : 'success');
+        }
       } catch (error) {
         logger.error('Error inesperado:', error);
         showToast(t('errors.saveTaskFailed'), 'error');

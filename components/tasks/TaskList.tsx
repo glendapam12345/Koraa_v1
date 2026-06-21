@@ -35,6 +35,11 @@ interface TaskListProps {
   hideCalendarExport?: boolean;
   /** Insight de priorización por id de tarea (Hoy + check-in). */
   getTaskPriorityInsight?: (taskId: string) => { whyUp: string[]; whyDown: string[] } | undefined;
+  /** Replanificar: swipe izquierdo en vista de proyecto. */
+  enableReplanSwipe?: boolean;
+  onMoveTomorrow?: (task: Task) => void;
+  onMoveNextWeek?: (task: Task) => void;
+  onMoveProject?: (task: Task) => void;
 }
 
 export function TaskList({
@@ -62,6 +67,10 @@ export function TaskList({
   uniformCard,
   hideCalendarExport,
   getTaskPriorityInsight,
+  enableReplanSwipe = false,
+  onMoveTomorrow,
+  onMoveNextWeek,
+  onMoveProject,
 }: TaskListProps) {
   return (
     <View style={styles.container}>
@@ -102,6 +111,15 @@ export function TaskList({
             hideCalendarExport={hideCalendarExport}
             priorityWhyUp={priorityInsight?.whyUp}
             priorityWhyDown={priorityInsight?.whyDown}
+            onMoveTomorrow={
+              enableReplanSwipe && onMoveTomorrow ? () => onMoveTomorrow(task) : undefined
+            }
+            onMoveNextWeek={
+              enableReplanSwipe && onMoveNextWeek ? () => onMoveNextWeek(task) : undefined
+            }
+            onMoveProject={
+              enableReplanSwipe && onMoveProject ? () => onMoveProject(task) : undefined
+            }
           />
         );
       })}

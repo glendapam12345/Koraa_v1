@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   rowTrack: {
     padding: THEME.spacing.xs / 2,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
   },
   rowAccent: {
     padding: THEME.spacing.xs / 2,
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.pill,
   },
   pillTrackSelected: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     ...THEME.shadows.soft,
   },
   pillAccent: {

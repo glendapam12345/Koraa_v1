@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   emoji: {
-    fontSize: 28,
+    fontSize: THEME.typography.displayEmoji.fontSize,
   },
   statusLine: {
     ...THEME.typography.body,

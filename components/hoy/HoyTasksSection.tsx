@@ -9,6 +9,17 @@ import { useAppleHealthConnection } from '@/hooks/useAppleHealthConnection';
 import type { Task } from '@/components/tasks/TaskCard';
 import type { FocusProgressStats } from '@/lib/focusProgressStats';
 import { getHoyFocusTasks } from '@/lib/hoyFocusTasks';
+import { buildHoyAttentionPlan } from '@/lib/hoyAttentionPlan';
+import { useHoyDayReflection } from '@/hooks/useHoyDayReflection';
+import { useHoyFocusTaskMeta } from '@/hooks/useHoyFocusTaskMeta';
+import { HoyDayReflectionFlow } from '@/components/vnext/HoyDayReflectionFlow';
+import { HoyDayReflectionCard } from '@/components/vnext/HoyDayReflectionCard';
+import {
+  buildFocusTaskDeadline,
+  formatFocusTaskDuration,
+  getFocusTaskEstimatedMinutes,
+  resolveFocusTaskAreaLabel,
+} from '@/lib/hoy/focusTaskDisplay';
 
 export type HoyTasksSectionProps = {
   todayMood: string;
@@ -23,7 +34,7 @@ export type HoyTasksSectionProps = {
   user: { id: string } | null;
   tasks: Task[];
   incompleteTasksForToday: Task[];
-  projectsMap: Record<string, { name: string; color?: string }>;
+  projectsMap: Record<string, { name: string; color?: string; due_date?: string | null }>;
   expandedTasks: Set<string>;
   expandedDetailsTasks: Set<string>;
   menuOpen: string | null;
@@ -42,10 +53,11 @@ export type HoyTasksSectionProps = {
   onShowMoreForToday?: () => void;
   onDeleteTask?: (task: Task) => void;
   onChangeEmotion?: () => void;
-  onLightenLoad?: () => void;
   crisisMode?: boolean;
   onCareModeDismiss?: () => void;
   onCareModeLearnMore?: () => void;
+  onTasksReload?: () => void | Promise<void>;
+  showToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
 };
 
 export function HoyTasksSection({
@@ -79,10 +91,11 @@ export function HoyTasksSection({
   onShowMoreForToday,
   onDeleteTask,
   onChangeEmotion,
-  onLightenLoad,
   crisisMode = false,
   onCareModeDismiss,
   onCareModeLearnMore,
+  onTasksReload,
+  showToast,
 }: HoyTasksSectionProps) {
   const { locale, t } = useI18n();
   const health = useAppleHealthConnection(t);
@@ -115,6 +128,37 @@ export function HoyTasksSection({
     [tasks, incompleteTasksForToday],
   );
 
+  const { planningMeta, projectProgress } = useHoyFocusTaskMeta(tasks);
+
+  const attentionPlan = useMemo(() => {
+    if (!todayMood || energyLevel <= 0 || !time || !focusLevel) return null;
+    const projectList = Object.entries(projectsMap).map(([id, meta]) => ({
+      id,
+      name: meta.name,
+      due_date: meta.due_date ?? null,
+    }));
+    return buildHoyAttentionPlan(tasks, projectList, {
+      energyLevel,
+      emotion: todayMood,
+      availableTime: time,
+      focusLevel,
+    });
+  }, [tasks, projectsMap, todayMood, energyLevel, time, focusLevel]);
+
+  const totalIncompleteCount = useMemo(
+    () => tasks.filter((task) => !task.is_completed && !task.parent_task_id).length,
+    [tasks],
+  );
+
+  const reflection = useHoyDayReflection({
+    userId: user?.id,
+    hasCheckIn: Boolean(todayMood),
+    priorityStats: todayPriorityStats,
+    incompleteCount: totalIncompleteCount,
+    onTasksReload: onTasksReload ?? (async () => {}),
+    showToast: showToast ?? (() => {}),
+  });
+
   const focusTaskIds = useMemo(() => new Set(focusTasks.map((task) => task.id)), [focusTasks]);
 
   /** Pendientes de hoy que no están en el plan principal (pueden esperar). */
@@ -131,26 +175,43 @@ export function HoyTasksSection({
     () =>
       visibleWaitingTasks.length > 0 ? (
         <View style={styles.waitingList}>
-          {visibleWaitingTasks.map((task, index) => (
-            <HoyFocusTaskRow
-              key={task.id}
-              task={task}
-              index={index}
-              projectName={
-                task.project_id ? projectsMap[task.project_id]?.name ?? null : null
-              }
-              onToggleComplete={() => void handleToggleTask(task.id)}
-              onOpenDetails={() => handleEditTask(task)}
-              onDelete={onDeleteTask ? () => onDeleteTask(task) : undefined}
-            />
-          ))}
+          {visibleWaitingTasks.map((task, index) => {
+            const project = task.project_id ? projectsMap[task.project_id] : undefined;
+            const minutes = getFocusTaskEstimatedMinutes(task, planningMeta[task.id]);
+            const deadline = buildFocusTaskDeadline(task, project, locale, t);
+            const progress = task.project_id ? projectProgress[task.project_id] : undefined;
+
+            return (
+              <HoyFocusTaskRow
+                key={task.id}
+                content={task.content}
+                completed={task.is_completed}
+                index={index}
+                durationLabel={formatFocusTaskDuration(minutes)}
+                deadlineLabel={deadline?.label ?? null}
+                deadlineUrgent={deadline?.urgent ?? false}
+                projectId={task.project_id ?? null}
+                projectName={project?.name ?? null}
+                projectColor={project?.color ?? THEME.colors.gradient.blue}
+                projectPercent={progress?.percent ?? null}
+                areaLabel={resolveFocusTaskAreaLabel(project)}
+                onToggleComplete={() => void handleToggleTask(task.id)}
+                onOpenDetails={() => handleEditTask(task)}
+                onDelete={onDeleteTask ? () => onDeleteTask(task) : undefined}
+              />
+            );
+          })}
         </View>
       ) : null,
     [
       handleEditTask,
       handleToggleTask,
+      locale,
       onDeleteTask,
+      planningMeta,
+      projectProgress,
       projectsMap,
+      t,
       visibleWaitingTasks,
     ],
   );
@@ -167,10 +228,13 @@ export function HoyTasksSection({
         time={time}
         focusLevel={focusLevel}
         coachSuggestion={coachSuggestion}
+        attentionPlan={attentionPlan}
         priorityStats={todayPriorityStats}
         focusTasks={focusTasks}
         totalPending={incompleteTasksForToday.length}
         projectsMap={projectsMap}
+        projectProgress={projectProgress}
+        planningMeta={planningMeta}
         onToggleTask={(taskId) => void handleToggleTask(taskId)}
         onOpenTask={handleEditTask}
         restExpanded={restOfDayExpanded}
@@ -183,7 +247,6 @@ export function HoyTasksSection({
         }}
         onDeleteTask={onDeleteTask}
         onChangeEmotion={onChangeEmotion}
-        onLightenLoad={onLightenLoad}
         compactLayout={compactLayout}
         onShowFullView={onShowFullView}
         shortSleep={health.shortSleep}
@@ -200,7 +263,27 @@ export function HoyTasksSection({
         waitingTasksSlot={waitingTasksSlot}
         onCareModeDismiss={onCareModeDismiss}
         onCareModeLearnMore={onCareModeLearnMore}
+        reorganizeSlot={
+          reflection.shouldShowCard ? (
+            <HoyDayReflectionCard onPress={reflection.openReflection} />
+          ) : null
+        }
       />
+
+      {!compactLayout && !crisisMode ? (
+        <HoyDayReflectionFlow
+          sheetOpen={reflection.sheetOpen}
+          successOpen={reflection.successOpen}
+          selectedOutcome={reflection.selectedOutcome}
+          replanning={reflection.replanning}
+          lastProposal={reflection.lastProposal}
+          onCloseReflection={reflection.closeReflection}
+          onSelectOutcome={reflection.setSelectedOutcome}
+          onReplan={() => void reflection.handleReplan()}
+          onDismissSuccess={reflection.dismissSuccess}
+        />
+      ) : null}
+
       {compactLayout && restOfDayExpanded && onCollapseRestOfDay ? (
         <HoyRestOfDayPanel
           tasks={tasks}

@@ -117,12 +117,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 52,
     borderWidth: 2,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
     borderRadius: THEME.borderRadius.rounded,
-    fontSize: 20,
+    fontSize: THEME.typography.sectionTitle.fontSize,
     fontFamily: THEME.fonts.heading.bold,
     textAlign: 'center',
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     color: THEME.colors.text.main,
   },
   inputFilled: {
@@ -130,8 +130,8 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.tint.blue.veryLight,
   },
   inputDisabled: {
-    backgroundColor: THEME.colors.fill[200],
-    borderColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.calm.mist,
+    borderColor: THEME.colors.calm.border,
     opacity: 0.85,
   },
 });

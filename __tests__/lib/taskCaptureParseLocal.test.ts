@@ -27,4 +27,27 @@ describe('parseTaskCaptureLocally', () => {
     );
     expect(result.prep_steps.length).toBeGreaterThan(0);
   });
+
+  it('splits comma and y lists into separate tasks', () => {
+    const result = parseTaskCaptureLocally(
+      'llamar al banco, comprar regalo y lavar ropa',
+      'es',
+      wednesday,
+    );
+    expect(result.prep_steps.length).toBe(2);
+    expect(result.main_task.content.toLowerCase()).toContain('llamar');
+    expect(result.prep_steps[0].content.toLowerCase()).toContain('comprar');
+    expect(result.prep_steps[1].content.toLowerCase()).toContain('lavar');
+  });
+
+  it('splits list with shared due date', () => {
+    const result = parseTaskCaptureLocally(
+      'el viernes llamar al banco y comprar regalo',
+      'es',
+      wednesday,
+    );
+    expect(result.main_task.scheduled_date).toBe('2026-06-12');
+    expect(result.prep_steps.length).toBe(1);
+    expect(result.prep_steps[0].scheduled_date).toBe('2026-06-12');
+  });
 });

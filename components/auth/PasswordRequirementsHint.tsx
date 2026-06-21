@@ -4,6 +4,7 @@ import { useI18n } from '@/contexts/I18nContext';
 
 const REQUIREMENT_KEYS = [
   'password.reqLength',
+  'password.reqUppercase',
   'password.reqLetter',
   'password.reqNumber',
   'password.reqSymbolsOptional',

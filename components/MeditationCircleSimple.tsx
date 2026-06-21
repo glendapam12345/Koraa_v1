@@ -48,7 +48,7 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
     THEME.colors.chartPalette[3],
     THEME.colors.gradient.blue,
     THEME.colors.chartPalette[0],
-    THEME.colors.fill[100],
+    THEME.colors.onGradient,
   ] as const;
 
   useEffect(() => {
@@ -203,7 +203,7 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
           style={styles.gradientBackground}
         >
           <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.7}>
-            <X size={24} color={THEME.colors.fill[100]} />
+            <X size={24} color={THEME.colors.onGradient} />
           </TouchableOpacity>
 
           <View style={styles.content}>
@@ -211,7 +211,7 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
               <>
                 <View style={styles.completedGlow} />
                 <View style={styles.completedCircle}>
-                  <CheckCircle size={100} color={THEME.colors.fill[100]} strokeWidth={2.5} />
+                  <CheckCircle size={100} color={THEME.colors.onGradient} strokeWidth={2.5} />
                 </View>
                 <Text style={styles.completedTitle}>{message.completed}</Text>
                 <Text style={styles.completedSubtitle}>{t('meditation.wellDone')}</Text>
@@ -253,7 +253,7 @@ export function MeditationCircleSimple({ visible, onComplete, onClose, type }: M
                     <View style={styles.ringCenter}>
                       <View style={styles.centerGlass}>
                         {!isActive ? (
-                          <Sparkles size={76} color={THEME.colors.fill[100]} strokeWidth={1.5} />
+                          <Sparkles size={76} color={THEME.colors.onGradient} strokeWidth={1.5} />
                         ) : (
                           <View style={styles.timerBlock}>
                             <Text style={styles.timerText} numberOfLines={1}>{secondsRemaining}</Text>
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   title: {
     ...THEME.typography.h2,
     fontSize: 26,
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
     textAlign: 'center',
     marginBottom: THEME.spacing.xs,
   },
@@ -437,15 +437,14 @@ const styles = StyleSheet.create({
   timerText: {
     fontSize: 64,
     fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
     lineHeight: 72,
     letterSpacing: -1,
     minHeight: 72,
     textAlign: 'center',
   },
   timerLabel: {
-    ...THEME.typography.body,
-    fontSize: 14,
+    ...THEME.typography.caption,
     color: THEME.colors.onGradientMuted,
     fontFamily: THEME.fonts.heading.medium,
     marginTop: 2,
@@ -458,7 +457,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   startButton: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     paddingHorizontal: THEME.spacing.xl * 2,
     paddingVertical: THEME.spacing.md + 4,
     borderRadius: THEME.borderRadius.full,
@@ -469,10 +468,8 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.surfaceOverlay.borderMedium,
   },
   startButtonText: {
-    ...THEME.typography.body,
-    fontSize: 17,
+    ...THEME.typography.cardTitle,
     color: THEME.colors.gradient.blue,
-    fontFamily: THEME.fonts.heading.bold,
   },
   instructionContainer: {
     alignItems: 'center',
@@ -495,7 +492,7 @@ const styles = StyleSheet.create({
   instructionText: {
     ...THEME.typography.h2,
     fontSize: 26,
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
     marginBottom: THEME.spacing.xs,
     fontFamily: THEME.fonts.heading.bold,
   },
@@ -535,9 +532,8 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
   },
   completedTitle: {
-    ...THEME.typography.h2,
-    fontSize: 22,
-    color: THEME.colors.fill[100],
+    ...THEME.typography.titleCompact,
+    color: THEME.colors.onGradient,
     textAlign: 'center',
     marginBottom: THEME.spacing.xs,
     paddingHorizontal: THEME.spacing.lg,
@@ -545,7 +541,6 @@ const styles = StyleSheet.create({
   },
   completedSubtitle: {
     ...THEME.typography.body,
-    fontSize: 16,
     color: THEME.colors.onGradientMuted,
     textAlign: 'center',
   },

@@ -9,8 +9,9 @@ import { useI18n } from '@/contexts/I18nContext';
 import { trackFocusSession } from '@/lib/productAnalytics';
 import type { TranslationKey } from '@/lib/i18n';
 
-const DURATION_OPTIONS = [5, 10, 25] as const;
-type DurationMinutes = (typeof DURATION_OPTIONS)[number];
+const FOCUS_DURATION_OPTIONS = [5, 10, 25] as const;
+const PAUSE_DURATION_OPTIONS = [5, 10] as const;
+type DurationMinutes = 5 | 10 | 25;
 
 const DURATION_LABEL_KEYS: Record<DurationMinutes, TranslationKey> = {
   5: 'focus.duration5',
@@ -18,11 +19,20 @@ const DURATION_LABEL_KEYS: Record<DurationMinutes, TranslationKey> = {
   25: 'focus.duration25',
 };
 
-function parseDurationMinutes(raw: string | string[] | undefined): DurationMinutes {
+function parseDurationMinutes(
+  raw: string | string[] | undefined,
+  isPauseMode: boolean,
+): DurationMinutes {
   const value = Array.isArray(raw) ? raw[0] : raw;
   const n = Number(value);
-  if (n === 10 || n === 25) return n;
+  if (n === 10) return 10;
+  if (!isPauseMode && n === 25) return 25;
   return 5;
+}
+
+function parsePauseMode(raw: string | string[] | undefined): boolean {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return value === 'pause';
 }
 
 function formatTime(totalSec: number): string {
@@ -34,8 +44,13 @@ function formatTime(totalSec: number): string {
 export default function FocusSessionScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
-  const { minutes: minutesParam } = useLocalSearchParams<{ minutes?: string }>();
-  const initialMinutes = parseDurationMinutes(minutesParam);
+  const { minutes: minutesParam, mode: modeParam } = useLocalSearchParams<{
+    minutes?: string;
+    mode?: string;
+  }>();
+  const isPauseMode = parsePauseMode(modeParam);
+  const durationOptions = isPauseMode ? PAUSE_DURATION_OPTIONS : FOCUS_DURATION_OPTIONS;
+  const initialMinutes = parseDurationMinutes(minutesParam, isPauseMode);
   const [durationMinutes, setDurationMinutes] = useState<DurationMinutes>(initialMinutes);
   const totalSeconds = durationMinutes * 60;
   const [remaining, setRemaining] = useState(totalSeconds);
@@ -145,12 +160,16 @@ export default function FocusSessionScreen() {
         <X size={24} color={THEME.colors.text.secondary} />
       </TouchableOpacity>
 
-      <Text style={styles.screenTitle}>{t('focus.sessionTitle')}</Text>
-      <Text style={styles.mode}>{t('focus.sessionMode')}</Text>
+      <Text style={styles.screenTitle}>
+        {t(isPauseMode ? 'focus.pauseScreenTitle' : 'focus.sessionTitle')}
+      </Text>
+      <Text style={styles.mode}>{t(isPauseMode ? 'focus.pauseMode' : 'focus.sessionMode')}</Text>
 
-      <Text style={styles.durationLabel}>{t('focus.durationLabel')}</Text>
+      <Text style={styles.durationLabel}>
+        {t(isPauseMode ? 'focus.pauseDurationLabel' : 'focus.durationLabel')}
+      </Text>
       <View style={styles.durationRow}>
-        {DURATION_OPTIONS.map((minutes) => {
+        {durationOptions.map((minutes) => {
           const selected = durationMinutes === minutes;
           return (
             <TouchableOpacity
@@ -178,7 +197,9 @@ export default function FocusSessionScreen() {
         />
         <View style={styles.ringInner}>
           <Text style={styles.timer}>{formatTime(remaining)}</Text>
-          <Text style={styles.hint}>{t('focus.sessionHint')}</Text>
+          <Text style={styles.hint}>
+            {t(isPauseMode ? 'focus.pauseHint' : 'focus.sessionHint')}
+          </Text>
         </View>
       </View>
 
@@ -256,7 +277,7 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.md,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
     minHeight: THEME.sizes.touchTarget,

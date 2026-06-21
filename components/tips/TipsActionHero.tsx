@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.xs,
     minHeight: THEME.sizes.touchTarget,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     paddingHorizontal: THEME.spacing.md,
     paddingVertical: THEME.spacing.sm,
   },

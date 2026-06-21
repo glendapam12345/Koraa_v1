@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.lg,
   },
   modalContent: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.rounded,
     width: '100%',
     maxWidth: 500,
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.lg,
     paddingBottom: THEME.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.stroke[100],
+    borderBottomColor: THEME.colors.calm.border,
   },
   headerContent: {
     flex: 1,
@@ -151,6 +151,6 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.lg,
     paddingTop: THEME.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: THEME.colors.stroke[100],
+    borderTopColor: THEME.colors.calm.border,
   },
 });

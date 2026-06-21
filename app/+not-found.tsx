@@ -1,6 +1,7 @@
 import { Link, Stack } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { useI18n } from '@/contexts/I18nContext';
+import { THEME } from '@/constants/theme';
 
 export default function NotFoundScreen() {
   const { t } = useI18n();
@@ -25,7 +26,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   text: {
-    fontSize: 20,
+    ...THEME.typography.sectionTitle,
     fontWeight: 600,
   },
   link: {

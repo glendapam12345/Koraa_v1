@@ -16,7 +16,7 @@ export function ProjectMetaRow({
   taskCount,
   incompleteCount,
   dueDate = null,
-  accentColor = THEME.colors.gradient.blue,
+  accentColor = THEME.colors.calm.lavenderDeep,
 }: ProjectMetaRowProps) {
   const { t, locale } = useI18n();
   const progress = computeProjectProgress(taskCount, incompleteCount);
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   track: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     overflow: 'hidden',
   },
   fill: {

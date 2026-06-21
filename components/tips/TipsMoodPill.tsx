@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     ...THEME.shadows.soft,
   },
   emoji: {
-    fontSize: 28,
+    fontSize: THEME.typography.displayEmoji.fontSize,
   },
   name: {
     ...THEME.typography.h3,

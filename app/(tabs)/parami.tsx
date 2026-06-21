@@ -1,11 +1,10 @@
 import { useMemo, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, RefreshControl } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { View, StyleSheet, RefreshControl } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useI18n } from '@/contexts/I18nContext';
-import { getCatalog } from '@/lib/i18n';
 import { useCheckInInsightsData } from '@/hooks/useCheckInInsightsData';
 import {
   buildEmotionMix,
@@ -17,19 +16,19 @@ import { MiniEmotionBars } from '@/components/yo/MiniEmotionBars';
 import { MiniMoodTimeline } from '@/components/yo/MiniMoodTimeline';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { ParaMiPeriodBar, type ParaMiPeriodId } from '@/components/parami/ParaMiPeriodBar';
 import { ParaMiMusaCard } from '@/components/parami/ParaMiMusaCard';
 import { ParaMiPatternCard } from '@/components/parami/ParaMiPatternCard';
 import { ParaMiTipsSection } from '@/components/parami/ParaMiTipsSection';
 import { ParaMiInsights } from '@/components/parami/ParaMiInsights';
 import { ParaMiPatternInsightCard } from '@/components/parami/ParaMiPatternInsightCard';
+import { FrentesWeekInsightCard } from '@/components/vnext/FrentesWeekInsightCard';
 import { useParamiPatternInsight } from '@/hooks/useParamiPatternInsight';
+import { useFrentesDashboard } from '@/hooks/useFrentesDashboard';
 import type { ParamiPatternInput } from '@/lib/paramiPatternInsight';
-import { LockedChartPreview } from '@/components/parami/LockedChartPreview';
+import { ParaMiPatternsLockedPreview } from '@/components/parami/ParaMiPatternsLockedPreview';
 import { PremiumBadge } from '@/components/premium/PremiumBadge';
 import { EmergencyKitEntryCard } from '@/components/emergencyKit/EmergencyKitEntryCard';
-import { openPaywall } from '@/lib/paywallNavigation';
 import { generateEmotionalInsights } from '@/lib/emotionalInsights';
 import type { TipsUserContext } from '@/lib/tipsTypes';
 
@@ -57,12 +56,16 @@ export default function ParaMiScreen() {
   );
 
   const { progressData, loading, load } = useCheckInInsightsData(monthNames, dayLabels);
+  const { dashboard: frentesDashboard, refresh: refreshFrentes } = useFrentesDashboard({
+    userId: user?.id,
+  });
 
   const refresh = useCallback(() => {
     if (user?.id) {
       void load(user.id);
+      void refreshFrentes();
     }
-  }, [user?.id, load]);
+  }, [user?.id, load, refreshFrentes]);
 
   useFocusEffect(
     useCallback(() => {
@@ -117,44 +120,6 @@ export default function ParaMiScreen() {
     hasInsightData,
   );
 
-  const patternStats = useMemo(() => {
-    const checkIns = periodData.filter((day) => day.hasCheckIn);
-    const top = emotionMix[0];
-    const emotions = getCatalog(locale).sentir.emotions as Record<string, string>;
-    const avgEnergy =
-      checkIns.length > 0
-        ? Math.round(
-            (checkIns.reduce((sum, d) => sum + (d.energyLevel ?? 0), 0) / checkIns.length) * 10,
-          ) / 10
-        : 0;
-
-    return {
-      checkInCount: checkIns.length,
-      topEmotionId: top?.id,
-      topEmotionLabel: top ? emotions[top.id.toLowerCase()] ?? top.id : undefined,
-      topEmotionCount: top?.count,
-      avgEnergy,
-    };
-  }, [periodData, emotionMix, locale]);
-
-  const moodChart = showPremiumLocked ? (
-    <LockedChartPreview variant="mood" />
-  ) : (
-    <MiniMoodTimeline days={periodData} monthNames={monthNames} period={period} />
-  );
-
-  const energyChart = showPremiumLocked ? (
-    <LockedChartPreview variant="energy" />
-  ) : (
-    <MiniSparklineChart days={periodData} monthNames={monthNames} period={period} />
-  );
-
-  const emotionsChart = showPremiumLocked ? (
-    <LockedChartPreview variant="symptoms" />
-  ) : hasPatternData ? (
-    <MiniEmotionBars items={emotionMix} />
-  ) : null;
-
   return (
     <CalmScreen
       topInset="md"
@@ -181,61 +146,52 @@ export default function ParaMiScreen() {
         locked={showPremiumLocked}
         hasEnoughData={hasInsightData}
         loading={loading}
-        paywallReturnTo="/(tabs)/parami"
       />
 
-      <ParaMiPatternInsightCard
-        insight={patternInsight}
-        stats={patternStats}
-        loading={patternInsightLoading}
-      />
+      <ParaMiPatternInsightCard insight={patternInsight} loading={patternInsightLoading} />
 
       <View style={styles.patternsSection}>
-        <ParaMiMusaCard
-          colors={[...THEME.colors.parami.moodCard]}
-          title={moodCardTitle}
-          body={t('parami.moodCardBody')}
-          locked={showPremiumLocked}
-          chartSize={moodChartSize}
-        >
-          {moodChart}
-        </ParaMiMusaCard>
+        {showPremiumLocked ? (
+          <ParaMiPatternsLockedPreview moodTitle={moodCardTitle} />
+        ) : (
+          <>
+            <ParaMiMusaCard
+              colors={[...THEME.colors.parami.moodCard]}
+              title={moodCardTitle}
+              body={t('parami.moodCardBody')}
+              locked={false}
+              chartSize={moodChartSize}
+            >
+              <MiniMoodTimeline days={periodData} monthNames={monthNames} period={period} />
+            </ParaMiMusaCard>
 
-        <ParaMiPatternCard
-          title={t('yo.patternEnergyTitle')}
-          body={t('parami.energyCardBody')}
-          locked={showPremiumLocked}
-          empty={false}
-          chartSize={moodChartSize}
-        >
-          {energyChart}
-        </ParaMiPatternCard>
+            <ParaMiPatternCard
+              title={t('yo.patternEnergyTitle')}
+              body={t('parami.energyCardBody')}
+              locked={false}
+              empty={false}
+              chartSize={moodChartSize}
+            >
+              <MiniSparklineChart days={periodData} monthNames={monthNames} period={period} />
+            </ParaMiPatternCard>
 
-        <ParaMiPatternCard
-          title={t('parami.symptomsCardTitle')}
-          body={t('parami.symptomsCardBody')}
-          locked={showPremiumLocked}
-          empty={!showPremiumLocked && !hasPatternData}
-        >
-          {emotionsChart}
-        </ParaMiPatternCard>
+            <ParaMiPatternCard
+              title={t('parami.symptomsCardTitle')}
+              body={t('parami.symptomsCardBody')}
+              locked={false}
+              empty={!hasPatternData}
+            >
+              {hasPatternData ? <MiniEmotionBars items={emotionMix} /> : null}
+            </ParaMiPatternCard>
+          </>
+        )}
       </View>
+
+      <FrentesWeekInsightCard bars={frentesDashboard.weekInsight} />
 
       <ParaMiTipsSection context={tipsContext} />
 
       <EmergencyKitEntryCard compact />
-
-      {showPremiumLocked ? (
-        <View style={styles.unlockRow}>
-          <Text style={styles.unlockNote}>{t('parami.premiumUnlockList')}</Text>
-          <CalmPrimaryButton
-            label={t('parami.unlockCta')}
-            onPress={() => openPaywall(router, '/(tabs)/parami')}
-            variant="soft"
-            accessibilityHint={t('paramiExtra.a11yUnlockHint')}
-          />
-        </View>
-      ) : null}
     </CalmScreen>
   );
 }
@@ -243,20 +199,5 @@ export default function ParaMiScreen() {
 const styles = StyleSheet.create({
   patternsSection: {
     gap: THEME.layout.sectionGapCompact,
-  },
-  placeholderOnGradient: {
-    ...THEME.typography.caption,
-    color: THEME.colors.onGradientMuted,
-    textAlign: 'center',
-  },
-  unlockRow: {
-    gap: THEME.spacing.sm,
-    alignItems: 'stretch',
-  },
-  unlockNote: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    lineHeight: 20,
-    textAlign: 'center',
   },
 });

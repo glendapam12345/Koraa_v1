@@ -43,7 +43,7 @@ function MoodFaceCell({
   monthNames?: readonly string[];
 }) {
   const hasMood = Boolean(day.hasCheckIn && day.emotion);
-  const accent = day.emotion ? getEmotionCalendarAccent(day.emotion) : THEME.colors.fill[200];
+  const accent = day.emotion ? getEmotionCalendarAccent(day.emotion) : THEME.colors.calm.mist;
   const emoji = hasMood ? getEmotionEmoji(day.emotion) : null;
   const dateLabel = labelForDay(day, total, monthNames);
 
@@ -152,8 +152,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   weekTag: {
-    ...THEME.typography.meta,
-    fontSize: 10,
+    ...THEME.typography.micro,
     color: THEME.colors.onGradientMuted,
     fontFamily: THEME.fonts.heading.bold,
   },
@@ -180,7 +179,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.28)',
+    backgroundColor: THEME.colors.surfaceOverlay.wash,
     borderWidth: 1.5,
   },
   faceBoxSm: {
@@ -189,18 +188,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: THEME.colors.surfaceOverlay.washLight,
     borderWidth: 1,
   },
   faceBoxFilled: {
-    backgroundColor: 'rgba(255,255,255,0.38)',
+    backgroundColor: THEME.colors.surfaceOverlay.washStrong,
   },
   faceBoxEmpty: {
-    borderColor: 'rgba(255,255,255,0.2)',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderColor: THEME.colors.surfaceOverlay.medium,
+    backgroundColor: THEME.colors.surfaceOverlay.veryFaint,
   },
   emoji: {
-    fontSize: 20,
+    fontSize: THEME.typography.displayEmojiSm.fontSize,
     lineHeight: 24,
   },
   emojiSm: {
@@ -214,29 +213,26 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   emptyMarkSm: {
-    fontSize: 14,
+    fontSize: THEME.typography.caption.fontSize,
     lineHeight: 16,
   },
   dayLabel: {
-    ...THEME.typography.meta,
-    fontSize: 10,
+    ...THEME.typography.micro,
     color: THEME.colors.onGradientFaint,
     textAlign: 'center',
   },
   dayLabelCompact: {
-    fontSize: 9,
+    ...THEME.typography.tiny,
   },
   dayLabelMonth: {
     fontSize: 8,
     lineHeight: 11,
   },
   legend: {
-    ...THEME.typography.meta,
-    fontSize: 10,
+    ...THEME.typography.micro,
     color: THEME.colors.onGradientFaint,
     textAlign: 'center',
     opacity: 0.9,
     marginTop: 2,
-    lineHeight: 15,
   },
 });

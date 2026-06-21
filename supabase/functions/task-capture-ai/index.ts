@@ -13,12 +13,14 @@ type CaptureRequest = {
   today?: string;
   energyLevel?: number | null;
   emotionKey?: string | null;
+  projects?: { id: string; name: string }[];
 };
 
 type ParsedTask = {
   content: string;
   scheduled_date: string | null;
   effort: 'light' | 'medium' | 'heavy' | null;
+  project_id: string | null;
 };
 
 type CaptureResponse = {
@@ -38,25 +40,29 @@ function buildSystemPrompt(locale: 'es' | 'en'): string {
   if (locale === 'en') {
     return `You parse natural-language task dumps for Koraa, a calm wellness app (not productivity guilt).
 Given user text and today's date (YYYY-MM-DD), return JSON only:
-{"summary":"one warm sentence","main_task":{"content":"short title","scheduled_date":"YYYY-MM-DD or null","effort":"light|medium|heavy|null"},"prep_steps":[{"content":"...","scheduled_date":"YYYY-MM-DD","effort":"light|medium|heavy|null"}]}
+{"summary":"one warm sentence","main_task":{"content":"short title","scheduled_date":"YYYY-MM-DD or null","effort":"light|medium|heavy|null","project_id":"uuid or null"},"prep_steps":[{"content":"...","scheduled_date":"YYYY-MM-DD","effort":"light|medium|heavy|null","project_id":"uuid or null"}]}
 Rules:
 - Extract due dates from phrases like "Friday", "tomorrow", "next Monday". Use the next matching calendar day on or after today.
 - main_task.content: clean task title, max 120 chars, no guilt language.
 - prep_steps: 0-3 gentle preparation steps spread BEFORE the due date (only if due date is 2+ days away and task feels important). Never more than 3.
+- If the user lists several DISTINCT tasks in one dump (commas, "and", newlines), put the first in main_task and each additional distinct task in prep_steps as its own independent task (not sub-steps of the same chore).
 - effort heavy if user says important/urgent/anxious about deadline.
 - summary: confirm what you understood, suggestive not imperative.
-- Never invent project names. scheduled_date must be null or valid ISO date.`;
+- projects: optional list {id, name} of the user's existing projects. Set project_id only when a task clearly belongs to one project (name in text or obvious match). Use only ids from that list; otherwise null. Never invent projects.
+- scheduled_date must be null or valid ISO date.`;
   }
   return `Interpretas capturas en lenguaje natural para Koraa, app de bienestar (sin culpa ni productividad tóxica).
 Con el texto de la usuaria y la fecha de hoy (AAAA-MM-DD), responde SOLO JSON:
-{"summary":"una frase cálida","main_task":{"content":"título corto","scheduled_date":"AAAA-MM-DD o null","effort":"light|medium|heavy|null"},"prep_steps":[{"content":"...","scheduled_date":"AAAA-MM-DD","effort":"light|medium|heavy|null"}]}
+{"summary":"una frase cálida","main_task":{"content":"título corto","scheduled_date":"AAAA-MM-DD o null","effort":"light|medium|heavy|null","project_id":"uuid o null"},"prep_steps":[{"content":"...","scheduled_date":"AAAA-MM-DD","effort":"light|medium|heavy|null","project_id":"uuid o null"}]}
 Reglas:
 - Extrae fechas: "el viernes", "mañana", "próximo lunes". Usa el próximo día calendario >= hoy.
 - main_task.content: título limpio, máx 120 caracteres, sin culpa.
 - prep_steps: 0-3 pasos suaves de preparación ANTES de la fecha límite (solo si faltan 2+ días y la tarea parece importante). Máximo 3.
+- Si el texto lista varias tareas DISTINTAS en un solo párrafo (comas, «y», saltos de línea), pon la primera en main_task y cada tarea adicional en prep_steps como tarea independiente (no subtareas de la misma).
 - effort heavy si dice importante/urgente/ansiedad por la fecha.
 - summary: confirma lo entendido, tono sugerente.
-- No inventes proyectos. scheduled_date null o fecha ISO válida.`;
+- projects: lista opcional {id, name} de proyectos existentes. Pon project_id solo si el paso encaja claramente con un proyecto (nombre en el texto o relación obvia). Solo ids de esa lista; si no, null. No inventes proyectos.
+- scheduled_date null o fecha ISO válida.`;
 }
 
 async function callOpenAI(
@@ -70,6 +76,12 @@ async function callOpenAI(
     today: payload.today ?? '',
     energyLevel: payload.energyLevel ?? null,
     emotionKey: payload.emotionKey ?? null,
+    projects: Array.isArray(payload.projects)
+      ? payload.projects
+          .filter((p) => p && typeof p.id === 'string' && typeof p.name === 'string')
+          .map((p) => ({ id: p.id, name: p.name.trim().slice(0, 80) }))
+          .slice(0, 40)
+      : [],
   });
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {

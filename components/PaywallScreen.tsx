@@ -303,14 +303,14 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
               isOnboardingContext ? t('paywallExtra.a11yCloseOnboardingHint') : t('paywallExtra.a11yCloseHint')
             }
           >
-            <X size={18} color={THEME.colors.fill[100]} />
+            <X size={18} color={THEME.colors.onGradient} />
           </TouchableOpacity>
 
           <View style={styles.heroIconWrap}>
             {isSubscribed ? (
-              <Check size={22} color={THEME.colors.fill[100]} />
+              <Check size={22} color={THEME.colors.onGradient} />
             ) : (
-              <Crown size={22} color={THEME.colors.fill[100]} />
+              <Crown size={22} color={THEME.colors.onGradient} />
             )}
           </View>
 
@@ -454,7 +454,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.background,
   },
   content: {
     paddingHorizontal: THEME.layout.screenPaddingX,
@@ -489,18 +489,18 @@ const styles = StyleSheet.create({
   },
   title: {
     ...THEME.typography.h2,
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
   subtitle: {
     ...THEME.typography.body,
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
     opacity: 0.95,
     lineHeight: 24,
   },
   heroHint: {
     ...THEME.typography.small,
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
     opacity: 0.9,
     marginTop: THEME.spacing.xs,
     lineHeight: 20,
@@ -544,8 +544,8 @@ const styles = StyleSheet.create({
   loadingPlans: {
     borderRadius: THEME.borderRadius.rounded,
     borderWidth: 1,
-    borderColor: THEME.colors.fill[200],
-    backgroundColor: THEME.colors.fill[100],
+    borderColor: THEME.colors.calm.border,
+    backgroundColor: THEME.colors.calm.card,
     padding: THEME.spacing.xl,
     alignItems: 'center',
     gap: THEME.spacing.sm,
@@ -559,8 +559,8 @@ const styles = StyleSheet.create({
   emptyState: {
     borderRadius: THEME.borderRadius.rounded,
     borderWidth: 1,
-    borderColor: THEME.colors.fill[200],
-    backgroundColor: THEME.colors.fill[100],
+    borderColor: THEME.colors.calm.border,
+    backgroundColor: THEME.colors.calm.card,
     padding: THEME.spacing.md,
     gap: THEME.spacing.sm,
   },
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
     minHeight: THEME.sizes.touchTarget,
     borderRadius: THEME.borderRadius.pill,
     borderWidth: 1,
-    borderColor: THEME.colors.fill[200],
+    borderColor: THEME.colors.calm.border,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: THEME.spacing.md,

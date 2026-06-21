@@ -98,7 +98,7 @@ See individual README files in each subdirectory for usage guidelines.
 
 **Design system (en curso):** [2026-05-19_design_system_unification.md](development_guidelines/running/2026-05-19_design_system_unification.md) — `CalmScreen`, `CalmCard`, `CalmPrimaryButton`, `ScreenHeader`, `THEME.surfaces.*`.
 
-**TestFlight iOS:** v**1.0.3**, build **30** (`app.config.js`). Release: [2026-06-04_testflight_build_30_v103.md](development_guidelines/delivered/2026-06-04_testflight_build_30_v103.md). `eas build --platform ios --profile production`.
+**TestFlight iOS:** v**1.0.3**, build **34** (`app.config.js`). Release: [2026-06-15_testflight_build_34_v103.md](development_guidelines/delivered/2026-06-15_testflight_build_34_v103.md). `eas build --platform ios --profile production`.
 
 **Google Calendar (export tareas):** [GOOGLE_CALENDAR_API_SETUP.md](development_guidelines/learnings/GOOGLE_CALENDAR_API_SETUP.md). Coach IA opcional: [HOY_COACH_AI_EDGE_FUNCTION.md](development_guidelines/learnings/HOY_COACH_AI_EDGE_FUNCTION.md).
 

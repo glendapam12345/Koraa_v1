@@ -12,15 +12,20 @@ import { X } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { PROJECT_COLORS } from '@/lib/projectColors';
 import { useI18n } from '@/contexts/I18nContext';
+import { ProjectDueDatePicker } from '@/components/projects/ProjectDueDatePicker';
+import { ProjectAreaPicker } from '@/components/projects/ProjectAreaPicker';
+import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
 
 type ProjectEditModalProps = {
   visible: boolean;
   name: string;
   color: string;
   dueDate?: string;
+  lifeAreaKey: LifeAreaKey;
   onNameChange: (value: string) => void;
   onColorChange: (value: string) => void;
   onDueDateChange?: (value: string) => void;
+  onLifeAreaChange: (value: LifeAreaKey) => void;
   onSave: () => void;
   onClose: () => void;
   onDelete?: () => void;
@@ -32,9 +37,11 @@ export function ProjectEditModal({
   name,
   color,
   dueDate = '',
+  lifeAreaKey,
   onNameChange,
   onColorChange,
   onDueDateChange,
+  onLifeAreaChange,
   onSave,
   onClose,
   onDelete,
@@ -88,21 +95,15 @@ export function ProjectEditModal({
           </View>
 
           {onDueDateChange ? (
-            <>
-              <Text style={styles.label}>{t('projects.dueDateLabel')}</Text>
-              <TextInput
-                style={styles.input}
-                value={dueDate}
-                onChangeText={onDueDateChange}
-                placeholder={t('projects.dueDatePlaceholder')}
-                placeholderTextColor={THEME.colors.text.tertiary}
-                keyboardType="numbers-and-punctuation"
-                maxLength={10}
-                accessibilityLabel={t('projects.dueDateA11y')}
-              />
-              <Text style={styles.hint}>{t('projects.dueDateHint')}</Text>
-            </>
+            <ProjectDueDatePicker
+              dueDate={dueDate}
+              onDueDateChange={onDueDateChange}
+              accentColor={color}
+            />
           ) : null}
+
+          <Text style={styles.label}>{t('projects.areaSectionTitle')}</Text>
+          <ProjectAreaPicker value={lifeAreaKey} onChange={onLifeAreaChange} />
 
           {onDelete ? (
             <TouchableOpacity
@@ -147,7 +148,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderTopLeftRadius: THEME.borderRadius.rounded,
     borderTopRightRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.lg,
@@ -173,7 +174,7 @@ const styles = StyleSheet.create({
   input: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.standard,
     padding: THEME.spacing.md,
     minHeight: THEME.sizes.touchTarget,
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
   },
   cancelText: {
     ...THEME.typography.body,

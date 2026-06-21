@@ -41,7 +41,7 @@ function EnergyGridCell({
   const fillH = bar.hasCheckIn && bar.energy != null
     ? Math.max(4, Math.round((bar.energy / max) * CELL_BAR_HEIGHT))
     : 0;
-  const trackColor = onGradient ? 'rgba(255,255,255,0.2)' : THEME.colors.fill[200];
+  const trackColor = onGradient ? THEME.colors.surfaceOverlay.medium : THEME.colors.calm.mist;
   const fillColor = onGradient ? THEME.colors.onGradient : THEME.colors.calm.lavenderDeep;
   const labelColor = onGradient ? THEME.colors.onGradientFaint : THEME.colors.text.tertiary;
   const scoreColor = onGradient ? THEME.colors.onGradientMuted : THEME.colors.calm.lavenderDeep;
@@ -78,7 +78,7 @@ function EnergyWeekList({
 }) {
   const { t } = useI18n();
   const labelColor = onGradient ? THEME.colors.onGradientMuted : THEME.colors.text.main;
-  const trackColor = onGradient ? 'rgba(255,255,255,0.22)' : THEME.colors.fill[200];
+  const trackColor = onGradient ? THEME.colors.surfaceOverlay.washLight : THEME.colors.calm.mist;
   const fillColor = onGradient ? THEME.colors.onGradient : THEME.colors.calm.lavenderDeep;
   const scoreColor = onGradient ? THEME.colors.onGradient : THEME.colors.calm.lavenderDeep;
   const mutedColor = onGradient ? THEME.colors.onGradientFaint : THEME.colors.text.tertiary;
@@ -267,8 +267,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   noCheckIn: {
-    ...THEME.typography.meta,
-    fontSize: 9,
+    ...THEME.typography.tiny,
     textAlign: 'center',
   },
   score: {
@@ -288,8 +287,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   weekTag: {
-    ...THEME.typography.meta,
-    fontSize: 10,
+    ...THEME.typography.micro,
     color: THEME.colors.text.secondary,
     fontFamily: THEME.fonts.heading.bold,
   },
@@ -323,7 +321,7 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.standard,
   },
   gridEmpty: {
-    fontSize: 14,
+    ...THEME.typography.caption,
     lineHeight: CELL_BAR_HEIGHT,
     color: THEME.colors.text.tertiary,
     opacity: 0.6,
@@ -332,29 +330,23 @@ const styles = StyleSheet.create({
     color: THEME.colors.onGradientFaint,
   },
   gridScore: {
-    ...THEME.typography.meta,
-    fontSize: 10,
+    ...THEME.typography.micro,
     fontFamily: THEME.fonts.heading.bold,
-    lineHeight: 12,
   },
   gridScoreEmpty: {
     fontFamily: THEME.fonts.heading.medium,
     opacity: 0.7,
   },
   gridLabel: {
-    ...THEME.typography.meta,
-    fontSize: 9,
+    ...THEME.typography.tiny,
     textAlign: 'center',
-    lineHeight: 11,
   },
   gridLabelCompact: {
     fontSize: 8,
     lineHeight: 10,
   },
   legend: {
-    ...THEME.typography.meta,
-    fontSize: 10,
-    lineHeight: 14,
+    ...THEME.typography.micro,
     marginTop: 2,
   },
   legendOnGradient: {

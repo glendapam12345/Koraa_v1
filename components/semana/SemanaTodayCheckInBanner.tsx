@@ -1,10 +1,11 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Heart } from 'lucide-react-native';
+import { Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Heart, ChevronRight } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 
+/** Aviso compacto — una línea, sin bloque grande. */
 export function SemanaTodayCheckInBanner() {
   const { t } = useI18n();
 
@@ -17,14 +18,12 @@ export function SemanaTodayCheckInBanner() {
       accessibilityLabel={t('semana.noCheckInTodayBannerCta')}
       accessibilityHint={t('semanaExtra.noCheckInTodayBannerHint')}
     >
-      <View style={styles.iconWrap}>
-        <Heart size={18} color={THEME.colors.calm.lavenderDeep} />
-      </View>
-      <View style={styles.textCol}>
-        <Text style={styles.title}>{t('semana.noCheckInTodayBannerTitle')}</Text>
-        <Text style={styles.body}>{t('semana.noCheckInTodayBannerBody')}</Text>
-        <Text style={styles.cta}>{t('semana.noCheckInTodayBannerCta')}</Text>
-      </View>
+      <Heart size={14} color={THEME.colors.calm.lavenderDeep} />
+      <Text style={styles.text} numberOfLines={2}>
+        <Text style={styles.muted}>{t('semana.noCheckInTodayBannerCompact')}</Text>
+        <Text style={styles.link}> {t('semana.noCheckInTodayBannerCta')}</Text>
+      </Text>
+      <ChevronRight size={16} color={THEME.colors.calm.lavenderDeep} />
     </TouchableOpacity>
   );
 }
@@ -32,40 +31,26 @@ export function SemanaTodayCheckInBanner() {
 const styles = StyleSheet.create({
   banner: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: THEME.spacing.sm,
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.standard,
     backgroundColor: THEME.colors.tint.blue.veryFaint,
-    borderRadius: THEME.borderRadius.card,
     borderWidth: 1,
     borderColor: THEME.colors.tint.blue.border,
-    padding: THEME.spacing.md,
+    minHeight: THEME.sizes.touchTarget,
   },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: THEME.colors.fill[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  textCol: {
+  text: {
     flex: 1,
-    gap: 4,
-  },
-  title: {
-    ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-  },
-  body: {
     ...THEME.typography.caption,
+    lineHeight: 18,
+  },
+  muted: {
     color: THEME.colors.text.secondary,
-    lineHeight: 20,
   },
-  cta: {
-    ...THEME.typography.caption,
+  link: {
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
-    marginTop: 2,
   },
 });

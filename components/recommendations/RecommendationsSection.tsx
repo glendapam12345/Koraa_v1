@@ -27,14 +27,7 @@ const CARD_HEIGHT = 188;
  * Un gradiente distinto por posición del carrusel (0, 1, 2) para que no se repita el mismo azul.
  * Orden fijo; el contenido sigue viniendo de la categoría detectada.
  */
-const CAROUSEL_SLOT_GRADIENTS: readonly (readonly [string, string])[] = [
-  [THEME.colors.gradient.blue, '#5B8FD9'],
-  [THEME.colors.gradient.pink, '#E85D75'],
-  ['#3EB489', THEME.colors.gradient.blue],
-  [THEME.colors.category.personal, '#9B7EDE'],
-  ['#F4A261', THEME.colors.accent.orange],
-  ['#2A9D8F', '#48CAE4'],
-] as const;
+const CAROUSEL_SLOT_GRADIENTS = THEME.colors.carousel.slotGradients;
 
 const CATEGORY_KEYS = ['bienestar', 'ejercicio', 'productividad', 'salud mental', 'social', 'creatividad', 'descanso', 'nutrición'] as const;
 
@@ -314,7 +307,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
               style={[styles.skeletonCardWrap, { width: CARD_WIDTH, marginRight: CARD_GAP }]}
             >
               <LinearGradient
-                colors={[THEME.colors.tint.blue.veryFaint, THEME.colors.fill[100]]}
+                colors={[THEME.colors.tint.blue.veryFaint, THEME.colors.calm.card]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={[styles.skeletonCardInner, { height: CARD_HEIGHT }]}
@@ -336,7 +329,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
         {sectionHeader()}
         <View style={styles.emptyRecommendations}>
           <LinearGradient
-            colors={[THEME.colors.fill[100], THEME.colors.tint.blue.veryFaint]}
+            colors={[THEME.colors.calm.card, THEME.colors.tint.blue.veryFaint]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.emptyCard}
@@ -447,7 +440,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
               >
                 <LinearGradient
                   pointerEvents="none"
-                  colors={['rgba(255,255,255,0.28)', 'rgba(255,255,255,0)', 'transparent']}
+                  colors={[THEME.colors.surfaceOverlay.wash, 'transparent', 'transparent']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0.85 }}
                   style={styles.cardShine}
@@ -501,7 +494,7 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.sm,
   },
   simpleHeaderTitle: {
-    fontSize: 20,
+    ...THEME.typography.sectionTitle,
     lineHeight: 26,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
@@ -514,17 +507,15 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   simpleHeaderSub: {
+    ...THEME.typography.meta,
     marginTop: 6,
-    fontSize: 13,
-    lineHeight: 18,
-    color: THEME.colors.text.secondary,
     fontFamily: THEME.fonts.accent.italic,
   },
   skeletonCardWrap: {
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
     ...THEME.shadows.soft,
   },
   skeletonCardInner: {
@@ -535,20 +526,20 @@ const styles = StyleSheet.create({
   skeletonLineWide: {
     height: 12,
     borderRadius: 6,
-    backgroundColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.calm.border,
     width: '72%',
   },
   skeletonLineNarrow: {
     height: 10,
     borderRadius: 5,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     width: '40%',
   },
   skeletonBlock: {
     marginTop: THEME.spacing.sm,
     flex: 1,
     borderRadius: THEME.borderRadius.standard,
-    backgroundColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.calm.border,
     opacity: 0.45,
     minHeight: 72,
   },
@@ -582,15 +573,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderWidth: 1,
     borderColor: THEME.colors.tint.blue.border,
   },
   emptyRecoPillText: {
-    ...THEME.typography.small,
+    ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.gradient.blue,
-    fontSize: 14,
   },
   horizontalScrollContent: {
     paddingHorizontal: CAROUSEL_GUTTER,
@@ -648,17 +638,14 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   horizontalCardTitle: {
-    fontSize: 17,
-    lineHeight: 22,
+    ...THEME.typography.cardTitle,
     color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
     marginBottom: 6,
   },
   horizontalCardPreview: {
     ...THEME.typography.small,
     color: THEME.colors.onGradient,
     opacity: 0.92,
-    fontSize: 12,
     lineHeight: 17,
   },
   horizontalCardMore: {
@@ -679,10 +666,9 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.xs,
   },
   verMasRecommendationsText: {
-    ...THEME.typography.body,
+    ...THEME.typography.caption,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
-    fontSize: 14,
   },
   recommendationCardWrapper: {
     marginBottom: THEME.spacing.sm,
@@ -744,21 +730,18 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   emoji: {
-    fontSize: 22,
+    fontSize: THEME.typography.displayEmojiMd.fontSize,
   },
   categoryTitle: {
-    ...THEME.typography.caption,
+    ...THEME.typography.sectionEyebrow,
     color: THEME.colors.onGradient,
     opacity: 0.95,
-    fontFamily: THEME.fonts.heading.bold,
-    fontSize: 12,
     letterSpacing: 0.2,
   },
   recommendationTitle: {
-    ...THEME.typography.body,
+    ...THEME.typography.caption,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 14,
     marginBottom: 4,
   },
   recommendationPreview: {
@@ -774,11 +757,9 @@ const styles = StyleSheet.create({
     borderTopColor: THEME.colors.surfaceOverlay.medium,
   },
   recommendationMessage: {
-    ...THEME.typography.body,
+    ...THEME.typography.meta,
     color: THEME.colors.onGradient,
     opacity: 0.95,
-    fontSize: 13,
-    lineHeight: 20,
     marginBottom: THEME.spacing.sm,
   },
   additionalRecommendations: {
@@ -788,20 +769,18 @@ const styles = StyleSheet.create({
     borderTopColor: THEME.colors.surfaceOverlay.medium,
   },
   additionalRecTitle: {
-    ...THEME.typography.caption,
+    ...THEME.typography.small,
     color: THEME.colors.onGradient,
     opacity: 0.9,
     fontFamily: THEME.fonts.heading.medium,
     marginBottom: THEME.spacing.xs,
-    fontSize: 12,
   },
   additionalRecItem: {
     paddingVertical: THEME.spacing.xs,
   },
   additionalRecText: {
-    ...THEME.typography.body,
+    ...THEME.typography.small,
     color: THEME.colors.onGradient,
     opacity: 0.85,
-    fontSize: 12,
   },
 });

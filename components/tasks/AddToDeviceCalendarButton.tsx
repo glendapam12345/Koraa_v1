@@ -162,7 +162,6 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.medium,
   },
   labelRow: {
-    ...THEME.typography.body,
-    fontSize: 14,
+    ...THEME.typography.caption,
   },
 });

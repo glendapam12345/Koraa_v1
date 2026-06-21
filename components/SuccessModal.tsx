@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     paddingTop: 60,
   },
   content: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.standard,
     padding: THEME.spacing.md,
     paddingHorizontal: THEME.spacing.lg,

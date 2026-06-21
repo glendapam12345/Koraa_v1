@@ -10,7 +10,7 @@ const EMOTION_ACCENT: Record<string, string> = {
 };
 
 export function getEmotionCalendarFill(emotion?: string | null): string {
-  if (!emotion) return THEME.colors.fill[200];
+  if (!emotion) return THEME.colors.calm.mist;
   const key = emotion.toLowerCase();
   return (
     THEME.colors.emotionTint[key as keyof typeof THEME.colors.emotionTint] ??
@@ -19,7 +19,7 @@ export function getEmotionCalendarFill(emotion?: string | null): string {
 }
 
 export function getEmotionCalendarAccent(emotion?: string | null): string {
-  if (!emotion) return THEME.colors.stroke[100];
+  if (!emotion) return THEME.colors.calm.border;
   const key = emotion.toLowerCase();
   return EMOTION_ACCENT[key] ?? THEME.colors.gradient.blue;
 }

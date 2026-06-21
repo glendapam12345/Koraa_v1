@@ -33,8 +33,7 @@ export function ProgressBar({
 
 const styles = StyleSheet.create({
   progressIndicator: {
-    backgroundColor: THEME.colors.fill[200],
-    borderRadius: THEME.borderRadius.rounded,
+    ...THEME.surfaces.panel,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.md,
   },
@@ -58,7 +57,7 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 8,
-    backgroundColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.calm.border,
     borderRadius: 4,
     overflow: 'hidden',
   },

@@ -411,15 +411,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   heroEmbeddedBubbleCompact: {
-    fontSize: 20,
+    fontSize: THEME.typography.displayEmojiSm.fontSize,
     lineHeight: 26,
   },
   heroEmbeddedNote: {
-    ...THEME.typography.body,
-    fontSize: 15,
+    ...THEME.typography.screenSubtitle,
     color: THEME.colors.onGradientMuted,
     textAlign: 'center',
-    lineHeight: 22,
     maxWidth: 320,
   },
   emotionsGrid: {
@@ -428,7 +426,7 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.xs,
   },
   emotionGridCell: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.rounded,
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.xs,
@@ -448,8 +446,7 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.xs,
   },
   emotionGridLabel: {
-    ...THEME.typography.caption,
-    fontSize: 13,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 17,
@@ -467,7 +464,7 @@ const styles = StyleSheet.create({
   },
   bubble: {
     alignSelf: 'flex-start',
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.pill,
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.md,
@@ -490,12 +487,12 @@ const styles = StyleSheet.create({
   },
   emotionChip: {
     width: 108,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.sm,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
     ...THEME.shadows.soft,
   },
   emotionChipSelected: {
@@ -555,7 +552,7 @@ const styles = StyleSheet.create({
   },
   optionChipSelected: {
     borderColor: THEME.colors.calm.lavenderDeep,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
   },
   optionChipText: {
     ...THEME.typography.meta,

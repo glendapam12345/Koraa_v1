@@ -11,23 +11,51 @@ import {
 import { THEME } from '@/constants/theme';
 import { X } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
+import type { Task } from '@/components/tasks/TaskCard';
+import { TaskPlanEditSheet } from '@/components/vnext/TaskPlanEditSheet';
+import type { TaskPlanEditPayload } from '@/lib/vnext/saveTaskPlanEdit';
 
 interface TaskEditModalProps {
   visible: boolean;
-  content: string;
-  onContentChange: (text: string) => void;
-  onSave: () => void;
+  content?: string;
+  task?: Task | null;
+  projects?: { id: string; name: string }[];
+  onContentChange?: (text: string) => void;
+  onSave?: () => void;
+  onSavePlan?: (payload: TaskPlanEditPayload) => void | Promise<void>;
+  onDelete?: () => void | Promise<void>;
+  saving?: boolean;
   onClose: () => void;
 }
 
 export function TaskEditModal({
   visible,
-  content,
+  content = '',
+  task = null,
+  projects = [],
   onContentChange,
   onSave,
+  onSavePlan,
+  onDelete,
+  saving = false,
   onClose,
 }: TaskEditModalProps) {
   const { t } = useI18n();
+
+  if (task && onSavePlan) {
+    return (
+      <TaskPlanEditSheet
+        visible={visible}
+        task={task}
+        projects={projects}
+        onSave={onSavePlan}
+        onDelete={onDelete}
+        onClose={onClose}
+        saving={saving}
+      />
+    );
+  }
+
   return (
     <Modal
       visible={visible}
@@ -65,7 +93,7 @@ export function TaskEditModal({
           <TextInput
             style={styles.editInput}
             value={content}
-            onChangeText={onContentChange}
+            onChangeText={onContentChange ?? (() => {})}
             placeholder={t('components.editTaskPlaceholder')}
             placeholderTextColor={THEME.colors.text.secondary}
             multiline
@@ -87,7 +115,7 @@ export function TaskEditModal({
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.modalButton, styles.modalButtonSave]}
-              onPress={onSave}
+              onPress={onSave ?? onClose}
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel={t('components.saveChangesA11y')}
@@ -112,9 +140,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalContent: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderTopLeftRadius: THEME.borderRadius.rounded,
     borderTopRightRadius: THEME.borderRadius.rounded,
+    borderTopWidth: 1,
+    borderColor: THEME.colors.calm.border,
     padding: THEME.spacing.lg,
     paddingBottom: THEME.spacing.xl * 2,
     maxHeight: '90%',
@@ -133,10 +163,11 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.xs,
   },
   editInput: {
-    fontSize: 16,
-    lineHeight: 24,
+    ...THEME.typography.body,
     color: THEME.colors.text.main,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     minHeight: 100,
@@ -154,7 +185,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalButtonCancel: {
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
   },
   modalButtonSave: {
     backgroundColor: THEME.colors.gradient.blue,
@@ -166,7 +199,7 @@ const styles = StyleSheet.create({
   },
   modalButtonSaveText: {
     ...THEME.typography.body,
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
 });

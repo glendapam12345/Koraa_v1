@@ -1,12 +1,11 @@
 import type { ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Target, Clock, ChevronRight, ChevronDown } from 'lucide-react-native';
-import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
-import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { HoyGentleRhythmStrip } from '@/components/hoy/HoyGentleRhythmStrip';
+import { HoyStepBadge } from '@/components/hoy/HoyStepBadge';
 
 type HoyDailyPlanCardProps = {
   stepCount: number;
@@ -16,13 +15,13 @@ type HoyDailyPlanCardProps = {
   prioritiesDone: number;
   prioritiesTotal: number;
   allFocusDone: boolean;
+  hasCheckIn?: boolean;
   prioritiesExpanded?: boolean;
   onTogglePriorities?: () => void;
   prioritiesSlot?: ReactNode;
   waitingExpanded?: boolean;
   onToggleWaiting?: () => void;
   waitingSlot?: ReactNode;
-  footerSlot?: ReactNode;
 };
 
 export function HoyDailyPlanCard({
@@ -33,18 +32,19 @@ export function HoyDailyPlanCard({
   prioritiesDone,
   prioritiesTotal,
   allFocusDone,
+  hasCheckIn = false,
   prioritiesExpanded = false,
   onTogglePriorities,
   prioritiesSlot,
   waitingExpanded = false,
   onToggleWaiting,
   waitingSlot,
-  footerSlot,
 }: HoyDailyPlanCardProps) {
   const { t } = useI18n();
 
-  const prioritiesSubtitle =
-    stepCount > 0
+  const prioritiesSubtitle = allFocusDone
+    ? t('hoy.planPrioritiesSubAllDone')
+    : stepCount > 0
       ? prioritiesExpanded
         ? t('hoy.planPrioritiesSubOpen')
         : t('hoy.planPrioritiesSub')
@@ -60,9 +60,16 @@ export function HoyDailyPlanCard({
   return (
     <CalmCard style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.title}>{t('hoy.planTitle')}</Text>
+        <View style={styles.titleRow}>
+          <HoyStepBadge step={2} />
+          <Text style={styles.title}>{t('hoy.planTitle')}</Text>
+        </View>
         <Text style={styles.subtitle}>
-          {crisisMode ? t('hoy.planSubtitleCare') : t('hoy.planSubtitle')}
+          {crisisMode
+            ? t('hoy.planSubtitleCare')
+            : hasCheckIn
+              ? t('hoy.planSubtitleWithCheckIn')
+              : t('hoy.planSubtitleNoCheckIn')}
         </Text>
       </View>
 
@@ -85,7 +92,7 @@ export function HoyDailyPlanCard({
         <View>
           <PlanRow
             icon={<Clock size={20} color={THEME.colors.text.secondary} />}
-            iconBg={THEME.colors.fill[200]}
+            iconBg={THEME.colors.calm.mist}
             title={t('hoy.planWaitingTitle')}
             subtitle={waitingSubtitle}
             expanded={waitingExpanded}
@@ -102,23 +109,15 @@ export function HoyDailyPlanCard({
         </View>
       </View>
 
-      <CalmPrimaryButton
-        label={t('hoy.planAddTasksCta')}
-        onPress={() => router.push('/(tabs)/vaciar')}
-        variant="soft"
-        accessibilityHint={t('hoy.planAddTasksHint')}
-        style={styles.addTasksBtn}
-      />
-
-      <HoyGentleRhythmStrip
-        crisisMode={crisisMode}
-        energyLevel={energyLevel}
-        prioritiesDone={prioritiesDone}
-        prioritiesTotal={prioritiesTotal}
-        allFocusDone={allFocusDone}
-      />
-
-      {footerSlot ? <View style={styles.footerSlot}>{footerSlot}</View> : null}
+      {!allFocusDone ? (
+        <HoyGentleRhythmStrip
+          crisisMode={crisisMode}
+          energyLevel={energyLevel}
+          prioritiesDone={prioritiesDone}
+          prioritiesTotal={prioritiesTotal}
+          allFocusDone={allFocusDone}
+        />
+      ) : null}
     </CalmCard>
   );
 }
@@ -172,6 +171,11 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: 4,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
   },
   title: {
     ...THEME.typography.h3,
@@ -235,11 +239,5 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: THEME.spacing.xs,
-  },
-  addTasksBtn: {
-    marginTop: THEME.spacing.xs,
-  },
-  footerSlot: {
-    gap: THEME.spacing.xs,
   },
 });

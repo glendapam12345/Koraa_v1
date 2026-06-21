@@ -98,8 +98,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   greeting: {
-    ...THEME.typography.h2,
-    fontSize: 22,
+    ...THEME.typography.titleCompact,
     lineHeight: 28,
     color: THEME.colors.text.main,
     textAlign: 'left',

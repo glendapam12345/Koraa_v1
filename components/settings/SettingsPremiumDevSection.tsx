@@ -48,10 +48,10 @@ export function SettingsPremiumDevSection({
           onValueChange={handleChange}
           disabled={disabled}
           trackColor={{
-            false: THEME.colors.fill[200],
+            false: THEME.colors.calm.mist,
             true: THEME.colors.calm.lavender,
           }}
-          thumbColor={enabled ? THEME.colors.calm.lavenderDeep : THEME.colors.fill[100]}
+          thumbColor={enabled ? THEME.colors.calm.lavenderDeep : THEME.colors.calm.card}
         />
       </View>
       {enabled ? (

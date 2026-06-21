@@ -18,7 +18,6 @@ import { normalizeCategoryKey } from '@/lib/i18n/categoryLabels';
 import { getCatalog } from '@/lib/i18n';
 import { HoyLiteBanner } from '@/components/hoy/HoyLiteBanner';
 import { HoyScreenHeader } from '@/components/hoy/HoyScreenHeader';
-import { HoyInicioView } from '@/components/hoy/HoyInicioView';
 import { HoyTasksSection } from '@/components/hoy/HoyTasksSection';
 import { useLocalSearchParams } from 'expo-router';
 import type { Task } from '@/components/tasks/TaskCard';
@@ -32,6 +31,7 @@ import { useStreak } from '@/hooks/today/useStreak';
 import { getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
 import { getTodayPriorityStats } from '@/lib/priorityProgress';
 import { useHoyDeleteTask, useHoyAllCompleteConfetti } from '@/hooks/useHoyTaskActions';
+import { useTaskPlanEdit } from '@/hooks/useTaskPlanEdit';
 import { useHoyPrioritization } from '@/hooks/useHoyPrioritization';
 import { useHoyTaskExpansion } from '@/hooks/useHoyTaskExpansion';
 import { useHoyProjectsMap } from '@/hooks/useHoyProjectsMap';
@@ -53,7 +53,6 @@ export default function TodayScreen() {
     recheckSource?: string;
   }>();
   const [dismissedCelebration, setDismissedCelebration] = useState(false);
-  const [showRedistribute, setShowRedistribute] = useState(false);
   const [careModeSheet, setCareModeSheet] = useState<'activate' | 'deactivate' | null>(null);
   const [careModeGuideOpen, setCareModeGuideOpen] = useState(false);
   const [careModeBusy, setCareModeBusy] = useState(false);
@@ -95,9 +94,6 @@ export default function TodayScreen() {
     closeMenu,
     toggleMenu,
     editingTask,
-    setEditingTask,
-    editContent,
-    setEditContent,
     toggleDetailsExpansion,
     toggleTaskExpansion,
     handleEditTask,
@@ -112,6 +108,47 @@ export default function TodayScreen() {
     setMenuOpen: taskExpansion.setMenuOpen,
   });
 
+  const projectsMap = useHoyProjectsMap(user?.id);
+
+  const editProjects = useMemo(
+    () => Object.entries(projectsMap).map(([id, meta]) => ({ id, name: meta.name })),
+    [projectsMap],
+  );
+
+  const { saving: planEditSaving, savePlan } = useTaskPlanEdit({
+    onError: (message) => showToast(message, 'error'),
+    onSaved: (taskId, payload) => {
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === taskId
+            ? {
+                ...task,
+                content: payload.content,
+                scheduled_date: payload.scheduledDate,
+                project_id: payload.projectId,
+                perceivedEffort: payload.effort ?? task.perceivedEffort,
+              }
+            : task,
+        ),
+      );
+      closeEditTask();
+      showToast(t('hooks.taskUpdated'), 'success');
+    },
+  });
+
+  const handleSavePlanEdit = useCallback(
+    async (payload: Parameters<typeof savePlan>[0]) => {
+      await savePlan(payload);
+    },
+    [savePlan],
+  );
+
+  const handleDeleteEditingTask = useCallback(async () => {
+    if (!editingTask) return;
+    await handleDeleteTask(editingTask);
+    closeEditTask();
+  }, [closeEditTask, editingTask, handleDeleteTask]);
+
   useHoyAllCompleteConfetti({
     tasks,
     loading,
@@ -125,7 +162,6 @@ export default function TodayScreen() {
   const { currentStreak, loadStreak } = useStreak(user?.id);
   const {
     hoyLiteLayout,
-    hoyPreFlowActive,
     hoyRestOfDayExpanded,
     showSecondaryModules,
     setShowSecondaryModules,
@@ -141,7 +177,6 @@ export default function TodayScreen() {
     scrollRef,
   });
 
-  const projectsMap = useHoyProjectsMap(user?.id);
   const { incompleteTasks } = useProgress(tasks, loading);
 
   const todayEmotionLabel = useMemo(() => {
@@ -149,20 +184,6 @@ export default function TodayScreen() {
     const emotions = getCatalog(locale).sentir.emotions as Record<string, string>;
     return emotions[todayMood.toLowerCase()] ?? todayMood;
   }, [locale, todayMood]);
-
-  const inicioEmotions = useMemo(() => {
-    const catalog = getCatalog(locale).sentir.emotions as Record<string, string>;
-    const ids = ['agotada', 'tranquila', 'ansiosa', 'motivada', 'abrumada', 'enfocada'] as const;
-    const emojis: Record<(typeof ids)[number], string> = {
-      agotada: '😔',
-      tranquila: '😌',
-      ansiosa: '😰',
-      motivada: '✨',
-      abrumada: '🥺',
-      enfocada: '🌿',
-    };
-    return ids.map((id) => ({ id, emoji: emojis[id], label: catalog[id] ?? id }));
-  }, [locale]);
 
   const incompleteTasksForToday = useMemo(() => {
     const today = getLocalDateString();
@@ -177,20 +198,6 @@ export default function TodayScreen() {
   const openQuickRecheck = useCallback(() => {
     openRecheckCheckIn('hoy');
   }, []);
-
-  const handleRedistributeApplied = useCallback(() => {
-    void loadTasks();
-    showToast(t('hoy.lightenLoadCelebration'), 'success');
-    setShowConfetti(true);
-    if (confettiTimeoutRef.current) clearTimeout(confettiTimeoutRef.current);
-    confettiTimeoutRef.current = setTimeout(() => {
-      setShowConfetti(false);
-      confettiTimeoutRef.current = null;
-    }, 2800);
-    if (Platform.OS !== 'web') {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }
-  }, [loadTasks, showToast, t]);
 
   const handleTaskCompleted = useCallback(
     (payload: TaskCompletedPayload) => {
@@ -229,7 +236,7 @@ export default function TodayScreen() {
     [todayMood, energyLevel, showToast, t, tasks],
   );
 
-  const { toggleTask, handleSaveEdit: handleSaveEditAction, clearToggleTimers } = useTaskActions({
+  const { toggleTask, clearToggleTimers } = useTaskActions({
     tasks,
     setTasks,
     loadTasks,
@@ -278,16 +285,12 @@ export default function TodayScreen() {
     await toggleTask(taskId, isSubtask, parentTaskId);
   };
 
-  const handleSaveEdit = async () => {
-    await handleSaveEditAction(editingTask, editContent, setEditingTask, setEditContent);
-  };
-
   return (
     <View style={styles.container}>
       <CalmScreen
         ref={scrollRef}
-        topInset={hoyPreFlowActive ? 'md' : 'lg'}
-        gap={hoyPreFlowActive ? THEME.layout.sectionGapCompact : THEME.layout.tabSectionGap}
+        topInset="lg"
+        gap={THEME.layout.tabSectionGap}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -298,8 +301,7 @@ export default function TodayScreen() {
         }
       >
         <HoyScreenHeader
-          minimal={hoyPreFlowActive}
-          showSubtitle={!hoyPreFlowActive && !hoyLiteLayout}
+          showSubtitle={!hoyLiteLayout}
           streak={currentStreak}
           checkedInToday={Boolean(todayMood)}
           crisisModeActive={crisisModeActive}
@@ -322,23 +324,9 @@ export default function TodayScreen() {
           />
         ) : null}
 
-        {!loading && hoyPreFlowActive ? (
-          <HoyInicioView
-            displayName={displayName}
-            emotions={inicioEmotions}
-            hasTasks={incompleteTasks.length > 0}
-            pendingCount={incompleteTasks.length}
-            liteMode={Boolean(hoyLiteLayout)}
-            onCheckInSaved={() => {
-              void loadTodayCheckIn();
-              void loadTasks();
-            }}
-          />
-        ) : null}
-
-        {!loading && todayMood ? (
+        {!loading ? (
           <HoyTasksSection
-            todayMood={todayMood}
+            todayMood={todayMood ?? ''}
             todayEmotionLabel={todayEmotionLabel}
             energyLevel={energyLevel}
             time={time}
@@ -368,15 +356,15 @@ export default function TodayScreen() {
             onShowMoreForToday={!showSecondaryModules ? handleShowMoreForHoy : undefined}
             onDeleteTask={handleDeleteTask}
             onChangeEmotion={openQuickRecheck}
-            onLightenLoad={() => setShowRedistribute(true)}
             crisisMode={crisisModeActive}
             onCareModeDismiss={() => setCareModeSheet('deactivate')}
             onCareModeLearnMore={() => setCareModeGuideOpen(true)}
+            onTasksReload={loadTasks}
+            showToast={showToast}
           />
         ) : null}
 
         {!loading &&
-        todayMood &&
         !crisisModeActive &&
         !hoyLiteLayout &&
         incompleteTasksForToday.length === 0 &&
@@ -391,22 +379,15 @@ export default function TodayScreen() {
         menuOpen={menuOpen}
         onCloseMenu={closeMenu}
         editingTask={editingTask}
-        editContent={editContent}
-        onEditContentChange={setEditContent}
-        onSaveEdit={handleSaveEdit}
+        editProjects={editProjects}
+        onSavePlanEdit={handleSavePlanEdit}
+        onDeleteEditingTask={handleDeleteEditingTask}
+        planEditSaving={planEditSaving}
         onCloseEdit={closeEditTask}
         showConfetti={showConfetti}
         toastMessage={toastMessage}
         toastType={toastType}
         onHideToast={() => setToastMessage(null)}
-        userId={user?.id}
-        showRedistribute={showRedistribute}
-        onCloseRedistribute={() => setShowRedistribute(false)}
-        tasks={tasks}
-        energyLevel={energyLevel}
-        availableTime={time || 'Medio (2-4hrs)'}
-        emotion={todayMood || 'tranquila'}
-        onRedistributeApplied={handleRedistributeApplied}
         showQuickOnboarding={showQuickOnboarding}
         onCloseQuickOnboarding={() => setShowQuickOnboarding(false)}
       />

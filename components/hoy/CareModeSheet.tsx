@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
   },
   content: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     width: '100%',
@@ -123,8 +123,7 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.xs,
   },
   title: {
-    ...THEME.typography.h3,
-    fontSize: 20,
+    ...THEME.typography.sectionTitle,
     lineHeight: 26,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,

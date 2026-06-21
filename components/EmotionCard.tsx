@@ -31,7 +31,7 @@ export function EmotionCard({ emoji, label, selected, onPress }: EmotionCardProp
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.sm,
     alignItems: 'center',

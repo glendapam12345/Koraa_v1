@@ -97,7 +97,7 @@ export function FlowIndicator({ currentStep, showPremiumHint = true }: FlowIndic
               >
                 {status === 'completed' ? (
                   <View style={styles.stepIconCompleted}>
-                    <CheckCircle2 size={20} color={THEME.colors.fill[100]} />
+                    <CheckCircle2 size={20} color={THEME.colors.onGradient} />
                   </View>
                 ) : status === 'current' ? (
                   <View style={[styles.stepIcon, styles.stepIconCurrent]}>
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: THEME.spacing.md,
     paddingHorizontal: THEME.spacing.sm,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.rounded,
   },
   stepContainer: {
@@ -185,9 +185,9 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderWidth: 2,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: THEME.spacing.xs,
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.onGradient,
   },
   stepIconCompleted: {
     width: 32,
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   connector: {
     width: 16,
     height: 2,
-    backgroundColor: THEME.colors.stroke[100],
+    backgroundColor: THEME.colors.calm.border,
     marginHorizontal: 2,
     marginTop: 15,
   },

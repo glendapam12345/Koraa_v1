@@ -67,10 +67,10 @@ export function YoPatternCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.rounded,
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
     padding: THEME.spacing.md,
     marginBottom: THEME.spacing.sm,
     ...THEME.shadows.soft,
@@ -82,8 +82,8 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   title: {
-    ...THEME.typography.h3,
-    fontSize: 16,
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
   },
   premiumBadge: {
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: THEME.spacing.xs,

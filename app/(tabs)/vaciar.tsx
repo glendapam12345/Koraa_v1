@@ -1,14 +1,24 @@
-import { View, StyleSheet, RefreshControl, Keyboard } from 'react-native';
-import { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, RefreshControl, Keyboard, Text } from 'react-native';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import type { ScrollView } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { Toast } from '@/components/Toast';
 import { VaciarCaptureForm } from '@/components/tasks/VaciarCaptureForm';
+import { FrontDetectionScreen } from '@/components/frentes/FrontDetectionScreen';
+import { WeeklyPlanReadyScreen } from '@/components/frentes/WeeklyPlanReadyScreen';
+import { RealityCheckScreen } from '@/components/vnext/RealityCheckScreen';
+import type { RealityCheckInput } from '@/lib/vnext/types';
+import {
+  buildWeeklyPlanPreview,
+  type WeeklyPlanPreview,
+} from '@/lib/frentes/buildWeeklyPlanPreview';
+import { CaptureSavedNextStep } from '@/components/tasks/CaptureSavedNextStep';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProjectsLibraryPanel } from '@/components/projects/ProjectsLibraryPanel';
 import { VaciarTabSegments, type VaciarTabSegment } from '@/components/tasks/VaciarTabSegments';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -17,14 +27,31 @@ import { useFocusedProject } from '@/hooks/useFocusedProject';
 import { FocusedProjectBanner } from '@/components/projects/FocusedProjectBanner';
 import { useVaciarHints } from '@/hooks/useVaciarHints';
 import { useVaciarTaskSave } from '@/hooks/useVaciarTaskSave';
-import { useTaskCaptureAi } from '@/hooks/useTaskCaptureAi';
-import { TaskCaptureAiPreview } from '@/components/tasks/TaskCaptureAiPreview';
-import { createTasksFromCapture } from '@/lib/createTasksFromCapture';
-import { getLocalDateString } from '@/lib/dateLocal';
+import { useVaciarBatchSave, type SavedCaptureTask } from '@/hooks/useVaciarBatchSave';
+import {
+  advancedCaptureOptionsActive,
+  buildEnrichedReleaseItems,
+  type VaciarAdvancedCaptureOptions,
+} from '@/lib/vaciarInboxCapture';
+import { buildCaptureFronts, type CaptureFrontsResult } from '@/lib/captureProjectFronts';
+import { stripAutoPlanningForDiscovery } from '@/lib/captureFrontDiscovery';
+import { buildLiveCapturePreview } from '@/lib/liveCapturePreview';
+import { applyAiProjectHints } from '@/lib/taskIntelligentEnrichment';
+import { createProjectForUser, createProjectErrorMessage } from '@/lib/createProject';
+import type { CaptureHeroLiveState } from '@/components/tasks/CaptureScreenHero';
+import { fetchProfilePreferences } from '@/lib/profilePreferences';
+import { getDisplayName } from '@/lib/displayName';
+import { fetchUserProjects } from '@/lib/projectDueDateSchema';
+import { PROJECT_COLORS } from '@/lib/projectColors';
+import type { EnrichedCaptureItem } from '@/lib/taskIntelligentEnrichment';
+import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import type { TaskEffort } from '@/lib/taskPerceivedEffort';
+
+type CaptureFlowStep = 'input' | 'preview' | 'reality' | 'weekly' | 'saved';
 
 export default function VaciarScreen() {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const { suggestion, date: dateParam, projectId: projectIdParam, segment: segmentParam } =
     useLocalSearchParams<{
       suggestion?: string;
@@ -33,51 +60,61 @@ export default function VaciarScreen() {
       segment?: string;
     }>();
   const [segment, setSegment] = useState<VaciarTabSegment>('capture');
+  const [projectsPanelMounted, setProjectsPanelMounted] = useState(
+    () => segmentParam === 'projects',
+  );
   const [taskInput, setTaskInput] = useState('');
   const [hasSubtasks, setHasSubtasks] = useState(false);
   const [subtasks, setSubtasks] = useState<string[]>(['']);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
-  const [refreshing, setRefreshing] = useState(false);
-  const [recentTaskSuggestions, setRecentTaskSuggestions] = useState<string[]>([]);
-  /** true = proyecto, false = tarea suelta con categoría */
   const [assignToProject, setAssignToProject] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('otros');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [effortFeel, setEffortFeel] = useState<TaskEffort | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
+  const [refreshing, setRefreshing] = useState(false);
+  const [isOrganizing, setIsOrganizing] = useState(false);
+  const [isRefiningPreview, setIsRefiningPreview] = useState(false);
+  const [releaseFronts, setReleaseFronts] = useState<CaptureFrontsResult | null>(null);
+  const [captureStep, setCaptureStep] = useState<CaptureFlowStep>('input');
+  const [previewItems, setPreviewItems] = useState<EnrichedCaptureItem[]>([]);
+  const [previewProjects, setPreviewProjects] = useState<
+    { id: string; name: string; due_date: string | null }[]
+  >([]);
+  const [previewFrontDeadlines, setPreviewFrontDeadlines] = useState<Record<string, string | null>>(
+    {},
+  );
+  const [savedCaptureTasks, setSavedCaptureTasks] = useState<SavedCaptureTask[]>([]);
+  const [weeklyPlan, setWeeklyPlan] = useState<WeeklyPlanPreview | null>(null);
+  const [creatingFrontKey, setCreatingFrontKey] = useState<string | null>(null);
+  const [, setLiveCaptureState] = useState<CaptureHeroLiveState | null>(null);
+  const [captureInputFocused, setCaptureInputFocused] = useState(false);
+  const previewGenerationRef = useRef(0);
   const [, setProjectCount] = useState<number | null>(null);
+  const [profileFullName, setProfileFullName] = useState<string | undefined>();
   const { user } = useAuth();
+
+  const displayName = useMemo(
+    () =>
+      getDisplayName(
+        { full_name: profileFullName, user_metadata: user?.user_metadata, email: user?.email },
+        t('yo.welcomeName'),
+      ),
+    [profileFullName, user?.user_metadata, user?.email, t],
+  );
+
+  useEffect(() => {
+    if (!user?.id) return;
+    void (async () => {
+      const { data } = await fetchProfilePreferences(user.id);
+      setProfileFullName(data?.full_name?.trim() || undefined);
+    })();
+  }, [user?.id]);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToastMessage(message);
     setToastType(type);
-  }, []);
-
-  const loadRecentTaskSuggestions = useCallback(async () => {
-    try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) return;
-
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('content')
-        .eq('user_id', authUser.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (error) {
-        logger.error('Error cargando sugerencias:', error);
-        return;
-      }
-
-      if (data) {
-        const uniqueTasks = Array.from(new Set(data.map((row) => row.content.trim())));
-        setRecentTaskSuggestions(uniqueTasks.slice(0, 3));
-      }
-    } catch (error) {
-      logger.error('Error inesperado:', error);
-    }
   }, []);
 
   const { hasCheckInToday, refresh: refreshCheckInToday } = useHasCheckInToday(user?.id);
@@ -100,9 +137,8 @@ export default function VaciarScreen() {
       setSelectedProjectId(null);
       setSelectedCategory('otros');
       setSelectedDate(null);
-      await loadRecentTaskSuggestions();
     },
-    [loadRecentTaskSuggestions, resetTaskForm, setHasTasks],
+    [resetTaskForm, setHasTasks],
   );
 
   const { isSaving, saveTask } = useVaciarTaskSave({
@@ -111,77 +147,370 @@ export default function VaciarScreen() {
     onSaved: handleTaskSaved,
   });
 
-  const { preview, isInterpreting, interpret, clearPreview } = useTaskCaptureAi();
-  const [isSavingCapture, setIsSavingCapture] = useState(false);
+  const handleBatchSaved = useCallback(async () => {
+    await handleTaskSaved({ savedTitle: '' });
+  }, [handleTaskSaved]);
 
-  const formatPreviewDate = useCallback(
-    (dateStr: string | null) => {
-      if (!dateStr) return '';
-      const monthNames =
-        locale === 'en'
-          ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-          : ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-      const todayStr = getLocalDateString();
-      if (dateStr === todayStr) return t('components.today');
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      if (dateStr === getLocalDateString(tomorrow)) return t('components.tomorrow');
-      const day = dateStr.slice(8);
-      const month = monthNames[parseInt(dateStr.slice(5, 7), 10) - 1];
-      return `${day} ${month}`;
+  const { isSavingBatch, saveBatch } = useVaciarBatchSave({
+    hasCheckInToday,
+    showToast,
+    onSaved: handleBatchSaved,
+  });
+
+  const handleRelease = useCallback(async () => {
+    Keyboard.dismiss();
+    const advanced: VaciarAdvancedCaptureOptions = {
+      assignToProject,
+      selectedCategory,
+      selectedProjectId,
+      selectedDate,
+      effortFeel,
+    };
+    const useAdvanced =
+      advancedCaptureOptionsActive(advanced) || assignToProject || hasSubtasks;
+
+    if (!user?.id) return;
+
+    setIsOrganizing(true);
+    try {
+      if (!useAdvanced) {
+        const { data } = await fetchUserProjects(user.id);
+        const projects = (data ?? []).map((p) => ({
+          id: p.id,
+          name: p.name,
+          due_date: p.due_date ?? null,
+        }));
+        const projectsForMatch = projects.map((p) => ({ id: p.id, name: p.name }));
+        const live = buildLiveCapturePreview(taskInput, locale, projectsForMatch);
+        if (!live || live.items.length === 0) {
+          showToast(t('vaciar.releaseEmpty'), 'info');
+          return;
+        }
+
+        previewGenerationRef.current += 1;
+        const refineGeneration = previewGenerationRef.current;
+        setPreviewItems(stripAutoPlanningForDiscovery(live.items));
+        setPreviewProjects(projects);
+        setPreviewFrontDeadlines({});
+        setCaptureStep('preview');
+        setReleaseFronts(null);
+        setIsOrganizing(false);
+        requestAnimationFrame(() => {
+          screenScrollRef.current?.scrollTo({ y: 0, animated: true });
+        });
+
+        setIsRefiningPreview(true);
+        void (async () => {
+          try {
+            const refined = await applyAiProjectHints(
+              live.items,
+              taskInput,
+              locale,
+              user.id,
+              projectsForMatch,
+            );
+            if (refineGeneration !== previewGenerationRef.current) return;
+            setPreviewItems(stripAutoPlanningForDiscovery(refined));
+          } catch (error) {
+            logger.warn('vaciar.previewAiRefine', error);
+          } finally {
+            if (refineGeneration === previewGenerationRef.current) {
+              setIsRefiningPreview(false);
+            }
+          }
+        })();
+        return;
+      }
+
+      const { items, projects } = await buildEnrichedReleaseItems(
+        taskInput,
+        locale,
+        user.id,
+        advanced,
+      );
+      if (items.length === 0) {
+        showToast(t('vaciar.releaseEmpty'), 'info');
+        return;
+      }
+
+      previewGenerationRef.current += 1;
+
+      setPreviewItems(stripAutoPlanningForDiscovery(items));
+      setPreviewProjects(projects);
+      setPreviewFrontDeadlines({});
+      setCaptureStep('preview');
+      setReleaseFronts(null);
+      requestAnimationFrame(() => {
+        screenScrollRef.current?.scrollTo({ y: 0, animated: true });
+      });
+    } finally {
+      setIsOrganizing(false);
+    }
+  }, [
+    assignToProject,
+    effortFeel,
+    hasSubtasks,
+    locale,
+    selectedCategory,
+    selectedDate,
+    selectedProjectId,
+    showToast,
+    t,
+    taskInput,
+    user?.id,
+  ]);
+
+  const handleConfirmPreview = useCallback(
+    async (payload?: {
+      items: EnrichedCaptureItem[];
+      frontDeadlines: Record<string, string | null>;
+      realityCheck?: RealityCheckInput;
+    }) => {
+      const itemsBase = payload?.items ?? previewItems;
+      const frontDeadlines = payload?.frontDeadlines ?? previewFrontDeadlines;
+      if (!user?.id || itemsBase.length === 0) return;
+
+      previewGenerationRef.current += 1;
+      setIsRefiningPreview(false);
+      setIsOrganizing(true);
+      try {
+        let items = [...itemsBase];
+        let projects = [...previewProjects];
+        const { fronts } = buildCaptureFronts(items, projects);
+
+        for (const front of fronts) {
+          if (!front.suggestedNewProject || front.projectId) continue;
+          const captureIds = new Set(front.tasks.map((task) => task.captureId));
+          const dueDateRaw = frontDeadlines[front.key] ?? undefined;
+          const { data: existingProjects } = await fetchUserProjects(user.id);
+          const result = await createProjectForUser({
+            userId: user.id,
+            name: front.name,
+            color: PROJECT_COLORS[0],
+            existingNames: (existingProjects ?? []).map((project) => project.name),
+            locale,
+            dueDateRaw,
+          });
+          if (!result.ok) continue;
+
+          projects = [
+            ...projects,
+            {
+              id: result.project.id,
+              name: result.project.name,
+              due_date: result.project.due_date ?? null,
+            },
+          ];
+          items = items.map((item) =>
+            captureIds.has(item.id)
+              ? {
+                  ...item,
+                  assignToProject: true,
+                  selectedProjectId: result.project.id,
+                }
+              : item,
+          );
+        }
+
+        let persistedTasks: SavedCaptureTask[] = [];
+
+        if (items.length === 1 && hasSubtasks) {
+          const item = items[0];
+          await saveTask(
+            {
+              content: item.content,
+              hasSubtasks: true,
+              subtasks,
+              assignToProject: item.assignToProject,
+              selectedCategory: item.selectedCategory || selectedCategory,
+              selectedProjectId: item.selectedProjectId,
+              selectedDate: item.selectedDate,
+            },
+            { effortFeel: item.effortFeel, reliefCapture: true, suppressToast: true },
+          );
+          setSavedCaptureTasks([]);
+        } else {
+          const saved = await saveBatch(items, { suppressToast: true });
+          persistedTasks = saved ?? [];
+          setSavedCaptureTasks(persistedTasks);
+        }
+
+        setHasTasks(true);
+        setPreviewProjects(projects);
+        setPreviewFrontDeadlines(frontDeadlines);
+        const frontsResult = buildCaptureFronts(items, projects);
+        setReleaseFronts(frontsResult);
+
+        const plan = buildWeeklyPlanPreview(
+          items,
+          projects,
+          locale,
+          t('projectsUi.looseTitle'),
+          payload?.realityCheck,
+        );
+
+        const captureToTaskId = new Map(
+          (persistedTasks.length > 0
+            ? persistedTasks
+            : items.map((item) => ({
+                captureId: item.id,
+                taskId: item.id,
+                content: item.content,
+                projectId: item.selectedProjectId,
+              }))
+          ).map((entry) => [entry.captureId, entry.taskId]),
+        );
+
+        const dbAssignments = plan.assignments
+          .map((entry) => ({
+            id: captureToTaskId.get(entry.id) ?? entry.id,
+            scheduled_date: entry.scheduled_date,
+          }))
+          .filter((entry) => entry.id);
+
+        if (dbAssignments.length > 0) {
+          await Promise.all(
+            dbAssignments.map((entry) =>
+              supabase
+                .from('tasks')
+                .update({ scheduled_date: entry.scheduled_date })
+                .eq('id', entry.id),
+            ),
+          );
+        }
+
+        setWeeklyPlan(plan);
+        setTaskInput('');
+        resetTaskForm();
+        setCaptureStep('weekly');
+        requestAnimationFrame(() => {
+          screenScrollRef.current?.scrollTo({ y: 0, animated: true });
+        });
+      } finally {
+        setIsOrganizing(false);
+      }
     },
-    [locale, t],
+    [
+      hasSubtasks,
+      locale,
+      previewFrontDeadlines,
+      previewItems,
+      previewProjects,
+      resetTaskForm,
+      saveBatch,
+      saveTask,
+      selectedCategory,
+      setHasTasks,
+      subtasks,
+      t,
+      user?.id,
+    ],
   );
 
-  const handleInterpretAi = useCallback(() => {
-    Keyboard.dismiss();
-    void interpret(taskInput);
-  }, [interpret, taskInput]);
-
-  const handleConfirmAiPreview = useCallback(async () => {
-    if (!preview) return;
-    setIsSavingCapture(true);
-    try {
-      const result = await createTasksFromCapture(preview, {
-        locale,
-        hasCheckInToday: Boolean(hasCheckInToday),
-        projectId: assignToProject ? selectedProjectId : null,
+  const handleReviewConfirm = useCallback(
+    (payload: {
+      items: EnrichedCaptureItem[];
+      frontDeadlines: Record<string, string | null>;
+    }) => {
+      setPreviewItems(payload.items);
+      setPreviewFrontDeadlines(payload.frontDeadlines);
+      setCaptureStep('reality');
+      requestAnimationFrame(() => {
+        screenScrollRef.current?.scrollTo({ y: 0, animated: true });
       });
-      if (result.status === 'not_authenticated') {
-        showToast(t('errors.notAuthenticated'), 'error');
-        return;
-      }
-      if (result.status === 'error') {
-        showToast(t('errors.saveTaskFailed'), 'error');
-        return;
-      }
-      clearPreview();
-      await handleTaskSaved({ savedTitle: result.savedTitle });
-      const msg = t('vaciar.aiSavedBatch', { count: result.tasksCreated });
-      showToast(
-        result.reprioritized ? `${msg} ${t('vaciar.suggestionsUpdatedToast')}` : msg,
-        'success',
-      );
-    } catch (error) {
-      logger.error('Error guardando captura IA:', error);
-      showToast(t('errors.saveTaskFailed'), 'error');
-    } finally {
-      setIsSavingCapture(false);
-    }
-  }, [assignToProject, clearPreview, handleTaskSaved, hasCheckInToday, locale, preview, selectedProjectId, showToast, t]);
+    },
+    [],
+  );
 
-  const handleApplyAiToForm = useCallback(() => {
-    if (!preview) return;
-    setTaskInput(preview.main_task.content);
-    setSelectedDate(preview.main_task.scheduled_date);
-    if (preview.main_task.effort) {
-      setEffortFeel(preview.main_task.effort);
-    }
-    clearPreview();
-    if (preview.prep_steps.length > 0) {
-      showToast(t('vaciar.aiApplyPartial'), 'info');
-    }
-  }, [clearPreview, preview, showToast, t]);
+  const handleBackFromReality = useCallback(() => {
+    setCaptureStep('preview');
+  }, []);
+
+  const handleRealityConfirm = useCallback(
+    (realityCheck: RealityCheckInput) => {
+      void handleConfirmPreview({
+        items: previewItems,
+        frontDeadlines: previewFrontDeadlines,
+        realityCheck,
+      });
+    },
+    [handleConfirmPreview, previewFrontDeadlines, previewItems],
+  );
+
+  const handleBackToCapture = useCallback(() => {
+    previewGenerationRef.current += 1;
+    setCaptureInputFocused(false);
+    setCaptureStep('input');
+    setPreviewItems([]);
+    setPreviewFrontDeadlines({});
+    setWeeklyPlan(null);
+    setIsRefiningPreview(false);
+  }, []);
+
+  const handleCreateProjectFromFront = useCallback(
+    async (frontKey: string, projectName: string) => {
+      if (!user?.id || !releaseFronts) return;
+      const front = releaseFronts.fronts.find((entry) => entry.key === frontKey);
+      if (!front) return;
+
+      const captureIds = new Set(front.tasks.map((task) => task.captureId));
+      const taskIds = savedCaptureTasks
+        .filter((task) => captureIds.has(task.captureId))
+        .map((task) => task.taskId);
+      if (taskIds.length === 0) {
+        showToast(t('errors.updateFailed'), 'error');
+        return;
+      }
+
+      setCreatingFrontKey(frontKey);
+      try {
+        const { data: existingProjects } = await fetchUserProjects(user.id);
+        const result = await createProjectForUser({
+          userId: user.id,
+          name: projectName,
+          color: PROJECT_COLORS[0],
+          existingNames: (existingProjects ?? []).map((project) => project.name),
+          locale,
+        });
+        if (!result.ok) {
+          showToast(createProjectErrorMessage(result.reason, locale), 'error');
+          return;
+        }
+
+        const { error } = await supabase
+          .from('tasks')
+          .update({ project_id: result.project.id })
+          .in('id', taskIds);
+        if (error) {
+          logger.error('Error asignando tareas al proyecto:', error);
+          showToast(t('errors.updateFailed'), 'error');
+          return;
+        }
+
+        setReleaseFronts((current) => {
+          if (!current) return current;
+          return {
+            ...current,
+            fronts: current.fronts.map((entry) =>
+              entry.key === frontKey
+                ? {
+                    ...entry,
+                    name: result.project.name,
+                    projectId: result.project.id,
+                    isExistingProject: true,
+                    suggestedNewProject: false,
+                  }
+                : entry,
+            ),
+          };
+        });
+        showToast(t('vaciar.projectCreated', { name: result.project.name }), 'success');
+      } finally {
+        setCreatingFrontKey(null);
+      }
+    },
+    [locale, releaseFronts, savedCaptureTasks, showToast, t, user?.id],
+  );
 
   // Pre-llenar input si hay sugerencia desde Tips; fecha desde Semana; proyecto desde detalle de proyecto
   useEffect(() => {
@@ -204,31 +533,20 @@ export default function VaciarScreen() {
   useEffect(() => {
     if (segmentParam === 'projects') {
       setSegment('projects');
+      setProjectsPanelMounted(true);
     } else if (segmentParam === 'capture') {
       setSegment('capture');
     }
   }, [segmentParam]);
 
-  const addSubtask = () => {
-    // Validar límite máximo de subtareas
-    if (subtasks.length >= 20) {
-      showToast(t('vaciar.maxSubtasks'), 'error');
-      return;
-    }
-    setSubtasks([...subtasks, '']);
-  };
-
-  const removeSubtask = (index: number) => {
-    if (subtasks.length > 1) {
-      setSubtasks(subtasks.filter((_, i) => i !== index));
-    }
-  };
+  useEffect(() => {
+    if (segment === 'projects') setProjectsPanelMounted(true);
+  }, [segment]);
 
   useEffect(() => {
     void refreshCheckInToday();
     void loadHintState();
-    void loadRecentTaskSuggestions();
-  }, [refreshCheckInToday, loadHintState, loadRecentTaskSuggestions]);
+  }, [refreshCheckInToday, loadHintState]);
 
   const loadProjectCount = useCallback(async () => {
     if (!user) {
@@ -253,23 +571,28 @@ export default function VaciarScreen() {
     }, [loadProjectCount, refreshCheckInToday, loadHintState, refreshFocusedProject]),
   );
 
-  const handleAddTask = () => {
-    Keyboard.dismiss();
-    void saveTask(
-      {
-        content: taskInput,
-        hasSubtasks,
-        subtasks,
-        assignToProject,
-        selectedCategory,
-        selectedProjectId,
-        selectedDate,
-      },
-      { effortFeel },
-    );
+  const addSubtask = () => {
+    if (subtasks.length >= 20) {
+      showToast(t('vaciar.maxSubtasks'), 'error');
+      return;
+    }
+    setSubtasks([...subtasks, '']);
   };
 
-  // Función para manejar pull to refresh
+  const removeSubtask = (index: number) => {
+    if (subtasks.length > 1) {
+      setSubtasks(subtasks.filter((_, i) => i !== index));
+    }
+  };
+
+  const isCaptureSegment = segment === 'capture';
+  const hasTaskText = Boolean(taskInput.trim());
+  const saveBlocked =
+    !hasTaskText ||
+    isSaving ||
+    isSavingBatch ||
+    (assignToProject && !selectedProjectId);
+  const screenScrollRef = useRef<ScrollView>(null);
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -278,7 +601,6 @@ export default function VaciarScreen() {
         loadHintState(),
         refreshFocusedProject(),
       ]);
-      // Intentar sincronizar datos offline
       const { syncAll } = await import('@/lib/offlineStorage');
       await syncAll();
     } catch (error) {
@@ -288,11 +610,6 @@ export default function VaciarScreen() {
       setRefreshing(false);
     }
   };
-
-  const isCaptureSegment = segment === 'capture';
-  const hasTaskText = Boolean(taskInput.trim());
-  const saveBlocked =
-    !hasTaskText || isSaving || (assignToProject && !selectedProjectId);
 
   return (
     <View style={styles.container}>
@@ -307,12 +624,13 @@ export default function VaciarScreen() {
 
       <View style={styles.screenBody}>
         <CalmScreen
-          scroll={!isCaptureSegment}
+          ref={screenScrollRef}
+          scroll
           topInset={isCaptureSegment ? 'md' : 'lg'}
           gap={isCaptureSegment ? THEME.spacing.sm : THEME.layout.tabSectionGap}
-          contentStyle={isCaptureSegment ? styles.captureContent : undefined}
           keyboardShouldPersistTaps="always"
           keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets={isCaptureSegment}
           refreshControl={
             !isCaptureSegment ? (
               <RefreshControl
@@ -323,108 +641,193 @@ export default function VaciarScreen() {
             ) : undefined
           }
         >
+        {user && !(isCaptureSegment && captureInputFocused) ? (
+          <VaciarTabSegments value={segment} onChange={setSegment} />
+        ) : null}
+
         {!isCaptureSegment ? (
           <ScreenHeader
             title={t('projects.title')}
             subtitle={t('projects.subtitle')}
           />
-        ) : (
-          <ScreenHeader
-            title={t('vaciar.title')}
-            subtitle={t('vaciar.captureHint')}
-            compact
-          />
-        )}
+        ) : null}
 
-        {user ? <VaciarTabSegments value={segment} onChange={setSegment} /> : null}
-
-        {user && focusedProject ? (
+        {user && focusedProject && !isCaptureSegment ? (
           <FocusedProjectBanner
             project={focusedProject}
             onClearFocus={() => void clearFocus()}
           />
         ) : null}
 
-        {segment === 'capture' && user ? (
-          <VaciarCaptureForm
-            userId={user.id}
-            taskInput={taskInput}
-            onTaskInputChange={setTaskInput}
-            assignToProject={assignToProject}
-            onAssignToProjectChange={(value) => {
-              setAssignToProject(value);
-              if (!value) {
-                setSelectedProjectId(null);
-                setHasSubtasks(false);
-                setSubtasks(['']);
-              } else {
-                setSelectedCategory('otros');
-              }
-            }}
-            selectedCategory={selectedCategory}
-            onCategoryChange={setSelectedCategory}
-            selectedProjectId={selectedProjectId}
-            onProjectChange={(id) => {
-              setSelectedProjectId(id);
-              setAssignToProject(Boolean(id));
-              if (!id) {
-                setHasSubtasks(false);
-                setSubtasks(['']);
-              }
-            }}
-            selectedDate={selectedDate}
-            onDateChange={setSelectedDate}
-            hasSubtasks={hasSubtasks}
-            onHasSubtasksChange={setHasSubtasks}
-            subtasks={subtasks}
-            onSubtasksChange={setSubtasks}
-            onAddSubtask={addSubtask}
-            onRemoveSubtask={removeSubtask}
-            isSaving={isSaving}
-            saveBlocked={saveBlocked}
-            onSave={handleAddTask}
-            onProjectError={(message) => showToast(message, 'error')}
-            onProjectCreated={(name) =>
-              showToast(t('vaciar.projectCreated', { name }), 'success')
-            }
-            recentSuggestions={recentTaskSuggestions}
-            effortFeel={effortFeel}
-            onEffortChange={setEffortFeel}
-            onInterpretAi={handleInterpretAi}
-            isInterpreting={isInterpreting}
-            onVoiceNotice={(message) => showToast(message, 'info')}
-            dictateHintDismissed={dictateHintDismissed}
-            onDismissDictateHint={() => void dismissDictateHint()}
-          />
-        ) : (
-          <ProjectsLibraryPanel
-            embedded
-            userId={user?.id}
-            onGoCapture={() => setSegment('capture')}
-            onAddTaskToProject={(projectId) => {
-              setSegment('capture');
-              if (projectId) {
-                setAssignToProject(true);
-                setSelectedProjectId(projectId);
-              } else {
-                setAssignToProject(false);
-                setSelectedProjectId(null);
-              }
-            }}
-          />
-        )}
+        <View
+          style={[
+            styles.segmentPanels,
+            isCaptureSegment && captureStep === 'input' && styles.segmentPanelsCapture,
+            isCaptureSegment && captureStep === 'input' && captureInputFocused && styles.segmentPanelsCaptureFocused,
+          ]}
+        >
+          {user ? (
+            <View
+              style={[
+                styles.segmentPanel,
+                isCaptureSegment ? styles.segmentPanelActive : styles.segmentPanelHidden,
+                isCaptureSegment && captureStep === 'input' && styles.segmentPanelCapture,
+                isCaptureSegment && captureStep === 'input' && captureInputFocused && styles.segmentPanelCaptureFocused,
+              ]}
+              pointerEvents={isCaptureSegment ? 'auto' : 'none'}
+            >
+              {captureStep !== 'input' ? (
+                <Text style={styles.simpleCaptureTitle}>
+                  {captureStep === 'preview'
+                    ? t('vaciar.flowStepReview')
+                    : captureStep === 'reality'
+                      ? t('vnext.flowStepCalibrate')
+                      : captureStep === 'weekly'
+                        ? t('frentes.flowStepPlan')
+                        : t('vaciar.flowStepDone')}
+                </Text>
+              ) : null}
+
+              {captureStep === 'input' ? (
+                <VaciarCaptureForm
+                  userId={user.id}
+                  parentScrollRef={screenScrollRef}
+                  taskInput={taskInput}
+                  onTaskInputChange={(value) => {
+                    setTaskInput(value);
+                    if (releaseFronts) setReleaseFronts(null);
+                    if (captureStep !== 'input') setCaptureStep('input');
+                  }}
+                  assignToProject={assignToProject}
+                  onAssignToProjectChange={(value) => {
+                    setAssignToProject(value);
+                    if (!value) setSelectedProjectId(null);
+                  }}
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={setSelectedCategory}
+                  selectedProjectId={selectedProjectId}
+                  onProjectChange={setSelectedProjectId}
+                  selectedDate={selectedDate}
+                  onDateChange={setSelectedDate}
+                  hasSubtasks={hasSubtasks}
+                  onHasSubtasksChange={setHasSubtasks}
+                  subtasks={subtasks}
+                  onSubtasksChange={setSubtasks}
+                  onAddSubtask={addSubtask}
+                  onRemoveSubtask={removeSubtask}
+                  isSaving={isSaving || isSavingBatch || isOrganizing}
+                  saveBlocked={saveBlocked}
+                  onSave={() => void handleRelease()}
+                  onProjectError={(message) => showToast(message, 'error')}
+                  onProjectCreated={(name) =>
+                    showToast(t('vaciar.projectCreated', { name }), 'success')
+                  }
+                  onVoiceNotice={(message) => showToast(message, 'info')}
+                  dictateHintDismissed={dictateHintDismissed}
+                  onDismissDictateHint={() => void dismissDictateHint()}
+                  effortFeel={effortFeel}
+                  onEffortChange={setEffortFeel}
+                  onLiveStateChange={setLiveCaptureState}
+                  onInputFocusChange={setCaptureInputFocused}
+                  inputFocused={captureInputFocused}
+                />
+              ) : null}
+
+              {captureStep === 'preview' && user ? (
+                <FrontDetectionScreen
+                  locale={locale}
+                  displayName={displayName}
+                  userId={user.id}
+                  items={previewItems}
+                  projects={previewProjects}
+                  onItemsChange={setPreviewItems}
+                  onProjectsChange={(next) =>
+                    setPreviewProjects(
+                      next.map((project) => ({
+                        id: project.id,
+                        name: project.name,
+                        due_date: project.due_date ?? null,
+                      })),
+                    )
+                  }
+                  onProjectError={(message) => showToast(message, 'error')}
+                  onBack={handleBackToCapture}
+                  onConfirm={(payload) => handleReviewConfirm(payload)}
+                  isSaving={isOrganizing || isSavingBatch}
+                  isRefining={isRefiningPreview}
+                />
+              ) : null}
+
+              {captureStep === 'reality' && user ? (
+                <RealityCheckScreen
+                  displayName={displayName}
+                  items={previewItems}
+                  projects={previewProjects}
+                  onBack={handleBackFromReality}
+                  onContinue={handleRealityConfirm}
+                  isSaving={isOrganizing || isSavingBatch}
+                />
+              ) : null}
+
+              {captureStep === 'weekly' && weeklyPlan && releaseFronts ? (
+                <WeeklyPlanReadyScreen
+                  days={weeklyPlan.days}
+                  fronts={releaseFronts.fronts}
+                  movedCount={weeklyPlan.movedCount}
+                  freedHours={weeklyPlan.freedHours}
+                  focusFrontName={weeklyPlan.focusFrontName}
+                  realism={weeklyPlan.realism}
+                  onContinue={() => setCaptureStep('saved')}
+                />
+              ) : null}
+
+              {captureStep === 'saved' && releaseFronts ? (
+                <CaptureSavedNextStep
+                  fronts={releaseFronts}
+                  hasCheckInToday={hasCheckInToday}
+                  creatingFrontKey={creatingFrontKey}
+                  onCreateProject={(frontKey, projectName) => {
+                    void handleCreateProjectFromFront(frontKey, projectName);
+                  }}
+                  onGoToHoy={() => router.replace('/(tabs)')}
+                  onGoToCheckIn={() => router.replace(CHECK_IN_ROUTE)}
+                />
+              ) : null}
+            </View>
+          ) : null}
+
+          {projectsPanelMounted ? (
+            <View
+              style={[
+                styles.segmentPanel,
+                !isCaptureSegment ? styles.segmentPanelActive : styles.segmentPanelHidden,
+              ]}
+              pointerEvents={!isCaptureSegment ? 'auto' : 'none'}
+            >
+              <ProjectsLibraryPanel
+                embedded
+                areasFirst
+                userId={user?.id}
+                hasCheckInToday={hasCheckInToday}
+                onGoCapture={() => setSegment('capture')}
+                onOpenFullCapture={(projectId) => {
+                  setSegment('capture');
+                  if (projectId) {
+                    setAssignToProject(true);
+                    setSelectedProjectId(projectId);
+                  } else {
+                    setAssignToProject(false);
+                    setSelectedProjectId(null);
+                  }
+                }}
+                onTaskSaved={(message) => showToast(message, 'success')}
+                onProjectCreated={(name) => showToast(t('vaciar.projectCreated', { name }), 'success')}
+              />
+            </View>
+          ) : null}
+        </View>
         </CalmScreen>
       </View>
-
-      <TaskCaptureAiPreview
-        visible={Boolean(preview)}
-        capture={preview}
-        isSaving={isSavingCapture}
-        onConfirm={() => void handleConfirmAiPreview()}
-        onApplyToForm={handleApplyAiToForm}
-        onClose={clearPreview}
-        formatDate={formatPreviewDate}
-      />
     </View>
   );
 }
@@ -437,8 +840,39 @@ const styles = StyleSheet.create({
   screenBody: {
     flex: 1,
   },
-  captureContent: {
+  segmentPanels: {
     flex: 1,
+  },
+  segmentPanelsCapture: {
+    flex: 1,
+  },
+  segmentPanelsCaptureFocused: {
+    flex: 1,
+    minHeight: 320,
+  },
+  simpleCaptureTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.bold,
+    lineHeight: 28,
+  },
+  segmentPanel: {
+    flex: 1,
+  },
+  segmentPanelActive: {
+    flex: 1,
+  },
+  segmentPanelCapture: {
+    flex: 1,
+  },
+  segmentPanelCaptureFocused: {
+    flex: 1,
+    minHeight: 300,
+  },
+  segmentPanelHidden: {
+    flex: 0,
+    height: 0,
+    overflow: 'hidden',
   },
   valueProp: {
     ...THEME.typography.small,
@@ -596,7 +1030,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -605,8 +1039,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   optionalExtrasTitle: {
-    ...THEME.typography.body,
-    fontSize: 15,
+    ...THEME.typography.screenSubtitle,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
   },
@@ -626,7 +1059,6 @@ const styles = StyleSheet.create({
   },
   assignQuestion: {
     ...THEME.typography.body,
-    fontSize: 16,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
     marginBottom: THEME.spacing.sm,
@@ -665,12 +1097,11 @@ const styles = StyleSheet.create({
   },
   assignButtonText: {
     ...THEME.typography.body,
-    fontSize: 16,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.secondary,
   },
   assignButtonTextSelectedYes: {
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
   categorySection: {
@@ -698,7 +1129,7 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.medium,
   },
   categoryChipTextSelected: {
-    color: THEME.colors.fill[100],
+    color: THEME.colors.onGradient,
   },
   projectBlock: {
     marginTop: THEME.spacing.xs,
@@ -718,14 +1149,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.md,
   },
   opcionesHeaderText: {
-    ...THEME.typography.body,
-    fontSize: 15,
+    ...THEME.typography.screenSubtitle,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
   },
   opcionesHeaderHint: {
-    ...THEME.typography.caption,
-    fontSize: 12,
+    ...THEME.typography.small,
     color: THEME.colors.text.tertiary,
     marginTop: 2,
   },
@@ -743,7 +1172,6 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.text.main,
     minHeight: 120,
-    fontSize: 16,
   },
   inputCompact: {
     minHeight: 80,
@@ -827,7 +1255,7 @@ const styles = StyleSheet.create({
   },
   subtaskInputContainer: {
     flex: 1,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.standard,
     padding: THEME.spacing.sm,
   },
@@ -840,7 +1268,7 @@ const styles = StyleSheet.create({
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.standard,
   },
   addSubtaskButton: {
@@ -882,9 +1310,8 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.xs,
   },
   suggestionsTitle: {
-    ...THEME.typography.sectionTitle,
-    fontSize: 16,
-    lineHeight: 22,
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
   },
   suggestionsGrid: {
@@ -915,5 +1342,17 @@ const styles = StyleSheet.create({
   flowGuideAccent: {
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.gradient.blue,
+  },
+  projectsLink: {
+    alignSelf: 'center',
+    paddingVertical: THEME.spacing.xs,
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+  },
+  projectsLinkText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
+    lineHeight: 18,
   },
 });

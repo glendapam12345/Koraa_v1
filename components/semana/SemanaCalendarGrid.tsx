@@ -50,8 +50,8 @@ export function SemanaCalendarGrid({
           {week.map((day) => {
             const selected = selectedDate === day.dateStr;
             const hasCheckIn = Boolean(day.emotion);
-            const fill = hasCheckIn ? getEmotionCalendarFill(day.emotion) : THEME.colors.fill[200];
-            const accent = hasCheckIn ? getEmotionCalendarAccent(day.emotion) : THEME.colors.stroke[100];
+            const fill = hasCheckIn ? getEmotionCalendarFill(day.emotion) : THEME.colors.calm.mist;
+            const accent = hasCheckIn ? getEmotionCalendarAccent(day.emotion) : THEME.colors.calm.border;
 
             const energyPct =
               hasCheckIn && day.energyLevel
@@ -183,8 +183,7 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   todayTag: {
-    ...THEME.typography.small,
-    fontSize: 9,
+    ...THEME.typography.tiny,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.bold,
     position: 'absolute',
@@ -212,7 +211,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   taskBadgeText: {
-    fontSize: 10,
+    ...THEME.typography.micro,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
@@ -223,7 +222,7 @@ const styles = StyleSheet.create({
     right: 6,
     height: 3,
     borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.45)',
+    backgroundColor: THEME.colors.surfaceOverlay.glassLight,
     overflow: 'hidden',
   },
   energyFill: {

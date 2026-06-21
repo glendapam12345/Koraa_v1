@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.md,
     paddingVertical: THEME.spacing.xs,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderWidth: 1,
     borderColor: THEME.colors.calm.lavenderDeep,
     alignItems: 'center',

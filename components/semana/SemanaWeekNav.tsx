@@ -137,9 +137,8 @@ const styles = StyleSheet.create({
     minWidth: 120,
   },
   label: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 13,
   },
 });

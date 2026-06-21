@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     minWidth: THEME.sizes.touchTarget,
     paddingHorizontal: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
     justifyContent: 'center',

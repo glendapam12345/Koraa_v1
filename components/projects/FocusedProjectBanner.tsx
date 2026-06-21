@@ -5,6 +5,8 @@ import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { FocusedProjectInfo } from '@/hooks/useFocusedProject';
 
+const UI_ACCENT = THEME.colors.calm.lavenderDeep;
+
 type FocusedProjectBannerProps = {
   project: FocusedProjectInfo;
   onClearFocus: () => void;
@@ -44,7 +46,7 @@ export function FocusedProjectBanner({ project, onClearFocus }: FocusedProjectBa
         accessibilityLabel={t('projects.focusedBannerView', { name: project.name })}
       >
         <Text style={styles.linkText}>{t('projects.focusedBannerView')}</Text>
-        <ChevronRight size={16} color={THEME.colors.gradient.blue} />
+        <ChevronRight size={16} color={UI_ACCENT} />
       </TouchableOpacity>
     </View>
   );
@@ -54,9 +56,9 @@ const styles = StyleSheet.create({
   wrap: {
     padding: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    backgroundColor: THEME.colors.calm.mist,
     borderWidth: 1,
-    borderColor: THEME.colors.tint.blue.border,
+    borderColor: THEME.colors.calm.border,
     borderLeftWidth: 4,
     gap: THEME.spacing.xs,
   },
@@ -92,6 +94,6 @@ const styles = StyleSheet.create({
   linkText: {
     ...THEME.typography.small,
     fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.gradient.blue,
+    color: UI_ACCENT,
   },
 });

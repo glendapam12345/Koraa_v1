@@ -169,8 +169,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: THEME.borderRadius.pill,
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
-    backgroundColor: THEME.colors.fill[100],
+    borderColor: THEME.colors.calm.border,
+    backgroundColor: THEME.colors.calm.card,
     minHeight: 36,
   },
   pillFlex: {
@@ -183,7 +183,6 @@ const styles = StyleSheet.create({
   },
   pillText: {
     ...THEME.typography.small,
-    fontSize: 12,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.secondary,
   },
@@ -192,7 +191,6 @@ const styles = StyleSheet.create({
   },
   moreLink: {
     ...THEME.typography.small,
-    fontSize: 12,
     color: THEME.colors.gradient.blue,
     fontFamily: THEME.fonts.heading.medium,
     textAlign: 'center',

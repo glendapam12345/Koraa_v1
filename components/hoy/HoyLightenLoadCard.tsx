@@ -59,12 +59,12 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: THEME.borderRadius.standard + 2,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconWrapEmphasized: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
   },
   textCol: {
     flex: 1,

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { ChevronRight, Sparkles } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { focusProjectForToday } from '@/lib/projectFocus';
 
@@ -12,6 +13,8 @@ type ProjectFocusCtaProps = {
   incompleteCount: number;
   onFocused?: () => void;
 };
+
+const UI_ACCENT = THEME.colors.calm.lavenderDeep;
 
 /** Prioriza pasos del proyecto con IA y lleva a Tareas. */
 export function ProjectFocusCta({
@@ -65,12 +68,64 @@ export function ProjectFocusCta({
   };
 
   return (
-    <CalmPrimaryButton
-      label={t('projects.focusCta')}
+    <TouchableOpacity
+      style={styles.row}
       onPress={() => void handlePress()}
-      loading={loading}
-      variant="soft"
+      disabled={loading}
+      activeOpacity={0.88}
+      accessibilityRole="button"
       accessibilityLabel={t('projects.focusCtaA11y', { name: projectName })}
-    />
+      accessibilityState={{ busy: loading }}
+    >
+      <View style={styles.iconWrap}>
+        {loading ? (
+          <ActivityIndicator size="small" color={UI_ACCENT} />
+        ) : (
+          <Sparkles size={20} color={UI_ACCENT} strokeWidth={2} />
+        )}
+      </View>
+      <View style={styles.textWrap}>
+        <Text style={styles.title}>{t('projects.focusCta')}</Text>
+        <Text style={styles.hint}>{t('projects.focusCtaHint', { name: projectName })}</Text>
+      </View>
+      {!loading ? <ChevronRight size={20} color={UI_ACCENT} /> : null}
+    </TouchableOpacity>
   );
 }
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    padding: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.calm.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    minHeight: THEME.sizes.touchTarget,
+  },
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: THEME.borderRadius.standard,
+    backgroundColor: THEME.colors.calm.mist,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textWrap: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  title: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+  },
+  hint: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+  },
+});

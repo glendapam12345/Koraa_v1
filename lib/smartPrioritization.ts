@@ -139,7 +139,7 @@ function isHighFocus(focusLevel: string): boolean {
 /**
  * Convierte tiempo disponible a minutos estimados
  */
-function getTimeInMinutes(availableTime: string): number {
+export function getAvailableMinutesFromCheckIn(availableTime: string): number {
   switch (availableTime) {
     case 'Poco (1-2hrs)':
     case 'Little (1-2hrs)':
@@ -162,7 +162,7 @@ function getTimeInMinutes(availableTime: string): number {
  * Estima la duración de una tarea basado en su contenido
  * (heurística simple basada en palabras clave y longitud)
  */
-function estimateTaskDuration(task: Task): number {
+export function estimateTaskMinutes(task: Task): number {
   const content = task.content.toLowerCase();
   const wordCount = task.content.split(' ').length;
   
@@ -261,8 +261,8 @@ function calculateTaskScore(
   }
   
   // Factor 2: Tiempo disponible → Duración estimada
-  const taskDuration = estimateTaskDuration(task);
-  const availableMinutes = getTimeInMinutes(checkIn.availableTime);
+  const taskDuration = estimateTaskMinutes(task);
+  const availableMinutes = getAvailableMinutesFromCheckIn(checkIn.availableTime);
   
   // Priorizar tareas que caben en el tiempo disponible
   if (taskDuration <= availableMinutes * 0.3) {
@@ -375,17 +375,17 @@ export function computePrioritizationPlan(
     maxPriorityTasks = 5;
   }
 
-  const availableMinutes = getTimeInMinutes(checkIn.availableTime);
+  const availableMinutes = getAvailableMinutesFromCheckIn(checkIn.availableTime);
   const totalEstimatedTime = taskScores
     .slice(0, maxPriorityTasks)
-    .reduce((sum, ts) => sum + estimateTaskDuration(ts.task), 0);
+    .reduce((sum, ts) => sum + estimateTaskMinutes(ts.task), 0);
 
   if (totalEstimatedTime > availableMinutes && maxPriorityTasks > 1) {
     let adjustedCount = maxPriorityTasks;
     let cumulativeTime = 0;
 
     for (let i = 0; i < taskScores.length && i < maxPriorityTasks; i++) {
-      cumulativeTime += estimateTaskDuration(taskScores[i].task);
+      cumulativeTime += estimateTaskMinutes(taskScores[i].task);
       if (cumulativeTime > availableMinutes) {
         adjustedCount = Math.max(1, i);
         break;
@@ -508,7 +508,7 @@ export function generatePrioritizationExplanation(
   reasons.push(translate(locale, 'smart.feeling', { emotion: emotionLabel.toLowerCase() }));
 
   if (checkIn.availableTime) {
-    const availableMinutes = getTimeInMinutes(checkIn.availableTime);
+    const availableMinutes = getAvailableMinutesFromCheckIn(checkIn.availableTime);
     if (availableMinutes < 120) {
       reasons.push(translate(locale, 'smart.littleTime'));
     } else if (availableMinutes >= 300) {
@@ -550,7 +550,7 @@ export function getPrioritizationExplainerBullets(locale: AppLocale = 'es'): str
 }
 
 function getTimeShortLabel(availableTime: string, locale: AppLocale): string {
-  const minutes = getTimeInMinutes(availableTime);
+  const minutes = getAvailableMinutesFromCheckIn(availableTime);
   if (minutes < 120) return translate(locale, 'smart.timeShortLittle');
   if (minutes >= 300) return translate(locale, 'smart.timeShortPlenty');
   return translate(locale, 'smart.timeShortMedium');

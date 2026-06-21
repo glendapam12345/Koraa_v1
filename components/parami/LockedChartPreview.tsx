@@ -37,8 +37,19 @@ export function LockedChartPreview({ variant }: LockedChartPreviewProps) {
         importantForAccessibility="no-hide-descendants"
         accessibilityElementsHidden
       >
-        {[55, 72, 48, 85, 60, 78, 52, 68].map((h, i) => (
-          <View key={i} style={[styles.energyBar, { height: h }]} />
+        {[55, 72, 48, 85, 60, 78, 52].map((h, i) => (
+          <View key={i} style={styles.energyCell}>
+            <View
+              style={[
+                styles.energyBar,
+                {
+                  height: h,
+                  backgroundColor:
+                    i % 2 === 0 ? THEME.colors.calm.lavenderDeep : THEME.colors.gradient.blue,
+                },
+              ]}
+            />
+          </View>
         ))}
       </View>
     );
@@ -73,21 +84,25 @@ const styles = StyleSheet.create({
   moodBar: {
     width: 8,
     borderRadius: 4,
-    opacity: 0.85,
+    opacity: 0.5,
   },
   energyWrap: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'center',
-    gap: 6,
+    gap: 4,
     height: 56,
     paddingVertical: 4,
   },
+  energyCell: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    height: 56,
+  },
   energyBar: {
-    width: 10,
-    borderRadius: 5,
-    backgroundColor: THEME.colors.calm.lavenderDeep,
-    opacity: 0.7,
+    width: 8,
+    borderRadius: 4,
+    opacity: 0.65,
   },
   symptomsWrap: {
     alignItems: 'center',
@@ -101,7 +116,7 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.sm,
   },
   emojiText: {
-    fontSize: 24,
-    opacity: 0.9,
+    fontSize: THEME.typography.displayEmojiMd.fontSize,
+    opacity: 0.65,
   },
 });

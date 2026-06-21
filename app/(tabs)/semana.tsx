@@ -14,15 +14,15 @@ import { shareTasksCsv } from '@/lib/exportTasksCsv';
 import { router, useFocusEffect } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
-import { PremiumTeaserCard } from '@/components/PremiumTeaserCard';
 import { SemanaCalendarGrid } from '@/components/semana/SemanaCalendarGrid';
 import { SemanaCalendarLegend } from '@/components/semana/SemanaCalendarLegend';
 import { SemanaWeekNav } from '@/components/semana/SemanaWeekNav';
 import { SemanaProjectFilter } from '@/components/semana/SemanaProjectFilter';
 import { SemanaDaySection } from '@/components/semana/SemanaDaySection';
 import { SemanaTodayCheckInBanner } from '@/components/semana/SemanaTodayCheckInBanner';
-import { SemanaFreePlanBanner } from '@/components/semana/SemanaFreePlanBanner';
 import { SemanaFreeLimitCard } from '@/components/semana/SemanaFreeLimitCard';
+import { SemanaDraggableWeekBoard } from '@/components/semana/SemanaDraggableWeekBoard';
+import { useSemanaTaskDrag } from '@/hooks/useSemanaTaskDrag';
 import { Toast } from '@/components/Toast';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
@@ -65,7 +65,7 @@ export default function SemanaScreen() {
   const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
   const monthNamesFull = locale === 'en' ? MONTH_NAMES_FULL_EN : MONTH_NAMES_FULL_ES;
   const { user } = useAuth();
-  const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
+  const { isSubscribed } = useSubscription();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info');
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
@@ -84,7 +84,7 @@ export default function SemanaScreen() {
     [],
   );
 
-  const { weekTasks, checkInsByDate, projects, loading, loadWeekTasks, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast, locale);
+  const { weekTasks, projects, loading, loadWeekTasks, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast, locale);
   const { hasCheckInToday, refresh: refreshCheckInToday } = useHasCheckInToday(user?.id);
   const { days: calendarDays, tasksByDate, loading: monthLoading, loadMonth } = useMonthCalendar(
     calendarYear,
@@ -216,6 +216,11 @@ export default function SemanaScreen() {
     handleRefresh();
   }, [handleRefresh]);
 
+  const { moveTaskToDay, moving: movingTask } = useSemanaTaskDrag({
+    showToast,
+    onTasksChanged: handleTasksChanged,
+  });
+
   const isRefreshing = viewMode === 'calendar' ? monthLoading : loading;
 
   const projectsMap = Object.fromEntries(projects.map((p) => [p.id, p]));
@@ -315,24 +320,23 @@ export default function SemanaScreen() {
           />
         }
       >
-        <ScreenHeader
-          title={t('semana.title')}
-          subtitle={t('semana.intro')}
-          trailing={
-            <HeaderIconButton
-              onPress={() => void handleExportTasks()}
-              accessibilityLabel={t('semana.exportA11y')}
-            >
-              <Download size={22} color={THEME.colors.calm.lavenderDeep} />
-            </HeaderIconButton>
-          }
-        />
+        <View style={styles.topBlock}>
+          <ScreenHeader
+            compact
+            title={t('semana.title')}
+            subtitle={t('semana.introShort')}
+            trailing={
+              <HeaderIconButton
+                onPress={() => void handleExportTasks()}
+                accessibilityLabel={t('semana.exportA11y')}
+              >
+                <Download size={22} color={THEME.colors.calm.lavenderDeep} />
+              </HeaderIconButton>
+            }
+          />
 
-        {hasCheckInToday === false ? <SemanaTodayCheckInBanner /> : null}
-
-        {!subscriptionLoading && !isSubscribed ? (
-          <SemanaFreePlanBanner viewMode={viewMode} />
-        ) : null}
+          {hasCheckInToday === false ? <SemanaTodayCheckInBanner /> : null}
+        </View>
 
         <CalmSegmentedControl
           segments={[
@@ -434,30 +438,14 @@ export default function SemanaScreen() {
           <Text style={styles.loadingWeek}>{t('semana.loadingDays')}</Text>
         ) : null}
 
-        {!loading && visibleWeekTasks.map(({ day, tasks }) => {
-          const dayLabel = formatDayLabel(day.dateStr, monthNames);
-          const dayCheckIn = checkInsByDate[day.dateStr];
-          return (
-            <SemanaDaySection
-              key={day.dateStr}
-              dateStr={day.dateStr}
-              title={dayLabel}
-              tasks={tasks}
-              projectsMap={projectsMap}
-              isToday={day.isToday}
-              checkInChipText={formatCheckInChip(dayCheckIn, t)}
-              emotionId={dayCheckIn?.emotion?.toLowerCase() ?? null}
-              energyLevel={dayCheckIn?.energy_level ?? null}
-              focusCount={null}
-              globalCheckInBannerVisible={day.isToday && hasCheckInToday === false}
-              suppressEmptyWhenGlobalBanner={day.isToday && hasCheckInToday === false}
-              addTasksA11yLabel={`${t('semana.addTasks')} ${dayLabel}`}
-              addMoreA11yLabel={`${t('semana.addMore')} ${dayLabel}`}
-              onTasksChanged={handleTasksChanged}
-              showToast={showToast}
-            />
-          );
-        })}
+        {!loading ? (
+          <SemanaDraggableWeekBoard
+            weekTasks={visibleWeekTasks}
+            projects={projects}
+            onMoveTask={moveTaskToDay}
+            moving={movingTask}
+          />
+        ) : null}
 
         {!isSubscribed ? <SemanaFreeLimitCard hiddenDayCount={hiddenWeekDayCount} /> : null}
 
@@ -490,14 +478,6 @@ export default function SemanaScreen() {
             </View>
           ) : null}
         </View>
-        ) : null}
-
-        {!loading && !subscriptionLoading && !isSubscribed && viewMode === 'calendar' ? (
-          <PremiumTeaserCard
-            title={t('semana.premiumTitle')}
-            body={t('premiumTeaser.semanaBody', { days: FREE_CALENDAR_VISIBLE_DAYS })}
-            paywallReturnTo="/(tabs)/semana"
-          />
         ) : null}
 
         {__DEV__ ? (
@@ -533,6 +513,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: THEME.colors.calm.background,
   },
+  topBlock: {
+    gap: THEME.spacing.xs,
+    alignSelf: 'stretch',
+  },
   focusProgress: {
     marginTop: THEME.spacing.sm,
   },
@@ -559,26 +543,20 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: THEME.colors.gradient.blue,
     ...THEME.shadows.soft,
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
   },
   setupCardTitle: {
-    ...THEME.typography.body,
-    fontSize: 15,
+    ...THEME.typography.screenSubtitle,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
     marginBottom: THEME.spacing.sm,
   },
   setupCardText: {
-    ...THEME.typography.body,
-    fontSize: 14,
-    lineHeight: 21,
+    ...THEME.typography.caption,
     color: THEME.colors.text.main,
     marginBottom: THEME.spacing.sm,
   },
   setupCardSteps: {
-    ...THEME.typography.small,
-    fontSize: 13,
+    ...THEME.typography.meta,
     lineHeight: 20,
     color: THEME.colors.text.secondary,
     marginBottom: THEME.spacing.xs,
@@ -586,7 +564,6 @@ const styles = StyleSheet.create({
   },
   setupCardHint: {
     ...THEME.typography.small,
-    fontSize: 12,
     color: THEME.colors.text.secondary,
     fontStyle: 'italic',
     marginTop: 2,

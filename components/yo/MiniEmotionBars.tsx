@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 10,
     borderRadius: 5,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     overflow: 'hidden',
   },
   fill: {

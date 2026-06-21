@@ -141,9 +141,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: 6,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderWidth: 1,
-    borderColor: THEME.colors.fill[200],
+    borderColor: THEME.colors.calm.border,
   },
   stepPillActive: {
     borderColor: THEME.colors.calm.lavenderDeep,
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   },
   stepPillDone: {
     borderColor: THEME.colors.calm.border,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
   },
   stepDot: {
     width: 6,

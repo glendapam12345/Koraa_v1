@@ -1,28 +1,17 @@
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Sparkles, Leaf, Heart } from 'lucide-react-native';
+import { Sparkles } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
-import { getEmotionEmoji } from '@/lib/emotionEmoji';
+import { CalmCard } from '@/components/ui/calm/CalmCard';
 import type { ParamiPatternInsightState } from '@/hooks/useParamiPatternInsight';
-
-export type ParaMiPatternStats = {
-  checkInCount: number;
-  topEmotionId?: string;
-  topEmotionLabel?: string;
-  topEmotionCount?: number;
-  avgEnergy?: number;
-};
 
 type ParaMiPatternInsightCardProps = {
   insight: ParamiPatternInsightState | null;
-  stats?: ParaMiPatternStats | null;
   loading?: boolean;
 };
 
 export function ParaMiPatternInsightCard({
   insight,
-  stats,
   loading = false,
 }: ParaMiPatternInsightCardProps) {
   const { t } = useI18n();
@@ -37,21 +26,12 @@ export function ParaMiPatternInsightCard({
 
   if (!insight) return null;
 
-  const topEmoji = stats?.topEmotionId ? getEmotionEmoji(stats.topEmotionId) : null;
-
   return (
-    <LinearGradient
-      colors={[THEME.colors.fill[100], THEME.colors.calm.lavender, THEME.colors.fill[100]]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.card}
-      accessibilityRole="summary"
-    >
+    <View accessibilityRole="summary">
+      <CalmCard style={styles.card}>
       <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <Sparkles size={12} color={THEME.colors.calm.lavenderDeep} />
-          <Text style={styles.eyebrow}>{t('parami.patternInsightEyebrow')}</Text>
-        </View>
+        <Sparkles size={12} color={THEME.colors.calm.lavenderDeep} />
+        <Text style={styles.eyebrow}>{t('parami.patternInsightEyebrow')}</Text>
         {insight.fromAi ? (
           <View style={styles.aiPill}>
             <Text style={styles.aiPillText}>{t('parami.patternInsightAiBadge')}</Text>
@@ -59,167 +39,57 @@ export function ParaMiPatternInsightCard({
         ) : null}
       </View>
 
-      {stats && stats.checkInCount > 0 ? (
-        <View style={styles.statsRow}>
-          <View style={styles.statChip}>
-            <Text style={styles.statValue}>{stats.checkInCount}</Text>
-            <Text style={styles.statLabel}>{t('parami.patternStatCheckIns')}</Text>
-          </View>
-          {stats.topEmotionLabel && topEmoji ? (
-            <View style={styles.statChip}>
-              <Text style={styles.statEmoji}>{topEmoji}</Text>
-              <Text style={styles.statValue} numberOfLines={1}>
-                {stats.topEmotionLabel}
-              </Text>
-              {stats.topEmotionCount ? (
-                <Text style={styles.statLabel}>×{stats.topEmotionCount}</Text>
-              ) : null}
-            </View>
-          ) : null}
-          {stats.avgEnergy && stats.avgEnergy > 0 ? (
-            <View style={styles.statChip}>
-              <Text style={styles.statValue}>{stats.avgEnergy.toFixed(1)}</Text>
-              <Text style={styles.statLabel}>{t('parami.patternStatEnergy')}</Text>
-            </View>
-          ) : null}
-        </View>
-      ) : null}
-
-      <View style={styles.tiles}>
-        <View style={styles.tile}>
-          <View style={styles.tileHeader}>
-            <View style={[styles.tileIcon, styles.tileIconPattern]}>
-              <Heart size={12} color={THEME.colors.calm.lavenderDeep} />
-            </View>
-            <Text style={styles.tileLabel}>{t('parami.patternInsightPatternLabel')}</Text>
-          </View>
-          <Text style={styles.tileBody}>{insight.patternNote}</Text>
-        </View>
-
-        <View style={styles.tile}>
-          <View style={styles.tileHeader}>
-            <View style={[styles.tileIcon, styles.tileIconTip]}>
-              <Leaf size={12} color={THEME.colors.gradient.blue} />
-            </View>
-            <Text style={styles.tileLabel}>{t('parami.patternInsightTipLabel')}</Text>
-          </View>
-          <Text style={styles.tileBody}>{insight.gentleTip}</Text>
-        </View>
-      </View>
-    </LinearGradient>
+      <Text style={styles.patternNote}>{insight.patternNote}</Text>
+      <Text style={styles.gentleTip}>{insight.gentleTip}</Text>
+      </CalmCard>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   loadingWrap: {
-    paddingVertical: THEME.spacing.md,
+    paddingVertical: THEME.spacing.sm,
     alignItems: 'center',
   },
   card: {
-    borderRadius: THEME.borderRadius.standard,
-    padding: THEME.spacing.xs,
-    gap: 6,
-    borderWidth: 1,
+    gap: THEME.spacing.xs,
+    padding: THEME.spacing.md,
+    backgroundColor: THEME.colors.calm.mist,
     borderColor: THEME.colors.calm.border,
-    ...THEME.shadows.soft,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: THEME.spacing.xs,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 6,
-    flex: 1,
   },
   eyebrow: {
-    ...THEME.typography.sectionEyebrow,
+    ...THEME.typography.meta,
     color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    flex: 1,
   },
   aiPill: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: 'rgba(255,255,255,0.75)',
+    backgroundColor: THEME.colors.calm.card,
   },
   aiPillText: {
     ...THEME.typography.meta,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
   },
-  statsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: THEME.spacing.xs,
-    paddingVertical: 2,
-  },
-  statChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
-  },
-  statEmoji: {
-    fontSize: 14,
-    lineHeight: 16,
-  },
-  statValue: {
-    ...THEME.typography.meta,
-    fontFamily: THEME.fonts.heading.bold,
+  patternNote: {
+    ...THEME.typography.body,
     color: THEME.colors.text.main,
-    flexShrink: 1,
+    lineHeight: 22,
   },
-  statLabel: {
-    ...THEME.typography.meta,
-    color: THEME.colors.text.tertiary,
-  },
-  tiles: {
-    gap: 4,
-  },
-  tile: {
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderRadius: THEME.borderRadius.standard,
-    backgroundColor: 'rgba(255,255,255,0.72)',
-  },
-  tileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  tileIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tileIconPattern: {
-    backgroundColor: THEME.colors.calm.lavender,
-  },
-  tileIconTip: {
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
-  },
-  tileLabel: {
-    ...THEME.typography.sectionEyebrow,
-    fontSize: 11,
-    textTransform: 'none',
-    letterSpacing: 0,
-    color: THEME.colors.text.main,
-    flex: 1,
-  },
-  tileBody: {
-    ...THEME.typography.meta,
+  gentleTip: {
+    ...THEME.typography.small,
     color: THEME.colors.text.secondary,
-    lineHeight: 16,
+    lineHeight: 20,
+    fontFamily: THEME.fonts.accent.italic,
   },
 });

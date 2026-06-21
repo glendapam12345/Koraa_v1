@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalContent: {
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderTopLeftRadius: THEME.borderRadius.rounded,
     borderTopRightRadius: THEME.borderRadius.rounded,
     width: '100%',
@@ -392,11 +392,11 @@ const styles = StyleSheet.create({
     flex: 1,
     ...THEME.typography.body,
     color: THEME.colors.text.main,
-    backgroundColor: THEME.colors.fill[200],
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     borderWidth: 1,
-    borderColor: THEME.colors.stroke[100],
+    borderColor: THEME.colors.calm.border,
   },
   addButton: {
     width: 48,
