@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { FolderKanban, Pencil, Plus } from 'lucide-react-native';
+import { FolderKanban, Pencil, Plus, ChevronUp, ChevronDown } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { DraggablePlannerTask } from '@/components/tasks/experience/DraggablePlannerTask';
 import type { LifeArea } from '@/lib/lifeAreas/types';
@@ -38,7 +38,13 @@ type BrainDumpAreaDragBoardProps = {
   splitLayout?: boolean;
   looseSectionTitle?: string;
   areasSectionTitle?: string;
+  areasHeader?: ReactNode;
   areasFooter?: ReactNode;
+  onMoveAreaColumn?: (ref: string, direction: 'up' | 'down') => void;
+  canMoveAreaUp?: (ref: string) => boolean;
+  canMoveAreaDown?: (ref: string) => boolean;
+  moveAreaUpA11y?: string;
+  moveAreaDownA11y?: string;
 };
 
 type AreaColumnProps = {
@@ -54,6 +60,11 @@ type AreaColumnProps = {
   onPressColumnHeader?: (column: BrainDumpAreaColumn) => void;
   onPressTask?: (taskId: string) => void;
   onPressAddProject?: (column: BrainDumpAreaColumn) => void;
+  onMoveAreaColumn?: (ref: string, direction: 'up' | 'down') => void;
+  canMoveAreaUp?: (ref: string) => boolean;
+  canMoveAreaDown?: (ref: string) => boolean;
+  moveAreaUpA11y?: string;
+  moveAreaDownA11y?: string;
   onDragStart: (taskId: string) => void;
   onDragMove: (absoluteX: number, absoluteY: number) => void;
   onDragEnd: (taskId: string, sourceColumnId: string, absoluteX: number, absoluteY: number) => void;
@@ -137,11 +148,17 @@ function AreaColumn({
   onPressColumnHeader,
   onPressTask,
   onPressAddProject,
+  onMoveAreaColumn,
+  canMoveAreaUp,
+  canMoveAreaDown,
+  moveAreaUpA11y,
+  moveAreaDownA11y,
   onDragStart,
   onDragMove,
   onDragEnd,
 }: AreaColumnProps) {
   const canRename = !column.isLoose && onPressColumnHeader;
+  const canReorder = !column.isLoose && column.ref && onMoveAreaColumn;
   const taskCount = countTasksInColumn(column);
   const canAddProject = !column.isLoose && column.ref && onPressAddProject && !compactDropTarget;
 
@@ -193,6 +210,34 @@ function AreaColumn({
           ) : null}
           {canRename ? (
             <Pencil size={14} color={THEME.colors.text.tertiary} accessibilityElementsHidden />
+          ) : null}
+          {canReorder && column.ref ? (
+            <View style={styles.reorderControls}>
+              <TouchableOpacity
+                style={[
+                  styles.reorderBtn,
+                  !(canMoveAreaUp?.(column.ref) ?? false) && styles.reorderBtnDisabled,
+                ]}
+                onPress={() => onMoveAreaColumn(column.ref!, 'up')}
+                disabled={!(canMoveAreaUp?.(column.ref) ?? false)}
+                accessibilityRole="button"
+                accessibilityLabel={moveAreaUpA11y ?? 'Subir área'}
+              >
+                <ChevronUp size={16} color={THEME.colors.text.secondary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.reorderBtn,
+                  !(canMoveAreaDown?.(column.ref) ?? false) && styles.reorderBtnDisabled,
+                ]}
+                onPress={() => onMoveAreaColumn(column.ref!, 'down')}
+                disabled={!(canMoveAreaDown?.(column.ref) ?? false)}
+                accessibilityRole="button"
+                accessibilityLabel={moveAreaDownA11y ?? 'Bajar área'}
+              >
+                <ChevronDown size={16} color={THEME.colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
           ) : null}
         </View>
       </TouchableOpacity>
@@ -274,7 +319,13 @@ export function BrainDumpAreaDragBoard({
   splitLayout = true,
   looseSectionTitle,
   areasSectionTitle,
+  areasHeader,
   areasFooter,
+  onMoveAreaColumn,
+  canMoveAreaUp,
+  canMoveAreaDown,
+  moveAreaUpA11y,
+  moveAreaDownA11y,
 }: BrainDumpAreaDragBoardProps) {
   const columnLayouts = useRef<Map<string, ColumnLayout>>(new Map());
   const columnRefs = useRef<Map<string, View | null>>(new Map());
@@ -400,6 +451,11 @@ export function BrainDumpAreaDragBoard({
         onPressColumnHeader={onPressColumnHeader}
         onPressTask={onPressTask}
         onPressAddProject={onPressAddProject}
+        onMoveAreaColumn={onMoveAreaColumn}
+        canMoveAreaUp={canMoveAreaUp}
+        canMoveAreaDown={canMoveAreaDown}
+        moveAreaUpA11y={moveAreaUpA11y}
+        moveAreaDownA11y={moveAreaDownA11y}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
@@ -427,6 +483,7 @@ export function BrainDumpAreaDragBoard({
             {areasSectionTitle ? (
               <Text style={styles.sectionTitle}>{areasSectionTitle}</Text>
             ) : null}
+            {areasHeader ? <View style={styles.sectionHeader}>{areasHeader}</View> : null}
             <View style={styles.board}>
               {visibleAreaColumns.map((column) => renderColumn(column))}
             </View>
@@ -457,6 +514,24 @@ const styles = StyleSheet.create({
   },
   sectionFooter: {
     alignSelf: 'stretch',
+  },
+  sectionHeader: {
+    alignSelf: 'stretch',
+  },
+  reorderControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  reorderBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: THEME.borderRadius.standard,
+  },
+  reorderBtnDisabled: {
+    opacity: 0.35,
   },
   dragHint: {
     ...THEME.typography.caption,

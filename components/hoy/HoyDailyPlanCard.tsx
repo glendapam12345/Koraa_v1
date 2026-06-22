@@ -63,7 +63,7 @@ export function HoyDailyPlanCard({
       : t('hoy.planWaitingSubEmpty');
 
   const progressLabel =
-    prioritiesTotal > 0
+    prioritiesTotal > 0 && (stepCount > 0 || waitingCount > 0)
       ? t('hoy.planProgressPill', { done: prioritiesDone, total: prioritiesTotal })
       : null;
 

@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { ArrowRightLeft } from 'lucide-react-native';
+import { ArrowRightLeft, Plus } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { BrainDumpAreaColumn } from '@/lib/review/buildBrainDumpAreaBoardModel';
@@ -9,18 +9,20 @@ type BrainDumpMoveAreaPickerProps = {
   columns: BrainDumpAreaColumn[];
   currentAreaRef: LifeAreaRef | null;
   onMove: (targetColumnId: string) => void;
+  onAddArea?: () => void;
 };
 
 export function BrainDumpMoveAreaPicker({
   columns,
   currentAreaRef,
   onMove,
+  onAddArea,
 }: BrainDumpMoveAreaPickerProps) {
   const { t } = useI18n();
 
   const areaOptions = columns.filter((column) => !column.isLoose && column.ref);
 
-  if (areaOptions.length === 0) return null;
+  if (areaOptions.length === 0 && !onAddArea) return null;
 
   return (
     <View style={styles.wrap}>
@@ -49,6 +51,18 @@ export function BrainDumpMoveAreaPicker({
             </TouchableOpacity>
           );
         })}
+        {onAddArea ? (
+          <TouchableOpacity
+            style={styles.addOption}
+            onPress={onAddArea}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={t('vaciar.areaReviewAddAreaA11y')}
+          >
+            <Plus size={16} color={THEME.colors.calm.lavenderDeep} />
+            <Text style={styles.addLabel}>{t('vaciar.areaReviewAddArea')}</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </View>
   );
@@ -97,6 +111,24 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.calm.lavenderDeep,
     backgroundColor: THEME.colors.calm.lavender,
     opacity: 0.85,
+  },
+  addOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: THEME.borderRadius.standard,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: THEME.colors.calm.lavenderDeep,
+    minHeight: THEME.sizes.touchTarget,
+  },
+  addLabel: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.calm.lavenderDeep,
   },
   emoji: {
     fontSize: 18,

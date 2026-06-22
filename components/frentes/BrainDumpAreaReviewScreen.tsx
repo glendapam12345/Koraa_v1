@@ -16,7 +16,8 @@ import { useI18n } from '@/contexts/I18nContext';
 import type { AppLocale, TranslationKey } from '@/lib/i18n';
 import type { EnrichedCaptureItem } from '@/lib/taskIntelligentEnrichment';
 import type { LifeAreaKey, LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
-import { isCustomLifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
+import { isCustomLifeAreaRef, makeCustomLifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
+import { resolveAreaColumnOrder } from '@/lib/lifeAreas/userLifeAreas';
 import { useUserLifeAreas } from '@/hooks/useUserLifeAreas';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { AreaNameEditSheet } from '@/components/projects/AreaNameEditSheet';
@@ -91,6 +92,7 @@ export function BrainDumpAreaReviewScreen({
     renameCustomArea,
     addCustomArea,
     saveConfig,
+    reorderAreaColumn,
   } = useUserLifeAreas(userId);
 
   const presetEnsuredRef = useRef(false);
@@ -142,8 +144,8 @@ export function BrainDumpAreaReviewScreen({
       return;
     }
     inferenceAppliedRef.current = true;
-    onItemsChange(applyInferredLifeAreas(items));
-  }, [items, onItemsChange]);
+    onItemsChange(applyInferredLifeAreas(items, effectiveConfig));
+  }, [items, onItemsChange, effectiveConfig]);
 
   const looseLabel = t('projectsUi.looseTitle');
   const looseInAreaLabel = t('vaciar.areaReviewLooseInArea');
@@ -249,9 +251,37 @@ export function BrainDumpAreaReviewScreen({
       if (result.ok && result.entry) {
         setAddAreaOpen(false);
         setCreatedAreaName(result.entry.name);
+        if (editingTaskId) {
+          handleMoveTask(editingTaskId, makeCustomLifeAreaRef(result.entry.id));
+        }
       }
     },
-    [addCustomArea],
+    [addCustomArea, editingTaskId, handleMoveTask],
+  );
+
+  const orderedAreaRefs = useMemo(
+    () => resolveAreaColumnOrder(effectiveConfig),
+    [effectiveConfig],
+  );
+
+  const canMoveAreaUp = useCallback(
+    (ref: string) => orderedAreaRefs.indexOf(ref as LifeAreaRef) > 0,
+    [orderedAreaRefs],
+  );
+
+  const canMoveAreaDown = useCallback(
+    (ref: string) => {
+      const index = orderedAreaRefs.indexOf(ref as LifeAreaRef);
+      return index >= 0 && index < orderedAreaRefs.length - 1;
+    },
+    [orderedAreaRefs],
+  );
+
+  const handleMoveAreaColumn = useCallback(
+    (ref: string, direction: 'up' | 'down') => {
+      void reorderAreaColumn(ref as LifeAreaRef, direction);
+    },
+    [reorderAreaColumn],
   );
 
   const handleCreateProject = useCallback(
@@ -332,7 +362,9 @@ export function BrainDumpAreaReviewScreen({
           <Text style={styles.backLabel}>{t('vaciar.previewBack')}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.lead}>{t('vaciar.areaReviewSubtitle')}</Text>
+        <Text style={styles.instructionTitle}>{t('vaciar.areaReviewTitle')}</Text>
+        <Text style={styles.instructionLine}>{t('vaciar.areaReviewInstruction1')}</Text>
+        <Text style={styles.instructionLine}>{t('vaciar.areaReviewInstruction2')}</Text>
 
         {countsLine ? (
           <Text style={styles.countsLine} numberOfLines={2}>
@@ -366,20 +398,24 @@ export function BrainDumpAreaReviewScreen({
         addProjectLabel={t('vaciar.areaReviewAddProject')}
         hideEmptyColumns
         dragHint={t('vaciar.areaReviewDragHint')}
-        boardHint={t('vaciar.areaReviewDragTip')}
         looseSectionTitle={t('vaciar.areaReviewLooseSectionTitle')}
         areasSectionTitle={t('vaciar.areaReviewAreasSectionTitle')}
-        areasFooter={
+        areasHeader={
           <TouchableOpacity
-            style={styles.addAreaButton}
+            style={styles.addAreaButtonCompact}
             onPress={() => setAddAreaOpen(true)}
             accessibilityRole="button"
             accessibilityLabel={t('vaciar.areaReviewAddAreaA11y')}
           >
-            <Plus size={18} color={THEME.colors.calm.lavenderDeep} />
-            <Text style={styles.addAreaLabel}>{t('vaciar.areaReviewAddArea')}</Text>
+            <Plus size={16} color={THEME.colors.calm.lavenderDeep} />
+            <Text style={styles.addAreaLabelCompact}>{t('vaciar.areaReviewAddArea')}</Text>
           </TouchableOpacity>
         }
+        onMoveAreaColumn={handleMoveAreaColumn}
+        canMoveAreaUp={canMoveAreaUp}
+        canMoveAreaDown={canMoveAreaDown}
+        moveAreaUpA11y={t('vaciar.areaReviewMoveAreaUpA11y')}
+        moveAreaDownA11y={t('vaciar.areaReviewMoveAreaDownA11y')}
       />
 
       <View style={styles.footer}>
@@ -451,6 +487,7 @@ export function BrainDumpAreaReviewScreen({
                   columns={columns}
                   currentAreaRef={editingItem.lifeAreaKey ?? null}
                   onMove={handleMoveTaskFromSheet}
+                  onAddArea={() => setAddAreaOpen(true)}
                 />
                 <BrainDumpTaskProjectPicker
                   item={editingItem}
@@ -491,11 +528,15 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
   },
-  lead: {
-    ...THEME.typography.body,
+  instructionTitle: {
+    ...THEME.typography.h3,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+  },
+  instructionLine: {
+    ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    lineHeight: 22,
-    fontFamily: THEME.fonts.heading.medium,
+    lineHeight: 18,
   },
   countsLine: {
     ...THEME.typography.caption,
@@ -525,19 +566,21 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.sm,
     paddingTop: THEME.spacing.xs,
   },
-  addAreaButton: {
+  addAreaButtonCompact: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: THEME.spacing.xs,
-    minHeight: THEME.sizes.touchTarget,
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minHeight: 40,
     borderRadius: THEME.borderRadius.pill,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
     backgroundColor: THEME.colors.fill[100],
   },
-  addAreaLabel: {
-    ...THEME.typography.body,
+  addAreaLabelCompact: {
+    ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.calm.lavenderDeep,
   },

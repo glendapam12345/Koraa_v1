@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
-import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
+import type { LifeAreaKey, LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 import {
   createCustomLifeArea,
   EMPTY_USER_LIFE_AREAS,
   mergeUserLifeAreasIntoPreferences,
   parseUserLifeAreasFromPreferences,
   type CustomLifeArea,
+  reorderAreaColumnInConfig,
   type UserLifeAreasConfig,
 } from '@/lib/lifeAreas/userLifeAreas';
 
@@ -102,6 +103,15 @@ export function useUserLifeAreas(userId: string | undefined) {
     [persist],
   );
 
+  const reorderAreaColumn = useCallback(
+    async (ref: LifeAreaRef, direction: 'up' | 'down') => {
+      const next = reorderAreaColumnInConfig(config, ref, direction);
+      if (next === config) return false;
+      return persist(next);
+    },
+    [config, persist],
+  );
+
   return {
     config,
     loading,
@@ -110,6 +120,7 @@ export function useUserLifeAreas(userId: string | undefined) {
     addCustomArea,
     renameCustomArea,
     saveConfig,
+    reorderAreaColumn,
   };
 }
 

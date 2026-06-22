@@ -1,5 +1,9 @@
 import { detectCategory } from '@/lib/categoryDetection';
 import { makeCustomLifeAreaRef, type LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
+import {
+  inferLifeAreaFromUserExamples,
+  type UserLifeAreasConfig,
+} from '@/lib/lifeAreas/userLifeAreas';
 import { BRAIN_DUMP_PRESET_CUSTOM_IDS } from '@/lib/review/brainDumpAreaPreset';
 import { inferGroupContextHint } from '@/lib/review/inferGroupContextHint';
 import type { EnrichedCaptureItem } from '@/lib/taskIntelligentEnrichment';
@@ -41,7 +45,14 @@ function textHits(content: string, keywords: string[]): boolean {
 }
 
 /** Sugiere área de vida para una tarea capturada (preset del brain dump). */
-export function inferCaptureItemLifeArea(content: string): LifeAreaRef {
+export function inferCaptureItemLifeArea(
+  content: string,
+  config?: UserLifeAreasConfig,
+): LifeAreaRef {
+  if (config) {
+    const fromExamples = inferLifeAreaFromUserExamples(content, config);
+    if (fromExamples) return fromExamples;
+  }
   if (textHits(content, EXERCISE_KEYWORDS)) return 'health';
   if (textHits(content, FAMILY_KEYWORDS)) {
     return makeCustomLifeAreaRef(BRAIN_DUMP_PRESET_CUSTOM_IDS.familia);
@@ -64,9 +75,12 @@ export function inferCaptureItemLifeArea(content: string): LifeAreaRef {
   return 'other';
 }
 
-export function applyInferredLifeAreas(items: EnrichedCaptureItem[]): EnrichedCaptureItem[] {
+export function applyInferredLifeAreas(
+  items: EnrichedCaptureItem[],
+  config?: UserLifeAreasConfig,
+): EnrichedCaptureItem[] {
   return items.map((item) => {
     if (item.lifeAreaKey != null) return item;
-    return { ...item, lifeAreaKey: inferCaptureItemLifeArea(item.content) };
+    return { ...item, lifeAreaKey: inferCaptureItemLifeArea(item.content, config) };
   });
 }

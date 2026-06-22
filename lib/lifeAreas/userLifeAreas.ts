@@ -3,10 +3,12 @@ import {
   CUSTOM_LIFE_AREA_PREFIX,
   LIFE_AREA_CATALOG,
   isCustomLifeAreaRef,
+  isLifeAreaKey,
   lifeAreaCatalogEntry,
   makeCustomLifeAreaRef,
   type LifeAreaRef,
 } from './lifeAreaCatalog';
+import { isBrainDumpPresetCustomId, getBrainDumpColumnRefs } from '@/lib/review/brainDumpAreaPreset';
 
 export type CustomLifeArea = {
   id: string;
@@ -17,9 +19,20 @@ export type CustomLifeArea = {
 export type UserLifeAreasConfig = {
   labels: Partial<Record<LifeAreaKey, string>>;
   custom: CustomLifeArea[];
+  /** Ejemplos por área built-in — ayuda a inferir al capturar. */
+  examples?: Partial<Record<LifeAreaKey, string>>;
+  /** Ejemplos por área custom (id sin prefijo custom:). */
+  customExamples?: Record<string, string>;
+  /** Orden de columnas de área (sin sueltas). */
+  columnOrder?: LifeAreaRef[];
 };
 
-export const EMPTY_USER_LIFE_AREAS: UserLifeAreasConfig = { labels: {}, custom: [] };
+export const EMPTY_USER_LIFE_AREAS: UserLifeAreasConfig = {
+  labels: {},
+  custom: [],
+  examples: {},
+  customExamples: {},
+};
 
 export type ResolvedLifeArea = {
   ref: LifeAreaRef;
@@ -51,7 +64,100 @@ export function parseUserLifeAreasFromPreferences(
     }))
     .filter((entry) => entry.id.length > 0 && entry.name.length > 0);
 
-  return { labels, custom };
+  const examples =
+    obj.examples && typeof obj.examples === 'object'
+      ? (obj.examples as Partial<Record<LifeAreaKey, string>>)
+      : {};
+
+  const customExamples =
+    obj.customExamples && typeof obj.customExamples === 'object'
+      ? (obj.customExamples as Record<string, string>)
+      : {};
+
+  const columnOrder = Array.isArray(obj.columnOrder)
+    ? obj.columnOrder.filter((entry): entry is LifeAreaRef => typeof entry === 'string')
+    : undefined;
+
+  return { labels, custom, examples, customExamples, columnOrder };
+}
+
+function exampleTokens(text: string): string[] {
+  return text
+    .split(/[,;\n]+/)
+    .map((part) => part.trim().toLowerCase())
+    .filter((part) => part.length > 1);
+}
+
+/** Infiere área según ejemplos que el usuario definió en onboarding o ajustes. */
+export function inferLifeAreaFromUserExamples(
+  content: string,
+  config: UserLifeAreasConfig,
+): LifeAreaRef | null {
+  const lower = content.toLowerCase();
+  let bestRef: LifeAreaRef | null = null;
+  let bestScore = 0;
+
+  const scoreRef = (ref: LifeAreaRef, examplesText: string | undefined) => {
+    if (!examplesText?.trim()) return;
+    const hits = exampleTokens(examplesText).filter((token) => lower.includes(token)).length;
+    if (hits > bestScore) {
+      bestScore = hits;
+      bestRef = ref;
+    }
+  };
+
+  for (const entry of LIFE_AREA_CATALOG) {
+    scoreRef(entry.key, config.examples?.[entry.key]);
+  }
+
+  for (const custom of config.custom) {
+    scoreRef(
+      makeCustomLifeAreaRef(custom.id),
+      config.customExamples?.[custom.id],
+    );
+  }
+
+  return bestScore > 0 ? bestRef : null;
+}
+
+export function defaultAreaColumnOrder(config: UserLifeAreasConfig): LifeAreaRef[] {
+  const preset = getBrainDumpColumnRefs();
+  const extra = config.custom
+    .filter((entry) => !isBrainDumpPresetCustomId(entry.id))
+    .map((entry) => makeCustomLifeAreaRef(entry.id));
+  return [...preset, ...extra];
+}
+
+export function resolveAreaColumnOrder(config: UserLifeAreasConfig): LifeAreaRef[] {
+  const fallback = defaultAreaColumnOrder(config);
+  const stored = config.columnOrder?.filter(
+    (ref) => isLifeAreaKey(ref) || isCustomLifeAreaRef(ref),
+  );
+  if (!stored?.length) return fallback;
+
+  const known = new Set(fallback);
+  const ordered = stored.filter((ref) => known.has(ref));
+  for (const ref of fallback) {
+    if (!ordered.includes(ref)) ordered.push(ref);
+  }
+  return ordered;
+}
+
+export function reorderAreaColumnInConfig(
+  config: UserLifeAreasConfig,
+  ref: LifeAreaRef,
+  direction: 'up' | 'down',
+): UserLifeAreasConfig {
+  const order = resolveAreaColumnOrder(config);
+  const index = order.indexOf(ref);
+  if (index < 0) return config;
+
+  const swapIndex = direction === 'up' ? index - 1 : index + 1;
+  if (swapIndex < 0 || swapIndex >= order.length) return config;
+
+  const next = [...order];
+  [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+  return { ...config, columnOrder: next };
 }
 
 export function mergeUserLifeAreasIntoPreferences(

@@ -24,6 +24,7 @@ import {
 } from '@/lib/review/inferAreaContextLabel';
 import {
   resolveLifeAreaDisplay,
+  resolveAreaColumnOrder,
   type UserLifeAreasConfig,
 } from '@/lib/lifeAreas/userLifeAreas';
 import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
@@ -70,12 +71,7 @@ export function captureItemToPlannerTask(
 }
 
 function listReviewColumnRefs(config: UserLifeAreasConfig): (LifeAreaRef | typeof LOOSE_LIFE_AREA_ID)[] {
-  const preset = getBrainDumpColumnRefs();
-  const extraCustom = config.custom
-    .filter((entry) => !isBrainDumpPresetCustomId(entry.id))
-    .map((entry) => makeCustomLifeAreaRef(entry.id));
-
-  return [...preset, ...extraCustom, LOOSE_LIFE_AREA_ID];
+  return [...resolveAreaColumnOrder(config), LOOSE_LIFE_AREA_ID];
 }
 
 function resolvedColumnMeta(
