@@ -20,6 +20,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import { ChevronDown, ChevronUp, Mic, Sparkles, X } from 'lucide-react-native';
 import { useTaskVoiceDictation } from '@/hooks/useTaskVoiceDictation';
 import { useLiveCaptureOrganization } from '@/hooks/useLiveCaptureOrganization';
+import { isExpoGoClient } from '@/lib/subscriptionEnvironment';
 import { BrainDumpLivePreview } from '@/components/frentes/BrainDumpLivePreview';
 import { TaskCaptureOrganize } from '@/components/tasks/TaskCaptureOrganize';
 import type { CaptureHeroLiveState } from '@/components/tasks/CaptureScreenHero';
@@ -127,6 +128,9 @@ export function VaciarCaptureForm({
 
   const hasText = Boolean(taskInput.trim());
   const showDictateHint = !voiceAvailable && !dictateHintDismissed && !inputFocused;
+  const dictateHintMessage = isExpoGoClient()
+    ? t('vaciarExtra.dictateHintExpoGo')
+    : t('vaciarExtra.dictateHintKeyboardOnly');
 
   const liveOrg = useLiveCaptureOrganization({
     text: taskInput,
@@ -288,7 +292,7 @@ export function VaciarCaptureForm({
 
       {showDictateHint ? (
         <View style={styles.dictateHintRow}>
-          <Text style={styles.dictateHintText}>{t('vaciarExtra.dictateHintKeyboardOnly')}</Text>
+          <Text style={styles.dictateHintText}>{dictateHintMessage}</Text>
           {onDismissDictateHint ? (
             <TouchableOpacity
               onPress={onDismissDictateHint}

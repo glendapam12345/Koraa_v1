@@ -28,6 +28,7 @@ import { SemanaRangePicker } from '@/components/semana/SemanaRangePicker';
 import { useSemanaTaskDrag } from '@/hooks/useSemanaTaskDrag';
 import { Toast } from '@/components/Toast';
 import { getLocalDateString } from '@/lib/dateLocal';
+import { requestHoyRefresh } from '@/lib/hoyRefreshBridge';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -272,7 +273,6 @@ export default function SemanaScreen() {
     setReplanDraft(null);
     setReplanProposal(null);
     replanBootstrappedRef.current = false;
-    router.replace('/(tabs)');
   }, []);
 
   const handleReplanAccept = useCallback(async () => {
@@ -300,6 +300,7 @@ export default function SemanaScreen() {
       } else {
         showToast(t('vnext.replanCalmToast'), 'info');
       }
+      requestHoyRefresh();
       router.replace('/(tabs)');
     } finally {
       setReplanApplying(false);
@@ -399,7 +400,7 @@ export default function SemanaScreen() {
           showToast(t('vnext.replanError'), 'error');
           setReplanMode(false);
           setReplanDraft(null);
-          router.replace('/(tabs)');
+          replanBootstrappedRef.current = false;
           return;
         }
         setReplanProposal(result.proposal);

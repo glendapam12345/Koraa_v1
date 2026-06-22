@@ -49,6 +49,10 @@ export const uiEs = {
     voiceListening: 'Escuchando… di tu tarea con calma.',
     voiceUnavailable:
       'En Expo Go no hay micrófono en la app. Usa el del teclado del sistema.',
+    dictateHintExpoGo:
+      'En Expo Go el dictado va por el micrófono del teclado del iPhone (abajo a la izquierda).',
+    aiLocalFallback:
+      'Sin conexión con la IA: revisión local. Puedes ajustar antes de confirmar.',
     voicePermissionDenied:
       'Necesitamos permiso del micrófono para dictar tu tarea.',
     a11yVoiceMic: 'Dictar tarea por voz',

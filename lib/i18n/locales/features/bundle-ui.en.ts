@@ -48,6 +48,10 @@ export const uiEn = {
     voiceListening: 'Listening… say your task calmly.',
     voiceUnavailable:
       'Expo Go can’t use in-app mic. Use your keyboard’s microphone instead.',
+    dictateHintExpoGo:
+      'In Expo Go, dictate with your iPhone keyboard microphone (bottom left).',
+    aiLocalFallback:
+      'AI is offline — showing a local preview. You can adjust before confirming.',
     voicePermissionDenied:
       'We need microphone permission to dictate your task.',
     a11yVoiceMic: 'Dictate task by voice',

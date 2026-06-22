@@ -172,6 +172,12 @@ export function enrichCaptureItemsLocally(
   }));
 }
 
+export type ApplyAiProjectHintsResult = {
+  items: EnrichedCaptureItem[];
+  /** true si la IA estaba activa pero se usó parseo local (sin red o error). */
+  usedLocalFallback: boolean;
+};
+
 /** IA opcional: proyecto y tiempo estimado cuando el match local no alcanza. */
 export async function applyAiProjectHints(
   items: EnrichedCaptureItem[],
@@ -179,21 +185,24 @@ export async function applyAiProjectHints(
   locale: AppLocale,
   userId: string | undefined,
   projects: ProjectForMatch[],
-): Promise<EnrichedCaptureItem[]> {
-  if (!userId) return items;
+): Promise<ApplyAiProjectHintsResult> {
+  if (!userId) return { items, usedLocalFallback: false };
 
-  const { interpretTaskCapture } = await import('@/lib/taskCaptureAi');
+  const { interpretTaskCapture, isTaskCaptureAiEnabled } = await import('@/lib/taskCaptureAi');
+  const aiEnabled = isTaskCaptureAiEnabled();
   const result = await interpretTaskCapture(userId, {
     rawText: rawInput.trim().slice(0, 500),
     locale,
     projects,
   });
-  if (!result || !isUserListCapture(result)) return items;
+  if (!result || !isUserListCapture(result)) {
+    return { items, usedLocalFallback: false };
+  }
 
   const aiRows = [result.main_task, ...result.prep_steps];
   const validIds = new Set(projects.map((p) => p.id));
 
-  return items.map((item, index) => {
+  const nextItems = items.map((item, index) => {
     const aiRow = aiRows[index];
     if (!aiRow) return item;
 
@@ -216,6 +225,11 @@ export async function applyAiProjectHints(
 
     return next;
   });
+
+  return {
+    items: nextItems,
+    usedLocalFallback: aiEnabled && !result.fromAi,
+  };
 }
 
 export function toReleaseSummaryLines(

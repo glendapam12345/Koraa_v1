@@ -355,7 +355,9 @@ export default function ProjectScreen() {
       })),
       looseFilter,
       { areaRef: areaFilter ?? null },
-    ).map((summary) => incompleteTasks.find((task) => task.id === summary.id)!);
+    )
+      .map((summary) => incompleteTasks.find((task) => task.id === summary.id))
+      .filter((task): task is Task => task != null);
   }, [areaFilter, incompleteTasks, isLoose, looseFilter]);
 
   const filteredCompletedTasks = useMemo(() => {

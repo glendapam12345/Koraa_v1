@@ -912,7 +912,11 @@ export function AreasCompactPanel({
     (project: ProjectLibraryItem) => {
       confirmDeleteProject(t, project.name, async () => {
         const result = await deleteProjectById(project.id);
-        if (result.ok) onChanged?.();
+        if (result.ok) {
+          onChanged?.();
+          return;
+        }
+        Alert.alert(t('errors.saveTaskFailed'));
       });
     },
     [onChanged, t],

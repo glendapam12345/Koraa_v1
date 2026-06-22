@@ -242,7 +242,7 @@ export default function VaciarScreen() {
         setIsRefiningPreview(true);
         void (async () => {
           try {
-            const refined = await applyAiProjectHints(
+            const { items: refined, usedLocalFallback } = await applyAiProjectHints(
               live.items,
               taskInput,
               locale,
@@ -250,6 +250,9 @@ export default function VaciarScreen() {
               projectsForMatch,
             );
             if (refineGeneration !== previewGenerationRef.current) return;
+            if (usedLocalFallback) {
+              showToast(t('vaciarExtra.aiLocalFallback'), 'info');
+            }
             setPreviewItems((current) => {
               const stripped = stripAutoPlanningForDiscovery(refined);
               const merged = mergeCaptureReviewEdits(current, stripped);

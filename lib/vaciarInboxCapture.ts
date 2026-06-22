@@ -141,7 +141,8 @@ export async function buildEnrichedReleaseItems(
 
   const userChoseOrganization = advanced && advancedCaptureOptionsActive(advanced);
   if (!userChoseOrganization) {
-    items = await applyAiProjectHints(items, rawInput, locale, userId, projectsForMatch);
+    const { items: hinted } = await applyAiProjectHints(items, rawInput, locale, userId, projectsForMatch);
+    items = hinted;
   }
 
   return { items, projectNamesById, projects };

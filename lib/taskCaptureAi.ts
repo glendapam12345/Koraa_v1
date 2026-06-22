@@ -19,6 +19,10 @@ function isAiEnabled(): boolean {
   return coachFlag === 'true' || coachFlag === '1';
 }
 
+export function isTaskCaptureAiEnabled(): boolean {
+  return isAiEnabled();
+}
+
 function isValidEffort(value: unknown): value is TaskCaptureEffort {
   return value === 'light' || value === 'medium' || value === 'heavy';
 }

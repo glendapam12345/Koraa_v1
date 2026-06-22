@@ -7,7 +7,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { useState, useRef, useMemo, useCallback } from 'react';
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
@@ -41,6 +41,7 @@ import { CareModeSheet } from '@/components/hoy/CareModeSheet';
 import { HoyCompanionHeader } from '@/components/hoy/HoyCompanionHeader';
 import { useCrisisMode } from '@/hooks/useCrisisMode';
 import { useFocusedProject } from '@/hooks/useFocusedProject';
+import { subscribeHoyRefresh } from '@/lib/hoyRefreshBridge';
 
 export default function TodayScreen() {
   const { t, locale } = useI18n();
@@ -93,8 +94,17 @@ export default function TodayScreen() {
     useCallback(() => {
       void refreshFocusedProject();
       void loadTasks();
-    }, [loadTasks, refreshFocusedProject]),
+      void loadTodayCheckIn();
+    }, [loadTasks, loadTodayCheckIn, refreshFocusedProject]),
   );
+
+  useEffect(() => {
+    return subscribeHoyRefresh(() => {
+      void loadTasks({ silent: true });
+      void loadTodayCheckIn();
+      void refreshFocusedProject();
+    });
+  }, [loadTasks, loadTodayCheckIn, refreshFocusedProject]);
 
   const loading = checkInLoading || loadingTasks;
 

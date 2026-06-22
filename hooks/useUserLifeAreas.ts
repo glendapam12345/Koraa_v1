@@ -133,11 +133,18 @@ export function useUserLifeAreas(userId: string | undefined) {
       if (!ok) return false;
 
       if (userId && customId && canDeleteCustomAreaId(customId)) {
-        await supabase
-          .from('tasks')
-          .update({ life_area_key: null })
-          .eq('user_id', userId)
-          .eq('life_area_key', ref);
+        await Promise.all([
+          supabase
+            .from('tasks')
+            .update({ life_area_key: null })
+            .eq('user_id', userId)
+            .eq('life_area_key', ref),
+          supabase
+            .from('projects')
+            .update({ life_area_key: null })
+            .eq('user_id', userId)
+            .eq('life_area_key', ref),
+        ]);
       }
 
       return true;
