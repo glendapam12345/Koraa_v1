@@ -1,9 +1,8 @@
-import { View, Text, StyleSheet, Linking, Platform, Alert } from 'react-native';
-import { Moon } from 'lucide-react-native';
+import { View, Text, StyleSheet, Linking, Platform, Alert, TouchableOpacity } from 'react-native';
+import { Moon, Music, BellOff } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
-import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { executeTipAction } from '@/lib/tipActions';
 import { isOverwhelmedState } from '@/lib/emotionalSafety';
 
@@ -29,60 +28,99 @@ export function HoyNightCompanionCard({ todayMood = '', energyLevel = 0 }: HoyNi
   return (
     <CalmCard style={styles.card}>
       <View style={styles.header}>
-        <Moon size={18} color={THEME.colors.calm.lavenderDeep} />
+        <Moon size={16} color={THEME.colors.calm.lavenderDeep} />
         <Text style={styles.title}>{t('hoy.nightCompanionTitle')}</Text>
       </View>
-      <Text style={styles.body}>
+      <Text style={styles.body} numberOfLines={3}>
         {anxious ? t('hoy.nightCompanionAnxiety') : t('hoy.nightCompanionBody')}
       </Text>
       <View style={styles.actions}>
-        <CalmPrimaryButton
-          label={t('hoy.nightCompanionMusicCta')}
+        <TouchableOpacity
+          style={styles.actionChip}
           onPress={() => void executeTipAction('spotify', t)}
-          variant="soft"
+          activeOpacity={0.85}
+          accessibilityRole="button"
           accessibilityLabel={t('hoy.nightCompanionMusicA11y')}
-        />
-        <CalmPrimaryButton
-          label={t('hoy.nightCompanionQuietCta')}
+        >
+          <Music size={15} color={THEME.colors.calm.lavenderDeep} />
+          <Text style={styles.actionLabel} numberOfLines={2}>
+            {t('hoy.nightCompanionMusicCta')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionChip}
           onPress={openQuietSettings}
-          variant="soft"
+          activeOpacity={0.85}
+          accessibilityRole="button"
           accessibilityLabel={t('hoy.nightCompanionQuietA11y')}
-        />
+        >
+          <BellOff size={15} color={THEME.colors.calm.lavenderDeep} />
+          <Text style={styles.actionLabel} numberOfLines={2}>
+            {t('hoy.nightCompanionQuietCta')}
+          </Text>
+        </TouchableOpacity>
       </View>
-      <Text style={styles.hint}>{t('hoy.nightCompanionQuietHint')}</Text>
+      <Text style={styles.hint} numberOfLines={2}>
+        {t('hoy.nightCompanionQuietHint')}
+      </Text>
     </CalmCard>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    gap: THEME.spacing.sm,
+    gap: THEME.spacing.xs,
+    padding: THEME.spacing.sm,
     backgroundColor: THEME.colors.calm.mist,
     borderColor: THEME.colors.calm.border,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   title: {
-    ...THEME.typography.body,
+    ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
-    lineHeight: 22,
+    lineHeight: 18,
   },
   body: {
-    ...THEME.typography.body,
+    ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    lineHeight: 22,
+    lineHeight: 18,
   },
   actions: {
-    gap: THEME.spacing.xs,
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 2,
+  },
+  actionChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    minHeight: 40,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: THEME.borderRadius.standard,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  actionLabel: {
+    ...THEME.typography.micro,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.calm.lavenderDeep,
+    textAlign: 'center',
+    flexShrink: 1,
+    lineHeight: 14,
   },
   hint: {
-    ...THEME.typography.caption,
+    ...THEME.typography.micro,
     color: THEME.colors.text.tertiary,
-    lineHeight: 18,
+    lineHeight: 14,
     fontStyle: 'italic',
   },
 });

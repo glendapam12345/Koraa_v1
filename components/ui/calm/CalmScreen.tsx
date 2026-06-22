@@ -7,8 +7,10 @@ import {
 } from 'react';
 import {
   View,
-  ScrollView,
   StyleSheet,
+  ScrollView,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   type RefreshControlProps,
   type ScrollView as ScrollViewType,
   type StyleProp,
@@ -35,6 +37,8 @@ type CalmScreenProps = {
   keyboardShouldPersistTaps?: 'always' | 'never' | 'handled';
   keyboardDismissMode?: 'none' | 'on-drag' | 'interactive';
   automaticallyAdjustKeyboardInsets?: boolean;
+  scrollEnabled?: boolean;
+  onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   /** Ref al contenedor interno del scroll (para scrollTo a hijos). */
   scrollContentRef?: RefObject<View | null>;
 };
@@ -52,6 +56,8 @@ export const CalmScreen = forwardRef<ScrollViewType, CalmScreenProps>(function C
     keyboardShouldPersistTaps,
     keyboardDismissMode,
     automaticallyAdjustKeyboardInsets = false,
+    scrollEnabled = true,
+    onScroll,
     scrollContentRef,
   },
   ref,
@@ -95,12 +101,15 @@ export const CalmScreen = forwardRef<ScrollViewType, CalmScreenProps>(function C
     <View style={styles.root}>
       <ScrollView
         ref={ref}
+        scrollEnabled={scrollEnabled}
+        nestedScrollEnabled
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
         keyboardShouldPersistTaps={keyboardShouldPersistTaps}
         keyboardDismissMode={keyboardDismissMode}
         automaticallyAdjustKeyboardInsets={automaticallyAdjustKeyboardInsets}
-        contentContainerStyle={styles.scrollGrow}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
       >
         {body}
       </ScrollView>
@@ -112,9 +121,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: THEME.colors.calm.background,
-  },
-  scrollGrow: {
-    flexGrow: 1,
   },
   inner: {},
   fill: {

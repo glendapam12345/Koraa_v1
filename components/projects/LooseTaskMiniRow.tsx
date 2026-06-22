@@ -1,5 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { ChevronRight } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
+import { ChevronRight, GripVertical, Pencil, Trash2 } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { LooseTaskSummary } from '@/lib/looseTasks';
@@ -9,7 +9,13 @@ import type { TranslationKey } from '@/lib/i18n';
 type LooseTaskMiniRowProps = {
   task: LooseTaskSummary;
   accentColor?: string;
-  onPress: () => void;
+  backgroundColor?: string;
+  borderColor?: string;
+  onPress?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  /** Mantén presionado en los dados para mover de área. */
+  onMoveRequest?: () => void;
 };
 
 function relativeAgeLabel(
@@ -22,36 +28,107 @@ function relativeAgeLabel(
   return t('looseTasks.addedDaysAgo', { days });
 }
 
-export function LooseTaskMiniRow({ task, accentColor, onPress }: LooseTaskMiniRowProps) {
+export function LooseTaskMiniRow({
+  task,
+  accentColor,
+  backgroundColor,
+  borderColor,
+  onPress,
+  onEdit,
+  onDelete,
+  onMoveRequest,
+}: LooseTaskMiniRowProps) {
   const { t } = useI18n();
-  const borderColor = accentColor ?? THEME.colors.calm.lavenderDeep;
+  const borderLeftColor = accentColor ?? THEME.colors.calm.lavenderDeep;
+  const handlePress = onEdit ?? onPress;
 
   return (
-    <TouchableOpacity
-      style={[styles.row, { borderLeftColor: borderColor }]}
-      onPress={onPress}
-      activeOpacity={0.88}
-      accessibilityRole="button"
-      accessibilityLabel={t('looseTasks.openTaskA11y', { task: task.content })}
+    <View
+      style={[
+        styles.row,
+        {
+          borderLeftColor,
+          backgroundColor: backgroundColor ?? THEME.colors.calm.mist,
+          borderColor: borderColor ?? THEME.colors.calm.border,
+        },
+      ]}
     >
-      <View style={styles.textCol}>
-        <Text style={styles.content} numberOfLines={2}>
-          {task.content}
-        </Text>
-        <Text style={styles.meta}>{relativeAgeLabel(task.created_at, t)}</Text>
-      </View>
-      <ChevronRight size={16} color={THEME.colors.text.tertiary} />
-    </TouchableOpacity>
+      {onMoveRequest ? (
+        <Pressable
+          style={styles.dragHandle}
+          onLongPress={onMoveRequest}
+          delayLongPress={220}
+          hitSlop={4}
+          accessibilityRole="button"
+          accessibilityLabel={t('areasCompact.moveTaskA11y', { task: task.content.slice(0, 40) })}
+          accessibilityHint={t('areasCompact.looseRowDragHint')}
+        >
+          <GripVertical size={16} color={THEME.colors.text.tertiary} strokeWidth={2.5} />
+        </Pressable>
+      ) : null}
+
+      <TouchableOpacity
+        style={styles.mainTap}
+        onPress={handlePress}
+        disabled={!handlePress}
+        activeOpacity={0.88}
+        accessibilityRole="button"
+        accessibilityLabel={t('looseTasks.openTaskA11y', { task: task.content })}
+        accessibilityHint={onEdit ? t('looseTasks.editTaskA11y', { task: task.content }) : undefined}
+      >
+        <View style={styles.textCol}>
+          <Text style={styles.content}>{task.content}</Text>
+          <Text style={styles.meta}>{relativeAgeLabel(task.created_at, t)}</Text>
+        </View>
+      </TouchableOpacity>
+
+      {onEdit ? (
+        <TouchableOpacity
+          onPress={onEdit}
+          style={styles.actionBtn}
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel={t('looseTasks.editTaskA11y', { task: task.content })}
+        >
+          <Pencil size={16} color={THEME.colors.calm.lavenderDeep} />
+        </TouchableOpacity>
+      ) : null}
+
+      {onDelete ? (
+        <TouchableOpacity
+          onPress={onDelete}
+          style={styles.actionBtn}
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel={t('looseTasks.deleteTaskA11y', { task: task.content })}
+        >
+          <Trash2 size={16} color={THEME.colors.semantic.danger} />
+        </TouchableOpacity>
+      ) : null}
+
+      {onPress && !onEdit ? (
+        <TouchableOpacity
+          onPress={onPress}
+          style={styles.actionBtn}
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel={t('looseTasks.openTaskA11y', { task: task.content })}
+        >
+          <ChevronRight size={16} color={THEME.colors.text.tertiary} />
+        </TouchableOpacity>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.xs,
-    paddingVertical: 10,
-    paddingHorizontal: THEME.spacing.sm,
+    alignItems: 'flex-start',
+    gap: 2,
+    paddingVertical: 6,
+    paddingLeft: 2,
+    paddingRight: 4,
     borderRadius: THEME.borderRadius.standard,
     backgroundColor: THEME.colors.calm.mist,
     borderWidth: 1,
@@ -59,19 +136,42 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     minHeight: 44,
   },
-  textCol: {
+  dragHandle: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+    flexShrink: 0,
+    paddingVertical: 4,
+  },
+  mainTap: {
     flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    paddingVertical: 2,
+    paddingLeft: 2,
+  },
+  textCol: {
     gap: 2,
+    flexShrink: 1,
+    minWidth: 0,
   },
   content: {
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
     lineHeight: 18,
+    flexShrink: 1,
   },
   meta: {
     ...THEME.typography.micro,
     color: THEME.colors.text.tertiary,
     lineHeight: 14,
+  },
+  actionBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

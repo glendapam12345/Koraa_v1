@@ -1,7 +1,17 @@
-import { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { useCallback, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  PanResponder,
+  Pressable,
+} from 'react-native';
 import { THEME } from '@/constants/theme';
 import { CheckCircle, AlertCircle, Info } from 'lucide-react-native';
+
+const DISMISS_DRAG_THRESHOLD = 36;
+const DISMISS_VELOCITY_THRESHOLD = 0.45;
 
 interface ToastProps {
   message: string;
@@ -13,9 +23,78 @@ interface ToastProps {
 export function Toast({ message, type = 'success', duration = 3000, onHide }: ToastProps) {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-50)).current;
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dismissingRef = useRef(false);
+
+  const dismiss = useCallback(
+    (direction: 'up' | 'side' = 'up') => {
+      if (dismissingRef.current) return;
+      dismissingRef.current = true;
+
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
+
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: direction === 'up' ? -80 : 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        onHide?.();
+      });
+    },
+    [onHide, opacity, translateY],
+  );
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) =>
+        Math.abs(gesture.dy) > 6 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+      onPanResponderMove: (_, gesture) => {
+        if (gesture.dy < 0) {
+          translateY.setValue(gesture.dy);
+        }
+      },
+      onPanResponderRelease: (_, gesture) => {
+        if (
+          gesture.dy < -DISMISS_DRAG_THRESHOLD ||
+          gesture.vy < -DISMISS_VELOCITY_THRESHOLD
+        ) {
+          dismiss('up');
+          return;
+        }
+
+        Animated.spring(translateY, {
+          toValue: 0,
+          tension: 80,
+          friction: 10,
+          useNativeDriver: true,
+        }).start();
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(translateY, {
+          toValue: 0,
+          tension: 80,
+          friction: 10,
+          useNativeDriver: true,
+        }).start();
+      },
+    }),
+  ).current;
 
   useEffect(() => {
-    // Animación de entrada
+    dismissingRef.current = false;
+    opacity.setValue(0);
+    translateY.setValue(-50);
+
     Animated.parallel([
       Animated.timing(opacity, {
         toValue: 1,
@@ -30,26 +109,17 @@ export function Toast({ message, type = 'success', duration = 3000, onHide }: To
       }),
     ]).start();
 
-    // Auto-ocultar después de la duración
-    const timer = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: -50,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        onHide?.();
-      });
+    hideTimerRef.current = setTimeout(() => {
+      dismiss('up');
     }, duration);
 
-    return () => clearTimeout(timer);
-  }, [duration, onHide, opacity, translateY]);
+    return () => {
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
+    };
+  }, [dismiss, duration, message, opacity, translateY]);
 
   const getIcon = () => {
     switch (type) {
@@ -79,6 +149,7 @@ export function Toast({ message, type = 'success', duration = 3000, onHide }: To
 
   return (
     <Animated.View
+      {...panResponder.panHandlers}
       style={[
         styles.container,
         {
@@ -88,10 +159,17 @@ export function Toast({ message, type = 'success', duration = 3000, onHide }: To
         },
       ]}
     >
-      <View style={styles.content}>
-        {getIcon()}
-        <Text style={styles.message}>{message}</Text>
-      </View>
+      <Pressable
+        onPress={() => dismiss('up')}
+        accessibilityRole="button"
+        accessibilityLabel={message}
+        style={styles.pressable}
+      >
+        <View style={styles.content}>
+          {getIcon()}
+          <Text style={styles.message}>{message}</Text>
+        </View>
+      </Pressable>
     </Animated.View>
   );
 }
@@ -103,9 +181,11 @@ const styles = StyleSheet.create({
     left: THEME.spacing.lg,
     right: THEME.spacing.lg,
     borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
     ...THEME.shadows.soft,
     zIndex: 9999,
+  },
+  pressable: {
+    padding: THEME.spacing.md,
   },
   content: {
     flexDirection: 'row',

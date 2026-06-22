@@ -65,7 +65,7 @@ export function HoyPlanExpandableRow({
         )}
       </TouchableOpacity>
 
-      {expanded ? <View style={styles.expandSlot}>{children}</View> : null}
+      {expanded && children ? <View style={styles.expandInline}>{children}</View> : null}
     </View>
   );
 }
@@ -93,15 +93,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   rowAccent: {
-    borderColor: THEME.colors.calm.lavender,
+    borderColor: THEME.colors.calm.border,
     backgroundColor: THEME.colors.fill[100],
   },
   rowExpanded: {
-    borderColor: THEME.colors.calm.lavenderDeep,
+    borderColor: THEME.colors.calm.border,
   },
   rowAccentExpanded: {
-    borderColor: THEME.colors.calm.lavender,
-    backgroundColor: THEME.colors.calm.blush,
+    borderColor: THEME.colors.calm.border,
+    backgroundColor: THEME.colors.fill[100],
   },
   iconWrap: {
     width: 40,
@@ -116,9 +116,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   iconWrapAccent: {
-    backgroundColor: THEME.colors.calm.lavender,
+    backgroundColor: THEME.colors.calm.mist,
     borderWidth: 1,
-    borderColor: THEME.colors.calm.lavenderDeep,
+    borderColor: THEME.colors.calm.border,
   },
   iconWrapMuted: {
     backgroundColor: THEME.colors.calm.mist,
@@ -148,15 +148,8 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     lineHeight: 15,
   },
-  expandSlot: {
-    gap: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.sm,
-    paddingTop: THEME.spacing.xs,
-    paddingBottom: THEME.spacing.sm,
-    marginTop: -2,
-    backgroundColor: THEME.colors.calm.mist,
-    borderRadius: THEME.borderRadius.rounded,
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
+  expandInline: {
+    gap: THEME.spacing.xs,
+    paddingTop: 4,
   },
 });

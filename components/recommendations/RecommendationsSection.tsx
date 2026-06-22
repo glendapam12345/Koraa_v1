@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from
 import { useState, useEffect, useCallback } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { openVaciarCapture } from '@/lib/vaciarNavigation';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { subscribeCheckInCelebration } from '@/lib/checkInCelebration';
 import { THEME } from '@/constants/theme';
@@ -273,10 +274,7 @@ export function RecommendationsSection({ userId }: RecommendationsSectionProps) 
   }, [loadRecommendations]);
 
   const handleRecommendationPress = (recommendation: Recommendation) => {
-    router.push({
-      pathname: '/(tabs)/vaciar',
-      params: { suggestion: recommendation.title },
-    });
+    openVaciarCapture({ suggestion: recommendation.title });
   };
 
   const sectionHeader = () => (

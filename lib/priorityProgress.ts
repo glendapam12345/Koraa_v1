@@ -1,6 +1,6 @@
 import type { Task } from '@/hooks/useTasks';
 import { getLocalDateFromISO, getLocalDateString } from '@/lib/dateLocal';
-import { isTaskScheduledForToday } from '@/lib/hoyFocusTasks';
+import { isTaskSuggestedForToday } from '@/lib/hoyFocusTasks';
 
 export function isPriorityCompletedToday(task: Task, today: string = getLocalDateString()): boolean {
   if (!task.is_priority || !task.is_completed || !task.completed_at) return false;
@@ -10,7 +10,7 @@ export function isPriorityCompletedToday(task: Task, today: string = getLocalDat
 /** Pasos sugeridos para hoy (misma ventana que el plan en Hoy). */
 export function getTodayPriorityStats(tasks: Task[], today: string = getLocalDateString()) {
   const focusTasks = tasks.filter(
-    (t) => t.is_priority && !t.parent_task_id && isTaskScheduledForToday(t, today),
+    (t) => !t.parent_task_id && isTaskSuggestedForToday(t, today),
   );
   const done = focusTasks.filter((t) => isPriorityCompletedToday(t, today)).length;
   const total = focusTasks.filter(

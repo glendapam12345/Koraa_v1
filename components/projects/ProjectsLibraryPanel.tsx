@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { FolderKanban, ChevronRight, Plus, Heart } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
+import { openVaciarCapture } from '@/lib/vaciarNavigation';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 import { useProjectsLibrary } from '@/hooks/useProjectsLibrary';
@@ -105,6 +106,7 @@ export function ProjectsLibraryPanel({
   const [quickAddTarget, setQuickAddTarget] = useState<ProjectQuickAddTarget | null>(null);
   const [projectFilter, setProjectFilter] = useState<'all' | 'withDate' | 'noDate'>('all');
   const projectCardRefs = useRef<Map<string, RNView>>(new Map());
+  const lastRefreshSignalRef = useRef(refreshSignal ?? 0);
   const {
     projects,
     looseCount,
@@ -117,17 +119,25 @@ export function ProjectsLibraryPanel({
     reload,
   } = useProjectsLibrary(userId, { hasCheckInToday: externalCheckInToday });
 
+  const reloadRef = useRef(reload);
+  reloadRef.current = reload;
+
   useFocusEffect(
     useCallback(() => {
-      if (embedded) reload(true);
-    }, [embedded, reload]),
+      if (embedded) void reloadRef.current(true);
+    }, [embedded]),
   );
 
   useEffect(() => {
-    if (embedded && refreshSignal != null && refreshSignal > 0) {
-      void reload(true);
-    }
-  }, [embedded, refreshSignal, reload]);
+    if (!embedded || refreshSignal == null || refreshSignal <= 0) return;
+    if (refreshSignal === lastRefreshSignalRef.current) return;
+    lastRefreshSignalRef.current = refreshSignal;
+    void reloadRef.current(true);
+  }, [embedded, refreshSignal]);
+
+  const handleLibraryChanged = useCallback(() => {
+    void reloadRef.current(true);
+  }, []);
 
   const filteredProjects = useMemo(() => {
     if (projectFilter === 'withDate') {
@@ -155,13 +165,24 @@ export function ProjectsLibraryPanel({
       onGoCapture();
       return;
     }
-    router.push('/(tabs)/vaciar');
+    openVaciarCapture();
   }, [embedded, onGoCapture]);
 
   const openQuickAdd = useCallback(
-    (projectId: string | null, lifeAreaRef?: LifeAreaRef) => {
+    (
+      projectId: string | null,
+      lifeAreaRef?: LifeAreaRef,
+      areaContext?: { label: string; emoji: string },
+      initialContent?: string,
+    ) => {
       if (projectId == null) {
-        setQuickAddTarget({ mode: 'loose', lifeAreaRef });
+        setQuickAddTarget({
+          mode: 'loose',
+          lifeAreaRef,
+          areaLabel: areaContext?.label,
+          areaEmoji: areaContext?.emoji,
+          initialContent,
+        });
         return;
       }
       const project = projects.find((p) => p.id === projectId);
@@ -176,12 +197,21 @@ export function ProjectsLibraryPanel({
     [projects],
   );
 
+  const openLoosePlanQuickAdd = useCallback(
+    (content: string) => {
+      openQuickAdd(null, undefined, undefined, content);
+    },
+    [openQuickAdd],
+  );
+
   const handleQuickAddSaved = useCallback(
-    ({ title, projectName }: { title: string; projectName?: string }) => {
+    ({ title, projectName, dayLabel }: { title: string; projectName?: string; dayLabel?: string }) => {
       reload(true);
-      const message = projectName
-        ? t('projects.quickAddSuccess', { title, name: projectName })
-        : t('projects.quickAddSuccessLoose', { title });
+      const message = dayLabel
+        ? t('semana.quickAddDaySuccess', { title, day: dayLabel })
+        : projectName
+          ? t('projects.quickAddSuccess', { title, name: projectName })
+          : t('projects.quickAddSuccessLoose', { title });
       onTaskSaved?.(message);
     },
     [onTaskSaved, reload, t],
@@ -259,9 +289,13 @@ export function ProjectsLibraryPanel({
             projects={sortedProjects}
             looseCount={looseCount}
             loading={false}
+            hasCheckInToday={Boolean(hasCheckInToday)}
             onAddTask={openQuickAdd}
             onCreateProject={openCreateProjectModal}
             onGoCapture={onGoCapture ? goCapture : undefined}
+            onChanged={handleLibraryChanged}
+            onTaskQuickSaved={(message) => onTaskSaved?.(message)}
+            onPlanQuickAdd={openLoosePlanQuickAdd}
           />
         </>
       );
@@ -286,6 +320,7 @@ export function ProjectsLibraryPanel({
         <ProjectQuickAddTaskModal
           visible={quickAddTarget != null}
           target={quickAddTarget}
+          userId={userId}
           hasCheckInToday={Boolean(hasCheckInToday)}
           onClose={() => setQuickAddTarget(null)}
           onSaved={handleQuickAddSaved}
@@ -498,6 +533,7 @@ export function ProjectsLibraryPanel({
         <ProjectQuickAddTaskModal
           visible={quickAddTarget != null}
           target={quickAddTarget}
+          userId={userId}
           hasCheckInToday={Boolean(hasCheckInToday)}
           onClose={() => setQuickAddTarget(null)}
           onSaved={handleQuickAddSaved}
@@ -540,6 +576,7 @@ export function ProjectsLibraryPanel({
       <ProjectQuickAddTaskModal
         visible={quickAddTarget != null}
         target={quickAddTarget}
+        userId={userId}
         hasCheckInToday={Boolean(hasCheckInToday)}
         onClose={() => setQuickAddTarget(null)}
         onSaved={handleQuickAddSaved}

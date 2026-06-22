@@ -1,6 +1,7 @@
 import type { AppLocale } from '@/lib/i18n';
 import { getLocalDateString, toISODateLocal } from '@/lib/dateLocal';
 import type { ParsedCaptureTask, TaskCaptureResult } from '@/lib/taskCaptureTypes';
+import { inferEstimatedMinutesFromText } from '@/lib/inferTaskEstimatedMinutes';
 
 const WEEKDAY_ES: Record<string, number> = {
   domingo: 0,
@@ -173,6 +174,10 @@ function segmentToTask(
     content,
     scheduled_date: date ?? fallbackDate,
     effort: inferEffort(segment) ?? fallbackEffort,
+    estimated_minutes: inferEstimatedMinutesFromText(
+      content,
+      (inferEffort(segment) ?? fallbackEffort) as 'light' | 'medium' | 'heavy' | null,
+    ),
   };
 }
 

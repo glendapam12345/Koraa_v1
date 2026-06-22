@@ -40,7 +40,7 @@ const FOCUS_OPTIONS: { id: string; labelKey: TranslationKey }[] = [
 type QuickRecheckInModalProps = {
   visible: boolean;
   onClose: () => void;
-  onComplete: () => void;
+  onComplete: (snapshot: { energyLevel: number; firstCheckIn: boolean }) => void;
   /** Primer check-in del día: emoción + energía (tiempo/enfoque con defaults). */
   firstCheckIn?: boolean;
   initialEmotion?: string;
@@ -111,7 +111,7 @@ export function QuickRecheckInModal({
         /* non-critical */
       }
 
-      onComplete();
+      onComplete({ energyLevel: energy, firstCheckIn });
       onClose();
 
       setTimeout(() => {

@@ -6,6 +6,8 @@ import { isUserListCapture } from '@/lib/taskCaptureParseLocal';
 import type { VaciarBatchItem } from '@/lib/vaciarBatchDraft';
 import type { TaskEffort } from '@/lib/taskPerceivedEffort';
 import type { CapturePriority } from '@/lib/review/capturePriority';
+import { clampEstimatedMinutes } from '@/lib/taskPlanningMeta';
+import { inferEstimatedMinutesFromText } from '@/lib/inferTaskEstimatedMinutes';
 
 export type TimingBucket = 'today' | 'this_week' | 'later';
 
@@ -155,6 +157,8 @@ export function enrichCaptureItem(
     selectedProjectId: projectId,
     selectedDate: scheduledDate,
     timing,
+    estimatedMinutes:
+      item.estimatedMinutes ?? inferEstimatedMinutesFromText(item.content, effort),
   };
 }
 
@@ -168,7 +172,7 @@ export function enrichCaptureItemsLocally(
   }));
 }
 
-/** IA opcional: asigna proyecto cuando el match local no alcanza. */
+/** IA opcional: proyecto y tiempo estimado cuando el match local no alcanza. */
 export async function applyAiProjectHints(
   items: EnrichedCaptureItem[],
   rawInput: string,
@@ -176,8 +180,7 @@ export async function applyAiProjectHints(
   userId: string | undefined,
   projects: ProjectForMatch[],
 ): Promise<EnrichedCaptureItem[]> {
-  if (!userId || projects.length === 0) return items;
-  if (items.every((item) => item.selectedProjectId)) return items;
+  if (!userId) return items;
 
   const { interpretTaskCapture } = await import('@/lib/taskCaptureAi');
   const result = await interpretTaskCapture(userId, {
@@ -191,14 +194,27 @@ export async function applyAiProjectHints(
   const validIds = new Set(projects.map((p) => p.id));
 
   return items.map((item, index) => {
-    if (item.selectedProjectId) return item;
-    const aiProjectId = aiRows[index]?.project_id;
-    if (!aiProjectId || !validIds.has(aiProjectId)) return item;
-    return {
-      ...item,
-      assignToProject: true,
-      selectedProjectId: aiProjectId,
-    };
+    const aiRow = aiRows[index];
+    if (!aiRow) return item;
+
+    let next = item;
+    const aiProjectId = aiRow.project_id;
+    if (!item.selectedProjectId && aiProjectId && validIds.has(aiProjectId)) {
+      next = {
+        ...next,
+        assignToProject: true,
+        selectedProjectId: aiProjectId,
+      };
+    }
+
+    if (aiRow.estimated_minutes != null && aiRow.estimated_minutes > 0) {
+      next = {
+        ...next,
+        estimatedMinutes: clampEstimatedMinutes(aiRow.estimated_minutes),
+      };
+    }
+
+    return next;
   });
 }
 

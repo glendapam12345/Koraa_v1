@@ -1,7 +1,6 @@
 import { categoriesEn } from './categories';
 import { extEn } from './bundle-ext.en';
 import { uiEn } from './bundle-ui.en';
-
 export const featuresEn = {
   categories: categoriesEn,
   errors: {
@@ -24,7 +23,8 @@ export const featuresEn = {
   },
   flow: {
     caption: 'Your day in 3 steps',
-    captionSub: '1) Release what is pending · 2) Check-in on Today · 3) Koraa suggests 2–5 steps.',
+    captionSub:
+      '1) Release what is pending · 2) Check-in on Today · 3) Koraa suggests 2–5 steps.',
     stepCheckInLabel: 'How you feel',
     stepTodayShort: 'What matters today',
     stepTasksShort: 'Tasks',
@@ -44,7 +44,8 @@ export const featuresEn = {
     title: "What's on your mind?",
     titleAccent: '',
     subtitle: 'Let it go. Koraa will organize later.',
-    captureNightSub: "If you can't sleep, let out what's on your mind — no pressure to organize now.",
+    captureNightSub:
+      "If you can't sleep, let out what's on your mind — no pressure to organize now.",
     captureHint: 'Let go. Koraa has you. 💜',
     capturePlaceholderMinimal: 'Write what is on your mind…',
     releaseTaskShort: 'Release',
@@ -57,8 +58,10 @@ export const featuresEn = {
     previewRefining: 'Refining suggestions…',
     liveNewProject: 'New',
     liveHeroThinking: 'Reading what you type…',
-    liveHeroDetected: 'I see {{fronts}} fronts and {{tasks}} things — release when ready.',
-    liveHeroDetectedAreas: 'I see {{areas}} areas and {{tasks}} things — release when ready.',
+    liveHeroDetected:
+      'I see {{fronts}} fronts and {{tasks}} things — release when ready.',
+    liveHeroDetectedAreas:
+      'I see {{areas}} areas and {{tasks}} things — release when ready.',
     liveAreaDetectedTitle: 'Here is how Koraa would group it',
     liveAreaGrouping: 'Grouping by area…',
     liveAreaDetectedOne: '1 thing detected',
@@ -85,7 +88,8 @@ export const featuresEn = {
     previewDiscoveryTitleOne: 'I found 1 open project',
     previewDiscoveryMeta: '{{tasks}} things in {{fronts}} projects',
     previewDiscoveryMetaOne: '1 thing · {{fronts}} project',
-    previewDiscoveryHint: 'Koraa detects home, work, side projects… review and fix if needed',
+    previewDiscoveryHint:
+      'Koraa detects home, work, side projects… review and fix if needed',
     previewContextWork: 'Could be work',
     previewContextHome: 'Could be home',
     previewContextVenture: 'Could be a side business',
@@ -121,8 +125,10 @@ export const featuresEn = {
     previewMarkAsProject: 'Save as project',
     previewPickProject: 'Pick a project',
     previewAssignProjectTitle: 'Which project is this?',
-    previewAssignProjectHint: 'Everything in this group will go to the project you pick.',
-    previewAssignProjectEmpty: 'You have no saved projects yet. Create one with the button below.',
+    previewAssignProjectHint:
+      'Everything in this group will go to the project you pick.',
+    previewAssignProjectEmpty:
+      'You have no saved projects yet. Create one with the button below.',
     previewExistingProjects: 'Your projects',
     previewExistingProjectMeta: '{{percent}}% · {{pending}} pending',
     previewCreateNewProject: 'Create new project',
@@ -142,7 +148,8 @@ export const featuresEn = {
     previewChaosRelief:
       'I grouped {{tasks}} things into {{fronts}} projects. You do not have to carry everything at once.',
     previewChaosReliefOne: 'It is one thing — already clearer.',
-    previewClarityNote: 'What to do today lives in Today — after check-in, based on how you feel.',
+    previewClarityNote:
+      'What to do today lives in Today — after check-in, based on how you feel.',
     reliefGotIt: 'Got it',
     reliefUnderstood: 'I understood what is on your mind.',
     reliefCountProjectOne: '🚀 1 project',
@@ -170,26 +177,42 @@ export const featuresEn = {
     previewDoneEdit: 'Done',
     previewAddDeadline: 'Add deadline',
     previewAddMoreItems: 'Add more',
-    previewProjectQuestion: 'This looks like a project. Does it have a deadline?',
+    previewProjectQuestion:
+      'This looks like a project. Does it have a deadline?',
     previewSubtitle:
       'Review and tap anything you want to change. Nothing is saved until you say it looks right.',
     previewConfirm: 'Accept ✨',
     areaReviewTitle: 'Sort by area',
     areaReviewSubtitle:
-      'Review how things were grouped. Tap a task for date, time, and priority — or to move it.',
-    areaReviewInstruction1: 'Tap a task → date, time, and priority.',
-    areaReviewInstruction2: 'Move it below, or drag. No project = stays in the area.',
-    areaReviewAreaCreated: 'Area «{{name}}» is ready — drag tasks into that column.',
+      'You only see areas with steps. Tap a name to rename or remove.',
+    areaReviewHint: 'Tap a step · drag · ↔ to change area',
+    areaReviewInstruction1:
+      'Tap a step → date, time, priority, and project (+ Create project below).',
+    areaReviewInstruction2:
+      '↔ changes area · New area above the board · hold to drag.',
+    areaReviewAreaCreated:
+      'Area «{{name}}» is ready — drag tasks into that column.',
     areaReviewLooseSectionTitle: 'Loose tasks',
     areaReviewAreasSectionTitle: 'Areas',
     areaReviewEmptyColumn: 'Drop here',
-    areaReviewDragHint: 'Drop the task in the area you want',
+    areaReviewDragHint:
+      'Drop anywhere on the area — it highlights as you pass over',
+    areaReviewDragTip:
+      'Hold a task to drag it, or tap ↔ to pick the area without dragging.',
     areaReviewRenameColumnA11y: 'Tap to rename this area',
     areaReviewAddArea: 'New area',
     areaReviewAddAreaA11y: 'Add a new area to the board',
     areaReviewAddAreaTitle: 'Area name',
     areaReviewRenameTitle: 'Rename area',
     areaReviewConfirm: 'Save ✨',
+    areaReviewSaveSummaryTitle: 'Before you save',
+    areaReviewSaveSummaryTotal: 'Total estimated time',
+    areaReviewSaveSummaryNoDuration: 'No time set',
+    areaReviewSaveSummaryDurationHint:
+      '{{count}} step(s) without estimated time — tap to add it.',
+    areaReviewSaveSummaryRowA11y: '{{task}}, time {{duration}}',
+    areaReviewClearDuration: 'Clear estimated time',
+    areaReviewClearDurationA11y: 'Clear estimated time for this step',
     areaReviewAddProject: 'Project',
     areaReviewLooseInArea: 'No project',
     areaReviewLooseInAreaHint: 'Stays in this area — no project needed.',
@@ -197,7 +220,6 @@ export const featuresEn = {
     areaReviewMoveAreaHint: 'Tap the destination — or create a new one below.',
     areaReviewMoveAreaUpA11y: 'Move area up',
     areaReviewMoveAreaDownA11y: 'Move area down',
-    areaReviewDragTip: 'Hold a task to move it, or tap to edit.',
     previewDateBtn: 'Date',
     previewTimeBtn: 'Time',
     previewPriorityBtn: 'Priority',
@@ -207,26 +229,39 @@ export const featuresEn = {
     capturePriorityMedium: 'Medium',
     capturePriorityHigh: 'High',
     capturePriorityUrgent: 'Urgent',
-    capturePriorityUrgentHint: 'Urgent is non-negotiable — Koraa always prioritizes it.',
+    capturePriorityUrgentHint:
+      'Urgent is non-negotiable — Koraa always prioritizes it.',
+    fieldPriority: 'Priority',
+    fieldPriorityHint:
+      'Optional — Koraa also adjusts suggestions when you check in on how you feel.',
     areaReviewCreateProjectTitle: 'New project',
     areaReviewCreateProjectConfirm: 'Create project',
     areaReviewProjectSection: 'Project',
+    areaReviewAllProjectsHint:
+      'These are your saved projects. Pick one for this step.',
     areaReviewDraftProject: 'New',
     areaReviewCreateProjectInline: '+ Create project in this area',
+    areaReviewProjectNeedsArea:
+      'Assign an area with ↔ first — then you can create or pick a project.',
+    areaReviewDeleteProjectA11y: 'Delete project {{name}}',
     areaReviewClearProject: 'Remove from project',
     organizedSummaryTitle: 'Done — it is organized',
     organizedSummaryBody: '{{count}} things saved by area.',
     organizedSummaryNewProjects: '{{count}} new projects created',
     organizedSummaryAreaMeta: '{{projects}} projects · {{tasks}} open steps',
     organizedSummaryLoose: '{{count}} loose tasks in total',
-    organizedSummaryEmpty: 'Your items are saved. Open the library to see everything.',
+    organizedSummaryEmpty:
+      'Your items are saved. Open the library to see everything.',
     organizedSummaryCaptureMore: 'Capture more',
+    organizedSummaryLooseStep: 'Loose step',
     previewBack: 'Edit text',
     previewBackA11y: 'Go back to edit what you wrote',
     previewEditTaskA11y: 'Edit {{task}}',
-    previewTapToAdjust: 'Tap text or use chips to adjust — without leaving this screen',
+    previewTapToAdjust:
+      'Tap text or use chips to adjust — without leaving this screen',
     previewCorrectionHint: 'Tap a group for details · ✏️ renames the title',
-    previewToolbarExplain: 'Missing something? Group loose steps or create a project to follow.',
+    previewToolbarExplain:
+      'Missing something? Group loose steps or create a project to follow.',
     previewAddGroupTitle: 'Group things',
     previewAddGroupHint: 'Bundle related steps — not saved as a project',
     previewAddProjectTitle: 'Create project',
@@ -246,7 +281,8 @@ export const featuresEn = {
     savedNextTitle: 'It is in Koraa now 💜',
     savedNextBodyCheckIn:
       'Your mind does not have to carry everything. Now tell me how you feel — from there you will see what matters today.',
-    savedNextBodyHoy: 'Your mind does not have to carry everything. Go to Today to see what matters now.',
+    savedNextBodyHoy:
+      'Your mind does not have to carry everything. Go to Today to see what matters now.',
     savedGoCheckIn: 'Go to Today — how I feel →',
     savedGoHoy: 'See my plan for today →',
     savedGoHoySecondary: 'Go to Today',
@@ -257,11 +293,13 @@ export const featuresEn = {
     capturePrompt: "What's on your mind?",
     captureSubtitle: 'One thing per line — Koraa groups by projects.',
     brainDumpHowTitle: 'How it works',
-    brainDumpStep1: 'Write everything as a list (one thing per line). No need to organize.',
+    brainDumpStep1:
+      'Write everything as a list (one thing per line). No need to organize.',
     organizeSavedToast: 'Saved {{count}} items — see how it looks in Areas',
     brainDumpStep2: 'Tap Organize. Koraa groups home, work, side projects…',
     brainDumpStep3: 'Or use the mic if you prefer to speak.',
-    brainDumpDatesNote: 'Dates are optional — Koraa does not invent them. You add them if you know them.',
+    brainDumpDatesNote:
+      'Dates are optional — Koraa does not invent them. You add them if you know them.',
     discoveryDatesTitle: 'What about dates?',
     discoveryDatesHint: 'Dates are optional — Koraa does not invent them',
     discoveryDatesHintA11y: 'Show note about optional dates',
@@ -286,15 +324,19 @@ export const featuresEn = {
     guidanceParkTitle: "You don't need to think about this now",
     guidanceReasonHighImpact:
       'This looks like a high-impact task that may need focused work.',
-    guidanceReasonDeepWork: 'It will need focus and an uninterrupted block of time.',
-    guidanceReasonQuickWin: 'A quick win you can close when you have a small gap.',
-    guidanceReasonOneThing: 'For now, this is the only thing Koraa would suggest focusing on.',
+    guidanceReasonDeepWork:
+      'It will need focus and an uninterrupted block of time.',
+    guidanceReasonQuickWin:
+      'A quick win you can close when you have a small gap.',
+    guidanceReasonOneThing:
+      'For now, this is the only thing Koraa would suggest focusing on.',
     guidanceDismissA11y: 'Got it, close focus guidance',
     captureLivePreviewListening: 'Koraa heard this:',
     frontsOpen: 'I see {{count}} open projects.',
     frontsOpenOne: 'I see 1 open project.',
     frontsOrganizedTitle: '✨ Koraa organized your mind into projects',
-    frontsOrganizedMind: 'Koraa organized your mind into fronts — not an endless list.',
+    frontsOrganizedMind:
+      'Koraa organized your mind into fronts — not an endless list.',
     frontsTaskCount: '{{count}} tasks',
     frontsNoTasksYet: '0 tasks yet',
     frontsHintHighPriority: 'High priority',
@@ -309,9 +351,9 @@ export const featuresEn = {
     frontsTodayRecommendation: 'Your recommendation for today',
     frontsTodayRecommendationBody:
       'Focusing on 1 main project will give you more clarity and progress.',
-    frontsSeeTodayPlan: 'See today\'s plan →',
+    frontsSeeTodayPlan: "See today's plan →",
     frontsMascotRelief:
-      'Breathe — it\'s in Koraa now. You don\'t have to carry everything at once. 💜',
+      "Breathe — it's in Koraa now. You don't have to carry everything at once. 💜",
     frontsReviewPrompt: 'Missing something or want to adjust?',
     frontsReviewAction: 'Review and edit',
     frontsReviewA11y: 'Review and edit what you captured',
@@ -351,20 +393,25 @@ export const featuresEn = {
     releaseTaskLegacy: 'Release task',
     fieldProjectOptional: 'Project (optional)',
     fieldProjectOptionalHint: 'Leave it loose or group it in a project.',
-    fieldDateHintInProject: 'When you want to take this step (not the project due date).',
+    fieldDateHintInProject:
+      'When you want to take this step (not the project due date).',
     clearProject: 'Remove project',
     clearProjectA11y: 'Save as a loose task without a project',
     captureInputA11y: 'Write what is on your mind and tap Release.',
-    captureAccessoryHint: 'Write what\'s on your mind',
+    captureAccessoryHint: "Write what's on your mind",
     captureAccessoryDone: 'Done',
-    captureAccessoryDoneHint: 'Then pick date, project, or weight — all optional',
+    captureAccessoryDoneHint:
+      'Then pick date, project, or weight — all optional',
     captureAccessoryDoneA11y: 'Close keyboard and see task options',
-    captureKeyboardStepHint: 'Tap Done on the keyboard to see project, date, and more below.',
+    captureKeyboardStepHint:
+      'Tap Done on the keyboard to see project, date, and more below.',
     captureStepWrite: 'Step 1 · Write',
     captureStepOrganize: 'Step 2 · Organize (optional)',
     captureStepSave: 'Step 3 · Save',
-    captureOrganizeIntro: 'Project, date, and how heavy it feels — only if it helps.',
-    captureSaveBlockedHint: 'Write something above before you release the task.',
+    captureOrganizeIntro:
+      'Project, date, and how heavy it feels — only if it helps.',
+    captureSaveBlockedHint:
+      'Write something above before you release the task.',
     placeholderShort: 'E.g. call the dentist, buy milk…',
     segmentCapture: 'Capture',
     segmentProjects: 'Areas',
@@ -372,8 +419,7 @@ export const featuresEn = {
     segmentProjectsA11y: 'See everything organized by areas and projects',
     brainDumpSimpleTitle: 'Release what you are carrying',
     brainDumpSimpleSub: 'One thing per line. Then review, edit, or accept.',
-    brainDumpPlaceholder:
-      'E.g.\nfinish presentation\nbuy grapes\ncall mom',
+    brainDumpPlaceholder: 'E.g.\nfinish presentation\nbuy grapes\ncall mom',
     brainDumpTip: 'Tip: one task per line, or separate with commas.',
     organizeCta: 'Organize',
     segmentGoCapture: 'Go to Capture',
@@ -405,15 +451,18 @@ export const featuresEn = {
     organizeCardSub:
       'Optional — by default it stays loose with no date. Only if it helps you organize.',
     fieldProject: 'Loose or in a project?',
-    fieldProjectHint: 'Stays loose by default. If you pick a project, you can choose one or create a new one.',
+    fieldProjectHint:
+      'Stays loose by default. If you pick a project, you can choose one or create a new one.',
     fieldDate: 'When?',
     looseTask: 'Loose task',
     inProject: 'In a project',
     projectRequiredHint: 'Choose or create a project to save here.',
     noDate: 'No date',
     optionalTitle: 'Everything else is optional',
-    optionalBody: 'Project, category, date, and subtasks are optional. Just write and save.',
-    optionalBodySecond: 'Koraa suggests what matters today in Today — no need to order tasks here.',
+    optionalBody:
+      'Project, category, date, and subtasks are optional. Just write and save.',
+    optionalBodySecond:
+      'Koraa suggests what matters today in Today — no need to order tasks here.',
     dismiss: 'Got it',
     flowCardTitle: 'How Koraa supports you',
     flowCardBody:
@@ -429,7 +478,7 @@ export const featuresEn = {
     placeholder: 'Write tasks, to-dos, or what is on your mind',
     fieldDateHint: 'Optional — Today suggests what matters',
     fieldDateOptionalBadge: 'Optional',
-    taskDatePickOther: 'Pick another date',
+    taskDatePickOther: 'Open calendar',
     whenToday: 'Today',
     whenThisWeek: 'This week',
     whenNoRush: 'No rush',
@@ -440,9 +489,10 @@ export const featuresEn = {
     effortHeavy: 'Heavy',
     aiInterpretBtn: 'Break into steps',
     aiInterpretHint: 'Optional: re-split if you changed the text.',
-    aiInterpretA11y: 'Split what you wrote into steps and preview before saving',
+    aiInterpretA11y:
+      'Split what you wrote into steps and preview before saving',
     aiInterpretLoading: 'Sorting…',
-    aiPreviewTitle: 'Here\'s how your steps could look',
+    aiPreviewTitle: "Here's how your steps could look",
     aiPreviewCloseA11y: 'Close preview',
     aiPreviewFromAi: 'AI suggestion',
     aiPreviewFromLocal: 'Basic split (no cloud AI)',
@@ -452,13 +502,15 @@ export const featuresEn = {
     aiPreviewPrep: 'Step {{n}}',
     aiPreviewDate: 'For {{date}}',
     aiPreviewNoDate: 'No date',
-    aiPreviewHint: 'Nothing is saved until you confirm. You can edit later in your list.',
+    aiPreviewHint:
+      'Nothing is saved until you confirm. You can edit later in your list.',
     aiPreviewConfirm: 'Save like this',
     aiPreviewApply: 'Fill the form only',
     aiPreviewApplyA11y: 'Fill title and date without saving yet',
     aiSavedBatch: '{{count}} steps saved gently.',
     savedBatch: '{{count}} steps saved gently.',
-    savedBatchOrganized: 'You released {{count}} things. Koraa sorted them for you.',
+    savedBatchOrganized:
+      'You released {{count}} things. Koraa sorted them for you.',
     batchPreviewOrganizeTitle: 'How all steps will be saved',
     batchPreviewPlacement: 'Where',
     batchPreviewCategory: 'Category',
@@ -472,7 +524,8 @@ export const featuresEn = {
       'The settings above apply to every step. Each keeps its own text; a step only gets its own date if you wrote it in the line.',
     batchPreviewStep: 'Step {{n}}',
     batchPreviewConfirm: 'Save {{count}} steps',
-    aiApplyPartial: 'Title and date are ready. Prep steps need confirming to save.',
+    aiApplyPartial:
+      'Title and date are ready. Prep steps need confirming to save.',
     suggestionsTitle: 'Quick suggestions:',
     assignQuestion: 'Assign this task to a project?',
     chooseCategory: 'Choose category',
@@ -489,7 +542,8 @@ export const featuresEn = {
     organizePanelTitle: 'Guides and suggestions',
     organizePanelHide: 'Hide guides and extras',
     organizePanelHint: 'Flow, projects, suggestions, and tips',
-    quickCaptureHint: 'Just write and save. Today suggests steps after your check-in.',
+    quickCaptureHint:
+      'Just write and save. Today suggests steps after your check-in.',
     saving: 'Saving...',
     saveTask: 'Save task',
     saveTaskLoose: 'Save loose task',
@@ -502,7 +556,8 @@ export const featuresEn = {
     subtaskTooLong: 'Subtasks cannot be longer than 300 characters',
     maxSubtasks: 'You cannot add more than 20 subtasks per task',
     savedOffline: 'Task saved offline. It will sync when you are back online.',
-    savedPartial: 'Task saved. Some advanced options will activate after setup.',
+    savedPartial:
+      'Task saved. Some advanced options will activate after setup.',
     savedSubtasksError: 'Could not save steps. Try again.',
     projectCreated: 'Project «{{name}}» created',
     voiceUnavailableWeb: 'Voice input is not available on web',
@@ -518,9 +573,21 @@ export const featuresEn = {
     subtitle: 'Step 3 · plan without pressure',
     intro:
       'Tap a day to view or add tasks. Colors reflect how you felt that day. What matters today still lives in Today.',
-    introShort: 'One day at a time. Long-press a card to move it.',
+    introShort: 'One day at a time. Drag a card to move it.',
+    replanIntro:
+      'Here’s how your week could look based on how you feel — adjust and accept.',
+    replanEyebrow: 'Preview',
+    replanDefaultHeadline: 'Proposal for your week',
+    replanDragHint:
+      'Drag steps between days or tap ↔. Accept to return to Today.',
+    replanAccept: 'Accept plan ✨',
+    replanCancel: 'Back to Today without changes',
+    replanAcceptedToast: 'Done — your week is updated',
     planAheadIntro: 'Next week — drag your steps to the days that feel right.',
-    plannerInteractHint: 'Tap text to edit · circle to complete · hold to drag',
+    plannerInteractHint:
+      'Tap text to edit · circle to complete · hold and drag · ↔ to move · + Add step on each day',
+    plannerAddToDay: 'Add step',
+    plannerAddToDayA11y: 'Add step to {{day}}',
     prev: 'Previous',
     next: 'Next',
     navPremiumHint: 'Tap the arrows or Premium to see other weeks and months',
@@ -537,26 +604,40 @@ export const featuresEn = {
     loadingDays: 'Loading days...',
     dayLabel: 'Day {{day}} of {{month}}',
     today: 'Today',
-    plannerEmptyDayHint: 'No steps · long-press a card to move it here',
+    plannerEmptyDayHint: 'No steps · drag a card here or tap Add step',
     emptyDay: 'This day is open',
-    emptyHint: 'Add a task and it will show here. No need to fill the whole month.',
+    emptyHint:
+      'Add a task and it will show here. No need to fill the whole month.',
     emptyTodayNoCheckIn: 'You have not logged how you feel today',
-    emptyTodayNoCheckInHint: 'Koraa cannot color this day or sort your steps yet.',
+    emptyTodayNoCheckInHint:
+      'Koraa cannot color this day or sort your steps yet.',
     emptyTodayNoCheckInCta: 'Check in on Today',
     emptyTodayNoCheckInSoft: 'No tasks on the calendar today',
-    emptyTodayNoCheckInSoftHint: 'After you check in on Today, your suggested steps will show up here.',
+    emptyTodayNoCheckInSoftHint:
+      'After you check in on Today, your suggested steps will show up here.',
     emptyLightDay: 'Light day',
-    emptyLightDayHint: 'No pending tasks — Koraa did not assign steps for today.',
-    emptyHeavyDay: '{{total}} on the calendar, but only {{count}} steps in Today',
+    emptyLightDayHint:
+      'No pending tasks — Koraa did not assign steps for today.',
+    emptyHeavyDay:
+      '{{total}} on the calendar, but only {{count}} steps in Today',
     emptyHeavyDayHint: 'Koraa protected your low energy.',
     emptyHeavyDayCta: 'See steps in Today',
     noCheckInTodayBannerTitle: 'No check-in today',
-    noCheckInTodayBannerBody: 'Koraa cannot color the calendar until you log how you feel.',
+    noCheckInTodayBannerBody:
+      'Koraa cannot color the calendar until you log how you feel.',
     noCheckInTodayBannerCompact: 'No check-in today —',
     noCheckInTodayBannerCta: 'Check in on Today',
     addTasks: 'Add task',
     addMore: 'Add another',
     addTasksOrProjects: 'Add task or project',
+    quickAddDayTitle: 'Add to {{day}}',
+    quickAddDayPrompt: 'Write a step for that day — no brain dump.',
+    quickAddDayChip: 'Will be saved on {{day}}',
+    quickAddDaySave: 'Add to day',
+    quickAddDaySuccess: '«{{title}}» added to {{day}}',
+    quickAddDayProjectSuccess: '«{{title}}» added to {{day}} · {{project}}',
+    quickAddDayProjectSection: 'Project (optional)',
+    quickAddDayNoProject: 'No project',
     looseTasks: 'Loose tasks',
     projectFallback: 'Project',
     setupTitle: 'Set up Week and projects',
@@ -592,8 +673,10 @@ export const featuresEn = {
     exportEmpty: 'No tasks to export in this period',
     brainDumpA11y: 'Brain dump, quick task capture',
     checkInTodayFab: 'Log today',
-    calendarDayWithCheckInA11y: 'Day {{day}}, {{tasks}} tasks, {{emotion}}, energy {{energy}} out of 5',
-    legendEnergyNote: 'The bar at the bottom of each day shows your energy (1–5)',
+    calendarDayWithCheckInA11y:
+      'Day {{day}}, {{tasks}} tasks, {{emotion}}, energy {{energy}} out of 5',
+    legendEnergyNote:
+      'The bar at the bottom of each day shows your energy (1–5)',
   },
   tips: {
     categories: {
@@ -613,18 +696,22 @@ export const featuresEn = {
     backToGrid: 'See more tips',
     categoryNotFound: 'Category not found',
     categoryOptional: 'No obligation — one is enough. Only if it feels right.',
-    categoryVisibleCount: 'You see {{visible}} of {{total}} tips in this category.',
+    categoryVisibleCount:
+      'You see {{visible}} of {{total}} tips in this category.',
     categoryPrimaryEyebrow: 'One that might help right now',
     categoryMoreToggle: 'More tips ({{count}})',
     categoryMoreHide: 'Hide more tips',
-    categoryPremiumHint: 'Premium unlocks {{count}} more tips in this category.',
+    categoryPremiumHint:
+      'Premium unlocks {{count}} more tips in this category.',
     categoryPremiumCta: 'See Premium (optional)',
     actionHeroCtaPause: 'Take a pause',
     actionHeroAbrumada:
       'Today feels heavy. One small step is enough — the rest can wait.',
-    actionHeroFocused: 'If you feel up to it, you could start with what weighs most. It is at the top in Today.',
+    actionHeroFocused:
+      'If you feel up to it, you could start with what weighs most. It is at the top in Today.',
     actionHeroLowEnergy: 'Low energy? One step and stopping also counts.',
-    actionHeroHighEnergy: 'Good momentum: channel it into one thing, not everything.',
+    actionHeroHighEnergy:
+      'Good momentum: channel it into one thing, not everything.',
     actionHeroDefault: 'For how you feel today: start with the smallest step.',
     actionHeroCtaHoy: 'See what matters today',
     actionStartFocus: 'A little time with you (5 min)',
@@ -661,7 +748,8 @@ export const featuresEn = {
       title: 'Walk through your day',
       titleAccent: 'by feeling',
       subtitle: 'without forcing structure',
-      description: 'Say how you feel. Koraa suggests gentle steps — no pressure.',
+      description:
+        'Say how you feel. Koraa suggests gentle steps — no pressure.',
       exampleExhausted: 'You feel exhausted',
       exampleEnergy: 'Energy: {{n}} / 5',
       exampleResultLow: 'Koraa suggests only 2 gentle steps',
@@ -675,7 +763,8 @@ export const featuresEn = {
     intro2: {
       title: 'Empty your mind in',
       titleAccent: 'one breath',
-      subtitle: 'No categories. No labels. No structure.\nJust write what you need to release.',
+      subtitle:
+        'No categories. No labels. No structure.\nJust write what you need to release.',
       preview: 'What do you need to do today?',
       previewTitle: 'Empty your mind',
       example1: '• Prepare project presentation',
@@ -688,7 +777,8 @@ export const featuresEn = {
     intro3: {
       title: 'Clarity',
       titleAccent: 'with you',
-      subtitle: 'Koraa suggests for you. See what might matter today — no pressure.',
+      subtitle:
+        'Koraa suggests for you. See what might matter today — no pressure.',
       step1Title: 'Tasks',
       step1Desc: 'Release what is pending',
       step2Title: 'Check-in on Today',
@@ -696,7 +786,8 @@ export const featuresEn = {
       step3Title: 'Today',
       step3Desc: 'See what matters today',
       resultTitle: '✨ Result',
-      resultBody: 'Gentle suggestions based on how you feel — you do not have to do it all',
+      resultBody:
+        'Gentle suggestions based on how you feel — you do not have to do it all',
       continue: 'Continue',
     },
     emotion: {
@@ -739,7 +830,8 @@ export const featuresEn = {
       saving: 'Saving...',
       save: 'Save',
       start: 'Get started',
-      savedOffline: 'Check-in saved offline. It will sync when you are back online.',
+      savedOffline:
+        'Check-in saved offline. It will sync when you are back online.',
       invalidEnergy: 'Energy level is not valid',
       saveCheckInError: 'Could not save your check-in. Try again.',
       closeOnboardingError: 'Could not finish onboarding. Try again.',
@@ -754,18 +846,24 @@ export const featuresEn = {
       continue: 'Continue',
       skip: 'Skip — we will discover them together',
       saving: 'Saving...',
-      saveError: 'Some projects could not be saved. You can add them later in Organized.',
+      saveError:
+        'Some projects could not be saved. You can add them later in Organized.',
     },
     areas: {
       title: 'Your',
       titleAccent: 'areas',
-      subtitle: 'Optional — name them in a way that feels right.',
-      hint: 'Add examples of what you usually do in each area. Koraa uses them to group your brain dump better.',
-      examplesPlaceholder: 'E.g. run, meditate, doctor',
-      continue: 'Continue',
-      skip: 'Skip — we use suggested areas',
+      subtitle:
+        'Pick the areas you use. Only those show up in Capture and Areas.',
+      hint: 'Turn each area on or off. You can rename them and add optional examples.',
+      examplesPlaceholder: 'E.g. errands, meetings, workouts (optional)',
+      selectedCount: '{{count}} areas selected',
+      toggleA11y: 'Use area {{name}}',
+      minOneArea: 'Choose at least one area to continue.',
+      continue: 'Save my areas',
+      skip: 'Use suggested (Home, Personal, Work)',
       saving: 'Saving...',
-      saveError: 'Could not save your areas. You can edit them later in Organize.',
+      saveError:
+        'Could not save your areas. You can edit them later in Organize.',
     },
     howItWorks: {
       title: 'How Koraa',
@@ -785,60 +883,24 @@ export const featuresEn = {
     },
   },
   hoy: {
-    streakToast: "You're back today ✨",
-    calmMoment: 'Your moment of',
-    calmMomentAccent: 'calm',
-    morning: 'Morning',
-    evening: 'Evening',
-    morningDone: 'Morning — Done',
-    eveningDone: 'Evening — Done',
-    morningHint: 'Wake up with clarity',
-    eveningHint: 'Close the day calmly',
-    fitsToday: 'This fits you today',
-    organizeByYou:
-      'Koraa suggests your day based on how you feel, your energy, your time, and your mind.',
     focusSummaryLine:
       'Today we suggest {{count}} {{steps}} · energy {{n}}/5 · {{emotion}} · {{time}}',
     focusOne: 'step',
     focusMany: 'steps',
     stepWhySuggested: 'Why Koraa suggests this today',
     stepWhyWait: 'Can wait because',
-    focusProgress: '{{done}} of {{total}} suggested steps',
     focusProgressA11y: 'Gentle progress: {{done}} of {{total}} steps today',
-    focusProgressStart: '{{total}} things might matter today. Start with what feels lightest.',
+    focusProgressStart:
+      '{{total}} things might matter today. Start with what feels lightest.',
     focusProgressHeading: 'You have {{done}} done — the rest can wait.',
     focusProgressAllDone: 'You did enough for today ✨',
-    focusProgressNames: 'Still open: {{names}}',
     firstStepDone: 'One step done. That counts — keep your pace.',
     firstStepDoneLow: 'One step on low energy is a real win.',
     focusOneRemaining: 'One more step if you want. No rush.',
     stepDoneToast: 'Step done. You are going at your pace.',
     allStepsDoneToast: 'You did enough for today. The rest can wait ✨',
-    energyLine: 'Energy {{n}}/5',
-    perCheckIn: 'Based on your check-in',
-    howWeSuggest: 'Why we suggest this',
-    howFeelToday: 'How do you feel today?',
     emotionalMemory: 'Emotional memory',
-    emotionalLoop: 'Emotional loop',
-    lightenLoad: 'Lighten load',
-    lightenLoadSub: 'Set aside what is not for today — without guilt',
-    lightenLoadCelebration:
-      'You lightened your load. Today can feel lighter — the rest lives on Calendar ✨',
-    secondaryModulesHint:
-      'Projects, emotional memory, and more detail on task order.',
-    allDoneSub:
-      'You have no pending tasks. If you add something in Tasks, Koraa will suggest what matters based on how you feel.',
-    noTasksOtherDays:
-      'You have tasks on other days. Switch to «All» to see them or add something for today from the Tasks tab.',
-    listStartsSub:
-      'Capture tasks in seconds on the Tasks tab. Koraa will order them based on your check-in in Feel.',
-    viewAll: 'View all tasks',
-    looseTasks: 'Loose tasks',
-    allDone: 'All caught up',
-    listStarts: 'Your list starts here',
-    goToTasks: 'Go to Tasks',
     deleteTaskTitle: 'Delete task',
-    deleteTaskBody: 'Are you sure you want to delete this task?',
     deleteTaskConfirm: 'Are you sure you want to delete «{{task}}»?',
     deleteSubtasksAlso: '{{count}} subtasks will also be deleted.',
     taskDeleted: 'Task deleted',
@@ -847,50 +909,56 @@ export const featuresEn = {
     planReasoning:
       'First capture tasks in Tasks, then check in on Today — Koraa suggests what might matter today.',
     dayComplete: 'Today is complete. Rest and enjoy the moment ✨',
-    datesUpdated: 'Dates updated. Check Calendar to see how things were spread out.',
-    showExtra: 'Show extra sections',
-    hideExtra: 'Hide extra sections',
-    showMoreForToday: 'More for today',
-    hideMoreForToday: 'Hide extras',
     meditationPrepTitle: 'Meditation coming soon',
-    meditationPrepBody: 'This feature will be available soon in this environment.',
-    meditationMorningA11y: 'Meditate in the morning',
-    meditationMorningDoneA11y: 'Morning meditation completed',
-    meditationEveningA11y: 'Meditate in the evening',
-    meditationEveningDoneA11y: 'Evening meditation completed',
+    meditationPrepBody:
+      'This feature will be available soon in this environment.',
     meditationDoneToast: 'Meditation completed! 🧘',
     meditationExpoGoNote:
       'In Expo Go, meditation uses a simplified view (no animated ring). Audio and logging work the same; TestFlight shows the full experience.',
-    memoryTipDeep: 'That day might work for something deeper; operational work can move to lighter blocks.',
-    memoryMsgVariable: 'Your energy has been variable these weeks, without a rigid daily pattern.',
-    memoryTipRealtime: 'Check in at the start of the day and adjust your load in real time.',
-    memoryTipFriction: 'When that state shows up, reduce friction and pick one light step.',
+    memoryTipDeep:
+      'That day might work for something deeper; operational work can move to lighter blocks.',
+    memoryMsgVariable:
+      'Your energy has been variable these weeks, without a rigid daily pattern.',
+    memoryTipRealtime:
+      'Check in at the start of the day and adjust your load in real time.',
+    memoryTipFriction:
+      'When that state shows up, reduce friction and pick one light step.',
     planSuggestLow: 'Low energy? Less is more. One step is enough.',
-    planSuggestMid: 'Moderate energy. Start with what feels lightest; the rest can wait.',
-    planSuggestHigh: 'Good momentum — channel it into one or two things, without pressure.',
+    planSuggestMid:
+      'Moderate energy. Start with what feels lightest; the rest can wait.',
+    planSuggestHigh:
+      'Good momentum — channel it into one or two things, without pressure.',
     closureListen: 'Today you listened to how you felt. That is real progress.',
-    closureListenNote: 'When you want, add a small task to keep momentum without pressure.',
+    closureListenNote:
+      'When you want, add a small task to keep momentum without pressure.',
     closureRestNote: 'You can rest easy and pick up tomorrow with clarity.',
-    closureNoProgress: 'You did not move tasks forward today, and that makes sense given how you felt.',
-    closurePendingSplit: '{{count}} still pending; we can spread them without overloading you.',
+    closureNoProgress:
+      'You did not move tasks forward today, and that makes sense given how you felt.',
+    closurePendingSplit:
+      '{{count}} still pending; we can spread them without overloading you.',
     closureResumeLight: 'Tomorrow you can start with one light task.',
-    closurePendingOne: 'You have {{count}} tasks left; one tomorrow may be enough.',
+    closurePendingOne:
+      'You have {{count}} tasks left; one tomorrow may be enough.',
     closureCleanList: 'Your list is clear today. Nice close.',
-    closureHardDay: 'No tasks were completed today, and that is valid when the day is hard.',
-    closureTomorrow: 'If you want, tomorrow we start with the shortest task for momentum.',
+    closureHardDay:
+      'No tasks were completed today, and that is valid when the day is hard.',
+    closureTomorrow:
+      'If you want, tomorrow we start with the shortest task for momentum.',
     closureTitle: 'Emotional close for today',
-    closureEnough: 'You did enough for today: you closed {{completed}} of {{total}} tasks.',
-    closureLowProgress: 'You had low energy and still moved {{count}} task(s) forward. That counts.',
-    closureMidProgress: 'Today you moved {{completed}} of {{total}}. Progress, not perfection.',
-    closureSmallProgress: 'Today you did {{count}} task(s). It may seem small, but it adds up.',
+    closureEnough:
+      'You did enough for today: you closed {{completed}} of {{total}} tasks.',
+    closureLowProgress:
+      'You had low energy and still moved {{count}} task(s) forward. That counts.',
+    closureMidProgress:
+      'Today you moved {{completed}} of {{total}}. Progress, not perfection.',
+    closureSmallProgress:
+      'Today you did {{count}} task(s). It may seem small, but it adds up.',
     mantraDefault: 'Your way forward does not have to look like anyone else’s.',
-    mantraCompassion: 'Today was about holding yourself first. Caring for yourself counts as progress.',
+    mantraCompassion:
+      'Today was about holding yourself first. Caring for yourself counts as progress.',
     mantraImpulse: 'Good momentum — use it on one or two things, without rush.',
-    mantraSteady: 'Steady pace, real progress: that is how durable consistency is built.',
-    focusSectionTitle: '{{count}} steps for today',
-    focusSectionSub: 'If you feel like it, start with what feels lightest. The rest can wait.',
-    noFeelSortHint:
-      'No suggestions yet: check in on Today and Koraa will order based on how you feel.',
+    mantraSteady:
+      'Steady pace, real progress: that is how durable consistency is built.',
     focusLevelNormal: 'Normal',
   },
   settingsExtra: {
@@ -929,8 +997,11 @@ export const featuresEn = {
     tasks: 'tasks',
     dateOptional: 'Date (optional)',
     pickDate: 'Pick date',
-    pickDateTitle: 'Pick date',
-    openCalendar: 'Pick on calendar',
+    pickDateTitle: 'When is it for?',
+    openCalendar: 'Open calendar',
+    openCalendarSub: 'Browse the full month',
+    dateQuickLabel: 'Quick picks',
+    dateConfirm: 'Use this date',
     removeDate: 'Remove date',
     createProject: 'Create project',
     projectName: 'Project name',

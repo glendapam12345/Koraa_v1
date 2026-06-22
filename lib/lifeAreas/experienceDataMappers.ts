@@ -298,10 +298,30 @@ export function buildAdaptiveReorganizePlan(
       }
     }
   } else if (reason === 'more_energy') {
-    const later = open.filter(
-      (task) => task.scheduled_date && task.scheduled_date > today,
-    );
-    later.slice(0, 2).forEach((task) => assign(task.id, today));
+    const targetToday = 4;
+    let slots = Math.max(0, targetToday - todayTasks.length);
+
+    const later = open
+      .filter((task) => task.scheduled_date && task.scheduled_date > today)
+      .sort((a, b) => (a.scheduled_date! < b.scheduled_date! ? -1 : 1));
+
+    for (const task of later) {
+      if (slots <= 0) break;
+      assign(task.id, today);
+      slots -= 1;
+    }
+
+    const unscheduledRanked = [
+      ...unscheduled.filter((task) => task.is_priority),
+      ...unscheduled.filter((task) => !task.is_priority),
+    ];
+    for (const task of unscheduledRanked) {
+      if (slots <= 0) break;
+      if (assignments.has(task.id) || keptIds.has(task.id)) continue;
+      assign(task.id, today);
+      slots -= 1;
+    }
+
     todayTasks.forEach((task) => keep(task.id));
   }
 

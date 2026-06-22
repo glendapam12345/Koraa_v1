@@ -10,14 +10,11 @@ function firstOpenDayKey(userId: string): string {
 }
 
 /**
- * Primer día calendario en que el usuario abre Hoy: mismo día que la primera apertura → vista simplificada.
- * Día siguiente (local) → vista completa. El usuario puede saltar con optOutHoyLiteLayout.
+ * Primer día calendario en que el usuario abre Hoy: mismo día que la primera apertura.
+ * Día siguiente (local) → vista completa. El banner de orientación sigue visible todo ese día.
  */
 export async function resolveHoyLiteLayout(userId: string): Promise<boolean> {
   try {
-    if ((await AsyncStorage.getItem(optOutKey(userId))) === '1') {
-      return false;
-    }
     const today = getLocalDateString();
     let first = await AsyncStorage.getItem(firstOpenDayKey(userId));
     if (!first) {
@@ -25,6 +22,15 @@ export async function resolveHoyLiteLayout(userId: string): Promise<boolean> {
       first = today;
     }
     return first === today;
+  } catch {
+    return false;
+  }
+}
+
+/** Usuario pidió vista completa: menos compacto, pero el banner del día 1 puede seguir visible. */
+export async function isHoyLiteCompactOptedOut(userId: string): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(optOutKey(userId))) === '1';
   } catch {
     return false;
   }

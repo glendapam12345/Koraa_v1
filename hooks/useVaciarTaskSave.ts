@@ -57,27 +57,27 @@ export function useVaciarTaskSave({
     async (
       draft: VaciarTaskDraft,
       options?: { effortFeel?: TaskEffort | null; reliefCapture?: boolean; suppressToast?: boolean },
-    ) => {
+    ): Promise<boolean> => {
       const validation = validateVaciarTaskDraft(draft);
       if (validation === 'empty') {
         showToast(t('vaciar.enterTask'), 'info');
-        return;
+        return false;
       }
       if (validation === 'no_project') {
         showToast(t('vaciar.selectProject'), 'info');
-        return;
+        return false;
       }
       if (validation === 'task_too_long') {
         showToast(t('vaciar.taskTooLong'), 'error');
-        return;
+        return false;
       }
       if (validation === 'no_subtasks') {
         showToast(t('vaciar.addSubtaskOrDisable'), 'info');
-        return;
+        return false;
       }
       if (validation === 'subtask_too_long') {
         showToast(t('vaciar.subtaskTooLong'), 'error');
-        return;
+        return false;
       }
 
       setIsSaving(true);
@@ -89,11 +89,11 @@ export function useVaciarTaskSave({
 
         if (result.status === 'not_authenticated') {
           showToast(t('errors.notAuthenticated'), 'error');
-          return;
+          return false;
         }
         if (result.status === 'error') {
           showToast(t('errors.saveTaskFailed'), 'error');
-          return;
+          return false;
         }
         if (result.taskId && options?.effortFeel) {
           await setTaskEffort(result.taskId, options.effortFeel);
@@ -124,7 +124,7 @@ export function useVaciarTaskSave({
             hasSubtasks: result.hasSubtasks,
           });
           showToast(t('vaciar.savedOffline'), 'info');
-          return;
+          return true;
         }
         if (result.status === 'partial') {
           await onSaved({
@@ -135,7 +135,7 @@ export function useVaciarTaskSave({
             hasSubtasks: result.hasSubtasks,
           });
           showToast(t('vaciar.savedPartial'), 'success');
-          return;
+          return true;
         }
 
         let toastMsg = result.hasSubtasks
@@ -172,9 +172,11 @@ export function useVaciarTaskSave({
         if (!options?.suppressToast) {
           showToast(toastMsg, result.reprioritized || !hasCheckInToday ? 'info' : 'success');
         }
+        return true;
       } catch (error) {
         logger.error('Error inesperado:', error);
         showToast(t('errors.saveTaskFailed'), 'error');
+        return false;
       } finally {
         setIsSaving(false);
       }

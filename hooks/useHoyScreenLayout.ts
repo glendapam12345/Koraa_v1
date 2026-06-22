@@ -3,8 +3,13 @@ import type { ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
-import { resolveHoyLiteLayout, optOutHoyLiteLayout } from '@/lib/hoyLiteDay';
+import {
+  resolveHoyLiteLayout,
+  optOutHoyLiteLayout,
+  isHoyLiteCompactOptedOut,
+} from '@/lib/hoyLiteDay';
 import { consumePrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
+import { consumeCheckInReplanSummary } from '@/lib/checkInReplanSummary';
 
 type ToastFn = (message: string, type?: 'success' | 'error' | 'info') => void;
 
@@ -29,11 +34,13 @@ export function useHoyScreenLayout({
 }: UseHoyScreenLayoutArgs) {
   const { t } = useI18n();
   const [hoyLiteLayout, setHoyLiteLayout] = useState<boolean | null>(null);
+  const [hoyLiteCompactOptedOut, setHoyLiteCompactOptedOut] = useState(false);
   const [showSecondaryModules, setShowSecondaryModules] = useState(false);
+  const [checkInReplanCoachLine, setCheckInReplanCoachLine] = useState<string | null>(null);
   const handleOptOutHoyLite = useCallback(async () => {
     if (!userId) return;
     await optOutHoyLiteLayout(userId);
-    setHoyLiteLayout(false);
+    setHoyLiteCompactOptedOut(true);
     setShowSecondaryModules(true);
     showToast(t('hoy.showAllSectionsToast'), 'info');
   }, [userId, showToast, t]);
@@ -46,9 +53,13 @@ export function useHoyScreenLayout({
       }
       let cancelled = false;
       void (async () => {
-        const lite = await resolveHoyLiteLayout(userId);
+        const [lite, compactOptedOut] = await Promise.all([
+          resolveHoyLiteLayout(userId),
+          isHoyLiteCompactOptedOut(userId),
+        ]);
         if (cancelled) return;
         setHoyLiteLayout(lite);
+        setHoyLiteCompactOptedOut(compactOptedOut);
 
         try {
           const secondaryRaw = await AsyncStorage.getItem(`hoy_secondary_modules_${userId}_v1`);
@@ -58,11 +69,11 @@ export function useHoyScreenLayout({
           } else if (secondaryRaw === '0') {
             setShowSecondaryModules(false);
           } else {
-            // Día 2+: meditación, consejos y resto del día visibles por defecto
-            setShowSecondaryModules(!lite);
+            // Día 2+ o vista completa: extras visibles por defecto
+            setShowSecondaryModules(!lite || compactOptedOut);
           }
         } catch {
-          if (!cancelled) setShowSecondaryModules(!lite);
+          if (!cancelled) setShowSecondaryModules(!lite || compactOptedOut);
         }
       })();
       void (async () => {
@@ -76,7 +87,24 @@ export function useHoyScreenLayout({
         await Promise.all([loadTodayCheckIn(), loadTasks()]);
         if (cancelled) return;
         const showPrioritiesReady = await consumePrioritiesReadyToast();
-        if (showPrioritiesReady && !cancelled) {
+        const replanSummary = userId ? await consumeCheckInReplanSummary(userId) : null;
+        if (cancelled) return;
+
+        if (replanSummary) {
+          setCheckInReplanCoachLine(replanSummary.subline || replanSummary.headline);
+          const toastParts = [replanSummary.headline];
+          if (replanSummary.movedCount > 0) {
+            toastParts.push(
+              t('hoy.checkInReplanMoved', { count: replanSummary.movedCount }),
+            );
+          }
+          if (replanSummary.boostedCount > 0) {
+            toastParts.push(
+              t('hoy.checkInReplanBoosted', { count: replanSummary.boostedCount }),
+            );
+          }
+          showToast(toastParts.join(' · '), 'info');
+        } else if (showPrioritiesReady) {
           showToast(t('sentir.checkInSavedToast'), 'success');
         }
       })();
@@ -105,13 +133,17 @@ export function useHoyScreenLayout({
     );
   }, [userId, showSecondaryModules, hoyPreFlowActive]);
 
+  const hoyLiteCompactLayout = Boolean(hoyLiteLayout && !hoyLiteCompactOptedOut);
+
   return {
     hoyLiteLayout,
+    hoyLiteCompactLayout,
     hoyPreFlowActive,
     hoyRestOfDayExpanded,
     showSecondaryModules,
     setShowSecondaryModules,
     handleOptOutHoyLite,
     handleShowMoreForHoy,
+    checkInReplanCoachLine,
   };
 }

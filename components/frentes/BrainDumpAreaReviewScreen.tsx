@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Alert,
+  InteractionManager,
 } from 'react-native';
 import { ChevronLeft, Plus } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
@@ -17,7 +19,7 @@ import type { AppLocale, TranslationKey } from '@/lib/i18n';
 import type { EnrichedCaptureItem } from '@/lib/taskIntelligentEnrichment';
 import type { LifeAreaKey, LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 import { isCustomLifeAreaRef, makeCustomLifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
-import { resolveAreaColumnOrder } from '@/lib/lifeAreas/userLifeAreas';
+import { resolveAreaColumnOrder, reorderAreaColumnInConfig, removeAreaFromUserConfig, type UserLifeAreasConfig } from '@/lib/lifeAreas/userLifeAreas';
 import { useUserLifeAreas } from '@/hooks/useUserLifeAreas';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { AreaNameEditSheet } from '@/components/projects/AreaNameEditSheet';
@@ -25,6 +27,7 @@ import { BrainDumpAreaDragBoard } from '@/components/frentes/BrainDumpAreaDragBo
 import { BrainDumpCreateProjectSheet } from '@/components/frentes/BrainDumpCreateProjectSheet';
 import { BrainDumpMoveAreaPicker } from '@/components/frentes/BrainDumpMoveAreaPicker';
 import { BrainDumpTaskProjectPicker } from '@/components/frentes/BrainDumpTaskProjectPicker';
+import { CaptureReviewSavePreview } from '@/components/frentes/CaptureReviewSavePreview';
 import { ReviewPreviewTaskRow } from '@/components/frentes/ReviewPreviewTaskRow';
 import {
   buildBrainDumpAreaBoardModel,
@@ -39,10 +42,12 @@ import { applyInferredLifeAreas } from '@/lib/review/inferCaptureItemLifeArea';
 import {
   assignItemToProject,
   createDraftBrainDumpProject,
+  isDraftProjectId,
   mergeBrainDumpProjects,
   toBrainDumpReviewProject,
   type BrainDumpReviewProject,
 } from '@/lib/review/brainDumpProjects';
+import { deleteProjectById } from '@/lib/deleteProject';
 
 type BrainDumpAreaReviewScreenProps = {
   locale: AppLocale;
@@ -55,7 +60,7 @@ type BrainDumpAreaReviewScreenProps = {
     color?: string | null;
     life_area_key?: string | null;
   }[];
-  onItemsChange: (items: EnrichedCaptureItem[]) => void;
+  onItemsChange: Dispatch<SetStateAction<EnrichedCaptureItem[]>>;
   onBack: () => void;
   onConfirm: (payload: {
     items: EnrichedCaptureItem[];
@@ -63,12 +68,16 @@ type BrainDumpAreaReviewScreenProps = {
   }) => void;
   isSaving: boolean;
   isRefining?: boolean;
+  onDraggingChange?: (dragging: boolean) => void;
+  parentScrollRef?: RefObject<ScrollView | null>;
+  parentScrollYRef?: RefObject<number>;
 };
 
 type RenameTarget = {
   ref: LifeAreaRef;
   name: string;
   emoji: string;
+  color: string;
   isCustom: boolean;
   customId?: string;
 };
@@ -83,20 +92,22 @@ export function BrainDumpAreaReviewScreen({
   onConfirm,
   isSaving,
   isRefining = false,
+  onDraggingChange,
+  parentScrollRef,
+  parentScrollYRef,
 }: BrainDumpAreaReviewScreenProps) {
   const { t } = useI18n();
   const {
     config: lifeAreasConfig,
     loading: lifeAreasLoading,
-    renameBuiltinArea,
-    renameCustomArea,
     addCustomArea,
     saveConfig,
-    reorderAreaColumn,
   } = useUserLifeAreas(userId);
 
   const presetEnsuredRef = useRef(false);
   const inferenceAppliedRef = useRef(false);
+
+  const [reviewAreaConfig, setReviewAreaConfig] = useState<UserLifeAreasConfig | null>(null);
 
   const [draftProjects, setDraftProjects] = useState<BrainDumpReviewProject[]>([]);
   const [renameTarget, setRenameTarget] = useState<RenameTarget | null>(null);
@@ -104,10 +115,22 @@ export function BrainDumpAreaReviewScreen({
   const [createProjectColumn, setCreateProjectColumn] = useState<BrainDumpAreaColumn | null>(null);
   const [pendingAssignTaskId, setPendingAssignTaskId] = useState<string | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [movingTaskId, setMovingTaskId] = useState<string | null>(null);
+  const [pendingMoveTaskIdForNewArea, setPendingMoveTaskIdForNewArea] = useState<string | null>(
+    null,
+  );
   const [createdAreaName, setCreatedAreaName] = useState<string | null>(null);
+  const [removedSavedProjectIds, setRemovedSavedProjectIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   const getDefaultLabel = useCallback(
     (key: LifeAreaKey) => t(`lifeAreas.${key}` as TranslationKey),
+    [t],
+  );
+
+  const getPresetCustomLabel = useCallback(
+    (presetCustomId: string) => t(`lifeAreasPreset.${presetCustomId}` as TranslationKey),
     [t],
   );
 
@@ -116,9 +139,14 @@ export function BrainDumpAreaReviewScreen({
     [lifeAreasConfig],
   );
 
+  const activeAreaConfig = reviewAreaConfig ?? effectiveConfig;
+
   const savedProjects = useMemo(
-    () => existingProjects.map((project) => toBrainDumpReviewProject(project)),
-    [existingProjects],
+    () =>
+      existingProjects
+        .filter((project) => !removedSavedProjectIds.has(project.id))
+        .map((project) => toBrainDumpReviewProject(project)),
+    [existingProjects, removedSavedProjectIds],
   );
 
   const allProjects = useMemo(
@@ -127,14 +155,14 @@ export function BrainDumpAreaReviewScreen({
   );
 
   useEffect(() => {
-    if (!userId || lifeAreasLoading || presetEnsuredRef.current) return;
-    if (!brainDumpPresetConfigChanged(lifeAreasConfig, effectiveConfig)) {
-      presetEnsuredRef.current = true;
-      return;
-    }
+    if (lifeAreasLoading || presetEnsuredRef.current) return;
+    const next = ensureBrainDumpPresetInConfig(lifeAreasConfig);
     presetEnsuredRef.current = true;
-    void saveConfig(effectiveConfig);
-  }, [userId, lifeAreasLoading, lifeAreasConfig, effectiveConfig, saveConfig]);
+    setReviewAreaConfig(next);
+    if (userId && brainDumpPresetConfigChanged(lifeAreasConfig, next)) {
+      void saveConfig(next);
+    }
+  }, [userId, lifeAreasLoading, lifeAreasConfig, saveConfig]);
 
   useEffect(() => {
     if (inferenceAppliedRef.current || items.length === 0) return;
@@ -143,9 +171,13 @@ export function BrainDumpAreaReviewScreen({
       inferenceAppliedRef.current = true;
       return;
     }
+    const inferred = applyInferredLifeAreas(items, activeAreaConfig);
+    const changed = inferred.some((item, index) => item.lifeAreaKey !== items[index]?.lifeAreaKey);
     inferenceAppliedRef.current = true;
-    onItemsChange(applyInferredLifeAreas(items, effectiveConfig));
-  }, [items, onItemsChange, effectiveConfig]);
+    if (changed) {
+      onItemsChange(inferred);
+    }
+  }, [items, onItemsChange, activeAreaConfig]);
 
   const looseLabel = t('projectsUi.looseTitle');
   const looseInAreaLabel = t('vaciar.areaReviewLooseInArea');
@@ -154,19 +186,26 @@ export function BrainDumpAreaReviewScreen({
     () =>
       buildBrainDumpAreaBoardModel(
         items,
-        effectiveConfig,
+        activeAreaConfig,
         getDefaultLabel,
         looseLabel,
         locale,
         allProjects,
         looseInAreaLabel,
+        true,
+        getPresetCustomLabel,
       ),
-    [items, effectiveConfig, getDefaultLabel, looseLabel, locale, allProjects, looseInAreaLabel],
+    [items, activeAreaConfig, getDefaultLabel, getPresetCustomLabel, looseLabel, locale, allProjects, looseInAreaLabel],
   );
 
   const editingItem = useMemo(
     () => items.find((item) => item.id === editingTaskId) ?? null,
     [items, editingTaskId],
+  );
+
+  const movingItem = useMemo(
+    () => items.find((item) => item.id === movingTaskId) ?? null,
+    [items, movingTaskId],
   );
 
   const clearProjectIfWrongArea = useCallback(
@@ -192,16 +231,22 @@ export function BrainDumpAreaReviewScreen({
   );
 
   const handleMoveTask = useCallback(
-    (taskId: string, targetColumnId: string) => {
+    (taskId: string, targetColumnId: string, targetProjectId?: string | null) => {
       const lifeAreaKey = columnIdToLifeAreaKey(targetColumnId);
-      onItemsChange(
-        items.map((item) => {
+      onItemsChange((prev) =>
+        prev.map((item) => {
           if (item.id !== taskId) return item;
-          return clearProjectIfWrongArea(item, lifeAreaKey);
+          let next = clearProjectIfWrongArea(item, lifeAreaKey);
+          if (targetProjectId) {
+            next = { ...next, ...assignItemToProject(true, targetProjectId) };
+          } else if (targetProjectId === null) {
+            next = { ...next, ...assignItemToProject(false, null) };
+          }
+          return next;
         }),
       );
     },
-    [clearProjectIfWrongArea, items, onItemsChange],
+    [clearProjectIfWrongArea, onItemsChange],
   );
 
   const openRenameForColumn = useCallback((column: BrainDumpAreaColumn) => {
@@ -209,10 +254,12 @@ export function BrainDumpAreaReviewScreen({
 
     if (isCustomLifeAreaRef(column.ref)) {
       const customId = column.ref.slice('custom:'.length);
+      const customEntry = activeAreaConfig.custom.find((entry) => entry.id === customId);
       setRenameTarget({
         ref: column.ref,
         name: column.name,
-        emoji: column.emoji,
+        emoji: customEntry?.emoji ?? column.emoji,
+        color: customEntry?.color ?? column.color,
         isCustom: true,
         customId,
       });
@@ -223,20 +270,146 @@ export function BrainDumpAreaReviewScreen({
       ref: column.ref,
       name: column.name,
       emoji: column.emoji,
+      color: column.color,
       isCustom: false,
     });
-  }, []);
+  }, [activeAreaConfig.custom]);
 
   const handleRenameSave = useCallback(
-    async (name: string, emoji?: string) => {
-      if (!renameTarget) return;
+    async (name: string, emoji?: string, color?: string) => {
+      if (!renameTarget) return false;
+
+      const trimmed = name.trim();
+      if (!trimmed) return false;
+
+      let next = activeAreaConfig;
       if (renameTarget.isCustom && renameTarget.customId) {
-        await renameCustomArea(renameTarget.customId, name, emoji);
+        next = {
+          ...activeAreaConfig,
+          custom: activeAreaConfig.custom.map((item) =>
+            item.id === renameTarget.customId
+              ? {
+                  ...item,
+                  name: trimmed,
+                  emoji: emoji ?? item.emoji,
+                  color: color ?? item.color,
+                }
+              : item,
+          ),
+        };
       } else if (!renameTarget.isCustom) {
-        await renameBuiltinArea(renameTarget.ref as LifeAreaKey, name);
+        const labels = { ...activeAreaConfig.labels };
+        labels[renameTarget.ref as LifeAreaKey] = trimmed;
+        next = { ...activeAreaConfig, labels };
       }
+
+      setReviewAreaConfig(next);
+
+      if (userId) {
+        const ok = await saveConfig(next);
+        if (!ok) {
+          Alert.alert(t('errors.generic'));
+          return false;
+        }
+      }
+
+      return true;
     },
-    [renameTarget, renameBuiltinArea, renameCustomArea],
+    [activeAreaConfig, renameTarget, saveConfig, t, userId],
+  );
+
+  const handleDeleteArea = useCallback(() => {
+    if (!renameTarget) return;
+
+    const target = renameTarget;
+    setRenameTarget(null);
+
+    Alert.alert(
+      t('areasCompact.deleteAreaTitle'),
+      t('areasCompact.deleteAreaBody', { name: target.name }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('errors.delete'),
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              const areaRef = target.ref;
+              const previousConfig = reviewAreaConfig ?? effectiveConfig;
+              const next = removeAreaFromUserConfig(previousConfig, areaRef);
+
+              setReviewAreaConfig(next);
+              const ok = userId ? await saveConfig(next) : true;
+              if (ok) {
+                onItemsChange((prev) =>
+                  prev.map((item) =>
+                    item.lifeAreaKey === areaRef
+                      ? clearProjectIfWrongArea(item, null)
+                      : item,
+                  ),
+                );
+              } else {
+                setReviewAreaConfig(previousConfig);
+                Alert.alert(t('areasCompact.deleteAreaFailed'));
+              }
+            })();
+          },
+        },
+      ],
+    );
+  }, [
+    clearProjectIfWrongArea,
+    effectiveConfig,
+    onItemsChange,
+    renameTarget,
+    reviewAreaConfig,
+    saveConfig,
+    t,
+    userId,
+  ]);
+
+  const detachProjectFromItems = useCallback(
+    (projectId: string) => {
+      onItemsChange((prev) =>
+        prev.map((item) =>
+          item.selectedProjectId === projectId
+            ? { ...item, ...assignItemToProject(false, null) }
+            : item,
+        ),
+      );
+    },
+    [onItemsChange],
+  );
+
+  const handleDeleteProject = useCallback(
+    (projectId: string, projectName: string) => {
+      const isDraft = isDraftProjectId(projectId);
+      Alert.alert(
+        t('projects.deleteProjectTitle'),
+        t('projects.deleteProjectBody', { name: projectName }),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('errors.delete'),
+            style: 'destructive',
+            onPress: () => {
+              detachProjectFromItems(projectId);
+              if (isDraft) {
+                setDraftProjects((current) => current.filter((entry) => entry.id !== projectId));
+                return;
+              }
+              void (async () => {
+                const result = await deleteProjectById(projectId);
+                if (result.ok) {
+                  setRemovedSavedProjectIds((prev) => new Set(prev).add(projectId));
+                }
+              })();
+            },
+          },
+        ],
+      );
+    },
+    [detachProjectFromItems, t],
   );
 
   useEffect(() => {
@@ -246,22 +419,38 @@ export function BrainDumpAreaReviewScreen({
   }, [createdAreaName]);
 
   const handleAddArea = useCallback(
-    async (name: string, emoji?: string) => {
-      const result = await addCustomArea(name, emoji ?? '🌿');
+    async (name: string, emoji?: string, color?: string) => {
+      const result = await addCustomArea(name, emoji ?? '🌿', color);
       if (result.ok && result.entry) {
+        const entry = result.entry;
+        setReviewAreaConfig((current) => {
+          const base = current ?? activeAreaConfig;
+          return { ...base, custom: [...base.custom, entry] };
+        });
         setAddAreaOpen(false);
         setCreatedAreaName(result.entry.name);
-        if (editingTaskId) {
-          handleMoveTask(editingTaskId, makeCustomLifeAreaRef(result.entry.id));
+        const taskIdToMove = pendingMoveTaskIdForNewArea ?? editingTaskId;
+        if (taskIdToMove) {
+          handleMoveTask(taskIdToMove, makeCustomLifeAreaRef(result.entry.id));
         }
+        setPendingMoveTaskIdForNewArea(null);
+        setMovingTaskId(null);
+        setEditingTaskId(null);
       }
     },
-    [addCustomArea, editingTaskId, handleMoveTask],
+    [activeAreaConfig, addCustomArea, editingTaskId, handleMoveTask, pendingMoveTaskIdForNewArea],
   );
 
+  const openAddAreaForTask = useCallback((taskId: string | null) => {
+    setPendingMoveTaskIdForNewArea(taskId);
+    setMovingTaskId(null);
+    setEditingTaskId(null);
+    setAddAreaOpen(true);
+  }, []);
+
   const orderedAreaRefs = useMemo(
-    () => resolveAreaColumnOrder(effectiveConfig),
-    [effectiveConfig],
+    () => resolveAreaColumnOrder(activeAreaConfig),
+    [activeAreaConfig],
   );
 
   const canMoveAreaUp = useCallback(
@@ -279,75 +468,102 @@ export function BrainDumpAreaReviewScreen({
 
   const handleMoveAreaColumn = useCallback(
     (ref: string, direction: 'up' | 'down') => {
-      void reorderAreaColumn(ref as LifeAreaRef, direction);
+      const next = reorderAreaColumnInConfig(activeAreaConfig, ref as LifeAreaRef, direction);
+      if (next === activeAreaConfig) return;
+      setReviewAreaConfig(next);
+      if (userId) void saveConfig(next);
     },
-    [reorderAreaColumn],
+    [activeAreaConfig, saveConfig, userId],
   );
 
   const handleCreateProject = useCallback(
     (payload: { name: string; dueDate: string | null }) => {
       if (!createProjectColumn?.ref) return;
-      const draft = createDraftBrainDumpProject(
-        payload.name,
-        createProjectColumn.ref,
-        payload.dueDate,
-      );
+      const areaRef = createProjectColumn.ref;
+      const draft = createDraftBrainDumpProject(payload.name, areaRef, payload.dueDate);
       setDraftProjects((current) => [...current, draft]);
 
-      if (pendingAssignTaskId) {
-        onItemsChange(
-          items.map((item) =>
-            item.id === pendingAssignTaskId
-              ? { ...item, ...assignItemToProject(true, draft.id) }
+      const assignedTaskId = pendingAssignTaskId;
+      if (assignedTaskId) {
+        onItemsChange((prev) =>
+          prev.map((item) =>
+            item.id === assignedTaskId
+              ? {
+                  ...item,
+                  lifeAreaKey: areaRef,
+                  ...assignItemToProject(true, draft.id),
+                }
               : item,
           ),
         );
-        setPendingAssignTaskId(null);
+        setEditingTaskId(assignedTaskId);
       }
+      setPendingAssignTaskId(null);
+      setCreateProjectColumn(null);
     },
-    [createProjectColumn?.ref, items, onItemsChange, pendingAssignTaskId],
+    [createProjectColumn?.ref, onItemsChange, pendingAssignTaskId],
   );
 
-  const handleOpenCreateProject = useCallback((column: BrainDumpAreaColumn) => {
-    setPendingAssignTaskId(null);
-    setCreateProjectColumn(column);
+  const openCreateProjectSheet = useCallback((column: BrainDumpAreaColumn) => {
+    if (!column.ref) return;
+    InteractionManager.runAfterInteractions(() => {
+      setCreateProjectColumn(column);
+    });
   }, []);
 
-  const handleRequestCreateFromTask = useCallback(() => {
+  const handleOpenCreateProject = useCallback(
+    (column: BrainDumpAreaColumn) => {
+      setPendingAssignTaskId(null);
+      setEditingTaskId(null);
+      setMovingTaskId(null);
+      openCreateProjectSheet(column);
+    },
+    [openCreateProjectSheet],
+  );
+
+  const openCreateProjectForTask = useCallback(() => {
     if (!editingItem?.lifeAreaKey) return;
     const column = columns.find((entry) => entry.ref === editingItem.lifeAreaKey);
-    if (!column) return;
+    if (!column?.ref) return;
     setPendingAssignTaskId(editingItem.id);
-    setCreateProjectColumn(column);
-  }, [columns, editingItem]);
+    setEditingTaskId(null);
+    setMovingTaskId(null);
+    openCreateProjectSheet(column);
+  }, [columns, editingItem, openCreateProjectSheet]);
 
   const handleMoveTaskFromSheet = useCallback(
     (targetColumnId: string) => {
-      if (!editingTaskId) return;
-      handleMoveTask(editingTaskId, targetColumnId);
+      const taskId = movingTaskId ?? editingTaskId;
+      if (!taskId) return;
+      handleMoveTask(taskId, targetColumnId);
+      setMovingTaskId(null);
+      if (editingTaskId === taskId) {
+        setEditingTaskId(null);
+      }
     },
-    [editingTaskId, handleMoveTask],
+    [editingTaskId, handleMoveTask, movingTaskId],
   );
 
   const handleConfirm = useCallback(() => {
+    onDraggingChange?.(false);
     onConfirm({
       items,
       draftProjects,
     });
-  }, [draftProjects, items, onConfirm]);
+  }, [draftProjects, items, onConfirm, onDraggingChange]);
 
   const handleTaskChange = useCallback(
     (next: EnrichedCaptureItem) => {
-      onItemsChange(items.map((item) => (item.id === next.id ? next : item)));
+      onItemsChange((prev) => prev.map((item) => (item.id === next.id ? next : item)));
     },
-    [items, onItemsChange],
+    [onItemsChange],
   );
 
   const handleDeleteTask = useCallback(() => {
     if (!editingTaskId) return;
-    onItemsChange(items.filter((item) => item.id !== editingTaskId));
+    onItemsChange((prev) => prev.filter((item) => item.id !== editingTaskId));
     setEditingTaskId(null);
-  }, [editingTaskId, items, onItemsChange]);
+  }, [editingTaskId, onItemsChange]);
 
   return (
     <View style={styles.root}>
@@ -362,9 +578,11 @@ export function BrainDumpAreaReviewScreen({
           <Text style={styles.backLabel}>{t('vaciar.previewBack')}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.instructionTitle}>{t('vaciar.areaReviewTitle')}</Text>
-        <Text style={styles.instructionLine}>{t('vaciar.areaReviewInstruction1')}</Text>
-        <Text style={styles.instructionLine}>{t('vaciar.areaReviewInstruction2')}</Text>
+        <Text style={styles.screenTitle}>{t('vaciar.areaReviewTitle')}</Text>
+        <Text style={styles.instructionSubtitle}>{t('vaciar.areaReviewSubtitle')}</Text>
+        <View style={styles.hintPill}>
+          <Text style={styles.hintText}>{t('vaciar.areaReviewHint')}</Text>
+        </View>
 
         {countsLine ? (
           <Text style={styles.countsLine} numberOfLines={2}>
@@ -389,10 +607,13 @@ export function BrainDumpAreaReviewScreen({
       <BrainDumpAreaDragBoard
         columns={columns}
         areas={areas}
+        projects={allProjects}
         onMoveTask={handleMoveTask}
         onPressColumnHeader={openRenameForColumn}
         onPressTask={setEditingTaskId}
+        onRequestMoveTask={setMovingTaskId}
         onPressAddProject={handleOpenCreateProject}
+        onPressDeleteProject={handleDeleteProject}
         emptyColumnHint={t('vaciar.areaReviewEmptyColumn')}
         renameColumnA11y={t('vaciar.areaReviewRenameColumnA11y')}
         addProjectLabel={t('vaciar.areaReviewAddProject')}
@@ -400,7 +621,10 @@ export function BrainDumpAreaReviewScreen({
         dragHint={t('vaciar.areaReviewDragHint')}
         looseSectionTitle={t('vaciar.areaReviewLooseSectionTitle')}
         areasSectionTitle={t('vaciar.areaReviewAreasSectionTitle')}
-        areasHeader={
+        onDraggingChange={onDraggingChange}
+        parentScrollRef={parentScrollRef}
+        parentScrollYRef={parentScrollYRef}
+        betweenSections={
           <TouchableOpacity
             style={styles.addAreaButtonCompact}
             onPress={() => setAddAreaOpen(true)}
@@ -418,6 +642,13 @@ export function BrainDumpAreaReviewScreen({
         moveAreaDownA11y={t('vaciar.areaReviewMoveAreaDownA11y')}
       />
 
+      <CaptureReviewSavePreview
+        items={items}
+        locale={locale}
+        onPressTask={setEditingTaskId}
+        onChangeItem={handleTaskChange}
+      />
+
       <View style={styles.footer}>
         <CalmPrimaryButton
           label={t('vaciar.areaReviewConfirm')}
@@ -432,7 +663,12 @@ export function BrainDumpAreaReviewScreen({
         title={t('vaciar.areaReviewRenameTitle')}
         initialName={renameTarget?.name ?? ''}
         initialEmoji={renameTarget?.emoji ?? '🌿'}
+        initialColor={renameTarget?.color}
         showEmoji={renameTarget?.isCustom ?? false}
+        showColor={renameTarget?.isCustom ?? false}
+        canDelete={Boolean(renameTarget)}
+        deleteLabel={t('areasCompact.deleteArea')}
+        onDelete={handleDeleteArea}
         onClose={() => setRenameTarget(null)}
         onSave={handleRenameSave}
       />
@@ -443,7 +679,11 @@ export function BrainDumpAreaReviewScreen({
         initialName=""
         initialEmoji="🌿"
         showEmoji
-        onClose={() => setAddAreaOpen(false)}
+        showColor
+        onClose={() => {
+          setAddAreaOpen(false);
+          setPendingMoveTaskIdForNewArea(null);
+        }}
         onSave={handleAddArea}
       />
 
@@ -452,11 +692,50 @@ export function BrainDumpAreaReviewScreen({
         areaName={createProjectColumn?.name ?? ''}
         areaRef={createProjectColumn?.ref ?? 'other'}
         onClose={() => {
+          const taskId = pendingAssignTaskId;
           setCreateProjectColumn(null);
           setPendingAssignTaskId(null);
+          if (taskId) setEditingTaskId(taskId);
         }}
         onCreate={handleCreateProject}
       />
+
+      <Modal
+        visible={movingItem != null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setMovingTaskId(null)}
+      >
+        <KeyboardAvoidingView
+          style={styles.taskSheetBackdrop}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <TouchableOpacity
+            style={styles.taskSheetScrim}
+            activeOpacity={1}
+            onPress={() => setMovingTaskId(null)}
+          />
+          {movingItem ? (
+            <View style={styles.taskSheet}>
+              <Text style={styles.moveSheetTaskTitle} numberOfLines={2}>
+                {movingItem.content}
+              </Text>
+              <BrainDumpMoveAreaPicker
+                columns={columns}
+                currentAreaRef={movingItem.lifeAreaKey ?? null}
+                onMove={handleMoveTaskFromSheet}
+                onAddArea={() => openAddAreaForTask(movingItem.id)}
+                looseLabel={looseLabel}
+              />
+              <CalmPrimaryButton
+                label={t('common.cancel')}
+                variant="soft"
+                onPress={() => setMovingTaskId(null)}
+              />
+            </View>
+          ) : null}
+        </KeyboardAvoidingView>
+      </Modal>
 
       <Modal
         visible={editingItem != null}
@@ -475,7 +754,12 @@ export function BrainDumpAreaReviewScreen({
           />
           {editingItem ? (
             <View style={styles.taskSheet}>
-              <ScrollView keyboardShouldPersistTaps="handled">
+              <ScrollView
+                keyboardShouldPersistTaps="always"
+                nestedScrollEnabled
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.taskSheetScroll}
+              >
                 <ReviewPreviewTaskRow
                   item={editingItem}
                   locale={locale}
@@ -487,14 +771,15 @@ export function BrainDumpAreaReviewScreen({
                   columns={columns}
                   currentAreaRef={editingItem.lifeAreaKey ?? null}
                   onMove={handleMoveTaskFromSheet}
-                  onAddArea={() => setAddAreaOpen(true)}
+                  onAddArea={() => openAddAreaForTask(editingItem.id)}
+                  looseLabel={looseLabel}
                 />
                 <BrainDumpTaskProjectPicker
                   item={editingItem}
                   projects={allProjects}
                   locale={locale}
                   onChange={handleTaskChange}
-                  onRequestCreateProject={handleRequestCreateFromTask}
+                  onRequestCreateProject={openCreateProjectForTask}
                 />
               </ScrollView>
               <CalmPrimaryButton
@@ -512,10 +797,12 @@ export function BrainDumpAreaReviewScreen({
 
 const styles = StyleSheet.create({
   root: {
-    gap: THEME.spacing.sm,
+    gap: THEME.spacing.md,
+    alignSelf: 'stretch',
   },
   header: {
     gap: THEME.spacing.xs,
+    alignSelf: 'stretch',
   },
   backButton: {
     flexDirection: 'row',
@@ -528,20 +815,37 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
   },
-  instructionTitle: {
+  screenTitle: {
     ...THEME.typography.h3,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
+    lineHeight: 28,
   },
-  instructionLine: {
+  instructionSubtitle: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
     lineHeight: 18,
+  },
+  hintPill: {
+    alignSelf: 'stretch',
+    backgroundColor: THEME.colors.calm.mist,
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: 8,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  hintText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 16,
+    textAlign: 'center',
   },
   countsLine: {
     ...THEME.typography.caption,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
+    lineHeight: 18,
   },
   refiningRow: {
     flexDirection: 'row',
@@ -599,5 +903,15 @@ const styles = StyleSheet.create({
     borderTopRightRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     gap: THEME.spacing.sm,
+  },
+  moveSheetTaskTitle: {
+    ...THEME.typography.screenSubtitle,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
+    lineHeight: 22,
+  },
+  taskSheetScroll: {
+    gap: THEME.spacing.md,
+    paddingBottom: THEME.spacing.xs,
   },
 });

@@ -107,9 +107,6 @@ export function HoyDailyPlanCard({
           {prioritiesSlot ?? (
             <Text style={styles.emptyHint}>{t('hoy.planPrioritiesSubEmpty')}</Text>
           )}
-          {stepCount > 0 ? (
-            <Text style={styles.editHint}>{t('hoy.planEditHint')}</Text>
-          ) : null}
         </HoyPlanExpandableRow>
 
         <HoyPlanExpandableRow
@@ -125,9 +122,6 @@ export function HoyDailyPlanCard({
           {waitingSlot ?? (
             <Text style={styles.emptyHint}>{t('hoy.planWaitingSubEmpty')}</Text>
           )}
-          {waitingCount > 0 ? (
-            <Text style={styles.editHint}>{t('hoy.planEditHint')}</Text>
-          ) : null}
         </HoyPlanExpandableRow>
       </View>
 
@@ -142,7 +136,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     gap: 0,
     backgroundColor: THEME.colors.fill[100],
-    borderColor: THEME.colors.calm.lavender,
+    borderColor: THEME.colors.calm.border,
     borderWidth: 1,
   },
   headerSoft: {
@@ -179,7 +173,7 @@ const styles = StyleSheet.create({
   progressText: {
     ...THEME.typography.micro,
     fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.calm.lavenderDeep,
+    color: THEME.colors.text.secondary,
     lineHeight: 14,
   },
   sections: {
@@ -199,11 +193,5 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.tertiary,
     fontStyle: 'italic',
     lineHeight: 22,
-  },
-  editHint: {
-    ...THEME.typography.micro,
-    color: THEME.colors.text.tertiary,
-    lineHeight: 14,
-    marginTop: 2,
   },
 });

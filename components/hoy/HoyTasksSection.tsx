@@ -1,25 +1,18 @@
-import { View, StyleSheet, Alert } from 'react-native';
-import { useCallback, useMemo, type Dispatch, type SetStateAction } from 'react';
+import { View, StyleSheet } from 'react-native';
+import { useMemo, type Dispatch, type SetStateAction } from 'react';
 import { THEME } from '@/constants/theme';
 import { HoyFocusPanel } from '@/components/hoy/HoyFocusPanel';
-import { HoyFocusTaskRow } from '@/components/hoy/HoyFocusTaskRow';
 import { HoyRestOfDayPanel } from '@/components/hoy/HoyRestOfDayPanel';
 import { useI18n } from '@/contexts/I18nContext';
-import { useAppleHealthConnection } from '@/hooks/useAppleHealthConnection';
 import type { Task } from '@/components/tasks/TaskCard';
 import type { FocusProgressStats } from '@/lib/focusProgressStats';
-import { getHoyFocusTasks } from '@/lib/hoyFocusTasks';
+import { getHoyPriorityPlanTasks, getHoyWaitingPlanTasks } from '@/lib/hoyFocusTasks';
 import { useHoyPlanTaskActions } from '@/hooks/useHoyPlanTaskActions';
 import type { FocusedProjectInfo } from '@/hooks/useFocusedProject';
 import { useHoyDayReflection } from '@/hooks/useHoyDayReflection';
 import { useHoyFocusTaskMeta } from '@/hooks/useHoyFocusTaskMeta';
+import { useUserLifeAreas } from '@/hooks/useUserLifeAreas';
 import { HoyDayReflectionFlow } from '@/components/vnext/HoyDayReflectionFlow';
-import {
-  buildFocusTaskDeadline,
-  formatFocusTaskDuration,
-  getFocusTaskEstimatedMinutes,
-  resolveFocusTaskAreaLabel,
-} from '@/lib/hoy/focusTaskDisplay';
 
 export type HoyTasksSectionProps = {
   todayMood: string;
@@ -56,7 +49,7 @@ export type HoyTasksSectionProps = {
   crisisMode?: boolean;
   onCareModeDismiss?: () => void;
   onCareModeLearnMore?: () => void;
-  onTasksReload?: () => void | Promise<void>;
+  onTasksReload?: (options?: { silent?: boolean }) => void | Promise<void>;
   showToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
   setTasks: Dispatch<SetStateAction<Task[]>>;
   focusedProject?: FocusedProjectInfo | null;
@@ -104,43 +97,29 @@ export function HoyTasksSection({
   onClearFocusedProject,
 }: HoyTasksSectionProps) {
   const { locale, t } = useI18n();
-  const health = useAppleHealthConnection(t);
+  const { config: lifeAreasConfig } = useUserLifeAreas(user?.id);
 
-  const handleHealthConnect = useCallback(async () => {
-    const result = await health.connect();
-    if (result.ok) {
-      const body = result.healthKit
-        ? t('appleHealth.connectSuccessBodyHealthKit')
-        : t('appleHealth.connectSuccessBody');
-      Alert.alert(t('appleHealth.connectSuccessTitle'), body);
-      return;
-    }
-    if (result.reason === 'unavailable') {
-      Alert.alert(t('appleHealth.unavailableTitle'), t('appleHealth.unavailableBody'));
-      return;
-    }
-    if (result.reason === 'permission_denied') {
-      Alert.alert(
-        t('appleHealth.permissionDeniedTitle'),
-        t('appleHealth.permissionDeniedBody'),
-      );
-      return;
-    }
-    Alert.alert(t('appleHealth.connectErrorTitle'), t('appleHealth.connectErrorBody'));
-  }, [health, t]);
-
-  const focusTasks = useMemo(
-    () => getHoyFocusTasks(tasks, incompleteTasksForToday, undefined, focusedProject?.id),
-    [tasks, incompleteTasksForToday, focusedProject?.id],
+  const priorityPlanTasks = useMemo(
+    () => getHoyPriorityPlanTasks(tasks, undefined, focusedProject?.id),
+    [tasks, focusedProject?.id],
   );
 
-  const { orderedFocusTasks, handlePostpone, handleMove } = useHoyPlanTaskActions({
-    focusTasks,
-    setTasks,
-    showToast: showToast ?? (() => {}),
-    onTasksReload,
-    postponeSuccessMessage: t('hoy.postponeStepSuccess'),
-  });
+  const waitingPlanTasks = useMemo(
+    () => getHoyWaitingPlanTasks(tasks, undefined, focusedProject?.id),
+    [tasks, focusedProject?.id],
+  );
+
+  const { orderedPriorityTasks, orderedWaitingTasks, handlePostpone, handleMove } =
+    useHoyPlanTaskActions({
+      priorityTasks: priorityPlanTasks,
+      waitingTasks: waitingPlanTasks,
+      setTasks,
+      showToast: showToast ?? (() => {}),
+      onTasksReload,
+      postponeSuccessMessage: t('hoy.postponeStepSuccess'),
+      promoteSuccessMessage: t('hoy.planPromoteSuccess'),
+      demoteSuccessMessage: t('hoy.planDemoteSuccess'),
+    });
 
   const { planningMeta, projectProgress } = useHoyFocusTaskMeta(tasks);
 
@@ -158,67 +137,16 @@ export function HoyTasksSection({
     showToast: showToast ?? (() => {}),
   });
 
-  const focusTaskIds = useMemo(() => new Set(focusTasks.map((task) => task.id)), [focusTasks]);
-
-  /** Pendientes de hoy que no están en el plan principal (prioridad más baja). */
   const waitingTasks = useMemo(
-    () => incompleteTasksForToday.filter((task) => !focusTaskIds.has(task.id)),
-    [focusTaskIds, incompleteTasksForToday],
+    () => waitingPlanTasks.filter((task) => !task.is_completed),
+    [waitingPlanTasks],
   );
 
   const restOfDayTasks = waitingTasks;
 
-  const visibleWaitingTasks = useMemo(() => waitingTasks.slice(0, 5), [waitingTasks]);
-
-  const waitingTasksSlot = useMemo(
-    () =>
-      visibleWaitingTasks.length > 0 ? (
-        <View style={styles.waitingList}>
-          {visibleWaitingTasks.map((task, index) => {
-            const project = task.project_id ? projectsMap[task.project_id] : undefined;
-            const minutes = getFocusTaskEstimatedMinutes(task, planningMeta[task.id]);
-            const deadline = buildFocusTaskDeadline(task, project, locale, t);
-            const progress = task.project_id ? projectProgress[task.project_id] : undefined;
-
-            return (
-              <HoyFocusTaskRow
-                key={task.id}
-                content={task.content}
-                completed={task.is_completed}
-                index={index}
-                durationLabel={formatFocusTaskDuration(minutes)}
-                deadlineLabel={deadline?.label ?? null}
-                deadlineUrgent={deadline?.urgent ?? false}
-                projectId={task.project_id ?? null}
-                projectName={project?.name ?? null}
-                projectColor={project?.color ?? THEME.colors.gradient.blue}
-                projectPercent={progress?.percent ?? null}
-                areaLabel={resolveFocusTaskAreaLabel(project)}
-                onToggleComplete={() => void handleToggleTask(task.id)}
-                onOpenDetails={() => handleEditTask(task)}
-                onDelete={onDeleteTask ? () => onDeleteTask(task) : undefined}
-              />
-            );
-          })}
-        </View>
-      ) : null,
-    [
-      handleEditTask,
-      handleToggleTask,
-      locale,
-      onDeleteTask,
-      planningMeta,
-      projectProgress,
-      projectsMap,
-      t,
-      visibleWaitingTasks,
-    ],
-  );
-
   return (
     <View style={styles.root}>
       <HoyFocusPanel
-        userId={user?.id}
         locale={locale}
         displayName={displayName}
         todayMood={todayMood}
@@ -228,8 +156,9 @@ export function HoyTasksSection({
         focusLevel={focusLevel}
         coachSuggestion={coachSuggestion}
         priorityStats={todayPriorityStats}
-        focusTasks={focusTasks}
-        orderedFocusTasks={orderedFocusTasks}
+        focusTasks={priorityPlanTasks}
+        orderedFocusTasks={orderedPriorityTasks}
+        orderedWaitingTasks={orderedWaitingTasks}
         totalPending={incompleteTasksForToday.length}
         projectsMap={projectsMap}
         projectProgress={projectProgress}
@@ -237,7 +166,8 @@ export function HoyTasksSection({
         onToggleTask={(taskId) => void handleToggleTask(taskId)}
         onOpenTask={handleEditTask}
         onPostponeTask={(taskId) => void handlePostpone(taskId)}
-        onMoveFocusTask={(taskId, direction) => void handleMove(taskId, direction)}
+        onMoveFocusTask={(taskId, direction) => void handleMove(taskId, direction, 'priority')}
+        onMoveWaitingTask={(taskId, direction) => void handleMove(taskId, direction, 'waiting')}
         restExpanded={restOfDayExpanded}
         onRestExpandedChange={(open) => {
           if (open) {
@@ -250,22 +180,14 @@ export function HoyTasksSection({
         onChangeEmotion={onChangeEmotion}
         compactLayout={compactLayout}
         onShowFullView={onShowFullView}
-        shortSleep={health.shortSleep}
-        sleepCard={{
-          available: health.available,
-          connected: health.connected,
-          lastNightHours: health.lastNightHours,
-          shortSleep: health.shortSleep,
-          onConnect: handleHealthConnect,
-          onOpenSleep: () => void health.openSleep(),
-        }}
         crisisMode={crisisMode}
         waitingCount={waitingTasks.length}
-        waitingTasksSlot={waitingTasksSlot}
+        waitingTasksSlot={null}
         onCareModeDismiss={onCareModeDismiss}
         onCareModeLearnMore={onCareModeLearnMore}
         focusedProject={focusedProject}
         onClearFocusedProject={onClearFocusedProject}
+        lifeAreasConfig={lifeAreasConfig}
       />
 
       {!compactLayout && !crisisMode ? (
@@ -310,8 +232,5 @@ export function HoyTasksSection({
 const styles = StyleSheet.create({
   root: {
     gap: THEME.layout.tabSectionGap,
-  },
-  waitingList: {
-    gap: THEME.spacing.sm,
   },
 });

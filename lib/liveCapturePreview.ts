@@ -4,6 +4,9 @@ import type { EnrichedCaptureItem } from '@/lib/taskIntelligentEnrichment';
 import { parseCaptureToInboxItems } from '@/lib/vaciarInboxCapture';
 import type { ProjectForMatch } from '@/lib/batchProjectMatch';
 import type { VaciarBatchItem } from '@/lib/vaciarBatchDraft';
+import { applyInferredLifeAreas } from '@/lib/review/inferCaptureItemLifeArea';
+import type { UserLifeAreasConfig } from '@/lib/lifeAreas/userLifeAreas';
+import { ensureBrainDumpPresetInConfig } from '@/lib/review/brainDumpAreaPreset';
 import {
   buildLiveAreaPreviewColumns,
   type LiveAreaPreviewChip,
@@ -41,7 +44,7 @@ export function buildLiveCapturePreview(
   rawInput: string,
   locale: AppLocale,
   projects: ProjectForMatch[],
-  options?: { stableIds?: boolean },
+  options?: { stableIds?: boolean; lifeAreasConfig?: UserLifeAreasConfig },
 ): LiveCapturePreview | null {
   const trimmed = rawInput.trim();
   if (trimmed.length < 4) return null;
@@ -50,8 +53,12 @@ export function buildLiveCapturePreview(
   if (parsed.length === 0) return null;
 
   const rows = options?.stableIds ? withStableLiveIds(parsed) : parsed;
-  const items = enrichCaptureItemsLocally(rows, projects);
-  const areaColumns = buildLiveAreaPreviewColumns(items, locale);
+  const effectiveConfig = options?.lifeAreasConfig
+    ? ensureBrainDumpPresetInConfig(options.lifeAreasConfig)
+    : undefined;
+  let items = enrichCaptureItemsLocally(rows, projects);
+  items = applyInferredLifeAreas(items, effectiveConfig);
+  const areaColumns = buildLiveAreaPreviewColumns(items, locale, effectiveConfig);
 
   return {
     items,

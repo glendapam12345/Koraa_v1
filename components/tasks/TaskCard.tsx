@@ -101,6 +101,10 @@ interface TaskCardProps {
   onMoveProject?: () => void;
   /** Desactiva acciones por swipe (mejor con botones rápidos). */
   swipeEnabled?: boolean;
+  /** Modo selección múltiple (p. ej. eliminar varias tareas sueltas). */
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 export function TaskCard({
@@ -137,6 +141,9 @@ export function TaskCard({
   onMoveNextWeek,
   onMoveProject,
   swipeEnabled = true,
+  selectionMode = false,
+  isSelected = false,
+  onToggleSelect,
 }: TaskCardProps) {
   const { t, locale } = useI18n();
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
@@ -221,6 +228,11 @@ export function TaskCard({
   const cardLeftBorderWidth = cardLeftBorderColor ? 5 : 0;
 
   const swipeableRef = useRef<Swipeable>(null);
+  const effectiveSwipeEnabled = swipeEnabled && !selectionMode;
+
+  const handleSelectPress = () => {
+    onToggleSelect?.();
+  };
 
   const handleSwipeAction = (fn: () => void) => {
     swipeableRef.current?.close();
@@ -310,14 +322,14 @@ export function TaskCard({
   );
 
   const showReplanSwipe =
-    swipeEnabled && Boolean(onMoveTomorrow || onMoveNextWeek || onMoveProject);
+    effectiveSwipeEnabled && Boolean(onMoveTomorrow || onMoveNextWeek || onMoveProject);
 
   return (
     <View style={styles.taskWrapper}>
       <Swipeable
         ref={swipeableRef}
-        enabled={swipeEnabled}
-        renderRightActions={swipeEnabled ? renderRightActions : undefined}
+        enabled={effectiveSwipeEnabled}
+        renderRightActions={effectiveSwipeEnabled ? renderRightActions : undefined}
         renderLeftActions={showReplanSwipe ? renderLeftActions : undefined}
         friction={2}
         rightThreshold={40}
@@ -373,27 +385,39 @@ export function TaskCard({
               style={[
                 styles.taskCheckbox,
                 uniformCard && styles.taskCheckboxAligned,
-                task.is_priority && !task.is_completed && styles.taskCheckboxFocus,
+                task.is_priority && !task.is_completed && !selectionMode && styles.taskCheckboxFocus,
+                selectionMode && isSelected && styles.taskCheckboxSelected,
+                selectionMode && styles.taskCheckboxSelectMode,
               ]}
-              onPress={onToggle}
+              onPress={selectionMode ? handleSelectPress : onToggle}
               activeOpacity={0.7}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               accessibilityRole="checkbox"
-              accessibilityState={{ checked: task.is_completed }}
+              accessibilityState={{
+                checked: selectionMode ? isSelected : task.is_completed,
+              }}
               accessibilityLabel={
-                task.is_completed
-                  ? t('taskCard.markPendingA11y', { task: taskContentLabel })
-                  : t('taskCard.markCompleted', { task: taskContentLabel })
+                selectionMode
+                  ? isSelected
+                    ? t('looseTasks.deselectTaskA11y', { task: taskContentLabel })
+                    : t('looseTasks.selectTaskA11y', { task: taskContentLabel })
+                  : task.is_completed
+                    ? t('taskCard.markPendingA11y', { task: taskContentLabel })
+                    : t('taskCard.markCompleted', { task: taskContentLabel })
               }
             >
-              {task.is_completed && (
+              {selectionMode ? (
+                isSelected ? (
+                  <Check size={14} color={THEME.colors.onGradient} strokeWidth={3} />
+                ) : null
+              ) : task.is_completed ? (
                 <View
                   style={[
                     styles.taskCheckboxChecked,
                     uniformCard && styles.taskCheckboxCheckedUniform,
                   ]}
                 />
-              )}
+              ) : null}
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -402,11 +426,17 @@ export function TaskCard({
           <View style={styles.taskTitleRow}>
             <TouchableOpacity
               style={styles.taskTextTouchable}
-              onPress={onEditTask}
+              onPress={selectionMode ? handleSelectPress : onEditTask}
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 0, right: 8 }}
               accessibilityRole="button"
-              accessibilityLabel={t('taskCard.editTask', { task: taskContentLabel })}
+              accessibilityLabel={
+                selectionMode
+                  ? isSelected
+                    ? t('looseTasks.deselectTaskA11y', { task: taskContentLabel })
+                    : t('looseTasks.selectTaskA11y', { task: taskContentLabel })
+                  : t('taskCard.editTask', { task: taskContentLabel })
+              }
             >
               <Text
                 style={[styles.taskText, task.is_completed && styles.taskTextCompleted]}
@@ -1178,6 +1208,14 @@ const styles = StyleSheet.create({
   },
   taskCheckboxFocus: {
     borderColor: THEME.colors.gradient.pink,
+  },
+  taskCheckboxSelectMode: {
+    borderRadius: THEME.borderRadius.standard,
+    borderColor: THEME.colors.calm.lavenderDeep,
+  },
+  taskCheckboxSelected: {
+    backgroundColor: THEME.colors.calm.lavenderDeep,
+    borderColor: THEME.colors.calm.lavenderDeep,
   },
   taskCheckboxChecked: {
     width: 14,

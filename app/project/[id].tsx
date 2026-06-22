@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { ChevronLeft, CheckCircle2, Plus, Pencil } from 'lucide-react-native';
+import { ChevronLeft, CheckCircle2, Plus, Pencil, CheckSquare, Trash2 } from 'lucide-react-native';
 import type { Task } from '@/components/tasks/TaskCard';
 import { TaskList } from '@/components/tasks/TaskList';
 import { TaskEditModal } from '@/components/tasks/TaskEditModal';
@@ -48,10 +48,17 @@ import {
   type LooseTaskSortFilter,
 } from '@/lib/looseTasks';
 import { resolveLifeAreaDisplay } from '@/lib/lifeAreas/userLifeAreas';
+import { makePresetCustomAreaLabelGetter } from '@/lib/lifeAreas/makePresetCustomAreaLabelGetter';
 import type { TranslationKey } from '@/lib/i18n';
 import { useTaskPlanEdit } from '@/hooks/useTaskPlanEdit';
 import { normalizeCategoryKey } from '@/lib/i18n/categoryLabels';
+import { openVaciarCapture } from '@/lib/vaciarNavigation';
 import { SemanaInteractiveTaskList } from '@/components/semana/SemanaInteractiveTaskList';
+import {
+  LOOSE_COMPLETED_RETENTION_DAYS,
+  filterRetainedLooseCompletedTasks,
+  purgeExpiredLooseCompletedTasks,
+} from '@/lib/looseCompletedRetention';
 
 export default function ProjectScreen() {
   const params = useLocalSearchParams<{
@@ -95,6 +102,8 @@ export default function ProjectScreen() {
   const [looseFilter, setLooseFilter] = useState<LooseTaskSortFilter>(initialFilter);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [moveTaskTarget, setMoveTaskTarget] = useState<Task | null>(null);
+  const [looseSelectMode, setLooseSelectMode] = useState(false);
+  const [looseSelectedIds, setLooseSelectedIds] = useState<Set<string>>(() => new Set());
   const [allProjects, setAllProjects] = useState<{ id: string; name: string; color: string }[]>(
     [],
   );
@@ -113,6 +122,8 @@ export default function ProjectScreen() {
     try {
       if (isLoose) {
         setProject({ name: t('projectDetail.looseName'), color: THEME.colors.text.tertiary, dueDate: null, lifeAreaKey: 'home', notes: null });
+
+        await purgeExpiredLooseCompletedTasks(user.id);
 
         const { data: tasksData, error: tasksError } = await supabase
           .from('tasks')
@@ -348,15 +359,22 @@ export default function ProjectScreen() {
   }, [areaFilter, incompleteTasks, isLoose, looseFilter]);
 
   const filteredCompletedTasks = useMemo(() => {
-    if (!isLoose || looseFilter !== 'all') return completedTasks;
-    if (!areaFilter) return completedTasks;
-    return completedTasks.filter((task) => (task.life_area_key ?? null) === areaFilter);
+    let list = isLoose ? filterRetainedLooseCompletedTasks(completedTasks) : completedTasks;
+    if (!isLoose || looseFilter !== 'all') return list;
+    if (!areaFilter) return list;
+    return list.filter((task) => (task.life_area_key ?? null) === areaFilter);
   }, [areaFilter, completedTasks, isLoose, looseFilter]);
 
   const areaFilterLabel = useMemo(() => {
     if (!isLoose || !areaFilter) return null;
     const getDefaultLabel = (key: LifeAreaKey) => t(`lifeAreas.${key}` as TranslationKey);
-    return resolveLifeAreaDisplay(areaFilter as LifeAreaRef, lifeAreasConfig, getDefaultLabel).name;
+    const getPresetCustomLabel = makePresetCustomAreaLabelGetter(t);
+    return resolveLifeAreaDisplay(
+      areaFilter as LifeAreaRef,
+      lifeAreasConfig,
+      getDefaultLabel,
+      getPresetCustomLabel,
+    ).name;
   }, [areaFilter, isLoose, lifeAreasConfig, t]);
 
   const visibleIncompleteTasks = isLoose ? filteredIncompleteTasks : incompleteTasks;
@@ -375,6 +393,7 @@ export default function ProjectScreen() {
           task.life_area_key as LifeAreaRef,
           lifeAreasConfig,
           getDefaultLabel,
+          makePresetCustomAreaLabelGetter(t),
         );
         return {
           label: display.name,
@@ -404,6 +423,48 @@ export default function ProjectScreen() {
   const showInteractiveToast = useCallback((message: string, _type?: 'success' | 'error' | 'info') => {
     setToastMessage(message);
   }, []);
+
+  const exitLooseSelectMode = useCallback(() => {
+    setLooseSelectMode(false);
+    setLooseSelectedIds(new Set());
+  }, []);
+
+  const toggleLooseTaskSelected = useCallback((taskId: string) => {
+    setLooseSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  }, []);
+
+  const handleBulkDeleteLooseTasks = useCallback(() => {
+    const ids = [...looseSelectedIds];
+    if (ids.length === 0) return;
+    Alert.alert(
+      t('looseTasks.deleteSelectedTitle'),
+      t('looseTasks.deleteSelectedConfirm', { count: ids.length }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('errors.delete'),
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              const { error } = await supabase.from('tasks').delete().in('id', ids);
+              if (error) {
+                setToastMessage(t('errors.deleteTaskFailed'));
+                return;
+              }
+              exitLooseSelectMode();
+              setToastMessage(t('looseTasks.deleteSelectedSuccess', { count: ids.length }));
+              await loadProjectAndTasks({ silent: true });
+            })();
+          },
+        },
+      ],
+    );
+  }, [exitLooseSelectMode, loadProjectAndTasks, looseSelectedIds, t]);
 
   const getProjectInfoForTask = useCallback(
     (task: Task) => {
@@ -636,7 +697,30 @@ export default function ProjectScreen() {
           >
             <Pencil size={20} color={THEME.colors.calm.lavenderDeep} />
           </TouchableOpacity>
-        ) : null}
+        ) : (
+          <TouchableOpacity
+            onPress={() => {
+              if (looseSelectMode) {
+                exitLooseSelectMode();
+                return;
+              }
+              setLooseSelectMode(true);
+            }}
+            style={styles.headerEditBtn}
+            accessibilityRole="button"
+            accessibilityLabel={
+              looseSelectMode
+                ? t('looseTasks.cancelSelectA11y')
+                : t('looseTasks.selectModeA11y')
+            }
+          >
+            {looseSelectMode ? (
+              <Text style={styles.headerSelectLabel}>{t('looseTasks.cancelSelect')}</Text>
+            ) : (
+              <CheckSquare size={20} color={THEME.colors.calm.lavenderDeep} />
+            )}
+          </TouchableOpacity>
+        )}
       </View>
       <ScrollView
         style={styles.scroll}
@@ -663,6 +747,31 @@ export default function ProjectScreen() {
             <LooseTasksFilterBar value={looseFilter} onChange={setLooseFilter} />
             {visibleIncompleteTasks.length === 0 && incompleteTasks.length > 0 ? (
               <Text style={styles.looseEmptyFilter}>{t('looseTasks.emptyFilter')}</Text>
+            ) : null}
+            {looseSelectMode ? (
+              <View style={styles.looseBulkBar}>
+                <Text style={styles.looseBulkCount}>
+                  {t('looseTasks.selectedCount', { count: looseSelectedIds.size })}
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.looseBulkDeleteBtn,
+                    looseSelectedIds.size === 0 && styles.looseBulkDeleteBtnDisabled,
+                  ]}
+                  onPress={handleBulkDeleteLooseTasks}
+                  disabled={looseSelectedIds.size === 0}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('looseTasks.deleteSelectedA11y', {
+                    count: looseSelectedIds.size,
+                  })}
+                >
+                  <Trash2 size={16} color={THEME.colors.semantic.danger} />
+                  <Text style={styles.looseBulkDeleteText}>
+                    {t('looseTasks.deleteSelected', { count: looseSelectedIds.size })}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             ) : null}
           </View>
         ) : null}
@@ -699,6 +808,10 @@ export default function ProjectScreen() {
                 resolveProjectInfo={getLooseProjectInfo}
                 editProjects={allProjects.map((entry) => ({ id: entry.id, name: entry.name }))}
                 disableSwipe
+                highlightTaskId={highlightTaskId}
+                selectionMode={looseSelectMode}
+                selectedTaskIds={looseSelectedIds}
+                onToggleSelect={toggleLooseTaskSelected}
               />
             ) : (
               <TaskList
@@ -726,6 +839,15 @@ export default function ProjectScreen() {
 
         {visibleCompletedTasks.length > 0 && (
           <>
+            {isLoose ? (
+              <View style={styles.looseRetentionNotice}>
+                <Text style={styles.looseRetentionNoticeText}>
+                  {t('projectDetail.looseCompletedRetentionNotice', {
+                    days: LOOSE_COMPLETED_RETENTION_DAYS,
+                  })}
+                </Text>
+              </View>
+            ) : null}
             <Text style={styles.sectionLabel}>
               {t('projectDetail.completedSection', { count: visibleCompletedTasks.length })}
             </Text>
@@ -740,6 +862,9 @@ export default function ProjectScreen() {
                 editProjects={allProjects.map((entry) => ({ id: entry.id, name: entry.name }))}
                 completedOnly
                 disableSwipe
+                selectionMode={looseSelectMode}
+                selectedTaskIds={looseSelectedIds}
+                onToggleSelect={toggleLooseTaskSelected}
               />
             ) : (
               <TaskList
@@ -828,6 +953,7 @@ export default function ProjectScreen() {
           visible={editingTask != null}
           task={editingTask}
           projects={allProjects}
+          userId={user?.id}
           onSavePlan={handleSavePlanEdit}
           onDelete={handleDeleteEditingTask}
           saving={planEditSaving}
@@ -860,15 +986,13 @@ export default function ProjectScreen() {
       <ProjectQuickAddTaskModal
         visible={quickAddTarget != null}
         target={quickAddTarget}
+        userId={user?.id}
         hasCheckInToday={Boolean(hasCheckInToday)}
         onClose={() => setQuickAddTarget(null)}
         onSaved={handleQuickAddSaved}
         onOpenFullCapture={(id) => {
           setQuickAddTarget(null);
-          router.push({
-            pathname: '/(tabs)/vaciar',
-            params: id ? { projectId: id, segment: 'capture' } : { segment: 'capture' },
-          });
+          openVaciarCapture({ projectId: id ?? undefined });
         }}
       />
 
@@ -1047,6 +1171,21 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
   },
+  looseRetentionNotice: {
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.standard,
+    backgroundColor: THEME.colors.calm.mist,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    marginBottom: THEME.spacing.sm,
+  },
+  looseRetentionNoticeText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+    fontStyle: 'italic',
+  },
   sectionLabel: {
     ...THEME.typography.small,
     fontFamily: THEME.fonts.heading.medium,
@@ -1071,6 +1210,49 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     fontStyle: 'italic',
     lineHeight: 18,
+  },
+  headerSelectLabel: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+  },
+  looseBulkBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.standard,
+    backgroundColor: THEME.colors.calm.mist,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  looseBulkCount: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.secondary,
+    flex: 1,
+  },
+  looseBulkDeleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.semantic.danger,
+    minHeight: THEME.sizes.touchTarget,
+  },
+  looseBulkDeleteBtnDisabled: {
+    opacity: 0.45,
+  },
+  looseBulkDeleteText: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.semantic.danger,
   },
   menuOverlay: {
     ...StyleSheet.absoluteFillObject,

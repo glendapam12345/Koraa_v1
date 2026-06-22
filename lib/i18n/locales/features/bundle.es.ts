@@ -1,7 +1,6 @@
 import { categoriesEs } from './categories';
 import { extEs } from './bundle-ext.es';
 import { uiEs } from './bundle-ui.es';
-
 export const featuresEs = {
   categories: categoriesEs,
   errors: {
@@ -9,9 +8,11 @@ export const featuresEs = {
     notAuthenticated: 'No estás autenticado',
     updateFailed: 'No se pudo actualizar. Inténtalo de nuevo.',
     deleteTaskFailed: 'No se pudo eliminar la tarea. Inténtalo de nuevo.',
-    deleteSubtasksFailed: 'No se pudieron eliminar los pasos. Inténtalo de nuevo.',
+    deleteSubtasksFailed:
+      'No se pudieron eliminar los pasos. Inténtalo de nuevo.',
     saveTaskFailed: 'No se pudo guardar la tarea. Inténtalo de nuevo.',
-    saveMeditationFailed: 'No se pudo guardar la meditación. Inténtalo de nuevo.',
+    saveMeditationFailed:
+      'No se pudo guardar la meditación. Inténtalo de nuevo.',
     refreshFailed: 'No se pudo actualizar. Inténtalo de nuevo.',
     continueFailed: 'No se pudo continuar',
     saveProgressFailed: 'No pudimos guardar tu progreso. Inténtalo de nuevo.',
@@ -24,7 +25,8 @@ export const featuresEs = {
   },
   flow: {
     caption: 'Tu día en 3 pasos',
-    captionSub: '1) Suelta lo pendiente · 2) Check-in en Hoy · 3) Koraa sugiere 2–5 pasos.',
+    captionSub:
+      '1) Suelta lo pendiente · 2) Check-in en Hoy · 3) Koraa sugiere 2–5 pasos.',
     stepCheckInLabel: 'Cómo te sientes',
     stepTodayShort: 'Qué importa hoy',
     stepTasksShort: 'Tareas',
@@ -44,7 +46,8 @@ export const featuresEs = {
     title: '¿Qué llevas en mente?',
     titleAccent: '',
     subtitle: 'Escribe o habla — Koraa organiza después.',
-    captureNightSub: 'Si no puedes dormir, suelta lo que te ronda — sin presión de organizar ahora.',
+    captureNightSub:
+      'Si no puedes dormir, suelta lo que te ronda — sin presión de organizar ahora.',
     captureHint: 'Suelta. Koraa se encarga. 💜',
     capturePlaceholderMinimal: 'Escribe lo que tienes en mente…',
     releaseTaskShort: 'Soltar',
@@ -57,8 +60,10 @@ export const featuresEs = {
     previewRefining: 'Afinando sugerencias…',
     liveNewProject: 'Nuevo',
     liveHeroThinking: 'Leyendo lo que escribes…',
-    liveHeroDetected: 'Veo {{fronts}} frentes y {{tasks}} cosas — suelta cuando quieras.',
-    liveHeroDetectedAreas: 'Veo {{areas}} áreas y {{tasks}} cosas — suelta cuando quieras.',
+    liveHeroDetected:
+      'Veo {{fronts}} frentes y {{tasks}} cosas — suelta cuando quieras.',
+    liveHeroDetectedAreas:
+      'Veo {{areas}} áreas y {{tasks}} cosas — suelta cuando quieras.',
     liveAreaDetectedTitle: 'Así lo iría agrupando Koraa',
     liveAreaGrouping: 'Agrupando por áreas…',
     liveAreaDetectedOne: '1 cosa detectada',
@@ -85,7 +90,8 @@ export const featuresEs = {
     previewDiscoveryTitleOne: 'Encontré 1 proyecto abierto',
     previewDiscoveryMeta: '{{tasks}} cosas en {{fronts}} proyectos',
     previewDiscoveryMetaOne: '1 cosa · {{fronts}} proyecto',
-    previewDiscoveryHint: 'Koraa detecta hogar, trabajo, emprendimiento… revisa y corrige si hace falta',
+    previewDiscoveryHint:
+      'Koraa detecta hogar, trabajo, emprendimiento… revisa y corrige si hace falta',
     previewContextWork: 'Podría ser trabajo',
     previewContextHome: 'Podría ser del hogar',
     previewContextVenture: 'Podría ser emprendimiento',
@@ -121,8 +127,10 @@ export const featuresEs = {
     previewMarkAsProject: 'Guardar como proyecto',
     previewPickProject: 'Elegir proyecto',
     previewAssignProjectTitle: '¿A qué proyecto va?',
-    previewAssignProjectHint: 'Todas las cosas de este grupo irán al proyecto que elijas.',
-    previewAssignProjectEmpty: 'Aún no tienes proyectos guardados. Puedes crear uno con el botón de abajo.',
+    previewAssignProjectHint:
+      'Todas las cosas de este grupo irán al proyecto que elijas.',
+    previewAssignProjectEmpty:
+      'Aún no tienes proyectos guardados. Puedes crear uno con el botón de abajo.',
     previewExistingProjects: 'Tus proyectos',
     previewExistingProjectMeta: '{{percent}}% · {{pending}} pendientes',
     previewCreateNewProject: 'Crear proyecto nuevo',
@@ -142,7 +150,8 @@ export const featuresEs = {
     previewChaosRelief:
       'Agrupé {{tasks}} cosas en {{fronts}} proyectos. No tienes que cargar con todo a la vez.',
     previewChaosReliefOne: 'Es una sola cosa — ya está más clara.',
-    previewClarityNote: 'Qué hacer hoy lo verás en Hoy — después del check-in, según cómo te sientas.',
+    previewClarityNote:
+      'Qué hacer hoy lo verás en Hoy — después del check-in, según cómo te sientas.',
     reliefGotIt: 'Entendido',
     reliefUnderstood: 'Entendí lo que llevas en mente.',
     reliefCountProjectOne: '🚀 1 proyecto',
@@ -176,28 +185,43 @@ export const featuresEs = {
     previewConfirm: 'Aceptar ✨',
     areaReviewTitle: 'Organiza por áreas',
     areaReviewSubtitle:
-      'Revisa cómo quedó agrupado. Toca una tarea para fecha, tiempo y prioridad — o moverla de área.',
-    areaReviewInstruction1: 'Toca una tarea → fecha, tiempo y prioridad.',
-    areaReviewInstruction2: 'Muévela de área abajo, o arrástrala. Sin proyecto = queda en el área.',
-    areaReviewAreaCreated: 'Área «{{name}}» lista — arrastra tareas a esa columna.',
+      'Solo ves áreas con pasos. Toca el nombre para renombrar o eliminar.',
+    areaReviewHint: 'Toca un paso · arrastra · ↔ cambia de área',
+    areaReviewInstruction1:
+      'Toca un paso → fecha, tiempo, prioridad y proyecto (+ Crear proyecto abajo).',
+    areaReviewInstruction2:
+      '↔ cambia de área · Nueva área arriba del tablero · mantén presionado para arrastrar.',
+    areaReviewAreaCreated:
+      'Área «{{name}}» lista — arrastra tareas a esa columna.',
     areaReviewLooseSectionTitle: 'Tareas sueltas',
     areaReviewAreasSectionTitle: 'Áreas',
     areaReviewEmptyColumn: 'Arrastra aquí',
-    areaReviewDragHint: 'Suelta la tarea en el área que quieras',
+    areaReviewDragHint:
+      'Suelta en cualquier parte del área — se ilumina al pasar encima',
+    areaReviewDragTip:
+      'Mantén presionada una tarea para arrastrarla, o toca ↔ para elegir el área sin arrastrar.',
     areaReviewRenameColumnA11y: 'Toca para renombrar el área',
     areaReviewAddArea: 'Nueva área',
     areaReviewAddAreaA11y: 'Agregar un área nueva al tablero',
     areaReviewAddAreaTitle: 'Nombre del área',
     areaReviewRenameTitle: 'Renombrar área',
     areaReviewConfirm: 'Guardar ✨',
+    areaReviewSaveSummaryTitle: 'Antes de guardar',
+    areaReviewSaveSummaryTotal: 'Tiempo total estimado',
+    areaReviewSaveSummaryNoDuration: 'Sin tiempo',
+    areaReviewSaveSummaryDurationHint:
+      '{{count}} paso(s) sin tiempo estimado — tócalo para agregarlo.',
+    areaReviewSaveSummaryRowA11y: '{{task}}, tiempo {{duration}}',
+    areaReviewClearDuration: 'Quitar tiempo estimado',
+    areaReviewClearDurationA11y: 'Quitar tiempo estimado de este paso',
     areaReviewAddProject: 'Proyecto',
     areaReviewLooseInArea: 'Sin proyecto',
-    areaReviewLooseInAreaHint: 'Queda en esta área — no hace falta crear un proyecto.',
+    areaReviewLooseInAreaHint:
+      'Queda en esta área — no hace falta crear un proyecto.',
     areaReviewMoveArea: 'Mover a área',
     areaReviewMoveAreaHint: 'Toca el área destino — o crea una nueva abajo.',
     areaReviewMoveAreaUpA11y: 'Subir área en la lista',
     areaReviewMoveAreaDownA11y: 'Bajar área en la lista',
-    areaReviewDragTip: 'Mantén presionada una tarea para moverla, o tócala para editar.',
     previewDateBtn: 'Fecha',
     previewTimeBtn: 'Tiempo',
     previewPriorityBtn: 'Prioridad',
@@ -207,28 +231,44 @@ export const featuresEs = {
     capturePriorityMedium: 'Media',
     capturePriorityHigh: 'Alta',
     capturePriorityUrgent: 'Urgente',
-    capturePriorityUrgentHint: 'Urgente no se negocia — Koraa la prioriza siempre.',
+    capturePriorityUrgentHint:
+      'Urgente no se negocia — Koraa la prioriza siempre.',
+    fieldPriority: 'Prioridad',
+    fieldPriorityHint:
+      'Opcional — Koraa también ajusta sugerencias cuando registras cómo te sientes.',
     areaReviewCreateProjectTitle: 'Nuevo proyecto',
     areaReviewCreateProjectConfirm: 'Crear proyecto',
     areaReviewProjectSection: 'Proyecto',
+    areaReviewAllProjectsHint:
+      'Estos son tus proyectos guardados. Elige uno para este paso.',
     areaReviewDraftProject: 'Nuevo',
     areaReviewCreateProjectInline: '+ Crear proyecto en esta área',
+    areaReviewProjectNeedsArea:
+      'Primero asígnale un área con ↔ — luego podrás crear o elegir proyecto.',
+    areaReviewDeleteProjectA11y: 'Eliminar proyecto {{name}}',
     areaReviewClearProject: 'Quitar del proyecto',
     organizedSummaryTitle: 'Listo — ya está organizado',
     organizedSummaryBody: '{{count}} cosas guardadas por área.',
     organizedSummaryNewProjects: '{{count}} proyectos nuevos creados',
-    organizedSummaryAreaMeta: '{{projects}} proyectos · {{tasks}} pasos abiertos',
+    organizedSummaryAreaMeta:
+      '{{projects}} proyectos · {{tasks}} pasos abiertos',
     organizedSummaryLoose: '{{count}} tareas sueltas en total',
-    organizedSummaryEmpty: 'Tus cosas están guardadas. Abre la biblioteca para ver todo.',
+    organizedSummaryEmpty:
+      'Tus cosas están guardadas. Abre la biblioteca para ver todo.',
     organizedSummaryCaptureMore: 'Capturar más',
+    organizedSummaryLooseStep: 'Paso suelto',
     previewBack: 'Editar texto',
     previewBackA11y: 'Volver a editar lo que escribiste',
     previewEditTaskA11y: 'Editar {{task}}',
-    previewTapToAdjust: 'Toca el texto o usa los chips para ajustar — sin salir de aquí',
-    previewCorrectionHint: 'Toca un grupo para ver detalles · ✏️ renombra el título',
-    previewToolbarExplain: '¿Falta algo? Agrupa cosas sueltas o crea un proyecto que quieras seguir.',
+    previewTapToAdjust:
+      'Toca el texto o usa los chips para ajustar — sin salir de aquí',
+    previewCorrectionHint:
+      'Toca un grupo para ver detalles · ✏️ renombra el título',
+    previewToolbarExplain:
+      '¿Falta algo? Agrupa cosas sueltas o crea un proyecto que quieras seguir.',
     previewAddGroupTitle: 'Agrupar cosas',
-    previewAddGroupHint: 'Juntar pasos relacionados — sin guardar como proyecto',
+    previewAddGroupHint:
+      'Juntar pasos relacionados — sin guardar como proyecto',
     previewAddProjectTitle: 'Crear proyecto',
     previewAddProjectHint: 'Con nombre y fecha — queda en Tu espacio',
     previewTapToExpand: 'Toca el grupo para fecha y detalles',
@@ -246,7 +286,8 @@ export const featuresEs = {
     savedNextTitle: 'Ya quedó en Koraa 💜',
     savedNextBodyCheckIn:
       'Tu mente ya no tiene que cargar con todo. Ahora dime cómo te sientes — desde ahí verás qué importa hoy.',
-    savedNextBodyHoy: 'Tu mente ya no tiene que cargar con todo. Ve a Hoy para ver qué importa ahora.',
+    savedNextBodyHoy:
+      'Tu mente ya no tiene que cargar con todo. Ve a Hoy para ver qué importa ahora.',
     savedGoCheckIn: 'Ir a Hoy — cómo me siento →',
     savedGoHoy: 'Ver mi plan de hoy →',
     savedGoHoySecondary: 'Ir a Hoy',
@@ -257,11 +298,14 @@ export const featuresEs = {
     capturePrompt: '¿Qué llevas en mente?',
     captureSubtitle: 'Una cosa por línea — Koraa agrupa por proyectos.',
     brainDumpHowTitle: 'Cómo funciona',
-    brainDumpStep1: 'Escribe todo en una lista (una cosa por línea). No hace falta ordenar.',
+    brainDumpStep1:
+      'Escribe todo en una lista (una cosa por línea). No hace falta ordenar.',
     organizeSavedToast: 'Guardé {{count}} cosas — mira cómo quedó en Áreas',
-    brainDumpStep2: 'Toca Organizar. Koraa agrupa hogar, trabajo, emprendimiento…',
+    brainDumpStep2:
+      'Toca Organizar. Koraa agrupa hogar, trabajo, emprendimiento…',
     brainDumpStep3: 'O usa el micrófono si prefieres hablar.',
-    brainDumpDatesNote: 'Las fechas son opcionales — Koraa no las inventa. Las agregas tú si las conoces.',
+    brainDumpDatesNote:
+      'Las fechas son opcionales — Koraa no las inventa. Las agregas tú si las conoces.',
     discoveryDatesTitle: '¿Y las fechas?',
     discoveryDatesHint: 'Fechas opcionales — Koraa no las inventa',
     discoveryDatesHintA11y: 'Ver nota sobre fechas opcionales',
@@ -286,15 +330,19 @@ export const featuresEs = {
     guidanceParkTitle: 'No necesitas pensar en esto ahora',
     guidanceReasonHighImpact:
       'Parece algo de alto impacto que puede pedir trabajo concentrado.',
-    guidanceReasonDeepWork: 'Pedirá foco y un bloque de tiempo sin interrupciones.',
-    guidanceReasonQuickWin: 'Es algo rápido que puedes cerrar cuando tengas un hueco.',
-    guidanceReasonOneThing: 'Por ahora, esto es lo único en lo que Koraa te sugeriría poner atención.',
+    guidanceReasonDeepWork:
+      'Pedirá foco y un bloque de tiempo sin interrupciones.',
+    guidanceReasonQuickWin:
+      'Es algo rápido que puedes cerrar cuando tengas un hueco.',
+    guidanceReasonOneThing:
+      'Por ahora, esto es lo único en lo que Koraa te sugeriría poner atención.',
     guidanceDismissA11y: 'Entendido, cerrar guía de enfoque',
     captureLivePreviewListening: 'Koraa escuchó esto:',
     frontsOpen: 'Veo {{count}} proyectos abiertos.',
     frontsOpenOne: 'Veo 1 proyecto abierto.',
     frontsOrganizedTitle: '✨ Koraa organizó tu mente en proyectos',
-    frontsOrganizedMind: 'Koraa organizó tu mente en proyectos — no en una lista interminable.',
+    frontsOrganizedMind:
+      'Koraa organizó tu mente en proyectos — no en una lista interminable.',
     frontsTaskCount: '{{count}} tareas',
     frontsNoTasksYet: '0 tareas aún',
     frontsHintHighPriority: 'Alta prioridad',
@@ -350,28 +398,34 @@ export const featuresEs = {
     batchMissingProject: 'El paso «{{task}}» necesita un proyecto.',
     releaseTaskLegacy: 'Soltar tarea',
     fieldProjectOptional: 'Proyecto (opcional)',
-    fieldProjectOptionalHint: 'Puedes dejarla suelta o agruparla en un proyecto.',
-    fieldDateHintInProject: 'Cuándo quieres dar este paso (no es la fecha del proyecto).',
+    fieldProjectOptionalHint:
+      'Puedes dejarla suelta o agruparla en un proyecto.',
+    fieldDateHintInProject:
+      'Cuándo quieres dar este paso (no es la fecha del proyecto).',
     clearProject: 'Quitar proyecto',
     clearProjectA11y: 'Guardar como tarea suelta, sin proyecto',
     captureInputA11y: 'Escribe lo que llevas en mente y pulsa Soltar.',
     captureAccessoryHint: 'Escribe lo que llevas en mente',
     captureAccessoryDone: 'Listo',
-    captureAccessoryDoneHint: 'Luego elige fecha, proyecto o peso — todo opcional',
+    captureAccessoryDoneHint:
+      'Luego elige fecha, proyecto o peso — todo opcional',
     captureAccessoryDoneA11y: 'Cerrar teclado y ver opciones de la tarea',
-    captureKeyboardStepHint: 'Toca Listo en el teclado para ver proyecto, fecha y más abajo.',
+    captureKeyboardStepHint:
+      'Toca Listo en el teclado para ver proyecto, fecha y más abajo.',
     captureStepWrite: 'Paso 1 · Escribir',
     captureStepOrganize: 'Paso 2 · Organizar (opcional)',
     captureStepSave: 'Paso 3 · Guardar',
-    captureOrganizeIntro: 'Proyecto, fecha y cómo se siente la tarea — solo si te ayuda.',
+    captureOrganizeIntro:
+      'Proyecto, fecha y cómo se siente la tarea — solo si te ayuda.',
     captureSaveBlockedHint: 'Escribe algo arriba para poder soltar la tarea.',
     placeholderShort: 'Ej: llamar al dentista, comprar leche…',
     segmentCapture: 'Capturar',
     segmentProjects: 'Áreas',
     segmentCaptureA11y: 'Capturar — soltar lo que llevas en mente',
     segmentProjectsA11y: 'Ver todo organizado por áreas y proyectos',
-  brainDumpSimpleTitle: 'Suelta lo que traes',
-    brainDumpSimpleSub: 'Una cosa por línea. Después revisas, editas o aceptas.',
+    brainDumpSimpleTitle: 'Suelta lo que traes',
+    brainDumpSimpleSub:
+      'Una cosa por línea. Después revisas, editas o aceptas.',
     brainDumpPlaceholder:
       'Ej:\nterminar presentación\ncomprar uvas\nllamar a mamá',
     brainDumpTip: 'Tip: escribe una tarea por línea o separa usando comas.',
@@ -405,7 +459,8 @@ export const featuresEs = {
     organizeCardSub:
       'Opcional — por defecto queda suelta y sin fecha. Solo si te ayuda a ordenarla.',
     fieldProject: '¿Suelta o en proyecto?',
-    fieldProjectHint: 'Por defecto queda suelta. Si eliges proyecto, podrás elegir uno o crear uno nuevo.',
+    fieldProjectHint:
+      'Por defecto queda suelta. Si eliges proyecto, podrás elegir uno o crear uno nuevo.',
     fieldDate: '¿Para cuándo?',
     looseTask: 'Tarea suelta',
     inProject: 'En un proyecto',
@@ -431,7 +486,7 @@ export const featuresEs = {
     placeholder: 'Escribe tareas, pendientes o cosas que traes en la cabeza',
     fieldDateHint: 'Opcional — Koraa sugiere qué importa en Hoy',
     fieldDateOptionalBadge: 'Opcional',
-    taskDatePickOther: 'Elegir otra fecha',
+    taskDatePickOther: 'Abrir calendario',
     whenToday: 'Hoy',
     whenThisWeek: 'Esta semana',
     whenNoRush: 'Sin prisa',
@@ -442,7 +497,8 @@ export const featuresEs = {
     effortHeavy: 'Pesada',
     aiInterpretBtn: 'Separar en pasos',
     aiInterpretHint: 'Opcional: vuelve a separar si cambiaste el texto.',
-    aiInterpretA11y: 'Separar lo escrito en pasos y ver vista previa antes de guardar',
+    aiInterpretA11y:
+      'Separar lo escrito en pasos y ver vista previa antes de guardar',
     aiInterpretLoading: 'Separando…',
     aiPreviewTitle: 'Así quedarían tus pasos',
     aiPreviewCloseA11y: 'Cerrar vista previa',
@@ -454,7 +510,8 @@ export const featuresEs = {
     aiPreviewPrep: 'Paso {{n}}',
     aiPreviewDate: 'Para {{date}}',
     aiPreviewNoDate: 'Sin fecha',
-    aiPreviewHint: 'Nada se guarda hasta que confirmes. Puedes editar después en la lista.',
+    aiPreviewHint:
+      'Nada se guarda hasta que confirmes. Puedes editar después en la lista.',
     aiPreviewConfirm: 'Guardar así',
     aiPreviewApply: 'Solo rellenar el formulario',
     aiPreviewApplyA11y: 'Rellenar título y fecha sin guardar aún',
@@ -474,7 +531,8 @@ export const featuresEs = {
       'Lo de arriba aplica a todos los pasos. Cada uno conserva su texto; la fecha del paso 2 solo cambia si la escribiste en el texto.',
     batchPreviewStep: 'Paso {{n}}',
     batchPreviewConfirm: 'Guardar {{count}} pasos',
-    aiApplyPartial: 'Título y fecha listos. Los pasos de preparación requieren confirmar.',
+    aiApplyPartial:
+      'Título y fecha listos. Los pasos de preparación requieren confirmar.',
     suggestionsTitle: 'Sugerencias rápidas:',
     assignQuestion: '¿Asignar esta tarea a un proyecto?',
     chooseCategory: 'Elige categoría',
@@ -491,7 +549,8 @@ export const featuresEs = {
     organizePanelTitle: 'Guías y sugerencias',
     organizePanelHide: 'Ocultar guías y extras',
     organizePanelHint: 'Flujo, proyectos, sugerencias y ayuda',
-    quickCaptureHint: 'Solo escribe y guarda. Hoy sugiere pasos tras tu check-in.',
+    quickCaptureHint:
+      'Solo escribe y guarda. Hoy sugiere pasos tras tu check-in.',
     saving: 'Guardando...',
     saveTask: 'Guardar tarea',
     saveTaskLoose: 'Guardar tarea suelta',
@@ -500,11 +559,14 @@ export const featuresEs = {
     enterTask: 'Por favor ingresa una tarea',
     selectProject: 'Selecciona un proyecto o créalo antes de guardar.',
     taskTooLong: 'La tarea no puede tener más de 300 caracteres',
-    addSubtaskOrDisable: 'Agrega al menos una subtarea o desactiva las subtareas',
+    addSubtaskOrDisable:
+      'Agrega al menos una subtarea o desactiva las subtareas',
     subtaskTooLong: 'Las subtareas no pueden tener más de 300 caracteres',
     maxSubtasks: 'No puedes agregar más de 20 subtareas por tarea',
-    savedOffline: 'Tarea guardada offline. Se sincronizará cuando haya conexión.',
-    savedPartial: 'Tarea guardada. Algunas opciones avanzadas se activarán cuando completes la configuración.',
+    savedOffline:
+      'Tarea guardada offline. Se sincronizará cuando haya conexión.',
+    savedPartial:
+      'Tarea guardada. Algunas opciones avanzadas se activarán cuando completes la configuración.',
     savedSubtasksError: 'No se pudieron guardar los pasos. Inténtalo de nuevo.',
     projectCreated: 'Proyecto «{{name}}» creado',
     voiceUnavailableWeb: 'La entrada por voz no está disponible en web',
@@ -520,9 +582,22 @@ export const featuresEs = {
     subtitle: 'Paso 3 · planifica sin presión',
     intro:
       'Toca un día para ver o agregar tareas. Los colores recuerdan cómo te sentiste ese día. Lo que importa hoy sigue viviendo en Hoy.',
-    introShort: 'Un día a la vez. Mantén presionada una tarjeta para moverla.',
-    planAheadIntro: 'Semana que viene — arrastra tus pasos a los días que te queden bien.',
-    plannerInteractHint: 'Toca el texto para editar · el círculo para completar · mantén presionado para mover',
+    introShort: 'Un día a la vez. Arrastra una tarjeta para moverla.',
+    replanIntro:
+      'Así quedaría tu semana según cómo te sientes — ajusta y acepta.',
+    replanEyebrow: 'Vista previa',
+    replanDefaultHeadline: 'Propuesta para tu semana',
+    replanDragHint:
+      'Arrastra pasos entre días o toca ↔. Al aceptar vuelves a Hoy.',
+    replanAccept: 'Aceptar plan ✨',
+    replanCancel: 'Volver a Hoy sin cambiar',
+    replanAcceptedToast: 'Listo — tu semana quedó actualizada',
+    planAheadIntro:
+      'Semana que viene — arrastra tus pasos a los días que te queden bien.',
+    plannerInteractHint:
+      'Toca el texto para editar · el círculo para completar · mantén presionado y arrastra · ↔ para mover · + Agregar paso en cada día',
+    plannerAddToDay: 'Agregar paso',
+    plannerAddToDayA11y: 'Agregar paso al {{day}}',
     prev: 'Anterior',
     next: 'Siguiente',
     navPremiumHint: 'Toca las flechas o Premium para ver otras semanas y meses',
@@ -532,33 +607,48 @@ export const featuresEs = {
     freePlanBannerCalendar:
       'Ves el mes actual y puedes tocar cualquier día. Cambiar de mes requiere Premium.',
     freeLimitTitle: '{{count}} días más en este rango',
-    freeLimitBody: 'Premium desbloquea 2 semanas, mes completo y navegar libremente.',
+    freeLimitBody:
+      'Premium desbloquea 2 semanas, mes completo y navegar libremente.',
     freeLimitCta: 'Ver Premium (opcional)',
     freeLimitCtaHint: 'Abre la pantalla de suscripción Premium',
     all: 'Todos',
     loadingDays: 'Cargando días...',
     dayLabel: 'Día {{day}} de {{month}}',
     today: 'Hoy',
-    plannerEmptyDayHint: 'Sin pasos · mantén presionada una tarjeta para moverla aquí',
+    plannerEmptyDayHint:
+      'Sin pasos · arrastra una tarjeta aquí o toca Agregar paso',
     emptyDay: 'Este día está libre',
-    emptyHint: 'Anota una tarea y la verás aquí. No hace falta llenar todo el mes.',
+    emptyHint:
+      'Anota una tarea y la verás aquí. No hace falta llenar todo el mes.',
     emptyTodayNoCheckIn: 'Hoy aún no registraste cómo te sientes',
-    emptyTodayNoCheckInHint: 'Koraa no puede colorear el día ni ordenar tus pasos.',
+    emptyTodayNoCheckInHint:
+      'Koraa no puede colorear el día ni ordenar tus pasos.',
     emptyTodayNoCheckInCta: 'Check-in en Hoy',
     emptyTodayNoCheckInSoft: 'Sin tareas en el calendario hoy',
-    emptyTodayNoCheckInSoftHint: 'Cuando hagas check-in en Hoy, verás tus pasos aquí organizados.',
+    emptyTodayNoCheckInSoftHint:
+      'Cuando hagas check-in en Hoy, verás tus pasos aquí organizados.',
     emptyLightDay: 'Día liviano',
     emptyLightDayHint: 'Sin pendientes — Koraa no te asignó pasos para hoy.',
-    emptyHeavyDay: '{{total}} en el calendario, pero en Hoy solo {{count}} pasos',
+    emptyHeavyDay:
+      '{{total}} en el calendario, pero en Hoy solo {{count}} pasos',
     emptyHeavyDayHint: 'Koraa protegió tu energía baja.',
     emptyHeavyDayCta: 'Ver pasos en Hoy',
     noCheckInTodayBannerTitle: 'Hoy sin check-in',
-    noCheckInTodayBannerBody: 'Koraa no puede colorear el calendario hasta que registres cómo te sientes.',
+    noCheckInTodayBannerBody:
+      'Koraa no puede colorear el calendario hasta que registres cómo te sientes.',
     noCheckInTodayBannerCompact: 'Sin check-in hoy —',
     noCheckInTodayBannerCta: 'Check-in en Hoy',
     addTasks: 'Agregar tarea',
     addMore: 'Agregar otra',
     addTasksOrProjects: 'Agregar tarea o proyecto',
+    quickAddDayTitle: 'Agregar a {{day}}',
+    quickAddDayPrompt: 'Escribe un paso para ese día — sin brain dump.',
+    quickAddDayChip: 'Se guardará el {{day}}',
+    quickAddDaySave: 'Agregar al día',
+    quickAddDaySuccess: '«{{title}}» agregada al {{day}}',
+    quickAddDayProjectSuccess: '«{{title}}» agregada al {{day}} · {{project}}',
+    quickAddDayProjectSection: 'Proyecto (opcional)',
+    quickAddDayNoProject: 'Sin proyecto',
     looseTasks: 'Tareas sueltas',
     projectFallback: 'Proyecto',
     setupTitle: 'Configura Semana y proyectos',
@@ -593,7 +683,8 @@ export const featuresEs = {
     exportA11y: 'Descargar tareas del periodo visible',
     exportEmpty: 'No hay tareas para exportar en este periodo',
     checkInTodayFab: 'Registrar hoy',
-    calendarDayWithCheckInA11y: 'Día {{day}}, {{tasks}} tareas, {{emotion}}, energía {{energy}} de 5',
+    calendarDayWithCheckInA11y:
+      'Día {{day}}, {{tasks}} tareas, {{emotion}}, energía {{energy}} de 5',
     legendEnergyNote: 'La barra inferior del día indica tu energía (1–5)',
     brainDumpA11y: 'Vaciar la mente, captura rápida de tareas',
   },
@@ -615,18 +706,22 @@ export const featuresEs = {
     backToGrid: 'Ver más consejos',
     categoryNotFound: 'Categoría no encontrada',
     categoryOptional: 'Sin obligación — uno basta. Elige solo si te apetece.',
-    categoryVisibleCount: 'Ves {{visible}} de {{total}} consejos en esta categoría.',
+    categoryVisibleCount:
+      'Ves {{visible}} de {{total}} consejos en esta categoría.',
     categoryPrimaryEyebrow: 'Uno que podría ayudarte ahora',
     categoryMoreToggle: 'Más consejos ({{count}})',
     categoryMoreHide: 'Ocultar más consejos',
-    categoryPremiumHint: 'Con Premium desbloqueas {{count}} consejos más en esta categoría.',
+    categoryPremiumHint:
+      'Con Premium desbloqueas {{count}} consejos más en esta categoría.',
     categoryPremiumCta: 'Ver Premium (opcional)',
     actionHeroCtaPause: 'Tomar una pausa',
     actionHeroAbrumada:
       'Hoy se siente pesado. Un paso pequeño basta — el resto puede esperar.',
-    actionHeroFocused: 'Si te apetece, podrías empezar por lo que más pesa. Está arriba en Hoy.',
+    actionHeroFocused:
+      'Si te apetece, podrías empezar por lo que más pesa. Está arriba en Hoy.',
     actionHeroLowEnergy: 'Con poca energía, un paso y parar también cuenta.',
-    actionHeroHighEnergy: 'Buen impulso: canalízalo en una cosa, no en hacerlo todo.',
+    actionHeroHighEnergy:
+      'Buen impulso: canalízalo en una cosa, no en hacerlo todo.',
     actionHeroDefault: 'Para cómo te sientes hoy: empieza por lo más pequeño.',
     actionHeroCtaHoy: 'Ver qué importa hoy',
     actionStartFocus: 'Un ratito contigo (5 min)',
@@ -650,9 +745,11 @@ export const featuresEs = {
     actionHealthSleepError: 'No pudimos abrir la app Salud.',
     actionOpenMindfulness: 'Respirar en Salud',
     actionUnavailableTitle: 'No disponible ahora',
-    actionSpotifyError: 'No pudimos abrir Spotify. Inténtalo desde el navegador.',
+    actionSpotifyError:
+      'No pudimos abrir Spotify. Inténtalo desde el navegador.',
     actionMusicError: 'No pudimos abrir la app de música.',
-    actionNotesError: 'No pudimos abrir Notas. Puedes escribir en cualquier app que uses.',
+    actionNotesError:
+      'No pudimos abrir Notas. Puedes escribir en cualquier app que uses.',
     actionRemindersError: 'No pudimos abrir Recordatorios.',
     actionHealthError: 'No pudimos abrir la app de bienestar.',
   },
@@ -663,7 +760,8 @@ export const featuresEs = {
       title: 'Acompaña tu día',
       titleAccent: 'sintiendo',
       subtitle: 'sin forzarte a estructurarlo',
-      description: 'Di cómo te sientes. Koraa sugiere unos pasos suaves — sin presión.',
+      description:
+        'Di cómo te sientes. Koraa sugiere unos pasos suaves — sin presión.',
       exampleExhausted: 'Poca energía hoy',
       exampleEnergy: 'Energía: {{n}} / 5',
       exampleResultLow: 'Koraa sugiere solo 2 pasos suaves',
@@ -677,7 +775,8 @@ export const featuresEs = {
     intro2: {
       title: 'Vacía tu mente en',
       titleAccent: 'un respiro',
-      subtitle: 'Sin categorías. Sin etiquetas. Sin estructura.\nSolo escribe lo que necesitas soltar.',
+      subtitle:
+        'Sin categorías. Sin etiquetas. Sin estructura.\nSolo escribe lo que necesitas soltar.',
       preview: '¿Qué necesitas hacer hoy?',
       previewTitle: 'Vacía tu mente',
       example1: '• Preparar presentación del proyecto',
@@ -690,7 +789,8 @@ export const featuresEs = {
     intro3: {
       title: 'Claridad',
       titleAccent: 'contigo',
-      subtitle: 'Koraa sugiere por ti. Mira qué podría importar hoy — sin presión.',
+      subtitle:
+        'Koraa sugiere por ti. Mira qué podría importar hoy — sin presión.',
       step1Title: 'Tareas',
       step1Desc: 'Suelta lo pendiente',
       step2Title: 'Check-in en Hoy',
@@ -698,7 +798,8 @@ export const featuresEs = {
       step3Title: 'Hoy',
       step3Desc: 'Ve qué importa hoy',
       resultTitle: '✨ Resultado',
-      resultBody: 'Sugerencias suaves según cómo te sientes — no tienes que hacerlo todo',
+      resultBody:
+        'Sugerencias suaves según cómo te sientes — no tienes que hacerlo todo',
       continue: 'Continuar',
     },
     emotion: {
@@ -741,7 +842,8 @@ export const featuresEs = {
       saving: 'Guardando...',
       save: 'Guardar',
       start: 'Comenzar',
-      savedOffline: 'Check-in guardado offline. Se sincronizará cuando haya conexión.',
+      savedOffline:
+        'Check-in guardado offline. Se sincronizará cuando haya conexión.',
       invalidEnergy: 'El nivel de energía no es válido',
       saveCheckInError: 'No se pudo guardar tu check-in. Inténtalo de nuevo.',
       closeOnboardingError: 'No se pudo cerrar onboarding. Inténtalo de nuevo.',
@@ -756,90 +858,63 @@ export const featuresEs = {
       continue: 'Continuar',
       skip: 'Omitir — lo descubrimos juntos',
       saving: 'Guardando...',
-      saveError: 'No se pudieron guardar algunos proyectos. Puedes agregarlos después en Organizado.',
+      saveError:
+        'No se pudieron guardar algunos proyectos. Puedes agregarlos después en Organizado.',
     },
     areas: {
       title: 'Tus',
       titleAccent: 'áreas',
-      subtitle: 'Opcional — nómbralas como te hagan sentido.',
-      hint: 'Agrega ejemplos de lo que sueles hacer en cada área. Koraa los usa para agrupar mejor tu brain dump.',
-      examplesPlaceholder: 'Ej. correr, meditar, doctor',
-      continue: 'Continuar',
-      skip: 'Omitir — usamos áreas sugeridas',
+      subtitle:
+        'Elige las áreas que uses. Solo esas aparecerán en Capturar y en Áreas.',
+      hint: 'Activa o desactiva cada una. Puedes renombrarlas y agregar ejemplos opcionales.',
+      examplesPlaceholder: 'Ej. correr, mandados, reuniones (opcional)',
+      selectedCount: '{{count}} áreas elegidas',
+      toggleA11y: 'Usar área {{name}}',
+      minOneArea: 'Elige al menos un área para continuar.',
+      continue: 'Guardar mis áreas',
+      skip: 'Usar sugeridas (Hogar, Personal, Trabajo)',
       saving: 'Guardando...',
-      saveError: 'No se pudieron guardar tus áreas. Puedes editarlas después en Organizar.',
+      saveError:
+        'No se pudieron guardar tus áreas. Puedes editarlas después en Organizar.',
     },
     howItWorks: {
       title: 'Así funciona',
       titleAccent: 'Koraa',
       subtitle: 'Tres pasos suaves — sin presión',
       step1Title: 'Suelta lo pendiente',
-      step1Body: 'En Tareas, escribe lo que llevas en mente. Sin orden ni culpa.',
+      step1Body:
+        'En Tareas, escribe lo que llevas en mente. Sin orden ni culpa.',
       step2Title: 'Registra cómo te sientes',
       step2Body: 'Un minuto en Hoy: emoción, energía y claridad.',
       step3Title: 'Ve qué importa hoy',
       step3Body: 'Koraa sugiere unos pasos. El resto puede esperar.',
       adaptTitle: 'Se adapta a ti',
-      adaptBody: 'Poca energía → 2 pasos suaves\nMás energía → hasta 5 — sin prisa',
+      adaptBody:
+        'Poca energía → 2 pasos suaves\nMás energía → hasta 5 — sin prisa',
       startCheckIn: 'Hacer mi check-in',
       enterApp: 'Explorar la app',
       continue: 'Continuar',
     },
   },
   hoy: {
-    streakToast: 'Volviste hoy ✨',
-    calmMoment: 'Tu momento de',
-    calmMomentAccent: 'calma',
-    morning: 'Mañana',
-    evening: 'Noche',
-    morningDone: 'Mañana — Completada',
-    eveningDone: 'Noche — Completada',
-    morningHint: 'Despierta con claridad',
-    eveningHint: 'Cierra el día con calma',
-    fitsToday: 'Esto te conviene hoy',
-    organizeByYou: 'Koraa sugiere tu día según cómo te encuentras, tu energía, tu tiempo y tu mente.',
     focusSummaryLine:
       'Hoy sugerimos {{count}} {{steps}} · energía {{n}}/5 · {{emotion}} · {{time}}',
     focusOne: 'paso',
     focusMany: 'pasos',
     stepWhySuggested: 'Por qué Koraa lo sugiere hoy',
     stepWhyWait: 'Puede esperar porque',
-    focusProgress: '{{done}} de {{total}} pasos sugeridos',
     focusProgressA11y: 'Avance suave: {{done}} de {{total}} pasos hoy',
-    focusProgressStart: '{{total}} cosas podrían importar hoy. Empieza por la que se sienta más liviana.',
+    focusProgressStart:
+      '{{total}} cosas podrían importar hoy. Empieza por la que se sienta más liviana.',
     focusProgressHeading: 'Llevas {{done}} — lo demás puede esperar.',
     focusProgressAllDone: 'Hiciste suficiente por hoy ✨',
-    focusProgressNames: 'Pendientes: {{names}}',
     firstStepDone: 'Un paso hecho. Eso cuenta — sigue a tu ritmo.',
     firstStepDoneLow: 'Un paso con poca energía ya es un logro real.',
     focusOneRemaining: 'Un paso más si quieres. Sin prisa.',
     stepDoneToast: 'Paso completado. Vas a tu ritmo.',
     allStepsDoneToast: 'Hiciste suficiente por hoy. Lo demás puede esperar ✨',
-    energyLine: 'Energía {{n}}/5',
-    perCheckIn: 'Según tu check-in',
-    howWeSuggest: 'Por qué sugerimos esto',
-    howFeelToday: '¿Cómo te sientes hoy?',
     emotionalMemory: 'Memoria emocional',
-    emotionalLoop: 'Loop emocional',
-    lightenLoad: 'Aliviar carga',
-    lightenLoadSub: 'Aparta lo que no es para hoy — sin culpa',
-    lightenLoadCelebration:
-      'Aliviaste tu carga. Hoy puede sentirse más liviano — el resto vive en Calendario ✨',
-    secondaryModulesHint:
-      'Proyectos, memoria emocional y más detalle del orden de tareas.',
-    allDoneSub:
-      'No tienes tareas pendientes. Si añades algo en Tareas, Koraa sugerirá qué importa según cómo te sientas.',
-    noTasksOtherDays:
-      'Tienes tareas en otros días. Cambia a «Todas» para verlas o añade algo para hoy desde la pestaña Tareas.',
-    listStartsSub:
-      'Captura tareas en segundos en la pestaña Tareas. Koraa las ordenará según tu check-in en Hoy.',
-    viewAll: 'Ver todas las tareas',
-    looseTasks: 'Tareas sin proyecto',
-    allDone: 'Todo al día',
-    listStarts: 'Tu lista empieza aquí',
-    goToTasks: 'Ir a Tareas',
     deleteTaskTitle: 'Eliminar tarea',
-    deleteTaskBody: '¿Estás seguro de que quieres eliminar esta tarea?',
     deleteTaskConfirm: '¿Estás seguro de que quieres eliminar «{{task}}»?',
     deleteSubtasksAlso: 'Se eliminarán también {{count}} subtareas.',
     taskDeleted: 'Tarea eliminada correctamente',
@@ -847,51 +922,60 @@ export const featuresEs = {
     planSteps: 'Tres pasos suaves — sin presión:',
     planReasoning:
       'Primero suelta tareas en Tareas, luego check-in en Hoy — Koraa sugiere qué podría importar hoy.',
-    dayComplete: 'Hoy está completo. Descansa y disfruta del momento presente ✨',
-    datesUpdated: 'Fechas actualizadas. Revisa Calendario para ver cómo quedó repartido.',
-    showExtra: 'Mostrar secciones extra',
-    hideExtra: 'Ocultar secciones extra',
-    showMoreForToday: 'Más para hoy',
-    hideMoreForToday: 'Ocultar extras',
+    dayComplete:
+      'Hoy está completo. Descansa y disfruta del momento presente ✨',
     meditationPrepTitle: 'Meditación en preparación',
-    meditationPrepBody: 'Esta función estará activa muy pronto en este entorno.',
-    meditationMorningA11y: 'Meditar por la mañana',
-    meditationMorningDoneA11y: 'Meditación matutina completada',
-    meditationEveningA11y: 'Meditar por la noche',
-    meditationEveningDoneA11y: 'Meditación nocturna completada',
+    meditationPrepBody:
+      'Esta función estará activa muy pronto en este entorno.',
     meditationDoneToast: '¡Meditación completada! 🧘',
     meditationExpoGoNote:
       'En Expo Go la meditación usa una vista simplificada (sin anillo animado). El audio y el registro funcionan igual; en TestFlight verás la experiencia completa.',
-    memoryTipDeep: 'Ese día podría servir para algo más profundo; lo operativo puede ir a bloques más suaves.',
-    memoryMsgVariable: 'Tu energía ha estado variable estas semanas, sin un patrón rígido por día.',
-    memoryTipRealtime: 'Revisa tu check-in al inicio del día y ajusta tu carga en tiempo real.',
-    memoryTipFriction: 'Cuando aparezca ese estado, reduce fricción y elige un solo paso liviano.',
+    memoryTipDeep:
+      'Ese día podría servir para algo más profundo; lo operativo puede ir a bloques más suaves.',
+    memoryMsgVariable:
+      'Tu energía ha estado variable estas semanas, sin un patrón rígido por día.',
+    memoryTipRealtime:
+      'Revisa tu check-in al inicio del día y ajusta tu carga en tiempo real.',
+    memoryTipFriction:
+      'Cuando aparezca ese estado, reduce fricción y elige un solo paso liviano.',
     planSuggestLow: 'Con poca energía, menos es más. Un paso basta.',
-    planSuggestMid: 'Energía moderada. Empieza por lo más liviano; lo demás puede esperar.',
-    planSuggestHigh: 'Buen impulso — canalízalo en una o dos cosas, sin presión.',
+    planSuggestMid:
+      'Energía moderada. Empieza por lo más liviano; lo demás puede esperar.',
+    planSuggestHigh:
+      'Buen impulso — canalízalo en una o dos cosas, sin presión.',
     closureListen: 'Hoy escuchaste cómo te sentías. Ese ya es un avance real.',
-    closureListenNote: 'Cuando quieras, agrega una tarea pequeña para seguir el ritmo sin presión.',
-    closureRestNote: 'Puedes soltar con tranquilidad y retomar mañana con claridad.',
-    closureNoProgress: 'Hoy no avanzaste tareas, y tiene sentido por cómo te sentías.',
-    closurePendingSplit: 'Quedan {{count}} pendientes; podemos repartirlos sin sobrecargarte.',
+    closureListenNote:
+      'Cuando quieras, agrega una tarea pequeña para seguir el ritmo sin presión.',
+    closureRestNote:
+      'Puedes soltar con tranquilidad y retomar mañana con claridad.',
+    closureNoProgress:
+      'Hoy no avanzaste tareas, y tiene sentido por cómo te sentías.',
+    closurePendingSplit:
+      'Quedan {{count}} pendientes; podemos repartirlos sin sobrecargarte.',
     closureResumeLight: 'Mañana puedes retomar desde una tarea liviana.',
-    closurePendingOne: 'Te quedan {{count}} tareas; con una mañana puede bastar.',
+    closurePendingOne:
+      'Te quedan {{count}} tareas; con una mañana puede bastar.',
     closureCleanList: 'Tu lista quedó limpia hoy. Buen cierre.',
-    closureHardDay: 'Hoy no se completaron tareas y también es válido cuando el día se complica.',
-    closureTomorrow: 'Si quieres, mañana arrancamos con la tarea más corta para ganar inercia.',
+    closureHardDay:
+      'Hoy no se completaron tareas y también es válido cuando el día se complica.',
+    closureTomorrow:
+      'Si quieres, mañana arrancamos con la tarea más corta para ganar inercia.',
     closureTitle: 'Cierre emocional de hoy',
-    closureEnough: 'Hiciste suficiente para hoy: cerraste {{completed}} de {{total}} tareas.',
-    closureLowProgress: 'Tuviste poca energía y aún así avanzaste {{count}} tarea(s). Eso cuenta.',
-    closureMidProgress: 'Hoy avanzaste {{completed}} de {{total}}. Es progreso, no perfección.',
-    closureSmallProgress: 'Hoy hiciste {{count}} tarea(s). Parece poco, pero suma.',
-    mantraDefault: 'Tu forma de avanzar no tiene que parecerse a la de nadie más.',
-    mantraCompassion: 'Hoy tocaba sostenerte primero. Cuidarte también es avanzar.',
+    closureEnough:
+      'Hiciste suficiente para hoy: cerraste {{completed}} de {{total}} tareas.',
+    closureLowProgress:
+      'Tuviste poca energía y aún así avanzaste {{count}} tarea(s). Eso cuenta.',
+    closureMidProgress:
+      'Hoy avanzaste {{completed}} de {{total}}. Es progreso, no perfección.',
+    closureSmallProgress:
+      'Hoy hiciste {{count}} tarea(s). Parece poco, pero suma.',
+    mantraDefault:
+      'Tu forma de avanzar no tiene que parecerse a la de nadie más.',
+    mantraCompassion:
+      'Hoy tocaba sostenerte primero. Cuidarte también es avanzar.',
     mantraImpulse: 'Buen impulso — úsalo en una o dos cosas, sin apuro.',
-    mantraSteady: 'Ritmo sereno, avance real: así se construye consistencia durable.',
-    focusSectionTitle: '{{count}} pasos para hoy',
-    focusSectionSub: 'Si te apetece, empieza por la que se sienta más liviana. Lo demás puede esperar.',
-    noFeelSortHint:
-      'Aún sin sugerencias: haz check-in en Hoy y Koraa sugerirá qué podría importar.',
+    mantraSteady:
+      'Ritmo sereno, avance real: así se construye consistencia durable.',
     focusLevelNormal: 'Normal',
   },
   settingsExtra: {
@@ -930,8 +1014,11 @@ export const featuresEs = {
     tasks: 'tareas',
     dateOptional: 'Fecha (opcional)',
     pickDate: 'Elegir fecha',
-    pickDateTitle: 'Elegir fecha',
-    openCalendar: 'Elegir en calendario',
+    pickDateTitle: '¿Para cuándo?',
+    openCalendar: 'Abrir calendario',
+    openCalendarSub: 'Ver el mes completo',
+    dateQuickLabel: 'Atajos rápidos',
+    dateConfirm: 'Usar esta fecha',
     removeDate: 'Quitar fecha',
     createProject: 'Crear proyecto',
     projectName: 'Nombre del proyecto',
@@ -941,7 +1028,8 @@ export const featuresEs = {
     projectNameMin: 'Usa al menos 2 caracteres.',
     projectDuplicate: 'Ya tienes un proyecto con ese nombre.',
     projectCreateError: 'No se pudo crear el proyecto. Inténtalo de nuevo.',
-    projectCreateSchemaError: 'No se pudo crear el proyecto en este momento. Inténtalo de nuevo.',
+    projectCreateSchemaError:
+      'No se pudo crear el proyecto en este momento. Inténtalo de nuevo.',
     loadingProjects: 'Cargando proyectos...',
     assignProject: 'Asignar a proyecto',
     projectLooseHint: 'Tareas sueltas (sin proyecto)',

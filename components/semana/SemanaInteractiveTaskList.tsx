@@ -39,6 +39,11 @@ type SemanaInteractiveTaskListProps = {
   completedOnly?: boolean;
   /** Desactiva swipe; mejor para listas con botones rápidos. */
   disableSwipe?: boolean;
+  /** Abre el editor al enfocar (p. ej. desde áreas → tarea suelta). */
+  highlightTaskId?: string;
+  selectionMode?: boolean;
+  selectedTaskIds?: ReadonlySet<string>;
+  onToggleSelect?: (taskId: string) => void;
 };
 
 export function SemanaInteractiveTaskList({
@@ -51,12 +56,17 @@ export function SemanaInteractiveTaskList({
   completedOnly = false,
   visibleTaskIds,
   disableSwipe = false,
+  highlightTaskId,
+  selectionMode = false,
+  selectedTaskIds,
+  onToggleSelect,
 }: SemanaInteractiveTaskListProps) {
   const { t, locale } = useI18n();
   const [localTasks, setLocalTasks] = useState(tasks);
   const [completingIds, setCompletingIds] = useState<Set<string>>(() => new Set());
   const backgroundLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoadingTasksRef = useRef(false);
+  const highlightedRef = useRef<string | null>(null);
 
   useEffect(() => {
     setLocalTasks(tasks);
@@ -95,11 +105,20 @@ export function SemanaInteractiveTaskList({
     t,
     showToast,
     setTasks: setLocalTasks,
-    loadTasks: reloadTasks,
     setMenuOpen,
+    onDeleted: reloadTasks,
   });
 
   useEffect(() => () => clearToggleTimers(), [clearToggleTimers]);
+
+  useEffect(() => {
+    if (!highlightTaskId || highlightedRef.current === highlightTaskId) return;
+    const task = localTasks.find((entry) => entry.id === highlightTaskId);
+    if (task) {
+      highlightedRef.current = highlightTaskId;
+      handleEditTask(task);
+    }
+  }, [handleEditTask, highlightTaskId, localTasks]);
 
   useFocusEffect(
     useCallback(() => {
@@ -213,7 +232,6 @@ export function SemanaInteractiveTaskList({
       );
       closeEditTask();
       showToast(t('hooks.taskUpdated'), 'success');
-      void reloadTasks();
     },
   });
 
@@ -298,7 +316,12 @@ export function SemanaInteractiveTaskList({
               }
               onToggleTask={(taskId) => void handleToggleTask(taskId)}
               uniformCard
-              swipeEnabled={!disableSwipe}
+              swipeEnabled={!disableSwipe && !selectionMode}
+              selectionMode={selectionMode}
+              isSelected={selectedTaskIds?.has(task.id) ?? false}
+              onToggleSelect={
+                onToggleSelect ? () => onToggleSelect(task.id) : undefined
+              }
             />
           );
         })}

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { DayTasks, Project } from '@/hooks/useWeekTasks';
@@ -8,7 +8,12 @@ import { buildSemanaPlannerModel } from '@/lib/semana/buildSemanaPlannerModel';
 import { WeekPlannerDragBoard } from '@/components/tasks/experience/WeekPlannerDragBoard';
 import { MoveTaskToDaySheet } from '@/components/tasks/experience/MoveTaskToDaySheet';
 import { TaskEditModal } from '@/components/tasks/TaskEditModal';
+import {
+  ProjectQuickAddTaskModal,
+  type ProjectQuickAddTarget,
+} from '@/components/projects/ProjectQuickAddTaskModal';
 import { useTaskPlanEdit } from '@/hooks/useTaskPlanEdit';
+import { openVaciarCapture } from '@/lib/vaciarNavigation';
 import { supabase } from '@/lib/supabase';
 
 import type { SemanaBoardLayout } from '@/lib/semana/rangeMode';
@@ -16,25 +21,34 @@ import type { SemanaBoardLayout } from '@/lib/semana/rangeMode';
 type SemanaDraggableWeekBoardProps = {
   weekTasks: DayTasks[];
   projects: Project[];
+  userId?: string;
   boardLayout?: SemanaBoardLayout;
   onMoveTask: (taskId: string, targetDayId: string) => Promise<{ ok: boolean }>;
   onTasksChanged?: () => void;
   moving?: boolean;
+  onDraggingChange?: (dragging: boolean) => void;
+  hasCheckInToday?: boolean;
+  showToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
 };
 
 export function SemanaDraggableWeekBoard({
   weekTasks,
   projects,
+  userId,
   boardLayout = 'weekGrid',
   onMoveTask,
   onTasksChanged,
   moving = false,
+  onDraggingChange,
+  hasCheckInToday = false,
+  showToast,
 }: SemanaDraggableWeekBoardProps) {
   const { t, locale } = useI18n();
   const [moveTask, setMoveTask] = useState<{ taskId: string; dayId: string; title: string } | null>(
     null,
   );
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [quickAddTarget, setQuickAddTarget] = useState<ProjectQuickAddTarget | null>(null);
 
   const { days, areas } = useMemo(
     () => buildSemanaPlannerModel(weekTasks, projects, t('projectsUi.looseTitle'), locale),
@@ -52,7 +66,17 @@ export function SemanaDraggableWeekBoard({
   }, [weekTasks]);
 
   const editProjects = useMemo(
-    () => projects.map((project) => ({ id: project.id, name: project.name })),
+    () => projects.map((project) => ({ id: project.id, name: project.name, color: project.color })),
+    [projects],
+  );
+
+  const quickAddProjects = useMemo(
+    () =>
+      projects.map((project) => ({
+        id: project.id,
+        name: project.name,
+        color: project.color ?? THEME.colors.gradient.blue,
+      })),
     [projects],
   );
 
@@ -121,6 +145,33 @@ export function SemanaDraggableWeekBoard({
     }
   }, [editingTask, onTasksChanged]);
 
+  const handleDeleteTask = useCallback(
+    (taskId: string) => {
+      const task = tasksById[taskId];
+      if (!task) return;
+      const taskLabel =
+        task.content.length > 40 ? `${task.content.slice(0, 40)}…` : task.content;
+      Alert.alert(t('hoy.deleteTaskTitle'), t('hoy.deleteTaskConfirm', { task: taskLabel }), [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('errors.delete'),
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+              if (!error) onTasksChanged?.();
+            })();
+          },
+        },
+      ]);
+    },
+    [onTasksChanged, t, tasksById],
+  );
+
+  const handlePressAddToDay = useCallback((dayId: string, dayLabel: string) => {
+    setQuickAddTarget({ mode: 'day', date: dayId, dayLabel });
+  }, []);
+
   return (
     <View style={styles.wrap}>
       <Text style={styles.hint}>{t('semana.plannerInteractHint')}</Text>
@@ -133,6 +184,9 @@ export function SemanaDraggableWeekBoard({
         onRequestMoveSheet={handleRequestMove}
         onPressTask={handlePressTask}
         onToggleComplete={(taskId) => void handleToggleComplete(taskId)}
+        onDeleteTask={handleDeleteTask}
+        onPressAddToDay={handlePressAddToDay}
+        onDraggingChange={onDraggingChange}
       />
 
       {openTasksCount === 0 ? (
@@ -161,12 +215,41 @@ export function SemanaDraggableWeekBoard({
           visible={editingTask != null}
           task={editingTask}
           projects={editProjects}
+          userId={userId}
           onSavePlan={handleSavePlanEdit}
           onDelete={handleDeleteEditingTask}
           saving={planEditSaving}
           onClose={() => setEditingTask(null)}
         />
       ) : null}
+
+      <ProjectQuickAddTaskModal
+        visible={quickAddTarget != null}
+        target={quickAddTarget}
+        userId={userId}
+        hasCheckInToday={hasCheckInToday}
+        projects={quickAddProjects}
+        onClose={() => setQuickAddTarget(null)}
+        onSaved={({ title: savedTitle, dayLabel, projectName }) => {
+          onTasksChanged?.();
+          if (dayLabel) {
+            showToast?.(
+              projectName
+                ? t('semana.quickAddDayProjectSuccess', {
+                    title: savedTitle,
+                    day: dayLabel,
+                    project: projectName,
+                  })
+                : t('semana.quickAddDaySuccess', { title: savedTitle, day: dayLabel }),
+              'success',
+            );
+          }
+        }}
+        onOpenFullCapture={(projectId) => {
+          if (quickAddTarget?.mode !== 'day') return;
+          openVaciarCapture({ date: quickAddTarget.date, projectId: projectId ?? undefined });
+        }}
+      />
     </View>
   );
 }

@@ -21,10 +21,13 @@ export const uiEn = {
     goToFeelShort: 'Go to Today',
   },
   hoyMemory: {
-    lowEnergyMessage: 'Over the last few weeks, you often have lower energy on {{day}}.',
-    lowEnergyTip: 'On that day, keep tasks light and protect recovery{{emotionSuffix}}.',
+    lowEnergyMessage:
+      'Over the last few weeks, you often have lower energy on {{day}}.',
+    lowEnergyTip:
+      'On that day, keep tasks light and protect recovery{{emotionSuffix}}.',
     lowEnergyTipEmotion: ' when you feel {{emotion}}',
-    highEnergyMessage: 'Your best window is often {{day}}: that’s when your energy is highest.',
+    highEnergyMessage:
+      'Your best window is often {{day}}: that’s when your energy is highest.',
     topEmotionMessage: 'Your most repeated state recently was {{emotion}}.',
   },
   vaciarExtra: {
@@ -34,7 +37,8 @@ export const uiEn = {
     toastStepAdded: 'Task saved as a suggested step — it will appear in Today',
     toastAdded: 'Task saved',
     toastAddedWithDate: 'Task saved for {{date}}. Find it in the Calendar tab.',
-    toastAddedWithDateAndCalendar: 'Task saved for {{date}} and added to your iPhone Calendar.',
+    toastAddedWithDateAndCalendar:
+      'Task saved for {{date}} and added to your iPhone Calendar.',
     toastAddedGoFeel:
       'Saved to your list. Next: check in on Today — Koraa suggests what matters.',
     dictateHint:
@@ -44,7 +48,8 @@ export const uiEn = {
     voiceListening: 'Listening… say your task calmly.',
     voiceUnavailable:
       'Expo Go can’t use in-app mic. Use your keyboard’s microphone instead.',
-    voicePermissionDenied: 'We need microphone permission to dictate your task.',
+    voicePermissionDenied:
+      'We need microphone permission to dictate your task.',
     a11yVoiceMic: 'Dictate task by voice',
     a11yVoiceMicHint: 'Starts voice transcription in the text field',
     a11yVoiceStop: 'Stop dictating',
@@ -53,7 +58,8 @@ export const uiEn = {
     a11yExpandOptional: 'Expand note about project, date, and subtasks',
     a11yDismissOptional: 'Got it, hide this note',
     a11yNextStepFeel: 'Next step: Log how you feel',
-    a11yNextStepFeelHint: 'Opens the screen to log your emotional state for the day',
+    a11yNextStepFeelHint:
+      'Opens the screen to log your emotional state for the day',
     a11yTaskField: 'Text field to add a task',
     a11yTaskFieldHint: 'Type or dictate the task you need to do today',
     a11yUseSuggestion: 'Use suggestion: {{suggestion}}',
@@ -93,15 +99,19 @@ export const uiEn = {
     checkInTodayFabHint: 'Opens today’s emotional check-in',
     noCheckInTodayBannerHint: 'Opens Today to log how you feel',
     setupTitle: 'Set up Week and projects',
-    setupScheduledDate: 'Week needs one more piece enabled to show tasks by day.',
+    setupScheduledDate:
+      'Week needs one more piece enabled to show tasks by day.',
     setupProjectsTable: 'Projects need to be enabled to organize your tasks.',
-    setupProjectId: 'The link between tasks and projects still needs to be enabled.',
+    setupProjectId:
+      'The link between tasks and projects still needs to be enabled.',
     setupGeneric: 'Week and projects are not active in this environment yet.',
     setupSteps: 'Complete the initial project setup to enable these features.',
     setupPullRefresh: 'Then pull down to refresh.',
     plannerDragTitle: 'Organize your week',
     taskMovedSuccess: 'Step moved to another day',
     taskMovedError: "We couldn't move the step. Try again.",
+    movePickCalendar: 'Or pick another date',
+    movePickCalendarHint: 'Open the calendar for any day of the month.',
     premiumOptional: 'Optional',
     premiumBody:
       'On the free plan you see {{days}} days of the week. Premium unlocks all 7 days, more filters, and full history.',
@@ -157,7 +167,8 @@ export const uiEn = {
     loadingPlans: 'Loading plans…',
     chooseThisPlan: 'Choose this plan',
     emptyTitle: 'Loading your Premium plans',
-    emptyBody: 'If prices don’t show yet, tap Refresh plans or try again in a few minutes.',
+    emptyBody:
+      'If prices don’t show yet, tap Refresh plans or try again in a few minutes.',
     fallbackPlansTitle: 'Meanwhile, you can review your plans:',
     monthlyTitle: 'Monthly plan',
     monthlyBadge: 'Flexible',
@@ -183,7 +194,8 @@ export const uiEn = {
       'Restoring subscriptions only works in the published app (TestFlight or App Store), not in Expo Go.',
     continueFree: 'Continue with free version',
     continueFreePrimary: 'Continue free',
-    onboardingSubtitle: 'We saved your check-in. Premium is optional — explore Koraa for free anytime.',
+    onboardingSubtitle:
+      'We saved your check-in. Premium is optional — explore Koraa for free anytime.',
     onboardingBannerTitle: 'Your check-in is ready',
     onboardingBannerBody:
       'Premium unlocks full Week view, unlimited tips, and more. Your free plan includes check-in, tasks, and Today.',
@@ -197,7 +209,8 @@ export const uiEn = {
     a11yCloseOnboardingHint: 'Close premium and explore the app for free',
     a11yChoosePlan: 'Choose plan {{title}}',
     a11yChoosePlanHint: 'Starts the premium plan purchase',
-    a11yChoosePlanHintPreview: 'Explains that purchasing is only on TestFlight or the App Store',
+    a11yChoosePlanHintPreview:
+      'Explains that purchasing is only on TestFlight or the App Store',
     a11yContinueFree: 'Continue with free version',
     a11yContinueFreeHint: 'Closes premium and keeps using the free plan',
     a11yBuyMonthly: 'Buy monthly plan',
@@ -231,13 +244,16 @@ export const uiEn = {
     chooseProjectSub: 'Or create a new one with the button above',
     captureModalHint: 'Pick a project from the list or create a new one.',
     captureSheetTitle: 'Which project is this for?',
-    captureSheetSub: 'Pick an existing one or create a new project for this task.',
+    captureSheetSub:
+      'Pick an existing one or create a new project for this task.',
     createNewSub: 'Name, color, and optional date',
     existingProjects: 'Your projects',
-    noProjectsYet: 'No projects yet — create your first one with the button above.',
+    noProjectsYet:
+      'No projects yet — create your first one with the button above.',
     a11yChooseProject: 'Choose or create a project for this task',
     a11yChooseOptional: 'Choose or create project, optional',
-    modalHint: 'Optional. Without a project, the task stays loose and appears in Hoy.',
+    modalHint:
+      'Optional. Without a project, the task stays loose and appears in Hoy.',
     a11ySelector: 'Project: {{name}}',
     a11yChoose: 'Choose a project',
     a11yLoose: 'Loose tasks',
@@ -320,7 +336,8 @@ export const uiEn = {
     title: 'Welcome to Koraa!',
     subtitle: 'A space to feel supported when the day feels heavy.',
     step1Title: 'Tasks',
-    step1Body: 'Release what is pending without pressure. Project and date are optional.',
+    step1Body:
+      'Release what is pending without pressure. Project and date are optional.',
     step2Title: 'Check-in on Today',
     step2Body: 'Log emotion and energy (~1 min). Koraa suggests for you.',
     step3Title: 'Today',
@@ -368,7 +385,8 @@ export const uiEn = {
     flowStep: 'Step {{step}}: {{title}}. {{body}}',
     highlightCard: '{{title}}. {{body}}',
     intro3FlowGroup: 'Koraa flow in three steps',
-    howItWorksStepsGroup: 'Three steps: tasks, check-in, and what matters today',
+    howItWorksStepsGroup:
+      'Three steps: tasks, check-in, and what matters today',
     previewDecorative: 'Preview of the Tasks screen',
   },
   sentirExtra: {
@@ -380,7 +398,8 @@ export const uiEn = {
     a11yNoTasksHint: 'Opens Tasks to add pending items before check-in',
     emotionGroupA11y: 'Choose how you feel today',
     emotionSelectedAnnounce: 'You selected {{emotion}}',
-    continueA11yHint: 'Continue with energy, time, and mental clarity for the day',
+    continueA11yHint:
+      'Continue with energy, time, and mental clarity for the day',
     exitConfirmStayHint: 'Dismiss this message and continue your check-in',
     exitConfirmLeaveHint: 'Leave without saving today’s check-in',
   },
@@ -398,9 +417,11 @@ export const uiEn = {
     a11yInsightsSection: 'Insights about your emotional rhythm',
     a11yInsightsLocked: 'Insights locked. Premium required',
     a11yEmotionMix: 'Most frequent emotions in recent check-ins',
-    a11yEnergySparkline: 'Energy chart: {{checkIns}} recent days of {{total}} in the period',
+    a11yEnergySparkline:
+      'Energy chart: {{checkIns}} recent days of {{total}} in the period',
     a11yEnergyBar: '{{day}}: energy {{level}} of 5',
-    a11yMoodTimeline: 'Mood by day: {{checkIns}} check-ins out of {{total}} days',
+    a11yMoodTimeline:
+      'Mood by day: {{checkIns}} check-ins out of {{total}} days',
   },
   focus: {
     sessionTitle: 'A little time together',
@@ -432,12 +453,16 @@ export const uiEn = {
   hoyClarity: {
     reorganizeCta: 'Reorganize my day',
     reorganizeA11y: 'Open day reorganization',
-    reorganizeHint: 'Did your day change? I can suggest a lighter plan — and move the rest out of today.',
-    planIntroCheckIn: 'Based on how you feel and what is open, this is enough for today.',
-    planIntroNoCheckIn: 'First tell me how you are. Then I pick a few steps — not your whole list.',
+    reorganizeHint:
+      'Did your day change? I can suggest a lighter plan — and move the rest out of today.',
+    planIntroCheckIn:
+      'Based on how you feel and what is open, this is enough for today.',
+    planIntroNoCheckIn:
+      'First tell me how you are. Then I pick a few steps — not your whole list.',
     checkInGate: 'Tap Log above to see your plan for today.',
     sectionImportant: 'Enough for today',
-    sectionImportantEmpty: 'Nothing urgent right now — a good moment to breathe.',
+    sectionImportantEmpty:
+      'Nothing urgent right now — a good moment to breathe.',
     sectionCouldAdvance: 'You could advance later',
     sectionCouldAdvanceSub: 'No pressure — when you have space.',
     sectionCanWait: 'Can wait',
@@ -452,9 +477,10 @@ export const uiEn = {
   },
   areasCompact: {
     headline: 'Everything you have open',
+    headlineShort: 'Your areas',
     explainer:
       'An area is a part of your life (work, health…). When reviewing your brain dump, tap each step and pick an area or project. See everything open here.',
-    overviewStats: '{{projects}} · {{tasks}} open in total',
+    overviewStats: '{{projects}} · {{tasks}} in total',
     areaLabel: 'Area',
     areaSummary: '{{projects}} · {{tasks}}',
     projectOne: '{{count}} project',
@@ -468,6 +494,8 @@ export const uiEn = {
     addTaskToProject: 'Add task',
     createProjectInArea: 'Create project here',
     addLooseTask: 'Loose task (no project)',
+    addLooseTaskShort: 'Loose step',
+    addStepShort: 'Add tasks',
     looseSectionTitle: 'Loose tasks',
     loosePreviewTitle: 'No area yet',
     looseSectionBody: 'Things not in a project yet',
@@ -486,14 +514,63 @@ export const uiEn = {
     renameAreaA11y: 'Rename area {{name}}',
     newArea: 'New area',
     newAreaA11y: 'Create a custom area',
+    deleteArea: 'Delete area',
+    deleteAreaTitle: 'Delete area',
+    deleteAreaBody:
+      'Delete «{{name}}»? Projects and tasks stay — only the column is removed.',
     saveArea: 'Save',
     areaNamePlaceholder: 'Area name',
     areaNameA11y: 'Area name',
     areaEmojiA11y: 'Area emoji',
-    emptyArea: 'No projects here yet. Create one or add loose tasks in this area.',
+    areaColorLabel: 'Color',
+    areaColorA11y: 'Area color',
+    emptyArea:
+      'No projects here yet. Create one or add loose tasks in this area.',
+    emptyAreaShort: 'No projects or steps here yet.',
+    areasFilterSummary: '{{active}} of {{total}} areas with content',
+    showEmptyAreas: 'View {{count}} empty areas',
+    showEmptyAreasA11y: 'Show {{count}} empty areas',
+    hideEmptyAreas: 'Hide empty areas',
+    hideEmptyAreasA11y: 'Hide empty areas',
     looseInAreaOne: '{{count}} loose task here',
     looseInAreaMany: '{{count}} loose tasks here',
     viewAreaLooseTasks: 'View all {{count}} loose in this area',
+    manageAreas: 'Adjust areas',
+    manageAreasA11y: 'Adjust or remove areas',
+    manageTitle: 'Your areas',
+    manageHint:
+      'Remove the ones you do not use. Tap OK when you are done to save.',
+    manageDone: 'OK',
+    manageCancel: 'Cancel',
+    manageSavedTitle: 'Saved',
+    manageSavedBody: 'Your areas were saved.',
+    manageSaveFailed: 'Could not save changes. Please try again.',
+    deleteAreaFailed: 'Could not remove the area. Please try again.',
+    quickAddTitle: 'Quick add a step',
+    quickAddHint: 'Type and save. Then drag it to the right area.',
+    quickAddPlaceholder: 'E.g. Call the dentist, buy a gift…',
+    quickAddSave: 'Save step',
+    looseDragTitle: 'Loose tasks',
+    looseDragHint: 'Tap ↔ on each step to pick its area.',
+    organizeDragHint:
+      'Tap text to edit · circle to complete · hold and drag · ↔ to move · trash to delete.',
+    organizeTapHint: 'Drag with the grip or tap the task to edit.',
+    looseRowDragHint: 'Hold to move to another area',
+    moveSheetTitle: 'Move to another area',
+    moveSheetProjectHint: 'The whole project «{{name}}» will move.',
+    moveTaskA11y: 'Move task {{task}}',
+    looseDragActiveHint: 'Drop on the target area.',
+    looseDragDropHere: 'Drop here',
+    looseDragMoved: 'Task moved to a new area.',
+    organizeDragTitle: 'Organize steps',
+    organizeToggle: 'Organize by dragging',
+    projectDragTitle: 'Project steps',
+    projectDragHint:
+      'Tap ↔ on a step to move the whole project to another area.',
+    projectDragMoved: '«{{name}}» moved to a new area.',
+    backToHoyCta: "See what's for today",
+    backToHoyA11y: 'Go to Today and see your suggested steps',
+    backToHoyHint: 'Your suggested steps are waiting in Today',
   },
   looseTasks: {
     filter: {
@@ -508,6 +585,20 @@ export const uiEn = {
     addedYesterday: 'Added yesterday',
     addedDaysAgo: '{{days}} days ago',
     openTaskA11y: 'Open task {{task}}',
+    editTaskA11y: 'Edit task {{task}}',
+    deleteTaskA11y: 'Delete task {{task}}',
+    selectMode: 'Select',
+    cancelSelect: 'Cancel',
+    selectModeA11y: 'Select multiple tasks',
+    cancelSelectA11y: 'Cancel selection',
+    selectTaskA11y: 'Select task {{task}}',
+    deselectTaskA11y: 'Deselect {{task}}',
+    selectedCount: '{{count}} selected',
+    deleteSelected: 'Delete ({{count}})',
+    deleteSelectedA11y: 'Delete {{count}} selected tasks',
+    deleteSelectedTitle: 'Delete tasks',
+    deleteSelectedConfirm: 'Delete {{count}} tasks? This cannot be undone.',
+    deleteSelectedSuccess: '{{count}} tasks deleted',
   },
   lifeAreas: {
     work: 'Work',
@@ -515,6 +606,10 @@ export const uiEn = {
     health: 'Health',
     creative: 'Creative',
     learning: 'Learning',
-    other: 'Other',
+    other: 'Others',
+  },
+  lifeAreasPreset: {
+    bd_familia: 'Family',
+    bd_personal: 'Personal',
   },
 } as const;

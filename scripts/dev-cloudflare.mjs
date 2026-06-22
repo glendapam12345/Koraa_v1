@@ -49,7 +49,8 @@ function assertSupportedNode() {
 
 function killPort(port) {
   try {
-    const pids = execSync(`lsof -ti :${port}`, { encoding: 'utf8' }).trim();
+    // Solo el proceso que escucha (Metro). No matar clientes como cloudflared → localhost:8081.
+    const pids = execSync(`lsof -tiTCP:${port} -sTCP:LISTEN`, { encoding: 'utf8' }).trim();
     if (!pids) return;
     for (const pid of pids.split(/\s+/)) {
       if (pid) process.kill(Number(pid), 'SIGKILL');
@@ -124,7 +125,7 @@ function startCloudflared({ quiet = false } = {}) {
       const url = parseCloudflaredTunnelUrl(buf);
       if (url) {
         clearTimeout(timer);
-        resolve({ url, proc });
+        setTimeout(() => resolve({ url, proc }), 5000);
       }
     };
 
@@ -175,8 +176,12 @@ async function openVerifiedPublicTunnel(opts = {}) {
   let tunnel = null;
   try {
     tunnel = await startCloudflared(opts);
-    const ok = await waitForTunnelReachable(tunnel.url, 45_000);
+    const ok = await waitForTunnelReachable(tunnel.url, 90_000);
     if (ok) return { tunnel, proxyUrl: tunnel.url, provider: 'cloudflared' };
+    console.log('\n⚠️  cloudflared aún no responde; esperando 15 s más…');
+    await new Promise((r) => setTimeout(r, 15_000));
+    const retryOk = await waitForTunnelReachable(tunnel.url, 60_000);
+    if (retryOk) return { tunnel, proxyUrl: tunnel.url, provider: 'cloudflared' };
     console.log('\n⚠️  cloudflared no responde (URL caducada o DNS bloqueado).');
     stopTunnelProc(tunnel);
     tunnel = null;
@@ -184,12 +189,8 @@ async function openVerifiedPublicTunnel(opts = {}) {
     console.log(`\ncloudflared: ${err instanceof Error ? err.message : err}`);
   }
 
-  console.log('\nIntentando localtunnel…');
-  tunnel = await openLocaltunnel();
-  const ok = await waitForTunnelReachable(tunnel.url, 60_000);
-  if (ok) return { tunnel, proxyUrl: tunnel.url, provider: 'localtunnel' };
-
-  stopTunnelProc(tunnel);
+  console.error('\n❌ No se pudo usar cloudflared (localtunnel rompe Expo Go con pantalla de carga).');
+  printHotspotFallback();
   throw new Error('TUNNEL_UNREACHABLE');
 }
 
@@ -307,32 +308,44 @@ function printConnectionHelp({ proxyUrl, expUrl, loadingUrl, tunnelOk, bundleOk,
   console.log(`  • Túnel: ${proxyUrl}\n`);
 }
 
-async function attachTunnelAndPrintQr() {
-  const metroUp = await new Promise((resolve) => {
-    const req = http.get(`http://127.0.0.1:${PORT}/status`, (res) => {
-      res.resume();
-      resolve(res.statusCode === 200);
-    });
-    req.on('error', () => resolve(false));
-    req.setTimeout(2000, () => {
-      req.destroy();
-      resolve(false);
-    });
-  });
+async function attachTunnelAndPrintQr({ restartMetroWithProxy = false } = {}) {
+  const metroUp = await isMetroRunning(PORT);
 
-  if (!metroUp) {
+  if (!metroUp && !restartMetroWithProxy) {
     console.error('\n❌ Metro no está en el puerto 8081.');
     console.error('   Primero: npm run dev:clear   (espera "Metro waiting on…")');
     console.error('   Luego:   npm run dev:cf:tunnel\n');
+    console.error('   Mejor: un solo comando → npm run dev:cf:clear\n');
     process.exit(1);
   }
 
-  console.log('✅ Metro detectado en 8081.\nIniciando túnel…\n');
+  if (metroUp && !restartMetroWithProxy) {
+    console.log('✅ Metro detectado en 8081.');
+    console.log('  Reiniciando con túnel (sin proxy el celular se queda cargando)…\n');
+    restartMetroWithProxy = true;
+  } else if (metroUp) {
+    console.log('✅ Metro detectado en 8081.\nIniciando túnel…\n');
+  }
+
   let tunnelHandle = null;
+  let expo = null;
+  let expoExited = false;
+  let expoExitCode = null;
+
+  const cleanup = () => {
+    stopTunnelProc(tunnelHandle);
+    stopExpo(expo);
+  };
+
+  process.on('SIGINT', () => {
+    cleanup();
+    process.exit(0);
+  });
+
   let proxyUrl;
   let provider = 'cloudflared';
   try {
-    const verified = await openVerifiedPublicTunnel({ quiet: true });
+    const verified = await openVerifiedPublicTunnel({ quiet: !restartMetroWithProxy });
     tunnelHandle = verified.tunnel;
     provider = verified.provider;
     proxyUrl = verified.proxyUrl;
@@ -340,28 +353,67 @@ async function attachTunnelAndPrintQr() {
     printHotspotFallback();
     process.exit(1);
   }
+
   const expUrl = buildExpoGoUrlFromProxy(proxyUrl);
   const loadingUrl = buildExpoLoadingUrl(proxyUrl, 'ios');
   writeDevTunnelState({ proxyUrl, expUrl, loadingUrl });
 
   console.log(`\n  Túnel (${provider}): ${proxyUrl}\n`);
-  console.log('⏳ Verificando túnel…');
+
+  if (restartMetroWithProxy) {
+    console.log('Reiniciando Metro con EXPO_PACKAGER_PROXY_URL…\n');
+    killPort(PORT);
+    killPort(PORT + 1);
+    await new Promise((r) => setTimeout(r, 800));
+    expo = startExpo({ proxyUrl, clearCache: false });
+    expo.on('exit', (code) => {
+      expoExited = true;
+      expoExitCode = code ?? null;
+    });
+    try {
+      await waitForMetro(() => expoExited, METRO_WARM_TIMEOUT_MS, 'Metro (con proxy)');
+    } catch (err) {
+      printExpoCrashHint(expo, expoExitCode);
+      cleanup();
+      throw err;
+    }
+    if (expoExited) {
+      printExpoCrashHint(expo, expoExitCode);
+      cleanup();
+      throw new Error('Expo terminó al reiniciar con proxy');
+    }
+    console.log('✅ Metro OK con EXPO_PACKAGER_PROXY_URL.');
+  }
+
+  console.log('⏳ Verificando túnel y bundle iOS…');
 
   const hostname = getTunnelHostname(proxyUrl);
-  const [tunnelOk, dns] = await Promise.all([
+  const [bundleResult, tunnelOk, dns] = await Promise.all([
+    warmUpMetroBundle(PORT, {
+      maxMs: 600_000,
+      onProgress: (seconds) => {
+        process.stdout.write(`\r  Compilando bundle iOS… ${seconds}s`);
+      },
+    }),
     waitForTunnelReachable(proxyUrl, 120_000),
     checkTunnelDns(hostname),
   ]);
 
+  process.stdout.write('\n');
+
+  const bundleOk = bundleResult.ok;
+  if (bundleOk && !bundleResult.skipped) {
+    console.log(
+      `✅ Bundle listo (${Math.round(bundleResult.bytes / 1024)} KB en ${Math.round(bundleResult.elapsedMs / 1000)}s).`,
+    );
+  } else if (!bundleOk) {
+    console.log('⚠️  Bundle aún compilando. Espera y pulsa Reload JS en Expo Go.');
+  }
+
   if (tunnelOk) console.log('✅ Túnel OK.');
   else console.log('⚠️  Túnel aún no responde; reintenta en 20 s o npm run dev:qr');
 
-  printConnectionHelp({ proxyUrl, expUrl, loadingUrl, tunnelOk, bundleOk: true, dns });
-
-  process.on('SIGINT', () => {
-    stopTunnelProc(tunnelHandle);
-    process.exit(0);
-  });
+  printConnectionHelp({ proxyUrl, expUrl, loadingUrl, tunnelOk, bundleOk, dns });
 
   await new Promise(() => {});
 }
@@ -370,7 +422,7 @@ async function main() {
   assertSupportedNode();
 
   if (TUNNEL_ONLY) {
-    await attachTunnelAndPrintQr();
+    await attachTunnelAndPrintQr({ restartMetroWithProxy: true });
     return;
   }
 
@@ -378,9 +430,7 @@ async function main() {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('  Koraa — Expo Go vía túnel (dev:cf)');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-    console.log('✅ Metro ya corre en 8081 — no lo reinicio.');
-    console.log('  Abriendo túnel para Expo Go en el celular…\n');
-    await attachTunnelAndPrintQr();
+    await attachTunnelAndPrintQr({ restartMetroWithProxy: true });
     return;
   }
 

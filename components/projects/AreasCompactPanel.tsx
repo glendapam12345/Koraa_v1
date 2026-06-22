@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import {
   ChevronDown,
@@ -13,8 +14,9 @@ import {
   ListTodo,
   Pencil,
   Plus,
+  Trash2,
 } from 'lucide-react-native';
-import { router, type Href } from 'expo-router';
+import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { supabase } from '@/lib/supabase';
@@ -23,36 +25,63 @@ import { makeCustomLifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 import {
   groupProjectsByResolvedLifeArea,
   resolveLifeAreaDisplay,
+  resolveAreaColumnOrder,
+  resolveAreasPanelColumnOrder,
+  removeAreaFromUserConfig,
+  createCustomLifeArea,
   type ResolvedLifeArea,
+  type UserLifeAreasConfig,
 } from '@/lib/lifeAreas/userLifeAreas';
+import { confirmDeleteProject, deleteProjectById } from '@/lib/deleteProject';
 import type { ProjectLibraryItem } from '@/hooks/useProjectsLibrary';
 import { useUserLifeAreas } from '@/hooks/useUserLifeAreas';
 import { computeProjectProgress, formatProjectDueDate } from '@/lib/projectProgress';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { AreaNameEditSheet } from '@/components/projects/AreaNameEditSheet';
-import { frontThemeForKey } from '@/lib/frentes/frontTheme';
+import { frontThemeForKey, type FrontTheme } from '@/lib/frentes/frontTheme';
 import type { TranslationKey } from '@/lib/i18n';
 import { LooseTaskMiniRow } from '@/components/projects/LooseTaskMiniRow';
+import { TaskEditModal } from '@/components/tasks/TaskEditModal';
+import type { Task } from '@/components/tasks/TaskCard';
+import { useTaskPlanEdit } from '@/hooks/useTaskPlanEdit';
+import { logger } from '@/lib/logger';
 import {
   groupLooseTasksByArea,
+  looseSummaryToTask,
   type LooseTaskSummary,
 } from '@/lib/looseTasks';
+import { purgeExpiredLooseCompletedTasks } from '@/lib/purgeExpiredLooseCompletedTasks';
+import { AreasQuickAddBar } from '@/components/projects/AreasQuickAddBar';
+import {
+  AreasMoveToAreaSheet,
+  type AreasMoveTarget,
+} from '@/components/projects/AreasMoveToAreaSheet';
+import { moveLooseTaskToArea } from '@/lib/moveLooseTaskToArea';
 
 type AreasCompactPanelProps = {
   userId: string;
   projects: ProjectLibraryItem[];
   looseCount: number;
   loading: boolean;
-  onAddTask: (projectId: string | null, lifeAreaRef?: LifeAreaRef) => void;
+  hasCheckInToday?: boolean;
+  onAddTask: (
+    projectId: string | null,
+    lifeAreaRef?: LifeAreaRef,
+    areaContext?: { label: string; emoji: string },
+  ) => void;
   onCreateProject?: (areaRef: LifeAreaRef) => void;
   onGoCapture?: () => void;
+  onChanged?: () => void;
+  onTaskQuickSaved?: (message: string) => void;
+  onPlanQuickAdd?: (content: string) => void;
 };
 
 type NextActionMap = Record<string, string>;
 
 type EditTarget =
   | { kind: 'builtin'; key: LifeAreaKey; name: string }
-  | { kind: 'custom'; id: string; name: string }
+  | { kind: 'custom'; id: string; name: string; emoji: string; color: string }
   | { kind: 'new' };
 
 function countLabel(
@@ -84,19 +113,39 @@ function ProjectCard({
   project,
   nextAction,
   locale,
+  compact = false,
+  areaTheme,
   onAddTask,
+  onDeleteProject,
 }: {
   project: ProjectLibraryItem;
   nextAction: string | null;
   locale: 'es' | 'en';
+  compact?: boolean;
+  areaTheme?: Pick<FrontTheme, 'bg' | 'border' | 'accent'>;
   onAddTask: (projectId: string | null) => void;
+  onDeleteProject: (project: ProjectLibraryItem) => void;
 }) {
   const { t } = useI18n();
   const progress = computeProjectProgress(project.taskCount, project.incompleteCount);
   const dueLabel = formatProjectDueDate(project.dueDate, locale);
 
   return (
-    <View style={styles.projectCard}>
+    <View
+      style={[
+        styles.projectCard,
+        compact && styles.projectCardCompact,
+        areaTheme && compact
+          ? {
+              backgroundColor: areaTheme.bg,
+              borderColor: areaTheme.border,
+              borderWidth: 1,
+              borderLeftWidth: 3,
+              borderLeftColor: areaTheme.accent,
+            }
+          : null,
+      ]}
+    >
       <TouchableOpacity
         style={styles.projectMain}
         onPress={() => router.push(`/project/${project.id}`)}
@@ -107,62 +156,153 @@ function ProjectCard({
           count: project.incompleteCount,
         })}
       >
-        <View style={styles.projectTopRow}>
-          <View style={[styles.projectDot, { backgroundColor: project.color }]} />
-          <Text style={styles.projectName} numberOfLines={1}>
-            {project.name}
-          </Text>
-          <Text style={[styles.projectPercent, { color: project.color }]}>
-            {progress.total > 0
-              ? t('areasCompact.progressPercent', { percent: progress.percent })
-              : t('areasCompact.noStepsYet')}
-          </Text>
+        <View style={styles.projectTopBlock}>
+          <View style={styles.projectTitleRow}>
+            <View style={[styles.projectDot, { backgroundColor: project.color }]} />
+            <Text style={[styles.projectName, compact && styles.projectNameCompact]} numberOfLines={compact ? 1 : undefined}>
+              {project.name}
+            </Text>
+            {compact ? (
+              <TouchableOpacity
+                style={styles.projectCompactAddBtn}
+                onPress={() => onAddTask(project.id)}
+                hitSlop={8}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={t('areasCompact.addTaskToProject')}
+              >
+                <Plus size={16} color={THEME.colors.calm.lavenderDeep} />
+              </TouchableOpacity>
+            ) : null}
+            <ChevronRight size={16} color={THEME.colors.text.tertiary} />
+          </View>
+          {!compact ? (
+            <Text style={[styles.projectPercent, { color: project.color }]}>
+              {progress.total > 0
+                ? t('areasCompact.progressPercent', { percent: progress.percent })
+                : t('areasCompact.noStepsYet')}
+            </Text>
+          ) : null}
         </View>
 
-        <ProjectProgressBar percent={progress.percent} color={project.color} />
+        {!compact ? (
+          <>
+            <ProjectProgressBar percent={progress.percent} color={project.color} />
 
-        <Text style={styles.projectProgressDetail}>
-          {progress.total > 0
-            ? t('areasCompact.progressDetail', {
-                done: progress.completed,
-                total: progress.total,
-              })
-            : countLabel(
-                project.incompleteCount,
-                'areasCompact.taskOpenOne',
-                'areasCompact.taskOpenMany',
-                t,
-              )}
-        </Text>
+            <Text style={styles.projectProgressDetail}>
+              {progress.total > 0
+                ? t('areasCompact.progressDetail', {
+                    done: progress.completed,
+                    total: progress.total,
+                  })
+                : countLabel(
+                    project.incompleteCount,
+                    'areasCompact.taskOpenOne',
+                    'areasCompact.taskOpenMany',
+                    t,
+                  )}
+            </Text>
 
-        {dueLabel ? (
-          <Text style={styles.projectMeta}>{t('areasCompact.deadline', { date: dueLabel })}</Text>
-        ) : null}
-        {nextAction ? (
-          <Text style={styles.projectNext} numberOfLines={1}>
-            {t('areasCompact.nextAction', { action: nextAction })}
+            {dueLabel ? (
+              <Text style={styles.projectMeta}>{t('areasCompact.deadline', { date: dueLabel })}</Text>
+            ) : null}
+            {nextAction ? (
+              <Text style={styles.projectNext} numberOfLines={1}>
+                {t('areasCompact.nextAction', { action: nextAction })}
+              </Text>
+            ) : null}
+          </>
+        ) : (
+          <Text style={styles.projectProgressDetail} numberOfLines={1}>
+            {progress.total > 0
+              ? t('areasCompact.progressDetail', {
+                  done: progress.completed,
+                  total: progress.total,
+                })
+              : countLabel(
+                  project.incompleteCount,
+                  'areasCompact.taskOpenOne',
+                  'areasCompact.taskOpenMany',
+                  t,
+                )}
           </Text>
-        ) : null}
+        )}
       </TouchableOpacity>
 
-      <View style={styles.projectActions}>
-        <TouchableOpacity
-          style={styles.projectActionBtn}
-          onPress={() => router.push(`/project/${project.id}`)}
-          activeOpacity={0.85}
-        >
-          <FolderKanban size={14} color={THEME.colors.calm.lavenderDeep} />
-          <Text style={styles.projectActionText}>{t('areasCompact.openProject')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.projectActionBtn}
-          onPress={() => onAddTask(project.id)}
-          activeOpacity={0.85}
-        >
-          <Plus size={14} color={THEME.colors.calm.lavenderDeep} />
-          <Text style={styles.projectActionText}>{t('areasCompact.addTaskToProject')}</Text>
-        </TouchableOpacity>
+      {!compact ? (
+        <View style={styles.projectActions}>
+          <TouchableOpacity
+            style={styles.projectActionBtn}
+            onPress={() => router.push(`/project/${project.id}`)}
+            activeOpacity={0.85}
+          >
+            <FolderKanban size={14} color={THEME.colors.calm.lavenderDeep} />
+            <Text style={styles.projectActionText}>{t('areasCompact.openProject')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.projectActionBtn}
+            onPress={() => onAddTask(project.id)}
+            activeOpacity={0.85}
+          >
+            <Plus size={14} color={THEME.colors.calm.lavenderDeep} />
+            <Text style={styles.projectActionText}>{t('areasCompact.addTaskToProject')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.projectActionBtn}
+            onPress={() => onDeleteProject(project)}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={t('projects.deleteProjectA11y', { name: project.name })}
+          >
+            <Trash2 size={14} color={THEME.colors.semantic.danger} />
+            <Text style={[styles.projectActionText, styles.projectActionDanger]}>
+              {t('projects.deleteProject')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function ManageAreaRow({
+  area,
+  onEdit,
+  onDelete,
+}: {
+  area: ResolvedLifeArea;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <View style={styles.manageRow}>
+      <View style={[styles.manageDot, { backgroundColor: area.color }]} />
+      <View style={styles.manageRowBody}>
+        <Text style={styles.manageRowName}>
+          {area.isCustom ? `${area.emoji} ` : ''}
+          {area.name}
+        </Text>
       </View>
+      <TouchableOpacity
+        onPress={onEdit}
+        hitSlop={8}
+        style={styles.manageIconBtn}
+        accessibilityRole="button"
+        accessibilityLabel={t('areasCompact.renameAreaA11y', { name: area.name })}
+      >
+        <Pencil size={16} color={THEME.colors.calm.lavenderDeep} />
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={onDelete}
+        hitSlop={8}
+        style={styles.manageIconBtn}
+        accessibilityRole="button"
+        accessibilityLabel={t('areasCompact.deleteArea')}
+      >
+        <Trash2 size={16} color={THEME.colors.semantic.danger} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -177,7 +317,10 @@ function AreaSection({
   defaultExpanded,
   onAddTask,
   onCreateProject,
-  onEditArea,
+  onDeleteProject,
+  onEditLooseTask,
+  onDeleteLooseTask,
+  onMoveLooseTask,
 }: {
   area: ResolvedLifeArea;
   areaIndex: number;
@@ -186,19 +329,29 @@ function AreaSection({
   nextActions: NextActionMap;
   locale: 'es' | 'en';
   defaultExpanded?: boolean;
-  onAddTask: (projectId: string | null, lifeAreaRef?: LifeAreaRef) => void;
+  onAddTask: (
+    projectId: string | null,
+    lifeAreaRef?: LifeAreaRef,
+    areaContext?: { label: string; emoji: string },
+  ) => void;
   onCreateProject?: (areaRef: LifeAreaRef) => void;
-  onEditArea: (area: ResolvedLifeArea) => void;
+  onDeleteProject: (project: ProjectLibraryItem) => void;
+  onEditLooseTask: (task: LooseTaskSummary) => void;
+  onDeleteLooseTask: (task: LooseTaskSummary) => void;
+  onMoveLooseTask?: (task: LooseTaskSummary) => void;
 }) {
   const { t } = useI18n();
-  const [expanded, setExpanded] = useState(
-    defaultExpanded ?? (projects.length > 0 || looseTasks.length > 0),
-  );
-
-  if (projects.length === 0 && looseTasks.length === 0 && !area.isCustom) return null;
+  const [expanded, setExpanded] = useState(defaultExpanded ?? false);
 
   const themeKey = area.catalogKey ?? 'other';
-  const theme = frontThemeForKey(themeKey, areaIndex);
+  const theme = area.isCustom
+    ? {
+        accent: area.color,
+        bg: `${area.color}22`,
+        border: `${area.color}88`,
+        taskBg: `${area.color}14`,
+      }
+    : frontThemeForKey(themeKey, areaIndex);
   const openTasks = projects.reduce((sum, p) => sum + p.incompleteCount, 0) + looseTasks.length;
 
   const areaSummary = t('areasCompact.areaSummary', {
@@ -213,43 +366,33 @@ function AreaSection({
 
   return (
     <View style={[styles.areaShell, { borderLeftColor: theme.accent }]}>
-      <View style={styles.areaHeader}>
-        <TouchableOpacity
-          style={styles.areaHeaderMain}
-          onPress={() => setExpanded((v) => !v)}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityState={{ expanded }}
-        >
-          <View style={styles.areaHeaderText}>
-            <Text style={[styles.areaEyebrow, { color: theme.accent }]}>
-              {t('areasCompact.areaLabel')}
-            </Text>
-            <Text style={styles.areaName}>{area.name}</Text>
-            <Text style={styles.areaMeta}>{areaSummary}</Text>
-          </View>
-          {expanded ? (
-            <ChevronDown size={18} color={THEME.colors.text.tertiary} />
-          ) : (
-            <ChevronRight size={18} color={THEME.colors.text.tertiary} />
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => onEditArea(area)}
-          hitSlop={8}
-          style={styles.editBtn}
-          accessibilityRole="button"
-          accessibilityLabel={t('areasCompact.renameAreaA11y', { name: area.name })}
-        >
-          <Pencil size={16} color={THEME.colors.calm.lavenderDeep} />
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        style={styles.areaHeaderMain}
+        onPress={() => setExpanded((v) => !v)}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+      >
+        <View style={[styles.areaColorDot, { backgroundColor: theme.accent }]} />
+        <View style={styles.areaHeaderText}>
+          <Text style={styles.areaName}>
+            {area.isCustom ? `${area.emoji} ` : ''}
+            {area.name}
+          </Text>
+          <Text style={styles.areaMeta}>{areaSummary}</Text>
+        </View>
+        {expanded ? (
+          <ChevronDown size={18} color={THEME.colors.text.tertiary} />
+        ) : (
+          <ChevronRight size={18} color={THEME.colors.text.tertiary} />
+        )}
+      </TouchableOpacity>
 
       {expanded ? (
         <View style={styles.areaBody}>
           {projects.length === 0 && looseTasks.length === 0 ? (
-            <Text style={styles.emptyArea}>{t('areasCompact.emptyArea')}</Text>
-          ) : (
+            <Text style={styles.emptyArea}>{t('areasCompact.emptyAreaShort')}</Text>
+          ) : projects.length > 0 ? (
             <View style={styles.projectList}>
               {projects.map((project) => (
                 <ProjectCard
@@ -257,76 +400,65 @@ function AreaSection({
                   project={project}
                   nextAction={nextActions[project.id] ?? null}
                   locale={locale}
+                  compact
+                  areaTheme={theme}
                   onAddTask={(id) => onAddTask(id)}
+                  onDeleteProject={onDeleteProject}
                 />
               ))}
             </View>
-          )}
+          ) : null}
 
           {looseTasks.length > 0 ? (
-            <View style={styles.looseInAreaBlock}>
-              <Text style={styles.looseInAreaLabel}>
-                {countLabel(
-                  looseTasks.length,
-                  'areasCompact.looseInAreaOne',
-                  'areasCompact.looseInAreaMany',
-                  t,
-                )}
-              </Text>
+            <View
+              style={[
+                styles.looseInAreaBlock,
+                projects.length > 0 && styles.looseInAreaBlockSeparated,
+              ]}
+            >
               <View style={styles.looseInAreaList}>
-                {looseTasks.slice(0, 5).map((task) => (
+                {looseTasks.map((task) => (
                   <LooseTaskMiniRow
                     key={task.id}
                     task={task}
                     accentColor={theme.accent}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/project/[id]',
-                        params: { id: 'sin-proyecto', area: area.ref, highlight: task.id },
-                      } as Href)
+                    backgroundColor={theme.taskBg}
+                    borderColor={theme.border}
+                    onEdit={() => onEditLooseTask(task)}
+                    onDelete={() => onDeleteLooseTask(task)}
+                    onMoveRequest={
+                      onMoveLooseTask ? () => onMoveLooseTask(task) : undefined
                     }
                   />
                 ))}
               </View>
-              {looseTasks.length > 5 ? (
-                <TouchableOpacity
-                  style={styles.looseInAreaMore}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/project/[id]',
-                      params: { id: 'sin-proyecto', area: area.ref },
-                    } as Href)
-                  }
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.looseInAreaMoreText}>
-                    {t('areasCompact.viewAreaLooseTasks', { count: looseTasks.length })}
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
             </View>
           ) : null}
 
-          <View style={styles.areaActions}>
+          <View style={styles.areaActionsCompact}>
             {onCreateProject ? (
               <TouchableOpacity
-                style={styles.areaActionPrimary}
+                style={styles.areaActionLink}
                 onPress={() => onCreateProject(area.ref)}
                 activeOpacity={0.88}
+                accessibilityRole="button"
+                accessibilityLabel={t('areasCompact.addProject')}
               >
-                <FolderKanban size={16} color={THEME.colors.calm.lavenderDeep} />
-                <Text style={styles.areaActionPrimaryText}>
-                  {t('areasCompact.createProjectInArea')}
-                </Text>
+                <Plus size={14} color={THEME.colors.calm.lavenderDeep} />
+                <Text style={styles.areaActionLinkText}>{t('areasCompact.addProject')}</Text>
               </TouchableOpacity>
             ) : null}
             <TouchableOpacity
-              style={styles.areaActionSecondary}
-              onPress={() => onAddTask(null, area.ref)}
+              style={styles.areaActionLink}
+              onPress={() => onAddTask(null, area.ref, { label: area.name, emoji: area.emoji })}
               activeOpacity={0.88}
+              accessibilityRole="button"
+              accessibilityLabel={t('areasCompact.addStepShort')}
             >
-              <ListTodo size={16} color={THEME.colors.text.secondary} />
-              <Text style={styles.areaActionSecondaryText}>{t('areasCompact.addLooseTask')}</Text>
+              <ListTodo size={14} color={THEME.colors.text.secondary} />
+              <Text style={[styles.areaActionLinkText, styles.areaActionLinkMuted]}>
+                {t('areasCompact.addStepShort')}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -340,62 +472,86 @@ export function AreasCompactPanel({
   projects,
   looseCount,
   loading,
+  hasCheckInToday = false,
   onAddTask,
   onCreateProject,
   onGoCapture,
+  onChanged,
+  onTaskQuickSaved,
+  onPlanQuickAdd,
 }: AreasCompactPanelProps) {
   const { t, locale } = useI18n();
   const [nextActions, setNextActions] = useState<NextActionMap>({});
   const [looseTasks, setLooseTasks] = useState<LooseTaskSummary[]>([]);
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
+  const [moveTargetForNewArea, setMoveTargetForNewArea] = useState<AreasMoveTarget | null>(null);
+  const [looseMoveTarget, setLooseMoveTarget] = useState<AreasMoveTarget | null>(null);
+  const [editingLooseTask, setEditingLooseTask] = useState<Task | null>(null);
+  const [manageMode, setManageMode] = useState(false);
+  const [showEmptyAreas, setShowEmptyAreas] = useState(false);
+  const [draftConfig, setDraftConfig] = useState<UserLifeAreasConfig | null>(null);
+  const [savingDraft, setSavingDraft] = useState(false);
   const {
     config: lifeAreasConfig,
     loading: lifeAreasLoading,
     renameBuiltinArea,
     addCustomArea,
     renameCustomArea,
+    removeArea,
+    saveConfig,
   } = useUserLifeAreas(userId);
+
+  const activeConfig = manageMode && draftConfig ? draftConfig : lifeAreasConfig;
 
   const getDefaultLabel = useCallback(
     (key: LifeAreaKey) => t(`lifeAreas.${key}` as TranslationKey),
     [t],
   );
 
-  const looseTasksByArea = useMemo(() => groupLooseTasksByArea(looseTasks), [looseTasks]);
-  const unassignedLoose = looseTasksByArea.get(null) ?? [];
+  const getPresetCustomLabel = useCallback(
+    (presetCustomId: string) => t(`lifeAreasPreset.${presetCustomId}` as TranslationKey),
+    [t],
+  );
 
-  const groups = useMemo(() => {
+  const looseTasksByArea = useMemo(() => groupLooseTasksByArea(looseTasks), [looseTasks]);
+
+  const allGroups = useMemo(() => {
     const withProjects = groupProjectsByResolvedLifeArea(
       projects,
-      lifeAreasConfig,
+      activeConfig,
       getDefaultLabel,
       t('lifeAreas.other'),
     );
-    const refsWithContent = new Set(withProjects.map((group) => group.area.ref));
+    const projectsByRef = new Map(
+      withProjects.map((group) => [group.area.ref, group.projects] as const),
+    );
 
-    for (const custom of lifeAreasConfig.custom) {
-      const ref = makeCustomLifeAreaRef(custom.id);
-      if (refsWithContent.has(ref)) continue;
-      withProjects.push({
-        area: resolveLifeAreaDisplay(ref, lifeAreasConfig, getDefaultLabel),
-        projects: [],
-      });
-      refsWithContent.add(ref);
-    }
+    const orderedRefs = resolveAreasPanelColumnOrder(activeConfig);
 
-    for (const [areaRef, areaLoose] of looseTasksByArea.entries()) {
-      if (areaRef == null || areaLoose.length === 0) continue;
-      const ref = areaRef as LifeAreaRef;
-      if (refsWithContent.has(ref)) continue;
-      withProjects.push({
-        area: resolveLifeAreaDisplay(ref, lifeAreasConfig, getDefaultLabel),
-        projects: [],
-      });
-      refsWithContent.add(ref);
-    }
+    return orderedRefs.map((ref, index) => ({
+      area: resolveLifeAreaDisplay(ref, activeConfig, getDefaultLabel, getPresetCustomLabel),
+      areaIndex: index,
+      projects: projectsByRef.get(ref) ?? [],
+      looseTasks: [
+        ...(looseTasksByArea.get(ref) ?? []),
+        ...(ref === 'other' ? (looseTasksByArea.get(null) ?? []) : []),
+      ],
+    }));
+  }, [projects, activeConfig, getDefaultLabel, getPresetCustomLabel, t, looseTasksByArea]);
 
-    return withProjects;
-  }, [projects, lifeAreasConfig, getDefaultLabel, t, looseTasksByArea]);
+  const activeGroups = useMemo(
+    () => allGroups.filter((group) => group.projects.length > 0 || group.looseTasks.length > 0),
+    [allGroups],
+  );
+
+  const emptyAreaCount = allGroups.length - activeGroups.length;
+  const displayGroups = showEmptyAreas ? allGroups : activeGroups;
+
+  const manageAreaList = useMemo(() => {
+    return resolveAreaColumnOrder(activeConfig).map((ref) =>
+      resolveLifeAreaDisplay(ref, activeConfig, getDefaultLabel, getPresetCustomLabel),
+    );
+  }, [activeConfig, getDefaultLabel, getPresetCustomLabel]);
 
   const totalOpenTasks = useMemo(
     () => projects.reduce((sum, p) => sum + p.incompleteCount, 0) + looseCount,
@@ -403,9 +559,11 @@ export function AreasCompactPanel({
   );
 
   const loadLooseTasks = useCallback(async () => {
+    await purgeExpiredLooseCompletedTasks(userId);
+
     const { data, error } = await supabase
       .from('tasks')
-      .select('id, content, created_at, scheduled_date, life_area_key, is_completed')
+      .select('id, content, created_at, scheduled_date, life_area_key, is_completed, is_priority')
       .eq('user_id', userId)
       .is('project_id', null)
       .is('parent_task_id', null)
@@ -418,6 +576,133 @@ export function AreasCompactPanel({
     }
     setLooseTasks((data as LooseTaskSummary[]) ?? []);
   }, [userId]);
+
+  const performDeleteLooseTask = useCallback(
+    async (taskId: string) => {
+      const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+      if (error) {
+        logger.error('Error eliminando tarea suelta:', error);
+        Alert.alert(t('errors.deleteTaskFailed'));
+        return false;
+      }
+      if (editingLooseTask?.id === taskId) {
+        setEditingLooseTask(null);
+      }
+      await loadLooseTasks();
+      onChanged?.();
+      return true;
+    },
+    [editingLooseTask?.id, loadLooseTasks, onChanged, t],
+  );
+
+  const editProjects = useMemo(
+    () => projects.map((project) => ({ id: project.id, name: project.name })),
+    [projects],
+  );
+
+  const { saving: planEditSaving, savePlan } = useTaskPlanEdit({
+    onSaved: (taskId, payload) => {
+      setEditingLooseTask(null);
+      if (payload.projectId) {
+        setLooseTasks((current) => current.filter((task) => task.id !== taskId));
+      } else {
+        setLooseTasks((current) =>
+          current.map((task) =>
+            task.id === taskId
+              ? {
+                  ...task,
+                  content: payload.content,
+                  life_area_key: payload.lifeAreaKey ?? task.life_area_key ?? null,
+                }
+              : task,
+          ),
+        );
+      }
+      void loadLooseTasks();
+      onChanged?.();
+    },
+    onError: () => {
+      Alert.alert(t('errors.saveTaskFailed'));
+    },
+  });
+
+  const handleEditLooseTask = useCallback((summary: LooseTaskSummary) => {
+    setEditingLooseTask(looseSummaryToTask(summary));
+  }, []);
+
+  const handleRequestMoveLooseTask = useCallback((summary: LooseTaskSummary) => {
+    setLooseMoveTarget({
+      kind: 'loose',
+      taskId: summary.id,
+      title: summary.content,
+      currentAreaRef: (summary.life_area_key as LifeAreaRef | null) ?? null,
+    });
+  }, []);
+
+  const handleDeleteLooseTask = useCallback(
+    (summary: LooseTaskSummary) => {
+      const taskLabel =
+        summary.content.length > 40 ? `${summary.content.slice(0, 40)}…` : summary.content;
+      Alert.alert(t('hoy.deleteTaskTitle'), t('hoy.deleteTaskConfirm', { task: taskLabel }), [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('errors.delete'),
+          style: 'destructive',
+          onPress: () => {
+            void performDeleteLooseTask(summary.id);
+          },
+        },
+      ]);
+    },
+    [performDeleteLooseTask, t],
+  );
+
+  const handleDeleteEditingLooseTask = useCallback(async () => {
+    if (!editingLooseTask) return;
+    await performDeleteLooseTask(editingLooseTask.id);
+  }, [editingLooseTask, performDeleteLooseTask]);
+
+  const handleMoveLooseTask = useCallback(
+    (taskId: string, targetAreaRef: LifeAreaRef) => {
+      let previousAreaRef: LifeAreaRef | null | undefined;
+      const normalizeAreaRef = (ref: LifeAreaRef | null | undefined) => ref ?? 'other';
+
+      setLooseTasks((current) => {
+        const existing = current.find((task) => task.id === taskId);
+        previousAreaRef = (existing?.life_area_key as LifeAreaRef | null) ?? null;
+        if (normalizeAreaRef(previousAreaRef) === normalizeAreaRef(targetAreaRef)) return current;
+        return current.map((task) =>
+          task.id === taskId ? { ...task, life_area_key: targetAreaRef } : task,
+        );
+      });
+
+      if (normalizeAreaRef(previousAreaRef) === normalizeAreaRef(targetAreaRef)) return;
+
+      void moveLooseTaskToArea(taskId, targetAreaRef).then((result) => {
+        if (!result.ok) {
+          setLooseTasks((current) =>
+            current.map((task) =>
+              task.id === taskId ? { ...task, life_area_key: previousAreaRef ?? null } : task,
+            ),
+          );
+          Alert.alert(t('errors.saveTaskFailed'));
+          return;
+        }
+        onTaskQuickSaved?.(t('areasCompact.looseDragMoved'));
+        onChanged?.();
+      });
+    },
+    [onChanged, onTaskQuickSaved, t],
+  );
+
+  const handleQuickAddSaved = useCallback(
+    (title: string) => {
+      void loadLooseTasks();
+      onChanged?.();
+      onTaskQuickSaved?.(t('projects.quickAddSuccessLoose', { title }));
+    },
+    [loadLooseTasks, onChanged, onTaskQuickSaved, t],
+  );
 
   const loadNextActions = useCallback(async () => {
     if (projects.length === 0) return;
@@ -441,8 +726,9 @@ export function AreasCompactPanel({
   }, [projects, userId]);
 
   useEffect(() => {
+    if (!userId) return;
     void loadLooseTasks();
-  }, [loadLooseTasks, looseCount]);
+  }, [userId, loadLooseTasks]);
 
   useEffect(() => {
     void loadNextActions();
@@ -451,28 +737,186 @@ export function AreasCompactPanel({
   const openEditArea = (area: ResolvedLifeArea) => {
     if (area.isCustom) {
       const id = area.ref.replace('custom:', '');
-      setEditTarget({ kind: 'custom', id, name: area.name });
+      setEditTarget({ kind: 'custom', id, name: area.name, emoji: area.emoji, color: area.color });
       return;
     }
     if (!area.catalogKey) return;
     setEditTarget({ kind: 'builtin', key: area.catalogKey, name: area.name });
   };
 
-  const handleSaveArea = async (name: string) => {
-    if (!editTarget) return;
+  const handleSaveArea = async (name: string, emoji?: string, color?: string) => {
+    if (!editTarget) return false;
+
+    if (manageMode && draftConfig) {
+      let next = draftConfig;
+      if (editTarget.kind === 'new') {
+        const entry = createCustomLifeArea(name, emoji ?? '🌿', color);
+        next = { ...draftConfig, custom: [...draftConfig.custom, entry] };
+      } else if (editTarget.kind === 'custom') {
+        next = {
+          ...draftConfig,
+          custom: draftConfig.custom.map((item) =>
+            item.id === editTarget.id
+              ? {
+                  ...item,
+                  name: name.trim(),
+                  emoji: emoji ?? item.emoji,
+                  color: color ?? item.color,
+                }
+              : item,
+          ),
+        };
+      } else {
+        const labels = { ...draftConfig.labels };
+        const trimmed = name.trim();
+        if (trimmed) labels[editTarget.key] = trimmed;
+        else delete labels[editTarget.key];
+        next = { ...draftConfig, labels };
+      }
+      setDraftConfig(next);
+      return;
+    }
 
     if (editTarget.kind === 'new') {
-      await addCustomArea(name);
-      return;
+      const result = await addCustomArea(name, emoji ?? '🌿', color);
+      if (result.ok && result.entry) {
+        onChanged?.();
+        if (moveTargetForNewArea?.kind === 'loose') {
+          const areaRef = makeCustomLifeAreaRef(result.entry.id);
+          void handleMoveLooseTask(moveTargetForNewArea.taskId, areaRef);
+          setMoveTargetForNewArea(null);
+        }
+        return;
+      }
+      Alert.alert(t('errors.saveTaskFailed'));
+      return false;
     }
 
     if (editTarget.kind === 'custom') {
-      await renameCustomArea(editTarget.id, name);
-      return;
+      const ok = await renameCustomArea(editTarget.id, name, emoji, color);
+      if (ok) {
+        onChanged?.();
+        return;
+      }
+      Alert.alert(t('errors.saveTaskFailed'));
+      return false;
     }
 
-    await renameBuiltinArea(editTarget.key, name);
+    const ok = await renameBuiltinArea(editTarget.key, name);
+    if (ok) {
+      onChanged?.();
+      return;
+    }
+    Alert.alert(t('errors.saveTaskFailed'));
+    return false;
   };
+
+  const confirmRemoveArea = useCallback(
+    (area: ResolvedLifeArea) => {
+      Alert.alert(
+        t('areasCompact.deleteAreaTitle'),
+        t('areasCompact.deleteAreaBody', { name: area.name }),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('errors.delete'),
+            style: 'destructive',
+            onPress: () => {
+              if (manageMode && draftConfig) {
+                setDraftConfig(removeAreaFromUserConfig(draftConfig, area.ref));
+                return;
+              }
+              void (async () => {
+                const ok = await removeArea(area.ref);
+                if (ok) {
+                  void loadLooseTasks();
+                  onChanged?.();
+                } else {
+                  Alert.alert(t('areasCompact.deleteAreaFailed'));
+                }
+              })();
+            },
+          },
+        ],
+      );
+    },
+    [draftConfig, loadLooseTasks, manageMode, onChanged, removeArea, t],
+  );
+
+  const handleDeleteArea = () => {
+    if (!editTarget || editTarget.kind === 'new') return;
+
+    const target = editTarget;
+    const areaRef: LifeAreaRef =
+      target.kind === 'custom' ? makeCustomLifeAreaRef(target.id) : target.key;
+    setEditTarget(null);
+
+    Alert.alert(
+      t('areasCompact.deleteAreaTitle'),
+      t('areasCompact.deleteAreaBody', { name: target.name }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('errors.delete'),
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              if (manageMode && draftConfig) {
+                setDraftConfig(removeAreaFromUserConfig(draftConfig, areaRef));
+                return;
+              }
+              const ok = await removeArea(areaRef);
+              if (ok) {
+                void loadLooseTasks();
+                onChanged?.();
+              } else {
+                Alert.alert(t('areasCompact.deleteAreaFailed'));
+              }
+            })();
+          },
+        },
+      ],
+    );
+  };
+
+  const startManageMode = useCallback(() => {
+    setDraftConfig(lifeAreasConfig);
+    setManageMode(true);
+  }, [lifeAreasConfig]);
+
+  const cancelManageMode = useCallback(() => {
+    setManageMode(false);
+    setDraftConfig(null);
+  }, []);
+
+  const confirmManageMode = useCallback(async () => {
+    if (!draftConfig || savingDraft) return;
+    setSavingDraft(true);
+    try {
+      const ok = await saveConfig(draftConfig);
+      if (!ok) {
+        Alert.alert(t('areasCompact.manageSaveFailed'));
+        return;
+      }
+      setManageMode(false);
+      setDraftConfig(null);
+      void loadLooseTasks();
+      onChanged?.();
+      Alert.alert(t('areasCompact.manageSavedTitle'), t('areasCompact.manageSavedBody'));
+    } finally {
+      setSavingDraft(false);
+    }
+  }, [draftConfig, loadLooseTasks, onChanged, saveConfig, savingDraft, t]);
+
+  const handleDeleteProject = useCallback(
+    (project: ProjectLibraryItem) => {
+      confirmDeleteProject(t, project.name, async () => {
+        const result = await deleteProjectById(project.id);
+        if (result.ok) onChanged?.();
+      });
+    },
+    [onChanged, t],
+  );
 
   if (loading || lifeAreasLoading) {
     return (
@@ -492,118 +936,191 @@ export function AreasCompactPanel({
             <Text style={styles.captureCtaText}>{t('vaciar.segmentGoCapture')}</Text>
           </TouchableOpacity>
         ) : null}
+        <View style={styles.hoyFooter}>
+          <Text style={styles.hoyFooterHint}>{t('areasCompact.backToHoyHint')}</Text>
+          <CalmPrimaryButton
+            label={t('areasCompact.backToHoyCta')}
+            onPress={() => router.push('/(tabs)')}
+            large
+            accessibilityLabel={t('areasCompact.backToHoyA11y')}
+          />
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.root}>
-      <View style={styles.topActions}>
-        <TouchableOpacity
-          style={styles.topActionLoose}
-          onPress={() => router.push('/project/sin-proyecto' as Href)}
-          activeOpacity={0.88}
-          accessibilityRole="button"
-          accessibilityLabel={t('areasCompact.viewLooseTasks')}
-        >
-          <View style={styles.topActionIconWrap}>
-            <ListTodo size={20} color={THEME.colors.calm.lavenderDeep} />
-          </View>
-          <View style={styles.topActionText}>
-            <Text style={styles.topActionTitle}>{t('areasCompact.looseSectionTitle')}</Text>
-            <Text style={styles.topActionMeta}>
-              {countLabel(
-                unassignedLoose.length > 0 ? unassignedLoose.length : looseCount,
+      <View style={styles.chrome}>
+        <View style={styles.chromeText}>
+          <Text style={styles.chromeTitle}>{t('areasCompact.headlineShort')}</Text>
+          <Text style={styles.chromeMeta}>
+            {t('areasCompact.overviewStats', {
+              projects: countLabel(
+                projects.length,
+                'areasCompact.projectOne',
+                'areasCompact.projectMany',
+                t,
+              ),
+              tasks: countLabel(
+                totalOpenTasks,
                 'areasCompact.taskOpenOne',
                 'areasCompact.taskOpenMany',
                 t,
-              )}
-            </Text>
-          </View>
-          <ChevronRight size={18} color={THEME.colors.calm.lavenderDeep} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.topActionArea}
-          onPress={() => setEditTarget({ kind: 'new' })}
-          activeOpacity={0.88}
-          accessibilityRole="button"
-          accessibilityLabel={t('areasCompact.newAreaA11y')}
-        >
-          <View style={[styles.topActionIconWrap, styles.topActionIconWrapMuted]}>
-            <Plus size={20} color={THEME.colors.calm.lavenderDeep} />
-          </View>
-          <Text style={styles.topActionTitle}>{t('areasCompact.newArea')}</Text>
-        </TouchableOpacity>
+              ),
+            })}
+          </Text>
+        </View>
+        <View style={styles.chromeActions}>
+          {!manageMode ? (
+            <TouchableOpacity
+              style={styles.chromeIconBtn}
+              onPress={startManageMode}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={t('areasCompact.manageAreasA11y')}
+            >
+              <Pencil size={16} color={THEME.colors.calm.lavenderDeep} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
 
-      <CalmCard style={styles.explainerCard}>
-        <Text style={styles.headline}>{t('areasCompact.headline')}</Text>
-        <Text style={styles.explainer}>{t('areasCompact.explainer')}</Text>
-        <Text style={styles.overviewStats}>
-          {t('areasCompact.overviewStats', {
-            projects: countLabel(
-              projects.length,
-              'areasCompact.projectOne',
-              'areasCompact.projectMany',
-              t,
-            ),
-            tasks: countLabel(
-              totalOpenTasks,
-              'areasCompact.taskOpenOne',
-              'areasCompact.taskOpenMany',
-              t,
-            ),
-          })}
-        </Text>
-      </CalmCard>
+      <AreasQuickAddBar
+        compact
+        hasCheckInToday={hasCheckInToday}
+        onOpenPlan={onPlanQuickAdd}
+        onSaved={(title) => {
+          handleQuickAddSaved(title);
+        }}
+        onError={() => Alert.alert(t('errors.saveTaskFailed'))}
+      />
 
-      {groups.map((group, index) => (
-        <AreaSection
-          key={group.area.ref}
-          area={group.area}
-          areaIndex={index}
-          projects={group.projects}
-          looseTasks={looseTasksByArea.get(group.area.ref) ?? []}
-          nextActions={nextActions}
-          locale={locale}
-          defaultExpanded={index === 0}
-          onAddTask={onAddTask}
-          onCreateProject={onCreateProject}
-          onEditArea={openEditArea}
-        />
-      ))}
-
-      {unassignedLoose.length > 0 ? (
-        <CalmCard style={styles.loosePreviewCard}>
-          <Text style={styles.loosePreviewTitle}>{t('areasCompact.loosePreviewTitle')}</Text>
-          <View style={styles.loosePreviewList}>
-            {unassignedLoose.slice(0, 3).map((task) => (
-              <LooseTaskMiniRow
-                key={task.id}
-                task={task}
-                onPress={() =>
-                  router.push({
-                    pathname: '/project/[id]',
-                    params: { id: 'sin-proyecto', highlight: task.id },
-                  } as Href)
-                }
+      {manageMode ? (
+        <CalmCard style={styles.manageCard}>
+          <Text style={styles.manageTitle}>{t('areasCompact.manageTitle')}</Text>
+          <Text style={styles.manageHint}>{t('areasCompact.manageHint')}</Text>
+          <TouchableOpacity
+            style={styles.manageAddAreaBtn}
+            onPress={() => setEditTarget({ kind: 'new' })}
+            activeOpacity={0.88}
+            accessibilityRole="button"
+            accessibilityLabel={t('areasCompact.newAreaA11y')}
+          >
+            <Plus size={16} color={THEME.colors.calm.lavenderDeep} />
+            <Text style={styles.manageAddAreaText}>{t('areasCompact.newArea')}</Text>
+          </TouchableOpacity>
+          <View style={styles.manageList}>
+            {manageAreaList.map((area) => (
+              <ManageAreaRow
+                key={area.ref}
+                area={area}
+                onEdit={() => openEditArea(area)}
+                onDelete={() => confirmRemoveArea(area)}
               />
             ))}
           </View>
-          {unassignedLoose.length > 3 ? (
+          <View style={styles.manageFooter}>
             <TouchableOpacity
-              style={styles.looseInAreaMore}
-              onPress={() => router.push('/project/sin-proyecto' as Href)}
-              activeOpacity={0.85}
+              onPress={cancelManageMode}
+              style={styles.manageCancelBtn}
+              accessibilityRole="button"
             >
-              <Text style={styles.looseInAreaMoreText}>
-                {t('areasCompact.viewLooseTasks')}
+              <Text style={styles.manageCancelText}>{t('areasCompact.manageCancel')}</Text>
+            </TouchableOpacity>
+            <CalmPrimaryButton
+              label={t('areasCompact.manageDone')}
+              onPress={() => void confirmManageMode()}
+              loading={savingDraft}
+              disabled={savingDraft}
+            />
+          </View>
+        </CalmCard>
+      ) : (
+        <>
+          {allGroups.length > 0 && emptyAreaCount > 0 ? (
+            <TouchableOpacity
+              style={styles.emptyAreasToggle}
+              onPress={() => setShowEmptyAreas((current) => !current)}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={
+                showEmptyAreas
+                  ? t('areasCompact.hideEmptyAreasA11y')
+                  : t('areasCompact.showEmptyAreasA11y', { count: emptyAreaCount })
+              }
+            >
+              <Text style={styles.emptyAreasToggleText}>
+                {showEmptyAreas
+                  ? t('areasCompact.hideEmptyAreas')
+                  : t('areasCompact.showEmptyAreas', { count: emptyAreaCount })}
               </Text>
             </TouchableOpacity>
           ) : null}
-        </CalmCard>
+
+          {displayGroups.map((group) => (
+            <AreaSection
+              key={group.area.ref}
+              area={group.area}
+              areaIndex={group.areaIndex}
+              projects={group.projects}
+              looseTasks={group.looseTasks}
+              nextActions={nextActions}
+              locale={locale}
+              defaultExpanded={group.projects.length > 0 || group.looseTasks.length > 0}
+              onAddTask={onAddTask}
+              onCreateProject={onCreateProject}
+              onDeleteProject={handleDeleteProject}
+              onEditLooseTask={handleEditLooseTask}
+              onDeleteLooseTask={handleDeleteLooseTask}
+              onMoveLooseTask={handleRequestMoveLooseTask}
+            />
+          ))}
+        </>
+      )}
+
+      {!manageMode ? (
+        <View style={styles.hoyFooter}>
+          <Text style={styles.hoyFooterHint}>{t('areasCompact.backToHoyHint')}</Text>
+          <CalmPrimaryButton
+            label={t('areasCompact.backToHoyCta')}
+            onPress={() => router.push('/(tabs)')}
+            large
+            accessibilityLabel={t('areasCompact.backToHoyA11y')}
+          />
+        </View>
       ) : null}
+
+      <TaskEditModal
+        visible={editingLooseTask != null}
+        task={editingLooseTask}
+        projects={editProjects}
+        userId={userId}
+        saving={planEditSaving}
+        onSavePlan={(payload) => void savePlan(payload)}
+        onDelete={() => void handleDeleteEditingLooseTask()}
+        onClose={() => setEditingLooseTask(null)}
+      />
+
+      <AreasMoveToAreaSheet
+        visible={looseMoveTarget != null}
+        target={looseMoveTarget}
+        areas={allGroups.map((group) => group.area)}
+        onClose={() => setLooseMoveTarget(null)}
+        onSelectArea={(areaRef) => {
+          if (!looseMoveTarget || looseMoveTarget.kind !== 'loose') return;
+          void handleMoveLooseTask(looseMoveTarget.taskId, areaRef);
+        }}
+        onAddArea={
+          looseMoveTarget
+            ? () => {
+                setMoveTargetForNewArea(looseMoveTarget);
+                setLooseMoveTarget(null);
+                setEditTarget({ kind: 'new' });
+              }
+            : undefined
+        }
+      />
 
       <AreaNameEditSheet
         visible={editTarget !== null}
@@ -613,7 +1130,27 @@ export function AreasCompactPanel({
             : t('areasCompact.renameArea')
         }
         initialName={editTarget?.kind === 'new' ? '' : (editTarget?.name ?? '')}
-        onClose={() => setEditTarget(null)}
+        initialEmoji={
+          editTarget?.kind === 'custom'
+            ? editTarget.emoji
+            : editTarget?.kind === 'new'
+              ? '🌿'
+              : undefined
+        }
+        initialColor={
+          editTarget?.kind === 'custom'
+            ? editTarget.color
+            : undefined
+        }
+        showEmoji={editTarget?.kind === 'new' || editTarget?.kind === 'custom'}
+        showColor={editTarget?.kind === 'new' || editTarget?.kind === 'custom'}
+        canDelete={editTarget?.kind !== 'new' && editTarget?.kind !== undefined}
+        deleteLabel={t('areasCompact.deleteArea')}
+        onDelete={handleDeleteArea}
+        onClose={() => {
+          setEditTarget(null);
+          setMoveTargetForNewArea(null);
+        }}
         onSave={handleSaveArea}
       />
     </View>
@@ -622,14 +1159,91 @@ export function AreasCompactPanel({
 
 const styles = StyleSheet.create({
   root: {
-    gap: THEME.spacing.md,
+    gap: THEME.spacing.sm,
+  },
+  chrome: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: THEME.spacing.sm,
+    paddingHorizontal: 2,
+  },
+  chromeText: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  chromeTitle: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    lineHeight: 22,
+  },
+  chromeMeta: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+  },
+  chromeActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+  },
+  chromeIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  chromeIconBtnActive: {
+    backgroundColor: THEME.colors.calm.lavender,
+    borderColor: THEME.colors.calm.lavenderDeep,
+  },
+  emptyAreasToggle: {
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    minHeight: 32,
+    justifyContent: 'center',
+  },
+  emptyAreasToggleText: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 18,
   },
   topActions: {
     gap: THEME.spacing.sm,
   },
-  topActionLoose: {
+  manageAddAreaBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    minHeight: 36,
+    maxWidth: '100%',
+  },
+  manageAddAreaText: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+    flexShrink: 1,
+    lineHeight: 18,
+  },
+  topActionLoose: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: THEME.spacing.sm,
     padding: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.rounded,
@@ -665,37 +1279,50 @@ const styles = StyleSheet.create({
   },
   topActionText: {
     flex: 1,
+    flexShrink: 1,
     gap: 2,
+    minWidth: 0,
   },
   topActionTitle: {
     ...THEME.typography.body,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
+    lineHeight: 22,
+    flexShrink: 1,
   },
   topActionMeta: {
     ...THEME.typography.caption,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
+    lineHeight: 18,
+    flexShrink: 1,
   },
   explainerCard: {
     gap: THEME.spacing.xs,
     backgroundColor: THEME.colors.calm.mist,
     borderColor: THEME.colors.calm.border,
+    padding: THEME.spacing.sm,
   },
   headline: {
-    ...THEME.typography.h3,
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
+    lineHeight: 24,
+    flexShrink: 1,
   },
   explainer: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
-    lineHeight: 22,
+    lineHeight: 24,
+    flexShrink: 1,
   },
   overviewStats: {
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.calm.lavenderDeep,
     marginTop: 4,
+    lineHeight: 20,
+    flexShrink: 1,
   },
   centered: {
     paddingVertical: THEME.spacing.xl,
@@ -738,30 +1365,26 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...THEME.shadows.soft,
   },
-  areaHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingRight: THEME.spacing.xs,
-    backgroundColor: THEME.colors.calm.mist,
-  },
   areaHeaderMain: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: THEME.spacing.sm,
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.sm,
     minHeight: THEME.sizes.touchTarget,
+    backgroundColor: THEME.colors.calm.mist,
   },
-  editBtn: {
-    minWidth: 36,
-    minHeight: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
+  areaColorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    flexShrink: 0,
   },
   areaHeaderText: {
     flex: 1,
+    flexShrink: 1,
     gap: 2,
+    minWidth: 0,
   },
   areaEyebrow: {
     ...THEME.typography.micro,
@@ -769,15 +1392,20 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     textTransform: 'uppercase',
     lineHeight: 14,
+    flexShrink: 1,
   },
   areaName: {
     ...THEME.typography.body,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
+    lineHeight: 22,
+    flexShrink: 1,
   },
   areaMeta: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
+    lineHeight: 18,
+    flexShrink: 1,
   },
   areaBody: {
     padding: THEME.spacing.sm,
@@ -799,11 +1427,18 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.fill[100],
     overflow: 'hidden',
   },
+  projectCardCompact: {
+    borderWidth: 0,
+    backgroundColor: THEME.colors.calm.mist,
+  },
   projectMain: {
     padding: THEME.spacing.sm,
     gap: 6,
   },
-  projectTopRow: {
+  projectTopBlock: {
+    gap: 4,
+  },
+  projectTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -813,17 +1448,36 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     flexShrink: 0,
+    marginTop: 6,
   },
   projectName: {
     ...THEME.typography.body,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
     flex: 1,
+    flexShrink: 1,
+    lineHeight: 22,
+  },
+  projectNameCompact: {
+    minWidth: 0,
+  },
+  projectCompactAddBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.colors.calm.lavender,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    flexShrink: 0,
   },
   projectPercent: {
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,
-    flexShrink: 0,
+    alignSelf: 'flex-start',
+    paddingLeft: 18,
+    lineHeight: 18,
   },
   progressTrack: {
     height: 6,
@@ -839,35 +1493,70 @@ const styles = StyleSheet.create({
   projectProgressDetail: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
-    lineHeight: 16,
+    lineHeight: 18,
+    flexShrink: 1,
   },
   projectMeta: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
+    lineHeight: 18,
+    flexShrink: 1,
   },
   projectNext: {
     ...THEME.typography.small,
     color: THEME.colors.text.tertiary,
     fontStyle: 'italic',
+    lineHeight: 18,
+    flexShrink: 1,
   },
   projectActions: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: THEME.colors.calm.border,
   },
   projectActionBtn: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+    gap: 8,
     paddingVertical: 10,
+    paddingHorizontal: THEME.spacing.sm,
     minHeight: 40,
   },
   projectActionText: {
     ...THEME.typography.small,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.calm.lavenderDeep,
+    flex: 1,
+    flexShrink: 1,
+    lineHeight: 18,
+  },
+  projectActionDanger: {
+    color: THEME.colors.semantic.danger,
+  },
+  areaActionsCompact: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.sm,
+    paddingTop: THEME.spacing.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: THEME.colors.calm.border,
+  },
+  areaActionLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    minHeight: 32,
+  },
+  areaActionLinkText: {
+    ...THEME.typography.small,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 18,
+  },
+  areaActionLinkMuted: {
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
   },
   areaActions: {
     gap: THEME.spacing.xs,
@@ -879,8 +1568,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    flexWrap: 'wrap',
     gap: 8,
     paddingVertical: 10,
+    paddingHorizontal: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.standard,
     backgroundColor: THEME.colors.calm.lavender,
     borderWidth: 1,
@@ -891,33 +1582,34 @@ const styles = StyleSheet.create({
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.calm.lavenderDeep,
+    textAlign: 'center',
+    flexShrink: 1,
+    lineHeight: 18,
   },
   areaActionSecondary: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    flexWrap: 'wrap',
     gap: 8,
     paddingVertical: 8,
+    paddingHorizontal: THEME.spacing.sm,
     minHeight: 40,
   },
   areaActionSecondaryText: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
     fontFamily: THEME.fonts.heading.medium,
-  },
-  loosePreviewCard: {
-    gap: THEME.spacing.sm,
-    borderColor: THEME.colors.calm.border,
-    backgroundColor: THEME.colors.calm.mist,
-  },
-  loosePreviewTitle: {
-    ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+    flexShrink: 1,
+    lineHeight: 18,
   },
   looseInAreaBlock: {
     gap: THEME.spacing.xs,
-    paddingTop: THEME.spacing.xs,
+  },
+  looseInAreaBlockSeparated: {
+    marginTop: THEME.spacing.xs,
+    paddingTop: THEME.spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: THEME.colors.calm.border,
   },
@@ -927,6 +1619,8 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
+    lineHeight: 16,
+    flexShrink: 1,
   },
   looseInAreaList: {
     gap: THEME.spacing.xs,
@@ -941,8 +1635,129 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
+    lineHeight: 18,
+    flexShrink: 1,
   },
-  loosePreviewList: {
+  manageEntryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.pill,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    backgroundColor: THEME.colors.fill[100],
+    minHeight: 36,
+  },
+  manageEntryText: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 18,
+  },
+  areaFilterRow: {
+    gap: 4,
+    paddingHorizontal: 2,
+  },
+  areaFilterSummary: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+  },
+  areaFilterToggle: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 18,
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+  },
+  manageCard: {
+    gap: THEME.spacing.sm,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    backgroundColor: THEME.colors.calm.mist,
+  },
+  manageTitle: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    lineHeight: 22,
+  },
+  manageHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+  },
+  manageList: {
     gap: THEME.spacing.xs,
+  },
+  manageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    paddingVertical: 10,
+    paddingHorizontal: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.standard,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    minHeight: 44,
+  },
+  manageDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    flexShrink: 0,
+  },
+  manageRowBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  manageRowName: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
+    lineHeight: 20,
+    flexShrink: 1,
+  },
+  manageIconBtn: {
+    minWidth: 36,
+    minHeight: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  manageFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: THEME.spacing.sm,
+    paddingTop: THEME.spacing.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: THEME.colors.calm.border,
+  },
+  manageCancelBtn: {
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+    paddingHorizontal: THEME.spacing.sm,
+  },
+  manageCancelText: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+  },
+  hoyFooter: {
+    marginTop: THEME.spacing.sm,
+    paddingTop: THEME.spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: THEME.colors.calm.border,
+    gap: THEME.spacing.sm,
+    alignItems: 'stretch',
+  },
+  hoyFooterHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

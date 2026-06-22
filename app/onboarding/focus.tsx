@@ -13,7 +13,7 @@ import { track } from '@/lib/analytics';
 import { fetchCurrentStreak, isStreakMilestone } from '@/lib/streak';
 import { publishCheckInCelebration } from '@/lib/checkInCelebration';
 import { getLocalDateString } from '@/lib/dateLocal';
-import { markOnboardingCompleted } from '@/lib/onboardingGate';
+import { completeOnboardingForUser, ONBOARDING_PAYWALL_PARAMS } from '@/lib/finishOnboarding';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 
@@ -270,14 +270,17 @@ export default function FocusScreen() {
         }
       }
 
-      // En onboarding, mostrar paywall suave antes de tabs.
+      // Cierra onboarding: áreas por defecto + paywall → app (sin paso extra de áreas).
       try {
-        const { error: onboardingError } = await markOnboardingCompleted(user.id);
+        const { error: onboardingError } = await completeOnboardingForUser(user.id);
         if (onboardingError) {
           showToast(t('onboarding.focus.closeOnboardingError'), 'error');
           return;
         }
-        router.replace('/onboarding/projects');
+        router.replace({
+          pathname: '/paywall',
+          params: ONBOARDING_PAYWALL_PARAMS,
+        });
       } catch (navError) {
         console.error('Error en navegación:', navError);
         router.replace('/(tabs)');

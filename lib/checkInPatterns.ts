@@ -13,7 +13,7 @@ export function buildEnergySparkline(days: DayData[]): number[] {
 }
 
 /** Top emociones por frecuencia en el periodo. */
-export function buildEmotionMix(days: DayData[], limit = 4): EmotionMixItem[] {
+export function buildEmotionMix(days: DayData[], limit = 5): EmotionMixItem[] {
   const counts = new Map<string, number>();
   for (const day of days) {
     if (!day.emotion) continue;

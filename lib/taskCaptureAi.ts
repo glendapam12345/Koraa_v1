@@ -9,6 +9,7 @@ import { logger } from '@/lib/logger';
 import type { AppLocale } from '@/lib/i18n';
 import { parseTaskCaptureLocally } from '@/lib/taskCaptureParseLocal';
 import type { ProjectForMatch } from '@/lib/batchProjectMatch';
+import { clampEstimatedMinutes } from '@/lib/taskPlanningMeta';
 import type { ParsedCaptureTask, TaskCaptureEffort, TaskCaptureResult } from '@/lib/taskCaptureTypes';
 
 function isAiEnabled(): boolean {
@@ -37,7 +38,23 @@ function parseTaskRow(raw: unknown, validProjectIds?: Set<string>): ParsedCaptur
   const rawProjectId = typeof row.project_id === 'string' ? row.project_id.trim() : null;
   const project_id =
     rawProjectId && validProjectIds && validProjectIds.has(rawProjectId) ? rawProjectId : null;
-  return { content: content.slice(0, 300), scheduled_date: scheduled, effort, project_id };
+  const rawMinutes =
+    typeof row.estimated_minutes === 'number'
+      ? row.estimated_minutes
+      : typeof row.estimated_minutes === 'string'
+        ? Number(row.estimated_minutes)
+        : null;
+  const estimated_minutes =
+    rawMinutes != null && Number.isFinite(rawMinutes) && rawMinutes > 0
+      ? clampEstimatedMinutes(rawMinutes)
+      : null;
+  return {
+    content: content.slice(0, 300),
+    scheduled_date: scheduled,
+    effort,
+    project_id,
+    estimated_minutes,
+  };
 }
 
 function parseCapturePayload(

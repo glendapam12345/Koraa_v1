@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { logger } from '@/lib/logger';
 import { resolvePostAuthGate } from '@/lib/onboardingGate';
+import { TimeoutError, withTimeout } from '@/lib/withTimeout';
 import { AppLoadingGate } from '@/components/AppLoadingGate';
 
 export default function IndexScreen() {
@@ -29,7 +30,7 @@ export default function IndexScreen() {
 
     setProfileGateError(false);
     try {
-      const result = await resolvePostAuthGate(userId);
+      const result = await withTimeout(resolvePostAuthGate(userId), 15_000);
       if (navigatedRef.current) return;
 
       if (result.status === 'error') {
@@ -41,7 +42,11 @@ export default function IndexScreen() {
       router.replace(result.route);
     } catch (e) {
       if (navigatedRef.current) return;
-      logger.debug('Index routing:', e);
+      if (e instanceof TimeoutError) {
+        logger.warn('Index routing: profile gate timeout');
+      } else {
+        logger.debug('Index routing:', e);
+      }
       setProfileGateError(true);
     }
   }, [userId]);

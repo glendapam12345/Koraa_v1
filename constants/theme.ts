@@ -155,7 +155,7 @@ export const THEME = {
     parami: {
       header: ['#4A90E2', '#7B61A8', '#FF6B6B'] as const,
       balanceCard: 'rgba(255, 255, 255, 0.14)',
-      moodCard: ['#7B61A8', '#FF6B6B'] as const,
+      moodCard: ['#6C5CE7', '#E85D75'] as const,
       energyCard: ['#4A90E2', '#6BB6FF'] as const,
       symptomsCard: ['#FF6B6B', '#7B61A8'] as const,
     },
@@ -176,13 +176,13 @@ export const THEME = {
     },
     /** Emotion check-in tints (soft background per emotion) */
     emotionTint: {
-      enfocada: 'rgba(74, 144, 226, 0.15)',
-      motivada: 'rgba(255, 107, 107, 0.15)',
-      tranquila: 'rgba(78, 205, 196, 0.15)',
-      ansiosa: 'rgba(255, 193, 7, 0.15)',
-      agotada: 'rgba(155, 89, 182, 0.15)',
-      abrumada: 'rgba(255, 152, 0, 0.15)',
-      default: 'rgba(74, 144, 226, 0.15)',
+      enfocada: 'rgba(82, 201, 162, 0.22)',
+      motivada: 'rgba(255, 217, 61, 0.25)',
+      tranquila: 'rgba(118, 214, 114, 0.22)',
+      ansiosa: 'rgba(255, 176, 69, 0.22)',
+      agotada: 'rgba(107, 182, 255, 0.22)',
+      abrumada: 'rgba(255, 123, 69, 0.22)',
+      default: 'rgba(118, 214, 114, 0.15)',
     },
   },
 

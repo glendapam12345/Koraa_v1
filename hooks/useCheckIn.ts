@@ -2,8 +2,11 @@ import { useState, useCallback } from 'react';
 import { supabase, getErrorMessage } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { getLocalDateString } from '@/lib/dateLocal';
+import { TimeoutError, withTimeout } from '@/lib/withTimeout';
+import { useI18n } from '@/contexts/I18nContext';
 
 export function useCheckIn(showToast: (message: string, type: 'success' | 'error' | 'info') => void) {
+  const { t } = useI18n();
   const [todayMood, setTodayMood] = useState<string | null>(null);
   const [energy, setEnergy] = useState<string>('');
   const [energyLevel, setEnergyLevel] = useState<number>(0);
@@ -20,12 +23,17 @@ export function useCheckIn(showToast: (message: string, type: 'success' | 'error
       }
 
       const today = getLocalDateString();
-      const { data, error } = await supabase
-        .from('daily_check_ins')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('date', today)
-        .maybeSingle();
+      const { data, error } = await withTimeout(
+        Promise.resolve(
+          supabase
+            .from('daily_check_ins')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('date', today)
+            .maybeSingle(),
+        ),
+        12_000,
+      );
 
       if (error) {
         logger.error('Error cargando check-in:', error);
@@ -56,7 +64,12 @@ export function useCheckIn(showToast: (message: string, type: 'success' | 'error
 
       setLoading(false);
     } catch (error) {
-      logger.error('Error inesperado cargando check-in:', error);
+      if (error instanceof TimeoutError) {
+        logger.warn('Check-in load timeout');
+        showToast(t('errors.refreshFailed'), 'error');
+      } else {
+        logger.error('Error inesperado cargando check-in:', error);
+      }
       setTodayMood(null);
       setEnergyLevel(0);
       setEnergy('');
@@ -64,7 +77,7 @@ export function useCheckIn(showToast: (message: string, type: 'success' | 'error
       setFocusLevel('');
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   return {
     todayMood,

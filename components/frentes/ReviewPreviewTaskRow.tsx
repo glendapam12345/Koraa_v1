@@ -24,8 +24,8 @@ import {
   type CapturePriority,
 } from '@/lib/review/capturePriority';
 import { buildPreviewTaskSummary } from '@/lib/review/previewTaskSummary';
-
-const DURATION_OPTIONS = [15, 25, 45, 60] as const;
+import { TaskDurationStepper } from '@/components/vnext/TaskDurationStepper';
+import { effortToDefaultMinutes } from '@/lib/taskPlanningMeta';
 
 type ReviewPreviewTaskRowProps = {
   item: EnrichedCaptureItem;
@@ -59,6 +59,7 @@ export function ReviewPreviewTaskRow({
   const [expanded, setExpanded] = useState(!compact);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showDurationPicker, setShowDurationPicker] = useState(false);
+  const [showPriorityPicker, setShowPriorityPicker] = useState(false);
 
   const activePriority = resolveCapturePriority(item);
   const urgentLocked = isUrgentCapturePriority(activePriority);
@@ -153,6 +154,7 @@ export function ReviewPreviewTaskRow({
                 setExpanded(false);
                 setShowDatePicker(false);
                 setShowDurationPicker(false);
+                setShowPriorityPicker(false);
               }}
               activeOpacity={0.85}
               accessibilityRole="button"
@@ -169,6 +171,7 @@ export function ReviewPreviewTaskRow({
               onPress={() => {
                 setShowDatePicker((value) => !value);
                 setShowDurationPicker(false);
+                setShowPriorityPicker(false);
               }}
               activeOpacity={0.85}
               accessibilityRole="button"
@@ -184,6 +187,7 @@ export function ReviewPreviewTaskRow({
               onPress={() => {
                 setShowDurationPicker((value) => !value);
                 setShowDatePicker(false);
+                setShowPriorityPicker(false);
               }}
               activeOpacity={0.85}
               accessibilityRole="button"
@@ -194,12 +198,22 @@ export function ReviewPreviewTaskRow({
               </Text>
             </TouchableOpacity>
 
-            <View style={[styles.actionBtn, styles.actionBtnStatic]}>
+            <TouchableOpacity
+              style={[styles.actionBtn, showPriorityPicker && styles.actionBtnActive]}
+              onPress={() => {
+                setShowPriorityPicker((value) => !value);
+                setShowDatePicker(false);
+                setShowDurationPicker(false);
+              }}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: showPriorityPicker }}
+            >
               <Flag size={14} color={THEME.colors.calm.lavenderDeep} />
               <Text style={styles.actionBtnText} numberOfLines={1}>
                 {priorityLabel}
               </Text>
-            </View>
+            </TouchableOpacity>
 
             {canMove && onRequestMove ? (
               <TouchableOpacity
@@ -234,67 +248,72 @@ export function ReviewPreviewTaskRow({
           ) : null}
 
           {showDurationPicker ? (
-            <View style={styles.optionRow}>
-              {DURATION_OPTIONS.map((minutes) => {
-                const active = item.estimatedMinutes === minutes;
-                return (
-                  <TouchableOpacity
-                    key={minutes}
-                    style={[styles.optionChip, active && styles.optionChipActive]}
-                    onPress={() =>
-                      onChange({
-                        ...item,
-                        estimatedMinutes: active ? null : minutes,
-                        effortFeel: active ? item.effortFeel : minutes <= 15 ? 'light' : minutes >= 45 ? 'heavy' : 'medium',
-                      })
-                    }
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
-                  >
-                    <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>
-                      {t('vaciar.previewDurationMinutes', { count: minutes })}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+            <View style={styles.pickerWrap}>
+              <TaskDurationStepper
+                minutes={item.estimatedMinutes ?? effortToDefaultMinutes(item.effortFeel ?? undefined)}
+                onChange={(minutes) =>
+                  onChange({
+                    ...item,
+                    estimatedMinutes: minutes,
+                    effortFeel:
+                      minutes <= 25 ? 'light' : minutes >= 75 ? 'heavy' : 'medium',
+                  })
+                }
+              />
+              {item.estimatedMinutes ? (
+                <TouchableOpacity
+                  style={styles.clearDurationBtn}
+                  onPress={() => onChange({ ...item, estimatedMinutes: null })}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('vaciar.areaReviewClearDurationA11y')}
+                >
+                  <Text style={styles.clearDurationText}>
+                    {t('vaciar.areaReviewClearDuration')}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           ) : null}
 
-          <View style={styles.optionRow}>
-            {CAPTURE_PRIORITY_ORDER.map((priority) => {
-              const active = activePriority === priority;
-              const disabled = urgentLocked && priority !== 'urgent';
-              return (
-                <TouchableOpacity
-                  key={priority}
-                  style={[
-                    styles.optionChip,
-                    active && styles.optionChipActive,
-                    priority === 'urgent' && active && styles.optionChipUrgent,
-                    disabled && styles.optionChipDisabled,
-                  ]}
-                  onPress={() => handlePriorityPress(priority)}
-                  disabled={disabled}
-                  activeOpacity={0.85}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active, disabled }}
-                >
-                  <Text
-                    style={[
-                      styles.optionChipText,
-                      active && styles.optionChipTextActive,
-                      priority === 'urgent' && active && styles.optionChipTextUrgent,
-                    ]}
-                  >
-                    {t(PRIORITY_LABEL_KEYS[priority])}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {showPriorityPicker ? (
+            <View style={styles.pickerWrap}>
+              <View style={styles.optionRow}>
+                {CAPTURE_PRIORITY_ORDER.map((priority) => {
+                  const active = activePriority === priority;
+                  const disabled = urgentLocked && priority !== 'urgent';
+                  return (
+                    <TouchableOpacity
+                      key={priority}
+                      style={[
+                        styles.optionChip,
+                        active && styles.optionChipActive,
+                        priority === 'urgent' && active && styles.optionChipUrgent,
+                        disabled && styles.optionChipDisabled,
+                      ]}
+                      onPress={() => handlePriorityPress(priority)}
+                      disabled={disabled}
+                      activeOpacity={0.85}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active, disabled }}
+                    >
+                      <Text
+                        style={[
+                          styles.optionChipText,
+                          active && styles.optionChipTextActive,
+                          priority === 'urgent' && active && styles.optionChipTextUrgent,
+                        ]}
+                      >
+                        {t(PRIORITY_LABEL_KEYS[priority])}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
 
-          {urgentLocked ? (
-            <Text style={styles.urgentHint}>{t('vaciar.capturePriorityUrgentHint')}</Text>
+              {urgentLocked ? (
+                <Text style={styles.urgentHint}>{t('vaciar.capturePriorityUrgentHint')}</Text>
+              ) : null}
+            </View>
           ) : null}
         </>
       )}
@@ -304,19 +323,20 @@ export function ReviewPreviewTaskRow({
 
 const styles = StyleSheet.create({
   wrap: {
-    gap: 6,
-    paddingVertical: 8,
+    gap: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: THEME.colors.calm.border,
+    alignSelf: 'stretch',
   },
   wrapCompact: {
-    gap: 4,
-    paddingVertical: 6,
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.xs,
   },
   mainRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 4,
+    gap: THEME.spacing.xs,
   },
   hideTitleActions: {
     flexDirection: 'row',
@@ -378,41 +398,50 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    alignSelf: 'stretch',
   },
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderRadius: THEME.borderRadius.pill,
     backgroundColor: THEME.colors.calm.mist,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
-    minHeight: 36,
+    minHeight: 40,
+    maxWidth: '100%',
   },
   actionBtnActive: {
     backgroundColor: THEME.colors.calm.lavender,
     borderColor: THEME.colors.calm.lavenderDeep,
   },
-  actionBtnStatic: {
-    opacity: 0.95,
-  },
   actionBtnText: {
     ...THEME.typography.small,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
-    lineHeight: 14,
-    maxWidth: 120,
+    lineHeight: 16,
+    flexShrink: 1,
   },
   pickerWrap: {
-    paddingTop: 2,
+    paddingTop: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.xs,
+    paddingBottom: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.standard,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    alignSelf: 'stretch',
   },
   optionRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    alignSelf: 'stretch',
   },
   optionChip: {
     paddingHorizontal: 10,
@@ -453,5 +482,15 @@ const styles = StyleSheet.create({
     color: THEME.colors.semantic.warn,
     lineHeight: 16,
     fontStyle: 'italic',
+  },
+  clearDurationBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+  },
+  clearDurationText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
   },
 });

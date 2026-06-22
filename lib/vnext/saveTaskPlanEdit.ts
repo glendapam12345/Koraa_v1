@@ -25,6 +25,7 @@ export async function saveTaskPlanEdit(
     content: payload.content.trim(),
     scheduled_date: payload.scheduledDate,
     project_id: payload.projectId,
+    life_area_key: payload.projectId ? null : (payload.lifeAreaKey ?? null),
   };
   if (payload.isPriority != null) {
     coreUpdate.is_priority = payload.isPriority;
@@ -36,24 +37,26 @@ export async function saveTaskPlanEdit(
     .eq('id', payload.taskId);
 
   if (error) {
-    return { ok: false, error: error.message };
+    if (/life_area_key/i.test(error.message)) {
+      const { life_area_key: _omit, ...withoutArea } = coreUpdate;
+      const { error: retryError } = await supabase
+        .from('tasks')
+        .update(withoutArea)
+        .eq('id', payload.taskId);
+      if (retryError) {
+        return { ok: false, error: retryError.message };
+      }
+    } else {
+      return { ok: false, error: error.message };
+    }
   }
 
-  const lifeAreaValue = payload.projectId ? null : (payload.lifeAreaKey ?? null);
-  const { error: areaError } = await supabase
-    .from('tasks')
-    .update({ life_area_key: lifeAreaValue })
-    .eq('id', payload.taskId);
-
-  if (areaError && !/life_area_key/i.test(areaError.message)) {
-    return { ok: false, error: areaError.message };
-  }
-
+  const metaWrites: Promise<void>[] = [];
   if (payload.effort) {
-    await setTaskEffort(payload.taskId, payload.effort);
+    metaWrites.push(setTaskEffort(payload.taskId, payload.effort));
   }
-
-  await setTaskPlanningMeta(payload.taskId, payload.planning);
+  metaWrites.push(setTaskPlanningMeta(payload.taskId, payload.planning));
+  await Promise.all(metaWrites);
   return { ok: true };
 }
 

@@ -76,7 +76,7 @@ export function formatDurationLabel(totalMinutes: number): string {
 }
 
 export function clampEstimatedMinutes(minutes: number): number {
-  return Math.max(15, Math.min(8 * 60, Math.round(minutes / 15) * 15));
+  return Math.max(5, Math.min(8 * 60, Math.round(minutes / 5) * 5));
 }
 
 export function stepEstimatedMinutes(current: number, delta: number): number {

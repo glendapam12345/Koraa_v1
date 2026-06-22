@@ -88,3 +88,109 @@ export async function fetchProfilePreferences(userId: string): Promise<{
     extendedColumnsAvailable: true,
   };
 }
+
+export type SaveProfilePreferencesInput = {
+  full_name: string | null;
+  age?: number;
+  favorite_activities: string[];
+  interests: string[];
+};
+
+/**
+ * Guarda preferencias de perfil. Usa upsert para crear la fila si no existe
+ * (p. ej. usuarios anteriores al trigger de signup).
+ */
+export async function saveProfilePreferences(
+  userId: string,
+  email: string,
+  payload: SaveProfilePreferencesInput,
+): Promise<{
+  error: { message: string; code?: string } | null;
+  usedBasicFallback: boolean;
+}> {
+  const emailNorm = email.trim();
+
+  const { data: existing, error: existingError } = await supabase
+    .from('profiles')
+    .select('id, email')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (existingError) {
+    return {
+      error: { message: existingError.message, code: existingError.code },
+      usedBasicFallback: false,
+    };
+  }
+
+  const resolvedEmail = emailNorm || existing?.email?.trim() || '';
+
+  if (!existing && !resolvedEmail) {
+    return {
+      error: { message: 'missing_email', code: 'missing_email' },
+      usedBasicFallback: false,
+    };
+  }
+
+  const saveExtended = async () => {
+    if (existing) {
+      return supabase
+        .from('profiles')
+        .update({
+          full_name: payload.full_name,
+          age: payload.age ?? null,
+          favorite_activities: payload.favorite_activities,
+          interests: payload.interests,
+        })
+        .eq('id', userId);
+    }
+
+    return supabase.from('profiles').insert({
+      id: userId,
+      email: resolvedEmail,
+      full_name: payload.full_name,
+      age: payload.age ?? null,
+      favorite_activities: payload.favorite_activities,
+      interests: payload.interests,
+    });
+  };
+
+  const saveBasic = async () => {
+    if (existing) {
+      return supabase
+        .from('profiles')
+        .update({ full_name: payload.full_name })
+        .eq('id', userId);
+    }
+
+    return supabase.from('profiles').insert({
+      id: userId,
+      email: resolvedEmail,
+      full_name: payload.full_name,
+    });
+  };
+
+  const extended = await saveExtended();
+
+  if (!extended.error) {
+    return { error: null, usedBasicFallback: false };
+  }
+
+  if (!isMissingColumnError(extended.error)) {
+    return {
+      error: { message: extended.error.message, code: extended.error.code },
+      usedBasicFallback: false,
+    };
+  }
+
+  const basic = await saveBasic();
+
+  if (basic.error) {
+    return {
+      error: { message: basic.error.message, code: basic.error.code },
+      usedBasicFallback: true,
+    };
+  }
+
+  return { error: null, usedBasicFallback: true };
+}

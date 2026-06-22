@@ -1,9 +1,15 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
+import { getEnergyLevelColor, getInsightsEmotionAccent } from '@/lib/insightsColors';
+import { getEmotionEmoji } from '@/lib/emotionEmoji';
 
 type LockedChartPreviewProps = {
   variant: 'mood' | 'energy' | 'symptoms';
 };
+
+const PREVIEW_MOOD_EMOTIONS = ['ansiosa', 'tranquila', 'agotada', 'tranquila', 'motivada', 'enfocada', 'tranquila'];
+const PREVIEW_ENERGY_LEVELS = [4, 3, 2, 4, 3, 4, 2];
+const PREVIEW_SYMPTOM_EMOTIONS = ['ansiosa', 'tranquila', 'agotada', 'enfocada', 'motivada'];
 
 export function LockedChartPreview({ variant }: LockedChartPreviewProps) {
   if (variant === 'mood') {
@@ -13,18 +19,19 @@ export function LockedChartPreview({ variant }: LockedChartPreviewProps) {
         importantForAccessibility="no-hide-descendants"
         accessibilityElementsHidden
       >
-        {[40, 65, 45, 80, 55, 70, 50].map((h, i) => (
-          <View
-            key={i}
-            style={[
-              styles.moodBar,
-              {
-                height: h,
-                backgroundColor:
-                  i % 2 === 0 ? THEME.colors.calm.lavenderDeep : THEME.colors.gradient.pink,
-              },
-            ]}
-          />
+        {PREVIEW_MOOD_EMOTIONS.map((emotion, i) => (
+          <View key={i} style={styles.moodCell}>
+            <View
+              style={[
+                styles.moodFace,
+                {
+                  borderColor: getInsightsEmotionAccent(emotion),
+                },
+              ]}
+            >
+              <Text style={styles.moodEmoji}>{getEmotionEmoji(emotion)}</Text>
+            </View>
+          </View>
         ))}
       </View>
     );
@@ -37,20 +44,24 @@ export function LockedChartPreview({ variant }: LockedChartPreviewProps) {
         importantForAccessibility="no-hide-descendants"
         accessibilityElementsHidden
       >
-        {[55, 72, 48, 85, 60, 78, 52].map((h, i) => (
-          <View key={i} style={styles.energyCell}>
-            <View
-              style={[
-                styles.energyBar,
-                {
-                  height: h,
-                  backgroundColor:
-                    i % 2 === 0 ? THEME.colors.calm.lavenderDeep : THEME.colors.gradient.blue,
-                },
-              ]}
-            />
-          </View>
-        ))}
+        {PREVIEW_ENERGY_LEVELS.map((level, i) => {
+          const widthPct = Math.max(18, level * 18);
+          return (
+            <View key={i} style={styles.energyRow}>
+              <View style={styles.energyTrack}>
+                <View
+                  style={[
+                    styles.energyFill,
+                    {
+                      width: `${widthPct}%`,
+                      backgroundColor: getEnergyLevelColor(level),
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+          );
+        })}
       </View>
     );
   }
@@ -62,10 +73,18 @@ export function LockedChartPreview({ variant }: LockedChartPreviewProps) {
       accessibilityElementsHidden
     >
       <View style={styles.symptomEmojiRow}>
-        {['🐼', '💤', '☁️', '😣', '🦉'].map((emoji, i) => (
-          <Text key={i} style={styles.emojiText}>
-            {emoji}
-          </Text>
+        {PREVIEW_SYMPTOM_EMOTIONS.map((emotion, i) => (
+          <View key={i} style={styles.symptomCell}>
+            <View
+              style={[
+                styles.symptomRing,
+                { borderColor: getInsightsEmotionAccent(emotion) },
+              ]}
+            >
+              <Text style={styles.emojiText}>{getEmotionEmoji(emotion)}</Text>
+            </View>
+            <Text style={styles.symptomPct}>{[28, 24, 20, 16, 12][i]}%</Text>
+          </View>
         ))}
       </View>
     </View>
@@ -78,31 +97,46 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
     gap: 4,
-    height: 56,
     paddingVertical: 4,
   },
-  moodBar: {
-    width: 8,
-    borderRadius: 4,
-    opacity: 0.5,
+  moodCell: {
+    alignItems: 'center',
+  },
+  moodFace: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.colors.fill[100],
+    opacity: 0.65,
+  },
+  moodEmoji: {
+    fontSize: 14,
+    lineHeight: 16,
   },
   energyWrap: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
     gap: 4,
-    height: 56,
     paddingVertical: 4,
+    justifyContent: 'center',
+    minHeight: 56,
   },
-  energyCell: {
+  energyRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    height: 56,
   },
-  energyBar: {
-    width: 8,
+  energyTrack: {
+    flex: 1,
+    height: 8,
     borderRadius: 4,
+    backgroundColor: THEME.colors.calm.mist,
+    overflow: 'hidden',
     opacity: 0.65,
+  },
+  energyFill: {
+    height: '100%',
+    borderRadius: 4,
   },
   symptomsWrap: {
     alignItems: 'center',
@@ -111,12 +145,31 @@ const styles = StyleSheet.create({
   },
   symptomEmojiRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: THEME.spacing.sm,
+    gap: 6,
+  },
+  symptomCell: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  symptomRing: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.colors.fill[100],
+    opacity: 0.65,
   },
   emojiText: {
-    fontSize: THEME.typography.displayEmojiMd.fontSize,
+    fontSize: 14,
+    lineHeight: 16,
+  },
+  symptomPct: {
+    ...THEME.typography.tiny,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.secondary,
     opacity: 0.65,
   },
 });

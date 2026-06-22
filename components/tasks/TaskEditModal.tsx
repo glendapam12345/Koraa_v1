@@ -20,6 +20,8 @@ interface TaskEditModalProps {
   content?: string;
   task?: Task | null;
   projects?: { id: string; name: string }[];
+  userId?: string;
+  onProjectCreated?: (project: { id: string; name: string }) => void;
   onContentChange?: (text: string) => void;
   onSave?: () => void;
   onSavePlan?: (payload: TaskPlanEditPayload) => void | Promise<void>;
@@ -33,6 +35,8 @@ export function TaskEditModal({
   content = '',
   task = null,
   projects = [],
+  userId,
+  onProjectCreated,
   onContentChange,
   onSave,
   onSavePlan,
@@ -48,6 +52,8 @@ export function TaskEditModal({
         visible={visible}
         task={task}
         projects={projects}
+        userId={userId}
+        onProjectCreated={onProjectCreated}
         onSave={onSavePlan}
         onDelete={onDelete}
         onClose={onClose}

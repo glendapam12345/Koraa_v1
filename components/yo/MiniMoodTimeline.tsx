@@ -3,7 +3,7 @@ import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { DayData } from '@/lib/checkInDayData';
 import { formatCheckInDateLabel, energyGridColumns, chunkEnergyRows } from '@/lib/energyChart';
-import { getEmotionCalendarAccent } from '@/lib/emotionCalendarColors';
+import { getEmotionCalendarAccent, getEmotionCalendarFill } from '@/lib/emotionCalendarColors';
 import { getEmotionEmoji } from '@/lib/emotionEmoji';
 
 type MiniMoodTimelineProps = {
@@ -44,6 +44,7 @@ function MoodFaceCell({
 }) {
   const hasMood = Boolean(day.hasCheckIn && day.emotion);
   const accent = day.emotion ? getEmotionCalendarAccent(day.emotion) : THEME.colors.calm.mist;
+  const fill = day.emotion ? getEmotionCalendarFill(day.emotion) : THEME.colors.surfaceOverlay.veryFaint;
   const emoji = hasMood ? getEmotionEmoji(day.emotion) : null;
   const dateLabel = labelForDay(day, total, monthNames);
 
@@ -53,7 +54,7 @@ function MoodFaceCell({
         style={[
           compact ? styles.faceBoxSm : styles.faceBox,
           hasMood ? styles.faceBoxFilled : styles.faceBoxEmpty,
-          hasMood ? { borderColor: accent } : undefined,
+          hasMood ? { borderColor: accent, backgroundColor: fill } : undefined,
         ]}
         accessibilityElementsHidden={!hasMood}
       >
@@ -174,37 +175,35 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   faceBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: THEME.colors.surfaceOverlay.wash,
-    borderWidth: 1.5,
+    borderWidth: 2,
   },
   faceBoxSm: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+    width: 30,
+    height: 30,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: THEME.colors.surfaceOverlay.washLight,
-    borderWidth: 1,
+    borderWidth: 2,
   },
-  faceBoxFilled: {
-    backgroundColor: THEME.colors.surfaceOverlay.washStrong,
-  },
+  faceBoxFilled: {},
   faceBoxEmpty: {
     borderColor: THEME.colors.surfaceOverlay.medium,
     backgroundColor: THEME.colors.surfaceOverlay.veryFaint,
   },
   emoji: {
-    fontSize: THEME.typography.displayEmojiSm.fontSize,
-    lineHeight: 24,
+    fontSize: 22,
+    lineHeight: 26,
   },
   emojiSm: {
-    fontSize: 15,
-    lineHeight: 18,
+    fontSize: 16,
+    lineHeight: 20,
   },
   emptyMark: {
     fontSize: 18,

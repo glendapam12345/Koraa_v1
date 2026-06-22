@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
@@ -18,12 +17,14 @@ import { useProjectsLibrary } from '@/hooks/useProjectsLibrary';
 import { useUserLifeAreas } from '@/hooks/useUserLifeAreas';
 import { supabase } from '@/lib/supabase';
 import { computeProjectProgress, formatProjectDueDate } from '@/lib/projectProgress';
+import { formatDurationLabel } from '@/lib/taskPlanningMeta';
 import { frontThemeForKey } from '@/lib/frentes/frontTheme';
 import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
 import {
   buildSavedSummaryAreaGroups,
   type SavedOrganizedContext,
   type SavedSummaryAreaGroup,
+  type SavedSummaryPreviewItem,
 } from '@/lib/review/buildBrainDumpSavedSummary';
 import { ensureBrainDumpPresetInConfig } from '@/lib/review/brainDumpAreaPreset';
 import type { LooseTaskSummary } from '@/lib/looseTasks';
@@ -111,6 +112,43 @@ function SummaryProjectRow({
   );
 }
 
+function SummaryLooseTaskRow({
+  item,
+  locale,
+}: {
+  item: SavedSummaryPreviewItem;
+  locale: 'es' | 'en';
+}) {
+  const { t } = useI18n();
+  const dateLabel = item.scheduledDate
+    ? formatProjectDueDate(item.scheduledDate, locale)
+    : null;
+  const durationLabel =
+    item.estimatedMinutes && item.estimatedMinutes > 0
+      ? formatDurationLabel(item.estimatedMinutes)
+      : null;
+
+  const metaParts = [dateLabel, durationLabel].filter(Boolean);
+
+  return (
+    <View style={styles.looseTaskRow}>
+      <Text style={styles.looseTaskBullet}>·</Text>
+      <View style={styles.looseTaskBody}>
+        <Text style={styles.looseTaskTitle} numberOfLines={2}>
+          {item.content}
+        </Text>
+        {metaParts.length > 0 ? (
+          <Text style={styles.looseTaskMeta} numberOfLines={1}>
+            {metaParts.join(' · ')}
+          </Text>
+        ) : (
+          <Text style={styles.looseTaskMeta}>{t('vaciar.organizedSummaryLooseStep')}</Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
 function SummaryAreaBlock({
   group,
   areaIndex,
@@ -138,7 +176,7 @@ function SummaryAreaBlock({
           <Text style={styles.areaMeta}>
             {t('vaciar.organizedSummaryAreaMeta', {
               projects: group.projects.length,
-              tasks: group.projects.reduce((sum, p) => sum + p.incompleteCount, 0) + group.looseCount,
+              tasks: group.looseTasks.length + group.projects.length,
             })}
           </Text>
         </View>
@@ -157,10 +195,16 @@ function SummaryAreaBlock({
         </View>
       ) : null}
 
-      {group.looseCount > 0 ? (
-        <Text style={styles.looseInArea}>
-          {t('areasCompact.looseInAreaMany', { count: group.looseCount })}
-        </Text>
+      {group.looseTasks.length > 0 ? (
+        <View style={styles.looseTaskList}>
+          {group.looseTasks.map((task, index) => (
+            <SummaryLooseTaskRow
+              key={`${task.content}-${index}`}
+              item={task}
+              locale={locale}
+            />
+          ))}
+        </View>
       ) : null}
     </View>
   );
@@ -184,6 +228,11 @@ export function BrainDumpSavedSummaryScreen({
 
   const getDefaultLabel = useCallback(
     (key: LifeAreaKey) => t(`lifeAreas.${key}` as TranslationKey),
+    [t],
+  );
+
+  const getPresetCustomLabel = useCallback(
+    (presetCustomId: string) => t(`lifeAreasPreset.${presetCustomId}` as TranslationKey),
     [t],
   );
 
@@ -225,11 +274,12 @@ export function BrainDumpSavedSummaryScreen({
         looseTasks,
         savedContext,
         t('lifeAreas.other'),
+        getPresetCustomLabel,
       ),
-    [projects, effectiveConfig, getDefaultLabel, looseTasks, savedContext, t],
+    [projects, effectiveConfig, getDefaultLabel, getPresetCustomLabel, looseTasks, savedContext, t],
   );
 
-  const needsCheckIn = !hasCheckInToday;
+  const needsCheckIn = hasCheckInToday === false;
   const isLoading = loading || lifeAreasLoading;
 
   return (
@@ -254,11 +304,7 @@ export function BrainDumpSavedSummaryScreen({
           <ActivityIndicator size="large" color={THEME.colors.calm.lavenderDeep} />
         </View>
       ) : (
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+        <View style={styles.scrollContent}>
           {areaGroups.length > 0 ? (
             areaGroups.map((group, index) => (
               <SummaryAreaBlock
@@ -276,12 +322,14 @@ export function BrainDumpSavedSummaryScreen({
             </CalmCard>
           )}
 
-          {looseCount > 0 ? (
+          {looseCount > 0 && savedContext.previewItems.filter((item) => !item.projectId).length > 0 ? (
             <Text style={styles.globalLoose}>
-              {t('vaciar.organizedSummaryLoose', { count: looseCount })}
+              {t('vaciar.organizedSummaryLoose', {
+                count: savedContext.previewItems.filter((item) => !item.projectId).length,
+              })}
             </Text>
           ) : null}
-        </ScrollView>
+        </View>
       )}
 
       <View style={styles.footer}>
@@ -346,10 +394,6 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.calm.lavenderDeep,
     textAlign: 'center',
-  },
-  scroll: {
-    flex: 1,
-    maxHeight: 420,
   },
   scrollContent: {
     gap: THEME.spacing.sm,
@@ -463,6 +507,41 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.tertiary,
     fontStyle: 'italic',
     paddingHorizontal: 4,
+  },
+  looseTaskList: {
+    gap: THEME.spacing.xs,
+    paddingTop: 2,
+  },
+  looseTaskRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.standard,
+    backgroundColor: THEME.colors.calm.mist,
+  },
+  looseTaskBullet: {
+    ...THEME.typography.body,
+    color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 20,
+    marginTop: -1,
+  },
+  looseTaskBody: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  looseTaskTitle: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
+    lineHeight: 20,
+  },
+  looseTaskMeta: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 16,
   },
   globalLoose: {
     ...THEME.typography.caption,

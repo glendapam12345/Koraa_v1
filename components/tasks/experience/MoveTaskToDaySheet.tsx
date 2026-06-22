@@ -10,6 +10,7 @@ import {
 import { X } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
+import { DateSelector } from '@/components/tasks/DateSelector';
 import type { WeekPlannerDay } from '@/lib/lifeAreas/types';
 
 type MoveTaskToDaySheetProps = {
@@ -60,12 +61,28 @@ export function MoveTaskToDaySheet({
                   }}
                   activeOpacity={0.85}
                   accessibilityRole="button"
+                  disabled={isCurrent}
                 >
                   <Text style={styles.optionLabel}>{day.fullLabel}</Text>
                   <Text style={styles.optionMeta}>{day.summary}</Text>
                 </TouchableOpacity>
               );
             })}
+
+            <View style={styles.calendarSection}>
+              <Text style={styles.calendarTitle}>{t('semana.movePickCalendar')}</Text>
+              <Text style={styles.calendarHint}>{t('semana.movePickCalendarHint')}</Text>
+              <DateSelector
+                selectedDate={currentDayId}
+                onSelect={(date) => {
+                  if (!date || date === currentDayId) return;
+                  onSelect(date);
+                  onClose();
+                }}
+                compact
+                hideLabel
+              />
+            </View>
           </ScrollView>
         </Pressable>
       </Pressable>
@@ -80,7 +97,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    maxHeight: '60%',
+    maxHeight: '72%',
     backgroundColor: THEME.colors.calm.card,
     borderTopLeftRadius: THEME.borderRadius.rounded,
     borderTopRightRadius: THEME.borderRadius.rounded,
@@ -138,5 +155,24 @@ const styles = StyleSheet.create({
   optionMeta: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
+  },
+  calendarSection: {
+    marginTop: THEME.spacing.sm,
+    paddingTop: THEME.spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: THEME.colors.calm.border,
+    gap: THEME.spacing.xs,
+  },
+  calendarTitle: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  calendarHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.tertiary,
+    lineHeight: 16,
   },
 });

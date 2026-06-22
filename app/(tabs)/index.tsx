@@ -17,7 +17,6 @@ import { useTaskActions } from '@/hooks/useTaskActions';
 import { useProgress } from '@/hooks/useProgress';
 import { normalizeCategoryKey } from '@/lib/i18n/categoryLabels';
 import { getCatalog } from '@/lib/i18n';
-import { HoyLiteBanner } from '@/components/hoy/HoyLiteBanner';
 import { HoyScreenHeader } from '@/components/hoy/HoyScreenHeader';
 import { HoyTasksSection } from '@/components/hoy/HoyTasksSection';
 import type { Task } from '@/components/tasks/TaskCard';
@@ -40,10 +39,8 @@ import type { TaskCompletedPayload } from '@/hooks/useTaskActions';
 import { CareModeGuideSheet } from '@/components/hoy/CareModeGuideSheet';
 import { CareModeSheet } from '@/components/hoy/CareModeSheet';
 import { HoyCompanionHeader } from '@/components/hoy/HoyCompanionHeader';
-import { HoyNightCompanionCard } from '@/components/hoy/HoyNightCompanionCard';
 import { useCrisisMode } from '@/hooks/useCrisisMode';
 import { useFocusedProject } from '@/hooks/useFocusedProject';
-import { isLateNight } from '@/lib/timeOfDayContext';
 
 export default function TodayScreen() {
   const { t, locale } = useI18n();
@@ -119,11 +116,10 @@ export default function TodayScreen() {
     t,
     showToast,
     setTasks,
-    loadTasks,
     setMenuOpen: taskExpansion.setMenuOpen,
   });
 
-  const projectsMap = useHoyProjectsMap(user?.id);
+  const { projectsMap, reloadProjects } = useHoyProjectsMap(user?.id);
 
   const editProjects = useMemo(
     () => Object.entries(projectsMap).map(([id, meta]) => ({ id, name: meta.name })),
@@ -141,6 +137,11 @@ export default function TodayScreen() {
                 content: payload.content,
                 scheduled_date: payload.scheduledDate,
                 project_id: payload.projectId,
+                is_priority: payload.isPriority ?? task.is_priority,
+                life_area_key:
+                  payload.projectId != null
+                    ? null
+                    : (payload.lifeAreaKey ?? task.life_area_key ?? null),
                 perceivedEffort: payload.effort ?? task.perceivedEffort,
               }
             : task,
@@ -148,6 +149,7 @@ export default function TodayScreen() {
       );
       closeEditTask();
       showToast(t('hooks.taskUpdated'), 'success');
+      void loadTasks({ silent: true });
     },
   });
 
@@ -176,12 +178,9 @@ export default function TodayScreen() {
 
   const { currentStreak, loadStreak } = useStreak(user?.id);
   const {
-    hoyLiteLayout,
     hoyRestOfDayExpanded,
-    showSecondaryModules,
     setShowSecondaryModules,
-    handleOptOutHoyLite,
-    handleShowMoreForHoy,
+    checkInReplanCoachLine,
   } = useHoyScreenLayout({
     userId: user?.id,
     loading,
@@ -325,24 +324,11 @@ export default function TodayScreen() {
 
         {!loading ? <HoyCompanionHeader displayName={displayName} /> : null}
 
-        {!loading && isLateNight() ? (
-          <HoyNightCompanionCard todayMood={todayMood ?? ''} energyLevel={energyLevel} />
-        ) : null}
-
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
             <Text style={styles.loadingText}>{t('hoy.loading')}</Text>
           </View>
-        ) : null}
-
-        {!loading && hoyLiteLayout ? (
-          <HoyLiteBanner
-            hasCheckIn={Boolean(todayMood)}
-            hasTasks={incompleteTasks.length > 0}
-            hasCompletedStep={todayPriorityStats.done > 0}
-            expanded={showSecondaryModules}
-          />
         ) : null}
 
         {!loading ? (
@@ -353,8 +339,6 @@ export default function TodayScreen() {
             time={time}
             focusLevel={focusLevel}
             todayPriorityStats={todayPriorityStats}
-            compactLayout={Boolean(hoyLiteLayout && !showSecondaryModules)}
-            onShowFullView={() => void handleOptOutHoyLite()}
             user={user}
             tasks={tasks}
             incompleteTasksForToday={incompleteTasksForToday}
@@ -373,8 +357,7 @@ export default function TodayScreen() {
             restOfDayExpanded={hoyRestOfDayExpanded}
             onCollapseRestOfDay={() => setShowSecondaryModules(false)}
             displayName={displayName}
-            coachSuggestion={explanation.suggestion}
-            onShowMoreForToday={!showSecondaryModules ? handleShowMoreForHoy : undefined}
+            coachSuggestion={checkInReplanCoachLine ?? explanation.suggestion}
             onDeleteTask={handleDeleteTask}
             onChangeEmotion={openQuickRecheck}
             crisisMode={crisisModeActive}
@@ -395,6 +378,8 @@ export default function TodayScreen() {
         onCloseMenu={closeMenu}
         editingTask={editingTask}
         editProjects={editProjects}
+        userId={user?.id}
+        onProjectCreated={() => void reloadProjects()}
         onSavePlanEdit={handleSavePlanEdit}
         onDeleteEditingTask={handleDeleteEditingTask}
         planEditSaving={planEditSaving}

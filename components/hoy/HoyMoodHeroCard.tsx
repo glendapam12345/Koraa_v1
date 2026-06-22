@@ -42,11 +42,11 @@ export function HoyMoodHeroCard({
       ? focusCount > 0
         ? t('hoy.nightMoodHeroWithSteps')
         : t('hoy.nightMoodHeroLead')
-      : compact
-        ? focusCount > 0
+      : focusCount > 0
+        ? compact
           ? t('hoy.moodHeroLiteWithSteps', { count: focusCount })
-          : t('hoy.moodHeroLiteNoSteps')
-        : t('hoy.moodHeroPlanLead');
+          : t('hoy.moodHeroPlanLead')
+        : t('hoy.moodHeroLiteNoSteps');
 
   const taskHint = null;
 

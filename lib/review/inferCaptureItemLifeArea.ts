@@ -2,6 +2,7 @@ import { detectCategory } from '@/lib/categoryDetection';
 import { makeCustomLifeAreaRef, type LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 import {
   inferLifeAreaFromUserExamples,
+  resolveActiveLifeAreaRef,
   type UserLifeAreasConfig,
 } from '@/lib/lifeAreas/userLifeAreas';
 import { BRAIN_DUMP_PRESET_CUSTOM_IDS } from '@/lib/review/brainDumpAreaPreset';
@@ -49,30 +50,36 @@ export function inferCaptureItemLifeArea(
   content: string,
   config?: UserLifeAreasConfig,
 ): LifeAreaRef {
+  let ref: LifeAreaRef;
+
   if (config) {
     const fromExamples = inferLifeAreaFromUserExamples(content, config);
-    if (fromExamples) return fromExamples;
+    if (fromExamples) {
+      return resolveActiveLifeAreaRef(fromExamples, config);
+    }
   }
-  if (textHits(content, EXERCISE_KEYWORDS)) return 'health';
-  if (textHits(content, FAMILY_KEYWORDS)) {
-    return makeCustomLifeAreaRef(BRAIN_DUMP_PRESET_CUSTOM_IDS.familia);
+  if (textHits(content, EXERCISE_KEYWORDS)) ref = 'health';
+  else if (textHits(content, FAMILY_KEYWORDS)) {
+    ref = makeCustomLifeAreaRef(BRAIN_DUMP_PRESET_CUSTOM_IDS.personal);
+  } else {
+    const hint = inferGroupContextHint([{ content }]);
+    if (hint === 'health') ref = 'health';
+    else if (hint === 'work') ref = 'work';
+    else if (hint === 'home') ref = 'home';
+    else if (hint === 'personal') {
+      ref = makeCustomLifeAreaRef(BRAIN_DUMP_PRESET_CUSTOM_IDS.personal);
+    } else if (hint === 'venture') ref = 'work';
+    else {
+      const category = detectCategory(content);
+      if (category === 'salud') ref = 'health';
+      else if (category === 'trabajo') ref = 'work';
+      else if (category === 'personal') {
+        ref = makeCustomLifeAreaRef(BRAIN_DUMP_PRESET_CUSTOM_IDS.personal);
+      } else ref = 'other';
+    }
   }
 
-  const hint = inferGroupContextHint([{ content }]);
-  if (hint === 'health') return 'health';
-  if (hint === 'work') return 'work';
-  if (hint === 'home') return 'home';
-  if (hint === 'personal') return makeCustomLifeAreaRef(BRAIN_DUMP_PRESET_CUSTOM_IDS.personal);
-  if (hint === 'venture') return 'work';
-
-  const category = detectCategory(content);
-  if (category === 'salud') return 'health';
-  if (category === 'trabajo') return 'work';
-  if (category === 'personal') {
-    return makeCustomLifeAreaRef(BRAIN_DUMP_PRESET_CUSTOM_IDS.personal);
-  }
-
-  return 'other';
+  return config ? resolveActiveLifeAreaRef(ref, config) : ref;
 }
 
 export function applyInferredLifeAreas(

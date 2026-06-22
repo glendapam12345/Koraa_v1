@@ -43,10 +43,10 @@ export default function ProfileScreen() {
 
   const profileState = useYoProfile({
     userId: user?.id,
+    userEmail: user?.email,
     userMetadata: user?.user_metadata,
     locale,
     t,
-    showEditProfile,
   });
 
   const {
@@ -67,14 +67,20 @@ export default function ProfileScreen() {
     removeInterest,
     handleAgeInputChange,
     handleSaveProfile,
+    beginEditProfile,
     clearProfileError,
   } = profileState;
 
+  const openEditProfile = useCallback(() => {
+    beginEditProfile();
+    setShowEditProfile(true);
+  }, [beginEditProfile]);
+
   useEffect(() => {
     if (editProfileParam !== '1') return;
-    setShowEditProfile(true);
+    openEditProfile();
     router.setParams({ editProfile: undefined });
-  }, [editProfileParam]);
+  }, [editProfileParam, openEditProfile]);
 
   useEffect(() => {
     void loadProfile();
@@ -149,7 +155,7 @@ export default function ProfileScreen() {
         <CalmCard>
           <TouchableOpacity
             style={styles.header}
-            onPress={() => setShowEditProfile(true)}
+            onPress={openEditProfile}
             activeOpacity={0.75}
             accessibilityRole="button"
             accessibilityLabel={t('yoExtra.editProfileA11y')}
@@ -175,7 +181,7 @@ export default function ProfileScreen() {
             <Text style={styles.namePromptBody}>{t('yo.namePromptBody')}</Text>
             <CalmPrimaryButton
               label={t('yo.namePromptCta')}
-              onPress={() => setShowEditProfile(true)}
+              onPress={openEditProfile}
               variant="soft"
               accessibilityLabel={t('yo.namePromptCta')}
             />
@@ -186,7 +192,7 @@ export default function ProfileScreen() {
           <YoMenuRow
             icon={<Edit size={22} color={THEME.colors.calm.lavenderDeep} />}
             title={t('yo.editProfile')}
-            onPress={() => setShowEditProfile(true)}
+            onPress={openEditProfile}
             accessibilityLabel={t('yoExtra.editProfileA11y')}
             accessibilityHint={t('yoExtra.editProfileMenuHint', {
               activities: profile.favorite_activities?.length || 0,

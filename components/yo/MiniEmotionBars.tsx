@@ -2,6 +2,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { EmotionMixItem } from '@/lib/checkInPatterns';
+import { getEmotionEmoji } from '@/lib/emotionEmoji';
+import { getInsightsEmotionAccent } from '@/lib/insightsColors';
 
 type MiniEmotionBarsProps = {
   items: EmotionMixItem[];
@@ -9,33 +11,31 @@ type MiniEmotionBarsProps = {
 
 export function MiniEmotionBars({ items }: MiniEmotionBarsProps) {
   const { t } = useI18n();
-  const maxCount = Math.max(...items.map((i) => i.count), 1);
 
   if (items.length === 0) {
     return null;
   }
 
+  const total = items.reduce((sum, item) => sum + item.count, 0);
+
   return (
     <View style={styles.wrap} accessibilityLabel={t('paramiExtra.a11yEmotionMix')}>
-      {items.map((item) => {
-        const widthPct = Math.max(12, Math.round((item.count / maxCount) * 100));
-        return (
-          <View key={item.id} style={styles.row}>
-            <Text style={styles.label} numberOfLines={1}>
-              {t(`sentir.emotions.${item.id}` as 'sentir.emotions.tranquila')}
-            </Text>
-            <View style={styles.track}>
-              <View
-                style={[
-                  styles.fill,
-                  { width: `${widthPct}%`, backgroundColor: item.color },
-                ]}
-              />
+      <View style={styles.emojiRow}>
+        {items.map((item) => {
+          const pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
+          const accent = getInsightsEmotionAccent(item.id);
+          return (
+            <View key={item.id} style={styles.emojiCell}>
+              <View style={[styles.emojiRing, { borderColor: accent }]}>
+                <Text style={styles.emoji} accessibilityElementsHidden importantForAccessibility="no">
+                  {getEmotionEmoji(item.id)}
+                </Text>
+              </View>
+              <Text style={styles.percent}>{pct}%</Text>
             </View>
-            <Text style={styles.count}>{item.count}</Text>
-          </View>
-        );
-      })}
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -43,34 +43,37 @@ export function MiniEmotionBars({ items }: MiniEmotionBarsProps) {
 const styles = StyleSheet.create({
   wrap: {
     gap: THEME.spacing.xs,
+    paddingTop: 2,
   },
-  row: {
+  emojiRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     gap: THEME.spacing.xs,
   },
-  label: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.main,
-    width: 72,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  track: {
+  emojiCell: {
     flex: 1,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: THEME.colors.calm.mist,
-    overflow: 'hidden',
+    alignItems: 'center',
+    gap: 6,
+    minWidth: 0,
   },
-  fill: {
-    height: '100%',
-    borderRadius: 5,
+  emojiRing: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.colors.fill[100],
   },
-  count: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    width: 20,
-    textAlign: 'right',
+  emoji: {
+    fontSize: 24,
+    lineHeight: 28,
+  },
+  percent: {
+    ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    lineHeight: 18,
   },
 });

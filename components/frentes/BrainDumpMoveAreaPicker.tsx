@@ -3,6 +3,7 @@ import { ArrowRightLeft, Plus } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { BrainDumpAreaColumn } from '@/lib/review/buildBrainDumpAreaBoardModel';
+import { LOOSE_LIFE_AREA_ID } from '@/lib/lifeAreas/projectToLifeArea';
 import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 
 type BrainDumpMoveAreaPickerProps = {
@@ -10,6 +11,7 @@ type BrainDumpMoveAreaPickerProps = {
   currentAreaRef: LifeAreaRef | null;
   onMove: (targetColumnId: string) => void;
   onAddArea?: () => void;
+  looseLabel?: string;
 };
 
 export function BrainDumpMoveAreaPicker({
@@ -17,12 +19,15 @@ export function BrainDumpMoveAreaPicker({
   currentAreaRef,
   onMove,
   onAddArea,
+  looseLabel,
 }: BrainDumpMoveAreaPickerProps) {
   const { t } = useI18n();
 
   const areaOptions = columns.filter((column) => !column.isLoose && column.ref);
+  const looseColumn = columns.find((column) => column.isLoose);
+  const isOnLoose = currentAreaRef == null;
 
-  if (areaOptions.length === 0 && !onAddArea) return null;
+  if (areaOptions.length === 0 && !onAddArea && !looseColumn) return null;
 
   return (
     <View style={styles.wrap}>
@@ -32,20 +37,40 @@ export function BrainDumpMoveAreaPicker({
       </View>
       <Text style={styles.hint}>{t('vaciar.areaReviewMoveAreaHint')}</Text>
       <View style={styles.options}>
+        {looseColumn ? (
+          <TouchableOpacity
+            style={[styles.option, isOnLoose && styles.optionActive]}
+            onPress={() => onMove(LOOSE_LIFE_AREA_ID)}
+            disabled={isOnLoose}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityState={{ selected: isOnLoose, disabled: isOnLoose }}
+          >
+            <Text style={styles.emoji}>{looseColumn.emoji}</Text>
+            <Text style={[styles.label, isOnLoose && styles.labelActive]}>
+              {looseLabel ?? looseColumn.name}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
         {areaOptions.map((column) => {
           const active = column.ref === currentAreaRef;
           return (
             <TouchableOpacity
               key={column.id}
-              style={[styles.option, active && styles.optionActive]}
+              style={[
+                styles.option,
+                active && styles.optionActive,
+                { borderColor: active ? column.color : THEME.colors.calm.border },
+              ]}
               onPress={() => onMove(column.id)}
               disabled={active}
               activeOpacity={0.85}
               accessibilityRole="button"
               accessibilityState={{ selected: active, disabled: active }}
             >
+              <View style={[styles.colorDot, { backgroundColor: column.color }]} />
               <Text style={styles.emoji}>{column.emoji}</Text>
-              <Text style={[styles.label, active && styles.labelActive]} numberOfLines={2}>
+              <Text style={[styles.label, active && styles.labelActive]}>
                 {column.name}
               </Text>
             </TouchableOpacity>
@@ -97,7 +122,7 @@ const styles = StyleSheet.create({
   },
   option: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: THEME.spacing.sm,
     paddingVertical: 10,
     paddingHorizontal: 12,
@@ -134,11 +159,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 22,
   },
+  colorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    flexShrink: 0,
+  },
   label: {
     ...THEME.typography.body,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
     flex: 1,
+    flexShrink: 1,
+    lineHeight: 22,
+    minWidth: 0,
   },
   labelActive: {
     fontFamily: THEME.fonts.heading.bold,

@@ -29,12 +29,19 @@ export function BrainDumpTaskProjectPicker({
   const { t } = useI18n();
 
   if (!item.lifeAreaKey) {
-    return null;
+    return (
+      <View style={styles.wrap}>
+        <Text style={styles.sectionTitle}>{t('vaciar.areaReviewProjectSection')}</Text>
+        <Text style={styles.sectionHint}>{t('vaciar.areaReviewProjectNeedsArea')}</Text>
+      </View>
+    );
   }
 
   const areaRef = item.lifeAreaKey as LifeAreaRef;
   const areaProjects = projectsForLifeArea(projects, areaRef);
-  const selected = areaProjects.find((project) => project.id === item.selectedProjectId);
+  const pickerProjects = areaProjects.length > 0 ? areaProjects : projects;
+  const showingAllProjects = areaProjects.length === 0 && projects.length > 0;
+  const selected = pickerProjects.find((project) => project.id === item.selectedProjectId);
 
   const handleSelect = (projectId: string | null) => {
     const assignment = assignItemToProject(Boolean(projectId), projectId);
@@ -44,6 +51,9 @@ export function BrainDumpTaskProjectPicker({
   return (
     <View style={styles.wrap}>
       <Text style={styles.sectionTitle}>{t('vaciar.areaReviewProjectSection')}</Text>
+      {showingAllProjects ? (
+        <Text style={styles.sectionHint}>{t('vaciar.areaReviewAllProjectsHint')}</Text>
+      ) : null}
 
       <TouchableOpacity
         style={[styles.option, !item.assignToProject ? styles.optionActive : null]}
@@ -58,7 +68,7 @@ export function BrainDumpTaskProjectPicker({
         </View>
       </TouchableOpacity>
 
-      {areaProjects.map((project) => {
+      {pickerProjects.map((project) => {
         const active = item.selectedProjectId === project.id;
         return (
           <TouchableOpacity
@@ -125,6 +135,11 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
+  },
+  sectionHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.tertiary,
+    lineHeight: 16,
   },
   option: {
     flexDirection: 'row',

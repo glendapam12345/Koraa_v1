@@ -77,7 +77,8 @@ export const extEn = {
     showcaseTitle: 'New tasks experience',
     showcaseSub: 'Preview — areas, cards, and reorganization',
     showcaseToggleA11y: 'Show or hide new tasks system preview',
-    philosophy: 'My life changed, but I do not have to reorganize everything manually.',
+    philosophy:
+      'My life changed, but I do not have to reorganize everything manually.',
     areasSection: 'Your life areas',
     areasSectionSub: 'Customizable — not fixed categories.',
     openAreaPicker: 'See area picker →',
@@ -85,7 +86,8 @@ export const extEn = {
     cardsSectionSub: 'Each item with its area, flexibility, and date.',
     reorganizeSection: 'Reorganize in seconds',
     reorganizeSectionSub: 'Koraa suggests what to move when your week shifts.',
-    prototypeNote: 'Uses your real tasks — reorganizing saves dates to Supabase.',
+    prototypeNote:
+      'Uses your real tasks — reorganizing saves dates to Supabase.',
     vision: {
       showcaseTitle: 'When life changes',
       showcaseSub: 'Tap to explore the full flow',
@@ -128,7 +130,8 @@ export const extEn = {
     },
   },
   deviceCalendar: {
-    draftDateHint: 'When you save, it is added to your iPhone Calendar automatically.',
+    draftDateHint:
+      'When you save, it is added to your iPhone Calendar automatically.',
     addToCalendar: 'Add to Calendar',
     addShort: 'Calendar',
     successTitle: 'Done',
@@ -140,7 +143,8 @@ export const extEn = {
     errorTitle: 'Could not add',
     errorBody: 'Try again in a moment.',
     permissionTitle: 'Calendar permission',
-    permissionBody: 'Koraa needs access to your iPhone Calendar to create the event.',
+    permissionBody:
+      'Koraa needs access to your iPhone Calendar to create the event.',
     openSettings: 'Open Settings',
     unavailableTitle: 'Calendar unavailable',
     unavailableBody: 'Use the app on your iPhone to add to Calendar.',
@@ -151,18 +155,21 @@ export const extEn = {
     sectionTitle: 'Google Calendar',
     disconnectedHint:
       'Connect your account to export steps as events in Google Calendar (one-way sync from Koraa).',
-    connectedHint: 'Connected as {{email}}. Koraa can create events on your primary calendar.',
+    connectedHint:
+      'Connected as {{email}}. Koraa can create events on your primary calendar.',
     connect: 'Connect Google Calendar',
     disconnect: 'Disconnect',
     connectA11y: 'Connect Google Calendar account',
     disconnectA11y: 'Disconnect Google Calendar',
     connectSuccessTitle: 'Google Calendar connected',
     connectSuccessBody: 'You can now export tasks to your calendar from Today.',
-    connectSuccessBodyWithEmail: 'Connected as {{email}}. You can export tasks from Today.',
+    connectSuccessBodyWithEmail:
+      'Connected as {{email}}. You can export tasks from Today.',
     connectErrorTitle: 'Could not connect',
     connectErrorBody: 'Could not connect to Google. Try again.',
     disconnectTitle: 'Disconnect Google Calendar?',
-    disconnectBody: 'Koraa will stop creating Google Calendar events until you connect again.',
+    disconnectBody:
+      'Koraa will stop creating Google Calendar events until you connect again.',
     disconnectConfirm: 'Disconnect',
     notConfiguredTitle: 'Google Calendar not configured',
     notConfiguredBody:
@@ -172,12 +179,14 @@ export const extEn = {
     notConfiguredCaptureHint:
       'When connect is active in the app, use Connect here or go to Settings.',
     howItWorksTitle: 'How it works',
-    step1: '1. Connect your Google account (not the iPhone Calendar app — your Gmail).',
+    step1:
+      '1. Connect your Google account (not the iPhone Calendar app — your Gmail).',
     step2: '2. Save a task with a date in Tasks.',
     step3: '3. In Today, tap «Google» on the step to add it to your calendar.',
     openSettings: 'Go to Settings',
     openSettingsA11y: 'Open Settings to connect Google Calendar',
-    webNote: 'Google Calendar connect is available in the iPhone and Android app.',
+    webNote:
+      'Google Calendar connect is available in the iPhone and Android app.',
     notConnectedTitle: 'Connect Google Calendar',
     notConnectedBody:
       'Connect your Google account in Settings first. Then you can export dated steps from Today.',
@@ -222,18 +231,21 @@ export const extEn = {
     connectSuccessBody:
       'The Health app opened. If you like, set your bedtime and wake time there — Koraa will not pressure you with targets.',
     connectErrorTitle: 'Could not open Health',
-    connectErrorBody: 'Try again from Settings or open the Health app manually.',
+    connectErrorBody:
+      'Try again from Settings or open the Health app manually.',
     disconnectTitle: 'Disconnect Health?',
     disconnectBody:
       'Koraa will stop showing shortcuts to sleep in Health. Your check-ins and suggested steps stay the same.',
     disconnectConfirm: 'Disconnect',
     unavailableTitle: 'iPhone only',
-    unavailableBody: 'Connecting with the Health app is available in the iPhone app.',
+    unavailableBody:
+      'Connecting with the Health app is available in the iPhone app.',
     webNote: 'Connecting with the Health app is available in the iPhone app.',
     androidNote:
       'Apple Health is iPhone only. On Android you can use Rest tips in For Me.',
     openErrorTitle: 'Could not open Health',
-    openError: 'We could not open the Health app. Open it manually on your iPhone.',
+    openError:
+      'We could not open the Health app. Open it manually on your iPhone.',
     connectSuccessBodyHealthKit:
       'Koraa can read your sleep hours to soften today’s steps. Health also opened in case you want to adjust your schedule.',
     permissionDeniedTitle: 'Sleep permission',
@@ -257,19 +269,23 @@ export const extEn = {
     byProject: 'By project',
     loose: 'No project',
     projectLabel: 'Project',
-    projectExplain: 'Pick a project: Koraa will spread only its pending tasks between today and the due date.',
+    projectExplain:
+      'Pick a project: Koraa will spread only its pending tasks between today and the due date.',
     retry: 'Retry',
-    noProjects: 'You do not have projects yet. Create one when saving a task in Tasks (name and color), then come back here to spread its tasks.',
+    noProjects:
+      'You do not have projects yet. Create one when saving a task in Tasks (name and color), then come back here to spread its tasks.',
     dueLabel: 'Due date (YYYY-MM-DD)',
     duePlaceholder: '2026-04-20',
     saveDue: 'Save this date on the project',
-    noDueColumn: 'Your database does not have a project due date column yet. Spreading still works; the date will not be saved on the project.',
+    noDueColumn:
+      'Your database does not have a project due date column yet. Spreading still works; the date will not be saved on the project.',
     tasksInProject: 'Tasks to spread in this project: {{count}}',
     distributeDays: 'Spread over the next days',
     daysCount: '{{count}} days',
     looseCount: 'Loose tasks: {{count}}',
     pickProject: 'Choose a project.',
-    pickDue: 'Enter the due date (YYYY-MM-DD) or set it on the project in the database.',
+    pickDue:
+      'Enter the due date (YYYY-MM-DD) or set it on the project in the database.',
     previewTitle: 'Preview',
     taskOne: 'task',
     taskMany: 'tasks',
@@ -277,10 +293,12 @@ export const extEn = {
     apply: 'Apply dates',
     calculate: 'Calculate spread',
     chooseProjectError: 'Choose a project.',
-    chooseDueError: 'Enter the due date (YYYY-MM-DD) or set it on the project in the database.',
+    chooseDueError:
+      'Enter the due date (YYYY-MM-DD) or set it on the project in the database.',
     noPendingInProject: 'No pending tasks in that project.',
     noLoosePending: 'You have no pending loose tasks.',
-    partialDueSave: 'Task dates were saved, but the project due date could not be saved.',
+    partialDueSave:
+      'Task dates were saved, but the project due date could not be saved.',
     warningInvalidDate: 'Use the date as YYYY-MM-DD (e.g. 2026-04-15).',
     warningDueBeforeToday: 'The due date cannot be before today.',
     warningInvalidToday: 'Invalid today date.',
@@ -302,17 +320,18 @@ export const extEn = {
     organizedTaskOne: '1 pending item',
     organizedTaskMany: '{{count}} pending items',
     organizedEmptyTitle: 'Nothing here yet',
-    organizedEmptyBody: 'Start with a brain dump — Koraa groups what you release into projects.',
-    organizedCaptureLink: '+ Release more',
-    organizedCaptureA11y: 'Go capture more items',
+    organizedEmptyBody:
+      'Start with a brain dump — Koraa groups what you release into projects.',
     areaGroupedExplainer: '',
     areaSectionTitle: 'Which front does it belong to?',
-    areaSectionSubCreate: 'E.g. Y Combinator → Koraa front; reels → Impermanence.',
+    areaSectionSubCreate:
+      'E.g. Y Combinator → Koraa front; reels → Impermanence.',
     areaPickerHint: 'The front groups; the project is the concrete initiative.',
     areaProjectCount: '{{count}} projects',
     areaProjectCountOne: '1 project',
     areaEmpty: 'No projects yet',
-    areasHint: 'You can create projects here. To edit or regroup areas, use Capture.',
+    areasHint:
+      'You can create projects here. To edit or regroup areas, use Capture.',
     createInArea: 'Create project here',
     createInAreaA11y: 'Create project in {{area}} area',
     editAreas: 'Arrange areas',
@@ -328,9 +347,12 @@ export const extEn = {
     librarySub: 'See everything you’ve added',
     libraryA11y: 'My projects and tasks',
     libraryA11yHint: 'Opens the full list of projects and loose tasks',
-    inventorySummary: '{{total}} pending saved · {{focus}} suggested steps in Today today',
-    inventoryNoFocus: '{{total}} pending saved · check in on Today to see what matters',
-    inventoryCheckInNoFocus: '{{total}} pending saved · today’s steps are in Today',
+    inventorySummary:
+      '{{total}} pending saved · {{focus}} suggested steps in Today today',
+    inventoryNoFocus:
+      '{{total}} pending saved · check in on Today to see what matters',
+    inventoryCheckInNoFocus:
+      '{{total}} pending saved · today’s steps are in Today',
     inventorySub: 'Hoy is for essentials; here you see everything else.',
     inventoryGoFeel: 'Go to Today',
     inventoryGoFeelA11y: 'Go to Today to see what might matter today',
@@ -341,7 +363,8 @@ export const extEn = {
     },
     loading: 'Loading projects…',
     emptyTitle: 'No projects yet',
-    emptyBody: 'Create a project with a name and date, or add tasks from Capture.',
+    emptyBody:
+      'Create a project with a name and date, or add tasks from Capture.',
     goTasks: 'Go to Tasks',
     goTasksA11y: 'Go to Tasks to add',
     addSection: 'Add projects or tasks',
@@ -355,7 +378,8 @@ export const extEn = {
     libraryProgressShort: '{{percent}}% complete',
     openProjectA11y: 'Open project {{name}}',
     openLooseA11y: 'Open {{count}} standalone tasks',
-    createProjectFormHint: 'Three steps: name, date, and color. Only the name is required.',
+    createProjectFormHint:
+      'Three steps: name, date, and color. Only the name is required.',
     createFieldRequired: 'Required',
     createProjectA11y: 'Create a new project',
     backToProjectList: 'Back to project list',
@@ -366,11 +390,13 @@ export const extEn = {
     dueDateTapToPick: 'Tap to pick a date',
     dueDateSectionTitle: 'When is it for?',
     dueDateStepShort: 'Date',
-    dueDateSectionSub: 'If you add a date, you will see it in My projects. You can skip it.',
-    dueDateSectionSubCreate: 'Tap an option — or «No date» if you are not sure yet.',
-    dueDatePickOtherShort: 'Another date on the calendar',
+    dueDateSectionSub:
+      'If you add a date, you will see it in My projects. You can skip it.',
+    dueDateSectionSubCreate:
+      'Tap an option — or «No date» if you are not sure yet.',
+    dueDatePickOtherShort: 'Open calendar',
     dueDateOptionalBadge: 'Optional',
-    dueDatePickCalendarCta: 'Pick another date on the calendar',
+    dueDatePickCalendarCta: 'Open calendar',
     dueDateSelected: 'You picked: {{date}}',
     dueDatePreviewEmpty: 'Optional date — pick below if you want',
     dueDatePickTitle: 'When would you like to finish?',
@@ -398,12 +424,16 @@ export const extEn = {
     quickAddLooseTitle: 'Loose task',
     quickAddPrompt: 'What step do you want to add to this project?',
     quickAddLoosePrompt: 'What do you want to release without a project?',
+    quickAddLooseHint: 'No project · in your list',
+    quickAddLoosePlanHint: 'Pick an area, date, time, and priority before saving.',
+    quickAddLooseAreaHint: 'No project · {{area}}',
     quickAddSave: 'Save to {{name}}',
     quickAddSaveShort: 'Save step',
     quickAddSaveLoose: 'Release task',
     quickAddMoreOptions: 'More options (category, steps…)',
     quickAddSuccess: '«{{title}}» saved to {{name}}.',
     quickAddSuccessLoose: '«{{title}}» saved as a loose task.',
+    newProject: 'New project',
     deleteProject: 'Delete project',
     deleteProjectA11y: 'Delete project {{name}}',
     deleteProjectTitle: 'Delete project',
@@ -416,11 +446,13 @@ export const extEn = {
     editProjectNameA11y: 'Project name',
     dueDateLabel: 'Project date',
     dueDatePlaceholder: 'YYYY-MM-DD',
-    dueDateHint: 'Optional. Helps you see the project with a date in My projects.',
+    dueDateHint:
+      'Optional. Helps you see the project with a date in My projects.',
     dueDateA11y: 'Project due date',
     focusCta: 'Suggest steps for today',
     focusCtaHint: 'What matters from «{{name}}» for how you feel today',
-    focusCtaA11y: 'Suggest steps from {{name}} in Tasks with smart prioritization',
+    focusCtaA11y:
+      'Suggest steps from {{name}} in Tasks with smart prioritization',
     focusLoading: 'Preparing steps…',
     focusSuccessTitle: 'Ready for today',
     focusSuccessBody:
@@ -446,7 +478,8 @@ export const extEn = {
     completed: 'Project complete ✓ · {{count}} {{tasks}}',
     taskOne: 'task',
     taskMany: 'tasks',
-    emptyLoose: 'Add what you have pending in Tasks, without assigning a project.',
+    emptyLoose:
+      'Add what you have pending in Tasks, without assigning a project.',
     emptyProject: 'Add a task and assign it to this project from Tasks.',
     goTasks: 'Go to Tasks',
     addTask: 'Add task',
@@ -461,6 +494,8 @@ export const extEn = {
     completedBannerSub: 'All tasks checked off ✓',
     pendingSection: 'Pending',
     completedSection: 'Completed ({{count}})',
+    looseCompletedRetentionNotice:
+      'Completed loose tasks stay here for up to {{days}} days, then Koraa removes them automatically.',
     subtitleProgress: '{{pending}} of {{total}} pending',
     noLooseTasks: 'No loose tasks',
     noProjectTasks: 'No tasks in this project yet',
@@ -500,7 +535,8 @@ export const extEn = {
   },
   celebration: {
     title: 'Enough for today',
-    message: 'You finished your suggested steps. You can stop here — resting counts too.',
+    message:
+      'You finished your suggested steps. You can stop here — resting counts too.',
     dismiss: 'Got it',
   },
   premiumLock: {
@@ -523,7 +559,8 @@ export const extEn = {
   },
   quickRecheck: {
     title: 'Did your day change?',
-    subtitle: 'If something changed, update how you feel and Koraa adjusts your suggested steps.',
+    subtitle:
+      'If something changed, update how you feel and Koraa adjusts your suggested steps.',
     firstTitle: 'How are you?',
     firstSubtitle: 'Koraa uses this to suggest your steps for today.',
     firstBadge: 'Quick check-in',
@@ -549,14 +586,16 @@ export const extEn = {
     viewFocusInHoy: 'See what matters today',
     viewFocusInHoyA11y: 'Go to Today to see today’s suggestions',
     quickRecheck: 'Full check-in (4 steps)',
-    quickRecheckA11y: 'Open full check-in with emotion, energy, time, and context',
+    quickRecheckA11y:
+      'Open full check-in with emotion, energy, time, and context',
     fullCheckIn: 'Full check-in below',
     fullCheckInA11y: 'Go to emotion picker for a full check-in',
   },
   boot: {
     loadingDay: 'Getting your day ready…',
     loadingProfile: 'Loading your profile…',
-    profileError: 'We couldn’t load your profile. Check your connection and try again.',
+    profileError:
+      'We couldn’t load your profile. Check your connection and try again.',
     retry: 'Try again',
   },
   hoyDayFlow: {
@@ -573,10 +612,12 @@ export const extEn = {
     dismissToday: 'Not now',
     dismissTodayA11y: 'Hide update check-in suggestion for today',
     dayChangedTitle: 'Did something change since your check-in?',
-    dayChangedBody: 'In about a minute, update how you feel and get a Today view that fits your afternoon.',
+    dayChangedBody:
+      'In about a minute, update how you feel and get a Today view that fits your afternoon.',
     dayChangedCta: 'Update how I feel',
     nothingDoneTitle: 'Your suggestions are still here',
-    nothingDoneBody: 'That’s okay. Update based on how you feel now, or lighten your load for another day.',
+    nothingDoneBody:
+      'That’s okay. Update based on how you feel now, or lighten your load for another day.',
     nothingDoneUpdate: 'Update in 1 min',
     nothingDoneLighten: 'Lighten load',
   },
@@ -599,15 +640,19 @@ export const extEn = {
     allStepsDone: 'Suggested steps done — nice pace',
     taskUpdated: 'Task updated',
     weekSignIn: 'Sign in to view and add tasks in your week.',
-    weekSchema: 'To see tasks by week, update the database (see instructions below).',
+    weekSchema:
+      'To see tasks by week, update the database (see instructions below).',
     weekLoadError: 'Could not load tasks. Check your connection or sign in.',
     weekGenericError: 'Could not load the week. Check your connection.',
     notifTitle: 'How do you feel today?',
-    notifBody: 'Check in on Today and Koraa suggests what might matter today 💭',
+    notifBody:
+      'Check in on Today and Koraa suggests what might matter today 💭',
     careModeNotifTitle: 'Still here?',
-    careModeNotifBody: 'You can. A gentle check-in if you feel like it — no pressure.',
+    careModeNotifBody:
+      'You can. A gentle check-in if you feel like it — no pressure.',
     recheckNotifTitle: 'Did your day change?',
-    recheckNotifBody: 'Update how you feel and Koraa adjusts your suggested steps in a minute.',
+    recheckNotifBody:
+      'Update how you feel and Koraa adjusts your suggested steps in a minute.',
   },
   smart: {
     reasonRecent: 'Recent step',
@@ -643,13 +688,20 @@ export const extEn = {
     highFocus: 'with good mental clarity',
     reasoningSuffix: ', we suggest these steps.',
     suggestLow: 'Low energy? Less is more. One step is enough.',
-    suggestHigh: 'Good momentum — channel it into one or two things, without pressure.',
-    suggestMid: 'Moderate energy. Start with what feels lightest; the rest can wait.',
-    bullet1: 'Your energy (1–5) shapes how many steps we suggest today: lower energy, shorter list.',
-    bullet2: 'The time you set in Today avoids filling your day with things that do not fit.',
-    bullet3: 'How your mind feels today favors simple steps or slightly deeper ones.',
-    bullet4: 'Your emotion tilts suggestions toward light or creative steps, depending on the moment.',
-    bullet5: 'What you see on top is for today; the rest lives in Calendar and Tasks, guilt-free.',
+    suggestHigh:
+      'Good momentum — channel it into one or two things, without pressure.',
+    suggestMid:
+      'Moderate energy. Start with what feels lightest; the rest can wait.',
+    bullet1:
+      'Your energy (1–5) shapes how many steps we suggest today: lower energy, shorter list.',
+    bullet2:
+      'The time you set in Today avoids filling your day with things that do not fit.',
+    bullet3:
+      'How your mind feels today favors simple steps or slightly deeper ones.',
+    bullet4:
+      'Your emotion tilts suggestions toward light or creative steps, depending on the moment.',
+    bullet5:
+      'What you see on top is for today; the rest lives in Calendar and Tasks, guilt-free.',
   },
   hoyPlanFallback: {
     essentialOne: '{{count}} suggested step might be enough today.',
@@ -658,9 +710,12 @@ export const extEn = {
     stepsMany: 'Koraa suggests {{count}} steps for today.',
     tasksOne: 'One possible step for today: {{count}} on the list.',
     tasksMany: 'Possible steps for today: {{count}} on the list.',
-    reasoningLow: 'With energy {{energy}}/5 and feeling {{emotion}}, your body and mind need less pressure.',
-    reasoningMid: 'With moderate energy and feeling {{emotion}}, these steps can go at your pace.',
-    reasoningHigh: 'You have good energy and feel {{emotion}}. One or two steps may be enough.',
+    reasoningLow:
+      'With energy {{energy}}/5 and feeling {{emotion}}, your body and mind need less pressure.',
+    reasoningMid:
+      'With moderate energy and feeling {{emotion}}, these steps can go at your pace.',
+    reasoningHigh:
+      'You have good energy and feel {{emotion}}. One or two steps may be enough.',
     planSteps: '1. Tasks → 2. Check-in on Today → 3. What matters today',
     streakToast: "You're back today ✨",
     streakA11y: '{{count}}-day streak. View in Profile',
@@ -673,8 +728,10 @@ export const extEn = {
     energyHigh: 'You are in a good energy moment! ✨',
     energyLow: 'Remember it is okay to rest when you need it 💙',
     energyBalanced: 'You have a healthy energy balance 🌱',
-    lowEnergyDay: 'We notice you often have less energy on {{day}}. Quieter days are normal 💭',
-    weekMoreEnergy: 'This week you had more energy than last week. Keep it up! 🌟',
+    lowEnergyDay:
+      'We notice you often have less energy on {{day}}. Quieter days are normal 💭',
+    weekMoreEnergy:
+      'This week you had more energy than last week. Keep it up! 🌟',
     weekLessEnergy: 'This week your energy was lower. Cycles are normal 💙',
     bestDay: 'Your best day was {{day}} ⚡',
     weekdaySun: 'Sunday',
@@ -699,7 +756,8 @@ export const extEn = {
     a11yStreakHeroHint: 'Opens For me to see your rhythm',
     a11yStreakEmptyHint: 'Opens Today to log how you feel',
     streakNextMilestone: '{{days}} days until the next milestone',
-    editProfileMenuHint: 'Opens the profile editor. You have {{activities}} activities and {{interests}} interests',
+    editProfileMenuHint:
+      'Opens the profile editor. You have {{activities}} activities and {{interests}} interests',
     manageProjectsA11y: 'Your fronts and projects',
     manageProjectsHint: 'Opens life areas, projects, and loose tasks',
     settingsHint: 'Opens settings: language, reminders, account, and Premium',
@@ -709,15 +767,18 @@ export const extEn = {
     profileModalTitle: 'My personal profile',
     closeModalA11y: 'Close modal',
     closeModalHint: 'Closes the profile editor',
-    profileModalIntro: 'Your name, activities, and interests power recommendations in Today.',
+    profileModalIntro:
+      'Your name, activities, and interests power recommendations in Today.',
     yourNameLabel: 'Your name',
     yourNameA11y: 'Your name or nickname',
     yourNameHint: 'Shown at the top of this screen',
-    nameHelp: 'Optional. Email is changed through your account provider (not here).',
+    nameHelp:
+      'Optional. Email is changed through your account provider (not here).',
     ageLabel: 'Age (optional)',
     ageHelp: 'Must be a number between 13 and 120',
     activitiesLabel: 'Favorite activities',
-    activitiesEmpty: 'You have not added activities yet. Add favorites to get personalized recommendations.',
+    activitiesEmpty:
+      'You have not added activities yet. Add favorites to get personalized recommendations.',
     removeActivityA11y: 'Remove activity: {{name}}',
     removeActivityHint: 'Removes this activity from your list',
     addActivityFieldA11y: 'Field to add a favorite activity',
@@ -726,14 +787,16 @@ export const extEn = {
     addActivityHint: 'Adds the typed activity to your favorites',
     charsRemaining: '{{count}} characters left',
     interestsLabel: 'Interests',
-    interestsEmpty: 'You have not added interests yet. Add interests for more relevant recommendations.',
+    interestsEmpty:
+      'You have not added interests yet. Add interests for more relevant recommendations.',
     removeInterestA11y: 'Remove interest: {{name}}',
     removeInterestHint: 'Removes this interest from your list',
     addInterestFieldA11y: 'Field to add an interest',
     addInterestFieldHint: 'Type an interest or hobby. Max 50 characters',
     addInterestA11y: 'Add interest',
     addInterestHint: 'Adds the typed interest to your list',
-    profileDataHelp: 'This helps us give you more personalized ideas in Today and For Me',
+    profileDataHelp:
+      'This helps us give you more personalized ideas in Today and For Me',
     projectsModalTitle: 'My projects',
     projectsCloseA11y: 'Close',
     saving: 'Saving...',
@@ -744,7 +807,8 @@ export const extEn = {
   },
   supabaseErrors: {
     unexpected: 'An unexpected error occurred',
-    noConnection: 'No internet connection. Check your connection and try again.',
+    noConnection:
+      'No internet connection. Check your connection and try again.',
     tryAgain: 'An unexpected error occurred. Please try again.',
   },
   supabaseHealth: {
@@ -778,7 +842,8 @@ export const extEn = {
     feelBannerA11y: 'View and update how you feel today',
     feelBannerHint: 'Abre Hoy para editar tu check-in del día',
     howWorksA11y: 'How Koraa works. Check in on Today to log how you feel.',
-    howWorksA11yNoTasks: 'How Koraa works. Go to Tasks to capture what’s pending.',
+    howWorksA11yNoTasks:
+      'How Koraa works. Go to Tasks to capture what’s pending.',
     howWorksHint: 'Open Today, the second step in the suggested flow',
     howWorksHintNoTasks: 'Open Tasks, the first step in the suggested flow',
     showAllA11y: 'Show all Today sections now',
@@ -787,13 +852,16 @@ export const extEn = {
     goTasksHint: 'Open Tasks to capture new items',
     toggleExtraA11yShow: 'Show extra Today sections',
     toggleExtraA11yHide: 'Hide extra Today sections',
-    toggleExtraHint: 'Controls secondary modules like project summary and emotional memory',
+    toggleExtraHint:
+      'Controls secondary modules like project summary and emotional memory',
     orderHide: 'Hide task order details',
     orderShow: 'View task order details',
     goFeelCheckIn: 'Go to Today to log how you feel',
-    goFeelCheckInHint: 'Check in and Koraa will suggest what might matter today',
+    goFeelCheckInHint:
+      'Check in and Koraa will suggest what might matter today',
     checkInHeroHint: 'Opens Today to complete your daily check-in',
-    a11yCompactMood: 'You feel {{emotion}} today. Energy {{energy}} out of 5. Tap to update',
+    a11yCompactMood:
+      'You feel {{emotion}} today. Energy {{energy}} out of 5. Tap to update',
     filterTodayA11y: 'View only today’s tasks',
     filterTodayHint: 'Shows today’s pending and tasks without a date',
     filterAllA11y: 'View all pending tasks',
@@ -822,8 +890,10 @@ export const extEn = {
     showSecondary: 'Show extra sections',
     hideSecondary: 'Hide extra sections',
     tasksSummaryTitle: 'Tasks summary',
-    focusScopeA11y: 'Only today’s suggested steps. The rest is in Tasks and Projects.',
-    focusScopeA11yWithStats: '{{total}} pending in total. Today we suggest {{focus}} steps.',
+    focusScopeA11y:
+      'Only today’s suggested steps. The rest is in Tasks and Projects.',
+    focusScopeA11yWithStats:
+      '{{total}} pending in total. Today we suggest {{focus}} steps.',
     focusScopeTasksA11y: 'Go to Tasks',
     focusScopeTasksHint: 'Open the tab to capture or view pending items',
     focusScopeProjectsA11y: 'Go to My projects and tasks',
@@ -864,14 +934,17 @@ export const extEn = {
     resumeSessionA11y: 'Continue your Emergency Kit session for {{event}}',
     resumeSessionHint: 'Opens your saved tools for this situation',
     changeSituation: 'Choose a different situation',
-    changeSituationHint: 'Opens the situation selector to personalize your support',
+    changeSituationHint:
+      'Opens the situation selector to personalize your support',
     sessionTitle: "Let's take care of you",
     sessionLoading: 'Preparing your support space…',
     sessionErrorTitle: "We couldn't open your space",
-    sessionErrorBody: 'Check your connection or sign in again. You can also go back and try later.',
+    sessionErrorBody:
+      'Check your connection or sign in again. You can also go back and try later.',
     sessionRetry: 'Try again',
     sessionGoBack: 'Go back',
-    crisisMode: "Crisis mode: less pressure, more care. You don't have to perform today.",
+    crisisMode:
+      "Crisis mode: less pressure, more care. You don't have to perform today.",
     supportMessageTitle: 'A message for you',
     aiPersonalized: 'Personalized',
     patternTitle: 'Something we noticed',
@@ -995,7 +1068,8 @@ export const extEn = {
     brainDumpSub: 'Let it all out — write or speak. No need to organize yet.',
     brainDumpSubActive: 'Koraa is grouping by fronts…',
     brainDumpPlaceholder: 'Write what’s on your mind…',
-    brainDumpWrite: 'Write everything in your head — lists, fragments, anything goes.',
+    brainDumpWrite:
+      'Write everything in your head — lists, fragments, anything goes.',
     brainDumpSpeak: 'Or tap the mic and speak; Koraa transcribes it.',
     brainDumpHowFrentes:
       'Koraa groups by life fronts, not rigid categories. Next you can move items and pick projects.',
@@ -1027,7 +1101,8 @@ export const extEn = {
     reviewHowToBody:
       '• Tap a step → loose, new project, or existing\n• ↔ or long-press → move between groups\n• ↑↓ → priority\n• Tap group name → rename\n• + Add step → more tasks in that group\n• Deadlines → below, per group\n• Above: + New group or + New project',
     reviewDeadlineTitle: 'Any deadlines?',
-    reviewDeadlineSub: 'Optional. Koraa uses these when building your week plan.',
+    reviewDeadlineSub:
+      'Optional. Koraa uses these when building your week plan.',
     reviewDeadlineClear: 'Remove date',
     newGroup: 'New group',
     createGroupTitle: 'New group',
@@ -1059,13 +1134,15 @@ export const extEn = {
     assignmentLoose: 'Loose task',
     assignmentLooseShort: 'Loose',
     assignmentAreaHeading: 'Which life area?',
-    assignmentAreaHint: 'Home, work, health… so you can find it later in Tasks.',
+    assignmentAreaHint:
+      'Home, work, health… so you can find it later in Tasks.',
     chipImportant: 'Priority',
     chipDeadline: 'By {date}',
     assignmentLooseHint: 'No project; stays on your personal list.',
     assignmentNewProject: 'New project: {{name}}',
     assignmentNewBadge: 'New: {{name}}',
-    assignmentNewProjectHint: 'Koraa will create a project for this front when saving.',
+    assignmentNewProjectHint:
+      'Koraa will create a project for this front when saving.',
     assignmentExistingHeading: 'Or in a project you already have',
     assignmentExistingFallback: 'Project',
     assignmentNoProjects: 'You do not have saved projects yet.',
@@ -1089,56 +1166,9 @@ export const extEn = {
     flowStepPlan: 'Plan',
   },
   vnext: {
-    flowStepCalibrate: 'Land',
-    realityGreeting: 'Hi, {{name}}',
-    realityTitle: 'A moment to land',
-    realitySub:
-      'No need to plan the week. Just anchor how you feel about what you just released.',
-    focusQuestion: 'Which project weighs on you most right now?',
-    timeQuestion: 'How much real time do you have today?',
-    hours: '{{count}} h',
-    hours8plus: '8+ h',
-    energyQuestion: 'How is your energy?',
-    energy: {
-      low: 'Low',
-      normal: 'Normal',
-      high: 'High',
-    },
-    realityReminder:
-      'What matters today lives in Hoy — after your check-in. For now, it is out of your head.',
-    realitySaveCta: '💜 Save to Koraa',
-    realismOkTitle: 'Your plan fits today',
-    realismOkBody: 'I suggest {{count}} steps for today — enough to move forward without overwhelm.',
-    realismWarnTitle: 'Your plan needs {{required}} h but you have {{available}} h',
-    realismWarnBody:
-      'Today: {{today}} essential steps. The rest ({{later}}) moves later in the week.',
-    weekFocusSub: 'Today’s focus: {{focus}}. I organized the rest gently.',
-    reflectionTitle: 'What changed?',
-    reflectionSub: 'Any time of day — Koraa adjusts your week in Calendar.',
-    reflectionReplan: 'See proposal',
-    reflection: {
-      finished_all: 'Finished everything',
-      less_energy: 'Had less energy',
-      difficult_day: 'Difficult day',
-      unexpected: 'Something unexpected happened',
-      finished_early: 'Finished early',
-    },
-    timelineTitle: 'Your plan for today',
-    timelineFocus: 'Focus: {{focus}}',
-    timelineTime: 'Available time: {{time}}',
-    planUpdatedTitle: 'Plan updated',
-    planUpdatedSummary: 'Today’s summary',
-    planUpdatedEssential: '{{count}} essential steps',
-    planUpdatedLater: '{{count}} steps for later',
-    planUpdatedCta: 'See my day',
-    reorganizeCardTitle: 'Did your day change?',
-    reorganizeCardSub: 'Less energy, surprise… I spread what’s pending across Calendar.',
-    reorganizeCardCta: 'Reorganize week',
     replanSuccessToast: 'I adjusted {{count}} things in your week',
-    replanViewCalendar: 'View in Calendar',
     replanCalmToast: 'Your week was already in a good rhythm',
     replanError: 'Couldn’t adjust your week. Try again.',
-    replanSuccessDismiss: 'Got it',
     frentesDashboardTitle: 'Your fronts',
     frentesDashboardSub: 'Life areas — not an endless task list',
     frentesSummary: '{{fronts}} fronts · {{tasks}} open steps',
@@ -1154,7 +1184,9 @@ export const extEn = {
     taskEditTitle: 'Edit step',
     taskEditName: 'Name',
     taskEditFront: 'Front',
+    taskEditFrontHint: 'Optional — group this step in a project',
     taskEditLifeArea: 'Life area',
+    taskEditLifeAreaHint: 'Only when the step is not in a project',
     taskEditPriority: 'Priority',
     taskEditPriorityOn: 'Mark as priority',
     taskEditDuration: 'Estimated time',
@@ -1164,8 +1196,23 @@ export const extEn = {
     taskEditNotesPlaceholder: 'Optional details…',
     taskEditDelete: 'Delete step',
     taskEditDeleteTitle: 'Delete this step?',
-    taskEditDeleteBody: 'It will be removed from your list. You can capture it again later.',
+    taskEditDeleteBody:
+      'It will be removed from your list. You can capture it again later.',
     taskEditDeleteConfirm: 'Delete',
+    taskEditMoreOptions: 'More options',
+    taskEditPreviewLabel: 'How it will look',
+    taskEditDurationMinutes: 'Minutes',
+    taskEditDurationHours: 'Hours',
+    taskEditDurationMinutesA11y: 'Duration in minutes',
+    taskEditDurationHoursA11y: 'Duration in hours',
+    taskEditDurationUnitMin: 'min',
+    taskEditDurationUnitHr: 'hr',
+    taskEditDurationInputA11y: 'Estimated time',
+    taskEditDurationInputHint:
+      'Enter minutes or hours based on the selected unit',
+    taskEditDurationDecreaseA11y: 'Decrease time',
+    taskEditDurationIncreaseA11y: 'Increase time',
+    taskEditDurationStepHint: 'Each tap adds or subtracts {{step}} min',
   },
   reorganizeDay: {
     title: 'Reorganize my day',
@@ -1189,8 +1236,10 @@ export const extEn = {
     mascotIntro: 'Based on what you shared, here is what I would do:',
     sectionKeep: 'I would keep',
     sectionMove: 'I would move for later',
-    emptyProposal: 'Your plan for today already fits — I would not move anything.',
-    antiPressure: 'You do not have to do it all. This is just a suggestion to lighten your day.',
+    emptyProposal:
+      'Your plan for today already fits — I would not move anything.',
+    antiPressure:
+      'You do not have to do it all. This is just a suggestion to lighten your day.',
     confirmCta: 'See my updated day',
     backToPlan: 'Back to previous plan',
   },

@@ -3,6 +3,7 @@ import type { AppLocale } from '@/lib/i18n';
 import { detectCategory } from '@/lib/categoryDetection';
 import type { TaskEffort } from '@/lib/taskPerceivedEffort';
 import type { TaskCaptureResult } from '@/lib/taskCaptureTypes';
+import { inferEstimatedMinutesFromText } from '@/lib/inferTaskEstimatedMinutes';
 import type { CapturePriority } from '@/lib/review/capturePriority';
 import { capturePriorityToIsPriority } from '@/lib/review/capturePriority';
 import {
@@ -41,8 +42,10 @@ function rowToBatchItem(
   scheduledDate: string | null,
   effort: TaskEffort | null,
   projectId?: string | null,
+  estimatedMinutes?: number | null,
 ): VaciarBatchItem {
   const hasProject = Boolean(projectId);
+  const resolvedEffort = effort;
   return {
     id: newId(),
     content: content.trim(),
@@ -50,7 +53,10 @@ function rowToBatchItem(
     selectedCategory: detectCategory(content) || 'otros',
     selectedProjectId: projectId ?? null,
     selectedDate: scheduledDate,
-    effortFeel: effort,
+    effortFeel: resolvedEffort,
+    estimatedMinutes:
+      estimatedMinutes ??
+      inferEstimatedMinutesFromText(content, resolvedEffort ?? undefined),
   };
 }
 
@@ -62,6 +68,7 @@ export function captureResultToBatchItems(capture: TaskCaptureResult): VaciarBat
       row.scheduled_date,
       (row.effort as TaskEffort | null | undefined) ?? null,
       row.project_id ?? null,
+      row.estimated_minutes ?? null,
     ),
   );
 }

@@ -10,9 +10,11 @@ describe('taskPlanningMeta duration helpers', () => {
     expect(formatDurationLabel(90)).toBe('1 h 30 min');
   });
 
-  it('steps in 15 minute increments within bounds', () => {
-    expect(stepEstimatedMinutes(45, 15)).toBe(60);
-    expect(stepEstimatedMinutes(15, -15)).toBe(15);
+  it('steps in 5 minute increments within bounds', () => {
+    expect(stepEstimatedMinutes(45, 5)).toBe(50);
+    expect(stepEstimatedMinutes(10, -5)).toBe(5);
+    expect(stepEstimatedMinutes(5, -5)).toBe(5);
     expect(clampEstimatedMinutes(1000)).toBe(480);
+    expect(clampEstimatedMinutes(23)).toBe(25);
   });
 });

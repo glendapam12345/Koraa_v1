@@ -6,6 +6,8 @@ export type ParsedCaptureTask = {
   effort?: TaskCaptureEffort | null;
   /** UUID de un proyecto existente de la usuaria, si la IA lo infiere con confianza. */
   project_id?: string | null;
+  /** Minutos estimados para el paso (5–480, múltiplos de 5). */
+  estimated_minutes?: number | null;
 };
 
 export type TaskCaptureResult = {

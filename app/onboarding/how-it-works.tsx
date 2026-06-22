@@ -8,7 +8,7 @@ import { OnboardingProgressDots } from '@/components/onboarding/OnboardingProgre
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
 import { PenTool, Heart, Sparkles, Route } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
-import { markOnboardingCompleted } from '@/lib/onboardingGate';
+import { completeOnboardingForUser } from '@/lib/finishOnboarding';
 import { useI18n } from '@/contexts/I18nContext';
 
 const STEPS = [
@@ -25,7 +25,7 @@ export default function HowItWorksScreen() {
   const finishToApp = async () => {
     if (user) {
       setSaving(true);
-      const { error } = await markOnboardingCompleted(user.id);
+      const { error } = await completeOnboardingForUser(user.id);
       setSaving(false);
       if (error) {
         Alert.alert(t('errors.continueFailed'), t('errors.saveProgressFailed'));

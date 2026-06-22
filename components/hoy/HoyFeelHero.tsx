@@ -1,9 +1,7 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { ChevronRight } from 'lucide-react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
-import { CalmCard } from '@/components/ui/calm/CalmCard';
-import { HoyStepBadge } from '@/components/hoy/HoyStepBadge';
 
 type HoyFeelHeroProps = {
   hasCheckIn: boolean;
@@ -22,108 +20,134 @@ export function HoyFeelHero({
 }: HoyFeelHeroProps) {
   const { t } = useI18n();
 
-  const statusLine = hasCheckIn && emotionLabel
-    ? energyLevel > 0
-      ? `${emotionLabel} · ${t('hoy.feelHeroEnergy', { level: energyLevel })}`
-      : emotionLabel
-    : t('hoy.feelHeroCompactSub');
+  if (hasCheckIn && emotionLabel) {
+    return (
+      <Pressable
+        onPress={onUpdateFeel}
+        style={({ pressed }) => [styles.pressable, pressed && styles.pressablePressed]}
+        accessibilityRole="button"
+        accessibilityLabel={t('hoy.currentStateEditA11y')}
+        accessibilityHint={t('hoy.feelHeroTapUpdate')}
+      >
+        <LinearGradient
+          colors={[THEME.colors.calm.blush, THEME.colors.fill[100], THEME.colors.calm.mist]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.card, styles.cardBorder]}
+        >
+          <Text style={styles.eyebrow}>{t('hoy.focusMoodLabel')}</Text>
+          <View style={styles.moodRow}>
+            <Text style={styles.emoji} accessibilityLabel={emotionLabel}>
+              {emotionEmoji}
+            </Text>
+            <View style={styles.moodTextCol}>
+              <Text style={styles.emotion} numberOfLines={1}>
+                {emotionLabel}
+              </Text>
+              {energyLevel > 0 ? (
+                <Text style={styles.energy}>{t('hoy.moodHeroEnergy', { level: energyLevel })}</Text>
+              ) : null}
+            </View>
+          </View>
+          <Text style={styles.koraaLine}>{t('hoy.feelHeroPurposeDone')}</Text>
+        </LinearGradient>
+      </Pressable>
+    );
+  }
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onUpdateFeel}
-      activeOpacity={0.88}
+      style={({ pressed }) => [styles.pressable, pressed && styles.pressablePressed]}
       accessibilityRole="button"
-      accessibilityLabel={t('hoy.currentStateEditA11y')}
-      accessibilityHint={hasCheckIn ? t('hoy.feelHeroTapUpdate') : t('hoy.inicio.primaryCta')}
+      accessibilityLabel={t('hoy.inicio.primaryCta')}
+      accessibilityHint={t('hoy.feelHeroPurpose')}
     >
-      <CalmCard style={styles.card}>
-        <View style={styles.emojiWrap}>
-          <Text style={styles.emoji}>{hasCheckIn ? emotionEmoji : '💜'}</Text>
-        </View>
-
-        <View style={styles.body}>
-          <View style={styles.titleRow}>
-            <HoyStepBadge step={1} />
-            <Text style={styles.title}>{t('hoy.feelHeroQuestion')}</Text>
-          </View>
-          <Text style={styles.purpose} numberOfLines={2}>
-            {hasCheckIn ? t('hoy.feelHeroPurposeDone') : t('hoy.feelHeroPurpose')}
-          </Text>
-          <Text style={styles.status} numberOfLines={1}>
-            {statusLine}
-          </Text>
-        </View>
-
-        <View style={styles.trailing}>
-          <Text style={styles.action}>
-            {hasCheckIn ? t('hoy.currentStateEdit') : t('hoy.feelHeroCompactCta')}
-          </Text>
-          <ChevronRight size={16} color={THEME.colors.calm.lavenderDeep} />
-        </View>
-      </CalmCard>
-    </TouchableOpacity>
+      <LinearGradient
+        colors={[THEME.colors.calm.blush, THEME.colors.fill[100], THEME.colors.calm.mist]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.card, styles.cardBorder]}
+      >
+        <Text style={styles.eyebrow}>{t('hoy.feelHeroEyebrow')}</Text>
+        <Text style={styles.inviteTitle}>{t('hoy.feelHeroQuestion')}</Text>
+        <Text style={styles.koraaLine}>{t('hoy.feelHeroPurpose')}</Text>
+        <Text style={styles.linkLine}>{t('hoy.feelHeroCompactCta')} →</Text>
+      </LinearGradient>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.sm,
-    paddingVertical: 12,
-    paddingHorizontal: THEME.spacing.sm,
+  pressable: {
+    width: '100%',
+    borderRadius: THEME.borderRadius.rounded,
   },
-  emojiWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: THEME.colors.calm.lavender,
-    alignItems: 'center',
-    justifyContent: 'center',
+  pressablePressed: {
+    opacity: 0.92,
+  },
+  card: {
+    borderRadius: THEME.borderRadius.rounded,
+    paddingVertical: 10,
+    paddingHorizontal: THEME.spacing.sm,
+    gap: 4,
+  },
+  cardBorder: {
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
   },
-  emoji: {
-    fontSize: THEME.typography.displayEmojiMd.fontSize,
-    lineHeight: 26,
+  eyebrow: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.accent.italic,
+    color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 18,
   },
-  body: {
+  moodRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    marginTop: 2,
+  },
+  emoji: {
+    fontSize: 26,
+    lineHeight: 30,
+  },
+  moodTextCol: {
     flex: 1,
-    gap: 2,
+    gap: 0,
     minWidth: 0,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  emotion: {
+    ...THEME.typography.body,
+    lineHeight: 20,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
   },
-  title: {
+  energy: {
+    ...THEME.typography.meta,
+    lineHeight: 18,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  inviteTitle: {
+    ...THEME.typography.h3,
+    lineHeight: 26,
+    fontFamily: THEME.fonts.accent.italic,
+    color: THEME.colors.text.main,
+    marginTop: 2,
+  },
+  koraaLine: {
+    ...THEME.typography.caption,
+    lineHeight: 20,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+    marginTop: 2,
+  },
+  linkLine: {
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
+    color: THEME.colors.calm.lavenderDeep,
     lineHeight: 18,
-    flex: 1,
-  },
-  purpose: {
-    ...THEME.typography.meta,
-    color: THEME.colors.calm.lavenderDeep,
-    lineHeight: 15,
-  },
-  status: {
-    ...THEME.typography.meta,
-    color: THEME.colors.text.secondary,
-    lineHeight: 15,
-  },
-  trailing: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    flexShrink: 0,
-  },
-  action: {
-    ...THEME.typography.caption,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.medium,
-    lineHeight: 16,
+    marginTop: 4,
   },
 });

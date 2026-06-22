@@ -3,6 +3,7 @@ import {
   formatProposalDeadlineLabel,
   formatProposalScheduleLabel,
 } from '@/lib/lifeAreas/experienceDataMappers';
+import { formatDurationLabel } from '@/lib/taskPlanningMeta';
 import { getLifeAreaAccentColor } from '@/lib/lifeAreas/lifeAreaColors';
 import { makeCustomLifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
@@ -64,7 +65,7 @@ export function captureItemToPlannerTask(
     timeLabel: item.selectedDate
       ? formatProposalScheduleLabel(item.selectedDate, locale)
       : '',
-    durationLabel: item.estimatedMinutes ? `${item.estimatedMinutes} min` : '',
+    durationLabel: item.estimatedMinutes ? formatDurationLabel(item.estimatedMinutes) : '',
     status: item.markImportant ? 'star' : 'pending',
     scheduledDate: item.selectedDate ?? '',
   };
@@ -80,6 +81,7 @@ function resolvedColumnMeta(
   getDefaultLabel: (key: LifeAreaKey) => string,
   looseLabel: string,
   colorIndex: number,
+  translatePresetCustom?: (presetCustomId: string) => string,
 ): Omit<BrainDumpAreaColumn, 'tasks' | 'projectGroups'> {
   if (columnId === LOOSE_LIFE_AREA_ID) {
     const loose = looseLifeArea(looseLabel);
@@ -94,13 +96,13 @@ function resolvedColumnMeta(
   }
 
   const ref = columnId as LifeAreaRef;
-  const resolved = resolveLifeAreaDisplay(ref, config, getDefaultLabel);
+  const resolved = resolveLifeAreaDisplay(ref, config, getDefaultLabel, translatePresetCustom);
   return {
     id: ref,
     ref,
     name: resolved.name,
     emoji: resolved.emoji,
-    color: getLifeAreaAccentColor(ref, colorIndex),
+    color: getLifeAreaAccentColor(ref, colorIndex, config),
     isLoose: false,
   };
 }
@@ -151,6 +153,8 @@ export function buildBrainDumpAreaBoardModel(
   locale: AppLocale,
   projects: BrainDumpReviewProject[] = [],
   looseInAreaLabel = 'Sin proyecto',
+  stableColumnLabels = false,
+  translatePresetCustom?: (presetCustomId: string) => string,
 ): { columns: BrainDumpAreaColumn[]; areas: LifeArea[]; countsLine: string } {
   const columnRefs = listReviewColumnRefs(config);
   const itemsByColumn = new Map<string, EnrichedCaptureItem[]>();
@@ -166,16 +170,23 @@ export function buildBrainDumpAreaBoardModel(
   }
 
   const columns: BrainDumpAreaColumn[] = columnRefs.map((columnId, index) => {
-    const meta = resolvedColumnMeta(columnId, config, getDefaultLabel, looseLabel, index);
+    const meta = resolvedColumnMeta(
+      columnId,
+      config,
+      getDefaultLabel,
+      looseLabel,
+      index,
+      translatePresetCustom,
+    );
     const columnItems = itemsByColumn.get(columnId) ?? [];
     const taskRows = columnItems.map((item) => ({ content: item.content }));
 
     const displayName =
-      columnItems.length > 0 && !meta.isLoose
+      !stableColumnLabels && columnItems.length > 0 && !meta.isLoose
         ? inferAreaContextLabel(taskRows, locale, meta.name)
         : meta.name;
     const displayEmoji =
-      columnItems.length > 0 && !meta.isLoose
+      !stableColumnLabels && columnItems.length > 0 && !meta.isLoose
         ? inferAreaContextEmoji(taskRows, meta.emoji)
         : meta.emoji;
 
@@ -243,6 +254,12 @@ export function countTasksInColumn(column: BrainDumpAreaColumn): number {
   return column.projectGroups.reduce((sum, group) => sum + group.tasks.length, 0);
 }
 
+/** Proyectos guardados o borradores en la columna (excluye grupo «sueltas en área»). */
+export function columnHasSavedProjectGroups(column: BrainDumpAreaColumn): boolean {
+  if (column.isLoose) return false;
+  return column.projectGroups.some((group) => !group.id.startsWith('loose-in-'));
+}
+
 export function isUserAddedCustomAreaColumn(column: BrainDumpAreaColumn): boolean {
   if (column.isLoose || !column.ref) return false;
   if (!isCustomLifeAreaRef(column.ref)) return false;
@@ -250,11 +267,17 @@ export function isUserAddedCustomAreaColumn(column: BrainDumpAreaColumn): boolea
   return !isBrainDumpPresetCustomId(customId);
 }
 
-/** Columnas con tareas + áreas personalizadas vacías (las que acabas de crear). */
-export function filterVisibleBrainDumpAreaColumns(columns: BrainDumpAreaColumn[]): BrainDumpAreaColumn[] {
-  return columns.filter(
-    (column) => countTasksInColumn(column) > 0 || isUserAddedCustomAreaColumn(column),
-  );
+/** Columnas con tareas, áreas personalizadas vacías, o áreas con proyectos ya guardados. */
+export function filterVisibleBrainDumpAreaColumns(
+  columns: BrainDumpAreaColumn[],
+  projects: BrainDumpReviewProject[] = [],
+): BrainDumpAreaColumn[] {
+  return columns.filter((column) => {
+    if (countTasksInColumn(column) > 0) return true;
+    if (isUserAddedCustomAreaColumn(column)) return true;
+    if (column.ref && projectsForLifeArea(projects, column.ref).length > 0) return true;
+    return false;
+  });
 }
 
 export function filterPopulatedBrainDumpColumns(columns: BrainDumpAreaColumn[]): BrainDumpAreaColumn[] {

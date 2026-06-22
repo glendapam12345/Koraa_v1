@@ -1,4 +1,12 @@
-import { getHoyFocusTasks, isTaskScheduledForToday } from '@/lib/hoyFocusTasks';
+import {
+  getHoyFocusTasks,
+  getHoyPriorityPlanTasks,
+  getHoyWaitingPlanTasks,
+  isTaskExplicitlyForToday,
+  isTaskScheduledForToday,
+  isTaskSuggestedForToday,
+  isTaskWaitingForToday,
+} from '@/lib/hoyFocusTasks';
 import type { Task } from '@/hooks/useTasks';
 
 const TODAY = '2026-06-08';
@@ -26,11 +34,67 @@ describe('hoyFocusTasks', () => {
     expect(isTaskScheduledForToday({ scheduled_date: '2026-06-09' }, TODAY)).toBe(false);
   });
 
-  it('returns only incomplete suggested steps (completed ones disappear)', () => {
+  it('isTaskExplicitlyForToday requires today date', () => {
+    expect(isTaskExplicitlyForToday({ scheduled_date: TODAY }, TODAY)).toBe(true);
+    expect(isTaskExplicitlyForToday({ scheduled_date: null }, TODAY)).toBe(false);
+  });
+
+  it('waiting tasks are only non-priority with today date', () => {
+    expect(
+      isTaskWaitingForToday(
+        { scheduled_date: TODAY, is_priority: false, is_completed: false },
+        TODAY,
+      ),
+    ).toBe(true);
+    expect(
+      isTaskWaitingForToday(
+        { scheduled_date: null, is_priority: false, is_completed: false },
+        TODAY,
+      ),
+    ).toBe(false);
+    expect(
+      isTaskWaitingForToday(
+        { scheduled_date: TODAY, is_priority: true, is_completed: false },
+        TODAY,
+      ),
+    ).toBe(false);
+  });
+
+  it('suggested tasks are priority for today or undated priority', () => {
+    expect(isTaskSuggestedForToday({ scheduled_date: TODAY, is_priority: true }, TODAY)).toBe(
+      true,
+    );
+    expect(isTaskSuggestedForToday({ scheduled_date: null, is_priority: true }, TODAY)).toBe(true);
+    expect(isTaskSuggestedForToday({ scheduled_date: null, is_priority: false }, TODAY)).toBe(
+      false,
+    );
+  });
+
+  it('getHoyPriorityPlanTasks excludes backlog and completed', () => {
     const tasks = [
-      task({ id: '1', is_priority: true, is_completed: true }),
-      task({ id: '2', is_priority: true }),
-      task({ id: '3', is_priority: false }),
+      task({ id: '1', is_priority: true, scheduled_date: TODAY }),
+      task({ id: '2', is_priority: true, is_completed: true, scheduled_date: TODAY }),
+      task({ id: '3', is_priority: false, scheduled_date: TODAY }),
+      task({ id: '4', is_priority: false, scheduled_date: null }),
+    ];
+    expect(getHoyPriorityPlanTasks(tasks, TODAY).map((row) => row.id)).toEqual(['1']);
+  });
+
+  it('getHoyWaitingPlanTasks only returns dated today non-priority open', () => {
+    const tasks = [
+      task({ id: 'w1', scheduled_date: TODAY }),
+      task({ id: 'w2', scheduled_date: null }),
+      task({ id: 'w3', scheduled_date: TODAY, is_priority: true }),
+      task({ id: 'w4', scheduled_date: '2026-06-09' }),
+    ];
+    expect(getHoyWaitingPlanTasks(tasks, TODAY).map((row) => row.id)).toEqual(['w1']);
+  });
+
+  it('returns only incomplete suggested steps', () => {
+    const tasks = [
+      task({ id: '1', is_priority: true, is_completed: true, scheduled_date: TODAY }),
+      task({ id: '2', is_priority: true, scheduled_date: TODAY }),
+      task({ id: '3', is_priority: false, scheduled_date: TODAY }),
     ];
     const incomplete = [task({ id: '2', is_priority: true }), task({ id: '3' })];
     const focus = getHoyFocusTasks(tasks, incomplete, TODAY);
@@ -38,32 +102,16 @@ describe('hoyFocusTasks', () => {
   });
 
   it('returns empty when all suggested steps are done', () => {
-    const tasks = [task({ id: '1', is_priority: true, is_completed: true })];
+    const tasks = [task({ id: '1', is_priority: true, is_completed: true, scheduled_date: TODAY })];
     const focus = getHoyFocusTasks(tasks, [], TODAY);
     expect(focus).toEqual([]);
   });
 
-  it('falls back to up to 5 incomplete today tasks when no priorities', () => {
-    const tasks = [
-      task({ id: 'a' }),
-      task({ id: 'b' }),
-      task({ id: 'c' }),
-      task({ id: 'd' }),
-      task({ id: 'e' }),
-      task({ id: 'f' }),
-    ];
-    const incomplete = tasks;
-    const focus = getHoyFocusTasks(tasks, incomplete, TODAY);
-    expect(focus.map((t) => t.id)).toEqual(['a', 'b', 'c', 'd', 'e']);
-  });
-
-  it('scopes suggested and fallback steps to focused project', () => {
+  it('scopes suggested steps to focused project', () => {
     const projectA = 'proj-a';
     const tasks = [
-      task({ id: '1', is_priority: true, project_id: projectA }),
-      task({ id: '2', is_priority: true, project_id: 'proj-b' }),
-      task({ id: '3', project_id: projectA }),
-      task({ id: '4', project_id: 'proj-b' }),
+      task({ id: '1', is_priority: true, project_id: projectA, scheduled_date: TODAY }),
+      task({ id: '2', is_priority: true, project_id: 'proj-b', scheduled_date: TODAY }),
     ];
     const incomplete = tasks.filter((row) => !row.is_completed);
     const focus = getHoyFocusTasks(tasks, incomplete, TODAY, projectA);

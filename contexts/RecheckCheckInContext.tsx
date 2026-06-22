@@ -13,6 +13,7 @@ import { getLocalDateString } from '@/lib/dateLocal';
 import { logger } from '@/lib/logger';
 import { track } from '@/lib/analytics';
 import { publishCheckInRefresh } from '@/lib/checkInRefresh';
+import { openHoyReplanPreview } from '@/lib/hoyReplanNavigation';
 import {
   DEFAULT_CHECK_IN_FOCUS,
   DEFAULT_CHECK_IN_TIME,
@@ -105,13 +106,20 @@ function RecheckModalHost() {
     return () => unregisterOpenRecheck();
   }, [openRecheck]);
 
-  const handleComplete = useCallback(() => {
-    void track(firstCheckIn ? 'check_in_completed' : 'recheck_completed', {
-      source: sourceRef.current,
-    });
-    publishCheckInRefresh();
-    setVisible(false);
-  }, [firstCheckIn]);
+  const handleComplete = useCallback(
+    (snapshot: { energyLevel: number; firstCheckIn: boolean }) => {
+      void track(snapshot.firstCheckIn ? 'check_in_completed' : 'recheck_completed', {
+        source: sourceRef.current,
+      });
+      publishCheckInRefresh();
+      setVisible(false);
+
+      if (!snapshot.firstCheckIn) {
+        openHoyReplanPreview({ energyLevel: snapshot.energyLevel });
+      }
+    },
+    [],
+  );
 
   const handleClose = useCallback(() => {
     setVisible(false);

@@ -16,9 +16,11 @@ import { CalmSegmentedControl } from '@/components/ui/calm/CalmSegmentedControl'
 import { ProjectSelector } from '@/components/projects/ProjectSelector';
 import { DateSelector } from '@/components/tasks/DateSelector';
 import { TaskEffortPicker } from '@/components/tasks/TaskEffortPicker';
+import { TaskCapturePriorityPicker } from '@/components/tasks/TaskCapturePriorityPicker';
 import { categoryKeys, type CategoryKey } from '@/lib/i18n/locales/features/categories';
 import { getLocalDateString, getEndOfWeekLocalDateString } from '@/lib/dateLocal';
 import type { TaskEffort } from '@/lib/taskPerceivedEffort';
+import type { CapturePriority } from '@/lib/review/capturePriority';
 
 const CATEGORY_OPTIONS: { key: CategoryKey }[] = categoryKeys.map((key) => ({ key }));
 
@@ -46,6 +48,8 @@ type TaskCaptureOrganizeProps = {
   onProjectCreated?: (name: string) => void;
   effortFeel?: TaskEffort | null;
   onEffortChange?: (value: TaskEffort | null) => void;
+  capturePriority?: CapturePriority | null;
+  onCapturePriorityChange?: (value: CapturePriority | null) => void;
 };
 
 export function TaskCaptureOrganize({
@@ -71,6 +75,8 @@ export function TaskCaptureOrganize({
   onProjectCreated,
   effortFeel = null,
   onEffortChange,
+  capturePriority = null,
+  onCapturePriorityChange,
 }: TaskCaptureOrganizeProps) {
   const { t } = useI18n();
   const [requestProjectOpen, setRequestProjectOpen] = useState(false);
@@ -217,6 +223,13 @@ export function TaskCaptureOrganize({
 
       {onEffortChange ? (
         <TaskEffortPicker value={effortFeel} onChange={onEffortChange} />
+      ) : null}
+
+      {onCapturePriorityChange ? (
+        <TaskCapturePriorityPicker
+          value={capturePriority}
+          onChange={onCapturePriorityChange}
+        />
       ) : null}
 
       {!inProject ? (

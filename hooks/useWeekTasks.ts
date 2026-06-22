@@ -118,11 +118,10 @@ export function useWeekTasks(
   const [loading, setLoading] = useState(true);
   const [lastLoadError, setLastLoadError] = useState<string | null>(null);
   const [schemaSetupType, setSchemaSetupType] = useState<SchemaSetupType | null>(null);
-  const isLoadingRef = useRef(false);
+  const loadRequestIdRef = useRef(0);
 
   const loadDateRange = useCallback(async (start: string, end: string) => {
-    if (isLoadingRef.current) return;
-    isLoadingRef.current = true;
+    const requestId = ++loadRequestIdRef.current;
     setLoading(true);
 
     try {
@@ -137,8 +136,9 @@ export function useWeekTasks(
         setProjects([]);
         setCheckInsByDate({});
         showToast(translate(locale, 'hooks.weekSignIn'), 'info');
-        setLoading(false);
-        isLoadingRef.current = false;
+        if (requestId === loadRequestIdRef.current) {
+          setLoading(false);
+        }
         return;
       }
 
@@ -211,10 +211,13 @@ export function useWeekTasks(
           setCheckInsByDate({});
           showToast(translate(locale, 'hooks.weekLoadError'), 'error');
         }
-        setLoading(false);
-        isLoadingRef.current = false;
+        if (requestId === loadRequestIdRef.current) {
+          setLoading(false);
+        }
         return;
       }
+
+      if (requestId !== loadRequestIdRef.current) return;
 
       setLastLoadError(null);
       setSchemaSetupType(null);
@@ -246,6 +249,7 @@ export function useWeekTasks(
 
       setWeekTasks(result);
     } catch (error) {
+      if (requestId !== loadRequestIdRef.current) return;
       logger.error('Error inesperado cargando semana:', error);
       if (isSchemaError(error)) {
         setSchemaSetupType(getSchemaSetupMessage(error) || 'schema');
@@ -261,8 +265,9 @@ export function useWeekTasks(
       setWeekTasks(fallbackDays.map((day) => ({ day, tasks: [] })));
       setCheckInsByDate({});
     } finally {
-      setLoading(false);
-      isLoadingRef.current = false;
+      if (requestId === loadRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [showToast, locale]);
 

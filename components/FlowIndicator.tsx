@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { openVaciarCapture } from '@/lib/vaciarNavigation';
 import { THEME } from '@/constants/theme';
 import { CheckCircle2 } from 'lucide-react-native';
 import { useSubscription } from '@/contexts/SubscriptionContext';
@@ -73,7 +74,11 @@ export function FlowIndicator({ currentStep, showPremiumHint = true }: FlowIndic
   };
 
   const openStep = (stepId: FlowStep) => {
-    router.push(STEP_ROUTES[stepId] as '/(tabs)/vaciar');
+    if (stepId === 'vaciar') {
+      openVaciarCapture();
+      return;
+    }
+    router.push(STEP_ROUTES[stepId] as '/(tabs)');
   };
 
   return (

@@ -41,7 +41,8 @@ function assertSupportedNode() {
 
 function killPort(port) {
   try {
-    const pids = execSync(`lsof -ti :${port}`, { encoding: 'utf8' }).trim();
+    // Solo el proceso que escucha (Metro). No matar clientes como cloudflared → localhost:8081.
+    const pids = execSync(`lsof -tiTCP:${port} -sTCP:LISTEN`, { encoding: 'utf8' }).trim();
     if (!pids) return;
     for (const pid of pids.split(/\s+/)) {
       if (pid) process.kill(Number(pid), 'SIGKILL');

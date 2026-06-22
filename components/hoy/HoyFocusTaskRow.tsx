@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Pressable } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Check, ChevronRight, Clock, Calendar, Trash2, ChevronUp, ChevronDown } from 'lucide-react-native';
+import { Check, ChevronRight, Clock, Calendar, Trash2, ChevronUp, ChevronDown, Pencil, Star } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -18,6 +18,7 @@ type HoyFocusTaskRowProps = {
   projectColor?: string;
   projectPercent?: number | null;
   areaLabel?: string | null;
+  isPriority?: boolean;
   onToggleComplete: () => void;
   onOpenDetails: () => void;
   onDelete?: () => void;
@@ -40,6 +41,7 @@ export function HoyFocusTaskRow({
   projectColor = THEME.colors.gradient.blue,
   projectPercent = null,
   areaLabel,
+  isPriority = false,
   onToggleComplete,
   onOpenDetails,
   onDelete,
@@ -108,34 +110,63 @@ export function HoyFocusTaskRow({
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.bodyTouch}
-        onPress={onOpenDetails}
-        activeOpacity={0.88}
-        accessibilityRole="button"
-        accessibilityLabel={t('hoy.focusTaskOpenA11y', { task: content })}
-        accessibilityHint={t('hoy.focusTaskOpenHint')}
-      >
+      <View style={styles.bodyTouch}>
         <View style={styles.bodyTop}>
           <Text style={styles.index}>{index + 1}</Text>
-          <Text style={[styles.content, completed && styles.contentDone]} numberOfLines={2}>
-            {content}
-          </Text>
+          <TouchableOpacity
+            style={styles.contentTouch}
+            onPress={onOpenDetails}
+            activeOpacity={0.88}
+            accessibilityRole="button"
+            accessibilityLabel={t('hoy.focusTaskOpenA11y', { task: content })}
+            accessibilityHint={t('hoy.focusTaskOpenHint')}
+          >
+            <View style={styles.contentTitleRow}>
+              {isPriority ? (
+                <Star
+                  size={14}
+                  color={THEME.colors.calm.lavenderDeep}
+                  fill={THEME.colors.calm.lavenderDeep}
+                />
+              ) : null}
+              <Text style={[styles.content, completed && styles.contentDone]} numberOfLines={2}>
+                {content}
+              </Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={onOpenDetails}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.75}
+            style={styles.iconBtn}
+            accessibilityRole="button"
+            accessibilityLabel={t('hoy.focusTaskEditA11y', { task: content })}
+            accessibilityHint={t('hoy.focusTaskOpenHint')}
+          >
+            <Pencil size={16} color={THEME.colors.calm.lavenderDeep} />
+          </TouchableOpacity>
           {onDelete ? (
             <TouchableOpacity
               onPress={onDelete}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               activeOpacity={0.75}
+              style={styles.iconBtn}
               accessibilityRole="button"
               accessibilityLabel={t('taskCard.deleteTask', { task: content })}
             >
               <Trash2 size={16} color={THEME.colors.text.tertiary} />
             </TouchableOpacity>
           ) : (
-            <ChevronRight size={16} color={THEME.colors.text.tertiary} />
+            <ChevronRight size={16} color={THEME.colors.text.tertiary} style={styles.trailingChevron} />
           )}
         </View>
 
+        <TouchableOpacity
+          onPress={onOpenDetails}
+          activeOpacity={0.88}
+          accessibilityRole="button"
+          accessibilityLabel={t('hoy.focusTaskOpenA11y', { task: content })}
+        >
         {durationLabel || deadlineLabel ? (
           <View style={styles.metaRow}>
             {durationLabel ? (
@@ -252,7 +283,8 @@ export function HoyFocusTaskRow({
             ) : null}
           </View>
         ) : null}
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </View>
     </Animated.View>
   );
 }
@@ -313,7 +345,26 @@ const styles = StyleSheet.create({
   bodyTop: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 6,
+    gap: 4,
+  },
+  contentTouch: {
+    flex: 1,
+    minWidth: 0,
+  },
+  contentTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 4,
+  },
+  iconBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -2,
+  },
+  trailingChevron: {
+    marginTop: 4,
   },
   index: {
     ...THEME.typography.caption,

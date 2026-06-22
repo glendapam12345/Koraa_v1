@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { router } from 'expo-router';
+import { openVaciarCapture } from '@/lib/vaciarNavigation';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -49,7 +50,7 @@ export function FrentesDashboardScreen() {
       });
       return;
     }
-    router.push('/(tabs)/vaciar');
+    openVaciarCapture();
   }, []);
 
   const handleCreated = useCallback(() => {
@@ -86,7 +87,7 @@ export function FrentesDashboardScreen() {
             <Text style={styles.emptySub}>{t('vnext.frentesEmptySub')}</Text>
             <CalmPrimaryButton
               label={t('vnext.frentesEmptyCta')}
-              onPress={() => router.push('/(tabs)/vaciar')}
+              onPress={() => openVaciarCapture()}
               large
             />
           </View>

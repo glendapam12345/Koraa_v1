@@ -18,6 +18,8 @@ export type HoyScreenOverlaysProps = {
   onCloseMenu: () => void;
   editingTask: Task | null;
   editProjects?: { id: string; name: string }[];
+  userId?: string;
+  onProjectCreated?: (project: { id: string; name: string }) => void;
   onSavePlanEdit: (payload: TaskPlanEditPayload) => void | Promise<void>;
   onDeleteEditingTask?: () => void | Promise<void>;
   planEditSaving?: boolean;
@@ -35,6 +37,8 @@ export function HoyScreenOverlays({
   onCloseMenu,
   editingTask,
   editProjects = [],
+  userId,
+  onProjectCreated,
   onSavePlanEdit,
   onDeleteEditingTask,
   planEditSaving = false,
@@ -66,6 +70,8 @@ export function HoyScreenOverlays({
           visible={editingTask !== null}
           task={editingTask}
           projects={editProjects}
+          userId={userId}
+          onProjectCreated={onProjectCreated}
           onSave={onSavePlanEdit}
           onDelete={onDeleteEditingTask}
           onClose={onCloseEdit}

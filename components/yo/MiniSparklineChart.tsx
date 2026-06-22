@@ -15,6 +15,7 @@ import {
   valuesToEnergyBars,
   type EnergyBar,
 } from '@/lib/energyChart';
+import { getEnergyLevelColor } from '@/lib/insightsColors';
 
 type MiniSparklineChartProps = {
   days?: DayData[];
@@ -42,15 +43,32 @@ function EnergyGridCell({
     ? Math.max(4, Math.round((bar.energy / max) * CELL_BAR_HEIGHT))
     : 0;
   const trackColor = onGradient ? THEME.colors.surfaceOverlay.medium : THEME.colors.calm.mist;
-  const fillColor = onGradient ? THEME.colors.onGradient : THEME.colors.calm.lavenderDeep;
+  const fillColor =
+    bar.hasCheckIn && bar.energy != null
+      ? getEnergyLevelColor(bar.energy)
+      : onGradient
+        ? THEME.colors.onGradient
+        : THEME.colors.calm.lavenderDeep;
   const labelColor = onGradient ? THEME.colors.onGradientFaint : THEME.colors.text.tertiary;
-  const scoreColor = onGradient ? THEME.colors.onGradientMuted : THEME.colors.calm.lavenderDeep;
+  const scoreColor =
+    bar.hasCheckIn && bar.energy != null
+      ? onGradient
+        ? THEME.colors.onGradient
+        : getEnergyLevelColor(bar.energy)
+      : onGradient
+        ? THEME.colors.onGradientMuted
+        : THEME.colors.calm.lavenderDeep;
 
   return (
     <View style={[styles.gridCell, compact && styles.gridCellCompact]}>
       <View style={[styles.gridTrack, { height: CELL_BAR_HEIGHT, backgroundColor: trackColor }]}>
         {bar.hasCheckIn ? (
-          <View style={[styles.gridFill, { height: fillH, backgroundColor: fillColor, opacity: onGradient ? 0.9 : 0.85 }]} />
+          <View
+            style={[
+              styles.gridFill,
+              { height: fillH, backgroundColor: fillColor, opacity: onGradient ? 0.95 : 1 },
+            ]}
+          />
         ) : (
           <Text style={[styles.gridEmpty, onGradient && styles.gridEmptyOnGradient]}>·</Text>
         )}
@@ -79,8 +97,6 @@ function EnergyWeekList({
   const { t } = useI18n();
   const labelColor = onGradient ? THEME.colors.onGradientMuted : THEME.colors.text.main;
   const trackColor = onGradient ? THEME.colors.surfaceOverlay.washLight : THEME.colors.calm.mist;
-  const fillColor = onGradient ? THEME.colors.onGradient : THEME.colors.calm.lavenderDeep;
-  const scoreColor = onGradient ? THEME.colors.onGradient : THEME.colors.calm.lavenderDeep;
   const mutedColor = onGradient ? THEME.colors.onGradientFaint : THEME.colors.text.tertiary;
 
   return (
@@ -100,6 +116,7 @@ function EnergyWeekList({
           );
         }
         const widthPct = Math.max(10, Math.round((bar.energy / max) * 100));
+        const barColor = getEnergyLevelColor(bar.energy);
         return (
           <View key={bar.key} style={styles.row}>
             <Text style={[styles.dateLabel, { color: labelColor }]} numberOfLines={1}>
@@ -109,11 +126,17 @@ function EnergyWeekList({
               <View
                 style={[
                   styles.fill,
-                  { width: `${widthPct}%`, backgroundColor: fillColor, opacity: onGradient ? 0.9 : 0.85 },
+                  {
+                    width: `${widthPct}%`,
+                    backgroundColor: barColor,
+                    opacity: onGradient ? 0.95 : 1,
+                  },
                 ]}
               />
             </View>
-            <Text style={[styles.score, { color: scoreColor }]}>{bar.energy}/5</Text>
+            <Text style={[styles.score, { color: onGradient ? THEME.colors.onGradient : barColor }]}>
+              {bar.energy}/5
+            </Text>
           </View>
         );
       })}
@@ -254,8 +277,8 @@ const styles = StyleSheet.create({
   },
   track: {
     flex: 1,
-    height: 10,
-    borderRadius: 5,
+    height: 12,
+    borderRadius: 6,
     overflow: 'hidden',
     justifyContent: 'center',
   },
@@ -264,7 +287,7 @@ const styles = StyleSheet.create({
   },
   fill: {
     height: '100%',
-    borderRadius: 5,
+    borderRadius: 6,
   },
   noCheckIn: {
     ...THEME.typography.tiny,

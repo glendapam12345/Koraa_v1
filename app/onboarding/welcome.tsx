@@ -3,10 +3,11 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { OnboardingHighlightCard } from '@/components/onboarding/OnboardingHighlightCard';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
-import { Sparkles, ArrowDown } from 'lucide-react-native';
+import { Sparkles } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
-import { markOnboardingCompleted } from '@/lib/onboardingGate';
+import { completeOnboardingForUser } from '@/lib/finishOnboarding';
 import { useI18n } from '@/contexts/I18nContext';
 
 export default function WelcomeScreen() {
@@ -20,7 +21,7 @@ export default function WelcomeScreen() {
       return;
     }
     setSkipLoading(true);
-    const { error } = await markOnboardingCompleted(user.id);
+    const { error } = await completeOnboardingForUser(user.id);
     setSkipLoading(false);
     if (error) {
       Alert.alert(t('errors.continueFailed'), t('errors.saveProgressFailed'));
@@ -40,7 +41,7 @@ export default function WelcomeScreen() {
           />
           <TouchableOpacity
             style={styles.secondaryButton}
-            onPress={() => router.push('/onboarding/intro2')}
+            onPress={() => router.push('/onboarding/how-it-works')}
             activeOpacity={0.85}
             accessibilityRole="button"
             accessibilityLabel={t('onboarding.welcome.seeHowItWorks')}
@@ -72,104 +73,19 @@ export default function WelcomeScreen() {
         </View>
       </View>
 
-      <Text style={styles.title}>{t('onboarding.welcome.title')}</Text>
-      <Text style={styles.titleAccent}>{t('onboarding.welcome.titleAccent')}</Text>
-      <Text style={styles.subtitle}>{t('onboarding.welcome.subtitle')}</Text>
+      <Text style={onboardingTypography.title}>{t('onboarding.welcome.title')}</Text>
+      <Text style={onboardingTypography.titleAccent}>{t('onboarding.welcome.titleAccent')}</Text>
+      <Text style={onboardingTypography.subtitle}>{t('onboarding.welcome.subtitle')}</Text>
 
-      <Text style={styles.description}>{t('onboarding.welcome.description')}</Text>
-
-      <View style={styles.exampleContainer}>
-        <View style={styles.exampleCard}>
-          <View style={styles.exampleHeader}>
-            <Text style={styles.exampleEmoji}>😔</Text>
-            <Text style={styles.exampleTitle}>{t('onboarding.welcome.exampleExhausted')}</Text>
-          </View>
-          <Text style={styles.exampleSubtitle}>{t('onboarding.welcome.exampleEnergy', { n: 2 })}</Text>
-          <View style={styles.exampleDivider} />
-          <Text style={styles.exampleResult}>{t('onboarding.welcome.exampleResultLow')}</Text>
-        </View>
-
-        <View style={styles.arrowDown}>
-          <ArrowDown size={20} color={THEME.colors.text.secondary} />
-        </View>
-
-        <View style={styles.exampleCard}>
-          <View style={styles.exampleHeader}>
-            <Text style={styles.exampleEmoji}>✨</Text>
-            <Text style={styles.exampleTitle}>{t('onboarding.welcome.exampleMotivated')}</Text>
-          </View>
-          <Text style={styles.exampleSubtitle}>{t('onboarding.welcome.exampleEnergy', { n: 5 })}</Text>
-          <View style={styles.exampleDivider} />
-          <Text style={styles.exampleResult}>{t('onboarding.welcome.exampleResultHigh')}</Text>
-        </View>
-      </View>
+      <OnboardingHighlightCard
+        title={t('onboarding.howItWorks.adaptTitle')}
+        body={t('onboarding.welcome.description')}
+      />
     </OnboardingScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  title: {
-    ...onboardingTypography.title,
-    textAlign: 'center',
-  },
-  titleAccent: {
-    ...onboardingTypography.titleAccent,
-    textAlign: 'center',
-    marginBottom: THEME.spacing.xs,
-  },
-  subtitle: {
-    ...onboardingTypography.subtitle,
-    textAlign: 'center',
-    marginBottom: THEME.spacing.md,
-  },
-  description: {
-    ...onboardingTypography.body,
-    textAlign: 'center',
-    marginBottom: THEME.spacing.lg,
-  },
-  exampleContainer: {
-    marginBottom: THEME.spacing.lg,
-  },
-  exampleCard: {
-    backgroundColor: THEME.colors.calm.card,
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
-    ...THEME.shadows.soft,
-  },
-  exampleHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.sm,
-    marginBottom: THEME.spacing.xs,
-  },
-  exampleEmoji: {
-    fontSize: THEME.typography.h3.fontSize,
-    lineHeight: THEME.typography.h3.lineHeight,
-  },
-  exampleTitle: {
-    ...THEME.typography.h3,
-    color: THEME.colors.text.main,
-  },
-  exampleSubtitle: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.sm,
-  },
-  exampleDivider: {
-    height: 1,
-    backgroundColor: THEME.colors.calm.border,
-    marginVertical: THEME.spacing.sm,
-  },
-  exampleResult: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-  },
-  arrowDown: {
-    alignItems: 'center',
-    paddingVertical: THEME.spacing.sm,
-  },
   secondaryButton: {
     marginTop: THEME.spacing.md,
     alignItems: 'center',

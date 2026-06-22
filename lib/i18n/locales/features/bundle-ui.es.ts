@@ -21,10 +21,13 @@ export const uiEs = {
     goToFeelShort: 'Ir a Hoy',
   },
   hoyMemory: {
-    lowEnergyMessage: 'En las últimas semanas, los {{day}} sueles llegar con menos energía.',
-    lowEnergyTip: 'Ese día deja tareas ligeras y protege recuperación{{emotionSuffix}}.',
+    lowEnergyMessage:
+      'En las últimas semanas, los {{day}} sueles llegar con menos energía.',
+    lowEnergyTip:
+      'Ese día deja tareas ligeras y protege recuperación{{emotionSuffix}}.',
     lowEnergyTipEmotion: ' cuando te notes {{emotion}}',
-    highEnergyMessage: 'Tu mejor ventana suele ser los {{day}}: ahí te notas con más energía.',
+    highEnergyMessage:
+      'Tu mejor ventana suele ser los {{day}}: ahí te notas con más energía.',
     topEmotionMessage: 'Tu estado más repetido recientemente fue {{emotion}}.',
   },
   vaciarExtra: {
@@ -46,7 +49,8 @@ export const uiEs = {
     voiceListening: 'Escuchando… di tu tarea con calma.',
     voiceUnavailable:
       'En Expo Go no hay micrófono en la app. Usa el del teclado del sistema.',
-    voicePermissionDenied: 'Necesitamos permiso del micrófono para dictar tu tarea.',
+    voicePermissionDenied:
+      'Necesitamos permiso del micrófono para dictar tu tarea.',
     a11yVoiceMic: 'Dictar tarea por voz',
     a11yVoiceMicHint: 'Inicia la transcripción de voz en el campo de texto',
     a11yVoiceStop: 'Dejar de dictar',
@@ -55,7 +59,8 @@ export const uiEs = {
     a11yExpandOptional: 'Expandir nota sobre proyecto, fecha y subtareas',
     a11yDismissOptional: 'Entendido, ocultar esta nota',
     a11yNextStepFeel: 'Siguiente paso: Registra cómo te sientes',
-    a11yNextStepFeelHint: 'Abre la pantalla para registrar tu estado emocional del día',
+    a11yNextStepFeelHint:
+      'Abre la pantalla para registrar tu estado emocional del día',
     a11yTaskField: 'Campo de texto para agregar tarea',
     a11yTaskFieldHint: 'Escribe o dicta la tarea que necesitas hacer hoy',
     a11yUseSuggestion: 'Usar sugerencia: {{suggestion}}',
@@ -68,7 +73,8 @@ export const uiEs = {
     a11ySaveTaskHint: 'Guarda esta tarea para organizarla después en tu día',
     a11yCloseOptions: 'Cerrar opciones',
     a11yOpenOptions: 'Abrir proyecto, categoría o fecha',
-    a11yOpenOptionsHint: 'Muestra u oculta proyecto, categoría y fecha de la tarea',
+    a11yOpenOptionsHint:
+      'Muestra u oculta proyecto, categoría y fecha de la tarea',
     a11yOrganizeCard: 'Opciones para organizar la tarea',
     a11yCategory: 'Categoría {{name}}',
     a11yDateToday: 'Programar para hoy',
@@ -95,15 +101,20 @@ export const uiEs = {
     checkInTodayFabHint: 'Abre el check-in emocional de hoy',
     noCheckInTodayBannerHint: 'Abre Hoy para registrar cómo te sientes',
     setupTitle: 'Configura Semana y proyectos',
-    setupScheduledDate: 'Falta activar una parte de Semana para ver tareas por día.',
+    setupScheduledDate:
+      'Falta activar una parte de Semana para ver tareas por día.',
     setupProjectsTable: 'Falta activar proyectos para organizar tus tareas.',
     setupProjectId: 'Falta activar la relación entre tareas y proyectos.',
-    setupGeneric: 'Semana y proyectos todavía no están activos en este entorno.',
-    setupSteps: 'Haz la configuración inicial del proyecto para activar estas funciones.',
+    setupGeneric:
+      'Semana y proyectos todavía no están activos en este entorno.',
+    setupSteps:
+      'Haz la configuración inicial del proyecto para activar estas funciones.',
     setupPullRefresh: 'Después, arrastra hacia abajo para recargar.',
     plannerDragTitle: 'Organiza tu semana',
     taskMovedSuccess: 'Paso movido a otro día',
     taskMovedError: 'No pudimos mover el paso. Inténtalo de nuevo.',
+    movePickCalendar: 'O elige otra fecha',
+    movePickCalendarHint: 'Abre el calendario para cualquier día del mes.',
     premiumOptional: 'Opcional',
     premiumBody:
       'Gratis: {{days}} días visibles. Premium: 7 días, cambiar semana/mes y ver todo tu calendario.',
@@ -159,7 +170,8 @@ export const uiEs = {
     loadingPlans: 'Cargando planes…',
     chooseThisPlan: 'Elegir este plan',
     emptyTitle: 'Estamos cargando tus planes Premium',
-    emptyBody: 'Si aún no ves precios, pulsa «Actualizar planes» o vuelve en unos minutos.',
+    emptyBody:
+      'Si aún no ves precios, pulsa «Actualizar planes» o vuelve en unos minutos.',
     fallbackPlansTitle: 'Mientras tanto, puedes revisar tus planes:',
     monthlyTitle: 'Plan mensual',
     monthlyBadge: 'Flexible',
@@ -185,7 +197,8 @@ export const uiEs = {
       'Restaurar suscripciones solo funciona en la app publicada (TestFlight o App Store), no en Expo Go.',
     continueFree: 'Seguir con versión gratis',
     continueFreePrimary: 'Seguir gratis',
-    onboardingSubtitle: 'Ya guardamos tu check-in. Premium es opcional — explora Koraa gratis cuando quieras.',
+    onboardingSubtitle:
+      'Ya guardamos tu check-in. Premium es opcional — explora Koraa gratis cuando quieras.',
     onboardingBannerTitle: 'Tu check-in ya está listo',
     onboardingBannerBody:
       'Premium desbloquea Semana completa, consejos ilimitados y más. Tu plan gratis incluye check-in, tareas y vista de Hoy.',
@@ -199,7 +212,8 @@ export const uiEs = {
     a11yCloseOnboardingHint: 'Cierra premium y explora la app gratis',
     a11yChoosePlan: 'Elegir plan {{title}}',
     a11yChoosePlanHint: 'Inicia la compra del plan premium',
-    a11yChoosePlanHintPreview: 'Explica que la compra solo está en TestFlight o App Store',
+    a11yChoosePlanHintPreview:
+      'Explica que la compra solo está en TestFlight o App Store',
     a11yContinueFree: 'Continuar con versión gratis',
     a11yContinueFreeHint: 'Cierra premium y sigue usando el plan gratuito',
     a11yBuyMonthly: 'Comprar plan mensual',
@@ -236,10 +250,12 @@ export const uiEs = {
     captureSheetSub: 'Elige uno existente o crea uno nuevo para esta tarea.',
     createNewSub: 'Nombre, color y fecha opcional',
     existingProjects: 'Tus proyectos',
-    noProjectsYet: 'Aún no tienes proyectos — crea el primero con el botón de arriba.',
+    noProjectsYet:
+      'Aún no tienes proyectos — crea el primero con el botón de arriba.',
     a11yChooseProject: 'Elegir o crear proyecto para esta tarea',
     a11yChooseOptional: 'Elegir o crear proyecto, opcional',
-    modalHint: 'Es opcional. Sin proyecto, la tarea queda suelta y aparece en Hoy.',
+    modalHint:
+      'Es opcional. Sin proyecto, la tarea queda suelta y aparece en Hoy.',
     a11ySelector: 'Proyecto: {{name}}',
     a11yChoose: 'Elige un proyecto',
     a11yLoose: 'Tareas sueltas',
@@ -322,11 +338,13 @@ export const uiEs = {
     title: '¡Te damos la bienvenida a Koraa!',
     subtitle: 'Un espacio para sentirte acompañada cuando el día pesa.',
     step1Title: 'Tareas',
-    step1Body: 'Suelta lo pendiente sin presión. Proyecto y fecha son opcionales.',
+    step1Body:
+      'Suelta lo pendiente sin presión. Proyecto y fecha son opcionales.',
     step2Title: 'Check-in en Hoy',
     step2Body: 'Registra emoción y energía (~1 min). Koraa sugiere por ti.',
     step3Title: 'Hoy',
-    step3Body: 'Verás qué podría importar hoy — sin obligación de hacerlo todo.',
+    step3Body:
+      'Verás qué podría importar hoy — sin obligación de hacerlo todo.',
     cta: 'Comenzar',
   },
   settingsUi: {
@@ -376,10 +394,12 @@ export const uiEs = {
   sentirExtra: {
     a11yClose: 'Cerrar check-in',
     a11yHelp: 'Ayuda y preguntas frecuentes',
-    a11yHelpHint: 'Abre la pantalla de ayuda con preguntas sobre Tareas, Hoy y biblioteca de ideas',
+    a11yHelpHint:
+      'Abre la pantalla de ayuda con preguntas sobre Tareas, Hoy y biblioteca de ideas',
     a11yDismissRitual: 'Entendido, ocultar explicación del ritual',
     a11yNoTasks: 'Paso 1: Agrega tus tareas primero',
-    a11yNoTasksHint: 'Abre la pestaña Tareas para agregar lo pendiente antes del check-in',
+    a11yNoTasksHint:
+      'Abre la pestaña Tareas para agregar lo pendiente antes del check-in',
     emotionGroupA11y: 'Elige cómo te sientes hoy',
     emotionSelectedAnnounce: 'Seleccionaste {{emotion}}',
     continueA11yHint: 'Continúa con energía, tiempo y claridad mental del día',
@@ -400,7 +420,8 @@ export const uiEs = {
     a11yInsightsSection: 'Insights sobre tu ritmo emocional',
     a11yInsightsLocked: 'Insights bloqueados. Requiere Premium',
     a11yEmotionMix: 'Emociones más frecuentes en tus check-ins recientes',
-    a11yEnergySparkline: 'Gráfica de energía: {{checkIns}} días recientes de {{total}} en el periodo',
+    a11yEnergySparkline:
+      'Gráfica de energía: {{checkIns}} días recientes de {{total}} en el periodo',
     a11yEnergyBar: '{{day}}: energía {{level}} de 5',
     a11yMoodTimeline: 'Ánimo por día: {{checkIns}} check-ins de {{total}} días',
   },
@@ -434,12 +455,16 @@ export const uiEs = {
   hoyClarity: {
     reorganizeCta: 'Reorganizar mi día',
     reorganizeA11y: 'Abrir reorganización del día',
-    reorganizeHint: '¿Cambió tu día? Te propongo un plan más liviano — muevo lo demás fuera de hoy.',
-    planIntroCheckIn: 'Con cómo te sientes y lo que tienes abierto, esto es suficiente para hoy.',
-    planIntroNoCheckIn: 'Primero cuéntame cómo estás. Así elijo pocos pasos — no toda tu lista.',
+    reorganizeHint:
+      '¿Cambió tu día? Te propongo un plan más liviano — muevo lo demás fuera de hoy.',
+    planIntroCheckIn:
+      'Con cómo te sientes y lo que tienes abierto, esto es suficiente para hoy.',
+    planIntroNoCheckIn:
+      'Primero cuéntame cómo estás. Así elijo pocos pasos — no toda tu lista.',
     checkInGate: 'Toca «Registrar» arriba para ver tu plan de hoy.',
     sectionImportant: 'Suficiente para hoy',
-    sectionImportantEmpty: 'Nada urgente ahora — un buen momento para respirar.',
+    sectionImportantEmpty:
+      'Nada urgente ahora — un buen momento para respirar.',
     sectionCouldAdvance: 'Después podrías avanzar',
     sectionCouldAdvanceSub: 'Sin presión — cuando tengas espacio.',
     sectionCanWait: 'Puede esperar',
@@ -454,9 +479,10 @@ export const uiEs = {
   },
   areasCompact: {
     headline: 'Todo lo que tienes abierto',
+    headlineShort: 'Tus áreas',
     explainer:
       'Un área es una parte de tu vida (trabajo, salud…). Al revisar tu brain dump, toca cada paso y elige área o proyecto. Aquí ves todo abierto.',
-    overviewStats: '{{projects}} · {{tasks}} abiertas en total',
+    overviewStats: '{{projects}} · {{tasks}} en total',
     areaLabel: 'Área',
     areaSummary: '{{projects}} · {{tasks}}',
     projectOne: '{{count}} proyecto',
@@ -470,13 +496,16 @@ export const uiEs = {
     addTaskToProject: 'Añadir tarea',
     createProjectInArea: 'Crear proyecto aquí',
     addLooseTask: 'Tarea suelta (sin proyecto)',
+    addLooseTaskShort: 'Paso suelto',
+    addStepShort: 'Añadir tareas',
     looseSectionTitle: 'Tareas sueltas',
     loosePreviewTitle: 'Sin área todavía',
     looseSectionBody: 'Cosas que aún no van en un proyecto',
     viewLooseTasks: 'Ver todas las sueltas',
     intro: 'Mapa de áreas y proyectos después de tu brain dump.',
     emptyTitle: 'Aún no hay nada organizado',
-    emptyBody: 'Empieza con un brain dump en Capturar. Koraa te ayuda a agrupar.',
+    emptyBody:
+      'Empieza con un brain dump en Capturar. Koraa te ayuda a agrupar.',
     projectCount: '{{count}} proyectos',
     taskCount: '{{count}} tareas',
     progress: '{{percent}}% completo',
@@ -488,14 +517,62 @@ export const uiEs = {
     renameAreaA11y: 'Renombrar área {{name}}',
     newArea: 'Nueva área',
     newAreaA11y: 'Crear una área personalizada',
+    deleteArea: 'Eliminar área',
+    deleteAreaTitle: 'Eliminar área',
+    deleteAreaBody:
+      '¿Eliminar «{{name}}»? Los proyectos y tareas siguen; solo desaparece la columna.',
     saveArea: 'Guardar',
     areaNamePlaceholder: 'Nombre del área',
     areaNameA11y: 'Nombre del área',
     areaEmojiA11y: 'Emoji del área',
-    emptyArea: 'Sin proyectos aquí. Crea uno o agrega tareas sueltas en esta área.',
+    areaColorLabel: 'Color',
+    areaColorA11y: 'Color del área',
+    emptyArea:
+      'Sin proyectos aquí. Crea uno o agrega tareas sueltas en esta área.',
+    emptyAreaShort: 'Sin proyectos ni pasos aquí todavía.',
+    areasFilterSummary: '{{active}} de {{total}} áreas con contenido',
+    showEmptyAreas: 'Ver {{count}} áreas vacías',
+    showEmptyAreasA11y: 'Mostrar {{count}} áreas vacías',
+    hideEmptyAreas: 'Ocultar áreas vacías',
+    hideEmptyAreasA11y: 'Ocultar áreas vacías',
     looseInAreaOne: '{{count}} tarea suelta aquí',
     looseInAreaMany: '{{count}} tareas sueltas aquí',
     viewAreaLooseTasks: 'Ver las {{count}} sueltas de esta área',
+    manageAreas: 'Ajustar áreas',
+    manageAreasA11y: 'Ajustar o eliminar áreas',
+    manageTitle: 'Tus áreas',
+    manageHint:
+      'Elimina las que no uses. Al final toca De acuerdo para guardar.',
+    manageDone: 'De acuerdo',
+    manageCancel: 'Cancelar',
+    manageSavedTitle: 'Listo',
+    manageSavedBody: 'Tus áreas quedaron guardadas.',
+    manageSaveFailed: 'No se pudieron guardar los cambios. Intenta de nuevo.',
+    deleteAreaFailed: 'No se pudo eliminar el área. Intenta de nuevo.',
+    quickAddTitle: 'Agregar paso rápido',
+    quickAddHint: 'Escribe y guarda. Luego arrástralo al área que toque.',
+    quickAddPlaceholder: 'Ej. Llamar al dentista, comprar regalo…',
+    quickAddSave: 'Guardar paso',
+    looseDragTitle: 'Tareas sueltas',
+    looseDragHint: 'Toca ↔ en cada paso para elegir el área.',
+    organizeDragHint:
+      'Toca el texto para editar · el círculo para completar · mantén presionado y arrastra · ↔ para mover · papelera para eliminar.',
+    organizeTapHint: 'Arrastra con los dados o toca la tarea para editarla.',
+    looseRowDragHint: 'Mantén presionado para mover de área',
+    moveSheetTitle: 'Mover a otra área',
+    moveSheetProjectHint: 'El proyecto «{{name}}» se moverá completo.',
+    moveTaskA11y: 'Mover tarea {{task}}',
+    looseDragActiveHint: 'Suelta sobre el área destino.',
+    looseDragDropHere: 'Soltar aquí',
+    looseDragMoved: 'Tarea movida de área.',
+    organizeDragTitle: 'Organizar pasos',
+    organizeToggle: 'Organizar arrastrando',
+    projectDragTitle: 'Pasos en proyectos',
+    projectDragHint: 'Toca ↔ en un paso para mover el proyecto a otra área.',
+    projectDragMoved: '«{{name}}» movido de área.',
+    backToHoyCta: 'Revisar lo que toca hoy',
+    backToHoyA11y: 'Ir a Hoy y ver tus pasos sugeridos',
+    backToHoyHint: 'Tus pasos sugeridos te esperan en Hoy',
   },
   looseTasks: {
     filter: {
@@ -510,6 +587,20 @@ export const uiEs = {
     addedYesterday: 'Agregada ayer',
     addedDaysAgo: 'Hace {{days}} días',
     openTaskA11y: 'Abrir tarea {{task}}',
+    editTaskA11y: 'Editar tarea {{task}}',
+    deleteTaskA11y: 'Eliminar tarea {{task}}',
+    selectMode: 'Seleccionar',
+    cancelSelect: 'Cancelar',
+    selectModeA11y: 'Seleccionar varias tareas',
+    cancelSelectA11y: 'Cancelar selección',
+    selectTaskA11y: 'Seleccionar tarea {{task}}',
+    deselectTaskA11y: 'Quitar selección de {{task}}',
+    selectedCount: '{{count}} seleccionadas',
+    deleteSelected: 'Eliminar ({{count}})',
+    deleteSelectedA11y: 'Eliminar {{count}} tareas seleccionadas',
+    deleteSelectedTitle: 'Eliminar tareas',
+    deleteSelectedConfirm: '¿Eliminar {{count}} tareas? No se puede deshacer.',
+    deleteSelectedSuccess: '{{count}} tareas eliminadas',
   },
   lifeAreas: {
     work: 'Trabajo',
@@ -517,6 +608,10 @@ export const uiEs = {
     health: 'Salud',
     creative: 'Creativo',
     learning: 'Aprendizaje',
-    other: 'Otro',
+    other: 'Otros',
+  },
+  lifeAreasPreset: {
+    bd_familia: 'Familia',
+    bd_personal: 'Personal',
   },
 } as const;

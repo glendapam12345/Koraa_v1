@@ -117,6 +117,7 @@ export function ProjectEditModal({
             onChange={onLifeAreaChange}
             lifeAreasConfig={lifeAreasConfig}
             onAddCustomArea={onAddCustomArea}
+            includeAreaRef={lifeAreaKey}
           />
 
           {onNotesChange ? (

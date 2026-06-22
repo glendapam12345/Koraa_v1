@@ -1,5 +1,7 @@
 import { useCallback, useRef, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions, TouchableOpacity } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
+import { Plus } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { DraggablePlannerTask } from '@/components/tasks/experience/DraggablePlannerTask';
@@ -22,10 +24,18 @@ type WeekPlannerDragBoardProps = {
   onRequestMoveSheet?: (taskId: string, dayId: string) => void;
   onPressTask?: (taskId: string) => void;
   onToggleComplete?: (taskId: string) => void;
+  onDeleteTask?: (taskId: string) => void;
+  onPressAddToDay?: (dayId: string, dayLabel: string) => void;
+  onDraggingChange?: (dragging: boolean) => void;
+  moveA11yLabel?: (taskTitle: string) => string;
+  deleteA11yLabel?: (taskTitle: string) => string;
+  addToDayLabel?: string;
+  addToDayA11y?: (dayLabel: string) => string;
 };
 
 const HORIZONTAL_PADDING = THEME.layout.screenPaddingX * 2;
 const PHONE_BREAKPOINT = 520;
+const DROP_HIT_SLOP = 24;
 
 function columnsForLayout(layout: SemanaBoardLayout, windowWidth: number): number {
   if (layout === 'day') return 1;
@@ -53,9 +63,17 @@ function DayColumn({
   onRequestMoveSheet,
   onPressTask,
   onToggleComplete,
+  onDeleteTask,
+  onPressAddToDay,
+  moveA11yLabel,
+  deleteA11yLabel,
+  addToDayLabel,
+  addToDayA11y,
   onDragStart,
   onDragMove,
   onDragEnd,
+  onDragPrepare,
+  onDragRelease,
   todayLabel,
   emptyDayHint,
 }: {
@@ -70,9 +88,17 @@ function DayColumn({
   onRequestMoveSheet?: (taskId: string, dayId: string) => void;
   onPressTask?: (taskId: string) => void;
   onToggleComplete?: (taskId: string) => void;
+  onDeleteTask?: (taskId: string) => void;
+  onPressAddToDay?: (dayId: string, dayLabel: string) => void;
+  moveA11yLabel: (taskTitle: string) => string;
+  deleteA11yLabel: (taskTitle: string) => string;
+  addToDayLabel: string;
+  addToDayA11y: (dayLabel: string) => string;
   onDragStart: (taskId: string) => void;
   onDragMove: (absoluteX: number, absoluteY: number) => void;
   onDragEnd: (taskId: string, sourceDayId: string, absoluteX: number, absoluteY: number) => void;
+  onDragPrepare?: () => void;
+  onDragRelease?: () => void;
   todayLabel: string;
   emptyDayHint: string;
 }) {
@@ -116,21 +142,42 @@ function DayColumn({
               areas={areas}
               sourceDayId={day.id}
               compact
+              dragMode="longPress"
               onDragStart={onDragStart}
               onDragMove={onDragMove}
               onDragEnd={(taskId, sourceDayId, x, y) => {
                 void onDragEnd(taskId, sourceDayId, x, y);
               }}
+              onDragPrepare={onDragPrepare}
+              onDragRelease={onDragRelease}
               onLongPressFallback={
                 onRequestMoveSheet ? () => onRequestMoveSheet(task.id, day.id) : undefined
               }
               onPressTask={onPressTask}
               onToggleComplete={onToggleComplete}
+              onMovePress={
+                onRequestMoveSheet ? () => onRequestMoveSheet(task.id, day.id) : undefined
+              }
+              onDeletePress={onDeleteTask ? () => onDeleteTask(task.id) : undefined}
+              moveA11yLabel={moveA11yLabel(task.title)}
+              deleteA11yLabel={deleteA11yLabel(task.title)}
             />
           ))}
         </View>
       ) : isListLayout ? (
         <Text style={styles.emptyDayHint}>{emptyDayHint}</Text>
+      ) : null}
+      {onPressAddToDay ? (
+        <TouchableOpacity
+          style={styles.addDayButton}
+          onPress={() => onPressAddToDay(day.id, day.fullLabel)}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={addToDayA11y(day.fullLabel)}
+        >
+          <Plus size={16} color={THEME.colors.gradient.blue} />
+          <Text style={styles.addDayButtonText}>{addToDayLabel}</Text>
+        </TouchableOpacity>
       ) : null}
     </View>
   );
@@ -144,11 +191,23 @@ export function WeekPlannerDragBoard({
   onRequestMoveSheet,
   onPressTask,
   onToggleComplete,
+  onDeleteTask,
+  onPressAddToDay,
+  onDraggingChange,
+  moveA11yLabel,
+  deleteA11yLabel,
+  addToDayLabel,
+  addToDayA11y,
 }: WeekPlannerDragBoardProps) {
   const { t } = useI18n();
+  const resolveMoveA11y =
+    moveA11yLabel ?? ((title: string) => t('areasCompact.moveTaskA11y', { task: title.slice(0, 40) }));
+  const resolveDeleteA11y =
+    deleteA11yLabel ?? ((title: string) => t('areasCompact.deleteTaskA11y', { task: title.slice(0, 40) }));
   const { width: windowWidth } = useWindowDimensions();
   const columnLayouts = useRef<Map<string, ColumnLayout>>(new Map());
   const columnRefs = useRef<Map<string, View | null>>(new Map());
+  const draggingCountRef = useRef(0);
   const [hoverDayId, setHoverDayId] = useState<string | null>(null);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
 
@@ -177,16 +236,28 @@ export function WeekPlannerDragBoard({
   const findDropDay = useCallback((absoluteX: number, absoluteY: number): string | null => {
     for (const layoutEntry of columnLayouts.current.values()) {
       if (
-        absoluteX >= layoutEntry.x &&
-        absoluteX <= layoutEntry.x + layoutEntry.width &&
-        absoluteY >= layoutEntry.y &&
-        absoluteY <= layoutEntry.y + layoutEntry.height
+        absoluteX >= layoutEntry.x - DROP_HIT_SLOP &&
+        absoluteX <= layoutEntry.x + layoutEntry.width + DROP_HIT_SLOP &&
+        absoluteY >= layoutEntry.y - DROP_HIT_SLOP &&
+        absoluteY <= layoutEntry.y + layoutEntry.height + DROP_HIT_SLOP
       ) {
         return layoutEntry.dayId;
       }
     }
     return null;
   }, []);
+
+  const handleDragPrepare = useCallback(() => {
+    draggingCountRef.current += 1;
+    onDraggingChange?.(true);
+  }, [onDraggingChange]);
+
+  const handleDragRelease = useCallback(() => {
+    draggingCountRef.current = Math.max(0, draggingCountRef.current - 1);
+    if (draggingCountRef.current === 0) {
+      onDraggingChange?.(false);
+    }
+  }, [onDraggingChange]);
 
   const handleDragStart = useCallback(
     (taskId: string) => {
@@ -198,7 +269,8 @@ export function WeekPlannerDragBoard({
 
   const handleDragMove = useCallback(
     (absoluteX: number, absoluteY: number) => {
-      setHoverDayId(findDropDay(absoluteX, absoluteY));
+      const nextDayId = findDropDay(absoluteX, absoluteY);
+      setHoverDayId((current) => (current === nextDayId ? current : nextDayId));
     },
     [findDropDay],
   );
@@ -231,9 +303,17 @@ export function WeekPlannerDragBoard({
       onRequestMoveSheet={onRequestMoveSheet}
       onPressTask={onPressTask}
       onToggleComplete={onToggleComplete}
+      onDeleteTask={onDeleteTask}
+      onPressAddToDay={onPressAddToDay}
+      moveA11yLabel={resolveMoveA11y}
+      deleteA11yLabel={resolveDeleteA11y}
+      addToDayLabel={addToDayLabel ?? t('semana.plannerAddToDay')}
+      addToDayA11y={addToDayA11y ?? ((dayLabel) => t('semana.plannerAddToDayA11y', { day: dayLabel }))}
       onDragStart={handleDragStart}
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
+      onDragPrepare={handleDragPrepare}
+      onDragRelease={handleDragRelease}
       todayLabel={t('semana.today')}
       emptyDayHint={t('semana.plannerEmptyDayHint')}
     />
@@ -245,6 +325,8 @@ export function WeekPlannerDragBoard({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.gridScroll}
         onLayout={measureColumns}
+        nestedScrollEnabled
+        keyboardShouldPersistTaps="handled"
       >
         {dayRows.map((row, rowIndex) => (
           <View key={`row-${rowIndex}`} style={styles.gridRow}>
@@ -261,6 +343,8 @@ export function WeekPlannerDragBoard({
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.board}
       onLayout={measureColumns}
+      nestedScrollEnabled
+      keyboardShouldPersistTaps="handled"
     >
       {days.map((day) => renderColumn(day))}
     </ScrollView>
@@ -353,5 +437,25 @@ const styles = StyleSheet.create({
   },
   tasks: {
     gap: THEME.spacing.xs,
+  },
+  addDayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.standard,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: THEME.colors.gradient.blue,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    marginTop: 2,
+    minHeight: THEME.sizes.touchTarget,
+  },
+  addDayButtonText: {
+    ...THEME.typography.meta,
+    color: THEME.colors.gradient.blue,
+    fontFamily: THEME.fonts.heading.medium,
   },
 });

@@ -1,25 +1,34 @@
 import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
-import { getBrainDumpColumnRefs } from '@/lib/review/brainDumpAreaPreset';
 import type { ProjectLibraryItem } from '@/hooks/useProjectsLibrary';
 import {
-  groupProjectsByResolvedLifeArea,
+  resolveAreaColumnOrder,
   resolveLifeAreaDisplay,
   type ResolvedLifeArea,
   type UserLifeAreasConfig,
 } from '@/lib/lifeAreas/userLifeAreas';
 import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
 import type { LooseTaskSummary } from '@/lib/looseTasks';
-import { groupLooseTasksByArea } from '@/lib/looseTasks';
+
+export type SavedSummaryPreviewItem = {
+  content: string;
+  lifeAreaKey: LifeAreaRef | null;
+  projectId: string | null;
+  scheduledDate?: string | null;
+  estimatedMinutes?: number | null;
+};
 
 export type SavedOrganizedContext = {
   taskCount: number;
   newProjectIds: string[];
   affectedAreaRefs: LifeAreaRef[];
+  /** Pasos guardados en esta sesión — para el preview inmediato. */
+  previewItems: SavedSummaryPreviewItem[];
 };
 
 export type SavedSummaryAreaGroup = {
   area: ResolvedLifeArea;
   projects: ProjectLibraryItem[];
+  looseTasks: SavedSummaryPreviewItem[];
   looseCount: number;
   hasNewProject: boolean;
 };
@@ -33,56 +42,54 @@ export function buildSavedSummaryAreaGroups(
   projects: ProjectLibraryItem[],
   config: UserLifeAreasConfig,
   getDefaultLabel: (key: LifeAreaKey) => string,
-  looseTasks: LooseTaskSummary[],
+  _looseTasks: LooseTaskSummary[],
   context: SavedOrganizedContext,
-  fallbackAreaName: string,
+  _fallbackAreaName: string,
+  translatePresetCustom?: (presetCustomId: string) => string,
 ): SavedSummaryAreaGroup[] {
-  const columnOrder = getBrainDumpColumnRefs();
+  const columnOrder = resolveAreaColumnOrder(config);
   const newProjectIds = new Set(context.newProjectIds);
-  const affectedRefs = new Set(context.affectedAreaRefs);
-  const looseByArea = groupLooseTasksByArea(looseTasks);
+  const previewItems = context.previewItems;
+  const affectedRefs =
+    context.affectedAreaRefs.length > 0
+      ? context.affectedAreaRefs
+      : [
+          ...new Set(
+            previewItems
+              .map((item) => item.lifeAreaKey)
+              .filter((ref): ref is LifeAreaRef => ref != null),
+          ),
+        ];
 
-  const grouped = groupProjectsByResolvedLifeArea(
-    projects,
-    config,
-    getDefaultLabel,
-    fallbackAreaName,
-  );
+  const groups: SavedSummaryAreaGroup[] = [];
 
-  const byRef = new Map<string, SavedSummaryAreaGroup>();
-  for (const group of grouped) {
-    byRef.set(group.area.ref, {
-      area: group.area,
-      projects: group.projects,
-      looseCount: looseByArea.get(group.area.ref)?.length ?? 0,
-      hasNewProject: group.projects.some((project) => newProjectIds.has(project.id)),
-    });
-  }
+  for (const ref of affectedRefs) {
+    const areaItems = previewItems.filter((item) => item.lifeAreaKey === ref);
+    if (areaItems.length === 0) continue;
 
-  for (const ref of context.affectedAreaRefs) {
-    if (byRef.has(ref)) continue;
-    const looseCount = looseByArea.get(ref)?.length ?? 0;
-    const areaProjects = projects.filter((project) => project.lifeAreaKey === ref);
-    if (looseCount === 0 && areaProjects.length === 0) continue;
+    const looseTasks = areaItems.filter((item) => !item.projectId);
+    const projectIdsInBatch = new Set(
+      areaItems.map((item) => item.projectId).filter((id): id is string => Boolean(id)),
+    );
 
-    byRef.set(ref, {
-      area: resolveLifeAreaDisplay(ref, config, getDefaultLabel),
+    const areaProjects = projects.filter(
+      (project) =>
+        project.lifeAreaKey === ref &&
+        (projectIdsInBatch.has(project.id) || newProjectIds.has(project.id)),
+    );
+
+    groups.push({
+      area: resolveLifeAreaDisplay(ref, config, getDefaultLabel, translatePresetCustom),
       projects: areaProjects,
-      looseCount,
+      looseTasks,
+      looseCount: looseTasks.length,
       hasNewProject: areaProjects.some((project) => newProjectIds.has(project.id)),
     });
   }
 
-  return [...byRef.values()]
-    .filter(
-      (group) =>
-        group.projects.length > 0 ||
-        group.looseCount > 0 ||
-        affectedRefs.has(group.area.ref as LifeAreaRef),
-    )
-    .sort(
-      (a, b) =>
-        areaSortIndex(a.area.ref as LifeAreaRef, columnOrder) -
-        areaSortIndex(b.area.ref as LifeAreaRef, columnOrder),
-    );
+  return groups.sort(
+    (a, b) =>
+      areaSortIndex(a.area.ref as LifeAreaRef, columnOrder) -
+      areaSortIndex(b.area.ref as LifeAreaRef, columnOrder),
+  );
 }

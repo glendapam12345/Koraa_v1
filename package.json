@@ -10,6 +10,7 @@
     "dev:fresh": "rm -rf .expo node_modules/.cache 2>/dev/null; REACT_NATIVE_PACKAGER_PORT=8081 EXPO_NO_TELEMETRY=1 expo start --port 8081 --lan --clear",
     "dev:sim": "REACT_NATIVE_PACKAGER_PORT=8081 EXPO_NO_TELEMETRY=1 expo start --port 8081 --ios",
     "dev:lan": "node scripts/print-expo-lan-url.mjs 8081 && REACT_NATIVE_PACKAGER_PORT=8081 EXPO_NO_TELEMETRY=1 expo start --port 8081 --lan",
+    "dev:go": "node scripts/dev-cloudflare.mjs --clear",
     "dev:cf": "node scripts/dev-cloudflare.mjs",
     "dev:cf:clear": "node scripts/dev-cloudflare.mjs --clear",
     "dev:cf:tunnel": "node scripts/dev-cloudflare.mjs --tunnel-only",

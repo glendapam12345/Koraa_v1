@@ -19,7 +19,7 @@ export function useTaskPlanEdit({ onSaved, onError }: UseTaskPlanEditOptions = {
           onError?.(result.error);
           return false;
         }
-        onSaved?.(payload.taskId, payload);
+        await Promise.resolve(onSaved?.(payload.taskId, payload));
         return true;
       } finally {
         setSaving(false);

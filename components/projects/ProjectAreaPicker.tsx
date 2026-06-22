@@ -3,9 +3,8 @@ import { Plus } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { LifeAreaKey, LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
-import { frontThemeForKey } from '@/lib/frentes/frontTheme';
 import {
-  listSelectableLifeAreas,
+  listActiveLifeAreas,
   type UserLifeAreasConfig,
 } from '@/lib/lifeAreas/userLifeAreas';
 import type { TranslationKey } from '@/lib/i18n';
@@ -15,6 +14,8 @@ type ProjectAreaPickerProps = {
   onChange: (key: LifeAreaRef) => void;
   lifeAreasConfig?: UserLifeAreasConfig;
   onAddCustomArea?: () => void;
+  /** Incluye un área fuera del panel activo (p. ej. al editar un proyecto legacy). */
+  includeAreaRef?: LifeAreaRef;
 };
 
 export function ProjectAreaPicker({
@@ -22,28 +23,34 @@ export function ProjectAreaPicker({
   onChange,
   lifeAreasConfig,
   onAddCustomArea,
+  includeAreaRef,
 }: ProjectAreaPickerProps) {
   const { t } = useI18n();
   const config = lifeAreasConfig ?? { labels: {}, custom: [] };
 
-  const areas = listSelectableLifeAreas(config, (key: LifeAreaKey) =>
-    t(`lifeAreas.${key}` as TranslationKey),
+  const areas = listActiveLifeAreas(
+    config,
+    (key: LifeAreaKey) => t(`lifeAreas.${key}` as TranslationKey),
+    (presetCustomId) => t(`lifeAreasPreset.${presetCustomId}` as TranslationKey),
+    includeAreaRef ?? value,
   );
 
   return (
     <View style={styles.wrap}>
       <Text style={styles.hint}>{t('projects.areaPickerHint')}</Text>
       <View style={styles.grid}>
-        {areas.map((area, index) => {
+        {areas.map((area) => {
           const selected = value === area.ref;
-          const themeKey = area.catalogKey ?? 'other';
-          const theme = frontThemeForKey(themeKey, index);
+          const accent = area.color;
           return (
             <TouchableOpacity
               key={area.ref}
               style={[
                 styles.chip,
-                { backgroundColor: theme.bg, borderColor: selected ? theme.accent : theme.border },
+                {
+                  backgroundColor: `${accent}22`,
+                  borderColor: selected ? accent : `${accent}66`,
+                },
                 selected && styles.chipSelected,
               ]}
               onPress={() => onChange(area.ref)}
@@ -52,7 +59,7 @@ export function ProjectAreaPicker({
               accessibilityState={{ selected }}
             >
               <Text style={styles.emoji}>{area.emoji}</Text>
-              <Text style={[styles.label, { color: theme.accent }]} numberOfLines={2}>
+              <Text style={[styles.label, { color: accent }]}>
                 {area.name}
               </Text>
             </TouchableOpacity>
@@ -93,12 +100,12 @@ const styles = StyleSheet.create({
     width: '47%',
     flexGrow: 1,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 8,
     paddingVertical: 10,
     paddingHorizontal: 10,
-    borderRadius: 14,
-    borderWidth: 1.5,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
     minHeight: 48,
   },
   chipSelected: {
@@ -117,13 +124,17 @@ const styles = StyleSheet.create({
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,
     flex: 1,
-    lineHeight: 16,
+    flexShrink: 1,
+    lineHeight: 18,
+    minWidth: 0,
   },
   addLabel: {
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.calm.lavenderDeep,
     flex: 1,
-    lineHeight: 16,
+    flexShrink: 1,
+    lineHeight: 18,
+    minWidth: 0,
   },
 });

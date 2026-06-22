@@ -104,20 +104,34 @@ export async function buildEnrichedReleaseItems(
 ): Promise<{
   items: EnrichedCaptureItem[];
   projectNamesById: Record<string, string>;
-  projects: { id: string; name: string; due_date: string | null }[];
+  projects: {
+    id: string;
+    name: string;
+    due_date: string | null;
+    color?: string | null;
+    life_area_key?: string | null;
+  }[];
 }> {
   const base = buildInboxReleaseItems(rawInput, locale, advanced);
   if (base.length === 0) {
     return { items: [], projectNamesById: {}, projects: [] };
   }
 
-  let projects: { id: string; name: string; due_date: string | null }[] = [];
+  let projects: {
+    id: string;
+    name: string;
+    due_date: string | null;
+    color?: string | null;
+    life_area_key?: string | null;
+  }[] = [];
   if (userId) {
     const { data } = await fetchUserProjects(userId);
     projects = (data ?? []).map((p) => ({
       id: p.id,
       name: p.name,
       due_date: p.due_date ?? null,
+      color: p.color ?? null,
+      life_area_key: p.life_area_key ?? null,
     }));
   }
   const projectNamesById = Object.fromEntries(projects.map((p) => [p.id, p.name]));

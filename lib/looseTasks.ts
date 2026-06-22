@@ -1,4 +1,5 @@
 import { getLocalDateString } from '@/lib/dateLocal';
+import type { Task } from '@/components/tasks/TaskCard';
 
 export type LooseTaskSortFilter = 'all' | 'recent' | 'oldest' | 'forgotten';
 
@@ -57,6 +58,23 @@ export function filterLooseTasks(
   }
 
   return [...list].sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+
+export function looseSummaryToTask(summary: LooseTaskSummary): Task {
+  return {
+    id: summary.id,
+    content: summary.content,
+    is_completed: summary.is_completed,
+    is_priority: summary.is_priority ?? false,
+    category: 'otros',
+    completed_at: null,
+    created_at: summary.created_at,
+    parent_task_id: null,
+    project_id: null,
+    scheduled_date: summary.scheduled_date ?? null,
+    life_area_key: summary.life_area_key ?? null,
+    subtasks: [],
+  };
 }
 
 export function groupLooseTasksByArea(

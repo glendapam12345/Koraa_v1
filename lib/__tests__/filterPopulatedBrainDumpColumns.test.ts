@@ -1,10 +1,12 @@
 import {
   filterPopulatedBrainDumpColumns,
   filterVisibleBrainDumpAreaColumns,
+  buildBrainDumpAreaBoardModel,
   isUserAddedCustomAreaColumn,
   splitBrainDumpBoardColumns,
   type BrainDumpAreaColumn,
 } from '@/lib/review/buildBrainDumpAreaBoardModel';
+import { hideAreaInConfig, EMPTY_USER_LIFE_AREAS } from '@/lib/lifeAreas/userLifeAreas';
 
 function column(
   id: string,
@@ -86,6 +88,22 @@ describe('filterVisibleBrainDumpAreaColumns', () => {
     ]);
   });
 
+  it('keeps empty areas visible when they have saved projects', () => {
+    const columns = [column('work', 0), column('home', 1)];
+    const projects = [
+      {
+        id: 'p1',
+        name: 'Proyecto trabajo',
+        lifeAreaKey: 'work' as const,
+        due_date: null,
+      },
+    ];
+    expect(filterVisibleBrainDumpAreaColumns(columns, projects).map((entry) => entry.id)).toEqual([
+      'work',
+      'home',
+    ]);
+  });
+
   it('detects user custom areas but not preset custom ids', () => {
     expect(isUserAddedCustomAreaColumn(column('mascotas', 0, { userCustom: true }))).toBe(true);
     expect(
@@ -95,5 +113,33 @@ describe('filterVisibleBrainDumpAreaColumns', () => {
         ref: 'custom:bd_familia',
       }),
     ).toBe(false);
+  });
+});
+
+describe('buildBrainDumpAreaBoardModel hidden areas', () => {
+  it('does not render hidden area columns after delete', () => {
+    const config = hideAreaInConfig(EMPTY_USER_LIFE_AREAS, 'home');
+    const { columns } = buildBrainDumpAreaBoardModel(
+      [
+        {
+          id: 't1',
+          content: 'Limpiar cocina',
+          assignToProject: false,
+          selectedCategory: 'otros',
+          selectedProjectId: null,
+          selectedDate: null,
+          effortFeel: null,
+          timing: 'later',
+          lifeAreaKey: 'home',
+        },
+      ],
+      config,
+      (key) => key,
+      'Sueltas',
+      'es',
+    );
+
+    expect(columns.some((entry) => entry.id === 'home')).toBe(false);
+    expect(columns.find((entry) => entry.isLoose)?.tasks).toHaveLength(1);
   });
 });

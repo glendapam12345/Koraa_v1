@@ -2,12 +2,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
 import type { LifeAreaKey, LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
+import { makeCustomLifeAreaRef, isCustomLifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
+import { canDeleteCustomAreaId } from '@/lib/lifeAreas/userLifeAreas';
 import {
   createCustomLifeArea,
   EMPTY_USER_LIFE_AREAS,
   mergeUserLifeAreasIntoPreferences,
   parseUserLifeAreasFromPreferences,
   type CustomLifeArea,
+  removeCustomAreaFromConfig,
+  removeAreaFromUserConfig,
   reorderAreaColumnInConfig,
   type UserLifeAreasConfig,
 } from '@/lib/lifeAreas/userLifeAreas';
@@ -16,6 +20,9 @@ export function useUserLifeAreas(userId: string | undefined) {
   const [config, setConfig] = useState<UserLifeAreasConfig>(EMPTY_USER_LIFE_AREAS);
   const [loading, setLoading] = useState(Boolean(userId));
   const otherPrefsRef = useRef<Record<string, unknown>>({});
+  const configRef = useRef(config);
+
+  configRef.current = config;
 
   const load = useCallback(async () => {
     if (!userId) {
@@ -69,11 +76,11 @@ export function useUserLifeAreas(userId: string | undefined) {
   );
 
   const addCustomArea = useCallback(
-    async (name: string, emoji = '🌿') => {
+    async (name: string, emoji = '🌿', color?: string) => {
       const trimmed = name.trim();
       if (!trimmed) return { ok: false as const, entry: null };
 
-      const entry = createCustomLifeArea(trimmed, emoji);
+      const entry = createCustomLifeArea(trimmed, emoji, color);
       const ok = await persist({ ...config, custom: [...config.custom, entry] });
       return { ok, entry: ok ? entry : null };
     },
@@ -81,7 +88,7 @@ export function useUserLifeAreas(userId: string | undefined) {
   );
 
   const renameCustomArea = useCallback(
-    async (id: string, name: string, emoji?: string) => {
+    async (id: string, name: string, emoji?: string, color?: string) => {
       const trimmed = name.trim();
       if (!trimmed) return false;
 
@@ -89,7 +96,12 @@ export function useUserLifeAreas(userId: string | undefined) {
         ...config,
         custom: config.custom.map((item) =>
           item.id === id
-            ? { ...item, name: trimmed, emoji: emoji ?? item.emoji }
+            ? {
+                ...item,
+                name: trimmed,
+                emoji: emoji ?? item.emoji,
+                color: color ?? item.color,
+              }
             : item,
         ),
       };
@@ -112,6 +124,32 @@ export function useUserLifeAreas(userId: string | undefined) {
     [config, persist],
   );
 
+  const removeArea = useCallback(
+    async (ref: LifeAreaRef) => {
+      const current = configRef.current;
+      const customId = isCustomLifeAreaRef(ref) ? ref.slice('custom:'.length) : null;
+      const next = removeAreaFromUserConfig(current, ref);
+      const ok = await persist(next);
+      if (!ok) return false;
+
+      if (userId && customId && canDeleteCustomAreaId(customId)) {
+        await supabase
+          .from('tasks')
+          .update({ life_area_key: null })
+          .eq('user_id', userId)
+          .eq('life_area_key', ref);
+      }
+
+      return true;
+    },
+    [persist, userId],
+  );
+
+  const removeCustomArea = useCallback(
+    async (id: string) => removeArea(makeCustomLifeAreaRef(id)),
+    [removeArea],
+  );
+
   return {
     config,
     loading,
@@ -119,6 +157,8 @@ export function useUserLifeAreas(userId: string | undefined) {
     renameBuiltinArea,
     addCustomArea,
     renameCustomArea,
+    removeCustomArea,
+    removeArea,
     saveConfig,
     reorderAreaColumn,
   };

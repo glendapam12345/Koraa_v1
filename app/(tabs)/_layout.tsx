@@ -5,12 +5,15 @@ import { THEME } from '@/constants/theme';
 import { Home, ListTodo, Calendar, Sparkles, User } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { resolvePostAuthGate } from '@/lib/onboardingGate';
+import { TimeoutError, withTimeout } from '@/lib/withTimeout';
+import { logger } from '@/lib/logger';
 import { AppLoadingGate } from '@/components/AppLoadingGate';
-import { hasSeenFirstSessionTour } from '@/lib/firstSessionTour';
+import { hasSeenFirstSessionTour, markFirstSessionTourSeen } from '@/lib/firstSessionTour';
 import {
   markFirstFlowLandingComplete,
   shouldLandOnTasksFirst,
 } from '@/lib/firstSessionFlow';
+import { resolveHoyLiteLayout } from '@/lib/hoyLiteDay';
 import { FirstSessionTourModal } from '@/components/onboarding/FirstSessionTourModal';
 import { SupabaseHealthBanner } from '@/components/SupabaseHealthBanner';
 import { useSupabaseHealth } from '@/hooks/useSupabaseHealth';
@@ -49,17 +52,27 @@ export default function TabLayout() {
       return;
     }
     setProfileGateError(false);
-    const result = await resolvePostAuthGate(userId);
-    if (result.status === 'error') {
+    try {
+      const result = await withTimeout(resolvePostAuthGate(userId), 15_000);
+      if (result.status === 'error') {
+        setProfileGateError(true);
+        setAllowed(false);
+        return;
+      }
+      if (result.route === '/onboarding/welcome') {
+        router.replace('/onboarding/welcome');
+        return;
+      }
+      setAllowed(true);
+    } catch (e) {
+      if (e instanceof TimeoutError) {
+        logger.warn('Tabs gate: profile gate timeout');
+      } else {
+        logger.debug('Tabs gate:', e);
+      }
       setProfileGateError(true);
       setAllowed(false);
-      return;
     }
-    if (result.route === '/onboarding/welcome') {
-      router.replace('/onboarding/welcome');
-      return;
-    }
-    setAllowed(true);
   }, [userId]);
 
   useEffect(() => {
@@ -79,9 +92,14 @@ export default function TabLayout() {
     let cancelled = false;
     void (async () => {
       const seen = await hasSeenFirstSessionTour(userId);
-      if (!cancelled && !seen) {
-        setShowFirstSessionTour(true);
+      if (cancelled || seen) return;
+      const liteDay = await resolveHoyLiteLayout(userId);
+      if (cancelled) return;
+      if (liteDay) {
+        await markFirstSessionTourSeen(userId);
+        return;
       }
+      setShowFirstSessionTour(true);
     })();
     return () => {
       cancelled = true;
@@ -89,18 +107,21 @@ export default function TabLayout() {
   }, [allowed, userId]);
 
   useEffect(() => {
-    if (!allowed || !userId) return;
+    if (!allowed || !userId || hasCheckInToday === null) return;
     let cancelled = false;
     void (async () => {
       const needsLanding = await shouldLandOnTasksFirst(userId);
       if (cancelled || !needsLanding) return;
 
       await markFirstFlowLandingComplete(userId);
+      if (hasCheckInToday) return;
+
+      router.replace('/(tabs)/vaciar');
     })();
     return () => {
       cancelled = true;
     };
-  }, [allowed, userId]);
+  }, [allowed, userId, hasCheckInToday]);
 
   if (loading || !userId) {
     return <AppLoadingGate message={t('boot.loadingProfile')} />;

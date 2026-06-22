@@ -1,16 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { FolderKanban, Pencil, Plus, ChevronUp, ChevronDown } from 'lucide-react-native';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, type ScrollView } from 'react-native';
+import { FolderKanban, Pencil, Plus, ChevronUp, ChevronDown, Trash2 } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
+import { useI18n } from '@/contexts/I18nContext';
 import { DraggablePlannerTask } from '@/components/tasks/experience/DraggablePlannerTask';
+import { applyDragEdgeAutoScroll } from '@/lib/dragEdgeAutoScroll';
 import type { LifeArea } from '@/lib/lifeAreas/types';
 import {
+  columnHasSavedProjectGroups,
   countTasksInColumn,
   filterVisibleBrainDumpAreaColumns,
   splitBrainDumpBoardColumns,
   type BrainDumpAreaColumn,
   type BrainDumpProjectGroup,
 } from '@/lib/review/buildBrainDumpAreaBoardModel';
+import type { BrainDumpReviewProject } from '@/lib/review/brainDumpProjects';
 
 type ColumnLayout = {
   columnId: string;
@@ -20,13 +24,49 @@ type ColumnLayout = {
   height: number;
 };
 
+type GroupLayout = {
+  groupId: string;
+  columnId: string;
+  projectId: string | null;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+type DropTarget = {
+  columnId: string;
+  projectId: string | null;
+};
+
+const DROP_HIT_SLOP = 44;
+const COLUMN_DROP_SLOP = 56;
+
+function pointInLayout(
+  absoluteX: number,
+  absoluteY: number,
+  layout: { x: number; y: number; width: number; height: number },
+  slop = DROP_HIT_SLOP,
+): boolean {
+  if (layout.width <= 0 || layout.height <= 0) return false;
+  return (
+    absoluteX >= layout.x - slop &&
+    absoluteX <= layout.x + layout.width + slop &&
+    absoluteY >= layout.y - slop &&
+    absoluteY <= layout.y + layout.height + slop
+  );
+}
+
 type BrainDumpAreaDragBoardProps = {
   columns: BrainDumpAreaColumn[];
   areas: LifeArea[];
-  onMoveTask: (taskId: string, targetColumnId: string) => void;
+  projects?: BrainDumpReviewProject[];
+  onMoveTask: (taskId: string, targetColumnId: string, targetProjectId?: string | null) => void;
   onPressColumnHeader?: (column: BrainDumpAreaColumn) => void;
   onPressTask?: (taskId: string) => void;
+  onRequestMoveTask?: (taskId: string) => void;
   onPressAddProject?: (column: BrainDumpAreaColumn) => void;
+  onPressDeleteProject?: (projectId: string, projectName: string) => void;
   emptyColumnHint: string;
   renameColumnA11y: string;
   addProjectLabel: string;
@@ -38,6 +78,7 @@ type BrainDumpAreaDragBoardProps = {
   splitLayout?: boolean;
   looseSectionTitle?: string;
   areasSectionTitle?: string;
+  betweenSections?: ReactNode;
   areasHeader?: ReactNode;
   areasFooter?: ReactNode;
   onMoveAreaColumn?: (ref: string, direction: 'up' | 'down') => void;
@@ -45,6 +86,9 @@ type BrainDumpAreaDragBoardProps = {
   canMoveAreaDown?: (ref: string) => boolean;
   moveAreaUpA11y?: string;
   moveAreaDownA11y?: string;
+  onDraggingChange?: (dragging: boolean) => void;
+  parentScrollRef?: RefObject<ScrollView | null>;
+  parentScrollYRef?: RefObject<number>;
 };
 
 type AreaColumnProps = {
@@ -59,7 +103,9 @@ type AreaColumnProps = {
   columnRef: (node: View | null) => void;
   onPressColumnHeader?: (column: BrainDumpAreaColumn) => void;
   onPressTask?: (taskId: string) => void;
+  onRequestMoveTask?: (taskId: string) => void;
   onPressAddProject?: (column: BrainDumpAreaColumn) => void;
+  onPressDeleteProject?: (projectId: string, projectName: string) => void;
   onMoveAreaColumn?: (ref: string, direction: 'up' | 'down') => void;
   canMoveAreaUp?: (ref: string) => boolean;
   canMoveAreaDown?: (ref: string) => boolean;
@@ -68,6 +114,8 @@ type AreaColumnProps = {
   onDragStart: (taskId: string) => void;
   onDragMove: (absoluteX: number, absoluteY: number) => void;
   onDragEnd: (taskId: string, sourceColumnId: string, absoluteX: number, absoluteY: number) => void;
+  onDragPrepare?: () => void;
+  onDragRelease?: () => void;
 };
 
 function ProjectGroupSection({
@@ -76,33 +124,61 @@ function ProjectGroupSection({
   areas,
   emptyHint,
   onPressTask,
+  onRequestMoveTask,
+  onPressDeleteProject,
+  groupRef,
+  onMeasureGroup,
   onDragStart,
   onDragMove,
   onDragEnd,
+  onDragPrepare,
+  onDragRelease,
 }: {
   group: BrainDumpProjectGroup;
   column: BrainDumpAreaColumn;
   areas: LifeArea[];
   emptyHint: string;
   onPressTask?: (taskId: string) => void;
+  onRequestMoveTask?: (taskId: string) => void;
+  onPressDeleteProject?: (projectId: string, projectName: string) => void;
+  onMeasureGroup?: (group: BrainDumpProjectGroup, columnId: string) => void;
+  groupRef?: (groupId: string, node: View | null) => void;
   onDragStart: (taskId: string) => void;
   onDragMove: (absoluteX: number, absoluteY: number) => void;
   onDragEnd: (taskId: string, sourceColumnId: string, absoluteX: number, absoluteY: number) => void;
+  onDragPrepare?: () => void;
+  onDragRelease?: () => void;
 }) {
+  const { t } = useI18n();
   const isLooseGroup = group.id.startsWith('loose-in-');
 
   return (
-    <View style={styles.projectGroup}>
+    <View
+      ref={(node) => groupRef?.(group.id, node)}
+      onLayout={() => onMeasureGroup?.(group, column.id)}
+      style={styles.projectGroup}
+    >
       {!isLooseGroup ? (
         <View style={styles.projectHeader}>
           <FolderKanban size={14} color={THEME.colors.calm.lavenderDeep} />
-          <Text style={styles.projectName} numberOfLines={2}>
+          <Text style={styles.projectName}>
             {group.name}
           </Text>
           {group.dueDateLabel ? (
-            <Text style={styles.projectDue} numberOfLines={1}>
+            <Text style={styles.projectDue}>
               {group.dueDateLabel}
             </Text>
+          ) : null}
+          {onPressDeleteProject ? (
+            <TouchableOpacity
+              onPress={() => onPressDeleteProject(group.id, group.name)}
+              hitSlop={8}
+              style={styles.projectDeleteBtn}
+              accessibilityRole="button"
+              accessibilityLabel={t('vaciar.areaReviewDeleteProjectA11y', { name: group.name })}
+            >
+              <Trash2 size={14} color={THEME.colors.semantic.danger} />
+            </TouchableOpacity>
           ) : null}
         </View>
       ) : group.tasks.length > 0 ? (
@@ -118,13 +194,26 @@ function ProjectGroupSection({
               areas={areas}
               sourceDayId={column.id}
               compact
+              dragMode="longPress"
               onDragStart={onDragStart}
               onDragMove={onDragMove}
               onDragEnd={(taskId, sourceColumnId, x, y) => {
                 onDragEnd(taskId, sourceColumnId, x, y);
               }}
+              onDragPrepare={onDragPrepare}
+              onDragRelease={onDragRelease}
               onPressTask={onPressTask}
-              onLongPressFallback={onPressTask ? () => onPressTask(task.id) : undefined}
+              onMovePress={
+                onRequestMoveTask ? () => onRequestMoveTask(task.id) : undefined
+              }
+              onLongPressFallback={
+                onRequestMoveTask
+                  ? () => onRequestMoveTask(task.id)
+                  : onPressTask
+                    ? () => onPressTask(task.id)
+                    : undefined
+              }
+              moveA11yLabel={t('vaciar.areaReviewMoveArea')}
             />
           ))}
         </View>
@@ -147,16 +236,26 @@ function AreaColumn({
   columnRef,
   onPressColumnHeader,
   onPressTask,
+  onRequestMoveTask,
   onPressAddProject,
+  onPressDeleteProject,
   onMoveAreaColumn,
   canMoveAreaUp,
   canMoveAreaDown,
   moveAreaUpA11y,
   moveAreaDownA11y,
+  onMeasureGroup,
+  groupRef,
   onDragStart,
   onDragMove,
   onDragEnd,
-}: AreaColumnProps) {
+  onDragPrepare,
+  onDragRelease,
+}: AreaColumnProps & {
+  onMeasureGroup?: (group: BrainDumpProjectGroup, columnId: string) => void;
+  groupRef?: (groupId: string, node: View | null) => void;
+}) {
+  const { t } = useI18n();
   const canRename = !column.isLoose && onPressColumnHeader;
   const canReorder = !column.isLoose && column.ref && onMoveAreaColumn;
   const taskCount = countTasksInColumn(column);
@@ -171,7 +270,7 @@ function AreaColumn({
       >
         <View style={styles.columnHeaderRow}>
           <Text style={styles.columnEmoji}>{column.emoji}</Text>
-          <Text style={styles.columnTitle} numberOfLines={1}>
+          <Text style={styles.columnTitle}>
             {column.name}
           </Text>
           <Text style={styles.dropTargetHint}>{emptyHint}</Text>
@@ -190,57 +289,57 @@ function AreaColumn({
         isHover ? styles.columnHover : null,
       ]}
     >
-      <TouchableOpacity
-        style={styles.columnHeader}
-        activeOpacity={canRename ? 0.7 : 1}
-        disabled={!canRename}
-        onPress={() => onPressColumnHeader?.(column)}
-        accessibilityRole={canRename ? 'button' : 'header'}
-        accessibilityLabel={
-          canRename ? `${column.name}, ${renameColumnA11y}` : `${column.emoji} ${column.name}`
-        }
-      >
-        <View style={styles.columnHeaderRow}>
-          <Text style={styles.columnEmoji}>{column.emoji}</Text>
-          <Text style={styles.columnTitle} numberOfLines={2}>
-            {column.name}
-          </Text>
-          {taskCount > 0 ? (
-            <Text style={styles.columnCountBadge}>{taskCount}</Text>
-          ) : null}
-          {canRename ? (
-            <Pencil size={14} color={THEME.colors.text.tertiary} accessibilityElementsHidden />
-          ) : null}
-          {canReorder && column.ref ? (
-            <View style={styles.reorderControls}>
-              <TouchableOpacity
-                style={[
-                  styles.reorderBtn,
-                  !(canMoveAreaUp?.(column.ref) ?? false) && styles.reorderBtnDisabled,
-                ]}
-                onPress={() => onMoveAreaColumn(column.ref!, 'up')}
-                disabled={!(canMoveAreaUp?.(column.ref) ?? false)}
-                accessibilityRole="button"
-                accessibilityLabel={moveAreaUpA11y ?? 'Subir área'}
-              >
-                <ChevronUp size={16} color={THEME.colors.text.secondary} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.reorderBtn,
-                  !(canMoveAreaDown?.(column.ref) ?? false) && styles.reorderBtnDisabled,
-                ]}
-                onPress={() => onMoveAreaColumn(column.ref!, 'down')}
-                disabled={!(canMoveAreaDown?.(column.ref) ?? false)}
-                accessibilityRole="button"
-                accessibilityLabel={moveAreaDownA11y ?? 'Bajar área'}
-              >
-                <ChevronDown size={16} color={THEME.colors.text.secondary} />
-              </TouchableOpacity>
-            </View>
-          ) : null}
-        </View>
-      </TouchableOpacity>
+      <View style={styles.columnHeader}>
+        <TouchableOpacity
+          style={styles.columnHeaderMain}
+          activeOpacity={canRename ? 0.7 : 1}
+          disabled={!canRename}
+          onPress={() => onPressColumnHeader?.(column)}
+          accessibilityRole={canRename ? 'button' : 'header'}
+          accessibilityLabel={
+            canRename ? `${column.name}, ${renameColumnA11y}` : `${column.emoji} ${column.name}`
+          }
+        >
+          <View style={styles.columnHeaderRow}>
+            <Text style={styles.columnEmoji}>{column.emoji}</Text>
+            <Text style={styles.columnTitle}>{column.name}</Text>
+            {taskCount > 0 ? (
+              <Text style={styles.columnCountBadge}>{taskCount}</Text>
+            ) : null}
+            {canRename ? (
+              <Pencil size={14} color={THEME.colors.text.tertiary} accessibilityElementsHidden />
+            ) : null}
+          </View>
+        </TouchableOpacity>
+        {canReorder && column.ref ? (
+          <View style={styles.reorderControls}>
+            <TouchableOpacity
+              style={[
+                styles.reorderBtn,
+                !(canMoveAreaUp?.(column.ref) ?? false) && styles.reorderBtnDisabled,
+              ]}
+              onPress={() => onMoveAreaColumn(column.ref!, 'up')}
+              disabled={!(canMoveAreaUp?.(column.ref) ?? false)}
+              accessibilityRole="button"
+              accessibilityLabel={moveAreaUpA11y ?? 'Subir área'}
+            >
+              <ChevronUp size={16} color={THEME.colors.text.secondary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.reorderBtn,
+                !(canMoveAreaDown?.(column.ref) ?? false) && styles.reorderBtnDisabled,
+              ]}
+              onPress={() => onMoveAreaColumn(column.ref!, 'down')}
+              disabled={!(canMoveAreaDown?.(column.ref) ?? false)}
+              accessibilityRole="button"
+              accessibilityLabel={moveAreaDownA11y ?? 'Bajar área'}
+            >
+              <ChevronDown size={16} color={THEME.colors.text.secondary} />
+            </TouchableOpacity>
+          </View>
+        ) : null}
+      </View>
 
       {column.isLoose ? (
         column.tasks.length > 0 ? (
@@ -252,13 +351,24 @@ function AreaColumn({
                 areas={areas}
                 sourceDayId={column.id}
                 compact
+                dragMode="longPress"
                 onDragStart={onDragStart}
                 onDragMove={onDragMove}
-                onDragEnd={(taskId, sourceColumnId, x, y) => {
-                  onDragEnd(taskId, sourceColumnId, x, y);
-                }}
+                onDragEnd={onDragEnd}
+                onDragPrepare={onDragPrepare}
+                onDragRelease={onDragRelease}
                 onPressTask={onPressTask}
-                onLongPressFallback={onPressTask ? () => onPressTask(task.id) : undefined}
+                onMovePress={
+                  onRequestMoveTask ? () => onRequestMoveTask(task.id) : undefined
+                }
+                onLongPressFallback={
+                  onRequestMoveTask
+                    ? () => onRequestMoveTask(task.id)
+                    : onPressTask
+                      ? () => onPressTask(task.id)
+                      : undefined
+                }
+                moveA11yLabel={t('vaciar.areaReviewMoveArea')}
               />
             ))}
           </View>
@@ -276,9 +386,15 @@ function AreaColumn({
                 areas={areas}
                 emptyHint={emptyHint}
                 onPressTask={onPressTask}
+                onRequestMoveTask={onRequestMoveTask}
+                onPressDeleteProject={onPressDeleteProject}
+                groupRef={groupRef}
+                onMeasureGroup={onMeasureGroup}
                 onDragStart={onDragStart}
                 onDragMove={onDragMove}
                 onDragEnd={onDragEnd}
+                onDragPrepare={onDragPrepare}
+                onDragRelease={onDragRelease}
               />
             ))
           ) : (
@@ -293,8 +409,10 @@ function AreaColumn({
               accessibilityRole="button"
               accessibilityLabel={addProjectLabel}
             >
-              <Plus size={14} color={THEME.colors.calm.lavenderDeep} />
-              <Text style={styles.addProjectText}>{addProjectLabel}</Text>
+              <View style={styles.addProjectInner}>
+                <Plus size={14} color={THEME.colors.calm.lavenderDeep} />
+                <Text style={styles.addProjectText}>{addProjectLabel}</Text>
+              </View>
             </TouchableOpacity>
           ) : null}
         </View>
@@ -306,10 +424,13 @@ function AreaColumn({
 export function BrainDumpAreaDragBoard({
   columns,
   areas,
+  projects = [],
   onMoveTask,
   onPressColumnHeader,
   onPressTask,
+  onRequestMoveTask,
   onPressAddProject,
+  onPressDeleteProject,
   emptyColumnHint,
   renameColumnA11y,
   addProjectLabel,
@@ -319,6 +440,7 @@ export function BrainDumpAreaDragBoard({
   splitLayout = true,
   looseSectionTitle,
   areasSectionTitle,
+  betweenSections,
   areasHeader,
   areasFooter,
   onMoveAreaColumn,
@@ -326,9 +448,16 @@ export function BrainDumpAreaDragBoard({
   canMoveAreaDown,
   moveAreaUpA11y,
   moveAreaDownA11y,
+  onDraggingChange,
+  parentScrollRef,
+  parentScrollYRef,
 }: BrainDumpAreaDragBoardProps) {
   const columnLayouts = useRef<Map<string, ColumnLayout>>(new Map());
+  const groupLayouts = useRef<Map<string, GroupLayout>>(new Map());
   const columnRefs = useRef<Map<string, View | null>>(new Map());
+  const groupRefs = useRef<Map<string, View | null>>(new Map());
+  const hoverTargetRef = useRef<DropTarget | null>(null);
+  const lastRemeasureAtRef = useRef(0);
   const [hoverColumnId, setHoverColumnId] = useState<string | null>(null);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
 
@@ -350,14 +479,14 @@ export function BrainDumpAreaDragBoard({
     const source = splitLayout ? areaColumns : columns.filter((column) => !column.isLoose);
     if (!hideEmptyColumns) return source;
     if (isDragging) return source;
-    return filterVisibleBrainDumpAreaColumns(source);
-  }, [splitLayout, areaColumns, columns, hideEmptyColumns, isDragging]);
+    return filterVisibleBrainDumpAreaColumns(source, projects);
+  }, [splitLayout, areaColumns, columns, hideEmptyColumns, isDragging, projects]);
 
   const visibleColumns = useMemo(() => {
     if (!splitLayout) {
       if (!hideEmptyColumns) return columns;
       if (isDragging) return columns;
-      return filterVisibleBrainDumpAreaColumns(columns);
+      return filterVisibleBrainDumpAreaColumns(columns, projects);
     }
     const result: BrainDumpAreaColumn[] = [];
     if (showLooseSection && looseColumn) result.push(looseColumn);
@@ -371,6 +500,7 @@ export function BrainDumpAreaDragBoard({
     showLooseSection,
     looseColumn,
     visibleAreaColumns,
+    projects,
   ]);
 
   const measureColumns = useCallback(() => {
@@ -382,56 +512,135 @@ export function BrainDumpAreaDragBoard({
     }
   }, [visibleColumns]);
 
-  const findDropColumn = useCallback((absoluteX: number, absoluteY: number): string | null => {
+  const measureGroups = useCallback(() => {
+    for (const [groupId, ref] of groupRefs.current.entries()) {
+      ref?.measureInWindow((x, y, width, height) => {
+        const existing = groupLayouts.current.get(groupId);
+        if (!existing) return;
+        groupLayouts.current.set(groupId, { ...existing, x, y, width, height });
+      });
+    }
+  }, []);
+
+  const measureDropTargets = useCallback(() => {
+    measureColumns();
+    measureGroups();
+  }, [measureColumns, measureGroups]);
+
+  const registerGroup = useCallback((group: BrainDumpProjectGroup, columnId: string) => {
+    const isLooseGroup = group.id.startsWith('loose-in-');
+    const layout: GroupLayout = {
+      groupId: group.id,
+      columnId,
+      projectId: isLooseGroup ? null : group.id,
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+    };
+    groupLayouts.current.set(group.id, layout);
+    const ref = groupRefs.current.get(group.id);
+    ref?.measureInWindow((x, y, width, height) => {
+      groupLayouts.current.set(group.id, { ...layout, x, y, width, height });
+    });
+  }, []);
+
+  const findDropTarget = useCallback((absoluteX: number, absoluteY: number): DropTarget | null => {
+    let matchedColumn: ColumnLayout | null = null;
     for (const layoutEntry of columnLayouts.current.values()) {
-      if (
-        absoluteX >= layoutEntry.x &&
-        absoluteX <= layoutEntry.x + layoutEntry.width &&
-        absoluteY >= layoutEntry.y &&
-        absoluteY <= layoutEntry.y + layoutEntry.height
-      ) {
-        return layoutEntry.columnId;
+      if (pointInLayout(absoluteX, absoluteY, layoutEntry, COLUMN_DROP_SLOP)) {
+        matchedColumn = layoutEntry;
+        break;
       }
     }
-    return null;
+    if (!matchedColumn) return null;
+
+    for (const layoutEntry of groupLayouts.current.values()) {
+      if (layoutEntry.columnId !== matchedColumn.columnId) continue;
+      if (pointInLayout(absoluteX, absoluteY, layoutEntry, DROP_HIT_SLOP)) {
+        return { columnId: layoutEntry.columnId, projectId: layoutEntry.projectId };
+      }
+    }
+
+    return { columnId: matchedColumn.columnId, projectId: null };
   }, []);
+
+  const handleDragPrepare = useCallback(() => {
+    onDraggingChange?.(true);
+  }, [onDraggingChange]);
+
+  const handleDragRelease = useCallback(() => {
+    onDraggingChange?.(false);
+  }, [onDraggingChange]);
 
   const handleDragStart = useCallback(
     (taskId: string) => {
+      hoverTargetRef.current = null;
       setDraggingTaskId(taskId);
-      requestAnimationFrame(() => measureColumns());
+      requestAnimationFrame(() => {
+        measureDropTargets();
+        requestAnimationFrame(measureDropTargets);
+      });
     },
-    [measureColumns],
+    [measureDropTargets],
   );
+
+  const maybeRemeasureAfterScroll = useCallback(() => {
+    const now = Date.now();
+    if (now - lastRemeasureAtRef.current < 48) return;
+    lastRemeasureAtRef.current = now;
+    measureDropTargets();
+  }, [measureDropTargets]);
 
   useEffect(() => {
     if (!isDragging) return;
-    const frame = requestAnimationFrame(() => measureColumns());
+    const frame = requestAnimationFrame(() => measureDropTargets());
     return () => cancelAnimationFrame(frame);
-  }, [isDragging, visibleColumns, measureColumns]);
+  }, [isDragging, visibleColumns, measureDropTargets]);
 
   const handleDragMove = useCallback(
     (absoluteX: number, absoluteY: number) => {
-      setHoverColumnId(findDropColumn(absoluteX, absoluteY));
+      if (parentScrollRef?.current && parentScrollYRef) {
+        const nextY = applyDragEdgeAutoScroll(
+          parentScrollRef.current,
+          parentScrollYRef.current,
+          absoluteY,
+          { edge: 110, step: 32, topInset: 120 },
+        );
+        if (nextY !== parentScrollYRef.current) {
+          parentScrollYRef.current = nextY;
+          maybeRemeasureAfterScroll();
+        }
+      }
+
+      const target = findDropTarget(absoluteX, absoluteY);
+      hoverTargetRef.current = target;
+      const nextColumnId = target?.columnId ?? null;
+      setHoverColumnId((current) => (current === nextColumnId ? current : nextColumnId));
     },
-    [findDropColumn],
+    [findDropTarget, maybeRemeasureAfterScroll, parentScrollRef, parentScrollYRef],
   );
 
   const handleDragEnd = useCallback(
-    (taskId: string, sourceColumnId: string, absoluteX: number, absoluteY: number) => {
-      const targetColumnId = findDropColumn(absoluteX, absoluteY);
+    (taskId: string, _sourceColumnId: string, absoluteX: number, absoluteY: number) => {
+      const target =
+        hoverTargetRef.current ?? findDropTarget(absoluteX, absoluteY);
+      hoverTargetRef.current = null;
       setHoverColumnId(null);
       setDraggingTaskId(null);
 
-      if (!targetColumnId || targetColumnId === sourceColumnId) return;
-      onMoveTask(taskId, targetColumnId);
+      if (!target) return;
+      onMoveTask(taskId, target.columnId, target.projectId);
     },
-    [findDropColumn, onMoveTask],
+    [findDropTarget, onMoveTask],
   );
 
   const renderColumn = (column: BrainDumpAreaColumn) => {
     const isEmptyDropTarget =
-      hideEmptyColumns && isDragging && countTasksInColumn(column) === 0;
+      hideEmptyColumns &&
+      isDragging &&
+      countTasksInColumn(column) === 0 &&
+      !columnHasSavedProjectGroups(column);
 
     return (
       <AreaColumn
@@ -443,14 +652,21 @@ export function BrainDumpAreaDragBoard({
         emptyColumnHint={emptyColumnHint}
         renameColumnA11y={renameColumnA11y}
         addProjectLabel={addProjectLabel}
-        onMeasure={measureColumns}
+        onMeasure={measureDropTargets}
         columnRef={(node) => {
           if (node) columnRefs.current.set(column.id, node);
           else columnRefs.current.delete(column.id);
         }}
+        groupRef={(groupId, node) => {
+          if (node) groupRefs.current.set(groupId, node);
+          else groupRefs.current.delete(groupId);
+        }}
+        onMeasureGroup={registerGroup}
         onPressColumnHeader={onPressColumnHeader}
         onPressTask={onPressTask}
+        onRequestMoveTask={onRequestMoveTask}
         onPressAddProject={onPressAddProject}
+        onPressDeleteProject={onPressDeleteProject}
         onMoveAreaColumn={onMoveAreaColumn}
         canMoveAreaUp={canMoveAreaUp}
         canMoveAreaDown={canMoveAreaDown}
@@ -459,12 +675,14 @@ export function BrainDumpAreaDragBoard({
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
+        onDragPrepare={handleDragPrepare}
+        onDragRelease={handleDragRelease}
       />
     );
   };
 
   return (
-    <View style={styles.boardWrap} onLayout={measureColumns}>
+    <View style={styles.boardWrap} onLayout={measureDropTargets}>
       {!isDragging && boardHint ? <Text style={styles.boardHint}>{boardHint}</Text> : null}
       {isDragging && dragHint ? <Text style={styles.dragHint}>{dragHint}</Text> : null}
 
@@ -479,11 +697,14 @@ export function BrainDumpAreaDragBoard({
             </View>
           ) : null}
 
+          {betweenSections ?? areasHeader ? (
+            <View style={styles.sectionHeader}>{betweenSections ?? areasHeader}</View>
+          ) : null}
+
           <View style={styles.section}>
             {areasSectionTitle ? (
               <Text style={styles.sectionTitle}>{areasSectionTitle}</Text>
             ) : null}
-            {areasHeader ? <View style={styles.sectionHeader}>{areasHeader}</View> : null}
             <View style={styles.board}>
               {visibleAreaColumns.map((column) => renderColumn(column))}
             </View>
@@ -560,11 +781,11 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   columnDropTarget: {
-    minHeight: 52,
+    minHeight: 96,
     justifyContent: 'center',
     borderStyle: 'dashed',
     backgroundColor: THEME.colors.calm.mist,
-    paddingVertical: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.sm,
   },
   dropTargetHint: {
     ...THEME.typography.caption,
@@ -581,27 +802,40 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.calm.lavender,
   },
   columnHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingHorizontal: 2,
     paddingBottom: 4,
     marginBottom: 2,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: THEME.colors.calm.border,
   },
+  columnHeaderMain: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+  },
   columnHeaderRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: THEME.spacing.xs,
   },
   columnEmoji: {
     fontSize: 16,
     lineHeight: 22,
+    marginTop: 1,
   },
   columnTitle: {
     ...THEME.typography.body,
     flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
     letterSpacing: 0.2,
+    lineHeight: 22,
   },
   columnCountBadge: {
     ...THEME.typography.caption,
@@ -631,11 +865,23 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
     flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    lineHeight: 18,
   },
   projectDue: {
     ...THEME.typography.micro,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
+    flexShrink: 1,
+    lineHeight: 14,
+  },
+  projectDeleteBtn: {
+    padding: 4,
+    minWidth: 28,
+    minHeight: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   looseGroupLabel: {
     ...THEME.typography.micro,
@@ -662,19 +908,27 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.xs,
   },
   addProjectBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+    alignSelf: 'stretch',
     minHeight: 40,
+    paddingHorizontal: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.pill,
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: THEME.colors.calm.lavenderDeep,
+    justifyContent: 'center',
+  },
+  addProjectInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    width: '100%',
   },
   addProjectText: {
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.calm.lavenderDeep,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

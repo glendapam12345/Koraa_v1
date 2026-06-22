@@ -9,11 +9,18 @@ import {
   type LifeAreaRef,
 } from './lifeAreaCatalog';
 import { isBrainDumpPresetCustomId, getBrainDumpColumnRefs } from '@/lib/review/brainDumpAreaPreset';
+import {
+  resolveBuiltinAreaDisplayName,
+  resolveCustomAreaDisplayName,
+} from '@/lib/lifeAreas/areaDisplayLabels';
+import { PROJECT_COLORS } from '@/lib/projectColors';
+import { frontThemeForKey } from '@/lib/frentes/frontTheme';
 
 export type CustomLifeArea = {
   id: string;
   name: string;
   emoji: string;
+  color?: string;
 };
 
 export type UserLifeAreasConfig = {
@@ -25,6 +32,8 @@ export type UserLifeAreasConfig = {
   customExamples?: Record<string, string>;
   /** Orden de columnas de área (sin sueltas). */
   columnOrder?: LifeAreaRef[];
+  /** Áreas ocultas por la usuaria (built-in o preset); proyectos y tareas conservan su área. */
+  hiddenAreaRefs?: LifeAreaRef[];
 };
 
 export const EMPTY_USER_LIFE_AREAS: UserLifeAreasConfig = {
@@ -38,6 +47,7 @@ export type ResolvedLifeArea = {
   ref: LifeAreaRef;
   name: string;
   emoji: string;
+  color: string;
   isCustom: boolean;
   catalogKey?: LifeAreaKey;
 };
@@ -61,6 +71,7 @@ export function parseUserLifeAreasFromPreferences(
       id: String(entry.id ?? ''),
       name: String(entry.name ?? '').trim(),
       emoji: String(entry.emoji ?? '🌿'),
+      color: typeof entry.color === 'string' && entry.color.trim() ? entry.color.trim() : undefined,
     }))
     .filter((entry) => entry.id.length > 0 && entry.name.length > 0);
 
@@ -78,7 +89,11 @@ export function parseUserLifeAreasFromPreferences(
     ? obj.columnOrder.filter((entry): entry is LifeAreaRef => typeof entry === 'string')
     : undefined;
 
-  return { labels, custom, examples, customExamples, columnOrder };
+  const hiddenAreaRefs = Array.isArray(obj.hiddenAreaRefs)
+    ? obj.hiddenAreaRefs.filter((entry): entry is LifeAreaRef => typeof entry === 'string')
+    : undefined;
+
+  return { labels, custom, examples, customExamples, columnOrder, hiddenAreaRefs };
 }
 
 function exampleTokens(text: string): string[] {
@@ -128,19 +143,46 @@ export function defaultAreaColumnOrder(config: UserLifeAreasConfig): LifeAreaRef
   return [...preset, ...extra];
 }
 
+export function isAreaHidden(config: UserLifeAreasConfig, ref: LifeAreaRef): boolean {
+  return config.hiddenAreaRefs?.includes(ref) ?? false;
+}
+
+/** Si el área está oculta, devuelve la primera columna activa (p. ej. Otro). */
+export function resolveActiveLifeAreaRef(
+  ref: LifeAreaRef,
+  config: UserLifeAreasConfig,
+): LifeAreaRef {
+  if (!isAreaHidden(config, ref)) return ref;
+  const active = resolveAreaColumnOrder(config);
+  return active[0] ?? 'other';
+}
+
+export function hideAreaInConfig(config: UserLifeAreasConfig, ref: LifeAreaRef): UserLifeAreasConfig {
+  const hidden = new Set(config.hiddenAreaRefs ?? []);
+  hidden.add(ref);
+  return {
+    ...config,
+    hiddenAreaRefs: [...hidden],
+    columnOrder: config.columnOrder?.filter((entry) => entry !== ref),
+  };
+}
+
 export function resolveAreaColumnOrder(config: UserLifeAreasConfig): LifeAreaRef[] {
   const fallback = defaultAreaColumnOrder(config);
   const stored = config.columnOrder?.filter(
     (ref) => isLifeAreaKey(ref) || isCustomLifeAreaRef(ref),
   );
-  if (!stored?.length) return fallback;
-
-  const known = new Set(fallback);
-  const ordered = stored.filter((ref) => known.has(ref));
-  for (const ref of fallback) {
-    if (!ordered.includes(ref)) ordered.push(ref);
+  let ordered: LifeAreaRef[];
+  if (!stored?.length) {
+    ordered = fallback;
+  } else {
+    const known = new Set(fallback);
+    ordered = stored.filter((ref) => known.has(ref));
+    for (const ref of fallback) {
+      if (!ordered.includes(ref)) ordered.push(ref);
+    }
   }
-  return ordered;
+  return ordered.filter((ref) => !isAreaHidden(config, ref));
 }
 
 export function reorderAreaColumnInConfig(
@@ -167,12 +209,61 @@ export function mergeUserLifeAreasIntoPreferences(
   return { ...otherPreferences, lifeAreas: config };
 }
 
-export function createCustomLifeArea(name: string, emoji = '🌿'): CustomLifeArea {
-  const slug = Math.random().toString(36).slice(2, 8);
+export function canDeleteCustomAreaId(customId: string): boolean {
+  return !isBrainDumpPresetCustomId(customId);
+}
+
+export function removeCustomAreaFromConfig(
+  config: UserLifeAreasConfig,
+  customId: string,
+): UserLifeAreasConfig | null {
+  if (!canDeleteCustomAreaId(customId)) return null;
+
+  const ref = makeCustomLifeAreaRef(customId);
+  const customExamples = { ...(config.customExamples ?? {}) };
+  delete customExamples[customId];
+
   return {
-    id: `a${Date.now().toString(36)}${slug}`,
+    ...config,
+    custom: config.custom.filter((entry) => entry.id !== customId),
+    columnOrder: config.columnOrder?.filter((entry) => entry !== ref),
+    customExamples,
+  };
+}
+
+/** Quita un área del tablero: borra custom de usuario u oculta built-in / preset. */
+export function removeAreaFromUserConfig(
+  config: UserLifeAreasConfig,
+  ref: LifeAreaRef,
+): UserLifeAreasConfig {
+  if (isCustomLifeAreaRef(ref)) {
+    const customId = ref.slice(CUSTOM_LIFE_AREA_PREFIX.length);
+    const removed = removeCustomAreaFromConfig(config, customId);
+    if (removed) return removed;
+  }
+  return hideAreaInConfig(config, ref);
+}
+
+export function defaultCustomAreaColor(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash + seed.charCodeAt(i) * (i + 1)) % PROJECT_COLORS.length;
+  }
+  return PROJECT_COLORS[hash] ?? PROJECT_COLORS[0];
+}
+
+export function createCustomLifeArea(
+  name: string,
+  emoji = '🌿',
+  color?: string,
+): CustomLifeArea {
+  const slug = Math.random().toString(36).slice(2, 8);
+  const id = `a${Date.now().toString(36)}${slug}`;
+  return {
+    id,
     name: name.trim(),
     emoji,
+    color: color ?? defaultCustomAreaColor(id),
   };
 }
 
@@ -180,24 +271,28 @@ export function resolveLifeAreaDisplay(
   ref: LifeAreaRef,
   config: UserLifeAreasConfig,
   getDefaultLabel?: (key: LifeAreaKey) => string,
+  translatePresetCustom?: (presetCustomId: string) => string,
 ): ResolvedLifeArea {
   if (isCustomLifeAreaRef(ref)) {
     const id = ref.slice(CUSTOM_LIFE_AREA_PREFIX.length);
     const entry = config.custom.find((item) => item.id === id);
     return {
       ref,
-      name: entry?.name ?? '',
+      name: resolveCustomAreaDisplayName(id, entry?.name, translatePresetCustom),
       emoji: entry?.emoji ?? '🌿',
+      color: entry?.color ?? defaultCustomAreaColor(id),
       isCustom: true,
     };
   }
 
   const catalog = lifeAreaCatalogEntry(ref);
-  const label = config.labels[ref] ?? getDefaultLabel?.(ref) ?? catalog.name;
+  const label = resolveBuiltinAreaDisplayName(ref, config.labels[ref], getDefaultLabel);
+  const catalogIndex = LIFE_AREA_CATALOG.findIndex((entry) => entry.key === ref);
   return {
     ref,
     name: label,
     emoji: catalog.emoji,
+    color: frontThemeForKey(ref, catalogIndex >= 0 ? catalogIndex : 0).accent,
     isCustom: false,
     catalogKey: ref,
   };
@@ -255,6 +350,35 @@ export function groupProjectsByResolvedLifeArea<T extends { lifeAreaKey: LifeAre
   return groups;
 }
 
+/** Orden de columnas en la vista Áreas: activas + Otros siempre al final. */
+export function resolveAreasPanelColumnOrder(
+  config: UserLifeAreasConfig,
+  includeRef?: LifeAreaRef | null,
+): LifeAreaRef[] {
+  const activeOrder = resolveAreaColumnOrder(config);
+  const mainRefs = activeOrder.filter((ref) => ref !== 'other');
+  const ordered: LifeAreaRef[] = [...mainRefs, 'other'];
+
+  if (includeRef && includeRef !== 'other' && !ordered.includes(includeRef)) {
+    ordered.splice(ordered.length - 1, 0, includeRef);
+  }
+
+  return ordered;
+}
+
+/** Áreas visibles en la vista Áreas y en pickers alineados con ella. */
+export function listActiveLifeAreas(
+  config: UserLifeAreasConfig,
+  getDefaultLabel: (key: LifeAreaKey) => string,
+  getPresetCustomLabel?: (presetCustomId: string) => string,
+  includeRef?: LifeAreaRef | null,
+): ResolvedLifeArea[] {
+  return resolveAreasPanelColumnOrder(config, includeRef).map((ref) =>
+    resolveLifeAreaDisplay(ref, config, getDefaultLabel, getPresetCustomLabel),
+  );
+}
+
+/** Catálogo completo (legacy): todas las built-in + custom, sin filtrar activas. */
 export function listSelectableLifeAreas(
   config: UserLifeAreasConfig,
   getDefaultLabel: (key: LifeAreaKey) => string,

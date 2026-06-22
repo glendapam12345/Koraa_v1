@@ -3,6 +3,7 @@ import type { AppLocale } from '@/lib/i18n';
 import type { ProjectForMatch } from '@/lib/batchProjectMatch';
 import { fetchUserProjects } from '@/lib/projectDueDateSchema';
 import { buildLiveCapturePreview, type LiveCapturePreview } from '@/lib/liveCapturePreview';
+import { useUserLifeAreas } from '@/hooks/useUserLifeAreas';
 
 const DEBOUNCE_MS = 220;
 const MIN_CHARS = 4;
@@ -24,6 +25,7 @@ export function useLiveCaptureOrganization({
   const [preview, setPreview] = useState<LiveCapturePreview | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { config: lifeAreasConfig } = useUserLifeAreas(userId);
 
   const loadProjects = useCallback(async () => {
     if (!userId) {
@@ -56,7 +58,10 @@ export function useLiveCaptureOrganization({
 
     setIsUpdating(true);
     timerRef.current = setTimeout(() => {
-      const next = buildLiveCapturePreview(trimmed, locale, projects, { stableIds: true });
+      const next = buildLiveCapturePreview(trimmed, locale, projects, {
+        stableIds: true,
+        lifeAreasConfig: lifeAreasConfig,
+      });
       setPreview(next);
       setIsUpdating(false);
     }, DEBOUNCE_MS);
@@ -64,7 +69,7 @@ export function useLiveCaptureOrganization({
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [enabled, locale, projects, text]);
+  }, [enabled, lifeAreasConfig, locale, projects, text]);
 
   const itemCount = preview?.items.length ?? 0;
   const areaCount = preview?.areaChips.length ?? 0;

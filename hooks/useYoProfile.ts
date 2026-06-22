@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/lib/supabase';
-import { fetchProfilePreferences } from '@/lib/profilePreferences';
+import { fetchProfilePreferences, saveProfilePreferences } from '@/lib/profilePreferences';
 import { logger } from '@/lib/logger';
 import { getErrorMessage } from '@/lib/supabase';
 import { track } from '@/lib/analytics';
@@ -21,18 +21,18 @@ const MAX_ITEM_LENGTH = 50;
 
 type UseYoProfileOptions = {
   userId: string | undefined;
+  userEmail: string | undefined;
   userMetadata: Record<string, unknown> | undefined;
   locale: AppLocale;
   t: (key: string, params?: Record<string, string | number>) => string;
-  showEditProfile: boolean;
 };
 
 export function useYoProfile({
   userId,
+  userEmail,
   userMetadata,
   locale,
   t,
-  showEditProfile,
 }: UseYoProfileOptions) {
   const [profile, setProfile] = useState<YoUserProfile>({});
   const [fullNameInput, setFullNameInput] = useState('');
@@ -76,13 +76,13 @@ export function useYoProfile({
     }
   }, [userId, locale, t]);
 
-  useEffect(() => {
-    if (!showEditProfile) return;
+  const beginEditProfile = useCallback(() => {
     const fromProfile = profile.full_name?.trim() ?? '';
     const fromMeta =
       typeof userMetadata?.full_name === 'string' ? userMetadata.full_name.trim() : '';
     setFullNameInput(fromProfile || fromMeta);
-  }, [showEditProfile, profile.full_name, userMetadata?.full_name]);
+    setProfileError(null);
+  }, [profile.full_name, userMetadata?.full_name]);
 
   const addActivity = useCallback(() => {
     const trimmedActivity = newActivity.trim();
@@ -186,7 +186,7 @@ export function useYoProfile({
   );
 
   const handleSaveProfile = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) return false;
 
     setIsSavingProfile(true);
     setProfileError(null);
@@ -203,23 +203,20 @@ export function useYoProfile({
       }
 
       const trimmedDisplayName = fullNameInput.trim();
+      const emailForRow = userEmail?.trim() ?? '';
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: trimmedDisplayName || null,
-          age: ageValue,
-          favorite_activities: profile.favorite_activities || [],
-          interests: profile.interests || [],
-        })
-        .eq('id', userId);
+      const { error: saveError } = await saveProfilePreferences(userId, emailForRow, {
+        full_name: trimmedDisplayName || null,
+        age: ageValue,
+        favorite_activities: profile.favorite_activities || [],
+        interests: profile.interests || [],
+      });
 
-      if (error) {
-        logger.error('Error guardando perfil:', error);
+      if (saveError) {
+        logger.error('Error guardando perfil:', saveError);
         const missingCol =
-          (error as { code?: string; message?: string }).code === '42703' ||
-          (typeof (error as { message?: string }).message === 'string' &&
-            (error as { message: string }).message.includes('does not exist'));
+          saveError.code === '42703' ||
+          (typeof saveError.message === 'string' && saveError.message.includes('does not exist'));
         setProfileError(missingCol ? t('yo.profileSaveSchemaError') : t('yo.profileSaveError'));
         return false;
       }
@@ -230,6 +227,12 @@ export function useYoProfile({
       if (metaErr) {
         logger.warn('Nombre guardado en perfil; no se pudo sincronizar en la sesión:', metaErr);
       }
+
+      setProfile((prev) => ({
+        ...prev,
+        full_name: trimmedDisplayName || undefined,
+        age: ageValue,
+      }));
 
       await loadProfile();
       void track('profile_saved', {
@@ -245,7 +248,7 @@ export function useYoProfile({
     } finally {
       setIsSavingProfile(false);
     }
-  }, [userId, ageInput, fullNameInput, profile, loadProfile, t]);
+  }, [userId, userEmail, ageInput, fullNameInput, profile, loadProfile, t]);
 
   const clearProfileError = useCallback(() => setProfileError(null), []);
 
@@ -267,6 +270,7 @@ export function useYoProfile({
     removeInterest,
     handleAgeInputChange,
     handleSaveProfile,
+    beginEditProfile,
     clearProfileError,
   };
 }

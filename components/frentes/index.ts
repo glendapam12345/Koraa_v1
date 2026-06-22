@@ -1,5 +1,4 @@
 export { FrenteChip } from '@/components/frentes/FrenteChip';
-export { FrentesSection } from '@/components/frentes/FrentesSection';
 export { CreateFrenteModal } from '@/components/frentes/CreateFrenteModal';
 export { BrainDumpAreaReviewScreen } from '@/components/frentes/BrainDumpAreaReviewScreen';
 export { BrainDumpAreaDragBoard } from '@/components/frentes/BrainDumpAreaDragBoard';

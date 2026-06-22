@@ -1,5 +1,6 @@
 import { Alert, Linking, Platform } from 'react-native';
 import { router } from 'expo-router';
+import { openVaciarCapture } from '@/lib/vaciarNavigation';
 import type { TranslationKey } from '@/lib/i18n';
 import { openAppleHealthSleep } from '@/lib/appleHealth';
 
@@ -204,7 +205,7 @@ function openHoyTab(): void {
 }
 
 function openVaciarTab(): void {
-  router.replace('/(tabs)/vaciar');
+  openVaciarCapture();
 }
 
 export async function executeTipAction(

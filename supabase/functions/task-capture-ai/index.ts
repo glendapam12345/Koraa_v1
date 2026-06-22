@@ -21,6 +21,7 @@ type ParsedTask = {
   scheduled_date: string | null;
   effort: 'light' | 'medium' | 'heavy' | null;
   project_id: string | null;
+  estimated_minutes: number | null;
 };
 
 type CaptureResponse = {
@@ -40,9 +41,10 @@ function buildSystemPrompt(locale: 'es' | 'en'): string {
   if (locale === 'en') {
     return `You parse natural-language task dumps for Koraa, a calm wellness app (not productivity guilt).
 Given user text and today's date (YYYY-MM-DD), return JSON only:
-{"summary":"one warm sentence","main_task":{"content":"short title","scheduled_date":"YYYY-MM-DD or null","effort":"light|medium|heavy|null","project_id":"uuid or null"},"prep_steps":[{"content":"...","scheduled_date":"YYYY-MM-DD","effort":"light|medium|heavy|null","project_id":"uuid or null"}]}
+{"summary":"one warm sentence","main_task":{"content":"short title","scheduled_date":"YYYY-MM-DD or null","effort":"light|medium|heavy|null","project_id":"uuid or null","estimated_minutes":number or null},"prep_steps":[{"content":"...","scheduled_date":"YYYY-MM-DD","effort":"light|medium|heavy|null","project_id":"uuid or null","estimated_minutes":number or null}]}
 Rules:
 - Extract due dates from phrases like "Friday", "tomorrow", "next Monday". Use the next matching calendar day on or after today.
+- estimated_minutes: realistic duration in minutes (5–480, round to 5). Quick calls/emails 15–25; errands 30–45; presentations 60–90; video/reel editing 90–120; deep work 75–120. Use null only if truly unknown.
 - main_task.content: clean task title, max 120 chars, no guilt language.
 - prep_steps: 0-3 gentle preparation steps spread BEFORE the due date (only if due date is 2+ days away and task feels important). Never more than 3.
 - If the user lists several DISTINCT tasks in one dump (commas, "and", newlines), put the first in main_task and each additional distinct task in prep_steps as its own independent task (not sub-steps of the same chore).
@@ -53,9 +55,10 @@ Rules:
   }
   return `Interpretas capturas en lenguaje natural para Koraa, app de bienestar (sin culpa ni productividad tóxica).
 Con el texto de la usuaria y la fecha de hoy (AAAA-MM-DD), responde SOLO JSON:
-{"summary":"una frase cálida","main_task":{"content":"título corto","scheduled_date":"AAAA-MM-DD o null","effort":"light|medium|heavy|null","project_id":"uuid o null"},"prep_steps":[{"content":"...","scheduled_date":"AAAA-MM-DD","effort":"light|medium|heavy|null","project_id":"uuid o null"}]}
+{"summary":"una frase cálida","main_task":{"content":"título corto","scheduled_date":"AAAA-MM-DD o null","effort":"light|medium|heavy|null","project_id":"uuid o null","estimated_minutes":número o null},"prep_steps":[{"content":"...","scheduled_date":"AAAA-MM-DD","effort":"light|medium|heavy|null","project_id":"uuid o null","estimated_minutes":número o null}]}
 Reglas:
 - Extrae fechas: "el viernes", "mañana", "próximo lunes". Usa el próximo día calendario >= hoy.
+- estimated_minutes: duración realista en minutos (5–480, redondea a 5). Llamadas/emails 15–25; recados 30–45; presentaciones 60–90; reel/video 90–120; trabajo profundo 75–120. null solo si no se puede estimar.
 - main_task.content: título limpio, máx 120 caracteres, sin culpa.
 - prep_steps: 0-3 pasos suaves de preparación ANTES de la fecha límite (solo si faltan 2+ días y la tarea parece importante). Máximo 3.
 - Si el texto lista varias tareas DISTINTAS en un solo párrafo (comas, «y», saltos de línea), pon la primera en main_task y cada tarea adicional en prep_steps como tarea independiente (no subtareas de la misma).

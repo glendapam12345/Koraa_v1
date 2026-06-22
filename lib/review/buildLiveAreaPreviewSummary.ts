@@ -3,7 +3,9 @@ import { translate } from '@/lib/i18n';
 import type { LifeAreaKey, LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 import {
   EMPTY_USER_LIFE_AREAS,
+  resolveAreaColumnOrder,
   resolveLifeAreaDisplay,
+  type UserLifeAreasConfig,
 } from '@/lib/lifeAreas/userLifeAreas';
 import { ensureBrainDumpPresetInConfig } from '@/lib/review/brainDumpAreaPreset';
 import { inferCaptureItemLifeArea } from '@/lib/review/inferCaptureItemLifeArea';
@@ -33,10 +35,14 @@ function truncatePreview(content: string): string {
   return `${trimmed.slice(0, PREVIEW_CHAR_LIMIT - 1).trim()}…`;
 }
 
-function groupItemsByArea(items: EnrichedCaptureItem[]): Map<LifeAreaRef, EnrichedCaptureItem[]> {
+function groupItemsByArea(
+  items: EnrichedCaptureItem[],
+  config?: UserLifeAreasConfig,
+): Map<LifeAreaRef, EnrichedCaptureItem[]> {
   const groups = new Map<LifeAreaRef, EnrichedCaptureItem[]>();
   for (const item of items) {
-    const ref = item.lifeAreaKey ?? inferCaptureItemLifeArea(item.content);
+    const ref =
+      item.lifeAreaKey ?? inferCaptureItemLifeArea(item.content, config);
     const bucket = groups.get(ref);
     if (bucket) bucket.push(item);
     else groups.set(ref, [item]);
@@ -48,11 +54,13 @@ function buildAreaPreviewEntry(
   ref: LifeAreaRef,
   groupItems: EnrichedCaptureItem[],
   locale: AppLocale,
+  config: UserLifeAreasConfig,
 ): LiveAreaPreviewColumn {
-  const config = ensureBrainDumpPresetInConfig(EMPTY_USER_LIFE_AREAS);
   const getDefaultLabel = (key: LifeAreaKey) =>
     translate(locale, `lifeAreas.${key}` as TranslationKey);
-  const resolved = resolveLifeAreaDisplay(ref, config, getDefaultLabel);
+  const translatePresetCustom = (presetCustomId: string) =>
+    translate(locale, `lifeAreasPreset.${presetCustomId}` as TranslationKey);
+  const resolved = resolveLifeAreaDisplay(ref, config, getDefaultLabel, translatePresetCustom);
   const taskRows = groupItems.map((item) => ({ content: item.content }));
 
   return {
@@ -67,15 +75,35 @@ function buildAreaPreviewEntry(
 export function buildLiveAreaPreviewColumns(
   items: EnrichedCaptureItem[],
   locale: AppLocale,
+  lifeAreasConfig?: UserLifeAreasConfig,
 ): LiveAreaPreviewColumn[] {
-  return [...groupItemsByArea(items).entries()]
-    .map(([ref, groupItems]) => buildAreaPreviewEntry(ref, groupItems, locale))
-    .sort((a, b) => b.count - a.count);
+  const config = ensureBrainDumpPresetInConfig(lifeAreasConfig ?? EMPTY_USER_LIFE_AREAS);
+  const activeRefs = resolveAreaColumnOrder(config);
+  const grouped = groupItemsByArea(items, config);
+
+  const columns = activeRefs
+    .map((ref) => {
+      const groupItems = grouped.get(ref);
+      if (!groupItems?.length) return null;
+      return buildAreaPreviewEntry(ref, groupItems, locale, config);
+    })
+    .filter((column): column is LiveAreaPreviewColumn => column != null);
+
+  const coveredRefs = new Set(columns.map((column) => column.ref));
+  for (const [ref, groupItems] of grouped) {
+    if (coveredRefs.has(ref) || groupItems.length === 0) continue;
+    columns.push(buildAreaPreviewEntry(ref, groupItems, locale, config));
+  }
+
+  return columns;
 }
 
 export function buildLiveAreaPreviewSummary(
   items: EnrichedCaptureItem[],
   locale: AppLocale,
+  lifeAreasConfig?: UserLifeAreasConfig,
 ): LiveAreaPreviewChip[] {
-  return buildLiveAreaPreviewColumns(items, locale).map(({ previews: _previews, ...chip }) => chip);
+  return buildLiveAreaPreviewColumns(items, locale, lifeAreasConfig).map(
+    ({ previews: _previews, ...chip }) => chip,
+  );
 }

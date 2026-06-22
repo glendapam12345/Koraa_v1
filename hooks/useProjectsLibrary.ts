@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { fetchUserProjects } from '@/lib/projectDueDateSchema';
 import { getLocalDateString } from '@/lib/dateLocal';
+import { purgeExpiredLooseCompletedTasks } from '@/lib/purgeExpiredLooseCompletedTasks';
 
 import {
   resolveProjectLifeAreaKey,
@@ -43,14 +44,18 @@ export function useProjectsLibrary(userId: string | undefined, options?: UseProj
   const [refreshing, setRefreshing] = useState(false);
   const hasLoadedRef = useRef(false);
 
+  const externalCheckInRef = useRef(externalCheckIn);
+  externalCheckInRef.current = externalCheckIn;
+
   const load = useCallback(
     async (loadOptions?: LoadOptions) => {
+      const checkInFromParent = externalCheckInRef.current;
       if (!userId) {
         setProjects([]);
         setLooseCount(0);
         setTotalIncomplete(0);
         setFocusIncomplete(0);
-        setHasCheckInToday(externalCheckIn ?? null);
+        setHasCheckInToday(checkInFromParent ?? null);
         setLoading(false);
         setRefreshing(false);
         hasLoadedRef.current = false;
@@ -66,10 +71,13 @@ export function useProjectsLibrary(userId: string | undefined, options?: UseProj
 
       try {
         const today = getLocalDateString();
-        const skipCheckInQuery = externalCheckIn !== undefined && externalCheckIn !== null;
+        const skipCheckInQuery =
+          checkInFromParent !== undefined && checkInFromParent !== null;
+
+        await purgeExpiredLooseCompletedTasks(userId);
 
         const checkInPromise = skipCheckInQuery
-          ? Promise.resolve({ data: externalCheckIn ? { id: 'cached' } : null, error: null })
+          ? Promise.resolve({ data: checkInFromParent ? { id: 'cached' } : null, error: null })
           : supabase
               .from('daily_check_ins')
               .select('id')
@@ -90,7 +98,7 @@ export function useProjectsLibrary(userId: string | undefined, options?: UseProj
         if (!skipCheckInQuery) {
           setHasCheckInToday(!!checkInRes.data);
         } else {
-          setHasCheckInToday(externalCheckIn ?? null);
+          setHasCheckInToday(checkInFromParent ?? null);
         }
 
         const { data: projectsData, error: projectsError } = projectsRes;
@@ -153,30 +161,40 @@ export function useProjectsLibrary(userId: string | undefined, options?: UseProj
         setRefreshing(false);
       }
     },
-    [externalCheckIn, userId],
+    [userId],
   );
 
   useEffect(() => {
     hasLoadedRef.current = false;
     void load();
-  }, [load]);
+  }, [userId, load]);
 
   useEffect(() => {
-    if (externalCheckIn !== undefined && externalCheckIn !== null) {
-      setHasCheckInToday(externalCheckIn);
+    if (externalCheckIn === undefined || externalCheckIn === null) return;
+    setHasCheckInToday(externalCheckIn);
+    if (hasLoadedRef.current) {
+      void load({ silent: true });
     }
-  }, [externalCheckIn]);
+  }, [externalCheckIn, load]);
 
   const refresh = useCallback(() => {
     void load({ silent: true });
   }, [load]);
 
   const reload = useCallback(
-    (silent = false) => {
+    (silent = true) => {
       void load({ silent });
     },
     [load],
   );
+
+  const patchProjectLifeArea = useCallback((projectId: string, lifeAreaRef: LifeAreaRef) => {
+    setProjects((current) =>
+      current.map((project) =>
+        project.id === projectId ? { ...project, lifeAreaKey: lifeAreaRef } : project,
+      ),
+    );
+  }, []);
 
   return {
     projects,
@@ -188,5 +206,6 @@ export function useProjectsLibrary(userId: string | undefined, options?: UseProj
     refreshing,
     refresh,
     reload,
+    patchProjectLifeArea,
   };
 }

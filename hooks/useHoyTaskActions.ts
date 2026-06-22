@@ -2,22 +2,23 @@ import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
+import { removeTaskFromHoyPlanOrders } from '@/lib/hoyFocusTaskOrder';
 import type { Task } from '@/components/tasks/TaskCard';
 
 type UseHoyDeleteTaskOptions = {
   t: (key: string, params?: Record<string, string | number>) => string;
   showToast: (message: string, type: 'success' | 'error' | 'info') => void;
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
-  loadTasks: () => void | Promise<void>;
   setMenuOpen: (id: string | null) => void;
+  onDeleted?: () => void;
 };
 
 export function useHoyDeleteTask({
   t,
   showToast,
   setTasks,
-  loadTasks,
   setMenuOpen,
+  onDeleted,
 }: UseHoyDeleteTaskOptions) {
   const handleDeleteTask = useCallback(
     (task: Task) => {
@@ -64,7 +65,8 @@ export function useHoyDeleteTask({
                 );
                 setMenuOpen(null);
                 showToast(t('hoy.taskDeleted'), 'success');
-                void loadTasks();
+                void removeTaskFromHoyPlanOrders(task.id);
+                onDeleted?.();
               } catch (error) {
                 logger.error('Error inesperado al eliminar:', error);
                 showToast(t('errors.deleteTaskFailed'), 'error');
@@ -75,7 +77,7 @@ export function useHoyDeleteTask({
         ],
       );
     },
-    [t, showToast, setTasks, loadTasks, setMenuOpen],
+    [t, showToast, setTasks, setMenuOpen, onDeleted],
   );
 
   return { handleDeleteTask };

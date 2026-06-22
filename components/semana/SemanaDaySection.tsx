@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Plus } from 'lucide-react-native';
@@ -8,6 +9,10 @@ import type { Task } from '@/hooks/useTasks';
 import { SemanaInteractiveTaskList } from '@/components/semana/SemanaInteractiveTaskList';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { getEmotionCalendarAccent, getEmotionCalendarFill } from '@/lib/emotionCalendarColors';
+import {
+  ProjectQuickAddTaskModal,
+  type ProjectQuickAddTarget,
+} from '@/components/projects/ProjectQuickAddTaskModal';
 
 type ProjectInfo = {
   name: string;
@@ -19,7 +24,10 @@ type SemanaDaySectionProps = {
   title: string;
   tasks: Task[];
   projectsMap: Record<string, ProjectInfo>;
+  userId?: string;
+  quickAddProjects?: { id: string; name: string; color: string }[];
   isToday?: boolean;
+  hasCheckInToday?: boolean;
   checkInChipText?: string | null;
   emotionId?: string | null;
   energyLevel?: number | null;
@@ -38,7 +46,10 @@ export function SemanaDaySection({
   title,
   tasks,
   projectsMap,
+  userId,
+  quickAddProjects = [],
   isToday = false,
+  hasCheckInToday = false,
   checkInChipText = null,
   emotionId = null,
   energyLevel = null,
@@ -51,12 +62,13 @@ export function SemanaDaySection({
   showToast,
 }: SemanaDaySectionProps) {
   const { t } = useI18n();
+  const [quickAddTarget, setQuickAddTarget] = useState<ProjectQuickAddTarget | null>(null);
   const emotionAccent = emotionId ? getEmotionCalendarAccent(emotionId) : null;
   const emotionFill = emotionId ? getEmotionCalendarFill(emotionId) : null;
   const hasCheckIn = Boolean(checkInChipText);
 
-  const navigateToVaciar = () => {
-    router.push(`/(tabs)/vaciar?date=${dateStr}`);
+  const openQuickAdd = () => {
+    setQuickAddTarget({ mode: 'day', date: dateStr, dayLabel: title });
   };
 
   const openHoy = () => {
@@ -102,7 +114,7 @@ export function SemanaDaySection({
       title: t('semana.emptyLightDay'),
       hint: t('semana.emptyLightDayHint'),
       cta: t('semana.addTasks'),
-      onPress: navigateToVaciar,
+      onPress: openQuickAdd,
       a11y: addTasksA11yLabel,
       showCta: true,
     },
@@ -110,7 +122,7 @@ export function SemanaDaySection({
       title: t('semana.emptyDay'),
       hint: t('semana.emptyHint'),
       cta: t('semana.addTasks'),
-      onPress: navigateToVaciar,
+      onPress: openQuickAdd,
       a11y: addTasksA11yLabel,
       showCta: true,
     },
@@ -221,10 +233,11 @@ export function SemanaDaySection({
               projectsMap={projectsMap}
               onTasksChanged={onTasksChanged}
               showToast={showToast}
+              disableSwipe
             />
             <TouchableOpacity
               style={styles.addDayButtonOutlined}
-              onPress={navigateToVaciar}
+              onPress={openQuickAdd}
               activeOpacity={0.8}
               accessibilityRole="button"
               accessibilityLabel={addMoreA11yLabel}
@@ -236,6 +249,24 @@ export function SemanaDaySection({
           </>
         )}
       </View>
+
+      <ProjectQuickAddTaskModal
+        visible={quickAddTarget != null}
+        target={quickAddTarget}
+        userId={userId}
+        projects={quickAddProjects}
+        hasCheckInToday={hasCheckInToday}
+        onClose={() => setQuickAddTarget(null)}
+        onSaved={({ title: savedTitle, dayLabel }) => {
+          onTasksChanged();
+          showToast(
+            dayLabel
+              ? t('semana.quickAddDaySuccess', { title: savedTitle, day: dayLabel })
+              : t('projects.quickAddSuccessLoose', { title: savedTitle }),
+            'success',
+          );
+        }}
+      />
     </View>
   );
 }

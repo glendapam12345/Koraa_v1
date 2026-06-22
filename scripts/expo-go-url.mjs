@@ -4,6 +4,7 @@
  */
 import fs from 'node:fs';
 import http from 'node:http';
+import https from 'node:https';
 import os from 'node:os';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
@@ -212,26 +213,46 @@ export async function waitForTunnelReachable(proxyUrl, maxMs = 120_000) {
 }
 
 /** Comprueba que el túnel responde (Metro a través de cloudflared). */
-export async function isTunnelReachable(proxyUrl, maxMs = 12_000) {
+export function isTunnelReachable(proxyUrl, maxMs = 12_000) {
   const base = proxyUrl.replace(/\/$/, '');
   const urls = [`${base}/status`, base];
   const start = Date.now();
-  while (Date.now() - start < maxMs) {
-    for (const statusUrl of urls) {
+
+  const fetchOnce = (statusUrl) =>
+    new Promise((resolve) => {
       try {
-        const res = await fetch(statusUrl, {
-          signal: AbortSignal.timeout(8000),
-          headers: { Accept: '*/*', 'User-Agent': 'koraa-dev-check' },
+        const client = statusUrl.startsWith('https:') ? https : http;
+        const req = client.get(statusUrl, { timeout: 8000 }, (res) => {
+          let body = '';
+          res.on('data', (chunk) => {
+            body += chunk;
+          });
+          res.on('end', () => {
+            const ok =
+              res.statusCode &&
+              res.statusCode >= 200 &&
+              res.statusCode < 400 &&
+              (body.includes('packager-status:running') || statusUrl.endsWith('/status'));
+            resolve(ok);
+          });
         });
-        const body = await res.text();
-        if (res.ok && (body.includes('packager-status:running') || statusUrl.endsWith('/status'))) {
-          return true;
-        }
+        req.on('error', () => resolve(false));
+        req.on('timeout', () => {
+          req.destroy();
+          resolve(false);
+        });
       } catch {
-        /* retry */
+        resolve(false);
       }
+    });
+
+  return (async () => {
+    while (Date.now() - start < maxMs) {
+      for (const statusUrl of urls) {
+        if (await fetchOnce(statusUrl)) return true;
+      }
+      await new Promise((r) => setTimeout(r, 1500));
     }
-    await new Promise((r) => setTimeout(r, 1500));
-  }
-  return false;
+    return false;
+  })();
 }

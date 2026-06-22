@@ -1,9 +1,9 @@
 import { View, Text, StyleSheet, RefreshControl } from 'react-native';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import { useWeekTasks, type WeekDayCheckIn } from '@/hooks/useWeekTasks';
+import { useWeekTasks, type DayTasks, type WeekDayCheckIn } from '@/hooks/useWeekTasks';
 import { useMonthCalendar } from '@/hooks/useMonthCalendar';
 import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
 import { getSupabaseEnvStatus } from '@/lib/envCheck';
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react-native';
 import { shareTasksCsv } from '@/lib/exportTasksCsv';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { openVaciarCapture } from '@/lib/vaciarNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 import { SemanaCalendarGrid } from '@/components/semana/SemanaCalendarGrid';
@@ -22,6 +23,7 @@ import { SemanaDaySection } from '@/components/semana/SemanaDaySection';
 import { SemanaTodayCheckInBanner } from '@/components/semana/SemanaTodayCheckInBanner';
 import { SemanaFreeLimitCard } from '@/components/semana/SemanaFreeLimitCard';
 import { SemanaDraggableWeekBoard } from '@/components/semana/SemanaDraggableWeekBoard';
+import { SemanaReplanPreviewBar } from '@/components/semana/SemanaReplanPreviewBar';
 import { SemanaRangePicker } from '@/components/semana/SemanaRangePicker';
 import { useSemanaTaskDrag } from '@/hooks/useSemanaTaskDrag';
 import { Toast } from '@/components/Toast';
@@ -48,6 +50,16 @@ import {
 } from '@/lib/semana/rangeMode';
 import { monthCalendarToDayTasks } from '@/lib/semana/monthToDayTasks';
 import { parseMonthAnchor } from '@/lib/calendarGrid';
+import {
+  applyAssignmentsToWeekTasks,
+  extractAssignmentsFromWeekDraft,
+  moveTaskInWeekDraft,
+} from '@/lib/replanWeekDraft';
+import {
+  applyDayReplanAssignments,
+  buildDayReplanPlan,
+} from '@/lib/vnext/executeDayReflectionReplan';
+import type { ReorganizeWeekProposal, WhatChangedReason } from '@/lib/lifeAreas/types';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
 const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
@@ -73,7 +85,8 @@ function formatCheckInChip(
 
 export default function SemanaScreen() {
   const { t, locale } = useI18n();
-  const { planAhead: planAheadParam } = useLocalSearchParams<{ planAhead?: string }>();
+  const { planAhead: planAheadParam, replan: replanParam, replanReason: replanReasonParam } =
+    useLocalSearchParams<{ planAhead?: string; replan?: string; replanReason?: string }>();
   const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
   const monthNamesFull = locale === 'en' ? MONTH_NAMES_FULL_EN : MONTH_NAMES_FULL_ES;
   const { user } = useAuth();
@@ -90,6 +103,14 @@ export default function SemanaScreen() {
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [planAheadMode, setPlanAheadMode] = useState(false);
+  const planAheadAppliedRef = useRef(false);
+  const [plannerDragging, setPlannerDragging] = useState(false);
+  const [replanMode, setReplanMode] = useState(false);
+  const [replanDraft, setReplanDraft] = useState<DayTasks[] | null>(null);
+  const [replanProposal, setReplanProposal] = useState<ReorganizeWeekProposal | null>(null);
+  const [replanLoading, setReplanLoading] = useState(false);
+  const [replanApplying, setReplanApplying] = useState(false);
+  const replanBootstrappedRef = useRef(false);
   const planAheadFloor = useMemo(() => getNextWeekMonday(todayStr), [todayStr]);
   const showToast = useCallback(
     (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -148,9 +169,9 @@ export default function SemanaScreen() {
 
   useEffect(() => {
     if (viewMode === 'calendar') {
-      void loadWeekTasks(undefined);
+      void loadWeekTasks(getWeekMonday(selectedDate));
     }
-  }, [viewMode, loadWeekTasks]);
+  }, [viewMode, loadWeekTasks, selectedDate]);
 
   const canGoPrevMonth = isSubscribed;
   const canGoNextMonth = isSubscribed;
@@ -200,10 +221,13 @@ export default function SemanaScreen() {
   useFocusEffect(
     useCallback(() => {
       if (planAheadParam !== '1') return;
+      if (planAheadAppliedRef.current) return;
+      planAheadAppliedRef.current = true;
       setPlanAheadMode(true);
       setViewMode('list');
       setRangeMode('week');
       setRangeAnchorDate(getNextWeekMonday(getLocalDateString()));
+      router.setParams({ planAhead: undefined });
     }, [planAheadParam]),
   );
 
@@ -230,6 +254,58 @@ export default function SemanaScreen() {
     onTasksChanged: handleTasksChanged,
   });
 
+  const handleBoardMoveTask = useCallback(
+    async (taskId: string, targetDayId: string) => {
+      if (replanMode && replanDraft) {
+        setReplanDraft((current) =>
+          current ? moveTaskInWeekDraft(current, taskId, targetDayId) : current,
+        );
+        return { ok: true };
+      }
+      return moveTaskToDay(taskId, targetDayId);
+    },
+    [moveTaskToDay, replanDraft, replanMode],
+  );
+
+  const handleReplanCancel = useCallback(() => {
+    setReplanMode(false);
+    setReplanDraft(null);
+    setReplanProposal(null);
+    replanBootstrappedRef.current = false;
+    router.replace('/(tabs)');
+  }, []);
+
+  const handleReplanAccept = useCallback(async () => {
+    if (!user?.id || !replanDraft) {
+      handleReplanCancel();
+      return;
+    }
+
+    setReplanApplying(true);
+    try {
+      const assignments = extractAssignmentsFromWeekDraft(replanDraft);
+      const applied = await applyDayReplanAssignments(user.id, assignments);
+      if (!applied.ok) {
+        showToast(t('vnext.replanError'), 'error');
+        return;
+      }
+
+      setReplanMode(false);
+      setReplanDraft(null);
+      setReplanProposal(null);
+      replanBootstrappedRef.current = false;
+
+      if (applied.movedCount > 0) {
+        showToast(t('vnext.replanSuccessToast', { count: applied.movedCount }), 'success');
+      } else {
+        showToast(t('vnext.replanCalmToast'), 'info');
+      }
+      router.replace('/(tabs)');
+    } finally {
+      setReplanApplying(false);
+    }
+  }, [handleReplanCancel, replanDraft, showToast, t, user?.id]);
+
   const isRefreshing =
     viewMode === 'calendar'
       ? monthLoading
@@ -246,6 +322,11 @@ export default function SemanaScreen() {
       tasks: tasks.filter((t) => t.project_id === selectedProjectId),
     }));
   }, [weekTasks, selectedProjectId]);
+
+  const calendarWeekTasks = useMemo(() => {
+    const monday = getWeekMonday(selectedDate);
+    return filteredWeekTasks.filter(({ day }) => getWeekMonday(day.dateStr) === monday);
+  }, [filteredWeekTasks, selectedDate]);
 
   const listSourceTasks = useMemo(() => {
     const base =
@@ -285,6 +366,60 @@ export default function SemanaScreen() {
   const visibleWeekTasks = visibleWeekSlice.visible;
   const hiddenWeekDayCount = visibleWeekSlice.hiddenCount;
   const freeVisibleDateKeys = visibleWeekSlice.visibleDateKeys;
+  const boardWeekTasks = replanDraft ?? visibleWeekTasks;
+
+  useEffect(() => {
+    if (replanParam !== '1' || !user?.id) {
+      if (replanParam !== '1' && !replanMode) {
+        replanBootstrappedRef.current = false;
+      }
+      return;
+    }
+    if (replanBootstrappedRef.current || loading) return;
+
+    replanBootstrappedRef.current = true;
+    setReplanMode(true);
+    setViewMode('list');
+    setRangeMode('week');
+    setRangeAnchorDate(todayStr);
+    router.setParams({ replan: undefined, replanReason: undefined });
+
+    const reason = (replanReasonParam as WhatChangedReason) || 'priorities_changed';
+
+    void (async () => {
+      setReplanLoading(true);
+      try {
+        const result = await buildDayReplanPlan(
+          user.id,
+          reason,
+          locale,
+          t('projectsUi.looseTitle'),
+        );
+        if (!result.ok) {
+          showToast(t('vnext.replanError'), 'error');
+          setReplanMode(false);
+          setReplanDraft(null);
+          router.replace('/(tabs)');
+          return;
+        }
+        setReplanProposal(result.proposal);
+        setReplanDraft(applyAssignmentsToWeekTasks(visibleWeekTasks, result.assignments));
+      } finally {
+        setReplanLoading(false);
+      }
+    })();
+  }, [
+    loading,
+    locale,
+    replanMode,
+    replanParam,
+    replanReasonParam,
+    showToast,
+    t,
+    todayStr,
+    user?.id,
+    visibleWeekTasks,
+  ]);
 
   useEffect(() => {
     if (!freeVisibleDateKeys || freeVisibleDateKeys.has(selectedDate)) return;
@@ -393,6 +528,12 @@ export default function SemanaScreen() {
     return visibleWeekTasks.flatMap(({ tasks }) => tasks);
   }, [viewMode, tasksByDate, filteredWeekTasks, isSubscribed, freeVisibleDateKeys, visibleWeekTasks]);
 
+  useFocusEffect(
+    useCallback(() => {
+      return () => setPlannerDragging(false);
+    }, []),
+  );
+
   const handleExportTasks = useCallback(async () => {
     if (exportableTasks.length === 0) {
       showToast(t('semana.exportEmpty'), 'info');
@@ -410,6 +551,7 @@ export default function SemanaScreen() {
         topInset="lg"
         gap={THEME.layout.tabSectionGap}
         keyboardShouldPersistTaps="handled"
+        scrollEnabled={!plannerDragging}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -422,7 +564,13 @@ export default function SemanaScreen() {
           <ScreenHeader
             compact
             title={t('semana.title')}
-            subtitle={planAheadMode ? t('semana.planAheadIntro') : t('semana.introShort')}
+            subtitle={
+              replanMode
+                ? t('semana.replanIntro')
+                : planAheadMode
+                  ? t('semana.planAheadIntro')
+                  : t('semana.introShort')
+            }
             trailing={
               <HeaderIconButton
                 onPress={() => void handleExportTasks()}
@@ -436,6 +584,7 @@ export default function SemanaScreen() {
           {hasCheckInToday === false ? <SemanaTodayCheckInBanner /> : null}
         </View>
 
+        {replanMode ? null : (
         <CalmSegmentedControl
           segments={[
             {
@@ -453,8 +602,20 @@ export default function SemanaScreen() {
           onChange={setViewMode}
           variant="accent"
         />
+        )}
 
-        {viewMode === 'calendar' ? (
+        {replanMode ? (
+          <SemanaReplanPreviewBar
+            headline={replanProposal?.headline}
+            subline={replanProposal?.subline}
+            loading={replanLoading}
+            applying={replanApplying}
+            onAccept={() => void handleReplanAccept()}
+            onCancel={handleReplanCancel}
+          />
+        ) : null}
+
+        {viewMode === 'calendar' && !replanMode ? (
           <>
             <View style={styles.calendarSection}>
               <SemanaCalendarLegend />
@@ -486,12 +647,35 @@ export default function SemanaScreen() {
               </View>
             )}
 
+            {!monthLoading &&
+            calendarWeekTasks.some(({ tasks }) => tasks.some((task) => !task.is_completed)) ? (
+              <SemanaDraggableWeekBoard
+                weekTasks={calendarWeekTasks}
+                projects={projects}
+                userId={user?.id}
+                boardLayout="weekGrid"
+                onMoveTask={moveTaskToDay}
+                onTasksChanged={handleTasksChanged}
+                moving={movingTask}
+                onDraggingChange={setPlannerDragging}
+                hasCheckInToday={hasCheckInToday === true}
+                showToast={showToast}
+              />
+            ) : null}
+
             <SemanaDaySection
               dateStr={selectedDate}
               title={t('semana.selectedDayTitle', { day: selectedDayLabel })}
               tasks={selectedDayTasks}
               projectsMap={projectsMap}
+              userId={user?.id}
+              quickAddProjects={projects.map((project) => ({
+                id: project.id,
+                name: project.name,
+                color: project.color ?? THEME.colors.gradient.blue,
+              }))}
               isToday={selectedDate === todayStr}
+              hasCheckInToday={hasCheckInToday === true}
               checkInChipText={selectedDayCheckInLabel}
               emotionId={selectedDayEmotionId}
               energyLevel={selectedDayData?.energyLevel ?? null}
@@ -514,13 +698,16 @@ export default function SemanaScreen() {
           </>
         ) : (
           <>
+        {replanMode ? null : (
         <SemanaRangePicker
           value={rangeMode}
           isSubscribed={isSubscribed}
           onChange={handleRangeModeChange}
           onLockedPress={handlePremiumRangePress}
         />
+        )}
 
+        {replanMode ? null : (
         <SemanaWeekNav
           label={displayRangeLabel}
           canGoPrev={canGoRangePrev}
@@ -536,40 +723,47 @@ export default function SemanaScreen() {
           hint={!isSubscribed ? t('semana.navPremiumHint') : undefined}
           onLockedNavPress={!isSubscribed ? handleLockedNavPress : undefined}
         />
+        )}
 
+        {replanMode ? null : (
         <SemanaProjectFilter
           projects={projects}
           selectedProjectId={selectedProjectId}
           onSelectProject={setSelectedProjectId}
         />
+        )}
 
-        {(rangeMode === 'month' ? monthLoading : loading) ? (
+        {(rangeMode === 'month' ? monthLoading : loading) || replanLoading ? (
           <Text style={styles.loadingWeek}>{t('semana.loadingDays')}</Text>
         ) : null}
 
-        {!(rangeMode === 'month' ? monthLoading : loading) ? (
+        {!(rangeMode === 'month' ? monthLoading : loading) && !replanLoading ? (
           <SemanaDraggableWeekBoard
-            weekTasks={visibleWeekTasks}
+            weekTasks={boardWeekTasks}
             projects={projects}
-            boardLayout={boardLayout}
-            onMoveTask={moveTaskToDay}
+            userId={user?.id}
+            boardLayout={replanMode ? 'weekGrid' : boardLayout}
+            onMoveTask={handleBoardMoveTask}
             onTasksChanged={handleTasksChanged}
-            moving={movingTask}
+            moving={movingTask && !replanMode}
+            onDraggingChange={setPlannerDragging}
+            hasCheckInToday={hasCheckInToday === true}
+            showToast={showToast}
           />
         ) : null}
 
-        {!isSubscribed && hiddenWeekDayCount > 0 ? (
+        {!replanMode && !isSubscribed && hiddenWeekDayCount > 0 ? (
           <SemanaFreeLimitCard hiddenDayCount={hiddenWeekDayCount} />
         ) : null}
 
           </>
         )}
 
-        {viewMode === 'list' ? (
+        {viewMode === 'list' && !replanMode ? (
         <View style={styles.bottomSection}>
           <CalmPrimaryButton
             label={t('semana.addTasksOrProjects')}
-            onPress={() => router.push('/(tabs)/vaciar')}
+            onPress={() => openVaciarCapture()}
             large
             accessibilityLabel={t('semana.addTasksOrProjects')}
           />

@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Task } from '@/hooks/useTasks';
+import { getLocalDateString } from '@/lib/dateLocal';
 
 const storageKey = (date: string) => `koraa_hoy_plan_order_${date}`;
 
@@ -19,6 +20,18 @@ export async function saveHoyPlanOrder(date: string, ids: string[]): Promise<voi
     await AsyncStorage.setItem(storageKey(date), JSON.stringify(ids));
   } catch {
     /* non-critical */
+  }
+}
+
+/** Quita ids borrados del orden guardado (evita fantasmas en el tablero). */
+export async function removeTaskFromHoyPlanOrders(
+  taskId: string,
+  today: string = getLocalDateString(),
+): Promise<void> {
+  for (const orderKey of [`${today}:priority`, `${today}:waiting`] as const) {
+    const stored = await loadHoyPlanOrder(orderKey);
+    if (!stored.includes(taskId)) continue;
+    await saveHoyPlanOrder(orderKey, stored.filter((id) => id !== taskId));
   }
 }
 
@@ -57,5 +70,15 @@ export function swapInOrder(
   if (swapIdx < 0 || swapIdx >= order.length) return null;
   const next = [...order];
   [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
+  return next;
+}
+
+/** Reinsert task at target index within the same ordered list. */
+export function moveInOrder(order: string[], taskId: string, toIndex: number): string[] {
+  const fromIdx = order.indexOf(taskId);
+  if (fromIdx < 0) return order;
+  const clamped = Math.max(0, Math.min(toIndex, order.length - 1));
+  const next = order.filter((id) => id !== taskId);
+  next.splice(clamped, 0, taskId);
   return next;
 }

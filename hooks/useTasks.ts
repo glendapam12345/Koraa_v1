@@ -4,6 +4,8 @@ import { logger } from '@/lib/logger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
 import { loadTaskEffortMap } from '@/lib/taskPerceivedEffort';
+import { TimeoutError, withTimeout } from '@/lib/withTimeout';
+import { useI18n } from '@/contexts/I18nContext';
 
 export interface Task {
   id: string;
@@ -17,6 +19,7 @@ export interface Task {
   parent_task_id: string | null;
   project_id?: string | null;
   scheduled_date?: string | null;
+  life_area_key?: string | null;
   perceivedEffort?: 'light' | 'medium' | 'heavy';
 }
 
@@ -41,6 +44,7 @@ function rowToTask(row: Record<string, unknown>): Task {
     parent_task_id: (row.parent_task_id as string | null | undefined) ?? null,
     project_id: (row.project_id as string | null | undefined) ?? null,
     scheduled_date: normalizeScheduledDate(row.scheduled_date as string | null | undefined),
+    life_area_key: (row.life_area_key as string | null | undefined) ?? null,
   };
 }
 
@@ -48,29 +52,38 @@ export function useTasks(
   todayMood: string | null,
   showToast: (message: string, type: 'success' | 'error' | 'info') => void
 ) {
+  const { t } = useI18n();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
-  const isLoadingRef = useRef(false);
+  const loadRequestIdRef = useRef(0);
 
-  const loadTasks = useCallback(async () => {
-    if (isLoadingRef.current) return;
-    isLoadingRef.current = true;
+  const loadTasks = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    const requestId = ++loadRequestIdRef.current;
+    if (!silent) {
+      setLoadingTasks(true);
+    }
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await withTimeout(supabase.auth.getUser(), 12_000);
+      if (requestId !== loadRequestIdRef.current) return;
       if (!user) {
         setLoadingTasks(false);
-        isLoadingRef.current = false;
         return;
       }
 
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .is('parent_task_id', null)
-        .order('is_priority', { ascending: false })
-        .order('created_at', { ascending: true });
+      const { data: tasksData, error: tasksError } = await withTimeout(
+        Promise.resolve(
+          supabase
+            .from('tasks')
+            .select('*')
+            .eq('user_id', user.id)
+            .is('parent_task_id', null)
+            .order('is_priority', { ascending: false })
+            .order('created_at', { ascending: true }),
+        ),
+        12_000,
+      );
 
       let tasksWithSubtasks: Task[] = [];
 
@@ -88,8 +101,9 @@ export function useTasks(
         if (allErr) {
           logger.error('Error cargando tareas:', allErr);
           showToast(getErrorMessage(allErr), 'error');
-          setLoadingTasks(false);
-          isLoadingRef.current = false;
+          if (requestId === loadRequestIdRef.current) {
+            setLoadingTasks(false);
+          }
           return;
         }
 
@@ -101,8 +115,9 @@ export function useTasks(
         logger.error('Error cargando tareas:', tasksError);
         const errorMessage = getErrorMessage(tasksError);
         showToast(errorMessage, 'error');
-        setLoadingTasks(false);
-        isLoadingRef.current = false;
+        if (requestId === loadRequestIdRef.current) {
+          setLoadingTasks(false);
+        }
         return;
       } else {
         const { data: subtasksData, error: subtasksError } = await supabase
@@ -141,6 +156,8 @@ export function useTasks(
         })),
       }));
 
+      if (requestId !== loadRequestIdRef.current) return;
+
       setTasks(withEffort);
 
       if (todayMood && tasksWithSubtasks.length > 0) {
@@ -158,14 +175,21 @@ export function useTasks(
         }
       }
 
-      setLoadingTasks(false);
-      isLoadingRef.current = false;
+      if (requestId === loadRequestIdRef.current) {
+        setLoadingTasks(false);
+      }
     } catch (error) {
-      logger.error('Error inesperado cargando tareas:', error);
-      setLoadingTasks(false);
-      isLoadingRef.current = false;
+      if (error instanceof TimeoutError) {
+        logger.warn('Tasks load timeout');
+        showToast(t('errors.refreshFailed'), 'error');
+      } else {
+        logger.error('Error inesperado cargando tareas:', error);
+      }
+      if (requestId === loadRequestIdRef.current) {
+        setLoadingTasks(false);
+      }
     }
-  }, [todayMood, showToast]);
+  }, [todayMood, showToast, t]);
 
   return {
     tasks,

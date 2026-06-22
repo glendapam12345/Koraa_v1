@@ -1,5 +1,5 @@
 import { View, StyleSheet, RefreshControl, Keyboard, Text } from 'react-native';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { ScrollView } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { Toast } from '@/components/Toast';
@@ -28,7 +28,9 @@ import {
   buildEnrichedReleaseItems,
   type VaciarAdvancedCaptureOptions,
 } from '@/lib/vaciarInboxCapture';
+import { sanitizeCaptureItemsForSave } from '@/lib/review/sanitizeCaptureItemsForSave';
 import { stripAutoPlanningForDiscovery } from '@/lib/captureFrontDiscovery';
+import { mergeCaptureReviewEdits } from '@/lib/review/mergeCaptureReviewEdits';
 import { buildLiveCapturePreview } from '@/lib/liveCapturePreview';
 import { applyAiProjectHints } from '@/lib/taskIntelligentEnrichment';
 import { createProjectForUser, createProjectErrorMessage } from '@/lib/createProject';
@@ -39,6 +41,8 @@ import type { EnrichedCaptureItem } from '@/lib/taskIntelligentEnrichment';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import type { TaskEffort } from '@/lib/taskPerceivedEffort';
 import { applyInferredLifeAreas } from '@/lib/review/inferCaptureItemLifeArea';
+import { ensureBrainDumpPresetInConfig } from '@/lib/review/brainDumpAreaPreset';
+import { useUserLifeAreas } from '@/hooks/useUserLifeAreas';
 import { logger } from '@/lib/logger';
 
 type CaptureFlowStep = 'input' | 'preview' | 'organized';
@@ -46,14 +50,22 @@ type CaptureFlowStep = 'input' | 'preview' | 'organized';
 export default function VaciarScreen() {
   const { t, locale } = useI18n();
   const router = useRouter();
-  const { suggestion, date: dateParam, projectId: projectIdParam, segment: segmentParam } =
-    useLocalSearchParams<{
-      suggestion?: string;
-      date?: string;
-      projectId?: string;
-      segment?: string;
-    }>();
-  const [segment, setSegment] = useState<VaciarTabSegment>('capture');
+  const {
+    suggestion,
+    date: dateParam,
+    projectId: projectIdParam,
+    segment: segmentParam,
+    fresh: freshParam,
+  } = useLocalSearchParams<{
+    suggestion?: string;
+    date?: string;
+    projectId?: string;
+    segment?: string;
+    fresh?: string;
+  }>();
+  const [segment, setSegment] = useState<VaciarTabSegment>(() =>
+    segmentParam === 'projects' ? 'projects' : 'capture',
+  );
   const [projectsPanelMounted, setProjectsPanelMounted] = useState(
     () => segmentParam === 'projects',
   );
@@ -77,7 +89,7 @@ export default function VaciarScreen() {
       id: string;
       name: string;
       due_date: string | null;
-      color?: string;
+      color?: string | null;
       life_area_key?: string | null;
     }[]
   >([]);
@@ -86,9 +98,51 @@ export default function VaciarScreen() {
   const [captureInputFocused, setCaptureInputFocused] = useState(false);
   const [savedOrganizedContext, setSavedOrganizedContext] =
     useState<SavedOrganizedContext | null>(null);
+  const [captureReviewDragging, setCaptureReviewDragging] = useState(false);
+
+  useEffect(() => {
+    setCaptureReviewDragging(false);
+  }, [segment, captureStep]);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        setCaptureReviewDragging(false);
+      };
+    }, []),
+  );
+
   const previewGenerationRef = useRef(0);
+  const confirmInFlightRef = useRef(false);
+
+  const handleSegmentChange = useCallback(
+    (next: VaciarTabSegment) => {
+      setCaptureReviewDragging(false);
+      setCaptureInputFocused(false);
+      if (next === 'projects') {
+        setProjectsPanelMounted(true);
+        setOrganizedRefreshSignal((n) => n + 1);
+        if (captureStep !== 'input') {
+          setCaptureStep('input');
+          setSavedOrganizedContext(null);
+          previewGenerationRef.current += 1;
+          setPreviewItems([]);
+          setIsRefiningPreview(false);
+        }
+      }
+      setSegment(next);
+      router.setParams({ segment: next, fresh: undefined });
+    },
+    [captureStep, router],
+  );
+
   const [, setProjectCount] = useState<number | null>(null);
   const { user } = useAuth();
+  const { config: lifeAreasConfig } = useUserLifeAreas(user?.id);
+  const effectiveLifeAreasConfig = useMemo(
+    () => ensureBrainDumpPresetInConfig(lifeAreasConfig),
+    [lifeAreasConfig],
+  );
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToastMessage(message);
@@ -136,6 +190,7 @@ export default function VaciarScreen() {
   });
 
   const handleRelease = useCallback(async () => {
+    if (isOrganizing || isSaving || isSavingBatch) return;
     Keyboard.dismiss();
     const advanced: VaciarAdvancedCaptureOptions = {
       assignToProject,
@@ -161,7 +216,9 @@ export default function VaciarScreen() {
           life_area_key: p.life_area_key ?? null,
         }));
         const projectsForMatch = projects.map((p) => ({ id: p.id, name: p.name }));
-        const live = buildLiveCapturePreview(taskInput, locale, projectsForMatch);
+        const live = buildLiveCapturePreview(taskInput, locale, projectsForMatch, {
+          lifeAreasConfig: effectiveLifeAreasConfig,
+        });
         if (!live || live.items.length === 0) {
           showToast(t('vaciar.releaseEmpty'), 'info');
           return;
@@ -169,7 +226,12 @@ export default function VaciarScreen() {
 
         previewGenerationRef.current += 1;
         const refineGeneration = previewGenerationRef.current;
-        setPreviewItems(applyInferredLifeAreas(stripAutoPlanningForDiscovery(live.items)));
+        setPreviewItems(
+          applyInferredLifeAreas(
+            stripAutoPlanningForDiscovery(live.items),
+            effectiveLifeAreasConfig,
+          ),
+        );
         setPreviewProjects(projects);
         setCaptureStep('preview');
         setIsOrganizing(false);
@@ -188,7 +250,11 @@ export default function VaciarScreen() {
               projectsForMatch,
             );
             if (refineGeneration !== previewGenerationRef.current) return;
-            setPreviewItems(applyInferredLifeAreas(stripAutoPlanningForDiscovery(refined)));
+            setPreviewItems((current) => {
+              const stripped = stripAutoPlanningForDiscovery(refined);
+              const merged = mergeCaptureReviewEdits(current, stripped);
+              return applyInferredLifeAreas(merged, effectiveLifeAreasConfig);
+            });
           } catch (error) {
             logger.warn('vaciar.previewAiRefine', error);
           } finally {
@@ -200,32 +266,46 @@ export default function VaciarScreen() {
         return;
       }
 
-      const { items, projects } = await buildEnrichedReleaseItems(
-        taskInput,
-        locale,
-        user.id,
-        advanced,
-      );
-      if (items.length === 0) {
-        showToast(t('vaciar.releaseEmpty'), 'info');
-        return;
+      try {
+        const { items, projects } = await buildEnrichedReleaseItems(
+          taskInput,
+          locale,
+          user.id,
+          advanced,
+        );
+        if (items.length === 0) {
+          showToast(t('vaciar.releaseEmpty'), 'info');
+          return;
+        }
+
+        previewGenerationRef.current += 1;
+
+        setPreviewItems(
+          applyInferredLifeAreas(
+            stripAutoPlanningForDiscovery(items),
+            effectiveLifeAreasConfig,
+          ),
+        );
+        setPreviewProjects(projects);
+        setCaptureStep('preview');
+        requestAnimationFrame(() => {
+          screenScrollRef.current?.scrollTo({ y: 0, animated: true });
+        });
+      } catch (error) {
+        logger.error('vaciar.advancedRelease', error);
+        showToast(t('errors.saveTaskFailed'), 'error');
       }
-
-      previewGenerationRef.current += 1;
-
-      setPreviewItems(applyInferredLifeAreas(stripAutoPlanningForDiscovery(items)));
-      setPreviewProjects(projects);
-      setCaptureStep('preview');
-      requestAnimationFrame(() => {
-        screenScrollRef.current?.scrollTo({ y: 0, animated: true });
-      });
     } finally {
       setIsOrganizing(false);
     }
   }, [
     assignToProject,
     effortFeel,
+    effectiveLifeAreasConfig,
     hasSubtasks,
+    isOrganizing,
+    isSaving,
+    isSavingBatch,
     locale,
     selectedCategory,
     selectedDate,
@@ -239,6 +319,7 @@ export default function VaciarScreen() {
   const handleViewOrganized = useCallback(() => {
     setProjectsPanelMounted(true);
     setSegment('projects');
+    router.setParams({ segment: 'projects', fresh: undefined });
     setCaptureStep('input');
     setSavedOrganizedContext(null);
     previewGenerationRef.current += 1;
@@ -248,7 +329,7 @@ export default function VaciarScreen() {
     requestAnimationFrame(() => {
       screenScrollRef.current?.scrollTo({ y: 0, animated: true });
     });
-  }, []);
+  }, [router]);
 
   const handleCaptureMore = useCallback(() => {
     setCaptureStep('input');
@@ -279,6 +360,13 @@ export default function VaciarScreen() {
         taskCount,
         newProjectIds: [...draftIdMap.values()],
         affectedAreaRefs,
+        previewItems: items.map((item) => ({
+          content: item.content,
+          lifeAreaKey: item.lifeAreaKey ?? null,
+          projectId: item.assignToProject ? item.selectedProjectId : null,
+          scheduledDate: item.selectedDate,
+          estimatedMinutes: item.estimatedMinutes ?? null,
+        })),
       });
       setOrganizedRefreshSignal((n) => n + 1);
       setCaptureStep('organized');
@@ -297,12 +385,17 @@ export default function VaciarScreen() {
       const itemsBase = payload?.items ?? previewItems;
       const draftProjects = payload?.draftProjects ?? [];
       if (!user?.id || itemsBase.length === 0) return;
+      if (confirmInFlightRef.current || isOrganizing || isSaving || isSavingBatch) {
+        return;
+      }
 
+      confirmInFlightRef.current = true;
       previewGenerationRef.current += 1;
       setIsRefiningPreview(false);
+      setCaptureReviewDragging(false);
       setIsOrganizing(true);
       try {
-        let items = [...itemsBase];
+        let items = sanitizeCaptureItemsForSave([...itemsBase]);
         let projects = [...previewProjects];
         const draftIdMap = new Map<string, string>();
 
@@ -324,7 +417,7 @@ export default function VaciarScreen() {
             });
             if (!result.ok) {
               showToast(createProjectErrorMessage(result.reason, locale), 'error');
-              continue;
+              return;
             }
 
             draftIdMap.set(draft.id, result.project.id);
@@ -343,7 +436,9 @@ export default function VaciarScreen() {
           items = items.map((item) => {
             if (!item.selectedProjectId || !isDraftProjectId(item.selectedProjectId)) return item;
             const resolvedId = draftIdMap.get(item.selectedProjectId);
-            if (!resolvedId) return item;
+            if (!resolvedId) {
+              return { ...item, assignToProject: false, selectedProjectId: null };
+            }
             return {
               ...item,
               selectedProjectId: resolvedId,
@@ -352,9 +447,11 @@ export default function VaciarScreen() {
           });
         }
 
+        items = sanitizeCaptureItemsForSave(items);
+
         if (items.length === 1 && hasSubtasks) {
           const item = items[0];
-          await saveTask(
+          const saved = await saveTask(
             {
               content: item.content,
               hasSubtasks: true,
@@ -366,8 +463,10 @@ export default function VaciarScreen() {
             },
             { effortFeel: item.effortFeel, reliefCapture: true, suppressToast: true },
           );
+          if (!saved) return;
         } else {
-          await saveBatch(items, { suppressToast: true });
+          const saved = await saveBatch(items, { suppressToast: true });
+          if (!saved || saved.length === 0) return;
         }
 
         setHasTasks(true);
@@ -376,11 +475,15 @@ export default function VaciarScreen() {
         resetTaskForm();
         showOrganizedSummary(items, itemsBase.length, draftIdMap);
       } finally {
+        confirmInFlightRef.current = false;
         setIsOrganizing(false);
       }
     },
     [
       hasSubtasks,
+      isOrganizing,
+      isSaving,
+      isSavingBatch,
       locale,
       previewItems,
       previewProjects,
@@ -410,21 +513,32 @@ export default function VaciarScreen() {
     [handleConfirmPreview],
   );
 
-  const handleBackToCapture = useCallback(() => {
+  const resetCaptureFlow = useCallback(() => {
     previewGenerationRef.current += 1;
     setCaptureInputFocused(false);
+    setCaptureReviewDragging(false);
     setCaptureStep('input');
     setPreviewItems([]);
     setIsRefiningPreview(false);
+    setSavedOrganizedContext(null);
+    setIsOrganizing(false);
   }, []);
+
+  const handleBackToCapture = useCallback(() => {
+    resetCaptureFlow();
+  }, [resetCaptureFlow]);
 
   // Pre-llenar input si hay sugerencia desde Tips; fecha desde Semana; proyecto desde detalle de proyecto
   useEffect(() => {
     if (suggestion) {
       setTaskInput(suggestion);
+      setSegment('capture');
     }
     if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
       setSelectedDate(dateParam);
+      if (segmentParam !== 'projects') {
+        setSegment('capture');
+      }
     }
     if (projectIdParam && typeof projectIdParam === 'string' && projectIdParam.length >= 10) {
       if (segmentParam === 'projects') {
@@ -436,19 +550,27 @@ export default function VaciarScreen() {
         setSegment('capture');
       }
     }
-    if (suggestion || dateParam) {
-      setSegment('capture');
-    }
   }, [suggestion, dateParam, projectIdParam, segmentParam]);
 
   useEffect(() => {
     if (segmentParam === 'projects') {
       setSegment('projects');
       setProjectsPanelMounted(true);
-    } else if (segmentParam === 'capture') {
+      return;
+    }
+    if (segmentParam === 'capture') {
       setSegment('capture');
     }
   }, [segmentParam]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (freshParam !== '1') return;
+      setSegment('capture');
+      resetCaptureFlow();
+      router.setParams({ fresh: undefined });
+    }, [freshParam, resetCaptureFlow, router]),
+  );
 
   useEffect(() => {
     if (segment === 'projects') setProjectsPanelMounted(true);
@@ -505,6 +627,10 @@ export default function VaciarScreen() {
     (assignToProject && !selectedProjectId);
   const screenScrollRef = useRef<ScrollView>(null);
   const screenContentRef = useRef<View>(null);
+  const captureScrollYRef = useRef(0);
+  const handleCaptureScroll = useCallback((event: { nativeEvent: { contentOffset: { y: number } } }) => {
+    captureScrollYRef.current = event.nativeEvent.contentOffset.y;
+  }, []);
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -539,6 +665,10 @@ export default function VaciarScreen() {
           ref={screenScrollRef}
           scrollContentRef={screenContentRef}
           scroll
+          scrollEnabled={
+            !(isCaptureSegment && captureStep === 'preview' && captureReviewDragging)
+          }
+          onScroll={isCaptureSegment ? handleCaptureScroll : undefined}
           topInset={isCaptureSegment ? 'md' : 'lg'}
           gap={isCaptureSegment ? THEME.spacing.sm : THEME.layout.tabSectionGap}
           keyboardShouldPersistTaps="always"
@@ -555,7 +685,7 @@ export default function VaciarScreen() {
           }
         >
         {user && !(isCaptureSegment && captureInputFocused) ? (
-          <VaciarTabSegments value={segment} onChange={setSegment} />
+          <VaciarTabSegments value={segment} onChange={handleSegmentChange} />
         ) : null}
 
         {user && focusedProject && !isCaptureSegment ? (
@@ -572,25 +702,19 @@ export default function VaciarScreen() {
             isCaptureSegment && captureStep === 'input' && captureInputFocused && styles.segmentPanelsCaptureFocused,
           ]}
         >
-          {user ? (
+          {user && isCaptureSegment ? (
             <View
               style={[
                 styles.segmentPanel,
-                isCaptureSegment ? styles.segmentPanelActive : styles.segmentPanelHidden,
                 isCaptureSegment && captureStep === 'input' && styles.segmentPanelCapture,
                 isCaptureSegment && captureStep === 'input' && captureInputFocused && styles.segmentPanelCaptureFocused,
               ]}
-              pointerEvents={isCaptureSegment ? 'auto' : 'none'}
             >
-              {captureStep !== 'input' ? (
-                <Text style={styles.simpleCaptureTitle}>
-                  {captureStep === 'preview'
-                    ? t('vaciar.flowStepReview')
-                    : t('vaciar.flowStepDone')}
-                </Text>
+              {isCaptureSegment && captureStep === 'organized' ? (
+                <Text style={styles.simpleCaptureTitle}>{t('vaciar.flowStepDone')}</Text>
               ) : null}
 
-              {captureStep === 'input' ? (
+              {isCaptureSegment && captureStep === 'input' ? (
                 <VaciarCaptureForm
                   userId={user.id}
                   parentScrollRef={screenScrollRef}
@@ -635,7 +759,7 @@ export default function VaciarScreen() {
                 />
               ) : null}
 
-              {captureStep === 'preview' && user ? (
+              {isCaptureSegment && captureStep === 'preview' && user ? (
                 <BrainDumpAreaReviewScreen
                   locale={locale}
                   userId={user.id}
@@ -646,10 +770,13 @@ export default function VaciarScreen() {
                   onConfirm={(payload) => handleReviewConfirm(payload)}
                   isSaving={isOrganizing || isSavingBatch}
                   isRefining={isRefiningPreview}
+                  onDraggingChange={setCaptureReviewDragging}
+                  parentScrollRef={screenScrollRef}
+                  parentScrollYRef={captureScrollYRef}
                 />
               ) : null}
 
-              {captureStep === 'organized' && user && savedOrganizedContext ? (
+              {isCaptureSegment && captureStep === 'organized' && user && savedOrganizedContext ? (
                 <BrainDumpSavedSummaryScreen
                   userId={user.id}
                   hasCheckInToday={hasCheckInToday}
@@ -663,14 +790,8 @@ export default function VaciarScreen() {
             </View>
           ) : null}
 
-          {projectsPanelMounted ? (
-            <View
-              style={[
-                styles.segmentPanel,
-                !isCaptureSegment ? styles.segmentPanelActive : styles.segmentPanelHidden,
-              ]}
-              pointerEvents={!isCaptureSegment ? 'auto' : 'none'}
-            >
+          {user && projectsPanelMounted && !isCaptureSegment ? (
+            <View style={styles.segmentPanel}>
               <ProjectsLibraryPanel
                 embedded
                 areasFirst
@@ -684,9 +805,15 @@ export default function VaciarScreen() {
                 }
                 parentScrollRef={screenScrollRef}
                 scrollContentRef={screenContentRef}
-                onGoCapture={() => setSegment('capture')}
+                onGoCapture={() => {
+                  setSegment('capture');
+                  router.setParams({ segment: 'capture', fresh: undefined });
+                  resetCaptureFlow();
+                }}
                 onOpenFullCapture={(projectId) => {
                   setSegment('capture');
+                  router.setParams({ segment: 'capture', fresh: undefined });
+                  resetCaptureFlow();
                   if (projectId) {
                     setAssignToProject(true);
                     setSelectedProjectId(projectId);
@@ -716,13 +843,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   segmentPanels: {
-    flex: 1,
+    alignSelf: 'stretch',
   },
   segmentPanelsCapture: {
-    flex: 1,
+    alignSelf: 'stretch',
   },
   segmentPanelsCaptureFocused: {
-    flex: 1,
+    alignSelf: 'stretch',
     minHeight: 320,
   },
   simpleCaptureTitle: {
@@ -732,22 +859,14 @@ const styles = StyleSheet.create({
     lineHeight: 28,
   },
   segmentPanel: {
-    flex: 1,
-  },
-  segmentPanelActive: {
-    flex: 1,
+    alignSelf: 'stretch',
   },
   segmentPanelCapture: {
-    flex: 1,
+    alignSelf: 'stretch',
   },
   segmentPanelCaptureFocused: {
-    flex: 1,
+    alignSelf: 'stretch',
     minHeight: 300,
-  },
-  segmentPanelHidden: {
-    flex: 0,
-    height: 0,
-    overflow: 'hidden',
   },
   valueProp: {
     ...THEME.typography.small,

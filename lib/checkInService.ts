@@ -8,7 +8,10 @@ import { getFocusedProjectId } from '@/lib/focusedProjectStorage';
 import { logger } from '@/lib/logger';
 import { fetchCurrentStreak, isStreakMilestone } from '@/lib/streak';
 import type { AppLocale } from '@/lib/i18n';
+import { getCatalog } from '@/lib/i18n';
 import type { Task } from '@/components/tasks/TaskCard';
+import type { CheckInReplanSummary } from '@/lib/checkInReplanSummary';
+import { applyCheckInAdaptivePlan } from '@/lib/checkInAdaptivePlan';
 
 export type DailyCheckInInput = {
   userId: string;
@@ -24,6 +27,7 @@ export type SaveCheckInResult = {
   offline?: boolean;
   errorMessage?: string;
   celebration?: { streak: number; milestone: boolean } | null;
+  replan?: CheckInReplanSummary | null;
 };
 
 export async function prioritizeTasksForCheckIn(
@@ -156,6 +160,28 @@ export async function saveDailyCheckInAndPrioritize(input: DailyCheckInInput): P
     locale: input.locale,
   });
 
+  let replan: SaveCheckInResult['replan'] = null;
+  if (!offline) {
+    const looseLabel =
+      (getCatalog(input.locale).projectsUi as { looseTitle?: string })?.looseTitle ??
+      (input.locale === 'en' ? 'Tasks without project' : 'Tareas sin proyecto');
+    try {
+      replan = await applyCheckInAdaptivePlan(
+        input.userId,
+        {
+          energyLevel: input.energyLevel,
+          emotion: emotionStored,
+          availableTime: input.availableTime,
+          focusLevel: input.focusLevel,
+          locale: input.locale,
+        },
+        looseLabel,
+      );
+    } catch (err) {
+      logger.debug('checkInService: adaptive replan failed', String(err));
+    }
+  }
+
   void markOnboardingCompleted(input.userId).then(({ error }) => {
     if (error) {
       logger.debug('checkInService: onboarding mark failed', error.message);
@@ -172,5 +198,5 @@ export async function saveDailyCheckInAndPrioritize(input: DailyCheckInInput): P
     }
   }
 
-  return { success: true, offline, celebration };
+  return { success: true, offline, celebration, replan };
 }

@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Plus, PencilLine } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
+import type { TranslationKey } from '@/lib/i18n';
 import {
   groupProjectsByLifeArea,
   LIFE_AREA_CATALOG,
@@ -97,7 +98,7 @@ function AreaGroup({
         <Text style={styles.areaEmoji}>{area.emoji}</Text>
         <View style={styles.areaHeaderText}>
           <Text style={[styles.areaTitle, { color: theme.accent }]}>
-            {t(`projects.areas.${area.key}`)}
+            {t(`lifeAreas.${area.key}` as TranslationKey)}
           </Text>
           <Text style={styles.areaSub}>
             {projects.length === 0
@@ -125,7 +126,7 @@ function AreaGroup({
             onPress={() => onCreateProjectInArea?.(area.key)}
             activeOpacity={0.86}
             accessibilityRole="button"
-            accessibilityLabel={t('projects.createInAreaA11y', { area: t(`projects.areas.${area.key}`) })}
+            accessibilityLabel={t('projects.createInAreaA11y', { area: t(`lifeAreas.${area.key}` as TranslationKey) })}
           >
             <Plus size={14} color={THEME.colors.calm.lavenderDeep} />
             <Text style={styles.areaActionText}>{t('projects.createInArea')}</Text>
@@ -157,9 +158,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   areaCard: {
-    borderRadius: 20,
-    borderWidth: 1.5,
-    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    padding: THEME.spacing.sm,
     gap: THEME.spacing.sm,
     ...THEME.shadows.soft,
   },
@@ -180,21 +181,24 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     fontFamily: THEME.fonts.heading.bold,
     lineHeight: 22,
+    flexShrink: 1,
   },
   areaSub: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
+    lineHeight: 18,
+    flexShrink: 1,
   },
   projectList: {
     gap: 8,
   },
   areaActionsRow: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     gap: THEME.spacing.xs,
     marginTop: 2,
   },
   areaActionBtn: {
-    flex: 1,
+    width: '100%',
     minHeight: THEME.sizes.touchTarget,
     borderRadius: THEME.borderRadius.pill,
     borderWidth: 1,
@@ -203,12 +207,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
     paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: 8,
   },
   areaActionText: {
     ...THEME.typography.caption,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
+    textAlign: 'center',
+    flexShrink: 1,
+    lineHeight: 18,
   },
 });

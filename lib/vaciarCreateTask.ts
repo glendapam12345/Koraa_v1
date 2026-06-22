@@ -10,6 +10,7 @@ import {
   type VaciarTaskDraft,
   type VaciarValidationCode,
 } from '@/lib/vaciarTaskValidation';
+import { isMissingTaskLifeAreaKeyColumnError } from '@/lib/projectLifeAreaSchema';
 
 export { validateVaciarTaskDraft, type VaciarTaskDraft, type VaciarValidationCode };
 
@@ -84,21 +85,42 @@ export async function createVaciarTask(
   const validSubtasks = draft.hasSubtasks ? draft.subtasks.filter((st) => st.trim()) : [];
   const subtaskCount = validSubtasks.length;
 
-  const { data: mainTask, error: mainTaskError } = await supabase
+  const baseInsert = {
+    user_id: user.id,
+    content: trimmed,
+    category: categoryToSave,
+    is_priority: draft.isPriority ?? false,
+    is_completed: false,
+    parent_task_id: null,
+    project_id: projectIdToSave,
+    scheduled_date: draft.selectedDate,
+  };
+
+  const insertPayload =
+    lifeAreaKeyToSave != null
+      ? { ...baseInsert, life_area_key: lifeAreaKeyToSave }
+      : baseInsert;
+
+  let { data: mainTask, error: mainTaskError } = await supabase
     .from('tasks')
-    .insert({
-      user_id: user.id,
-      content: trimmed,
-      category: categoryToSave,
-      is_priority: draft.isPriority ?? false,
-      is_completed: false,
-      parent_task_id: null,
-      project_id: projectIdToSave,
-      scheduled_date: draft.selectedDate,
-      ...(lifeAreaKeyToSave ? { life_area_key: lifeAreaKeyToSave } : {}),
-    })
+    .insert(insertPayload)
     .select()
     .single();
+
+  if (
+    mainTaskError &&
+    lifeAreaKeyToSave &&
+    isMissingTaskLifeAreaKeyColumnError(mainTaskError)
+  ) {
+    logger.warn(
+      '[vaciar] tasks.life_area_key no existe en Supabase — guardando sin área. Aplica la migración 20260621120000_tasks_life_area_key.sql',
+    );
+    ({ data: mainTask, error: mainTaskError } = await supabase
+      .from('tasks')
+      .insert(baseInsert)
+      .select()
+      .single());
+  }
 
   if (mainTaskError) {
     if (isNetworkError(mainTaskError)) {
@@ -230,7 +252,7 @@ export async function createVaciarTask(
   });
 
   let reprioritized = false;
-  if (options.hasCheckInToday) {
+  if (options.hasCheckInToday && !draft.isPriority) {
     try {
       reprioritized = await reprioritizeAfterTaskSave(user.id, options.locale);
     } catch (reprioritizeError) {
