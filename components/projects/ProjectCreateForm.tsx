@@ -7,7 +7,8 @@ import { useI18n } from '@/contexts/I18nContext';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { ProjectDueDatePicker } from '@/components/projects/ProjectDueDatePicker';
 import { ProjectAreaPicker } from '@/components/projects/ProjectAreaPicker';
-import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
+import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
+import type { UserLifeAreasConfig } from '@/lib/lifeAreas/userLifeAreas';
 import { formatProjectDueDate } from '@/lib/projectProgress';
 
 const UI_ACCENT = THEME.colors.calm.lavenderDeep;
@@ -16,7 +17,9 @@ type ProjectCreateFormProps = {
   name: string;
   color: string;
   dueDate: string;
-  lifeAreaKey: LifeAreaKey;
+  lifeAreaKey: LifeAreaRef;
+  lifeAreasConfig?: UserLifeAreasConfig;
+  onAddCustomArea?: () => void;
   error?: string | null;
   saving?: boolean;
   embedded?: boolean;
@@ -24,7 +27,7 @@ type ProjectCreateFormProps = {
   onNameChange: (value: string) => void;
   onColorChange: (value: string) => void;
   onDueDateChange: (value: string) => void;
-  onLifeAreaChange: (value: LifeAreaKey) => void;
+  onLifeAreaChange: (value: LifeAreaRef) => void;
   onCancel: () => void;
   onSubmit: () => void;
 };
@@ -76,6 +79,8 @@ export function ProjectCreateForm({
   color,
   dueDate,
   lifeAreaKey,
+  lifeAreasConfig,
+  onAddCustomArea,
   error = null,
   saving = false,
   embedded = false,
@@ -135,6 +140,8 @@ export function ProjectCreateForm({
           <ProjectAreaPicker
             value={lifeAreaKey}
             onChange={onLifeAreaChange}
+            lifeAreasConfig={lifeAreasConfig}
+            onAddCustomArea={onAddCustomArea}
           />
         </FieldSection>
 

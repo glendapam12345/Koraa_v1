@@ -8,6 +8,7 @@ import { subscribeCheckInCelebration } from '@/lib/checkInCelebration';
 import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
 import { subscribeCheckInRefresh } from '@/lib/checkInRefresh';
 import { getDisplayName } from '@/lib/displayName';
+import { getTimeOfDayGreetingKey, getTimeOfDayPeriod } from '@/lib/timeOfDayContext';
 import { logger } from '@/lib/logger';
 
 type ToastFn = (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -62,10 +63,7 @@ export function useHoyScreenBootstrap({
   );
 
   const getGreeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return t('hoy.greetingMorning');
-    if (hour < 18) return t('hoy.greetingAfternoon');
-    return t('hoy.greetingEvening');
+    return t(getTimeOfDayGreetingKey(getTimeOfDayPeriod()));
   }, [t]);
 
   useEffect(() => {

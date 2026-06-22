@@ -1,5 +1,5 @@
 import { View, StyleSheet, Alert } from 'react-native';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, type Dispatch, type SetStateAction } from 'react';
 import { THEME } from '@/constants/theme';
 import { HoyFocusPanel } from '@/components/hoy/HoyFocusPanel';
 import { HoyFocusTaskRow } from '@/components/hoy/HoyFocusTaskRow';
@@ -9,11 +9,11 @@ import { useAppleHealthConnection } from '@/hooks/useAppleHealthConnection';
 import type { Task } from '@/components/tasks/TaskCard';
 import type { FocusProgressStats } from '@/lib/focusProgressStats';
 import { getHoyFocusTasks } from '@/lib/hoyFocusTasks';
-import { buildHoyAttentionPlan } from '@/lib/hoyAttentionPlan';
+import { useHoyPlanTaskActions } from '@/hooks/useHoyPlanTaskActions';
+import type { FocusedProjectInfo } from '@/hooks/useFocusedProject';
 import { useHoyDayReflection } from '@/hooks/useHoyDayReflection';
 import { useHoyFocusTaskMeta } from '@/hooks/useHoyFocusTaskMeta';
 import { HoyDayReflectionFlow } from '@/components/vnext/HoyDayReflectionFlow';
-import { HoyDayReflectionCard } from '@/components/vnext/HoyDayReflectionCard';
 import {
   buildFocusTaskDeadline,
   formatFocusTaskDuration,
@@ -58,6 +58,9 @@ export type HoyTasksSectionProps = {
   onCareModeLearnMore?: () => void;
   onTasksReload?: () => void | Promise<void>;
   showToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
+  setTasks: Dispatch<SetStateAction<Task[]>>;
+  focusedProject?: FocusedProjectInfo | null;
+  onClearFocusedProject?: () => void;
 };
 
 export function HoyTasksSection({
@@ -96,6 +99,9 @@ export function HoyTasksSection({
   onCareModeLearnMore,
   onTasksReload,
   showToast,
+  setTasks,
+  focusedProject = null,
+  onClearFocusedProject,
 }: HoyTasksSectionProps) {
   const { locale, t } = useI18n();
   const health = useAppleHealthConnection(t);
@@ -124,26 +130,19 @@ export function HoyTasksSection({
   }, [health, t]);
 
   const focusTasks = useMemo(
-    () => getHoyFocusTasks(tasks, incompleteTasksForToday),
-    [tasks, incompleteTasksForToday],
+    () => getHoyFocusTasks(tasks, incompleteTasksForToday, undefined, focusedProject?.id),
+    [tasks, incompleteTasksForToday, focusedProject?.id],
   );
 
-  const { planningMeta, projectProgress } = useHoyFocusTaskMeta(tasks);
+  const { orderedFocusTasks, handlePostpone, handleMove } = useHoyPlanTaskActions({
+    focusTasks,
+    setTasks,
+    showToast: showToast ?? (() => {}),
+    onTasksReload,
+    postponeSuccessMessage: t('hoy.postponeStepSuccess'),
+  });
 
-  const attentionPlan = useMemo(() => {
-    if (!todayMood || energyLevel <= 0 || !time || !focusLevel) return null;
-    const projectList = Object.entries(projectsMap).map(([id, meta]) => ({
-      id,
-      name: meta.name,
-      due_date: meta.due_date ?? null,
-    }));
-    return buildHoyAttentionPlan(tasks, projectList, {
-      energyLevel,
-      emotion: todayMood,
-      availableTime: time,
-      focusLevel,
-    });
-  }, [tasks, projectsMap, todayMood, energyLevel, time, focusLevel]);
+  const { planningMeta, projectProgress } = useHoyFocusTaskMeta(tasks);
 
   const totalIncompleteCount = useMemo(
     () => tasks.filter((task) => !task.is_completed && !task.parent_task_id).length,
@@ -161,7 +160,7 @@ export function HoyTasksSection({
 
   const focusTaskIds = useMemo(() => new Set(focusTasks.map((task) => task.id)), [focusTasks]);
 
-  /** Pendientes de hoy que no están en el plan principal (pueden esperar). */
+  /** Pendientes de hoy que no están en el plan principal (prioridad más baja). */
   const waitingTasks = useMemo(
     () => incompleteTasksForToday.filter((task) => !focusTaskIds.has(task.id)),
     [focusTaskIds, incompleteTasksForToday],
@@ -228,15 +227,17 @@ export function HoyTasksSection({
         time={time}
         focusLevel={focusLevel}
         coachSuggestion={coachSuggestion}
-        attentionPlan={attentionPlan}
         priorityStats={todayPriorityStats}
         focusTasks={focusTasks}
+        orderedFocusTasks={orderedFocusTasks}
         totalPending={incompleteTasksForToday.length}
         projectsMap={projectsMap}
         projectProgress={projectProgress}
         planningMeta={planningMeta}
         onToggleTask={(taskId) => void handleToggleTask(taskId)}
         onOpenTask={handleEditTask}
+        onPostponeTask={(taskId) => void handlePostpone(taskId)}
+        onMoveFocusTask={(taskId, direction) => void handleMove(taskId, direction)}
         restExpanded={restOfDayExpanded}
         onRestExpandedChange={(open) => {
           if (open) {
@@ -263,24 +264,23 @@ export function HoyTasksSection({
         waitingTasksSlot={waitingTasksSlot}
         onCareModeDismiss={onCareModeDismiss}
         onCareModeLearnMore={onCareModeLearnMore}
-        reorganizeSlot={
-          reflection.shouldShowCard ? (
-            <HoyDayReflectionCard onPress={reflection.openReflection} />
-          ) : null
-        }
+        focusedProject={focusedProject}
+        onClearFocusedProject={onClearFocusedProject}
       />
 
       {!compactLayout && !crisisMode ? (
         <HoyDayReflectionFlow
-          sheetOpen={reflection.sheetOpen}
-          successOpen={reflection.successOpen}
-          selectedOutcome={reflection.selectedOutcome}
-          replanning={reflection.replanning}
-          lastProposal={reflection.lastProposal}
-          onCloseReflection={reflection.closeReflection}
-          onSelectOutcome={reflection.setSelectedOutcome}
-          onReplan={() => void reflection.handleReplan()}
-          onDismissSuccess={reflection.dismissSuccess}
+          flowOpen={reflection.flowOpen}
+          step={reflection.step}
+          displayName={displayName}
+          selectedReason={reflection.selectedReason}
+          previewProposal={reflection.previewProposal}
+          buildingPreview={reflection.buildingPreview}
+          applying={reflection.applying}
+          onClose={reflection.closeReflection}
+          onSelectReason={reflection.handleSelectReason}
+          onBackToReason={reflection.handleBackToReason}
+          onConfirm={() => void reflection.handleConfirm()}
         />
       ) : null}
 

@@ -1,7 +1,9 @@
 import {
   forwardRef,
+  useRef,
   type ReactElement,
   type ReactNode,
+  type RefObject,
 } from 'react';
 import {
   View,
@@ -33,6 +35,8 @@ type CalmScreenProps = {
   keyboardShouldPersistTaps?: 'always' | 'never' | 'handled';
   keyboardDismissMode?: 'none' | 'on-drag' | 'interactive';
   automaticallyAdjustKeyboardInsets?: boolean;
+  /** Ref al contenedor interno del scroll (para scrollTo a hijos). */
+  scrollContentRef?: RefObject<View | null>;
 };
 
 export const CalmScreen = forwardRef<ScrollViewType, CalmScreenProps>(function CalmScreen(
@@ -48,10 +52,13 @@ export const CalmScreen = forwardRef<ScrollViewType, CalmScreenProps>(function C
     keyboardShouldPersistTaps,
     keyboardDismissMode,
     automaticallyAdjustKeyboardInsets = false,
+    scrollContentRef,
   },
   ref,
 ) {
   const insets = useSafeAreaInsets();
+  const localContentRef = useRef<View>(null);
+  const contentRef = scrollContentRef ?? localContentRef;
   const tabBarClearance =
     bottomInset && reserveFloatingTabBar ? THEME.layout.floatingTabBarClearance : 0;
   const paddingBottom = bottomInset
@@ -63,6 +70,7 @@ export const CalmScreen = forwardRef<ScrollViewType, CalmScreenProps>(function C
 
   const body = (
     <View
+      ref={contentRef}
       style={[
         styles.inner,
         screenContentBase(),

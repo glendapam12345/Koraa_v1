@@ -11,6 +11,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="energy" />
       <Stack.Screen name="time" />
       <Stack.Screen name="focus" />
+      <Stack.Screen name="projects" />
     </Stack>
   );
 }

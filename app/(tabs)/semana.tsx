@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import { useWeekTasks, getWeekOptions, type WeekDayCheckIn } from '@/hooks/useWeekTasks';
+import { useWeekTasks, type WeekDayCheckIn } from '@/hooks/useWeekTasks';
 import { useMonthCalendar } from '@/hooks/useMonthCalendar';
 import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
 import { getSupabaseEnvStatus } from '@/lib/envCheck';
@@ -11,7 +11,7 @@ import {
   Download,
 } from 'lucide-react-native';
 import { shareTasksCsv } from '@/lib/exportTasksCsv';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 import { SemanaCalendarGrid } from '@/components/semana/SemanaCalendarGrid';
@@ -22,6 +22,7 @@ import { SemanaDaySection } from '@/components/semana/SemanaDaySection';
 import { SemanaTodayCheckInBanner } from '@/components/semana/SemanaTodayCheckInBanner';
 import { SemanaFreeLimitCard } from '@/components/semana/SemanaFreeLimitCard';
 import { SemanaDraggableWeekBoard } from '@/components/semana/SemanaDraggableWeekBoard';
+import { SemanaRangePicker } from '@/components/semana/SemanaRangePicker';
 import { useSemanaTaskDrag } from '@/hooks/useSemanaTaskDrag';
 import { Toast } from '@/components/Toast';
 import { getLocalDateString } from '@/lib/dateLocal';
@@ -37,6 +38,16 @@ import {
   getFreeVisibleWeekTasks,
   isDateInFreeVisibleRange,
 } from '@/lib/semanaFreePlan';
+import {
+  getBoardLayout,
+  getNextWeekMonday,
+  getRangeBounds,
+  getWeekMonday,
+  shiftAnchorDate,
+  type SemanaRangeMode,
+} from '@/lib/semana/rangeMode';
+import { monthCalendarToDayTasks } from '@/lib/semana/monthToDayTasks';
+import { parseMonthAnchor } from '@/lib/calendarGrid';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
 const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
@@ -62,20 +73,24 @@ function formatCheckInChip(
 
 export default function SemanaScreen() {
   const { t, locale } = useI18n();
+  const { planAhead: planAheadParam } = useLocalSearchParams<{ planAhead?: string }>();
   const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
   const monthNamesFull = locale === 'en' ? MONTH_NAMES_FULL_EN : MONTH_NAMES_FULL_ES;
   const { user } = useAuth();
   const { isSubscribed } = useSubscription();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info');
-  const [viewMode, setViewMode] = useState<ViewMode>('calendar');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const todayStr = getLocalDateString();
+  const [rangeMode, setRangeMode] = useState<SemanaRangeMode>('week');
+  const [rangeAnchorDate, setRangeAnchorDate] = useState<string>(todayStr);
   const todayDate = useMemo(() => new Date(), []);
   const [calendarYear, setCalendarYear] = useState(todayDate.getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(todayDate.getMonth());
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
-  const [selectedWeekStart, setSelectedWeekStart] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [planAheadMode, setPlanAheadMode] = useState(false);
+  const planAheadFloor = useMemo(() => getNextWeekMonday(todayStr), [todayStr]);
   const showToast = useCallback(
     (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
       setToastMessage(msg);
@@ -84,7 +99,7 @@ export default function SemanaScreen() {
     [],
   );
 
-  const { weekTasks, projects, loading, loadWeekTasks, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast, locale);
+  const { weekTasks, projects, loading, loadWeekTasks, loadDateRange, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast, locale);
   const { hasCheckInToday, refresh: refreshCheckInToday } = useHasCheckInToday(user?.id);
   const { days: calendarDays, tasksByDate, loading: monthLoading, loadMonth } = useMonthCalendar(
     calendarYear,
@@ -95,42 +110,24 @@ export default function SemanaScreen() {
   const envStatus = getSupabaseEnvStatus();
   const supabaseEnvOk = envStatus.url && envStatus.key;
 
-  const currentWeekStart = getWeekBounds().start;
-  const weekOptions = useMemo(() => {
-    const opts = getWeekOptions(6);
-    return opts.map((o, i) => ({
-      ...o,
-      label:
-        i === 0
-          ? t('semana.weekPrev')
-          : i === 1
-            ? t('semana.weekCurrent')
-            : `${o.start.slice(8)} ${monthNames[parseInt(o.start.slice(5, 7), 10) - 1]}`,
-    }));
-  }, [t, monthNames]);
-
-  const weekIndex = useMemo(() => {
-    const start = selectedWeekStart ?? currentWeekStart;
-    const i = weekOptions.findIndex((o) => o.start === start);
-    return i >= 0 ? i : 1;
-  }, [selectedWeekStart, currentWeekStart, weekOptions]);
-
-  const canGoPrev = isSubscribed && weekIndex > 0;
-  const canGoNext = isSubscribed && weekIndex < weekOptions.length - 1;
-  const displayWeekLabel =
-    weekOptions[weekIndex]?.label ?? (weekTasks.length === 7
-      ? (() => {
-          const d0 = weekTasks[0].day.dateStr;
-          const d6 = weekTasks[6].day.dateStr;
-          return `${d0.slice(8)} – ${d6.slice(8)} ${monthNames[parseInt(d0.slice(5, 7), 10) - 1]}`;
-        })()
-      : t('semanaExtra.weekFallback'));
+  const currentWeekBounds = useMemo(() => getWeekBounds(), [getWeekBounds]);
 
   useEffect(() => {
-    if (viewMode === 'list') {
-      loadWeekTasks(selectedWeekStart || undefined);
+    if (rangeMode !== 'month') return;
+    const { year, monthIndex } = parseMonthAnchor(rangeAnchorDate);
+    setCalendarYear(year);
+    setCalendarMonth(monthIndex);
+  }, [rangeAnchorDate, rangeMode]);
+
+  useEffect(() => {
+    if (viewMode !== 'list') return;
+    if (rangeMode === 'month') {
+      void loadMonth();
+      return;
     }
-  }, [loadWeekTasks, selectedWeekStart, viewMode]);
+    const { start, end } = getRangeBounds(rangeMode, rangeAnchorDate);
+    void loadDateRange(start, end);
+  }, [viewMode, rangeMode, rangeAnchorDate, loadDateRange, loadMonth]);
 
   useEffect(() => {
     if (viewMode === 'calendar') {
@@ -140,25 +137,20 @@ export default function SemanaScreen() {
 
   useEffect(() => {
     if (viewMode === 'list' && projects.length === 0) {
-      loadWeekTasks(selectedWeekStart || undefined);
+      if (rangeMode === 'month') {
+        void loadMonth();
+      } else {
+        const { start, end } = getRangeBounds(rangeMode, rangeAnchorDate);
+        void loadDateRange(start, end);
+      }
     }
-  }, [viewMode, projects.length, loadWeekTasks, selectedWeekStart]);
+  }, [viewMode, projects.length, loadDateRange, loadMonth, rangeMode, rangeAnchorDate]);
 
   useEffect(() => {
-    if (viewMode === 'calendar' && projects.length === 0) {
-      loadWeekTasks(undefined);
+    if (viewMode === 'calendar') {
+      void loadWeekTasks(undefined);
     }
-  }, [viewMode, projects.length, loadWeekTasks]);
-
-  const handlePrevWeek = useCallback(() => {
-    if (!canGoPrev) return;
-    setSelectedWeekStart(weekOptions[weekIndex - 1].start);
-  }, [canGoPrev, weekIndex, weekOptions]);
-
-  const handleNextWeek = useCallback(() => {
-    if (!canGoNext) return;
-    setSelectedWeekStart(weekOptions[weekIndex + 1].start);
-  }, [canGoNext, weekIndex, weekOptions]);
+  }, [viewMode, loadWeekTasks]);
 
   const canGoPrevMonth = isSubscribed;
   const canGoNextMonth = isSubscribed;
@@ -189,11 +181,15 @@ export default function SemanaScreen() {
       void refreshCheckInToday();
       if (viewMode === 'calendar') {
         void loadMonth();
+        void loadWeekTasks(undefined);
+      } else if (rangeMode === 'month') {
+        void loadMonth();
       } else {
-        void loadWeekTasks(selectedWeekStart || undefined);
+        const { start, end } = getRangeBounds(rangeMode, rangeAnchorDate);
+        void loadDateRange(start, end);
       }
     });
-  }, [refreshCheckInToday, viewMode, loadMonth, loadWeekTasks, selectedWeekStart]);
+  }, [refreshCheckInToday, viewMode, rangeMode, rangeAnchorDate, loadMonth, loadDateRange, loadWeekTasks]);
 
   useFocusEffect(
     useCallback(() => {
@@ -201,16 +197,29 @@ export default function SemanaScreen() {
     }, [refreshCheckInToday]),
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      if (planAheadParam !== '1') return;
+      setPlanAheadMode(true);
+      setViewMode('list');
+      setRangeMode('week');
+      setRangeAnchorDate(getNextWeekMonday(getLocalDateString()));
+    }, [planAheadParam]),
+  );
+
   const handleRefresh = useCallback(() => {
     if (viewMode === 'calendar') {
       loadMonth();
-      if (projects.length === 0) {
-        loadWeekTasks(selectedWeekStart || undefined);
-      }
-    } else {
-      loadWeekTasks(selectedWeekStart || undefined);
+      loadWeekTasks(undefined);
+      return;
     }
-  }, [viewMode, loadMonth, loadWeekTasks, projects.length, selectedWeekStart]);
+    if (rangeMode === 'month') {
+      loadMonth();
+      return;
+    }
+    const { start, end } = getRangeBounds(rangeMode, rangeAnchorDate);
+    void loadDateRange(start, end);
+  }, [viewMode, rangeMode, rangeAnchorDate, loadMonth, loadDateRange, loadWeekTasks]);
 
   const handleTasksChanged = useCallback(() => {
     handleRefresh();
@@ -221,7 +230,12 @@ export default function SemanaScreen() {
     onTasksChanged: handleTasksChanged,
   });
 
-  const isRefreshing = viewMode === 'calendar' ? monthLoading : loading;
+  const isRefreshing =
+    viewMode === 'calendar'
+      ? monthLoading
+      : rangeMode === 'month'
+        ? monthLoading
+        : loading;
 
   const projectsMap = Object.fromEntries(projects.map((p) => [p.id, p]));
 
@@ -233,12 +247,32 @@ export default function SemanaScreen() {
     }));
   }, [weekTasks, selectedProjectId]);
 
+  const listSourceTasks = useMemo(() => {
+    const base =
+      rangeMode === 'month'
+        ? monthCalendarToDayTasks(calendarDays, tasksByDate, locale)
+        : filteredWeekTasks;
+
+    if (!selectedProjectId) return base;
+    return base.map(({ day, tasks }) => ({
+      day,
+      tasks: tasks.filter((task) => task.project_id === selectedProjectId),
+    }));
+  }, [rangeMode, calendarDays, tasksByDate, locale, filteredWeekTasks, selectedProjectId]);
+
+  const listBoardTasks = useMemo(() => {
+    if (rangeMode === 'day') {
+      return listSourceTasks.filter(({ day }) => day.dateStr === rangeAnchorDate);
+    }
+    return listSourceTasks;
+  }, [listSourceTasks, rangeMode, rangeAnchorDate]);
+
   const visibleWeekSlice = useMemo(() => {
     if (isSubscribed) {
-      return { visible: filteredWeekTasks, hiddenCount: 0, visibleDateKeys: null as Set<string> | null };
+      return { visible: listBoardTasks, hiddenCount: 0, visibleDateKeys: null as Set<string> | null };
     }
     const { visible, hiddenCount } = getFreeVisibleWeekTasks(
-      filteredWeekTasks,
+      listBoardTasks,
       FREE_CALENDAR_VISIBLE_DAYS,
     );
     return {
@@ -246,7 +280,7 @@ export default function SemanaScreen() {
       hiddenCount,
       visibleDateKeys: new Set(visible.map(({ day }) => day.dateStr)),
     };
-  }, [isSubscribed, filteredWeekTasks]);
+  }, [isSubscribed, listBoardTasks]);
 
   const visibleWeekTasks = visibleWeekSlice.visible;
   const hiddenWeekDayCount = visibleWeekSlice.hiddenCount;
@@ -264,12 +298,75 @@ export default function SemanaScreen() {
     openPaywall(router, '/(tabs)/semana');
   }, []);
 
+  const displayRangeLabel = useMemo(() => {
+    if (rangeMode === 'day') {
+      return formatDayLabel(rangeAnchorDate, monthNames);
+    }
+    if (rangeMode === 'month') {
+      return `${monthNamesFull[calendarMonth]} ${calendarYear}`;
+    }
+    const { start, end } = getRangeBounds(rangeMode, rangeAnchorDate);
+    return `${formatDayLabel(start, monthNames)} – ${formatDayLabel(end, monthNames)}`;
+  }, [rangeMode, rangeAnchorDate, monthNames, monthNamesFull, calendarMonth, calendarYear]);
+
+  const canGoRangePrev = useMemo(() => {
+    if (planAheadMode && (rangeMode === 'week' || rangeMode === 'twoWeeks')) {
+      return getWeekMonday(rangeAnchorDate) > planAheadFloor;
+    }
+    if (rangeMode === 'day') {
+      if (isSubscribed) return true;
+      return rangeAnchorDate > currentWeekBounds.start;
+    }
+    return isSubscribed;
+  }, [planAheadMode, planAheadFloor, rangeMode, rangeAnchorDate, isSubscribed, currentWeekBounds.start]);
+
+  const canGoRangeNext = useMemo(() => {
+    if (rangeMode === 'day') {
+      if (isSubscribed) return true;
+      return rangeAnchorDate < currentWeekBounds.end;
+    }
+    return isSubscribed;
+  }, [rangeMode, rangeAnchorDate, isSubscribed, currentWeekBounds.end]);
+
+  const handleRangePrev = useCallback(() => {
+    if (!canGoRangePrev) {
+      if (!isSubscribed) handleLockedNavPress();
+      return;
+    }
+    setRangeAnchorDate(shiftAnchorDate(rangeMode, rangeAnchorDate, -1));
+  }, [canGoRangePrev, isSubscribed, handleLockedNavPress, rangeMode, rangeAnchorDate]);
+
+  const handleRangeNext = useCallback(() => {
+    if (!canGoRangeNext) {
+      if (!isSubscribed) handleLockedNavPress();
+      return;
+    }
+    setRangeAnchorDate(shiftAnchorDate(rangeMode, rangeAnchorDate, 1));
+  }, [canGoRangeNext, isSubscribed, handleLockedNavPress, rangeMode, rangeAnchorDate]);
+
+  const handleRangeModeChange = useCallback(
+    (mode: SemanaRangeMode) => {
+      setRangeMode(mode);
+      setRangeAnchorDate(todayStr);
+    },
+    [todayStr],
+  );
+
+  const handlePremiumRangePress = useCallback(() => {
+    handleLockedNavPress();
+  }, [handleLockedNavPress]);
+
+  const boardLayout = getBoardLayout(rangeMode);
+
   const selectedDayData = useMemo(
     () => calendarDays.find((d) => d.dateStr === selectedDate),
     [calendarDays, selectedDate],
   );
   const selectedDayUnlocked = isDateInFreeVisibleRange(selectedDate, freeVisibleDateKeys);
-  const selectedDayTasks = selectedDayUnlocked ? (tasksByDate[selectedDate] ?? []) : [];
+  const selectedDayTasks = useMemo(() => {
+    if (!selectedDayUnlocked) return [];
+    return (tasksByDate[selectedDate] ?? []).filter((task) => !task.is_completed);
+  }, [selectedDayUnlocked, tasksByDate, selectedDate]);
   const selectedDayLabel = formatDayLabel(selectedDate, monthNames);
   const selectedDayCheckInLabel = useMemo(() => {
     const checkIn = selectedDayData?.emotion
@@ -312,6 +409,7 @@ export default function SemanaScreen() {
       <CalmScreen
         topInset="lg"
         gap={THEME.layout.tabSectionGap}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -324,7 +422,7 @@ export default function SemanaScreen() {
           <ScreenHeader
             compact
             title={t('semana.title')}
-            subtitle={t('semana.introShort')}
+            subtitle={planAheadMode ? t('semana.planAheadIntro') : t('semana.introShort')}
             trailing={
               <HeaderIconButton
                 onPress={() => void handleExportTasks()}
@@ -416,14 +514,25 @@ export default function SemanaScreen() {
           </>
         ) : (
           <>
+        <SemanaRangePicker
+          value={rangeMode}
+          isSubscribed={isSubscribed}
+          onChange={handleRangeModeChange}
+          onLockedPress={handlePremiumRangePress}
+        />
+
         <SemanaWeekNav
-          label={displayWeekLabel}
-          canGoPrev={canGoPrev}
-          canGoNext={canGoNext}
-          onPrev={handlePrevWeek}
-          onNext={handleNextWeek}
-          prevA11yLabel={t('semanaExtra.a11yPrevWeek')}
-          nextA11yLabel={t('semanaExtra.a11yNextWeek')}
+          label={displayRangeLabel}
+          canGoPrev={canGoRangePrev}
+          canGoNext={canGoRangeNext}
+          onPrev={handleRangePrev}
+          onNext={handleRangeNext}
+          prevA11yLabel={
+            rangeMode === 'day' ? t('semana.rangeNavPrevDayA11y') : t('semanaExtra.a11yPrevWeek')
+          }
+          nextA11yLabel={
+            rangeMode === 'day' ? t('semana.rangeNavNextDayA11y') : t('semanaExtra.a11yNextWeek')
+          }
           hint={!isSubscribed ? t('semana.navPremiumHint') : undefined}
           onLockedNavPress={!isSubscribed ? handleLockedNavPress : undefined}
         />
@@ -434,20 +543,24 @@ export default function SemanaScreen() {
           onSelectProject={setSelectedProjectId}
         />
 
-        {loading ? (
+        {(rangeMode === 'month' ? monthLoading : loading) ? (
           <Text style={styles.loadingWeek}>{t('semana.loadingDays')}</Text>
         ) : null}
 
-        {!loading ? (
+        {!(rangeMode === 'month' ? monthLoading : loading) ? (
           <SemanaDraggableWeekBoard
             weekTasks={visibleWeekTasks}
             projects={projects}
+            boardLayout={boardLayout}
             onMoveTask={moveTaskToDay}
+            onTasksChanged={handleTasksChanged}
             moving={movingTask}
           />
         ) : null}
 
-        {!isSubscribed ? <SemanaFreeLimitCard hiddenDayCount={hiddenWeekDayCount} /> : null}
+        {!isSubscribed && hiddenWeekDayCount > 0 ? (
+          <SemanaFreeLimitCard hiddenDayCount={hiddenWeekDayCount} />
+        ) : null}
 
           </>
         )}

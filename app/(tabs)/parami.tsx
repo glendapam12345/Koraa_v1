@@ -22,9 +22,7 @@ import { ParaMiPatternCard } from '@/components/parami/ParaMiPatternCard';
 import { ParaMiTipsSection } from '@/components/parami/ParaMiTipsSection';
 import { ParaMiInsights } from '@/components/parami/ParaMiInsights';
 import { ParaMiPatternInsightCard } from '@/components/parami/ParaMiPatternInsightCard';
-import { FrentesWeekInsightCard } from '@/components/vnext/FrentesWeekInsightCard';
 import { useParamiPatternInsight } from '@/hooks/useParamiPatternInsight';
-import { useFrentesDashboard } from '@/hooks/useFrentesDashboard';
 import type { ParamiPatternInput } from '@/lib/paramiPatternInsight';
 import { ParaMiPatternsLockedPreview } from '@/components/parami/ParaMiPatternsLockedPreview';
 import { PremiumBadge } from '@/components/premium/PremiumBadge';
@@ -56,16 +54,12 @@ export default function ParaMiScreen() {
   );
 
   const { progressData, loading, load } = useCheckInInsightsData(monthNames, dayLabels);
-  const { dashboard: frentesDashboard, refresh: refreshFrentes } = useFrentesDashboard({
-    userId: user?.id,
-  });
 
   const refresh = useCallback(() => {
     if (user?.id) {
       void load(user.id);
-      void refreshFrentes();
     }
-  }, [user?.id, load, refreshFrentes]);
+  }, [user?.id, load]);
 
   useFocusEffect(
     useCallback(() => {
@@ -186,8 +180,6 @@ export default function ParaMiScreen() {
           </>
         )}
       </View>
-
-      <FrentesWeekInsightCard bars={frentesDashboard.weekInsight} />
 
       <ParaMiTipsSection context={tipsContext} />
 

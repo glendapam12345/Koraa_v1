@@ -1,57 +1,49 @@
 import { View, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
-import {
-  DayReflectionSheet,
-  type DayReflectionOutcome,
-} from '@/components/vnext/DayReflectionSheet';
-import { DayReplanSuccessSheet } from '@/components/vnext/DayReplanSuccessSheet';
-import type { ReorganizeWeekProposal } from '@/lib/lifeAreas/types';
+import { ReorganizeDayFlow } from '@/components/hoy/ReorganizeDayFlow';
+import type { WhatChangedReason, ReorganizeWeekProposal } from '@/lib/lifeAreas/types';
 
 type HoyDayReflectionFlowProps = {
-  sheetOpen: boolean;
-  successOpen: boolean;
-  selectedOutcome: DayReflectionOutcome | null;
-  replanning: boolean;
-  lastProposal: ReorganizeWeekProposal | null;
-  onCloseReflection: () => void;
-  onSelectOutcome: (outcome: DayReflectionOutcome) => void;
-  onReplan: () => void;
-  onDismissSuccess: () => void;
+  flowOpen: boolean;
+  step: 'reason' | 'preview';
+  displayName?: string;
+  selectedReason: WhatChangedReason | null;
+  previewProposal: ReorganizeWeekProposal | null;
+  buildingPreview: boolean;
+  applying: boolean;
+  onClose: () => void;
+  onSelectReason: (reason: WhatChangedReason) => void;
+  onBackToReason: () => void;
+  onConfirm: () => void;
 };
 
 export function HoyDayReflectionFlow({
-  sheetOpen,
-  successOpen,
-  selectedOutcome,
-  replanning,
-  lastProposal,
-  onCloseReflection,
-  onSelectOutcome,
-  onReplan,
-  onDismissSuccess,
+  flowOpen,
+  step,
+  displayName,
+  selectedReason,
+  previewProposal,
+  buildingPreview,
+  applying,
+  onClose,
+  onSelectReason,
+  onBackToReason,
+  onConfirm,
 }: HoyDayReflectionFlowProps) {
-  const handleViewCalendar = () => {
-    onDismissSuccess();
-    router.push('/(tabs)/semana');
-  };
-
   return (
     <View style={styles.wrap}>
-      <DayReflectionSheet
-        visible={sheetOpen}
-        selected={selectedOutcome}
-        onSelect={onSelectOutcome}
-        onReplan={onReplan}
-        onClose={onCloseReflection}
-        isReplanning={replanning}
-      />
-
-      <DayReplanSuccessSheet
-        visible={successOpen}
-        proposal={lastProposal}
-        onDismiss={onDismissSuccess}
-        onViewCalendar={handleViewCalendar}
+      <ReorganizeDayFlow
+        visible={flowOpen}
+        step={step}
+        displayName={displayName}
+        selectedReason={selectedReason}
+        proposal={previewProposal}
+        buildingPreview={buildingPreview}
+        applying={applying}
+        onSelectReason={onSelectReason}
+        onConfirm={onConfirm}
+        onBack={onBackToReason}
+        onClose={onClose}
       />
     </View>
   );

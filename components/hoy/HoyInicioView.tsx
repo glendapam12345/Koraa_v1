@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
+import { formatGreetingWithName, formatNightReturnGreeting, useKoraaGreeting } from '@/hooks/useKoraaGreeting';
+import { TimeOfDayChip } from '@/components/hoy/TimeOfDayChip';
 import {
   SentirVisualCheckIn,
   type SentirEmotionOption,
@@ -31,14 +32,12 @@ export function HoyInicioView({
   liteMode = false,
 }: HoyInicioViewProps) {
   const { t } = useI18n();
+  const { period, greeting, timeChipLabel, lateNight } = useKoraaGreeting();
   const firstName = getFirstName(displayName);
 
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return t('hoy.greetingMorning');
-    if (hour < 18) return t('hoy.greetingAfternoon');
-    return t('hoy.greetingEvening');
-  }, [t]);
+  const greetingLine = lateNight
+    ? formatNightReturnGreeting(t, firstName, period)
+    : formatGreetingWithName(t, greeting, firstName);
 
   const openMindDump = () => router.push('/(tabs)/vaciar');
 
@@ -46,11 +45,14 @@ export function HoyInicioView({
     return (
       <View style={styles.root}>
         <View style={styles.header}>
-          <Text style={styles.greeting}>
-            {t('hoy.inicio.greetingWithName', { greeting, name: firstName })}
-          </Text>
+          <TimeOfDayChip period={period} label={timeChipLabel} />
+          <Text style={styles.greeting}>{greetingLine}</Text>
           <Text style={styles.subtitle}>
-            {liteMode ? t('hoy.inicio.liteTasksFirstSub') : t('hoy.inicio.tasksFirstSub')}
+            {lateNight
+              ? t('hoy.nightReturnSubline', { name: firstName })
+              : liteMode
+                ? t('hoy.inicio.liteTasksFirstSub')
+                : t('hoy.inicio.tasksFirstSub')}
           </Text>
         </View>
 
@@ -70,12 +72,13 @@ export function HoyInicioView({
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <Text style={styles.greeting}>
-          {t('hoy.inicio.greetingWithName', { greeting, name: firstName })}
-        </Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
-      </View>
+        <View style={styles.header}>
+          <TimeOfDayChip period={period} label={timeChipLabel} />
+          <Text style={styles.greeting}>{greetingLine}</Text>
+          <Text style={styles.subtitle}>
+            {lateNight ? t('hoy.nightReturnSubline', { name: firstName }) : subtitle}
+          </Text>
+        </View>
 
       <SentirVisualCheckIn
         emotions={emotions}

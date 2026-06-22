@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -19,6 +19,11 @@ import { PROJECT_COLORS } from '@/lib/projectColors';
 import { createProjectForUser, createProjectErrorMessage } from '@/lib/createProject';
 import type { CreatedProject } from '@/lib/createProject';
 import type { AppLocale } from '@/lib/i18n';
+import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
+import { inferLifeAreaKeyForProject } from '@/lib/lifeAreas/lifeAreaCatalog';
+import { getLifeAreaAccentColor } from '@/lib/lifeAreas/lifeAreaColors';
+import { useUserLifeAreas } from '@/hooks/useUserLifeAreas';
+import { ProjectAreaPicker } from '@/components/projects/ProjectAreaPicker';
 
 const EMOJI_OPTIONS = ['🚀', '🎨', '❤️', '💰', '🏋️', '🎓', '💼', '🏠', '✨', '🌿', '📚', '🎬'];
 
@@ -27,6 +32,7 @@ type CreateFrenteModalProps = {
   userId: string;
   locale: AppLocale;
   existingNames?: string[];
+  initialLifeAreaKey?: LifeAreaRef;
   onClose: () => void;
   onCreated: (project: CreatedProject) => void;
   onError?: (message: string) => void;
@@ -37,20 +43,24 @@ export function CreateFrenteModal({
   userId,
   locale,
   existingNames = [],
+  initialLifeAreaKey,
   onClose,
   onCreated,
   onError,
 }: CreateFrenteModalProps) {
   const { t } = useI18n();
+  const { config: lifeAreasConfig } = useUserLifeAreas(userId);
   const [name, setName] = useState('');
   const [emoji, setEmoji] = useState('✨');
   const [color, setColor] = useState<string>(PROJECT_COLORS[1]);
+  const [lifeAreaKey, setLifeAreaKey] = useState<LifeAreaRef>(initialLifeAreaKey ?? 'other');
   const [saving, setSaving] = useState(false);
 
   const reset = () => {
     setName('');
     setEmoji('✨');
-    setColor(PROJECT_COLORS[1]);
+    setColor(initialLifeAreaKey ? getLifeAreaAccentColor(initialLifeAreaKey) : PROJECT_COLORS[1]);
+    setLifeAreaKey(initialLifeAreaKey ?? 'other');
     setSaving(false);
   };
 
@@ -58,6 +68,14 @@ export function CreateFrenteModal({
     reset();
     onClose();
   };
+
+  useEffect(() => {
+    if (!visible) return;
+    if (initialLifeAreaKey) {
+      setLifeAreaKey(initialLifeAreaKey);
+      setColor(getLifeAreaAccentColor(initialLifeAreaKey));
+    }
+  }, [initialLifeAreaKey, visible]);
 
   const handleSave = async () => {
     const trimmed = name.trim();
@@ -67,6 +85,7 @@ export function CreateFrenteModal({
       userId,
       name: trimmed,
       color,
+      lifeAreaKey,
       existingNames,
       locale,
     });
@@ -103,10 +122,27 @@ export function CreateFrenteModal({
               <TextInput
                 style={styles.input}
                 value={name}
-                onChangeText={setName}
+                onChangeText={(text) => {
+                  setName(text);
+                  if (text.trim() && !initialLifeAreaKey) {
+                    const inferred = inferLifeAreaKeyForProject(text);
+                    setLifeAreaKey(inferred);
+                    setColor(getLifeAreaAccentColor(inferred));
+                  }
+                }}
                 placeholder={t('frentes.createNamePlaceholder')}
                 placeholderTextColor={THEME.colors.text.tertiary}
                 maxLength={48}
+              />
+
+              <Text style={styles.label}>{t('projects.areaSectionTitle')}</Text>
+              <ProjectAreaPicker
+                value={lifeAreaKey}
+                onChange={(ref) => {
+                  setLifeAreaKey(ref);
+                  setColor(getLifeAreaAccentColor(ref));
+                }}
+                lifeAreasConfig={lifeAreasConfig}
               />
 
               <Text style={styles.label}>{t('frentes.createEmoji')}</Text>

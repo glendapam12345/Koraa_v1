@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Pressable } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Check, ChevronRight, Clock, Calendar, Trash2 } from 'lucide-react-native';
+import { Check, ChevronRight, Clock, Calendar, Trash2, ChevronUp, ChevronDown } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -21,6 +21,11 @@ type HoyFocusTaskRowProps = {
   onToggleComplete: () => void;
   onOpenDetails: () => void;
   onDelete?: () => void;
+  onPostpone?: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 };
 
 export function HoyFocusTaskRow({
@@ -38,6 +43,11 @@ export function HoyFocusTaskRow({
   onToggleComplete,
   onOpenDetails,
   onDelete,
+  onPostpone,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp = false,
+  canMoveDown = false,
 }: HoyFocusTaskRowProps) {
   const { t } = useI18n();
   const pulse = useRef(new Animated.Value(1)).current;
@@ -181,6 +191,67 @@ export function HoyFocusTaskRow({
         ) : (
           <Text style={styles.looseLabel}>{t('hoy.focusTaskNoProject')}</Text>
         )}
+
+        {!completed && (onPostpone || onMoveUp || onMoveDown) ? (
+          <View style={styles.actionsRow}>
+            {onPostpone ? (
+              <TouchableOpacity
+                onPress={(event) => {
+                  event.stopPropagation();
+                  onPostpone();
+                }}
+                activeOpacity={0.85}
+                style={styles.actionChip}
+                accessibilityRole="button"
+                accessibilityLabel={t('hoy.postponeStepA11y', { task: content })}
+              >
+                <Text style={styles.actionChipText}>{t('hoy.postponeStep')}</Text>
+              </TouchableOpacity>
+            ) : null}
+            {onMoveUp || onMoveDown ? (
+              <View style={styles.reorderGroup}>
+                {onMoveUp ? (
+                  <TouchableOpacity
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      onMoveUp();
+                    }}
+                    disabled={!canMoveUp}
+                    activeOpacity={0.85}
+                    style={[styles.reorderBtn, !canMoveUp && styles.reorderBtnDisabled]}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('hoy.moveStepUpA11y', { task: content })}
+                    accessibilityState={{ disabled: !canMoveUp }}
+                  >
+                    <ChevronUp
+                      size={16}
+                      color={canMoveUp ? THEME.colors.calm.lavenderDeep : THEME.colors.text.tertiary}
+                    />
+                  </TouchableOpacity>
+                ) : null}
+                {onMoveDown ? (
+                  <TouchableOpacity
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      onMoveDown();
+                    }}
+                    disabled={!canMoveDown}
+                    activeOpacity={0.85}
+                    style={[styles.reorderBtn, !canMoveDown && styles.reorderBtnDisabled]}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('hoy.moveStepDownA11y', { task: content })}
+                    accessibilityState={{ disabled: !canMoveDown }}
+                  >
+                    <ChevronDown
+                      size={16}
+                      color={canMoveDown ? THEME.colors.calm.lavenderDeep : THEME.colors.text.tertiary}
+                    />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
       </TouchableOpacity>
     </Animated.View>
   );
@@ -193,8 +264,8 @@ const styles = StyleSheet.create({
     gap: 10,
     backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.rounded,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.sm,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
     ...THEME.shadows.soft,
@@ -327,5 +398,48 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.tertiary,
     marginLeft: 20,
     lineHeight: 14,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: THEME.spacing.xs,
+    marginLeft: 20,
+    marginTop: 2,
+  },
+  actionChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.calm.mist,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    minHeight: 32,
+    justifyContent: 'center',
+  },
+  actionChipText: {
+    ...THEME.typography.small,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
+    lineHeight: 14,
+  },
+  reorderGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    marginLeft: 'auto',
+  },
+  reorderBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.colors.calm.mist,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  reorderBtnDisabled: {
+    opacity: 0.45,
   },
 });

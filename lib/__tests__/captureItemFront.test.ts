@@ -31,13 +31,13 @@ describe('captureItemFront', () => {
       item('b', 'Terminar última versión de la app'),
     ];
 
-    const moved = moveCaptureItemToFrontKey(items, 'a', 'koraa', []);
-    const koraaItem = moved.find((entry) => entry.id === 'a');
+    const moved = moveCaptureItemToFrontKey(items, 'a', 'token:app', []);
+    const movedItem = moved.find((entry) => entry.id === 'a');
 
-    expect(koraaItem?.frontKeyOverride).toBe('koraa');
+    expect(movedItem?.frontKeyOverride).toBe('token:app');
     const { fronts } = buildCaptureFronts(moved);
-    const koraa = fronts.find((front) => front.key === 'koraa');
-    expect(koraa?.tasks.map((task) => task.captureId)).toContain('a');
+    const appFront = fronts.find((front) => front.key === 'token:app');
+    expect(appFront?.tasks.map((task) => task.captureId)).toContain('a');
   });
 
   it('assigns item to existing project', () => {
@@ -56,10 +56,10 @@ describe('captureItemFront', () => {
 
   it('marks single item for new project creation', () => {
     const items = [item('a', 'Diseño reel impermanence')];
-    const next = applyAssignmentKind(items[0], 'new_project', { frontKey: 'impermanence' });
+    const next = applyAssignmentKind(items[0], 'new_project', { frontKey: 'token:reel' });
 
     expect(next.createProjectOnSave).toBe(true);
-    expect(next.frontKeyOverride).toBe('impermanence');
+    expect(next.frontKeyOverride).toBe('token:reel');
 
     const { fronts } = buildCaptureFronts([next]);
     expect(fronts[0]?.suggestedNewProject).toBe(true);

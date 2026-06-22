@@ -19,6 +19,8 @@ import {
 const BREAK_COUNT = 2;
 
 type HoyGentleRhythmStripProps = {
+  /** Cuando va en su propia tarjeta (fuera del plan), sin borde superior. */
+  standalone?: boolean;
   crisisMode: boolean;
   energyLevel: number;
   prioritiesDone: number;
@@ -47,6 +49,7 @@ const CHIP_A11Y: Record<RhythmChipId, TranslationKey> = {
 };
 
 export function HoyGentleRhythmStrip({
+  standalone = false,
   crisisMode,
   energyLevel,
   prioritiesDone,
@@ -140,7 +143,7 @@ export function HoyGentleRhythmStrip({
 
   return (
     <>
-      <View style={styles.wrap}>
+      <View style={[styles.wrap, standalone && styles.wrapStandalone]}>
         <View style={styles.header}>
           <Text style={styles.title}>{t('hoy.rhythmTitle')}</Text>
           <Text style={styles.countLine}>{t('hoy.rhythmSubCount', { count: BREAK_COUNT })}</Text>
@@ -254,15 +257,23 @@ const styles = StyleSheet.create({
   wrap: {
     gap: THEME.spacing.xs,
     paddingTop: THEME.spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: THEME.colors.calm.border,
+    paddingHorizontal: THEME.spacing.sm,
+    paddingBottom: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.calm.blush,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  wrapStandalone: {
+    paddingTop: THEME.spacing.sm,
+    borderTopWidth: 0,
   },
   header: {
     gap: 2,
   },
   title: {
     ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
+    fontFamily: THEME.fonts.accent.italic,
     color: THEME.colors.text.main,
   },
   countLine: {
@@ -289,13 +300,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.xs,
     paddingVertical: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.calm.card,
+    backgroundColor: THEME.colors.fill[100],
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
     minHeight: THEME.sizes.touchTarget,
   },
   chipHighlighted: {
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    backgroundColor: THEME.colors.calm.lavender,
     borderColor: THEME.colors.calm.lavenderDeep,
     borderWidth: 1.5,
   },

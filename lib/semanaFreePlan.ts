@@ -1,6 +1,6 @@
 import type { DayTasks } from '@/hooks/useWeekTasks';
 
-export const FREE_CALENDAR_VISIBLE_DAYS = 3;
+export const FREE_CALENDAR_VISIBLE_DAYS = 7;
 
 /**
  * Plan gratis: muestra hasta N días de la semana actual, priorizando hoy y los siguientes.

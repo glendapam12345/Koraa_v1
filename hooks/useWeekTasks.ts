@@ -73,7 +73,7 @@ export function getWeekOptions(count: number): { start: string; label: string }[
   return options;
 }
 
-function buildWeekDays(start: string, locale: AppLocale): WeekDay[] {
+function buildDaysForRange(start: string, end: string, locale: AppLocale): WeekDay[] {
   const today = getLocalDateString();
   const dayNames = [
     translate(locale, 'semana.weekdayMon'),
@@ -85,19 +85,27 @@ function buildWeekDays(start: string, locale: AppLocale): WeekDay[] {
     translate(locale, 'semana.weekdaySun'),
   ];
   const days: WeekDay[] = [];
-  const d = parseLocalDateString(start);
-  for (let i = 0; i < 7; i++) {
-    const dateStr = getLocalDateString(d);
-    const dayNum = d.getDate();
+  const cursor = parseLocalDateString(start);
+  const endDate = parseLocalDateString(end);
+
+  while (cursor <= endDate) {
+    const dateStr = getLocalDateString(cursor);
+    const dayIndex = (cursor.getDay() + 6) % 7;
     days.push({
       dateStr,
-      label: `${dayNames[i]} ${dayNum}`,
-      dayName: dayNames[i],
+      label: `${dayNames[dayIndex]} ${cursor.getDate()}`,
+      dayName: dayNames[dayIndex],
       isToday: dateStr === today,
     });
-    d.setDate(d.getDate() + 1);
+    cursor.setDate(cursor.getDate() + 1);
   }
+
   return days;
+}
+
+function buildWeekDays(start: string, locale: AppLocale): WeekDay[] {
+  const { end } = getWeekBoundsForStart(start);
+  return buildDaysForRange(start, end, locale);
 }
 
 export function useWeekTasks(
@@ -112,22 +120,19 @@ export function useWeekTasks(
   const [schemaSetupType, setSchemaSetupType] = useState<SchemaSetupType | null>(null);
   const isLoadingRef = useRef(false);
 
-  const loadWeekTasks = useCallback(async (weekStart?: string) => {
+  const loadDateRange = useCallback(async (start: string, end: string) => {
     if (isLoadingRef.current) return;
     isLoadingRef.current = true;
     setLoading(true);
 
     try {
-      const { start, end } = weekStart
-        ? getWeekBoundsForStart(weekStart)
-        : getWeekBounds();
-      const weekDays = buildWeekDays(start, locale);
+      const rangeDays = buildDaysForRange(start, end, locale);
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setLastLoadError(null);
         setSchemaSetupType(null);
-        const emptyResult: DayTasks[] = weekDays.map((day) => ({ day, tasks: [] }));
+        const emptyResult: DayTasks[] = rangeDays.map((day) => ({ day, tasks: [] }));
         setWeekTasks(emptyResult);
         setProjects([]);
         setCheckInsByDate({});
@@ -193,7 +198,7 @@ export function useWeekTasks(
         if (isSchemaError(tasksError)) {
           setSchemaSetupType(getSchemaSetupMessage(tasksError) || 'schema');
           setLastLoadError(null);
-          const emptyResult: DayTasks[] = weekDays.map((day) => ({ day, tasks: [] }));
+          const emptyResult: DayTasks[] = rangeDays.map((day) => ({ day, tasks: [] }));
           setWeekTasks(emptyResult);
           setCheckInsByDate({});
           showToast(translate(locale, 'hooks.weekSchema'), 'info');
@@ -201,7 +206,7 @@ export function useWeekTasks(
           logger.error('Error cargando tareas de la semana:', tasksError);
           setSchemaSetupType(null);
           setLastLoadError(getErrorMessage(tasksError, locale));
-          const emptyResult: DayTasks[] = weekDays.map((day) => ({ day, tasks: [] }));
+          const emptyResult: DayTasks[] = rangeDays.map((day) => ({ day, tasks: [] }));
           setWeekTasks(emptyResult);
           setCheckInsByDate({});
           showToast(translate(locale, 'hooks.weekLoadError'), 'error');
@@ -224,7 +229,7 @@ export function useWeekTasks(
       }));
 
       const byDate = new Map<string, Task[]>();
-      for (const day of weekDays) {
+      for (const day of rangeDays) {
         byDate.set(day.dateStr, []);
       }
       for (const task of tasksWithSubtasks) {
@@ -234,7 +239,7 @@ export function useWeekTasks(
         }
       }
 
-      const result: DayTasks[] = weekDays.map((day) => ({
+      const result: DayTasks[] = rangeDays.map((day) => ({
         day,
         tasks: byDate.get(day.dateStr) || [],
       }));
@@ -261,12 +266,21 @@ export function useWeekTasks(
     }
   }, [showToast, locale]);
 
+  const loadWeekTasks = useCallback(
+    async (weekStart?: string) => {
+      const { start, end } = weekStart ? getWeekBoundsForStart(weekStart) : getWeekBounds();
+      await loadDateRange(start, end);
+    },
+    [loadDateRange],
+  );
+
   return {
     weekTasks,
     checkInsByDate,
     projects,
     loading,
     loadWeekTasks,
+    loadDateRange,
     getWeekBounds,
     getWeekOptions,
     lastLoadError,

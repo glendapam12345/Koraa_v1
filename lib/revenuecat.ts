@@ -1,5 +1,4 @@
 import { Platform } from 'react-native';
-import { LOG_LEVEL } from 'react-native-purchases';
 import { getRevenueCatApiKey } from '@/config/revenuecat';
 import { logger } from '@/lib/logger';
 import { canProcessInAppPurchases, isExpoGoClient } from '@/lib/subscriptionEnvironment';
@@ -22,7 +21,7 @@ export async function initializeRevenueCat() {
   }
 
   try {
-    const Purchases = (await import('react-native-purchases')).default;
+    const { default: Purchases, LOG_LEVEL } = await import('react-native-purchases');
     if (__DEV__) {
       Purchases.setLogLevel(LOG_LEVEL.DEBUG);
     }

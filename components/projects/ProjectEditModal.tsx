@@ -14,18 +14,23 @@ import { PROJECT_COLORS } from '@/lib/projectColors';
 import { useI18n } from '@/contexts/I18nContext';
 import { ProjectDueDatePicker } from '@/components/projects/ProjectDueDatePicker';
 import { ProjectAreaPicker } from '@/components/projects/ProjectAreaPicker';
-import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
+import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
+import type { UserLifeAreasConfig } from '@/lib/lifeAreas/userLifeAreas';
 
 type ProjectEditModalProps = {
   visible: boolean;
   name: string;
   color: string;
   dueDate?: string;
-  lifeAreaKey: LifeAreaKey;
+  lifeAreaKey: LifeAreaRef;
+  lifeAreasConfig?: UserLifeAreasConfig;
+  onAddCustomArea?: () => void;
+  notes?: string;
   onNameChange: (value: string) => void;
   onColorChange: (value: string) => void;
   onDueDateChange?: (value: string) => void;
-  onLifeAreaChange: (value: LifeAreaKey) => void;
+  onNotesChange?: (value: string) => void;
+  onLifeAreaChange: (value: LifeAreaRef) => void;
   onSave: () => void;
   onClose: () => void;
   onDelete?: () => void;
@@ -38,9 +43,13 @@ export function ProjectEditModal({
   color,
   dueDate = '',
   lifeAreaKey,
+  lifeAreasConfig,
+  onAddCustomArea,
+  notes = '',
   onNameChange,
   onColorChange,
   onDueDateChange,
+  onNotesChange,
   onLifeAreaChange,
   onSave,
   onClose,
@@ -103,7 +112,29 @@ export function ProjectEditModal({
           ) : null}
 
           <Text style={styles.label}>{t('projects.areaSectionTitle')}</Text>
-          <ProjectAreaPicker value={lifeAreaKey} onChange={onLifeAreaChange} />
+          <ProjectAreaPicker
+            value={lifeAreaKey}
+            onChange={onLifeAreaChange}
+            lifeAreasConfig={lifeAreasConfig}
+            onAddCustomArea={onAddCustomArea}
+          />
+
+          {onNotesChange ? (
+            <>
+              <Text style={styles.label}>{t('projectsUi.notesLabel')}</Text>
+              <TextInput
+                style={[styles.input, styles.notesInput]}
+                value={notes}
+                onChangeText={onNotesChange}
+                placeholder={t('projectsUi.notesPlaceholder')}
+                placeholderTextColor={THEME.colors.text.tertiary}
+                multiline
+                maxLength={500}
+                textAlignVertical="top"
+                accessibilityLabel={t('projectsUi.notesLabel')}
+              />
+            </>
+          ) : null}
 
           {onDelete ? (
             <TouchableOpacity
@@ -178,6 +209,10 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.standard,
     padding: THEME.spacing.md,
     minHeight: THEME.sizes.touchTarget,
+  },
+  notesInput: {
+    minHeight: 96,
+    paddingTop: THEME.spacing.md,
   },
   colorRow: {
     flexDirection: 'row',

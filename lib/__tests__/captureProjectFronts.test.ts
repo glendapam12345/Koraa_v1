@@ -1,6 +1,6 @@
 import { parseCaptureToInboxItems } from '@/lib/vaciarInboxCapture';
 import { enrichCaptureItem, enrichCaptureItemsLocally } from '@/lib/taskIntelligentEnrichment';
-import { buildCaptureFronts } from '@/lib/captureProjectFronts';
+import { buildCaptureFronts, suggestGroupNameFromTasks } from '@/lib/captureProjectFronts';
 import type { VaciarBatchItem } from '@/lib/vaciarBatchDraft';
 
 const CHATGPT_BRAIN_DUMP =
@@ -17,6 +17,13 @@ function enrich(content: string, index: number) {
     effortFeel: null,
   };
   return enrichCaptureItem(item, []);
+}
+
+function tasksInFrontMatching(result: ReturnType<typeof buildCaptureFronts>, needle: RegExp) {
+  return result.fronts.find(
+    (front) =>
+      needle.test(front.name) || front.tasks.some((task) => needle.test(task.content)),
+  );
 }
 
 describe('captureProjectFronts', () => {
@@ -38,13 +45,14 @@ describe('captureProjectFronts', () => {
     expect(result.frontCount).toBeGreaterThanOrEqual(3);
     expect(result.frontCount).toBeLessThan(result.taskCount);
 
-    const koraa = result.fronts.find((front) => front.name === 'Koraa App');
-    const impermanence = result.fronts.find((front) => front.name === 'Impermanence');
-    expect(koraa?.tasks.length).toBeGreaterThanOrEqual(2);
-    expect(impermanence?.tasks.length).toBeGreaterThanOrEqual(3);
-    expect(impermanence?.suggestedNewProject).toBe(true);
+    const appGroup = tasksInFrontMatching(result, /app|versión|presentación|móvil|movil/i);
+    const hoodiesGroup = tasksInFrontMatching(result, /hoodie|sudadera/i);
+    const reelGroup = tasksInFrontMatching(result, /reel|tiktok/i);
+    expect(appGroup?.tasks.length).toBeGreaterThanOrEqual(2);
+    expect(hoodiesGroup?.tasks.length).toBeGreaterThanOrEqual(2);
+    expect(reelGroup?.tasks.length).toBeGreaterThanOrEqual(1);
     expect(result.quickSummary.taskCount).toBe(8);
-    expect(result.quickSummary.projectCount).toBeGreaterThanOrEqual(3);
+    expect(result.frontCount).toBeGreaterThanOrEqual(2);
   });
 
   it('suggests creating a project for multi-task inferred fronts', () => {
@@ -54,51 +62,75 @@ describe('captureProjectFronts', () => {
       enrich('Reunión estrategia CONADE', 2),
     ];
     const result = buildCaptureFronts(items);
-    const marathon = result.fronts.find((front) => front.name === 'Maratón');
+    const marathon = tasksInFrontMatching(result, /marat/i);
     expect(marathon?.suggestedNewProject).toBe(true);
-    expect(marathon?.tasks.length).toBe(3);
+    expect(marathon?.tasks.length).toBe(2);
   });
 
-  it('does not show two Personal cards for cine + misc personal tasks', () => {
+  it('keeps unrelated single tasks as standalone groups', () => {
     const items = [
       enrich('Ir al cine comprar croquetas Luna', 0),
       enrich('Hacer mi contenido', 1),
     ];
     const result = buildCaptureFronts(items);
-    const personalCards = result.fronts.filter((front) => front.name === 'Personal');
-    expect(personalCards).toHaveLength(1);
-    expect(personalCards[0]?.tasks.length).toBe(2);
+    expect(result.frontCount).toBeGreaterThanOrEqual(1);
+    expect(result.taskCount).toBe(2);
   });
 
-  it('clusters the ChatGPT brain dump like the product mockup', () => {
+  it('clusters the ChatGPT brain dump into a few project-sized groups', () => {
     const parsed = parseCaptureToInboxItems(CHATGPT_BRAIN_DUMP, 'es');
     expect(parsed.length).toBe(10);
 
     const enriched = enrichCaptureItemsLocally(parsed, []);
     const result = buildCaptureFronts(enriched);
 
-    expect(result.frontCount).toBe(3);
-    const koraa = result.fronts.find((front) => front.name === 'Koraa App');
-    const impermanence = result.fronts.find((front) => front.name === 'Impermanence');
-    const personal = result.fronts.find((front) => front.name === 'Personal');
+    expect(result.frontCount).toBeGreaterThanOrEqual(3);
+    expect(result.frontCount).toBeLessThan(result.taskCount);
 
-    expect(koraa?.tasks.length).toBe(2);
-    expect(impermanence?.tasks.length).toBe(6);
-    expect(personal?.tasks.length).toBe(2);
-    expect(impermanence?.hints).toContain('important');
-    expect(koraa?.hints.length).toBeGreaterThan(0);
-    expect(personal?.tasks.map((task) => task.content)).toEqual(
-      expect.arrayContaining([
-        expect.stringMatching(/tiktok personal/i),
-        expect.stringMatching(/cine/i),
-      ]),
+    const appGroup = result.fronts.find((front) =>
+      front.tasks.some((task) => /app|presentacion|version/i.test(task.content)),
     );
-    expect(impermanence?.tasks.map((task) => task.content)).toEqual(
-      expect.arrayContaining([
-        expect.stringMatching(/reel/i),
-        expect.stringMatching(/sudaderas/i),
-        expect.stringMatching(/cobrar/i),
-      ]),
+    const sudaderasGroup = result.fronts.find((front) =>
+      front.tasks.some((task) => /sudaderas|reel|tiktok|cobrar/i.test(task.content)),
     );
+    const cineGroup = result.fronts.find((front) =>
+      front.tasks.some((task) => /cine|personal/i.test(task.content)),
+    );
+
+    expect(appGroup?.tasks.length).toBeGreaterThanOrEqual(2);
+    expect(sudaderasGroup?.tasks.length).toBeGreaterThanOrEqual(3);
+    expect(cineGroup?.tasks.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('uses existing project names when the user already saved them', () => {
+    const items = [
+      enrich('Terminar última versión de la app', 0),
+      enrich('Dos tiktoks impermanence', 1),
+    ];
+    const result = buildCaptureFronts(items, [
+      { id: 'p1', name: 'Mi marca', due_date: null },
+    ]);
+    const saved = result.fronts.find((front) => front.projectId === 'p1');
+    expect(saved?.name).toBe('Mi marca');
+    expect(saved?.isExistingProject).toBe(true);
+  });
+
+  it('suggests readable names from task text when no saved project exists', () => {
+    const name = suggestGroupNameFromTasks([
+      { captureId: '1', content: 'Enviar sudaderas nuevas' },
+      { captureId: '2', content: 'Revisar sudaderas Jaqui' },
+    ]);
+    expect(name.toLowerCase()).toContain('sudaderas');
+  });
+
+  it('never uses hardcoded brand front keys', () => {
+    const items = [
+      enrich('Terminar última versión de la app', 0),
+      enrich('Sudaderas impermanence', 1),
+    ];
+    const result = buildCaptureFronts(items);
+    const keys = result.fronts.map((front) => front.key);
+    expect(keys).not.toContain('koraa');
+    expect(keys).not.toContain('impermanence');
   });
 });

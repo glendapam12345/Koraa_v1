@@ -1,6 +1,6 @@
 import type { Task } from '@/components/tasks/TaskCard';
 import { getLocalDateFromISO, getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
-import { INFERRED_FRONT_PATTERNS, inferInferredFrontKey } from '@/lib/captureProjectFronts';
+import { inferInferredFrontKey, suggestGroupNameFromTasks } from '@/lib/captureProjectFronts';
 import { getProjectEmoji } from '@/lib/projectEmoji';
 import { frontThemeForFront } from '@/lib/frentes/frontTheme';
 import { getCurrentWeekDates } from '@/lib/lifeAreas/experienceDataMappers';
@@ -58,13 +58,10 @@ function normalizeText(value: string): string {
 function inferLooseFront(content: string): Pick<FrontBucket, 'key' | 'name' | 'emoji'> {
   const key = inferInferredFrontKey(content);
   if (key === 'loose') {
-    return { key: 'personal', name: 'Personal', emoji: '🌿' };
+    return { key: 'loose', name: 'Otros pasos', emoji: '🌿' };
   }
-  const pattern = INFERRED_FRONT_PATTERNS.find((entry) => entry.key === key);
-  if (pattern) {
-    return { key: pattern.key, name: pattern.name, emoji: pattern.emoji };
-  }
-  return { key: 'personal', name: 'Personal', emoji: '🌿' };
+  const name = suggestGroupNameFromTasks([{ captureId: 'solo', content }]);
+  return { key, name, emoji: getProjectEmoji(content) };
 }
 
 function taskTouchesWeek(

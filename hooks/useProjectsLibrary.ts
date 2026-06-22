@@ -5,7 +5,7 @@ import { getLocalDateString } from '@/lib/dateLocal';
 
 import {
   resolveProjectLifeAreaKey,
-  type LifeAreaKey,
+  type LifeAreaRef,
 } from '@/lib/lifeAreas/lifeAreaCatalog';
 
 export type ProjectLibraryItem = {
@@ -13,8 +13,9 @@ export type ProjectLibraryItem = {
   name: string;
   color: string;
   dueDate: string | null;
-  lifeAreaKey: LifeAreaKey;
+  lifeAreaKey: LifeAreaRef;
   priority: number;
+  notes: string | null;
   taskCount: number;
   incompleteCount: number;
   withDateCount: number;
@@ -138,6 +139,7 @@ export function useProjectsLibrary(userId: string | undefined, options?: UseProj
             dueDate: p.due_date ?? null,
             lifeAreaKey: resolveProjectLifeAreaKey(p.life_area_key, p.name),
             priority: typeof p.priority === 'number' ? p.priority : 5,
+            notes: p.notes ?? null,
             taskCount: byProject[p.id]?.total ?? 0,
             incompleteCount: byProject[p.id]?.incomplete ?? 0,
             withDateCount: byProject[p.id]?.withDate ?? 0,

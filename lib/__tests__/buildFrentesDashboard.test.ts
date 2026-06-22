@@ -37,7 +37,7 @@ describe('buildFrentesDashboard', () => {
     expect(dashboard.totalOpenTasks).toBe(3);
     const koraa = dashboard.fronts.find((front) => front.projectId === 'p1');
     expect(koraa?.openTaskCount).toBe(1);
-    expect(koraa?.emoji).toBe('🚀');
+    expect(koraa?.emoji).toBe('📁');
   });
 
   it('builds weekly insight bars from week activity', () => {

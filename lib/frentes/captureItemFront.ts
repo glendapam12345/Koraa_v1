@@ -7,6 +7,7 @@ import {
 import type { ProjectForMatch } from '@/lib/batchProjectMatch';
 import type { EnrichedCaptureItem } from '@/lib/taskIntelligentEnrichment';
 import { nextCaptureRankInFront } from '@/lib/frentes/reorderCapturePriority';
+import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 
 export const LOOSE_FRONT_BUCKET = 'loose';
 
@@ -28,7 +29,7 @@ export function getItemAssignmentKind(item: EnrichedCaptureItem): CaptureAssignm
 export function applyAssignmentKind(
   item: EnrichedCaptureItem,
   kind: CaptureAssignmentKind,
-  options?: { projectId?: string; frontKey?: string },
+  options?: { projectId?: string; frontKey?: string; lifeAreaKey?: LifeAreaRef | null },
 ): EnrichedCaptureItem {
   if (kind === 'existing_project' && options?.projectId) {
     return {
@@ -37,6 +38,7 @@ export function applyAssignmentKind(
       selectedProjectId: options.projectId,
       frontKeyOverride: null,
       createProjectOnSave: false,
+      lifeAreaKey: null,
     };
   }
 
@@ -49,6 +51,7 @@ export function applyAssignmentKind(
       selectedProjectId: null,
       frontKeyOverride: frontKey,
       createProjectOnSave: true,
+      lifeAreaKey: null,
     };
   }
 
@@ -58,6 +61,7 @@ export function applyAssignmentKind(
     selectedProjectId: null,
     frontKeyOverride: LOOSE_FRONT_BUCKET,
     createProjectOnSave: false,
+    lifeAreaKey: options?.lifeAreaKey ?? item.lifeAreaKey ?? null,
   };
 }
 

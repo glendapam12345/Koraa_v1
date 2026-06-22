@@ -24,11 +24,13 @@ export type ProjectRowBase = {
 };
 
 import { isMissingProjectLifeAreaKeyColumnError } from '@/lib/projectLifeAreaSchema';
+import { isMissingProjectNotesColumnError } from '@/lib/projectNotesSchema';
 
 export type ProjectRowWithDueDate = ProjectRowBase & {
   due_date: string | null;
   life_area_key?: string | null;
   priority?: number;
+  notes?: string | null;
 };
 
 /** Carga proyectos con fallback si `due_date` aún no está en la BD remota. */
@@ -39,7 +41,7 @@ export async function fetchUserProjects(
 
   const withExtended = await supabase
     .from('projects')
-    .select('id, name, color, due_date, life_area_key, priority')
+    .select('id, name, color, due_date, life_area_key, priority, notes')
     .eq('user_id', userId)
     .order('priority', { ascending: false });
 
@@ -49,15 +51,38 @@ export async function fetchUserProjects(
         ...p,
         due_date: p.due_date ?? null,
         life_area_key: p.life_area_key ?? null,
+        notes: p.notes ?? null,
       })),
       supportsDueDate: true,
       error: null,
     };
   }
 
+  if (isMissingProjectNotesColumnError(withExtended.error)) {
+    const withoutNotes = await supabase
+      .from('projects')
+      .select('id, name, color, due_date, life_area_key, priority')
+      .eq('user_id', userId)
+      .order('priority', { ascending: false });
+
+    if (!withoutNotes.error) {
+      return {
+        data: ((withoutNotes.data || []) as ProjectRowWithDueDate[]).map((p) => ({
+          ...p,
+          due_date: p.due_date ?? null,
+          life_area_key: p.life_area_key ?? null,
+          notes: null,
+        })),
+        supportsDueDate: true,
+        error: null,
+      };
+    }
+  }
+
   if (
     !isMissingProjectDueDateColumnError(withExtended.error) &&
-    !isMissingProjectLifeAreaKeyColumnError(withExtended.error)
+    !isMissingProjectLifeAreaKeyColumnError(withExtended.error) &&
+    !isMissingProjectNotesColumnError(withExtended.error)
   ) {
     return { data: [], supportsDueDate: true, error: withExtended.error };
   }
@@ -110,6 +135,7 @@ export type ProjectDetailRow = {
   color: string;
   due_date: string | null;
   life_area_key?: string | null;
+  notes?: string | null;
 };
 
 /** Carga un proyecto por id con fallback si `due_date` no existe en la BD. */
@@ -121,7 +147,7 @@ export async function fetchProjectById(
 
   const withExtended = await supabase
     .from('projects')
-    .select('name, color, due_date, life_area_key')
+    .select('name, color, due_date, life_area_key, notes')
     .eq('id', projectId)
     .eq('user_id', userId)
     .maybeSingle();
@@ -132,6 +158,7 @@ export async function fetchProjectById(
       color: string;
       due_date?: string | null;
       life_area_key?: string | null;
+      notes?: string | null;
     };
     return {
       data: {
@@ -139,15 +166,45 @@ export async function fetchProjectById(
         color: row.color,
         due_date: row.due_date ?? null,
         life_area_key: row.life_area_key ?? null,
+        notes: row.notes ?? null,
       },
       error: null,
     };
   }
 
+  if (withExtended.error && isMissingProjectNotesColumnError(withExtended.error)) {
+    const withoutNotes = await supabase
+      .from('projects')
+      .select('name, color, due_date, life_area_key')
+      .eq('id', projectId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!withoutNotes.error && withoutNotes.data) {
+      const row = withoutNotes.data as {
+        name: string;
+        color: string;
+        due_date?: string | null;
+        life_area_key?: string | null;
+      };
+      return {
+        data: {
+          name: row.name,
+          color: row.color,
+          due_date: row.due_date ?? null,
+          life_area_key: row.life_area_key ?? null,
+          notes: null,
+        },
+        error: null,
+      };
+    }
+  }
+
   if (
     withExtended.error &&
     !isMissingProjectDueDateColumnError(withExtended.error) &&
-    !isMissingProjectLifeAreaKeyColumnError(withExtended.error)
+    !isMissingProjectLifeAreaKeyColumnError(withExtended.error) &&
+    !isMissingProjectNotesColumnError(withExtended.error)
   ) {
     return { data: null, error: withExtended.error };
   }

@@ -113,9 +113,9 @@ export function SemanaCalendarGrid({
                 >
                   {day.dayNumber}
                 </Text>
-                {day.taskCount > 0 ? (
+                {day.incompleteCount > 0 ? (
                   <View style={[styles.taskBadge, { backgroundColor: accent }]}>
-                    <Text style={styles.taskBadgeText}>{day.incompleteCount || day.taskCount}</Text>
+                    <Text style={styles.taskBadgeText}>{day.incompleteCount}</Text>
                   </View>
                 ) : null}
                 {hasCheckIn && energyPct > 0 ? (

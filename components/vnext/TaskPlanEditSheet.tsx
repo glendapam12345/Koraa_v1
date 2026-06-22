@@ -30,6 +30,14 @@ import {
 import { getPerceivedEffort, loadTaskEffortMap } from '@/lib/taskPerceivedEffort';
 import { getProjectEmoji } from '@/lib/projectEmoji';
 import { energyFromEffort, type TaskPlanEditPayload } from '@/lib/vnext/saveTaskPlanEdit';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUserLifeAreas } from '@/hooks/useUserLifeAreas';
+import {
+  listSelectableLifeAreas,
+  type ResolvedLifeArea,
+} from '@/lib/lifeAreas/userLifeAreas';
+import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
+import type { TranslationKey } from '@/lib/i18n';
 
 type TaskPlanEditSheetProps = {
   visible: boolean;
@@ -51,9 +59,13 @@ export function TaskPlanEditSheet({
   saving = false,
 }: TaskPlanEditSheetProps) {
   const { t } = useI18n();
+  const { user } = useAuth();
+  const { config: lifeAreasConfig } = useUserLifeAreas(user?.id);
   const [content, setContent] = useState('');
   const [scheduledDate, setScheduledDate] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [lifeAreaKey, setLifeAreaKey] = useState<LifeAreaRef | null>(null);
+  const [isPriority, setIsPriority] = useState(false);
   const [effort, setEffort] = useState<TaskEffort | null>(null);
   const [estimatedMinutes, setEstimatedMinutes] = useState(45);
   const [notes, setNotes] = useState('');
@@ -70,6 +82,8 @@ export function TaskPlanEditSheet({
       setContent(task.content);
       setScheduledDate(task.scheduled_date ?? null);
       setProjectId(task.project_id ?? null);
+      setLifeAreaKey((task.life_area_key as LifeAreaRef | null) ?? null);
+      setIsPriority(task.is_priority);
       setEffort(perceived);
       setEstimatedMinutes(
         planning.estimatedMinutes || effortToDefaultMinutes(perceived ?? undefined),
@@ -96,6 +110,11 @@ export function TaskPlanEditSheet({
   };
 
   const canSave = Boolean(task && content.trim() && metaReady && !saving);
+
+  const selectableAreas: ResolvedLifeArea[] = listSelectableLifeAreas(
+    lifeAreasConfig,
+    (key) => t(`lifeAreas.${key}` as TranslationKey),
+  );
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -134,7 +153,9 @@ export function TaskPlanEditSheet({
                     <VnextSelectableChip
                       label={t('projectsUi.looseTitle')}
                       selected={!projectId}
-                      onPress={() => setProjectId(null)}
+                      onPress={() => {
+                        setProjectId(null);
+                      }}
                     />
                     {projects.slice(0, 6).map((project) => (
                       <VnextSelectableChip
@@ -142,12 +163,42 @@ export function TaskPlanEditSheet({
                         label={project.name}
                         emoji={getProjectEmoji(project.name)}
                         selected={projectId === project.id}
-                        onPress={() => setProjectId(project.id)}
+                        onPress={() => {
+                          setProjectId(project.id);
+                          setLifeAreaKey(null);
+                        }}
                       />
                     ))}
                   </View>
                 </View>
               ) : null}
+
+              {!projectId ? (
+                <View style={styles.section}>
+                  <Text style={styles.label}>{t('vnext.taskEditLifeArea')}</Text>
+                  <View style={styles.chipRow}>
+                    {selectableAreas.map((area) => (
+                      <VnextSelectableChip
+                        key={area.ref}
+                        label={area.name}
+                        emoji={area.emoji}
+                        selected={lifeAreaKey === area.ref}
+                        onPress={() => setLifeAreaKey(area.ref)}
+                      />
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+
+              <View style={styles.section}>
+                <Text style={styles.label}>{t('vnext.taskEditPriority')}</Text>
+                <VnextSelectableChip
+                  label={t('vnext.taskEditPriorityOn')}
+                  emoji="⭐"
+                  selected={isPriority}
+                  onPress={() => setIsPriority((value) => !value)}
+                />
+              </View>
 
               <View style={styles.section}>
                 <Text style={styles.label}>{t('vnext.taskEditDuration')}</Text>
@@ -204,6 +255,8 @@ export function TaskPlanEditSheet({
                   scheduledDate,
                   projectId,
                   effort,
+                  isPriority,
+                  lifeAreaKey: projectId ? null : lifeAreaKey,
                   planning: {
                     estimatedMinutes,
                     energyRequired: energyFromEffort(effort),

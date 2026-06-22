@@ -1,44 +1,49 @@
 import type { ReactNode } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Target, Clock, ChevronRight, ChevronDown } from 'lucide-react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Clock, Star } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
-import { HoyGentleRhythmStrip } from '@/components/hoy/HoyGentleRhythmStrip';
-import { HoyStepBadge } from '@/components/hoy/HoyStepBadge';
+import { HoyFocusedProjectStrip } from '@/components/hoy/HoyFocusedProjectStrip';
+import { HoyPlanExpandableRow } from '@/components/hoy/HoyPlanExpandableRow';
+import type { FocusedProjectInfo } from '@/hooks/useFocusedProject';
 
 type HoyDailyPlanCardProps = {
   stepCount: number;
   waitingCount: number;
   crisisMode: boolean;
-  energyLevel: number;
   prioritiesDone: number;
   prioritiesTotal: number;
   allFocusDone: boolean;
   hasCheckIn?: boolean;
+  focusedProject?: FocusedProjectInfo | null;
+  onClearFocusedProject?: () => void;
+  prioritiesSlot?: ReactNode;
   prioritiesExpanded?: boolean;
   onTogglePriorities?: () => void;
-  prioritiesSlot?: ReactNode;
   waitingExpanded?: boolean;
   onToggleWaiting?: () => void;
   waitingSlot?: ReactNode;
+  footerSlot?: ReactNode;
 };
 
 export function HoyDailyPlanCard({
   stepCount,
   waitingCount,
   crisisMode,
-  energyLevel,
   prioritiesDone,
   prioritiesTotal,
   allFocusDone,
   hasCheckIn = false,
+  focusedProject = null,
+  onClearFocusedProject,
+  prioritiesSlot,
   prioritiesExpanded = false,
   onTogglePriorities,
-  prioritiesSlot,
   waitingExpanded = false,
   onToggleWaiting,
   waitingSlot,
+  footerSlot,
 }: HoyDailyPlanCardProps) {
   const { t } = useI18n();
 
@@ -47,7 +52,7 @@ export function HoyDailyPlanCard({
     : stepCount > 0
       ? prioritiesExpanded
         ? t('hoy.planPrioritiesSubOpen')
-        : t('hoy.planPrioritiesSub')
+        : t('hoy.planPrioritiesMany', { count: stepCount })
       : t('hoy.planPrioritiesSubEmpty');
 
   const waitingSubtitle =
@@ -57,129 +62,103 @@ export function HoyDailyPlanCard({
         : t('hoy.planWaitingSub', { count: waitingCount })
       : t('hoy.planWaitingSubEmpty');
 
+  const progressLabel =
+    prioritiesTotal > 0
+      ? t('hoy.planProgressPill', { done: prioritiesDone, total: prioritiesTotal })
+      : null;
+
   return (
     <CalmCard style={styles.card}>
-      <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <HoyStepBadge step={2} />
+      <View style={styles.headerSoft}>
+        <View style={styles.header}>
           <Text style={styles.title}>{t('hoy.planTitle')}</Text>
-        </View>
-        <Text style={styles.subtitle}>
-          {crisisMode
-            ? t('hoy.planSubtitleCare')
-            : hasCheckIn
-              ? t('hoy.planSubtitleWithCheckIn')
-              : t('hoy.planSubtitleNoCheckIn')}
-        </Text>
-      </View>
-
-      <View style={styles.rows}>
-        <View>
-          <PlanRow
-            icon={<Target size={20} color={THEME.colors.calm.lavenderDeep} />}
-            iconBg={THEME.colors.calm.lavender}
-            title={t('hoy.planPrioritiesTitle')}
-            subtitle={prioritiesSubtitle}
-            expanded={prioritiesExpanded}
-            onPress={() => onTogglePriorities?.()}
-            a11y={t('hoy.planPrioritiesA11y', { count: Math.max(stepCount, 0) })}
-          />
-          {prioritiesExpanded && prioritiesSlot ? (
-            <View style={styles.expandSlot}>{prioritiesSlot}</View>
-          ) : null}
-        </View>
-
-        <View>
-          <PlanRow
-            icon={<Clock size={20} color={THEME.colors.text.secondary} />}
-            iconBg={THEME.colors.calm.mist}
-            title={t('hoy.planWaitingTitle')}
-            subtitle={waitingSubtitle}
-            expanded={waitingExpanded}
-            onPress={() => onToggleWaiting?.()}
-            a11y={t('hoy.planWaitingA11y', { count: waitingCount })}
-          />
-          {waitingExpanded ? (
-            <View style={styles.expandSlot}>
-              {waitingSlot ?? (
-                <Text style={styles.waitingEmpty}>{t('hoy.planWaitingSubEmpty')}</Text>
-              )}
+          <Text style={styles.subtitle}>
+            {focusedProject
+              ? t('hoy.planSubtitleWithProject', { name: focusedProject.name })
+              : crisisMode
+                ? t('hoy.planSubtitleCare')
+                : hasCheckIn
+                  ? t('hoy.planSubtitleWithCheckIn')
+                  : t('hoy.planSubtitleNoCheckIn')}
+          </Text>
+          {progressLabel ? (
+            <View style={styles.progressPill}>
+              <Text style={styles.progressText}>{progressLabel}</Text>
             </View>
           ) : null}
         </View>
       </View>
 
-      {!allFocusDone ? (
-        <HoyGentleRhythmStrip
-          crisisMode={crisisMode}
-          energyLevel={energyLevel}
-          prioritiesDone={prioritiesDone}
-          prioritiesTotal={prioritiesTotal}
-          allFocusDone={allFocusDone}
-        />
+      {focusedProject && onClearFocusedProject ? (
+        <HoyFocusedProjectStrip project={focusedProject} onClearFocus={onClearFocusedProject} />
       ) : null}
-    </CalmCard>
-  );
-}
 
-function PlanRow({
-  icon,
-  iconBg,
-  title,
-  subtitle,
-  expanded,
-  onPress,
-  a11y,
-}: {
-  icon: ReactNode;
-  iconBg: string;
-  title: string;
-  subtitle: string;
-  expanded: boolean;
-  onPress: () => void;
-  a11y: string;
-}) {
-  return (
-    <TouchableOpacity
-      style={[styles.row, expanded && styles.rowExpanded]}
-      onPress={onPress}
-      activeOpacity={0.85}
-      accessibilityRole="button"
-      accessibilityLabel={a11y}
-      accessibilityState={{ expanded }}
-    >
-      <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>{icon}</View>
-      <View style={styles.rowText}>
-        <Text style={styles.rowTitle}>{title}</Text>
-        <Text style={styles.rowSub}>{subtitle}</Text>
+      <View style={styles.sections}>
+        <HoyPlanExpandableRow
+          variant="accent"
+          compact
+          icon={<Star size={18} color={THEME.colors.calm.lavenderDeep} />}
+          title={t('hoy.planPrioritiesTitle')}
+          subtitle={prioritiesSubtitle}
+          expanded={prioritiesExpanded}
+          onToggle={() => onTogglePriorities?.()}
+          accessibilityLabel={t('hoy.planPrioritiesA11y', { count: stepCount })}
+        >
+          {prioritiesSlot ?? (
+            <Text style={styles.emptyHint}>{t('hoy.planPrioritiesSubEmpty')}</Text>
+          )}
+          {stepCount > 0 ? (
+            <Text style={styles.editHint}>{t('hoy.planEditHint')}</Text>
+          ) : null}
+        </HoyPlanExpandableRow>
+
+        <HoyPlanExpandableRow
+          variant="muted"
+          compact
+          icon={<Clock size={18} color={THEME.colors.text.secondary} />}
+          title={t('hoy.planWaitingTitle')}
+          subtitle={waitingSubtitle}
+          expanded={waitingExpanded}
+          onToggle={() => onToggleWaiting?.()}
+          accessibilityLabel={t('hoy.planWaitingA11y', { count: waitingCount })}
+        >
+          {waitingSlot ?? (
+            <Text style={styles.emptyHint}>{t('hoy.planWaitingSubEmpty')}</Text>
+          )}
+          {waitingCount > 0 ? (
+            <Text style={styles.editHint}>{t('hoy.planEditHint')}</Text>
+          ) : null}
+        </HoyPlanExpandableRow>
       </View>
-      {expanded ? (
-        <ChevronDown size={18} color={THEME.colors.calm.lavenderDeep} />
-      ) : (
-        <ChevronRight size={18} color={THEME.colors.calm.lavenderDeep} />
-      )}
-    </TouchableOpacity>
+
+      {footerSlot ? <View style={styles.footer}>{footerSlot}</View> : null}
+    </CalmCard>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    padding: THEME.spacing.md,
-    gap: THEME.spacing.sm,
-    backgroundColor: THEME.colors.calm.mist,
-    borderColor: THEME.colors.calm.border,
+    padding: 0,
+    overflow: 'hidden',
+    gap: 0,
+    backgroundColor: THEME.colors.fill[100],
+    borderColor: THEME.colors.calm.lavender,
+    borderWidth: 1,
+  },
+  headerSoft: {
+    paddingHorizontal: THEME.spacing.md,
+    paddingTop: THEME.spacing.md,
+    paddingBottom: THEME.spacing.sm,
+    backgroundColor: THEME.colors.calm.blush,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: THEME.colors.calm.border,
   },
   header: {
-    gap: 4,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.xs,
+    gap: 6,
   },
   title: {
     ...THEME.typography.h3,
-    fontFamily: THEME.fonts.heading.bold,
+    fontFamily: THEME.fonts.accent.italic,
     color: THEME.colors.text.main,
   },
   subtitle: {
@@ -187,57 +166,44 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     lineHeight: 18,
   },
-  rows: {
-    gap: THEME.spacing.sm,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.sm + 2,
-    paddingHorizontal: THEME.spacing.md,
-    backgroundColor: THEME.colors.calm.card,
-    borderRadius: THEME.borderRadius.rounded,
+  progressPill: {
+    alignSelf: 'flex-start',
+    marginTop: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[100],
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
-    minHeight: THEME.sizes.touchTarget,
-    ...THEME.shadows.soft,
   },
-  rowExpanded: {
-    borderColor: THEME.colors.calm.lavenderDeep,
-  },
-  iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowText: {
-    flex: 1,
-    gap: 2,
-    minWidth: 0,
-  },
-  rowTitle: {
-    ...THEME.typography.body,
+  progressText: {
+    ...THEME.typography.micro,
     fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
+    color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 14,
+  },
+  sections: {
+    gap: THEME.spacing.xs,
+    padding: THEME.spacing.md,
+    paddingTop: THEME.spacing.sm,
+  },
+  footer: {
+    gap: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.md,
+    paddingBottom: THEME.spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: THEME.colors.calm.border,
+  },
+  emptyHint: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.tertiary,
+    fontStyle: 'italic',
     lineHeight: 22,
   },
-  rowSub: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    lineHeight: 17,
-  },
-  expandSlot: {
-    marginTop: THEME.spacing.xs,
-    gap: THEME.spacing.xs,
-  },
-  waitingEmpty: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    lineHeight: 18,
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.xs,
+  editHint: {
+    ...THEME.typography.micro,
+    color: THEME.colors.text.tertiary,
+    lineHeight: 14,
+    marginTop: 2,
   },
 });

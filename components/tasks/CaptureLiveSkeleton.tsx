@@ -39,30 +39,33 @@ function ShimmerBar({ width, height }: { width: `${number}%` | number; height: n
   );
 }
 
-export function CaptureLiveSkeleton() {
+type CaptureLiveSkeletonProps = {
+  count?: number;
+};
+
+function ColumnSkeleton() {
+  return (
+    <View style={styles.columnCard}>
+      <View style={styles.row}>
+        <ShimmerBar width={28} height={28} />
+        <View style={styles.col}>
+          <ShimmerBar width="70%" height={12} />
+          <ShimmerBar width="40%" height={10} />
+        </View>
+      </View>
+      <ShimmerBar width="92%" height={10} />
+      <ShimmerBar width="78%" height={10} />
+      <ShimmerBar width="65%" height={10} />
+    </View>
+  );
+}
+
+export function CaptureLiveSkeleton({ count = 2 }: CaptureLiveSkeletonProps) {
   return (
     <View style={styles.wrap} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <View style={styles.card}>
-        <View style={styles.row}>
-          <ShimmerBar width={28} height={28} />
-          <View style={styles.col}>
-            <ShimmerBar width="55%" height={12} />
-            <ShimmerBar width="35%" height={10} />
-          </View>
-        </View>
-        <ShimmerBar width="90%" height={10} />
-        <ShimmerBar width="72%" height={10} />
-      </View>
-      <View style={styles.card}>
-        <View style={styles.row}>
-          <ShimmerBar width={28} height={28} />
-          <View style={styles.col}>
-            <ShimmerBar width="48%" height={12} />
-            <ShimmerBar width="30%" height={10} />
-          </View>
-        </View>
-        <ShimmerBar width="80%" height={10} />
-      </View>
+      {Array.from({ length: count }, (_, index) => (
+        <ColumnSkeleton key={index} />
+      ))}
     </View>
   );
 }
@@ -70,14 +73,16 @@ export function CaptureLiveSkeleton() {
 const styles = StyleSheet.create({
   wrap: {
     gap: THEME.spacing.sm,
+    alignSelf: 'stretch',
   },
-  card: {
+  columnCard: {
     padding: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.standard,
-    backgroundColor: THEME.colors.calm.card,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.fill[100],
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
     gap: 8,
+    alignSelf: 'stretch',
   },
   row: {
     flexDirection: 'row',

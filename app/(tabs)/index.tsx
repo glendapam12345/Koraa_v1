@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useState, useRef, useMemo, useCallback } from 'react';
 import * as Haptics from 'expo-haptics';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useCheckIn } from '@/hooks/useCheckIn';
 import { useTasks } from '@/hooks/useTasks';
@@ -19,7 +20,6 @@ import { getCatalog } from '@/lib/i18n';
 import { HoyLiteBanner } from '@/components/hoy/HoyLiteBanner';
 import { HoyScreenHeader } from '@/components/hoy/HoyScreenHeader';
 import { HoyTasksSection } from '@/components/hoy/HoyTasksSection';
-import { useLocalSearchParams } from 'expo-router';
 import type { Task } from '@/components/tasks/TaskCard';
 import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,10 +37,13 @@ import { useHoyTaskExpansion } from '@/hooks/useHoyTaskExpansion';
 import { useHoyProjectsMap } from '@/hooks/useHoyProjectsMap';
 import { useHoyScreenBootstrap } from '@/hooks/useHoyScreenBootstrap';
 import type { TaskCompletedPayload } from '@/hooks/useTaskActions';
-import { NoPendingTasksCelebration } from '@/components/NoPendingTasksCelebration';
 import { CareModeGuideSheet } from '@/components/hoy/CareModeGuideSheet';
 import { CareModeSheet } from '@/components/hoy/CareModeSheet';
+import { HoyCompanionHeader } from '@/components/hoy/HoyCompanionHeader';
+import { HoyNightCompanionCard } from '@/components/hoy/HoyNightCompanionCard';
 import { useCrisisMode } from '@/hooks/useCrisisMode';
+import { useFocusedProject } from '@/hooks/useFocusedProject';
+import { isLateNight } from '@/lib/timeOfDayContext';
 
 export default function TodayScreen() {
   const { t, locale } = useI18n();
@@ -52,7 +55,6 @@ export default function TodayScreen() {
     openRecheck?: string;
     recheckSource?: string;
   }>();
-  const [dismissedCelebration, setDismissedCelebration] = useState(false);
   const [careModeSheet, setCareModeSheet] = useState<'activate' | 'deactivate' | null>(null);
   const [careModeGuideOpen, setCareModeGuideOpen] = useState(false);
   const [careModeBusy, setCareModeBusy] = useState(false);
@@ -83,6 +85,19 @@ export default function TodayScreen() {
     loadTasks,
     setTasks,
   } = useTasks(todayMood, showToast);
+
+  const {
+    focusedProject,
+    refresh: refreshFocusedProject,
+    clearFocus: clearFocusedProject,
+  } = useFocusedProject(user?.id);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshFocusedProject();
+      void loadTasks();
+    }, [loadTasks, refreshFocusedProject]),
+  );
 
   const loading = checkInLoading || loadingTasks;
 
@@ -301,12 +316,18 @@ export default function TodayScreen() {
         }
       >
         <HoyScreenHeader
-          showSubtitle={!hoyLiteLayout}
+          showSubtitle={false}
           streak={currentStreak}
           checkedInToday={Boolean(todayMood)}
           crisisModeActive={crisisModeActive}
           onCareModePress={() => setCareModeSheet(crisisModeActive ? 'deactivate' : 'activate')}
         />
+
+        {!loading ? <HoyCompanionHeader displayName={displayName} /> : null}
+
+        {!loading && isLateNight() ? (
+          <HoyNightCompanionCard todayMood={todayMood ?? ''} energyLevel={energyLevel} />
+        ) : null}
 
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -361,16 +382,10 @@ export default function TodayScreen() {
             onCareModeLearnMore={() => setCareModeGuideOpen(true)}
             onTasksReload={loadTasks}
             showToast={showToast}
+            setTasks={setTasks}
+            focusedProject={focusedProject}
+            onClearFocusedProject={() => void clearFocusedProject()}
           />
-        ) : null}
-
-        {!loading &&
-        !crisisModeActive &&
-        !hoyLiteLayout &&
-        incompleteTasksForToday.length === 0 &&
-        tasks.length > 0 &&
-        !dismissedCelebration ? (
-          <NoPendingTasksCelebration onDismiss={() => setDismissedCelebration(true)} />
         ) : null}
 
       </CalmScreen>

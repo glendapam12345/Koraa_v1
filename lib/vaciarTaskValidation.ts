@@ -1,5 +1,7 @@
 const MAX_TASK_LENGTH = 300;
 
+import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
+
 export type VaciarTaskDraft = {
   content: string;
   hasSubtasks: boolean;
@@ -8,6 +10,9 @@ export type VaciarTaskDraft = {
   selectedCategory: string;
   selectedProjectId: string | null;
   selectedDate: string | null;
+  isPriority?: boolean;
+  /** Área de vida para tareas sueltas (sin proyecto). */
+  lifeAreaKey?: LifeAreaRef | null;
 };
 
 export type VaciarValidationCode =

@@ -8,26 +8,38 @@ describe('buildLiveCapturePreview', () => {
     expect(buildLiveCapturePreview('ok', 'es', [])).toBeNull();
   });
 
-  it('builds fronts locally without network', () => {
+  it('builds area chips locally without network', () => {
     const result = buildLiveCapturePreview(CHATGPT_BRAIN_DUMP, 'es', []);
     expect(result).not.toBeNull();
     expect(result!.items.length).toBe(10);
-    expect(result!.fronts.frontCount).toBe(3);
-    expect(result!.fronts.fronts.map((f) => f.name)).toEqual(
-      expect.arrayContaining(['Koraa App', 'Impermanence', 'Personal']),
+    expect(result!.areaColumns.length).toBeGreaterThanOrEqual(2);
+    expect(result!.areaChips.length).toBe(result!.areaColumns.length);
+    expect(result!.areaColumns.reduce((sum, col) => sum + col.count, 0)).toBe(result!.items.length);
+    expect(result!.areaColumns.every((col) => col.previews.length > 0)).toBe(true);
+  });
+
+  it('labels home tasks with contextual copy', () => {
+    const result = buildLiveCapturePreview(
+      'Lavar la ropa\nComprar leche en el super\nLimpiar la cocina',
+      'es',
+      [],
     );
+    expect(result).not.toBeNull();
+    const homeColumn = result!.areaColumns.find((col) => col.label === 'Tareas del hogar');
+    expect(homeColumn).toBeTruthy();
+    expect(homeColumn!.count).toBe(3);
   });
 
   it('matches existing projects when provided', () => {
-    const projects = [{ id: 'p1', name: 'Koraa App' }];
+    const projects = [{ id: 'p1', name: 'Mi app' }];
     const result = buildLiveCapturePreview(
       'Terminar la última versión de la app\nArreglar bug en onboarding',
       'es',
       projects,
     );
     expect(result).not.toBeNull();
-    const koraaFront = result!.fronts.fronts.find((f) => f.name === 'Koraa App');
-    expect(koraaFront?.projectId).toBe('p1');
+    const matched = result!.items.find((item) => item.selectedProjectId === 'p1');
+    expect(matched).toBeTruthy();
   });
 
   it('keeps stable ids when stableIds is enabled', () => {
@@ -38,6 +50,5 @@ describe('buildLiveCapturePreview', () => {
     });
     expect(first!.items[0].id).toBe(second!.items[0].id);
     expect(first!.items[1].id).toBe(second!.items[1].id);
-    expect(second!.items).toHaveLength(3);
   });
 });

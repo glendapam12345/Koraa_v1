@@ -1,8 +1,9 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { getFirstName } from '@/lib/displayName';
+import { formatGreetingWithName, formatNightReturnGreeting, useKoraaGreeting } from '@/hooks/useKoraaGreeting';
+import { TimeOfDayChip } from '@/components/hoy/TimeOfDayChip';
 
 type HoyGreetingBarProps = {
   displayName: string;
@@ -11,20 +12,17 @@ type HoyGreetingBarProps = {
 export function HoyGreetingBar({ displayName }: HoyGreetingBarProps) {
   const { t } = useI18n();
   const firstName = getFirstName(displayName);
+  const { period, greeting, timeChipLabel, lateNight, greetingSubline } = useKoraaGreeting();
 
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return t('hoy.greetingMorning');
-    if (hour < 18) return t('hoy.greetingAfternoon');
-    return t('hoy.greetingEvening');
-  }, [t]);
+  const title = lateNight
+    ? formatNightReturnGreeting(t, firstName, period)
+    : formatGreetingWithName(t, greeting, firstName);
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.greeting}>
-        {t('hoy.inicio.greetingWithName', { greeting, name: firstName })}
-      </Text>
-      <Text style={styles.subline}>{t('hoy.greetingSubline')}</Text>
+      <TimeOfDayChip period={period} label={timeChipLabel} />
+      <Text style={styles.greeting}>{title}</Text>
+      <Text style={styles.subline}>{greetingSubline}</Text>
     </View>
   );
 }

@@ -53,3 +53,10 @@ export function getPreviousLocalDateString(date: Date = new Date()): string {
   d.setDate(d.getDate() - 1);
   return getLocalDateString(d);
 }
+
+/** Día calendario local siguiente (AAAA-MM-DD). */
+export function getNextLocalDateString(date: Date = new Date()): string {
+  const d = parseLocalDateString(getLocalDateString(date));
+  d.setDate(d.getDate() + 1);
+  return getLocalDateString(d);
+}

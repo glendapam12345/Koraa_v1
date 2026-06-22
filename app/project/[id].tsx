@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
@@ -13,6 +13,7 @@ import { TaskEditModal } from '@/components/tasks/TaskEditModal';
 import { ProjectEditModal } from '@/components/projects/ProjectEditModal';
 import { ProjectMetaRow } from '@/components/projects/ProjectMetaRow';
 import { ProjectFocusCta } from '@/components/projects/ProjectFocusCta';
+import { ProjectNotesBlock } from '@/components/projects/ProjectNotesBlock';
 import {
   ProjectQuickAddTaskModal,
   type ProjectQuickAddTarget,
@@ -23,6 +24,7 @@ import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
 import { confirmDeleteProject, deleteProjectById } from '@/lib/deleteProject';
 import { fetchProjectById, fetchUserProjects } from '@/lib/projectDueDateSchema';
 import { normalizeDueDateInput } from '@/lib/projectProgress';
+import { updateProjectFields } from '@/lib/updateProjectFields';
 import { TaskMoveProjectModal } from '@/components/tasks/TaskMoveProjectModal';
 import {
   getNextWeekDateString,
@@ -33,21 +35,48 @@ import {
 import { getProjectEmoji } from '@/lib/projectEmoji';
 import {
   resolveProjectLifeAreaKey,
+  makeCustomLifeAreaRef,
   type LifeAreaKey,
+  type LifeAreaRef,
 } from '@/lib/lifeAreas/lifeAreaCatalog';
+import { useUserLifeAreas } from '@/hooks/useUserLifeAreas';
+import { AreaNameEditSheet } from '@/components/projects/AreaNameEditSheet';
+import { LooseTasksFilterBar } from '@/components/projects/LooseTasksFilterBar';
+import {
+  filterLooseTasks,
+  isLooseTaskSortFilter,
+  type LooseTaskSortFilter,
+} from '@/lib/looseTasks';
+import { resolveLifeAreaDisplay } from '@/lib/lifeAreas/userLifeAreas';
+import type { TranslationKey } from '@/lib/i18n';
+import { useTaskPlanEdit } from '@/hooks/useTaskPlanEdit';
+import { normalizeCategoryKey } from '@/lib/i18n/categoryLabels';
+import { SemanaInteractiveTaskList } from '@/components/semana/SemanaInteractiveTaskList';
 
 export default function ProjectScreen() {
-  const params = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{
+    id: string;
+    filter?: string;
+    area?: string;
+    highlight?: string;
+  }>();
   const projectId = typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : undefined;
+  const areaFilter = typeof params.area === 'string' ? params.area : undefined;
+  const highlightTaskId =
+    typeof params.highlight === 'string' ? params.highlight : undefined;
+  const initialFilter = isLooseTaskSortFilter(params.filter) ? params.filter : 'all';
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { t } = useI18n();
+  const { config: lifeAreasConfig, addCustomArea } = useUserLifeAreas(user?.id);
+  const [showNewAreaSheet, setShowNewAreaSheet] = useState(false);
   const [project, setProject] = useState<{
     name: string;
     color: string;
     dueDate: string | null;
-    lifeAreaKey: LifeAreaKey;
+    lifeAreaKey: LifeAreaRef;
+    notes: string | null;
   } | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,14 +84,15 @@ export default function ProjectScreen() {
   const [expandedDetailsTasks, setExpandedDetailsTasks] = useState<Set<string>>(new Set());
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [editContent, setEditContent] = useState('');
   const [editingProject, setEditingProject] = useState(false);
   const [editProjectName, setEditProjectName] = useState('');
   const [editProjectColor, setEditProjectColor] = useState<string>(THEME.colors.gradient.blue);
   const [editProjectDueDate, setEditProjectDueDate] = useState('');
-  const [editProjectLifeAreaKey, setEditProjectLifeAreaKey] = useState<LifeAreaKey>('other');
+  const [editProjectLifeAreaKey, setEditProjectLifeAreaKey] = useState<LifeAreaRef>('other');
+  const [editProjectNotes, setEditProjectNotes] = useState('');
   const [savingProject, setSavingProject] = useState(false);
   const [quickAddTarget, setQuickAddTarget] = useState<ProjectQuickAddTarget | null>(null);
+  const [looseFilter, setLooseFilter] = useState<LooseTaskSortFilter>(initialFilter);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [moveTaskTarget, setMoveTaskTarget] = useState<Task | null>(null);
   const [allProjects, setAllProjects] = useState<{ id: string; name: string; color: string }[]>(
@@ -82,7 +112,7 @@ export default function ProjectScreen() {
     if (!silent) setLoading(true);
     try {
       if (isLoose) {
-        setProject({ name: t('projectDetail.looseName'), color: THEME.colors.text.tertiary, dueDate: null, lifeAreaKey: 'personal' });
+        setProject({ name: t('projectDetail.looseName'), color: THEME.colors.text.tertiary, dueDate: null, lifeAreaKey: 'home', notes: null });
 
         const { data: tasksData, error: tasksError } = await supabase
           .from('tasks')
@@ -144,6 +174,7 @@ export default function ProjectScreen() {
           color: projectData.color ?? THEME.colors.gradient.blue,
           dueDate: projectData.due_date ?? null,
           lifeAreaKey: resolveProjectLifeAreaKey(projectData.life_area_key, projectData.name),
+          notes: projectData.notes ?? null,
         });
 
         if (tasksError) {
@@ -181,7 +212,11 @@ export default function ProjectScreen() {
 
   const openQuickAdd = useCallback(() => {
     if (isLoose) {
-      setQuickAddTarget({ mode: 'loose' });
+      const lifeAreaRef =
+        areaFilter && (areaFilter.startsWith('custom:') || areaFilter.length > 0)
+          ? (areaFilter as LifeAreaRef)
+          : undefined;
+      setQuickAddTarget({ mode: 'loose', lifeAreaRef });
       return;
     }
     if (!project || !projectId) return;
@@ -191,7 +226,7 @@ export default function ProjectScreen() {
       name: project.name,
       color: project.color,
     });
-  }, [isLoose, project, projectId]);
+  }, [isLoose, project, projectId, areaFilter]);
 
   const handleQuickAddSaved = useCallback(
     ({ title, projectName }: { title: string; projectName?: string }) => {
@@ -208,6 +243,19 @@ export default function ProjectScreen() {
     hasLoadedRef.current = false;
     loadProjectAndTasks();
   }, [loadProjectAndTasks]);
+
+  useEffect(() => {
+    if (highlightTaskId) {
+      setExpandedTasks((prev) => new Set(prev).add(highlightTaskId));
+      setExpandedDetailsTasks((prev) => new Set(prev).add(highlightTaskId));
+    }
+  }, [highlightTaskId, tasks.length]);
+
+  useEffect(() => {
+    if (isLooseTaskSortFilter(params.filter)) {
+      setLooseFilter(params.filter);
+    }
+  }, [params.filter]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -282,10 +330,116 @@ export default function ProjectScreen() {
   const completedTasks = tasks.filter((t) => t.is_completed);
   const allDone = completedTasks.length > 0 && incompleteTasks.length === 0;
 
+  const filteredIncompleteTasks = useMemo(() => {
+    if (!isLoose) return incompleteTasks;
+    return filterLooseTasks(
+      incompleteTasks.map((task) => ({
+        id: task.id,
+        content: task.content,
+        created_at: task.created_at,
+        scheduled_date: task.scheduled_date,
+        life_area_key: task.life_area_key ?? null,
+        is_completed: task.is_completed,
+        is_priority: task.is_priority,
+      })),
+      looseFilter,
+      { areaRef: areaFilter ?? null },
+    ).map((summary) => incompleteTasks.find((task) => task.id === summary.id)!);
+  }, [areaFilter, incompleteTasks, isLoose, looseFilter]);
+
+  const filteredCompletedTasks = useMemo(() => {
+    if (!isLoose || looseFilter !== 'all') return completedTasks;
+    if (!areaFilter) return completedTasks;
+    return completedTasks.filter((task) => (task.life_area_key ?? null) === areaFilter);
+  }, [areaFilter, completedTasks, isLoose, looseFilter]);
+
+  const areaFilterLabel = useMemo(() => {
+    if (!isLoose || !areaFilter) return null;
+    const getDefaultLabel = (key: LifeAreaKey) => t(`lifeAreas.${key}` as TranslationKey);
+    return resolveLifeAreaDisplay(areaFilter as LifeAreaRef, lifeAreasConfig, getDefaultLabel).name;
+  }, [areaFilter, isLoose, lifeAreasConfig, t]);
+
+  const visibleIncompleteTasks = isLoose ? filteredIncompleteTasks : incompleteTasks;
+  const visibleCompletedTasks = isLoose ? filteredCompletedTasks : completedTasks;
+
   const getCategoryColorCallback = useCallback((category: string) => {
-    const key = category.toLowerCase();
+    const key = normalizeCategoryKey(category) ?? category.trim().toLowerCase();
     return THEME.colors.category[key as keyof typeof THEME.colors.category] ?? THEME.colors.text.secondary;
   }, []);
+
+  const getLooseProjectInfo = useCallback(
+    (task: Task) => {
+      if (task.life_area_key) {
+        const getDefaultLabel = (key: LifeAreaKey) => t(`lifeAreas.${key}` as TranslationKey);
+        const display = resolveLifeAreaDisplay(
+          task.life_area_key as LifeAreaRef,
+          lifeAreasConfig,
+          getDefaultLabel,
+        );
+        return {
+          label: display.name,
+          color: THEME.colors.calm.lavenderDeep,
+          projectId: undefined as string | undefined,
+          projectName: undefined as string | undefined,
+        };
+      }
+      return {
+        label: t('components.looseTasks'),
+        color: THEME.colors.text.secondary,
+        projectId: undefined as string | undefined,
+        projectName: undefined as string | undefined,
+      };
+    },
+    [lifeAreasConfig, t],
+  );
+
+  const projectsMap = useMemo(
+    () =>
+      Object.fromEntries(
+        allProjects.map((entry) => [entry.id, { name: entry.name, color: entry.color }]),
+      ),
+    [allProjects],
+  );
+
+  const showInteractiveToast = useCallback((message: string, _type?: 'success' | 'error' | 'info') => {
+    setToastMessage(message);
+  }, []);
+
+  const getProjectInfoForTask = useCallback(
+    (task: Task) => {
+      if (isLoose) return getLooseProjectInfo(task);
+      return {
+        label: project?.name ?? '',
+        color: project?.color ?? THEME.colors.gradient.blue,
+        projectId: projectId ?? undefined,
+        projectName: project?.name,
+      };
+    },
+    [getLooseProjectInfo, isLoose, project, projectId],
+  );
+
+  const { saving: planEditSaving, savePlan } = useTaskPlanEdit({
+    onSaved: (_taskId, payload) => {
+      setEditingTask(null);
+      setToastMessage(t('hooks.taskUpdated'));
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === payload.taskId
+            ? {
+                ...task,
+                content: payload.content,
+                scheduled_date: payload.scheduledDate,
+                project_id: payload.projectId,
+                is_priority: payload.isPriority ?? task.is_priority,
+                life_area_key: payload.projectId ? null : (payload.lifeAreaKey ?? null),
+              }
+            : task,
+        ),
+      );
+      void loadProjectAndTasks({ silent: true });
+    },
+    onError: (message) => setToastMessage(message),
+  });
 
   const toggleExpansion = useCallback((taskId: string) => {
     setExpandedTasks((prev) => {
@@ -327,6 +481,7 @@ export default function ProjectScreen() {
       setEditProjectColor(project.color);
       setEditProjectDueDate(project.dueDate ?? '');
       setEditProjectLifeAreaKey(project.lifeAreaKey);
+      setEditProjectNotes(project.notes ?? '');
     }
   }, [project, isLoose]);
 
@@ -346,15 +501,13 @@ export default function ProjectScreen() {
     setSavingProject(true);
     try {
       const dueDate = normalizeDueDateInput(editProjectDueDate);
-      const { error } = await supabase
-        .from('projects')
-        .update({
-          name: editProjectName.trim(),
-          color: editProjectColor,
-          due_date: dueDate,
-          life_area_key: editProjectLifeAreaKey,
-        })
-        .eq('id', projectId);
+      const { error } = await updateProjectFields(projectId, {
+        name: editProjectName.trim(),
+        color: editProjectColor,
+        due_date: dueDate,
+        life_area_key: editProjectLifeAreaKey,
+        notes: editProjectNotes,
+      });
       if (!error) {
         setEditingProject(false);
         loadProjectAndTasks();
@@ -362,25 +515,21 @@ export default function ProjectScreen() {
     } finally {
       setSavingProject(false);
     }
-  }, [editProjectColor, editProjectDueDate, editProjectLifeAreaKey, editProjectName, isLoose, loadProjectAndTasks, projectId]);
+  }, [
+    editProjectColor,
+    editProjectDueDate,
+    editProjectLifeAreaKey,
+    editProjectName,
+    editProjectNotes,
+    isLoose,
+    loadProjectAndTasks,
+    projectId,
+  ]);
 
   const handleEditTask = useCallback((task: Task) => {
     setEditingTask(task);
-    setEditContent(task.content);
     setMenuOpen(null);
   }, []);
-
-  const handleSaveEdit = useCallback(async () => {
-    if (!editingTask || !editContent.trim()) return;
-    const { error } = await supabase
-      .from('tasks')
-      .update({ content: editContent.trim() })
-      .eq('id', editingTask.id);
-    if (!error) {
-      setEditingTask(null);
-      loadProjectAndTasks();
-    }
-  }, [editContent, editingTask, loadProjectAndTasks]);
 
   const handleDeleteTask = useCallback(
     (task: Task) => {
@@ -402,11 +551,24 @@ export default function ProjectScreen() {
               if (!error) loadProjectAndTasks();
             },
           },
-        ]
+        ],
       );
     },
-    [loadProjectAndTasks, t]
+    [loadProjectAndTasks, t],
   );
+
+  const handleSavePlanEdit = useCallback(
+    async (payload: Parameters<typeof savePlan>[0]) => {
+      await savePlan(payload);
+    },
+    [savePlan],
+  );
+
+  const handleDeleteEditingTask = useCallback(async () => {
+    if (!editingTask) return;
+    handleDeleteTask(editingTask);
+    setEditingTask(null);
+  }, [editingTask, handleDeleteTask]);
 
   if (!projectId) {
     return (
@@ -460,8 +622,8 @@ export default function ProjectScreen() {
                       : t('projectDetail.taskMany'),
                 })
               : t('projectDetail.subtitleProgress', {
-                  pending: incompleteTasks.length,
-                  total: tasks.length,
+                  pending: visibleIncompleteTasks.length,
+                  total: isLoose ? visibleIncompleteTasks.length + visibleCompletedTasks.length : tasks.length,
                 })}
           </Text>
         </View>
@@ -480,6 +642,8 @@ export default function ProjectScreen() {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
       >
         {allDone && (
           <View style={styles.completedBanner}>
@@ -489,6 +653,20 @@ export default function ProjectScreen() {
           </View>
         )}
 
+        {isLoose ? (
+          <View style={styles.looseTools}>
+            {areaFilterLabel ? (
+              <Text style={styles.looseAreaBadge}>
+                {t('looseTasks.areaFilter', { area: areaFilterLabel })}
+              </Text>
+            ) : null}
+            <LooseTasksFilterBar value={looseFilter} onChange={setLooseFilter} />
+            {visibleIncompleteTasks.length === 0 && incompleteTasks.length > 0 ? (
+              <Text style={styles.looseEmptyFilter}>{t('looseTasks.emptyFilter')}</Text>
+            ) : null}
+          </View>
+        ) : null}
+
         {!isLoose && user ? (
           <View style={styles.metaSection}>
             <ProjectMetaRow
@@ -497,6 +675,7 @@ export default function ProjectScreen() {
               dueDate={project.dueDate}
               accentColor={project.color}
             />
+            <ProjectNotesBlock notes={project.notes} onEdit={() => setEditingProject(true)} />
             <ProjectFocusCta
               userId={user.id}
               projectId={projectId}
@@ -507,55 +686,82 @@ export default function ProjectScreen() {
           </View>
         ) : null}
 
-        {incompleteTasks.length > 0 && (
+        {visibleIncompleteTasks.length > 0 && (
           <>
             <Text style={[styles.sectionLabel, styles.sectionLabelFirst]}>{t('projectDetail.pendingSection')}</Text>
-            <TaskList
-              tasks={tasks}
-              incompleteTasks={incompleteTasks}
-              expandedTasks={expandedTasks}
-              expandedDetailsTasks={expandedDetailsTasks}
-              menuOpen={menuOpen}
-              onToggleTask={handleToggleTask}
-              onToggleExpansion={toggleExpansion}
-              onToggleDetailsExpansion={toggleDetailsExpansion}
-              onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
-              onEditTask={handleEditTask}
-              onDeleteTask={handleDeleteTask}
-              getCategoryColor={getCategoryColorCallback}
-              onSubtaskToggle={() => {}}
-              getProjectInfo={() => ({ label: project.name, color: project.color })}
-              hideProjectLabel={true}
-              sectionAccentColor={project.color}
-              {...replanProps}
-            />
+            {isLoose ? (
+              <SemanaInteractiveTaskList
+                tasks={tasks}
+                visibleTaskIds={visibleIncompleteTasks.map((task) => task.id)}
+                projectsMap={projectsMap}
+                onTasksChanged={() => void loadProjectAndTasks({ silent: true })}
+                showToast={showInteractiveToast}
+                resolveProjectInfo={getLooseProjectInfo}
+                editProjects={allProjects.map((entry) => ({ id: entry.id, name: entry.name }))}
+                disableSwipe
+              />
+            ) : (
+              <TaskList
+                tasks={tasks}
+                incompleteTasks={visibleIncompleteTasks}
+                expandedTasks={expandedTasks}
+                expandedDetailsTasks={expandedDetailsTasks}
+                menuOpen={menuOpen}
+                onToggleTask={handleToggleTask}
+                onToggleExpansion={toggleExpansion}
+                onToggleDetailsExpansion={toggleDetailsExpansion}
+                onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+                onEditTask={handleEditTask}
+                onDeleteTask={handleDeleteTask}
+                getCategoryColor={getCategoryColorCallback}
+                onSubtaskToggle={() => {}}
+                getProjectInfo={getProjectInfoForTask}
+                hideProjectLabel
+                sectionAccentColor={project.color}
+                {...replanProps}
+              />
+            )}
           </>
         )}
 
-        {completedTasks.length > 0 && (
+        {visibleCompletedTasks.length > 0 && (
           <>
             <Text style={styles.sectionLabel}>
-              {t('projectDetail.completedSection', { count: completedTasks.length })}
+              {t('projectDetail.completedSection', { count: visibleCompletedTasks.length })}
             </Text>
-            <TaskList
-              tasks={tasks}
-              incompleteTasks={completedTasks}
-              expandedTasks={expandedTasks}
-              expandedDetailsTasks={expandedDetailsTasks}
-              menuOpen={menuOpen}
-              onToggleTask={handleToggleTask}
-              onToggleExpansion={toggleExpansion}
-              onToggleDetailsExpansion={toggleDetailsExpansion}
-              onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
-              onEditTask={handleEditTask}
-              onDeleteTask={handleDeleteTask}
-              getCategoryColor={getCategoryColorCallback}
-              onSubtaskToggle={() => {}}
-              getProjectInfo={() => ({ label: project.name, color: project.color })}
-              hideProjectLabel={true}
-              sectionAccentColor={project.color}
-              {...replanProps}
-            />
+            {isLoose ? (
+              <SemanaInteractiveTaskList
+                tasks={tasks}
+                visibleTaskIds={visibleCompletedTasks.map((task) => task.id)}
+                projectsMap={projectsMap}
+                onTasksChanged={() => void loadProjectAndTasks({ silent: true })}
+                showToast={showInteractiveToast}
+                resolveProjectInfo={getLooseProjectInfo}
+                editProjects={allProjects.map((entry) => ({ id: entry.id, name: entry.name }))}
+                completedOnly
+                disableSwipe
+              />
+            ) : (
+              <TaskList
+                tasks={tasks}
+                incompleteTasks={visibleCompletedTasks}
+                expandedTasks={expandedTasks}
+                expandedDetailsTasks={expandedDetailsTasks}
+                menuOpen={menuOpen}
+                onToggleTask={handleToggleTask}
+                onToggleExpansion={toggleExpansion}
+                onToggleDetailsExpansion={toggleDetailsExpansion}
+                onMenuPress={(taskId) => setMenuOpen(menuOpen === taskId ? null : taskId)}
+                onEditTask={handleEditTask}
+                onDeleteTask={handleDeleteTask}
+                getCategoryColor={getCategoryColorCallback}
+                onSubtaskToggle={() => {}}
+                getProjectInfo={getProjectInfoForTask}
+                hideProjectLabel
+                sectionAccentColor={project.color}
+                {...replanProps}
+              />
+            )}
           </>
         )}
 
@@ -607,13 +813,27 @@ export default function ProjectScreen() {
         </TouchableOpacity>
       ) : null}
 
-      <TaskEditModal
-        visible={editingTask != null}
-        content={editContent}
-        onContentChange={setEditContent}
-        onSave={() => void handleSaveEdit()}
-        onClose={() => setEditingTask(null)}
-      />
+      {!isLoose && menuOpen ? (
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={() => setMenuOpen(null)}
+          accessibilityRole="button"
+          accessibilityLabel={t('hoyExtra.closeMenuA11y')}
+        />
+      ) : null}
+
+      {!isLoose && editingTask ? (
+        <TaskEditModal
+          visible={editingTask != null}
+          task={editingTask}
+          projects={allProjects}
+          onSavePlan={handleSavePlanEdit}
+          onDelete={handleDeleteEditingTask}
+          saving={planEditSaving}
+          onClose={() => setEditingTask(null)}
+        />
+      ) : null}
 
       {!isLoose ? (
         <ProjectEditModal
@@ -622,9 +842,13 @@ export default function ProjectScreen() {
           color={editProjectColor}
           dueDate={editProjectDueDate}
           lifeAreaKey={editProjectLifeAreaKey}
+          lifeAreasConfig={lifeAreasConfig}
+          onAddCustomArea={() => setShowNewAreaSheet(true)}
+          notes={editProjectNotes}
           onNameChange={setEditProjectName}
           onColorChange={setEditProjectColor}
           onDueDateChange={setEditProjectDueDate}
+          onNotesChange={setEditProjectNotes}
           onLifeAreaChange={setEditProjectLifeAreaKey}
           onSave={() => void handleSaveProjectEdit()}
           onClose={() => setEditingProject(false)}
@@ -664,6 +888,21 @@ export default function ProjectScreen() {
       {toastMessage ? (
         <Toast message={toastMessage} onHide={() => setToastMessage(null)} />
       ) : null}
+
+      <AreaNameEditSheet
+        visible={showNewAreaSheet}
+        title={t('areasCompact.newArea')}
+        initialName=""
+        initialEmoji="🌿"
+        showEmoji
+        onClose={() => setShowNewAreaSheet(false)}
+        onSave={async (areaName, emoji) => {
+          const result = await addCustomArea(areaName, emoji);
+          if (result.ok && result.entry) {
+            setEditProjectLifeAreaKey(makeCustomLifeAreaRef(result.entry.id));
+          }
+        }}
+      />
     </View>
   );
 }
@@ -817,5 +1056,25 @@ const styles = StyleSheet.create({
   },
   sectionLabelFirst: {
     marginTop: 0,
+  },
+  looseTools: {
+    gap: THEME.spacing.sm,
+    marginBottom: THEME.spacing.md,
+  },
+  looseAreaBadge: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+  },
+  looseEmptyFilter: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontStyle: 'italic',
+    lineHeight: 18,
+  },
+  menuOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+    zIndex: 10,
   },
 });

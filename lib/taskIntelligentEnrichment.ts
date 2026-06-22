@@ -5,11 +5,16 @@ import { matchProjectForTask, type ProjectForMatch } from '@/lib/batchProjectMat
 import { isUserListCapture } from '@/lib/taskCaptureParseLocal';
 import type { VaciarBatchItem } from '@/lib/vaciarBatchDraft';
 import type { TaskEffort } from '@/lib/taskPerceivedEffort';
+import type { CapturePriority } from '@/lib/review/capturePriority';
 
 export type TimingBucket = 'today' | 'this_week' | 'later';
 
 export type EnrichedCaptureItem = VaciarBatchItem & {
   timing: TimingBucket;
+  /** Marcar como paso importante al guardar (is_priority). */
+  markImportant?: boolean;
+  /** Prioridad explícita en revisión — urgente siempre va a is_priority. */
+  capturePriority?: CapturePriority | null;
   /** Fuerza agrupación en un frente durante revisión (p. ej. koraa, loose). */
   frontKeyOverride?: string | null;
   /** Usuario pidió crear proyecto al guardar, aunque sea una sola tarea. */

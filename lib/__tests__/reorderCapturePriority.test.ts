@@ -16,7 +16,7 @@ function item(id: string, content: string, rank: number): EnrichedCaptureItem {
     effortFeel: null,
     timing: 'later',
     captureRank: rank,
-    frontKeyOverride: 'koraa',
+    frontKeyOverride: 'token:app',
   };
 }
 
@@ -29,16 +29,16 @@ describe('reorderCapturePriority', () => {
 
     const next = reorderCaptureItemsInFront(items, ['b', 'a']);
     const { fronts } = buildCaptureFronts(next);
-    const koraa = fronts.find((front) => front.key === 'koraa');
+    const appFront = fronts.find((front) => front.key === 'token:app');
 
-    expect(koraa?.tasks.map((task) => task.captureId)).toEqual(['b', 'a']);
+    expect(appFront?.tasks.map((task) => task.captureId)).toEqual(['b', 'a']);
   });
 
   it('marks first item per front as top priority', () => {
     const items = [
       item('a', 'Presentación ONU', 10),
       item('b', 'Y combinator', 0),
-      { ...item('c', 'Sacar a Lunita', 0), frontKeyOverride: 'personal' },
+      { ...item('c', 'Sacar a Lunita', 0), frontKeyOverride: 'token:casa' },
     ];
 
     const top = topPriorityCaptureIds(items);

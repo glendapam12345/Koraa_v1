@@ -1,91 +1,115 @@
 import { matchProjectForTask, type ProjectForMatch } from '@/lib/batchProjectMatch';
+import { getProjectEmoji } from '@/lib/projectEmoji';
 import type { EnrichedCaptureItem } from '@/lib/taskIntelligentEnrichment';
 
 export type ProjectMeta = ProjectForMatch & {
   due_date?: string | null;
+  color?: string;
 };
-
-export type InferredFrontPattern = {
-  key: string;
-  name: string;
-  emoji: string;
-  keywords: string[];
-};
-
-export const INFERRED_FRONT_PATTERNS: InferredFrontPattern[] = [
-  {
-    key: 'koraa',
-    name: 'Koraa App',
-    emoji: '🚀',
-    keywords: [
-      'koraa',
-      'app',
-      'aplicación',
-      'application',
-      'presentación',
-      'presentation',
-      'testflight',
-      'versión',
-      'version',
-      'build',
-      'app store',
-    ],
-  },
-  {
-    key: 'impermanence',
-    name: 'Impermanence',
-    emoji: '👕',
-    keywords: [
-      'impermanence',
-      'hoodie',
-      'hoodies',
-      'sudadera',
-      'sudaderas',
-      'jaqui',
-      'reel',
-      'tiktok',
-      'prenda',
-      'muestra',
-      'muestras',
-      'comercial',
-      'merch',
-      'playera',
-      'cobrar',
-      'pago',
-      'samples',
-      'enviar',
-      'producción',
-      'produccion',
-    ],
-  },
-  {
-    key: 'marathon',
-    name: 'Maratón',
-    emoji: '🏃',
-    keywords: ['maratón', 'marathon', 'conade', 'carrera', 'propuesta maratón'],
-  },
-  {
-    key: 'personal',
-    name: 'Personal',
-    emoji: '🎬',
-    keywords: [
-      'cine',
-      'película',
-      'movie',
-      'boletos',
-      'tickets',
-      'perros',
-      'comida',
-      'personal',
-      'contenido',
-      'content',
-      'reel personal',
-      'tiktok personal',
-    ],
-  },
-];
 
 const LOOSE_FRONT_KEY = 'loose';
+
+const GROUP_NAME_STOPWORDS = new Set([
+  'necesito',
+  'terminar',
+  'hacer',
+  'ver',
+  'comprar',
+  'enviar',
+  'mañana',
+  'hoy',
+  'para',
+  'como',
+  'van',
+  'mis',
+  'las',
+  'los',
+  'una',
+  'uno',
+  'del',
+  'de',
+  'la',
+  'el',
+  'en',
+  'y',
+  'a',
+  'need',
+  'finish',
+  'make',
+  'buy',
+  'send',
+  'tomorrow',
+  'today',
+  'the',
+  'and',
+  'for',
+  'with',
+]);
+
+function normalizeText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '');
+}
+
+/** Palabras significativas del texto — sin marcas ni categorías fijas. */
+export function extractSignificantTokens(content: string): string[] {
+  return normalizeText(content)
+    .split(/\s+/)
+    .filter((word) => word.length >= 3 && !GROUP_NAME_STOPWORDS.has(word))
+    .sort((a, b) => b.length - a.length);
+}
+
+export function buildWordCountsFromContents(contents: string[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const content of contents) {
+    for (const token of extractSignificantTokens(content)) {
+      counts.set(token, (counts.get(token) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
+/** Nombre legible sugerido a partir del contenido — no nombres fijos de marca. */
+export function suggestGroupNameFromTasks(tasks: CaptureFrontTask[]): string {
+  if (tasks.length === 0) return 'Proyecto nuevo';
+  if (tasks.length === 1) {
+    const content = tasks[0].content.trim();
+    return content.length > 36 ? `${content.slice(0, 33)}…` : content;
+  }
+
+  const counts = new Map<string, number>();
+  for (const task of tasks) {
+    for (const word of normalizeText(task.content).split(/\s+/)) {
+      if (word.length < 4 || GROUP_NAME_STOPWORDS.has(word)) continue;
+      counts.set(word, (counts.get(word) ?? 0) + 1);
+    }
+  }
+
+  const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  const best = ranked[0];
+  if (best && best[1] >= 2) {
+    const label = best[0];
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+
+  const first = tasks[0].content.trim();
+  return first.length > 36 ? `${first.slice(0, 33)}…` : first;
+}
+
+function resolvedFrontName(
+  key: string,
+  meta: Pick<CaptureFront, 'name' | 'isExistingProject'>,
+  tasks: CaptureFrontTask[],
+): string {
+  if (meta.isExistingProject && meta.name.trim()) return meta.name;
+  if (key.startsWith('token:') || key.startsWith('custom:') || key === 'loose-group') {
+    return suggestGroupNameFromTasks(tasks);
+  }
+  if (meta.name.trim()) return meta.name;
+  return suggestGroupNameFromTasks(tasks);
+}
 
 export type CaptureFrontTask = {
   captureId: string;
@@ -131,63 +155,34 @@ export type CaptureFrontsResult = {
   quickSummary: CaptureFrontQuickSummary;
 };
 
-function normalizeText(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '');
-}
-
-function inferFrontKey(content: string, projects: ProjectForMatch[]): string {
+function inferFrontKey(
+  content: string,
+  projects: ProjectForMatch[],
+  wordCounts: Map<string, number>,
+): string {
   const matchedProjectId = matchProjectForTask(content, projects);
   if (matchedProjectId) return `project:${matchedProjectId}`;
 
-  return inferInferredFrontKey(content);
+  return inferInferredFrontKey(content, wordCounts);
 }
 
-/** Agrupa tareas sueltas en frentes sin proyecto — exportado para Hoy. */
-export function inferInferredFrontKey(content: string): string {
-  const lower = normalizeText(content);
+/** Agrupa tareas sueltas por palabras compartidas — sin rutas de marca. */
+export function inferInferredFrontKey(
+  content: string,
+  globalWordCounts?: Map<string, number>,
+): string {
+  const tokens = extractSignificantTokens(content);
+  if (tokens.length === 0) return LOOSE_FRONT_KEY;
 
-  if (/\b(conade|maraton|marathon)\b/i.test(lower)) return 'marathon';
-
-  if (
-    /\b(koraa)\b/i.test(lower) ||
-    (/\b(app|aplicacion|application)\b/i.test(lower) &&
-      /\b(terminar|version|presentacion|presentation|build|testflight|ultima)\b/i.test(lower))
-  ) {
-    return 'koraa';
+  if (globalWordCounts && globalWordCounts.size > 0) {
+    const ranked = [...tokens].sort(
+      (a, b) => (globalWordCounts.get(b) ?? 0) - (globalWordCounts.get(a) ?? 0),
+    );
+    const best = ranked[0];
+    if (best) return `token:${best}`;
   }
 
-  if (/\bimpermanence\b/i.test(lower)) return 'impermanence';
-
-  if (/\b(personal)\b/i.test(lower) && !/\bimpermanence\b/i.test(lower)) return 'personal';
-
-  if (/\b(sudadera|sudaderas|jaqui|hoodie|hoodies)\b/i.test(lower)) return 'impermanence';
-
-  if (/\b(cine|boletos|pelicula|movie|tickets)\b/i.test(lower)) return 'personal';
-
-  let best: { key: string; score: number } | null = null;
-
-  for (const pattern of INFERRED_FRONT_PATTERNS) {
-    let score = 0;
-    for (const keyword of pattern.keywords) {
-      if (lower.includes(normalizeText(keyword))) {
-        score += keyword.length >= 5 ? 3 : 2;
-      }
-    }
-    if (pattern.key === 'marathon' && /\b(maraton|marathon)\b/i.test(lower)) {
-      score += 8;
-    }
-    if (pattern.key === 'personal' && /\bpersonal\b/i.test(lower)) {
-      score += 10;
-    }
-    if (score > 0 && (!best || score > best.score)) {
-      best = { key: pattern.key, score };
-    }
-  }
-
-  return best?.key ?? 'personal';
+  return `token:${tokens[0]}`;
 }
 
 function frontMetaForKey(
@@ -199,28 +194,16 @@ function frontMetaForKey(
     const project = projectsById[projectId];
     return {
       name: project?.name ?? 'Proyecto',
-      emoji: '📁',
+      emoji: project ? getProjectEmoji(project.name) : '📁',
       projectId,
       isExistingProject: true,
     };
   }
 
-  const pattern = INFERRED_FRONT_PATTERNS.find((entry) => entry.key === key);
-  if (pattern) {
-    const existing = Object.values(projectsById).find(
-      (project) => normalizeText(project.name) === normalizeText(pattern.name),
-    );
-    if (existing) {
-      return {
-        name: existing.name,
-        emoji: pattern.emoji,
-        projectId: existing.id,
-        isExistingProject: true,
-      };
-    }
+  if (key.startsWith('token:') || key.startsWith('custom:') || key === 'loose-group') {
     return {
-      name: pattern.name,
-      emoji: pattern.emoji,
+      name: '',
+      emoji: '🌿',
       projectId: null,
       isExistingProject: false,
     };
@@ -254,11 +237,6 @@ function impactWeight(item: EnrichedCaptureItem): number {
   return score;
 }
 
-function frontInferredKey(frontKey: string): string | null {
-  if (frontKey.startsWith('project:')) return null;
-  return frontKey;
-}
-
 function inferFrontHints(
   front: Omit<CaptureFront, 'hints'>,
   items: EnrichedCaptureItem[],
@@ -274,7 +252,6 @@ function inferFrontHints(
   }
 
   const dueDate = front.projectId ? projectsById[front.projectId]?.due_date : null;
-  const inferredKey = frontInferredKey(front.key);
   const frontItems = items.filter((item) =>
     front.tasks.some((task) => task.captureId === item.id),
   );
@@ -282,12 +259,9 @@ function inferFrontHints(
   const hasTodayTiming = frontItems.some((item) => item.timing === 'today');
 
   if (dueDate || hasTodayTiming) hints.push('hasDeadline');
-  if (inferredKey === 'koraa' || hasHeavy) hints.push('highPriority');
-  if (inferredKey === 'impermanence' || front.tasks.length >= 3) hints.push('important');
-  if (inferredKey === 'personal') hints.push('personalLife');
-  if (!dueDate && !hasTodayTiming && !hints.includes('personalLife')) {
-    hints.push('noDeadline');
-  }
+  if (hasHeavy) hints.push('highPriority');
+  if (front.tasks.length >= 3) hints.push('important');
+  if (!dueDate && !hasTodayTiming) hints.push('noDeadline');
 
   return [...new Set(hints)].slice(0, 2);
 }
@@ -316,14 +290,11 @@ function appendEmptyExistingProjects(
     .slice(0, 2);
 
   for (const project of emptyCandidates) {
-    const pattern = INFERRED_FRONT_PATTERNS.find(
-      (entry) => normalizeText(entry.name) === normalizeText(project.name),
-    );
     const meta = frontMetaForKey(`project:${project.id}`, projectsById);
     fronts.push({
       key: `project:${project.id}`,
       name: meta.name,
-      emoji: pattern?.emoji ?? meta.emoji,
+      emoji: getProjectEmoji(project.name),
       projectId: project.id,
       isExistingProject: true,
       suggestedNewProject: false,
@@ -374,14 +345,14 @@ function frontDisplayName(front: Pick<CaptureFront, 'name'>): string {
 
 function frontKeyMergePriority(key: string): number {
   if (key.startsWith('project:')) return 0;
-  if (INFERRED_FRONT_PATTERNS.some((pattern) => pattern.key === key)) return 1;
+  if (key.startsWith('token:')) return 1;
   if (key.startsWith('custom:')) return 2;
   if (key === 'loose-group') return 3;
   if (key.startsWith('loose:')) return 4;
   return 2;
 }
 
-/** Una sola tarjeta por nombre visible (p. ej. no dos "Personal"). */
+/** Una sola tarjeta por nombre visible. */
 function mergeDuplicateNamedFronts(
   fronts: CaptureFront[],
   items: EnrichedCaptureItem[],
@@ -457,6 +428,7 @@ export function buildCaptureFronts(
 
   const projectsById = Object.fromEntries(projects.map((project) => [project.id, project]));
   const projectList = projects.map((project) => ({ id: project.id, name: project.name }));
+  const wordCounts = buildWordCountsFromContents(items.map((item) => item.content));
 
   const buckets = new Map<string, CaptureFrontTask[]>();
 
@@ -465,7 +437,7 @@ export function buildCaptureFronts(
       item.assignToProject && item.selectedProjectId ? item.selectedProjectId : null;
     const key =
       item.frontKeyOverride ??
-      (explicitProjectId ? `project:${explicitProjectId}` : inferFrontKey(item.content, projectList));
+      (explicitProjectId ? `project:${explicitProjectId}` : inferFrontKey(item.content, projectList, wordCounts));
     const list = buckets.get(key) ?? [];
     list.push({ captureId: item.id, content: item.content });
     buckets.set(key, list);
@@ -490,9 +462,10 @@ export function buildCaptureFronts(
       const item = items.find((entry) => entry.id === task.captureId);
       return Boolean(item?.createProjectOnSave);
     });
+    const displayName = resolvedFrontName(key, meta, sortedTasks);
     const base = {
       key,
-      name: meta.name,
+      name: displayName,
       emoji: meta.emoji,
       projectId: meta.projectId,
       isExistingProject: meta.isExistingProject,
@@ -508,9 +481,10 @@ export function buildCaptureFronts(
 
   if (looseTasks.length > 0) {
     const sortedLoose = sortTasksInBucket(looseTasks);
+    const looseName = suggestGroupNameFromTasks(sortedLoose);
     const base = {
       key: 'loose-group',
-      name: 'Personal',
+      name: looseName,
       emoji: '🌿',
       projectId: null,
       isExistingProject: false,

@@ -17,11 +17,10 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
-import { ChevronDown, ChevronUp, Mic, Paperclip, Sparkles, X } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Mic, Sparkles, X } from 'lucide-react-native';
 import { useTaskVoiceDictation } from '@/hooks/useTaskVoiceDictation';
 import { useLiveCaptureOrganization } from '@/hooks/useLiveCaptureOrganization';
-import { FrentesLivePreview } from '@/components/frentes/FrentesLivePreview';
-import { CreateFrenteModal } from '@/components/frentes/CreateFrenteModal';
+import { BrainDumpLivePreview } from '@/components/frentes/BrainDumpLivePreview';
 import { TaskCaptureOrganize } from '@/components/tasks/TaskCaptureOrganize';
 import type { CaptureHeroLiveState } from '@/components/tasks/CaptureScreenHero';
 import type { TaskEffort } from '@/lib/taskPerceivedEffort';
@@ -60,6 +59,8 @@ type VaciarCaptureFormProps = {
   onLiveStateChange?: (state: CaptureHeroLiveState | null) => void;
   onInputFocusChange?: (focused: boolean) => void;
   inputFocused?: boolean;
+  /** Solo brain dump: sin opciones avanzadas de captura individual. */
+  brainDumpOnly?: boolean;
 };
 
 export function VaciarCaptureForm({
@@ -94,6 +95,7 @@ export function VaciarCaptureForm({
   onLiveStateChange,
   onInputFocusChange,
   inputFocused = false,
+  brainDumpOnly = false,
 }: VaciarCaptureFormProps) {
   const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
@@ -101,7 +103,6 @@ export function VaciarCaptureForm({
   const inputRef = useRef<TextInput>(null);
   const scrollRef = useRef<ScrollView>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showCreateFrente, setShowCreateFrente] = useState(false);
   const usesParentScroll = Boolean(parentScrollRef);
 
   const { isListening, isAvailable: voiceAvailable, toggle: toggleVoice } = useTaskVoiceDictation({
@@ -142,24 +143,20 @@ export function VaciarCaptureForm({
       hasText
         ? {
             isThinking: liveOrg.isThinking,
-            frontCount: liveOrg.frontCount,
+            areaCount: liveOrg.areaCount,
             itemCount: liveOrg.itemCount,
           }
         : null,
     );
   }, [
     hasText,
-    liveOrg.frontCount,
+    liveOrg.areaCount,
     liveOrg.isThinking,
     liveOrg.itemCount,
     onLiveStateChange,
   ]);
 
-  const releaseLabel = isSaving
-    ? t('vaciar.releaseOrganizing')
-    : liveOrg.preview && liveOrg.itemCount > 0
-      ? t('frentes.createPlanCta')
-      : t('vaciar.releaseTaskShort');
+  const releaseLabel = isSaving ? t('vaciar.releaseOrganizing') : t('vaciar.releaseTaskShort');
 
   const handleSave = () => {
     if (saveBlocked || isSaving) return;
@@ -174,6 +171,18 @@ export function VaciarCaptureForm({
 
   const formBody = (
     <View style={[styles.captureWrap, inputFocused && styles.captureWrapFocused]}>
+      {!inputFocused && !brainDumpOnly && !hasText ? (
+        <View style={styles.captureIntro}>
+          <Text style={styles.captureTitle}>{t('frentes.brainDumpTitle')}</Text>
+          <Text style={styles.captureSubtitle}>{t('vaciar.captureSubtitle')}</Text>
+        </View>
+      ) : brainDumpOnly && !inputFocused && !hasText ? (
+        <View style={styles.captureIntro}>
+          <Text style={styles.captureTitle}>{t('vaciar.brainDumpSimpleTitle')}</Text>
+          <Text style={styles.captureSubtitle}>{t('vaciar.brainDumpSimpleSub')}</Text>
+        </View>
+      ) : null}
+
       <View
         style={[
           styles.captureCard,
@@ -199,7 +208,9 @@ export function VaciarCaptureForm({
             }
           }}
           onBlur={() => onInputFocusChange?.(false)}
-          placeholder={t('frentes.brainDumpPlaceholder')}
+          placeholder={
+            brainDumpOnly ? t('vaciar.brainDumpPlaceholder') : t('vaciar.placeholderCapture')
+          }
           placeholderTextColor={THEME.colors.text.tertiary}
           multiline
           scrollEnabled
@@ -240,16 +251,6 @@ export function VaciarCaptureForm({
                 }
               />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.toolBtn}
-              onPress={() => setShowAdvanced((open) => !open)}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel={t('vaciar.advancedOptionsA11y')}
-              accessibilityState={{ expanded: showAdvanced }}
-            >
-              <Paperclip size={20} color={THEME.colors.calm.lavenderDeep} />
-            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
@@ -272,28 +273,14 @@ export function VaciarCaptureForm({
         </View>
       </View>
 
+
       {!inputFocused ? (
-        <FrentesLivePreview
+        <BrainDumpLivePreview
           preview={liveOrg.preview}
           isThinking={liveOrg.isThinking}
           isUpdating={liveOrg.isUpdating}
-          projects={liveOrg.projects}
-          onAddProject={() => setShowCreateFrente(true)}
         />
       ) : null}
-
-      <CreateFrenteModal
-        visible={showCreateFrente}
-        userId={userId}
-        locale={locale}
-        existingNames={liveOrg.projects.map((p) => p.name)}
-        onClose={() => setShowCreateFrente(false)}
-        onCreated={() => {
-          setShowCreateFrente(false);
-          void liveOrg.reloadProjects();
-        }}
-        onError={onProjectError}
-      />
 
       {isListening ? (
         <Text style={styles.voiceListening}>{t('vaciarExtra.voiceListening')}</Text>
@@ -316,7 +303,7 @@ export function VaciarCaptureForm({
         </View>
       ) : null}
 
-      {!inputFocused && showAdvanced ? (
+      {!inputFocused && !brainDumpOnly && showAdvanced ? (
         <View style={styles.advancedPanel}>
           <TaskCaptureOrganize
             embedded
@@ -343,7 +330,7 @@ export function VaciarCaptureForm({
             onEffortChange={onEffortChange}
           />
         </View>
-      ) : !inputFocused && hideAdvancedEntry ? null : !inputFocused ? (
+      ) : !inputFocused && !brainDumpOnly && hideAdvancedEntry ? null : !inputFocused && !brainDumpOnly ? (
         <TouchableOpacity
           style={styles.advancedToggle}
           onPress={() => setShowAdvanced(true)}
@@ -356,7 +343,7 @@ export function VaciarCaptureForm({
         </TouchableOpacity>
       ) : null}
 
-      {!inputFocused && showAdvanced ? (
+      {!inputFocused && !brainDumpOnly && showAdvanced ? (
         <TouchableOpacity
           style={styles.advancedToggle}
           onPress={() => setShowAdvanced(false)}
@@ -447,6 +434,20 @@ const styles = StyleSheet.create({
   captureWrap: {
     gap: THEME.spacing.sm,
     alignSelf: 'stretch',
+  },
+  captureIntro: {
+    gap: THEME.spacing.xs,
+  },
+  captureTitle: {
+    ...THEME.typography.h2,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    lineHeight: 32,
+  },
+  captureSubtitle: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    lineHeight: 22,
   },
   captureWrapFocused: {
     flex: 1,

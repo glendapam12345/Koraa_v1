@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { RectButton, Swipeable } from 'react-native-gesture-handler';
+import { View, Text, StyleSheet, Animated } from 'react-native';
+import { RectButton, Swipeable, TouchableOpacity } from 'react-native-gesture-handler';
 import { THEME } from '@/constants/theme';
 import { getCategoryEmoji } from '@/constants/emojis';
-import { ChevronDown, ChevronRight, Check, Pencil, Trash2, Calendar, FolderInput } from 'lucide-react-native';
+import { ChevronDown, ChevronRight, Check, Pencil, Trash2, Calendar, FolderInput, Star } from 'lucide-react-native';
 import { TaskCalendarExportRow } from '@/components/tasks/TaskCalendarExportRow';
 import { useI18n } from '@/contexts/I18nContext';
 import { categoryLabel } from '@/lib/i18n/categoryLabels';
@@ -51,6 +51,7 @@ export interface Task {
   parent_task_id: string | null;
   project_id?: string | null;
   scheduled_date?: string | null;
+  life_area_key?: string | null;
   perceivedEffort?: 'light' | 'medium' | 'heavy';
 }
 
@@ -98,6 +99,8 @@ interface TaskCardProps {
   onMoveTomorrow?: () => void;
   onMoveNextWeek?: () => void;
   onMoveProject?: () => void;
+  /** Desactiva acciones por swipe (mejor con botones rápidos). */
+  swipeEnabled?: boolean;
 }
 
 export function TaskCard({
@@ -133,6 +136,7 @@ export function TaskCard({
   onMoveTomorrow,
   onMoveNextWeek,
   onMoveProject,
+  swipeEnabled = true,
 }: TaskCardProps) {
   const { t, locale } = useI18n();
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
@@ -176,7 +180,8 @@ export function TaskCard({
   const hasProjectSteps = projectSteps && projectSteps.length > 0;
   /** En modo uniforme: solo mostrar leyenda si pertenece a un proyecto; si no, nada */
   const showProjectLegend = uniformCard && projectName != null && projectName !== '';
-  const showLabel = !uniformCard && !hideProjectLabel && projectLabel != null && projectLabel !== '';
+  const showLabel =
+    !hideProjectLabel && projectLabel != null && projectLabel !== '';
   const looseLabels = useMemo(
     () =>
       new Set([
@@ -260,8 +265,6 @@ export function TaskCard({
     </View>
   );
 
-  const showReplanSwipe = Boolean(onMoveTomorrow || onMoveNextWeek || onMoveProject);
-
   const renderLeftActions = () => (
     <View style={styles.swipeActionsRow}>
       {onMoveTomorrow ? (
@@ -306,17 +309,23 @@ export function TaskCard({
     </View>
   );
 
+  const showReplanSwipe =
+    swipeEnabled && Boolean(onMoveTomorrow || onMoveNextWeek || onMoveProject);
+
   return (
     <View style={styles.taskWrapper}>
       <Swipeable
         ref={swipeableRef}
-        renderRightActions={renderRightActions}
+        enabled={swipeEnabled}
+        renderRightActions={swipeEnabled ? renderRightActions : undefined}
         renderLeftActions={showReplanSwipe ? renderLeftActions : undefined}
         friction={2}
         rightThreshold={40}
         leftThreshold={40}
         overshootRight={false}
         overshootLeft={false}
+        activeOffsetX={[-20, 20]}
+        failOffsetY={[-12, 12]}
       >
         <View
           style={[
@@ -433,6 +442,17 @@ export function TaskCard({
           {uniformCard ? (
             <View style={styles.metaRowUniform}>
               <View style={styles.metaRowUniformMain}>
+                {task.is_priority && !task.is_completed ? (
+                  <View style={styles.uniformPriorityChip}>
+                    <Star size={12} color={THEME.colors.accent.star} fill={THEME.colors.accent.star} />
+                    <Text style={styles.uniformPriorityText}>{t('taskCard.priorityShort')}</Text>
+                  </View>
+                ) : null}
+                {showLabel && projectLabel ? (
+                  <Text style={styles.metaLineCompact} numberOfLines={1}>
+                    {projectLabel}
+                  </Text>
+                ) : null}
                 {showDate ? (
                   <View style={styles.dateRow}>
                     <View style={styles.dateChip}>
@@ -481,6 +501,26 @@ export function TaskCard({
                   )}
                 </TouchableOpacity>
               ) : null}
+              <View style={styles.uniformQuickActions}>
+                <TouchableOpacity
+                  onPress={onEditTask}
+                  style={styles.uniformQuickBtn}
+                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('taskCard.editTask', { task: taskContentLabel })}
+                >
+                  <Pencil size={16} color={THEME.colors.calm.lavenderDeep} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={onDeleteTask}
+                  style={styles.uniformQuickBtn}
+                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('taskCard.deleteTask', { task: taskContentLabel })}
+                >
+                  <Trash2 size={16} color={THEME.colors.text.tertiary} />
+                </TouchableOpacity>
+              </View>
             </View>
           ) : (
             <View style={styles.metaRow}>
@@ -979,6 +1019,33 @@ const styles = StyleSheet.create({
     gap: 4,
     flexShrink: 0,
     marginLeft: THEME.spacing.xs,
+  },
+  uniformPriorityChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.calm.lavender,
+  },
+  uniformPriorityText: {
+    ...THEME.typography.micro,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 14,
+  },
+  uniformQuickActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    flexShrink: 0,
+  },
+  uniformQuickBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   metaLine: {
     ...THEME.typography.meta,

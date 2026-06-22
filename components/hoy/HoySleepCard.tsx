@@ -244,12 +244,12 @@ function MiniAction({
 const styles = StyleSheet.create({
   strip: {
     gap: 6,
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.standard,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.calm.blush,
     borderWidth: 1,
-    borderColor: THEME.colors.tint.blue.border,
+    borderColor: THEME.colors.calm.border,
   },
   topRow: {
     flexDirection: 'row',
@@ -295,9 +295,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: THEME.spacing.xs,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.calm.card,
+    backgroundColor: THEME.colors.fill[100],
     borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
+    borderColor: THEME.colors.calm.lavender,
     minHeight: THEME.sizes.touchTarget,
     justifyContent: 'center',
   },

@@ -67,7 +67,7 @@ export function useLiveCaptureOrganization({
   }, [enabled, locale, projects, text]);
 
   const itemCount = preview?.items.length ?? 0;
-  const frontCount = preview?.fronts.frontCount ?? 0;
+  const areaCount = preview?.areaChips.length ?? 0;
   /** Solo true cuando aún no hay preview (primera carga). */
   const isThinking = isUpdating && !preview;
 
@@ -86,7 +86,7 @@ export function useLiveCaptureOrganization({
     isThinking,
     isUpdating,
     itemCount,
-    frontCount,
+    areaCount,
     projects,
     projectsMeta,
     reloadProjects: loadProjects,

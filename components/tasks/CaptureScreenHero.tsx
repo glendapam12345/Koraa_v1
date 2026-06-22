@@ -6,10 +6,12 @@ import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { getFirstName } from '@/lib/displayName';
 import { KoraaMascotAvatar } from '@/components/branding/KoraaMascotAvatar';
+import { formatGreetingWithName, formatNightReturnGreeting, useKoraaGreeting } from '@/hooks/useKoraaGreeting';
+import { TimeOfDayChip } from '@/components/hoy/TimeOfDayChip';
 
 export type CaptureHeroLiveState = {
   isThinking: boolean;
-  frontCount: number;
+  areaCount: number;
   itemCount: number;
 };
 
@@ -21,25 +23,25 @@ type CaptureScreenHeroProps = {
 export function CaptureScreenHero({ displayName, liveState }: CaptureScreenHeroProps) {
   const { t } = useI18n();
   const firstName = getFirstName(displayName);
+  const { period, greeting, timeChipLabel, lateNight } = useKoraaGreeting();
 
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return t('hoy.greetingMorning');
-    if (hour < 18) return t('hoy.greetingAfternoon');
-    return t('hoy.greetingEvening');
-  }, [t]);
+  const greetingLine = useMemo(() => {
+    if (lateNight) return formatNightReturnGreeting(t, firstName, period);
+    return formatGreetingWithName(t, greeting, firstName);
+  }, [firstName, greeting, lateNight, period, t]);
 
   const subtitle = useMemo(() => {
+    if (lateNight && !liveState?.itemCount) return t('vaciar.captureNightSub');
     if (!liveState) return t('vaciar.subtitle');
     if (liveState.isThinking) return t('vaciar.liveHeroThinking');
     if (liveState.itemCount > 0) {
-      return t('vaciar.liveHeroDetected', {
-        fronts: liveState.frontCount,
+      return t('vaciar.liveHeroDetectedAreas', {
+        areas: liveState.areaCount,
         tasks: liveState.itemCount,
       });
     }
     return t('vaciar.subtitle');
-  }, [liveState, t]);
+  }, [lateNight, liveState, t]);
 
   return (
     <View style={styles.wrap}>
@@ -51,16 +53,16 @@ export function CaptureScreenHero({ displayName, liveState }: CaptureScreenHeroP
         <KoraaMascotAvatar size={44} />
       </View>
 
-      <Text style={styles.greeting}>
-        {t('hoy.inicio.greetingWithName', { greeting, name: firstName })}
-      </Text>
+      <TimeOfDayChip period={period} label={timeChipLabel} />
+
+      <Text style={styles.greeting}>{greetingLine}</Text>
         <Text style={styles.prompt}>{t('frentes.brainDumpTitle')}</Text>
       <Animated.Text
         key={subtitle}
         entering={FadeIn.duration(220)}
         style={styles.subtitle}
       >
-        {liveState?.itemCount ? t('frentes.brainDumpSubActive') : t('frentes.brainDumpSub')}
+        {liveState?.itemCount ? t('frentes.brainDumpSubActive') : subtitle}
       </Animated.Text>
     </View>
   );

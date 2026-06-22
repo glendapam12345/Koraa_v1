@@ -10,6 +10,7 @@ import { useHoyTaskExpansion } from '@/hooks/useHoyTaskExpansion';
 import { useTaskActions } from '@/hooks/useTaskActions';
 import { useHoyDeleteTask } from '@/hooks/useHoyTaskActions';
 import { useTaskPlanEdit } from '@/hooks/useTaskPlanEdit';
+import { supabase } from '@/lib/supabase';
 
 type ProjectInfo = {
   name: string;
@@ -23,6 +24,21 @@ type SemanaInteractiveTaskListProps = {
   projectsMap: Record<string, ProjectInfo>;
   onTasksChanged: () => void;
   showToast: ToastFn;
+  /** Etiqueta de área/proyecto personalizada (p. ej. tareas sueltas). */
+  resolveProjectInfo?: (task: Task) => {
+    label: string;
+    color: string;
+    projectId?: string;
+    projectName?: string;
+  };
+  /** Proyectos en el editor; por defecto se derivan de projectsMap. */
+  editProjects?: { id: string; name: string }[];
+  /** IDs de tareas raíz visibles (el listado completo va en `tasks`). */
+  visibleTaskIds?: string[];
+  /** Mostrar solo tareas completadas (sección archivadas). */
+  completedOnly?: boolean;
+  /** Desactiva swipe; mejor para listas con botones rápidos. */
+  disableSwipe?: boolean;
 };
 
 export function SemanaInteractiveTaskList({
@@ -30,9 +46,15 @@ export function SemanaInteractiveTaskList({
   projectsMap,
   onTasksChanged,
   showToast,
+  resolveProjectInfo,
+  editProjects: editProjectsProp,
+  completedOnly = false,
+  visibleTaskIds,
+  disableSwipe = false,
 }: SemanaInteractiveTaskListProps) {
   const { t, locale } = useI18n();
   const [localTasks, setLocalTasks] = useState(tasks);
+  const [completingIds, setCompletingIds] = useState<Set<string>>(() => new Set());
   const backgroundLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoadingTasksRef = useRef(false);
 
@@ -87,9 +109,45 @@ export function SemanaInteractiveTaskList({
     }, [closeMenu]),
   );
 
-  const rootTasks = useMemo(
-    () => localTasks.filter((task) => !task.parent_task_id),
-    [localTasks],
+  const visibleIdSet = useMemo(
+    () => (visibleTaskIds?.length ? new Set(visibleTaskIds) : null),
+    [visibleTaskIds],
+  );
+
+  const rootTasks = useMemo(() => {
+    const base = localTasks.filter(
+      (task) => !task.parent_task_id && (!visibleIdSet || visibleIdSet.has(task.id)),
+    );
+    if (completedOnly) {
+      return base.filter((task) => task.is_completed);
+    }
+    return base.filter(
+      (task) => !task.is_completed || completingIds.has(task.id),
+    );
+  }, [completedOnly, completingIds, localTasks, visibleIdSet]);
+
+  const handleToggleTask = useCallback(
+    (taskId: string, isSubtask?: boolean, parentTaskId?: string) => {
+      const task = isSubtask
+        ? localTasks
+            .find((entry) => entry.id === parentTaskId)
+            ?.subtasks?.find((st) => st.id === taskId)
+        : localTasks.find((entry) => entry.id === taskId);
+
+      if (task && !task.is_completed) {
+        setCompletingIds((prev) => new Set(prev).add(taskId));
+        setTimeout(() => {
+          setCompletingIds((prev) => {
+            const next = new Set(prev);
+            next.delete(taskId);
+            return next;
+          });
+        }, 500);
+      }
+
+      void toggleTask(taskId, isSubtask, parentTaskId);
+    },
+    [localTasks, toggleTask],
   );
 
   const getCategoryColor = useCallback((category: string) => {
@@ -102,6 +160,9 @@ export function SemanaInteractiveTaskList({
 
   const getProjectInfo = useCallback(
     (task: Task) => {
+      if (resolveProjectInfo) {
+        return resolveProjectInfo(task);
+      }
       if (!task.project_id) {
         return {
           label: t('components.looseTasks'),
@@ -118,16 +179,17 @@ export function SemanaInteractiveTaskList({
         projectName: project?.name,
       };
     },
-    [projectsMap, t],
+    [projectsMap, resolveProjectInfo, t],
   );
 
   const editProjects = useMemo(
     () =>
+      editProjectsProp ??
       Object.entries(projectsMap).map(([id, meta]) => ({
         id,
         name: meta.name,
       })),
-    [projectsMap],
+    [editProjectsProp, projectsMap],
   );
 
   const { saving: planEditSaving, savePlan } = useTaskPlanEdit({
@@ -141,6 +203,10 @@ export function SemanaInteractiveTaskList({
                 content: payload.content,
                 scheduled_date: payload.scheduledDate,
                 project_id: payload.projectId,
+                is_priority: payload.isPriority ?? task.is_priority,
+                life_area_key: payload.projectId
+                  ? null
+                  : (payload.lifeAreaKey ?? task.life_area_key ?? null),
               }
             : task,
         ),
@@ -160,9 +226,35 @@ export function SemanaInteractiveTaskList({
 
   const handleDeleteEditingTask = useCallback(async () => {
     if (!editingTask) return;
-    await handleDeleteTask(editingTask);
-    closeEditTask();
-  }, [closeEditTask, editingTask, handleDeleteTask]);
+    try {
+      if (editingTask.subtasks?.length) {
+        const subtaskIds = editingTask.subtasks.map((st) => st.id);
+        const { error: subtasksError } = await supabase
+          .from('tasks')
+          .delete()
+          .in('id', subtaskIds);
+        if (subtasksError) {
+          showToast(t('errors.deleteSubtasksFailed'), 'error');
+          return;
+        }
+      }
+      const { error } = await supabase.from('tasks').delete().eq('id', editingTask.id);
+      if (error) {
+        showToast(t('errors.deleteTaskFailed'), 'error');
+        return;
+      }
+      setLocalTasks((prev) =>
+        prev.filter(
+          (task) => task.id !== editingTask.id && task.parent_task_id !== editingTask.id,
+        ),
+      );
+      closeEditTask();
+      showToast(t('hoy.taskDeleted'), 'success');
+      void reloadTasks();
+    } catch {
+      showToast(t('errors.deleteTaskFailed'), 'error');
+    }
+  }, [closeEditTask, editingTask, reloadTasks, showToast, t]);
 
   return (
     <View style={styles.wrap} pointerEvents="box-none">
@@ -188,13 +280,13 @@ export function SemanaInteractiveTaskList({
               expandedDetails={expandedDetailsTasks.has(task.id)}
               onToggleDetailsExpand={() => toggleDetailsExpansion(task.id)}
               menuOpen={menuOpen === task.id}
-              onToggle={() => void toggleTask(task.id)}
+              onToggle={() => handleToggleTask(task.id)}
               onToggleExpansion={() => toggleTaskExpansion(task.id)}
               onMenuPress={() => toggleMenu(task.id)}
               onEditTask={() => handleEditTask(task)}
               onDeleteTask={() => handleDeleteTask(task)}
               getCategoryColor={getCategoryColor}
-              onSubtaskToggle={(subtaskId) => void toggleTask(subtaskId, true, task.id)}
+              onSubtaskToggle={(subtaskId) => void handleToggleTask(subtaskId, true, task.id)}
               projectLabel={projectInfo.label}
               projectLabelColor={projectInfo.color}
               projectId={projectInfo.projectId}
@@ -204,8 +296,9 @@ export function SemanaInteractiveTaskList({
                   ? () => router.push(`/project/${projectInfo.projectId}`)
                   : undefined
               }
-              onToggleTask={(taskId) => void toggleTask(taskId)}
+              onToggleTask={(taskId) => void handleToggleTask(taskId)}
               uniformCard
+              swipeEnabled={!disableSwipe}
             />
           );
         })}

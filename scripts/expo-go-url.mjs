@@ -4,6 +4,7 @@
  */
 import fs from 'node:fs';
 import http from 'node:http';
+import os from 'node:os';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { lookup } from 'node:dns/promises';
@@ -37,6 +38,27 @@ export function buildExpoGoUrlFromProxy(proxyUrl) {
 
 export function buildExpoGoUrlFromLan(ip, port = '8081') {
   return `exp://${ip}:${port}`;
+}
+
+/** IP LAN usable para Expo Go (misma Wi‑Fi o hotspot del iPhone). */
+export function getLanExpoUrl(port = 8081) {
+  const nets = os.networkInterfaces();
+  const candidates = [];
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name] ?? []) {
+      if (net.family !== 'IPv4' || net.internal) continue;
+      if (!net.address || net.address.startsWith('127.') || net.address.startsWith('169.254.')) {
+        continue;
+      }
+      candidates.push({ name, address: net.address });
+    }
+  }
+  const preferred =
+    candidates.find((c) => c.name === 'en0' && c.address.startsWith('192.168.')) ??
+    candidates.find((c) => c.address.startsWith('192.168.')) ??
+    candidates.find((c) => c.name === 'en0') ??
+    candidates[0];
+  return preferred ? buildExpoGoUrlFromLan(preferred.address, String(port)) : null;
 }
 
 export function writeDevTunnelState({ proxyUrl, expUrl, loadingUrl }) {

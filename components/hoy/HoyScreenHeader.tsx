@@ -7,6 +7,7 @@ import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { HoyStreakPill } from '@/components/hoy/HoyStreakPill';
 import { HoyCareModeToggle } from '@/components/hoy/HoyCareModeToggle';
 import { useI18n } from '@/contexts/I18nContext';
+import { useKoraaGreeting } from '@/hooks/useKoraaGreeting';
 
 type HoyScreenHeaderProps = {
   /** Ocultar subtítulo cuando la pantalla de inicio ya explica el flujo. */
@@ -29,6 +30,7 @@ export function HoyScreenHeader({
   onCareModePress,
 }: HoyScreenHeaderProps) {
   const { t } = useI18n();
+  const { headerSubtitle } = useKoraaGreeting();
 
   const trailing = (
     <>
@@ -56,7 +58,7 @@ export function HoyScreenHeader({
   return (
     <ScreenHeader
       title={t('tabs.today')}
-      subtitle={showSubtitle ? t('hoy.headerSubtitle') : undefined}
+      subtitle={showSubtitle ? headerSubtitle : undefined}
       trailing={trailing}
     />
   );

@@ -18,12 +18,13 @@ import { useI18n } from '@/contexts/I18nContext';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { createVaciarTask } from '@/lib/vaciarCreateTask';
 import { getLocalDateString, getEndOfWeekLocalDateString } from '@/lib/dateLocal';
+import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 
 const UI_ACCENT = THEME.colors.calm.lavenderDeep;
 
 export type ProjectQuickAddTarget =
   | { mode: 'project'; id: string; name: string; color: string }
-  | { mode: 'loose' };
+  | { mode: 'loose'; lifeAreaRef?: LifeAreaRef };
 
 type ProjectQuickAddTaskModalProps = {
   visible: boolean;
@@ -93,6 +94,7 @@ export function ProjectQuickAddTaskModal({
           selectedCategory: 'otros',
           selectedProjectId: target.mode === 'project' ? target.id : null,
           selectedDate,
+          lifeAreaKey: target.mode === 'loose' ? target.lifeAreaRef ?? null : null,
         },
         { locale, hasCheckInToday },
       );

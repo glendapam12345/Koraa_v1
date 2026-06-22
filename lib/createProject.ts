@@ -1,9 +1,10 @@
 import { supabase, getSchemaSetupMessage } from '@/lib/supabase';
 import { normalizeDueDateInput } from '@/lib/projectProgress';
-import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
+import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 import { inferLifeAreaKeyForProject } from '@/lib/lifeAreas/lifeAreaCatalog';
 import { isMissingProjectDueDateColumnError } from '@/lib/projectDueDateSchema';
 import { isMissingProjectLifeAreaKeyColumnError } from '@/lib/projectLifeAreaSchema';
+import { isMissingProjectNotesColumnError } from '@/lib/projectNotesSchema';
 import type { AppLocale } from '@/lib/i18n';
 import { translate } from '@/lib/i18n';
 import { validateProjectName } from '@/lib/projectNameValidation';
@@ -21,7 +22,8 @@ export type CreateProjectInput = {
   name: string;
   color: string;
   dueDateRaw?: string;
-  lifeAreaKey?: LifeAreaKey;
+  lifeAreaKey?: LifeAreaRef;
+  notes?: string;
   existingNames?: string[];
   locale?: AppLocale;
 };
@@ -62,12 +64,15 @@ export async function createProjectForUser(
 
   const lifeAreaKey = input.lifeAreaKey ?? inferLifeAreaKeyForProject(projectName);
 
-  const basePayload = {
+  const basePayload: Record<string, unknown> = {
     user_id: input.userId,
     name: projectName,
     color: input.color,
     life_area_key: lifeAreaKey,
   };
+  if (input.notes?.trim()) {
+    basePayload.notes = input.notes.trim();
+  }
 
   type Attempt = {
     insert: Record<string, unknown>;
@@ -124,7 +129,8 @@ export async function createProjectForUser(
     }
 
     if (!isMissingProjectDueDateColumnError(result.error) &&
-        !isMissingProjectLifeAreaKeyColumnError(result.error)) {
+        !isMissingProjectLifeAreaKeyColumnError(result.error) &&
+        !isMissingProjectNotesColumnError(result.error)) {
       break;
     }
   }

@@ -29,11 +29,13 @@ import { TaskEditModal } from '@/components/tasks/TaskEditModal';
 import { ProjectEditModal } from '@/components/projects/ProjectEditModal';
 import { ProjectMetaRow } from '@/components/projects/ProjectMetaRow';
 import { ProjectFocusCta } from '@/components/projects/ProjectFocusCta';
+import { ProjectNotesBlock } from '@/components/projects/ProjectNotesBlock';
 import type { ProjectLibraryItem } from '@/hooks/useProjectsLibrary';
 import { confirmDeleteProject, deleteProjectById } from '@/lib/deleteProject';
 import { getProjectEmoji } from '@/lib/projectEmoji';
 import { normalizeDueDateInput } from '@/lib/projectProgress';
-import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
+import { updateProjectFields } from '@/lib/updateProjectFields';
+import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 
 type TaskPreview = {
   id: string;
@@ -46,6 +48,7 @@ type ProjectExpandableCardProps = {
   userId: string;
   onChanged?: () => void;
   onAddTask?: (projectId: string | null) => void;
+  initialExpanded?: boolean;
 } & (
   | { mode: 'project'; project: ProjectLibraryItem }
   | { mode: 'loose'; looseCount: number }
@@ -54,13 +57,13 @@ type ProjectExpandableCardProps = {
 const UI_ACCENT = THEME.colors.calm.lavenderDeep;
 
 export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
-  const { userId, onChanged, onAddTask } = props;
+  const { userId, onChanged, onAddTask, initialExpanded = false } = props;
   const isLoose = props.mode === 'loose';
   const project = isLoose ? null : props.project;
   const looseCount = isLoose ? props.looseCount : 0;
 
   const { t } = useI18n();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(initialExpanded);
   const [tasks, setTasks] = useState<TaskPreview[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskPreview | null>(null);
@@ -69,8 +72,13 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
   const [editName, setEditName] = useState(project?.name ?? '');
   const [editColor, setEditColor] = useState(project?.color ?? THEME.colors.gradient.blue);
   const [editDueDate, setEditDueDate] = useState(project?.dueDate ?? '');
-  const [editLifeAreaKey, setEditLifeAreaKey] = useState<LifeAreaKey>(project?.lifeAreaKey ?? 'other');
+  const [editLifeAreaKey, setEditLifeAreaKey] = useState<LifeAreaRef>(project?.lifeAreaKey ?? 'other');
+  const [editNotes, setEditNotes] = useState(project?.notes ?? '');
   const [savingProject, setSavingProject] = useState(false);
+
+  useEffect(() => {
+    if (initialExpanded) setExpanded(true);
+  }, [initialExpanded]);
 
   const loadTasks = useCallback(async () => {
     setLoadingTasks(true);
@@ -106,6 +114,8 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
       setEditName(project.name);
       setEditColor(project.color || THEME.colors.gradient.blue);
       setEditDueDate(project.dueDate ?? '');
+      setEditLifeAreaKey(project.lifeAreaKey);
+      setEditNotes(project.notes ?? '');
     }
   }, [project]);
 
@@ -173,15 +183,13 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
     setSavingProject(true);
     try {
       const dueDate = normalizeDueDateInput(editDueDate);
-      const { error } = await supabase
-        .from('projects')
-        .update({
-          name: editName.trim(),
-          color: editColor,
-          due_date: dueDate,
-          life_area_key: editLifeAreaKey,
-        })
-        .eq('id', project.id);
+      const { error } = await updateProjectFields(project.id, {
+        name: editName.trim(),
+        color: editColor,
+        due_date: dueDate,
+        life_area_key: editLifeAreaKey,
+        notes: editNotes,
+      });
       if (!error) {
         setEditingProject(false);
         onChanged?.();
@@ -309,6 +317,13 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
 
       {expanded ? (
         <View style={styles.tasksPanel}>
+          {!isLoose && project ? (
+            <ProjectNotesBlock
+              notes={project.notes}
+              onEdit={() => setEditingProject(true)}
+              compact
+            />
+          ) : null}
           <View style={styles.tasksActions}>
             {!isLoose && project ? (
               <View style={styles.focusCtaWrap}>
@@ -433,9 +448,11 @@ export function ProjectExpandableCard(props: ProjectExpandableCardProps) {
           color={editColor}
           dueDate={editDueDate}
           lifeAreaKey={editLifeAreaKey}
+          notes={editNotes}
           onNameChange={setEditName}
           onColorChange={setEditColor}
           onDueDateChange={setEditDueDate}
+          onNotesChange={setEditNotes}
           onLifeAreaChange={setEditLifeAreaKey}
           onSave={() => void saveProjectEdit()}
           onClose={() => setEditingProject(false)}

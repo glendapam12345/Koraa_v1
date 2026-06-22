@@ -4,7 +4,8 @@ import {
   getAvailableMinutesFromCheckIn,
   type CheckInData,
 } from '@/lib/smartPrioritization';
-import { INFERRED_FRONT_PATTERNS, inferInferredFrontKey } from '@/lib/captureProjectFronts';
+import { inferInferredFrontKey, suggestGroupNameFromTasks } from '@/lib/captureProjectFronts';
+import { getProjectEmoji } from '@/lib/projectEmoji';
 
 export type HoyProjectMeta = {
   id: string;
@@ -56,13 +57,10 @@ function normalizeText(value: string): string {
 function inferLooseFront(content: string): Pick<FrontBucket, 'key' | 'name' | 'emoji'> {
   const key = inferInferredFrontKey(content);
   if (key === 'loose') {
-    return { key: 'loose', name: 'Personal', emoji: '🌿' };
+    return { key: 'loose', name: 'Otros pasos', emoji: '🌿' };
   }
-  const pattern = INFERRED_FRONT_PATTERNS.find((entry) => entry.key === key);
-  if (pattern) {
-    return { key: pattern.key, name: pattern.name, emoji: pattern.emoji };
-  }
-  return { key: 'loose', name: 'Otros pasos', emoji: '🌿' };
+  const name = suggestGroupNameFromTasks([{ captureId: 'solo', content }]);
+  return { key, name, emoji: getProjectEmoji(content) };
 }
 
 function daysUntil(isoDate: string, now: Date = new Date()): number {
@@ -114,10 +112,7 @@ function groupTasksByFront(tasks: Task[], projects: HoyProjectMeta[]): FrontBuck
       const project = projectsById[task.project_id];
       bucketKey = `project:${project.id}`;
       name = project.name;
-      emoji =
-        INFERRED_FRONT_PATTERNS.find(
-          (pattern) => normalizeText(pattern.name) === normalizeText(project.name),
-        )?.emoji ?? '📁';
+      emoji = getProjectEmoji(project.name);
       projectId = project.id;
       dueDate = project.due_date ?? null;
     } else {

@@ -1,53 +1,47 @@
 import { View, StyleSheet, RefreshControl, Keyboard, Text } from 'react-native';
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ScrollView } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { Toast } from '@/components/Toast';
 import { VaciarCaptureForm } from '@/components/tasks/VaciarCaptureForm';
-import { FrontDetectionScreen } from '@/components/frentes/FrontDetectionScreen';
-import { WeeklyPlanReadyScreen } from '@/components/frentes/WeeklyPlanReadyScreen';
-import { RealityCheckScreen } from '@/components/vnext/RealityCheckScreen';
-import type { RealityCheckInput } from '@/lib/vnext/types';
-import {
-  buildWeeklyPlanPreview,
-  type WeeklyPlanPreview,
-} from '@/lib/frentes/buildWeeklyPlanPreview';
-import { CaptureSavedNextStep } from '@/components/tasks/CaptureSavedNextStep';
+import { BrainDumpAreaReviewScreen } from '@/components/frentes/BrainDumpAreaReviewScreen';
+import { BrainDumpSavedSummaryScreen } from '@/components/frentes/BrainDumpSavedSummaryScreen';
+import type { BrainDumpReviewProject } from '@/lib/review/brainDumpProjects';
+import { isDraftProjectId } from '@/lib/review/brainDumpProjects';
+import type { SavedOrganizedContext } from '@/lib/review/buildBrainDumpSavedSummary';
+import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 import { supabase } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProjectsLibraryPanel } from '@/components/projects/ProjectsLibraryPanel';
 import { VaciarTabSegments, type VaciarTabSegment } from '@/components/tasks/VaciarTabSegments';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
 import { useFocusedProject } from '@/hooks/useFocusedProject';
 import { FocusedProjectBanner } from '@/components/projects/FocusedProjectBanner';
 import { useVaciarHints } from '@/hooks/useVaciarHints';
 import { useVaciarTaskSave } from '@/hooks/useVaciarTaskSave';
-import { useVaciarBatchSave, type SavedCaptureTask } from '@/hooks/useVaciarBatchSave';
+import { useVaciarBatchSave } from '@/hooks/useVaciarBatchSave';
 import {
   advancedCaptureOptionsActive,
   buildEnrichedReleaseItems,
   type VaciarAdvancedCaptureOptions,
 } from '@/lib/vaciarInboxCapture';
-import { buildCaptureFronts, type CaptureFrontsResult } from '@/lib/captureProjectFronts';
 import { stripAutoPlanningForDiscovery } from '@/lib/captureFrontDiscovery';
 import { buildLiveCapturePreview } from '@/lib/liveCapturePreview';
 import { applyAiProjectHints } from '@/lib/taskIntelligentEnrichment';
 import { createProjectForUser, createProjectErrorMessage } from '@/lib/createProject';
 import type { CaptureHeroLiveState } from '@/components/tasks/CaptureScreenHero';
-import { fetchProfilePreferences } from '@/lib/profilePreferences';
-import { getDisplayName } from '@/lib/displayName';
 import { fetchUserProjects } from '@/lib/projectDueDateSchema';
 import { PROJECT_COLORS } from '@/lib/projectColors';
 import type { EnrichedCaptureItem } from '@/lib/taskIntelligentEnrichment';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import type { TaskEffort } from '@/lib/taskPerceivedEffort';
+import { applyInferredLifeAreas } from '@/lib/review/inferCaptureItemLifeArea';
+import { logger } from '@/lib/logger';
 
-type CaptureFlowStep = 'input' | 'preview' | 'reality' | 'weekly' | 'saved';
+type CaptureFlowStep = 'input' | 'preview' | 'organized';
 
 export default function VaciarScreen() {
   const { t, locale } = useI18n();
@@ -76,41 +70,25 @@ export default function VaciarScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isOrganizing, setIsOrganizing] = useState(false);
   const [isRefiningPreview, setIsRefiningPreview] = useState(false);
-  const [releaseFronts, setReleaseFronts] = useState<CaptureFrontsResult | null>(null);
   const [captureStep, setCaptureStep] = useState<CaptureFlowStep>('input');
   const [previewItems, setPreviewItems] = useState<EnrichedCaptureItem[]>([]);
   const [previewProjects, setPreviewProjects] = useState<
-    { id: string; name: string; due_date: string | null }[]
+    {
+      id: string;
+      name: string;
+      due_date: string | null;
+      color?: string;
+      life_area_key?: string | null;
+    }[]
   >([]);
-  const [previewFrontDeadlines, setPreviewFrontDeadlines] = useState<Record<string, string | null>>(
-    {},
-  );
-  const [savedCaptureTasks, setSavedCaptureTasks] = useState<SavedCaptureTask[]>([]);
-  const [weeklyPlan, setWeeklyPlan] = useState<WeeklyPlanPreview | null>(null);
-  const [creatingFrontKey, setCreatingFrontKey] = useState<string | null>(null);
+  const [organizedRefreshSignal, setOrganizedRefreshSignal] = useState(0);
   const [, setLiveCaptureState] = useState<CaptureHeroLiveState | null>(null);
   const [captureInputFocused, setCaptureInputFocused] = useState(false);
+  const [savedOrganizedContext, setSavedOrganizedContext] =
+    useState<SavedOrganizedContext | null>(null);
   const previewGenerationRef = useRef(0);
   const [, setProjectCount] = useState<number | null>(null);
-  const [profileFullName, setProfileFullName] = useState<string | undefined>();
   const { user } = useAuth();
-
-  const displayName = useMemo(
-    () =>
-      getDisplayName(
-        { full_name: profileFullName, user_metadata: user?.user_metadata, email: user?.email },
-        t('yo.welcomeName'),
-      ),
-    [profileFullName, user?.user_metadata, user?.email, t],
-  );
-
-  useEffect(() => {
-    if (!user?.id) return;
-    void (async () => {
-      const { data } = await fetchProfilePreferences(user.id);
-      setProfileFullName(data?.full_name?.trim() || undefined);
-    })();
-  }, [user?.id]);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToastMessage(message);
@@ -178,7 +156,9 @@ export default function VaciarScreen() {
         const projects = (data ?? []).map((p) => ({
           id: p.id,
           name: p.name,
+          color: p.color ?? undefined,
           due_date: p.due_date ?? null,
+          life_area_key: p.life_area_key ?? null,
         }));
         const projectsForMatch = projects.map((p) => ({ id: p.id, name: p.name }));
         const live = buildLiveCapturePreview(taskInput, locale, projectsForMatch);
@@ -189,11 +169,9 @@ export default function VaciarScreen() {
 
         previewGenerationRef.current += 1;
         const refineGeneration = previewGenerationRef.current;
-        setPreviewItems(stripAutoPlanningForDiscovery(live.items));
+        setPreviewItems(applyInferredLifeAreas(stripAutoPlanningForDiscovery(live.items)));
         setPreviewProjects(projects);
-        setPreviewFrontDeadlines({});
         setCaptureStep('preview');
-        setReleaseFronts(null);
         setIsOrganizing(false);
         requestAnimationFrame(() => {
           screenScrollRef.current?.scrollTo({ y: 0, animated: true });
@@ -210,7 +188,7 @@ export default function VaciarScreen() {
               projectsForMatch,
             );
             if (refineGeneration !== previewGenerationRef.current) return;
-            setPreviewItems(stripAutoPlanningForDiscovery(refined));
+            setPreviewItems(applyInferredLifeAreas(stripAutoPlanningForDiscovery(refined)));
           } catch (error) {
             logger.warn('vaciar.previewAiRefine', error);
           } finally {
@@ -235,11 +213,9 @@ export default function VaciarScreen() {
 
       previewGenerationRef.current += 1;
 
-      setPreviewItems(stripAutoPlanningForDiscovery(items));
+      setPreviewItems(applyInferredLifeAreas(stripAutoPlanningForDiscovery(items)));
       setPreviewProjects(projects);
-      setPreviewFrontDeadlines({});
       setCaptureStep('preview');
-      setReleaseFronts(null);
       requestAnimationFrame(() => {
         screenScrollRef.current?.scrollTo({ y: 0, animated: true });
       });
@@ -260,14 +236,66 @@ export default function VaciarScreen() {
     user?.id,
   ]);
 
+  const handleViewOrganized = useCallback(() => {
+    setProjectsPanelMounted(true);
+    setSegment('projects');
+    setCaptureStep('input');
+    setSavedOrganizedContext(null);
+    previewGenerationRef.current += 1;
+    setPreviewItems([]);
+    setIsRefiningPreview(false);
+    setOrganizedRefreshSignal((n) => n + 1);
+    requestAnimationFrame(() => {
+      screenScrollRef.current?.scrollTo({ y: 0, animated: true });
+    });
+  }, []);
+
+  const handleCaptureMore = useCallback(() => {
+    setCaptureStep('input');
+    setSavedOrganizedContext(null);
+    previewGenerationRef.current += 1;
+    setPreviewItems([]);
+    setIsRefiningPreview(false);
+    requestAnimationFrame(() => {
+      screenScrollRef.current?.scrollTo({ y: 0, animated: true });
+    });
+  }, []);
+
+  const showOrganizedSummary = useCallback(
+    (
+      items: EnrichedCaptureItem[],
+      taskCount: number,
+      draftIdMap: Map<string, string>,
+    ) => {
+      const affectedAreaRefs = [
+        ...new Set(
+          items
+            .map((item) => item.lifeAreaKey)
+            .filter((ref): ref is LifeAreaRef => ref != null),
+        ),
+      ];
+
+      setSavedOrganizedContext({
+        taskCount,
+        newProjectIds: [...draftIdMap.values()],
+        affectedAreaRefs,
+      });
+      setOrganizedRefreshSignal((n) => n + 1);
+      setCaptureStep('organized');
+      requestAnimationFrame(() => {
+        screenScrollRef.current?.scrollTo({ y: 0, animated: true });
+      });
+    },
+    [],
+  );
+
   const handleConfirmPreview = useCallback(
     async (payload?: {
       items: EnrichedCaptureItem[];
-      frontDeadlines: Record<string, string | null>;
-      realityCheck?: RealityCheckInput;
+      draftProjects?: BrainDumpReviewProject[];
     }) => {
       const itemsBase = payload?.items ?? previewItems;
-      const frontDeadlines = payload?.frontDeadlines ?? previewFrontDeadlines;
+      const draftProjects = payload?.draftProjects ?? [];
       if (!user?.id || itemsBase.length === 0) return;
 
       previewGenerationRef.current += 1;
@@ -276,43 +304,53 @@ export default function VaciarScreen() {
       try {
         let items = [...itemsBase];
         let projects = [...previewProjects];
-        const { fronts } = buildCaptureFronts(items, projects);
+        const draftIdMap = new Map<string, string>();
 
-        for (const front of fronts) {
-          if (!front.suggestedNewProject || front.projectId) continue;
-          const captureIds = new Set(front.tasks.map((task) => task.captureId));
-          const dueDateRaw = frontDeadlines[front.key] ?? undefined;
+        if (draftProjects.some((project) => project.isDraft)) {
           const { data: existingProjects } = await fetchUserProjects(user.id);
-          const result = await createProjectForUser({
-            userId: user.id,
-            name: front.name,
-            color: PROJECT_COLORS[0],
-            existingNames: (existingProjects ?? []).map((project) => project.name),
-            locale,
-            dueDateRaw,
+          const existingNames = (existingProjects ?? []).map((project) => project.name);
+
+          for (const draft of draftProjects) {
+            if (!draft.isDraft) continue;
+            const result = await createProjectForUser({
+              userId: user.id,
+              name: draft.name,
+              color: draft.color ?? PROJECT_COLORS[0],
+              dueDateRaw: draft.due_date ?? undefined,
+              lifeAreaKey: draft.lifeAreaKey,
+              notes: draft.notes,
+              existingNames,
+              locale,
+            });
+            if (!result.ok) {
+              showToast(createProjectErrorMessage(result.reason, locale), 'error');
+              continue;
+            }
+
+            draftIdMap.set(draft.id, result.project.id);
+            projects = [
+              ...projects,
+              {
+                id: result.project.id,
+                name: result.project.name,
+                color: result.project.color,
+                due_date: result.project.due_date ?? null,
+                life_area_key: draft.lifeAreaKey,
+              },
+            ];
+          }
+
+          items = items.map((item) => {
+            if (!item.selectedProjectId || !isDraftProjectId(item.selectedProjectId)) return item;
+            const resolvedId = draftIdMap.get(item.selectedProjectId);
+            if (!resolvedId) return item;
+            return {
+              ...item,
+              selectedProjectId: resolvedId,
+              assignToProject: true,
+            };
           });
-          if (!result.ok) continue;
-
-          projects = [
-            ...projects,
-            {
-              id: result.project.id,
-              name: result.project.name,
-              due_date: result.project.due_date ?? null,
-            },
-          ];
-          items = items.map((item) =>
-            captureIds.has(item.id)
-              ? {
-                  ...item,
-                  assignToProject: true,
-                  selectedProjectId: result.project.id,
-                }
-              : item,
-          );
         }
-
-        let persistedTasks: SavedCaptureTask[] = [];
 
         if (items.length === 1 && hasSubtasks) {
           const item = items[0];
@@ -328,64 +366,15 @@ export default function VaciarScreen() {
             },
             { effortFeel: item.effortFeel, reliefCapture: true, suppressToast: true },
           );
-          setSavedCaptureTasks([]);
         } else {
-          const saved = await saveBatch(items, { suppressToast: true });
-          persistedTasks = saved ?? [];
-          setSavedCaptureTasks(persistedTasks);
+          await saveBatch(items, { suppressToast: true });
         }
 
         setHasTasks(true);
         setPreviewProjects(projects);
-        setPreviewFrontDeadlines(frontDeadlines);
-        const frontsResult = buildCaptureFronts(items, projects);
-        setReleaseFronts(frontsResult);
-
-        const plan = buildWeeklyPlanPreview(
-          items,
-          projects,
-          locale,
-          t('projectsUi.looseTitle'),
-          payload?.realityCheck,
-        );
-
-        const captureToTaskId = new Map(
-          (persistedTasks.length > 0
-            ? persistedTasks
-            : items.map((item) => ({
-                captureId: item.id,
-                taskId: item.id,
-                content: item.content,
-                projectId: item.selectedProjectId,
-              }))
-          ).map((entry) => [entry.captureId, entry.taskId]),
-        );
-
-        const dbAssignments = plan.assignments
-          .map((entry) => ({
-            id: captureToTaskId.get(entry.id) ?? entry.id,
-            scheduled_date: entry.scheduled_date,
-          }))
-          .filter((entry) => entry.id);
-
-        if (dbAssignments.length > 0) {
-          await Promise.all(
-            dbAssignments.map((entry) =>
-              supabase
-                .from('tasks')
-                .update({ scheduled_date: entry.scheduled_date })
-                .eq('id', entry.id),
-            ),
-          );
-        }
-
-        setWeeklyPlan(plan);
         setTaskInput('');
         resetTaskForm();
-        setCaptureStep('weekly');
-        requestAnimationFrame(() => {
-          screenScrollRef.current?.scrollTo({ y: 0, animated: true });
-        });
+        showOrganizedSummary(items, itemsBase.length, draftIdMap);
       } finally {
         setIsOrganizing(false);
       }
@@ -393,7 +382,6 @@ export default function VaciarScreen() {
     [
       hasSubtasks,
       locale,
-      previewFrontDeadlines,
       previewItems,
       previewProjects,
       resetTaskForm,
@@ -401,8 +389,9 @@ export default function VaciarScreen() {
       saveTask,
       selectedCategory,
       setHasTasks,
+      showOrganizedSummary,
+      showToast,
       subtasks,
-      t,
       user?.id,
     ],
   );
@@ -410,31 +399,15 @@ export default function VaciarScreen() {
   const handleReviewConfirm = useCallback(
     (payload: {
       items: EnrichedCaptureItem[];
-      frontDeadlines: Record<string, string | null>;
+      draftProjects: BrainDumpReviewProject[];
     }) => {
       setPreviewItems(payload.items);
-      setPreviewFrontDeadlines(payload.frontDeadlines);
-      setCaptureStep('reality');
-      requestAnimationFrame(() => {
-        screenScrollRef.current?.scrollTo({ y: 0, animated: true });
-      });
-    },
-    [],
-  );
-
-  const handleBackFromReality = useCallback(() => {
-    setCaptureStep('preview');
-  }, []);
-
-  const handleRealityConfirm = useCallback(
-    (realityCheck: RealityCheckInput) => {
       void handleConfirmPreview({
-        items: previewItems,
-        frontDeadlines: previewFrontDeadlines,
-        realityCheck,
+        items: payload.items,
+        draftProjects: payload.draftProjects,
       });
     },
-    [handleConfirmPreview, previewFrontDeadlines, previewItems],
+    [handleConfirmPreview],
   );
 
   const handleBackToCapture = useCallback(() => {
@@ -442,75 +415,8 @@ export default function VaciarScreen() {
     setCaptureInputFocused(false);
     setCaptureStep('input');
     setPreviewItems([]);
-    setPreviewFrontDeadlines({});
-    setWeeklyPlan(null);
     setIsRefiningPreview(false);
   }, []);
-
-  const handleCreateProjectFromFront = useCallback(
-    async (frontKey: string, projectName: string) => {
-      if (!user?.id || !releaseFronts) return;
-      const front = releaseFronts.fronts.find((entry) => entry.key === frontKey);
-      if (!front) return;
-
-      const captureIds = new Set(front.tasks.map((task) => task.captureId));
-      const taskIds = savedCaptureTasks
-        .filter((task) => captureIds.has(task.captureId))
-        .map((task) => task.taskId);
-      if (taskIds.length === 0) {
-        showToast(t('errors.updateFailed'), 'error');
-        return;
-      }
-
-      setCreatingFrontKey(frontKey);
-      try {
-        const { data: existingProjects } = await fetchUserProjects(user.id);
-        const result = await createProjectForUser({
-          userId: user.id,
-          name: projectName,
-          color: PROJECT_COLORS[0],
-          existingNames: (existingProjects ?? []).map((project) => project.name),
-          locale,
-        });
-        if (!result.ok) {
-          showToast(createProjectErrorMessage(result.reason, locale), 'error');
-          return;
-        }
-
-        const { error } = await supabase
-          .from('tasks')
-          .update({ project_id: result.project.id })
-          .in('id', taskIds);
-        if (error) {
-          logger.error('Error asignando tareas al proyecto:', error);
-          showToast(t('errors.updateFailed'), 'error');
-          return;
-        }
-
-        setReleaseFronts((current) => {
-          if (!current) return current;
-          return {
-            ...current,
-            fronts: current.fronts.map((entry) =>
-              entry.key === frontKey
-                ? {
-                    ...entry,
-                    name: result.project.name,
-                    projectId: result.project.id,
-                    isExistingProject: true,
-                    suggestedNewProject: false,
-                  }
-                : entry,
-            ),
-          };
-        });
-        showToast(t('vaciar.projectCreated', { name: result.project.name }), 'success');
-      } finally {
-        setCreatingFrontKey(null);
-      }
-    },
-    [locale, releaseFronts, savedCaptureTasks, showToast, t, user?.id],
-  );
 
   // Pre-llenar input si hay sugerencia desde Tips; fecha desde Semana; proyecto desde detalle de proyecto
   useEffect(() => {
@@ -521,14 +427,19 @@ export default function VaciarScreen() {
       setSelectedDate(dateParam);
     }
     if (projectIdParam && typeof projectIdParam === 'string' && projectIdParam.length >= 10) {
-      setAssignToProject(true);
-      setSelectedProjectId(projectIdParam);
-      setSegment('capture');
+      if (segmentParam === 'projects') {
+        setSegment('projects');
+        setProjectsPanelMounted(true);
+      } else {
+        setAssignToProject(true);
+        setSelectedProjectId(projectIdParam);
+        setSegment('capture');
+      }
     }
     if (suggestion || dateParam) {
       setSegment('capture');
     }
-  }, [suggestion, dateParam, projectIdParam]);
+  }, [suggestion, dateParam, projectIdParam, segmentParam]);
 
   useEffect(() => {
     if (segmentParam === 'projects') {
@@ -593,6 +504,7 @@ export default function VaciarScreen() {
     isSavingBatch ||
     (assignToProject && !selectedProjectId);
   const screenScrollRef = useRef<ScrollView>(null);
+  const screenContentRef = useRef<View>(null);
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -625,6 +537,7 @@ export default function VaciarScreen() {
       <View style={styles.screenBody}>
         <CalmScreen
           ref={screenScrollRef}
+          scrollContentRef={screenContentRef}
           scroll
           topInset={isCaptureSegment ? 'md' : 'lg'}
           gap={isCaptureSegment ? THEME.spacing.sm : THEME.layout.tabSectionGap}
@@ -643,13 +556,6 @@ export default function VaciarScreen() {
         >
         {user && !(isCaptureSegment && captureInputFocused) ? (
           <VaciarTabSegments value={segment} onChange={setSegment} />
-        ) : null}
-
-        {!isCaptureSegment ? (
-          <ScreenHeader
-            title={t('projects.title')}
-            subtitle={t('projects.subtitle')}
-          />
         ) : null}
 
         {user && focusedProject && !isCaptureSegment ? (
@@ -680,11 +586,7 @@ export default function VaciarScreen() {
                 <Text style={styles.simpleCaptureTitle}>
                   {captureStep === 'preview'
                     ? t('vaciar.flowStepReview')
-                    : captureStep === 'reality'
-                      ? t('vnext.flowStepCalibrate')
-                      : captureStep === 'weekly'
-                        ? t('frentes.flowStepPlan')
-                        : t('vaciar.flowStepDone')}
+                    : t('vaciar.flowStepDone')}
                 </Text>
               ) : null}
 
@@ -695,7 +597,6 @@ export default function VaciarScreen() {
                   taskInput={taskInput}
                   onTaskInputChange={(value) => {
                     setTaskInput(value);
-                    if (releaseFronts) setReleaseFronts(null);
                     if (captureStep !== 'input') setCaptureStep('input');
                   }}
                   assignToProject={assignToProject}
@@ -730,27 +631,17 @@ export default function VaciarScreen() {
                   onLiveStateChange={setLiveCaptureState}
                   onInputFocusChange={setCaptureInputFocused}
                   inputFocused={captureInputFocused}
+                  brainDumpOnly
                 />
               ) : null}
 
               {captureStep === 'preview' && user ? (
-                <FrontDetectionScreen
+                <BrainDumpAreaReviewScreen
                   locale={locale}
-                  displayName={displayName}
                   userId={user.id}
                   items={previewItems}
-                  projects={previewProjects}
+                  existingProjects={previewProjects}
                   onItemsChange={setPreviewItems}
-                  onProjectsChange={(next) =>
-                    setPreviewProjects(
-                      next.map((project) => ({
-                        id: project.id,
-                        name: project.name,
-                        due_date: project.due_date ?? null,
-                      })),
-                    )
-                  }
-                  onProjectError={(message) => showToast(message, 'error')}
                   onBack={handleBackToCapture}
                   onConfirm={(payload) => handleReviewConfirm(payload)}
                   isSaving={isOrganizing || isSavingBatch}
@@ -758,39 +649,15 @@ export default function VaciarScreen() {
                 />
               ) : null}
 
-              {captureStep === 'reality' && user ? (
-                <RealityCheckScreen
-                  displayName={displayName}
-                  items={previewItems}
-                  projects={previewProjects}
-                  onBack={handleBackFromReality}
-                  onContinue={handleRealityConfirm}
-                  isSaving={isOrganizing || isSavingBatch}
-                />
-              ) : null}
-
-              {captureStep === 'weekly' && weeklyPlan && releaseFronts ? (
-                <WeeklyPlanReadyScreen
-                  days={weeklyPlan.days}
-                  fronts={releaseFronts.fronts}
-                  movedCount={weeklyPlan.movedCount}
-                  freedHours={weeklyPlan.freedHours}
-                  focusFrontName={weeklyPlan.focusFrontName}
-                  realism={weeklyPlan.realism}
-                  onContinue={() => setCaptureStep('saved')}
-                />
-              ) : null}
-
-              {captureStep === 'saved' && releaseFronts ? (
-                <CaptureSavedNextStep
-                  fronts={releaseFronts}
+              {captureStep === 'organized' && user && savedOrganizedContext ? (
+                <BrainDumpSavedSummaryScreen
+                  userId={user.id}
                   hasCheckInToday={hasCheckInToday}
-                  creatingFrontKey={creatingFrontKey}
-                  onCreateProject={(frontKey, projectName) => {
-                    void handleCreateProjectFromFront(frontKey, projectName);
-                  }}
+                  savedContext={savedOrganizedContext}
+                  onViewOrganized={handleViewOrganized}
                   onGoToHoy={() => router.replace('/(tabs)')}
                   onGoToCheckIn={() => router.replace(CHECK_IN_ROUTE)}
+                  onCaptureMore={handleCaptureMore}
                 />
               ) : null}
             </View>
@@ -807,8 +674,16 @@ export default function VaciarScreen() {
               <ProjectsLibraryPanel
                 embedded
                 areasFirst
+                refreshSignal={organizedRefreshSignal}
                 userId={user?.id}
                 hasCheckInToday={hasCheckInToday}
+                expandProjectId={
+                  segmentParam === 'projects' && typeof projectIdParam === 'string'
+                    ? projectIdParam
+                    : null
+                }
+                parentScrollRef={screenScrollRef}
+                scrollContentRef={screenContentRef}
                 onGoCapture={() => setSegment('capture')}
                 onOpenFullCapture={(projectId) => {
                   setSegment('capture');

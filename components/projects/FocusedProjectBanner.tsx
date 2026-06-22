@@ -38,16 +38,28 @@ export function FocusedProjectBanner({ project, onClearFocus }: FocusedProjectBa
         </TouchableOpacity>
       </View>
       <Text style={styles.body}>{t('projects.focusedBannerBody')}</Text>
-      <TouchableOpacity
-        style={styles.linkRow}
-        onPress={() => router.push(`/project/${project.id}` as Href)}
-        activeOpacity={0.85}
-        accessibilityRole="button"
-        accessibilityLabel={t('projects.focusedBannerView', { name: project.name })}
-      >
-        <Text style={styles.linkText}>{t('projects.focusedBannerView')}</Text>
-        <ChevronRight size={16} color={UI_ACCENT} />
-      </TouchableOpacity>
+      <View style={styles.linkRowGroup}>
+        <TouchableOpacity
+          style={styles.linkRow}
+          onPress={() => router.push('/(tabs)')}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={t('projects.focusedBannerGoHoy')}
+        >
+          <Text style={styles.linkText}>{t('projects.focusedBannerGoHoy')}</Text>
+          <ChevronRight size={16} color={UI_ACCENT} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.linkRow}
+          onPress={() => router.push(`/project/${project.id}` as Href)}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={t('projects.focusedBannerView', { name: project.name })}
+        >
+          <Text style={styles.linkText}>{t('projects.focusedBannerView')}</Text>
+          <ChevronRight size={16} color={UI_ACCENT} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -83,6 +95,9 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     lineHeight: 18,
+  },
+  linkRowGroup: {
+    gap: 2,
   },
   linkRow: {
     flexDirection: 'row',

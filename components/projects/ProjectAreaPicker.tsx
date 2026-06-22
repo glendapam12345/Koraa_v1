@@ -1,47 +1,75 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Plus } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
-import {
-  LIFE_AREA_CATALOG,
-  type LifeAreaKey,
-} from '@/lib/lifeAreas/lifeAreaCatalog';
+import type { LifeAreaKey, LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 import { frontThemeForKey } from '@/lib/frentes/frontTheme';
+import {
+  listSelectableLifeAreas,
+  type UserLifeAreasConfig,
+} from '@/lib/lifeAreas/userLifeAreas';
+import type { TranslationKey } from '@/lib/i18n';
 
 type ProjectAreaPickerProps = {
-  value: LifeAreaKey;
-  onChange: (key: LifeAreaKey) => void;
+  value: LifeAreaRef;
+  onChange: (key: LifeAreaRef) => void;
+  lifeAreasConfig?: UserLifeAreasConfig;
+  onAddCustomArea?: () => void;
 };
 
-export function ProjectAreaPicker({ value, onChange }: ProjectAreaPickerProps) {
+export function ProjectAreaPicker({
+  value,
+  onChange,
+  lifeAreasConfig,
+  onAddCustomArea,
+}: ProjectAreaPickerProps) {
   const { t } = useI18n();
+  const config = lifeAreasConfig ?? { labels: {}, custom: [] };
+
+  const areas = listSelectableLifeAreas(config, (key: LifeAreaKey) =>
+    t(`lifeAreas.${key}` as TranslationKey),
+  );
 
   return (
     <View style={styles.wrap}>
       <Text style={styles.hint}>{t('projects.areaPickerHint')}</Text>
       <View style={styles.grid}>
-        {LIFE_AREA_CATALOG.map((area, index) => {
-          const selected = value === area.key;
-          const theme = frontThemeForKey(area.key, index);
+        {areas.map((area, index) => {
+          const selected = value === area.ref;
+          const themeKey = area.catalogKey ?? 'other';
+          const theme = frontThemeForKey(themeKey, index);
           return (
             <TouchableOpacity
-              key={area.key}
+              key={area.ref}
               style={[
                 styles.chip,
                 { backgroundColor: theme.bg, borderColor: selected ? theme.accent : theme.border },
                 selected && styles.chipSelected,
               ]}
-              onPress={() => onChange(area.key)}
+              onPress={() => onChange(area.ref)}
               activeOpacity={0.85}
               accessibilityRole="button"
               accessibilityState={{ selected }}
             >
               <Text style={styles.emoji}>{area.emoji}</Text>
               <Text style={[styles.label, { color: theme.accent }]} numberOfLines={2}>
-                {t(`projects.areas.${area.key}`)}
+                {area.name}
               </Text>
             </TouchableOpacity>
           );
         })}
+        {onAddCustomArea ? (
+          <TouchableOpacity
+            style={[styles.chip, styles.addChip]}
+            onPress={onAddCustomArea}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={t('areasCompact.newAreaA11y')}
+          >
+            <Plus size={18} color={THEME.colors.calm.lavenderDeep} />
+            <Text style={styles.addLabel}>{t('areasCompact.newArea')}</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </View>
   );
@@ -76,6 +104,11 @@ const styles = StyleSheet.create({
   chipSelected: {
     ...THEME.shadows.soft,
   },
+  addChip: {
+    backgroundColor: THEME.colors.calm.mist,
+    borderColor: THEME.colors.calm.border,
+    borderStyle: 'dashed',
+  },
   emoji: {
     fontSize: THEME.typography.displayEmojiSm.fontSize,
     lineHeight: 24,
@@ -83,6 +116,13 @@ const styles = StyleSheet.create({
   label: {
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,
+    flex: 1,
+    lineHeight: 16,
+  },
+  addLabel: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.calm.lavenderDeep,
     flex: 1,
     lineHeight: 16,
   },

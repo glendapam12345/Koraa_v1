@@ -1,14 +1,19 @@
 import type { AppLocale } from '@/lib/i18n';
-import { buildCaptureFronts, type CaptureFrontsResult } from '@/lib/captureProjectFronts';
 import { enrichCaptureItemsLocally } from '@/lib/taskIntelligentEnrichment';
 import type { EnrichedCaptureItem } from '@/lib/taskIntelligentEnrichment';
 import { parseCaptureToInboxItems } from '@/lib/vaciarInboxCapture';
 import type { ProjectForMatch } from '@/lib/batchProjectMatch';
 import type { VaciarBatchItem } from '@/lib/vaciarBatchDraft';
+import {
+  buildLiveAreaPreviewColumns,
+  type LiveAreaPreviewChip,
+  type LiveAreaPreviewColumn,
+} from '@/lib/review/buildLiveAreaPreviewSummary';
 
 export type LiveCapturePreview = {
   items: EnrichedCaptureItem[];
-  fronts: CaptureFrontsResult;
+  areaChips: LiveAreaPreviewChip[];
+  areaColumns: LiveAreaPreviewColumn[];
 };
 
 function stableLiveItemId(content: string, index: number): string {
@@ -31,7 +36,7 @@ function withStableLiveIds(items: VaciarBatchItem[]): VaciarBatchItem[] {
   });
 }
 
-/** Organización local instantánea — sin IA ni red (para preview en vivo). */
+/** Organización local instantánea por áreas — sin IA ni red (preview en vivo). */
 export function buildLiveCapturePreview(
   rawInput: string,
   locale: AppLocale,
@@ -46,14 +51,11 @@ export function buildLiveCapturePreview(
 
   const rows = options?.stableIds ? withStableLiveIds(parsed) : parsed;
   const items = enrichCaptureItemsLocally(rows, projects);
-  const projectsMeta = projects.map((p) => ({
-    id: p.id,
-    name: p.name,
-    due_date: null as string | null,
-  }));
+  const areaColumns = buildLiveAreaPreviewColumns(items, locale);
 
   return {
     items,
-    fronts: buildCaptureFronts(items, projectsMeta),
+    areaColumns,
+    areaChips: areaColumns.map(({ previews: _previews, ...chip }) => chip),
   };
 }

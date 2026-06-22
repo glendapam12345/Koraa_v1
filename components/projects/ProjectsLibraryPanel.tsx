@@ -2,12 +2,13 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  ScrollView,
 } from 'react-native';
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import type { ScrollView as ScrollViewType, View as RNView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { FolderKanban, ChevronRight, Plus, Heart } from 'lucide-react-native';
@@ -17,13 +18,15 @@ import { useI18n } from '@/contexts/I18nContext';
 import { useProjectsLibrary } from '@/hooks/useProjectsLibrary';
 import { ProjectLibraryCard } from '@/components/projects/ProjectLibraryCard';
 import { ProjectsByAreaSection } from '@/components/projects/ProjectsByAreaSection';
+import { AreasCompactPanel } from '@/components/projects/AreasCompactPanel';
 import { AdaptiveExperienceProjectsCta } from '@/components/tasks/experience/AdaptiveExperienceProjectsCta';
 import { ProjectCreateModal } from '@/components/projects/ProjectCreateModal';
 import {
   ProjectQuickAddTaskModal,
   type ProjectQuickAddTarget,
 } from '@/components/projects/ProjectQuickAddTaskModal';
-import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
+import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
+import { scrollChildIntoView } from '@/lib/scrollChildIntoView';
 
 type ProjectsLibraryPanelProps = {
   userId: string | undefined;
@@ -32,6 +35,12 @@ type ProjectsLibraryPanelProps = {
   areasFirst?: boolean;
   /** Evita query duplicada de check-in cuando el padre ya la tiene (p. ej. tab Tareas). */
   hasCheckInToday?: boolean | null;
+  /** Incrementar para forzar recarga (p. ej. tras brain dump). */
+  refreshSignal?: number;
+  /** Abrir con este proyecto expandido (p. ej. enlace desde Hoy). */
+  expandProjectId?: string | null;
+  parentScrollRef?: RefObject<ScrollViewType | null>;
+  scrollContentRef?: RefObject<RNView | null>;
   onGoCapture?: () => void;
   /** Abre captura completa (categoría, pasos…) con proyecto preseleccionado. */
   onOpenFullCapture?: (projectId: string | null) => void;
@@ -79,18 +88,23 @@ export function ProjectsLibraryPanel({
   embedded = false,
   areasFirst = false,
   hasCheckInToday: externalCheckInToday,
+  expandProjectId = null,
+  parentScrollRef,
+  scrollContentRef,
   onGoCapture,
   onOpenFullCapture,
   onProjectCreated,
   onTaskSaved,
+  refreshSignal,
 }: ProjectsLibraryPanelProps) {
   const { t } = useI18n();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createProjectAreaKey, setCreateProjectAreaKey] = useState<LifeAreaKey | undefined>(
+  const [createProjectAreaKey, setCreateProjectAreaKey] = useState<LifeAreaRef | undefined>(
     undefined,
   );
   const [quickAddTarget, setQuickAddTarget] = useState<ProjectQuickAddTarget | null>(null);
   const [projectFilter, setProjectFilter] = useState<'all' | 'withDate' | 'noDate'>('all');
+  const projectCardRefs = useRef<Map<string, RNView>>(new Map());
   const {
     projects,
     looseCount,
@@ -109,6 +123,12 @@ export function ProjectsLibraryPanel({
     }, [embedded, reload]),
   );
 
+  useEffect(() => {
+    if (embedded && refreshSignal != null && refreshSignal > 0) {
+      void reload(true);
+    }
+  }, [embedded, refreshSignal, reload]);
+
   const filteredProjects = useMemo(() => {
     if (projectFilter === 'withDate') {
       return projects.filter((project) => Boolean(project.dueDate));
@@ -119,6 +139,17 @@ export function ProjectsLibraryPanel({
     return projects;
   }, [projectFilter, projects]);
 
+  const sortedProjects = useMemo(
+    () =>
+      [...filteredProjects].sort((a, b) => {
+        if (b.incompleteCount !== a.incompleteCount) {
+          return b.incompleteCount - a.incompleteCount;
+        }
+        return a.name.localeCompare(b.name);
+      }),
+    [filteredProjects],
+  );
+
   const goCapture = useCallback(() => {
     if (embedded && onGoCapture) {
       onGoCapture();
@@ -128,9 +159,9 @@ export function ProjectsLibraryPanel({
   }, [embedded, onGoCapture]);
 
   const openQuickAdd = useCallback(
-    (projectId: string | null) => {
+    (projectId: string | null, lifeAreaRef?: LifeAreaRef) => {
       if (projectId == null) {
-        setQuickAddTarget({ mode: 'loose' });
+        setQuickAddTarget({ mode: 'loose', lifeAreaRef });
         return;
       }
       const project = projects.find((p) => p.id === projectId);
@@ -156,15 +187,110 @@ export function ProjectsLibraryPanel({
     [onTaskSaved, reload, t],
   );
 
-  const openCreateProjectModal = useCallback((areaKey?: LifeAreaKey) => {
-    setCreateProjectAreaKey(areaKey);
+  const openCreateProjectModal = useCallback((areaRef?: LifeAreaRef) => {
+    setCreateProjectAreaKey(areaRef);
     setShowCreateModal(true);
   }, []);
+
+  const scrollToExpandedProject = useCallback(() => {
+    if (!expandProjectId || !parentScrollRef || !scrollContentRef) return;
+    const target = projectCardRefs.current.get(expandProjectId);
+    if (!target) return;
+    scrollChildIntoView(parentScrollRef, scrollContentRef, target, THEME.spacing.md);
+  }, [expandProjectId, parentScrollRef, scrollContentRef]);
+
+  useEffect(() => {
+    if (!areasFirst || !expandProjectId || loading) return;
+    scrollToExpandedProject();
+    const retrySoon = setTimeout(scrollToExpandedProject, 150);
+    const retryAfterExpand = setTimeout(scrollToExpandedProject, 450);
+    return () => {
+      clearTimeout(retrySoon);
+      clearTimeout(retryAfterExpand);
+    };
+  }, [areasFirst, expandProjectId, loading, sortedProjects, scrollToExpandedProject]);
 
   if (!userId) {
     return (
       <View style={styles.centered}>
         <Text style={styles.emptyText}>{t('projects.signIn')}</Text>
+      </View>
+    );
+  }
+
+  if (areasFirst) {
+    const organizedContent =
+      loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={THEME.colors.calm.lavenderDeep} />
+          <Text style={styles.loadingText}>{t('projects.loading')}</Text>
+        </View>
+      ) : projects.length === 0 && looseCount === 0 ? (
+        <View style={[styles.empty, styles.emptyEmbedded]}>
+          <LinearGradient
+            colors={[THEME.colors.calm.mist, THEME.colors.calm.blush]}
+            style={styles.emptyIconWrap}
+          >
+            <FolderKanban size={48} color={THEME.colors.calm.lavenderDeep} strokeWidth={1.5} />
+          </LinearGradient>
+          <Text style={styles.emptyTitle}>{t('projects.organizedEmptyTitle')}</Text>
+          <Text style={styles.emptyText}>{t('projects.organizedEmptyBody')}</Text>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={goCapture}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={t('vaciar.segmentGoCaptureA11y')}
+          >
+            <LinearGradient
+              colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.addButtonGradient}
+            >
+              <Text style={styles.addButtonText}>{t('vaciar.segmentGoCapture')}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <>
+          <AreasCompactPanel
+            userId={userId}
+            projects={sortedProjects}
+            looseCount={looseCount}
+            loading={false}
+            onAddTask={openQuickAdd}
+            onCreateProject={openCreateProjectModal}
+            onGoCapture={onGoCapture ? goCapture : undefined}
+          />
+        </>
+      );
+
+    return (
+      <View style={styles.embeddedWrap}>
+        {organizedContent}
+        <ProjectCreateModal
+          visible={showCreateModal}
+          userId={userId}
+          initialLifeAreaKey={createProjectAreaKey}
+          onClose={() => {
+            setShowCreateModal(false);
+            setCreateProjectAreaKey(undefined);
+          }}
+          onCreated={(project) => {
+            void reload();
+            onProjectCreated?.(project.name);
+          }}
+          existingNames={projects.map((p) => p.name)}
+        />
+        <ProjectQuickAddTaskModal
+          visible={quickAddTarget != null}
+          target={quickAddTarget}
+          hasCheckInToday={Boolean(hasCheckInToday)}
+          onClose={() => setQuickAddTarget(null)}
+          onSaved={handleQuickAddSaved}
+          onOpenFullCapture={onOpenFullCapture}
+        />
       </View>
     );
   }
@@ -649,5 +775,17 @@ const styles = StyleSheet.create({
   backLinkText: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
+  },
+  organizedCaptureLink: {
+    alignSelf: 'center',
+    paddingVertical: THEME.spacing.sm,
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+  },
+  organizedCaptureText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.bold,
+    textAlign: 'center',
   },
 });

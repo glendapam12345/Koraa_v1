@@ -1,4 +1,5 @@
 import type { AppLocale } from '@/lib/i18n';
+import { isLateNight } from '@/lib/timeOfDayContext';
 
 export type HoyCoachMessage = {
   greeting: string;
@@ -34,10 +35,13 @@ export function buildHoyCoachMessage(input: HoyCoachInput): HoyCoachMessage {
     focusCount,
   } = input;
   const day = weekdayLabel(locale, new Date());
-  const e = emotionKey.toLowerCase();
+  const lateNight = isLateNight();
 
-  const greeting =
-    locale === 'en'
+  const greeting = lateNight
+    ? locale === 'en'
+      ? `Good evening, ${displayName}. You're back — can't sleep?`
+      : `Buenas noches, ${displayName}. Has vuelto — ¿no puedes dormir?`
+    : locale === 'en'
       ? `${displayName}, today is ${day}`
       : `${displayName}, hoy es ${day}`;
 
@@ -47,7 +51,13 @@ export function buildHoyCoachMessage(input: HoyCoachInput): HoyCoachMessage {
       : `Te sientes ${emotionLabel.toLowerCase()} · energía ${energyLevel}/5.`;
 
   let actionLine = suggestion.trim();
-  if (!actionLine) {
+  if (lateNight) {
+    actionLine =
+      locale === 'en'
+        ? 'No need to work now — soft music, quiet notifications, or just breathe.'
+        : 'No hace falta trabajar ahora — música suave, silenciar avisos o solo respirar.';
+  } else if (!actionLine) {
+    const e = emotionKey.toLowerCase();
     if (energyLevel <= 2 || ['agotada', 'ansiosa', 'abrumada'].includes(e)) {
       actionLine =
         locale === 'en'

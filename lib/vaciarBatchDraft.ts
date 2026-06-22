@@ -1,7 +1,10 @@
+import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 import type { AppLocale } from '@/lib/i18n';
 import { detectCategory } from '@/lib/categoryDetection';
 import type { TaskEffort } from '@/lib/taskPerceivedEffort';
 import type { TaskCaptureResult } from '@/lib/taskCaptureTypes';
+import type { CapturePriority } from '@/lib/review/capturePriority';
+import { capturePriorityToIsPriority } from '@/lib/review/capturePriority';
 import {
   isMultiTaskListInput,
   parseTaskCaptureLocally,
@@ -15,6 +18,9 @@ export type VaciarBatchItem = {
   selectedProjectId: string | null;
   selectedDate: string | null;
   effortFeel: TaskEffort | null;
+  lifeAreaKey?: LifeAreaRef | null;
+  /** Duración estimada en minutos (p. ej. 25 para un bloque de foco). */
+  estimatedMinutes?: number | null;
 };
 
 export type VaciarBatchDefaults = {
@@ -81,7 +87,11 @@ export function applyProjectToAllItems(
   }));
 }
 
-export function batchItemToDraft(item: VaciarBatchItem) {
+export function batchItemToDraft(
+  item: VaciarBatchItem & { markImportant?: boolean; capturePriority?: CapturePriority | null },
+) {
+  const isPriority =
+    Boolean(item.markImportant) || capturePriorityToIsPriority(item.capturePriority);
   return {
     content: item.content,
     hasSubtasks: false as const,
@@ -90,5 +100,7 @@ export function batchItemToDraft(item: VaciarBatchItem) {
     selectedCategory: item.selectedCategory,
     selectedProjectId: item.selectedProjectId,
     selectedDate: item.selectedDate,
+    isPriority,
+    lifeAreaKey: item.lifeAreaKey ?? null,
   };
 }

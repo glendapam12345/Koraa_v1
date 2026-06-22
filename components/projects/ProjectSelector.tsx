@@ -20,7 +20,7 @@ import { ProjectCreateStepsOverview } from '@/components/projects/ProjectCreateS
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { PROJECT_COLORS } from '@/lib/projectColors';
 import { createProjectForUser, createProjectErrorMessage } from '@/lib/createProject';
-import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
+import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 import { inferLifeAreaKeyForProject } from '@/lib/lifeAreas/lifeAreaCatalog';
 import { formatProjectDueDate } from '@/lib/projectProgress';
 
@@ -69,7 +69,7 @@ export function ProjectSelector({
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState<string>(PROJECT_COLORS[0]);
   const [newDueDate, setNewDueDate] = useState('');
-  const [newLifeAreaKey, setNewLifeAreaKey] = useState<LifeAreaKey>('other');
+  const [newLifeAreaKey, setNewLifeAreaKey] = useState<LifeAreaRef>('other');
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [keyboardPad, setKeyboardPad] = useState(0);

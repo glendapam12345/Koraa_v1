@@ -71,6 +71,17 @@ export function useVaciarBatchSave({
             await setTaskEffort(result.taskId, item.effortFeel);
           }
 
+          if (result.taskId && item.estimatedMinutes) {
+            const { setTaskPlanningMeta, getDefaultPlanningMeta } = await import(
+              '@/lib/taskPlanningMeta'
+            );
+            const base = getDefaultPlanningMeta();
+            await setTaskPlanningMeta(result.taskId, {
+              ...base,
+              estimatedMinutes: item.estimatedMinutes,
+            });
+          }
+
           if (result.taskId) {
             savedTasks.push({
               captureId: item.id,

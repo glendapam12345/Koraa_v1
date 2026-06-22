@@ -43,15 +43,30 @@ describe('hoyFocusTasks', () => {
     expect(focus).toEqual([]);
   });
 
-  it('falls back to up to 3 incomplete today tasks when no priorities', () => {
+  it('falls back to up to 5 incomplete today tasks when no priorities', () => {
     const tasks = [
       task({ id: 'a' }),
       task({ id: 'b' }),
       task({ id: 'c' }),
       task({ id: 'd' }),
+      task({ id: 'e' }),
+      task({ id: 'f' }),
     ];
     const incomplete = tasks;
     const focus = getHoyFocusTasks(tasks, incomplete, TODAY);
-    expect(focus.map((t) => t.id)).toEqual(['a', 'b', 'c']);
+    expect(focus.map((t) => t.id)).toEqual(['a', 'b', 'c', 'd', 'e']);
+  });
+
+  it('scopes suggested and fallback steps to focused project', () => {
+    const projectA = 'proj-a';
+    const tasks = [
+      task({ id: '1', is_priority: true, project_id: projectA }),
+      task({ id: '2', is_priority: true, project_id: 'proj-b' }),
+      task({ id: '3', project_id: projectA }),
+      task({ id: '4', project_id: 'proj-b' }),
+    ];
+    const incomplete = tasks.filter((row) => !row.is_completed);
+    const focus = getHoyFocusTasks(tasks, incomplete, TODAY, projectA);
+    expect(focus.map((row) => row.id)).toEqual(['1']);
   });
 });

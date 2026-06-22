@@ -277,7 +277,7 @@ export default function FocusScreen() {
           showToast(t('onboarding.focus.closeOnboardingError'), 'error');
           return;
         }
-        router.replace({ pathname: '/paywall', params: { next: '/(tabs)', source: 'onboarding' } });
+        router.replace('/onboarding/projects');
       } catch (navError) {
         console.error('Error en navegación:', navError);
         router.replace('/(tabs)');

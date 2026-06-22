@@ -79,6 +79,8 @@ export async function createVaciarTask(
         : ''
       : draft.selectedCategory || detectCategory(trimmed) || 'otros';
   const projectIdToSave = draft.assignToProject === true ? draft.selectedProjectId : null;
+  const lifeAreaKeyToSave =
+    projectIdToSave == null && draft.lifeAreaKey ? draft.lifeAreaKey : null;
   const validSubtasks = draft.hasSubtasks ? draft.subtasks.filter((st) => st.trim()) : [];
   const subtaskCount = validSubtasks.length;
 
@@ -88,11 +90,12 @@ export async function createVaciarTask(
       user_id: user.id,
       content: trimmed,
       category: categoryToSave,
-      is_priority: false,
+      is_priority: draft.isPriority ?? false,
       is_completed: false,
       parent_task_id: null,
       project_id: projectIdToSave,
       scheduled_date: draft.selectedDate,
+      ...(lifeAreaKeyToSave ? { life_area_key: lifeAreaKeyToSave } : {}),
     })
     .select()
     .single();
@@ -103,7 +106,7 @@ export async function createVaciarTask(
       const mainTaskId = await saveTaskOffline({
         content: trimmed,
         category: categoryToSave,
-        is_priority: false,
+        is_priority: draft.isPriority ?? false,
         is_completed: false,
         parent_task_id: null,
         project_id: projectIdToSave,
@@ -115,7 +118,7 @@ export async function createVaciarTask(
         await saveTaskOffline({
           content: subtask.trim(),
           category: stCat,
-          is_priority: false,
+          is_priority: draft.isPriority ?? false,
           is_completed: false,
           parent_task_id: mainTaskId,
           project_id: projectIdToSave,
@@ -123,7 +126,7 @@ export async function createVaciarTask(
       }
 
       trackTaskCreated({
-        priority: false,
+        priority: Boolean(draft.isPriority),
         projectId: projectIdToSave,
         scheduledDate: draft.selectedDate,
         hasSubtasks: subtaskCount > 0,
@@ -151,7 +154,7 @@ export async function createVaciarTask(
           user_id: user.id,
           content: trimmed,
           category: categoryToSave,
-          is_priority: false,
+          is_priority: draft.isPriority ?? false,
           is_completed: false,
           parent_task_id: null,
         })
@@ -168,7 +171,7 @@ export async function createVaciarTask(
           user_id: user.id,
           content: subtask.trim(),
           category: detectCategory(subtask.trim()),
-          is_priority: false,
+          is_priority: draft.isPriority ?? false,
           is_completed: false,
           parent_task_id: fallbackTask.id,
         }));
@@ -176,7 +179,7 @@ export async function createVaciarTask(
       }
 
       trackTaskCreated({
-        priority: false,
+        priority: Boolean(draft.isPriority),
         projectId: projectIdToSave,
         scheduledDate: draft.selectedDate,
         hasSubtasks: subtaskCount > 0,
@@ -203,7 +206,7 @@ export async function createVaciarTask(
       user_id: user.id,
       content: subtask.trim(),
       category: detectCategory(subtask.trim()) || categoryToSave,
-      is_priority: false,
+      is_priority: draft.isPriority ?? false,
       is_completed: false,
       parent_task_id: mainTask.id,
       project_id: projectIdToSave,
@@ -220,7 +223,7 @@ export async function createVaciarTask(
   }
 
   trackTaskCreated({
-    priority: false,
+    priority: Boolean(draft.isPriority),
     projectId: projectIdToSave,
     scheduledDate: draft.selectedDate,
     hasSubtasks: subtaskCount > 0,

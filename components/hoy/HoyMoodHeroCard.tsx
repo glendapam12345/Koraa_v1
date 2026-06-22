@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
+import { isLateNight } from '@/lib/timeOfDayContext';
 
 type HoyMoodHeroCardProps = {
   emotionEmoji: string;
@@ -37,11 +38,15 @@ export function HoyMoodHeroCard({
 
   const koraaLine = crisisMode
     ? t('hoy.crisisMoodHero')
-    : compact
+    : isLateNight()
       ? focusCount > 0
-        ? t('hoy.moodHeroLiteWithSteps', { count: focusCount })
-        : t('hoy.moodHeroLiteNoSteps')
-      : t('hoy.moodHeroPlanLead');
+        ? t('hoy.nightMoodHeroWithSteps')
+        : t('hoy.nightMoodHeroLead')
+      : compact
+        ? focusCount > 0
+          ? t('hoy.moodHeroLiteWithSteps', { count: focusCount })
+          : t('hoy.moodHeroLiteNoSteps')
+        : t('hoy.moodHeroPlanLead');
 
   const taskHint = null;
 
@@ -50,7 +55,14 @@ export function HoyMoodHeroCard({
     !coachLineRepeatsMood(coachLine, emotionLabel, energyLevel) &&
     coachLine !== koraaLine;
 
-  const detailLine = taskHint ?? (compact ? null : coachAddsValue ? coachLine : null);
+  const detailLine =
+    isLateNight() || taskHint
+      ? taskHint
+      : compact
+        ? null
+        : coachAddsValue
+          ? coachLine
+          : null;
 
   const cardStyles = compact ? styles.cardCompact : styles.card;
   const emojiStyle = compact ? styles.emojiCompact : styles.emoji;
@@ -63,13 +75,13 @@ export function HoyMoodHeroCard({
           {emotionEmoji}
         </Text>
         <View style={styles.moodTextCol}>
-          <Text style={styles.emotion} numberOfLines={1}>
+          <Text style={[styles.emotion, compact && styles.emotionCompact]} numberOfLines={1}>
             {emotionLabel}
           </Text>
           <Text style={styles.energy}>{t('hoy.moodHeroEnergy', { level: energyLevel })}</Text>
         </View>
       </View>
-      <Text style={styles.koraaLine} numberOfLines={compact ? 2 : 3}>
+      <Text style={[styles.koraaLine, compact && styles.koraaLineCompact]} numberOfLines={compact ? 1 : 3}>
         {koraaLine}
       </Text>
       {detailLine ? (
@@ -93,10 +105,10 @@ export function HoyMoodHeroCard({
       accessibilityHint={onPress ? t('hoy.focusUpdateCheckInA11y') : undefined}
     >
       <LinearGradient
-        colors={[THEME.colors.gradient.blue, THEME.colors.calm.lavenderDeep, THEME.colors.gradient.pink]}
+        colors={[THEME.colors.calm.blush, THEME.colors.fill[100], THEME.colors.calm.mist]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={cardStyles}
+        style={[cardStyles, styles.cardBorder]}
       >
         {content}
       </LinearGradient>
@@ -128,18 +140,22 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.md,
     gap: 4,
-    ...THEME.shadows.soft,
   },
   cardCompact: {
     borderRadius: THEME.borderRadius.rounded,
-    paddingVertical: THEME.spacing.xs,
+    paddingVertical: 10,
     paddingHorizontal: THEME.spacing.sm,
     gap: 2,
-    ...THEME.shadows.soft,
+  },
+  cardBorder: {
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
   },
   eyebrow: {
-    ...THEME.typography.sectionEyebrow,
-    color: THEME.colors.onGradientMuted,
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.accent.italic,
+    color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 18,
   },
   moodRow: {
     flexDirection: 'row',
@@ -152,36 +168,46 @@ const styles = StyleSheet.create({
     lineHeight: 40,
   },
   emojiCompact: {
-    fontSize: 30,
-    lineHeight: 34,
+    fontSize: 26,
+    lineHeight: 30,
   },
   moodTextCol: {
     flex: 1,
     gap: 0,
   },
   emotion: {
-    ...THEME.typography.sectionTitle,
-    lineHeight: 24,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.onGradient,
+    ...THEME.typography.h3,
+    lineHeight: 26,
+    fontFamily: THEME.fonts.accent.italic,
+    color: THEME.colors.text.main,
+  },
+  emotionCompact: {
+    ...THEME.typography.body,
+    lineHeight: 20,
+    fontFamily: THEME.fonts.heading.medium,
   },
   energy: {
     ...THEME.typography.meta,
     lineHeight: 18,
-    color: THEME.colors.onGradientSoft,
+    color: THEME.colors.text.secondary,
     fontFamily: THEME.fonts.heading.medium,
   },
   koraaLine: {
     ...THEME.typography.caption,
     lineHeight: 20,
-    color: THEME.colors.onGradient,
+    color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.medium,
     marginTop: 4,
+  },
+  koraaLineCompact: {
+    ...THEME.typography.small,
+    lineHeight: 16,
+    marginTop: 2,
   },
   coach: {
     ...THEME.typography.small,
     lineHeight: 17,
-    color: THEME.colors.onGradientMuted,
+    color: THEME.colors.text.secondary,
     marginTop: 2,
   },
 });

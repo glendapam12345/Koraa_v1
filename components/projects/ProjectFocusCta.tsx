@@ -57,8 +57,12 @@ export function ProjectFocusCta({
         }),
         [
           {
-            text: t('projects.focusGoTasks'),
-            onPress: () => router.push('/(tabs)/vaciar'),
+            text: t('projects.focusGoHoy'),
+            onPress: () => router.push('/(tabs)'),
+          },
+          {
+            text: t('projects.focusGoOrganized'),
+            onPress: () => router.push('/(tabs)/vaciar?segment=projects'),
           },
         ],
       );

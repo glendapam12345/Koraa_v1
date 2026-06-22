@@ -1,7 +1,9 @@
 export { FrenteChip } from '@/components/frentes/FrenteChip';
 export { FrentesSection } from '@/components/frentes/FrentesSection';
-export { FrontGroupCard } from '@/components/frentes/FrontGroupCard';
-export { FrentesLivePreview } from '@/components/frentes/FrentesLivePreview';
 export { CreateFrenteModal } from '@/components/frentes/CreateFrenteModal';
-export { FrontDetectionScreen } from '@/components/frentes/FrontDetectionScreen';
-export { WeeklyPlanReadyScreen } from '@/components/frentes/WeeklyPlanReadyScreen';
+export { BrainDumpAreaReviewScreen } from '@/components/frentes/BrainDumpAreaReviewScreen';
+export { BrainDumpAreaDragBoard } from '@/components/frentes/BrainDumpAreaDragBoard';
+export { BrainDumpCreateProjectSheet } from '@/components/frentes/BrainDumpCreateProjectSheet';
+export { BrainDumpTaskProjectPicker } from '@/components/frentes/BrainDumpTaskProjectPicker';
+export { BrainDumpSavedSummaryScreen } from '@/components/frentes/BrainDumpSavedSummaryScreen';
+export { BrainDumpLivePreview } from '@/components/frentes/BrainDumpLivePreview';

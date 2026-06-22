@@ -12,6 +12,15 @@ import {
 import { buildLifeAreaIndex } from '@/lib/lifeAreas/projectToLifeArea';
 import type { ReorganizeWeekProposal, WhatChangedReason } from '@/lib/lifeAreas/types';
 
+export type DayReflectionReplanBuildResult =
+  | {
+      ok: true;
+      proposal: ReorganizeWeekProposal;
+      assignments: { id: string; scheduled_date: string }[];
+      usedAi: boolean;
+    }
+  | { ok: false; error: string };
+
 export type DayReflectionReplanResult =
   | {
       ok: true;
@@ -21,12 +30,13 @@ export type DayReflectionReplanResult =
     }
   | { ok: false; error: string };
 
-export async function executeDayReflectionReplan(
+/** Genera propuesta de reorganización sin guardar en Supabase. */
+export async function buildDayReplanPlan(
   userId: string,
   reason: WhatChangedReason,
   locale: AppLocale,
   looseLabel: string,
-): Promise<DayReflectionReplanResult> {
+): Promise<DayReflectionReplanBuildResult> {
   const today = getLocalDateString();
   const weekDates = getCurrentWeekDates(today);
 
@@ -61,8 +71,8 @@ export async function executeDayReflectionReplan(
       proposal: {
         headline:
           locale === 'en'
-            ? 'Your week already looks calm.'
-            : 'Tu semana ya se ve tranquila.',
+            ? 'Your day already looks calm.'
+            : 'Tu día ya se ve tranquilo.',
         subline:
           locale === 'en'
             ? 'Nothing left to move right now.'
@@ -70,7 +80,7 @@ export async function executeDayReflectionReplan(
         moved: [],
         kept: [],
       },
-      movedCount: 0,
+      assignments: [],
       usedAi: false,
     };
   }
@@ -95,17 +105,24 @@ export async function executeDayReflectionReplan(
     aiPlan ??
     buildAdaptiveReorganizePlan(tasks, areaIndex, reason, locale, today, projectDueDates);
 
-  if (plan.assignments.length === 0) {
-    return {
-      ok: true,
-      proposal: plan.proposal,
-      movedCount: 0,
-      usedAi: Boolean(aiPlan),
-    };
+  return {
+    ok: true,
+    proposal: plan.proposal,
+    assignments: plan.assignments,
+    usedAi: Boolean(aiPlan),
+  };
+}
+
+export async function applyDayReplanAssignments(
+  userId: string,
+  assignments: { id: string; scheduled_date: string }[],
+): Promise<{ ok: true; movedCount: number } | { ok: false; error: string }> {
+  if (assignments.length === 0) {
+    return { ok: true, movedCount: 0 };
   }
 
   const updates = await Promise.all(
-    plan.assignments.map((entry) =>
+    assignments.map((entry) =>
       supabase
         .from('tasks')
         .update({ scheduled_date: entry.scheduled_date })
@@ -119,10 +136,34 @@ export async function executeDayReflectionReplan(
     return { ok: false, error: failed.error.message };
   }
 
+  return { ok: true, movedCount: assignments.length };
+}
+
+export async function executeDayReflectionReplan(
+  userId: string,
+  reason: WhatChangedReason,
+  locale: AppLocale,
+  looseLabel: string,
+): Promise<DayReflectionReplanResult> {
+  const built = await buildDayReplanPlan(userId, reason, locale, looseLabel);
+  if (!built.ok) return built;
+
+  if (built.assignments.length === 0) {
+    return {
+      ok: true,
+      proposal: built.proposal,
+      movedCount: 0,
+      usedAi: built.usedAi,
+    };
+  }
+
+  const applied = await applyDayReplanAssignments(userId, built.assignments);
+  if (!applied.ok) return applied;
+
   return {
     ok: true,
-    proposal: plan.proposal,
-    movedCount: plan.proposal.moved.length,
-    usedAi: Boolean(aiPlan),
+    proposal: built.proposal,
+    movedCount: applied.movedCount,
+    usedAi: built.usedAi,
   };
 }

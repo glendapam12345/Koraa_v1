@@ -20,8 +20,11 @@ import { ProjectCreateStepsOverview } from '@/components/projects/ProjectCreateS
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { createProjectForUser, createProjectErrorMessage } from '@/lib/createProject';
 import type { CreatedProject } from '@/lib/createProject';
-import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
-import { inferLifeAreaKeyForProject } from '@/lib/lifeAreas/lifeAreaCatalog';
+import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
+import { inferLifeAreaKeyForProject, makeCustomLifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
+import { useUserLifeAreas } from '@/hooks/useUserLifeAreas';
+import { getLifeAreaAccentColor } from '@/lib/lifeAreas/lifeAreaColors';
+import { AreaNameEditSheet } from '@/components/projects/AreaNameEditSheet';
 
 type ProjectCreateModalProps = {
   visible: boolean;
@@ -30,7 +33,7 @@ type ProjectCreateModalProps = {
   onCreated: (project: CreatedProject) => void;
   onError?: (message: string) => void;
   existingNames?: string[];
-  initialLifeAreaKey?: LifeAreaKey;
+  initialLifeAreaKey?: LifeAreaRef;
 };
 
 export function ProjectCreateModal({
@@ -47,10 +50,12 @@ export function ProjectCreateModal({
   const [name, setName] = useState('');
   const [color, setColor] = useState<string>(PROJECT_COLORS[0]);
   const [dueDate, setDueDate] = useState('');
-  const [lifeAreaKey, setLifeAreaKey] = useState<LifeAreaKey>('other');
+  const [lifeAreaKey, setLifeAreaKey] = useState<LifeAreaRef>('other');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [keyboardPad, setKeyboardPad] = useState(0);
+  const [showNewAreaSheet, setShowNewAreaSheet] = useState(false);
+  const { config: lifeAreasConfig, addCustomArea } = useUserLifeAreas(userId);
 
   useEffect(() => {
     const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -74,8 +79,17 @@ export function ProjectCreateModal({
 
   useEffect(() => {
     if (!visible) return;
-    setLifeAreaKey(initialLifeAreaKey ?? 'other');
+    const area = initialLifeAreaKey ?? 'other';
+    setLifeAreaKey(area);
+    if (initialLifeAreaKey) {
+      setColor(getLifeAreaAccentColor(area));
+    }
   }, [initialLifeAreaKey, visible]);
+
+  const handleLifeAreaChange = (ref: LifeAreaRef) => {
+    setLifeAreaKey(ref);
+    setColor(getLifeAreaAccentColor(ref));
+  };
 
   const handleClose = () => {
     Keyboard.dismiss();
@@ -154,16 +168,22 @@ export function ProjectCreateModal({
                 color={color}
                 dueDate={dueDate}
                 lifeAreaKey={lifeAreaKey}
+                lifeAreasConfig={lifeAreasConfig}
+                onAddCustomArea={() => setShowNewAreaSheet(true)}
                 error={error}
                 saving={saving}
                 onNameChange={(v) => {
                   setName(v);
-                  if (v.trim()) setLifeAreaKey(inferLifeAreaKeyForProject(v));
+                  if (v.trim() && !initialLifeAreaKey) {
+                    const inferred = inferLifeAreaKeyForProject(v);
+                    setLifeAreaKey(inferred);
+                    setColor(getLifeAreaAccentColor(inferred));
+                  }
                   if (error) setError(null);
                 }}
                 onColorChange={setColor}
                 onDueDateChange={setDueDate}
-                onLifeAreaChange={setLifeAreaKey}
+                onLifeAreaChange={handleLifeAreaChange}
                 onCancel={handleClose}
                 onSubmit={() => void handleSubmit()}
               />
@@ -182,6 +202,20 @@ export function ProjectCreateModal({
           </View>
         </KeyboardAvoidingView>
       </View>
+      <AreaNameEditSheet
+        visible={showNewAreaSheet}
+        title={t('areasCompact.newArea')}
+        initialName=""
+        initialEmoji="🌿"
+        showEmoji
+        onClose={() => setShowNewAreaSheet(false)}
+        onSave={async (areaName, emoji) => {
+          const result = await addCustomArea(areaName, emoji);
+          if (result.ok && result.entry) {
+            setLifeAreaKey(makeCustomLifeAreaRef(result.entry.id));
+          }
+        }}
+      />
     </Modal>
   );
 }

@@ -5,21 +5,11 @@ import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { VnextSelectableChip } from '@/components/vnext/VnextSelectableChip';
-import { PlanRealismCard } from '@/components/vnext/PlanRealismCard';
 import { buildCaptureFronts } from '@/lib/captureProjectFronts';
 import { frontThemeForFront } from '@/lib/frentes/frontTheme';
-import {
-  applyRealityCheckToItems,
-  assessPlanRealism,
-} from '@/lib/vnext/planRealism';
 import type { EnrichedCaptureItem } from '@/lib/taskIntelligentEnrichment';
-import type {
-  RealityCheckInput,
-  VnextAvailableHours,
-  VnextEnergyLevel,
-} from '@/lib/vnext/types';
+import type { RealityCheckInput, VnextEnergyLevel } from '@/lib/vnext/types';
 
-const HOUR_OPTIONS: VnextAvailableHours[] = [2, 4, 6, 8];
 const ENERGY_OPTIONS: VnextEnergyLevel[] = ['low', 'normal', 'high'];
 
 type RealityCheckScreenProps = {
@@ -47,10 +37,7 @@ export function RealityCheckScreen({
     [fronts],
   );
 
-  const [focusKey, setFocusKey] = useState<string | null>(
-    () => focusOptions[0]?.key ?? null,
-  );
-  const [hours, setHours] = useState<VnextAvailableHours>(4);
+  const [focusKey, setFocusKey] = useState<string | null>(() => focusOptions[0]?.key ?? null);
   const [energy, setEnergy] = useState<VnextEnergyLevel>('normal');
 
   const draftCheck = useMemo((): RealityCheckInput | null => {
@@ -59,16 +46,10 @@ export function RealityCheckScreen({
     return {
       focusFrontKey: focus.key,
       focusFrontName: focus.name,
-      availableHours: hours,
+      availableHours: 4,
       energy,
     };
-  }, [energy, focusKey, focusOptions, hours]);
-
-  const realism = useMemo(() => {
-    if (!draftCheck) return null;
-    const adjusted = applyRealityCheckToItems(items, fronts, draftCheck);
-    return assessPlanRealism(adjusted, fronts, draftCheck);
-  }, [draftCheck, fronts, items]);
+  }, [energy, focusKey, focusOptions]);
 
   const canContinue = Boolean(draftCheck) && !isSaving;
 
@@ -79,10 +60,10 @@ export function RealityCheckScreen({
           onPress={onBack}
           style={styles.backBtn}
           accessibilityRole="button"
-          accessibilityLabel={t('frentes.editBeforePlan')}
+          accessibilityLabel={t('vaciar.previewBackA11y')}
         >
           <ArrowLeft size={20} color={THEME.colors.text.secondary} />
-          <Text style={styles.backText}>{t('frentes.editBeforePlan')}</Text>
+          <Text style={styles.backText}>{t('vaciar.previewBack')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -102,10 +83,11 @@ export function RealityCheckScreen({
           <View style={styles.chipGrid}>
             {focusOptions.map((front) => {
               const theme = frontThemeForFront(front);
+              const displayName = front.name.replace(/\s+App$/i, '');
               return (
                 <VnextSelectableChip
                   key={front.key}
-                  label={front.name}
+                  label={displayName}
                   emoji={front.emoji}
                   selected={focusKey === front.key}
                   accentColor={theme.accent}
@@ -117,37 +99,19 @@ export function RealityCheckScreen({
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('vnext.timeQuestion')}</Text>
-          <View style={styles.rowChips}>
-            {HOUR_OPTIONS.map((option) => (
-              <VnextSelectableChip
-                key={option}
-                label={option >= 8 ? t('vnext.hours8plus') : t('vnext.hours', { count: option })}
-                selected={hours === option}
-                onPress={() => setHours(option)}
-              />
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('vnext.energyQuestion')}</Text>
           <View style={styles.rowChips}>
             {ENERGY_OPTIONS.map((option) => (
               <VnextSelectableChip
                 key={option}
                 label={t(`vnext.energy.${option}`)}
-                emoji={
-                  option === 'low' ? '😴' : option === 'high' ? '⚡' : '🌤️'
-                }
+                emoji={option === 'low' ? '😴' : option === 'high' ? '⚡' : '🌤️'}
                 selected={energy === option}
                 onPress={() => setEnergy(option)}
               />
             ))}
           </View>
         </View>
-
-        {realism ? <PlanRealismCard realism={realism} /> : null}
 
         <View style={styles.reminder}>
           <Sparkles size={16} color={THEME.colors.calm.lavenderDeep} />
@@ -157,7 +121,7 @@ export function RealityCheckScreen({
 
       <View style={styles.footer}>
         <CalmPrimaryButton
-          label={t('frentes.createPlanCta')}
+          label={t('vnext.realitySaveCta')}
           onPress={() => {
             if (draftCheck) onContinue(draftCheck);
           }}
