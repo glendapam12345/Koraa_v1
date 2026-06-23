@@ -58,7 +58,7 @@ module.exports = {
   expo: {
     name: 'Koraa',
     slug: 'koraav1-1',
-    version: '1.0.3',
+    version: '1.0.4',
     orientation: 'portrait',
     icon: './assets/images/koraa-logo.png',
     scheme: 'myapp',
@@ -73,7 +73,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.impermanencecasaartisitca.koraav1',
-      buildNumber: '37',
+      buildNumber: '38',
       entitlements: {
         'com.apple.developer.healthkit': true,
         // Tipos concretos en runtime (react-native-health SleepAnalysis); [] = permisos por uso en app.
