@@ -233,8 +233,10 @@ export default function VaciarScreen() {
           ),
         );
         setPreviewProjects(projects);
+        setSegment('capture');
         setCaptureStep('preview');
         setIsOrganizing(false);
+        router.setParams({ segment: 'capture', fresh: undefined });
         requestAnimationFrame(() => {
           screenScrollRef.current?.scrollTo({ y: 0, animated: true });
         });
@@ -290,7 +292,9 @@ export default function VaciarScreen() {
           ),
         );
         setPreviewProjects(projects);
+        setSegment('capture');
         setCaptureStep('preview');
+        router.setParams({ segment: 'capture', fresh: undefined });
         requestAnimationFrame(() => {
           screenScrollRef.current?.scrollTo({ y: 0, animated: true });
         });
@@ -571,7 +575,7 @@ export default function VaciarScreen() {
       if (freshParam !== '1') return;
       setSegment('capture');
       resetCaptureFlow();
-      router.setParams({ fresh: undefined });
+      router.setParams({ segment: 'capture', fresh: undefined });
     }, [freshParam, resetCaptureFlow, router]),
   );
 

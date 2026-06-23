@@ -6,9 +6,9 @@ export type OpenVaciarCaptureOptions = {
   suggestion?: string;
 };
 
-/** Abre la pestaña Tareas (sin forzar captura). */
+/** Abre Tareas → Capturar (mismo flujo que brain dump + preview por áreas). */
 export function openVaciarTab(): void {
-  router.push('/(tabs)/vaciar');
+  openVaciarCapture();
 }
 
 /** Abre Tareas → Capturar con formulario limpio (desde Hoy, Semana, etc.). */
@@ -21,7 +21,7 @@ export function openVaciarCapture(options?: OpenVaciarCaptureOptions): void {
   if (options?.projectId) params.projectId = options.projectId;
   if (options?.suggestion) params.suggestion = options.suggestion;
 
-  router.push({
+  router.navigate({
     pathname: '/(tabs)/vaciar',
     params,
   });

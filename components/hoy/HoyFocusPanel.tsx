@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, type ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { openVaciarTab } from '@/lib/vaciarNavigation';
+import { openVaciarCapture } from '@/lib/vaciarNavigation';
 import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
 import { THEME } from '@/constants/theme';
 import type { FocusProgressStats } from '@/lib/focusProgressStats';
@@ -151,7 +151,7 @@ export function HoyFocusPanel({
   const addTasksButton = (
     <TouchableOpacity
       style={styles.addTasksBtn}
-      onPress={() => openVaciarTab()}
+      onPress={() => openVaciarCapture()}
       activeOpacity={0.85}
       accessibilityRole="button"
       accessibilityLabel={t('hoy.planAddTasksCta')}
