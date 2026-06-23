@@ -39,4 +39,14 @@ describe('mergeCaptureReviewEdits', () => {
     expect(merged.map((entry) => entry.id).sort()).toEqual(['a', 'b']);
     expect(merged.find((entry) => entry.id === 'b')?.lifeAreaKey).toBe('work');
   });
+
+  it('preserves cleared preferred time when AI refine returns a suggestion', () => {
+    const previous = [item('a', { preferredTime: null, estimatedMinutes: null })];
+    const incoming = [item('a', { preferredTime: '09:00', estimatedMinutes: 45 })];
+
+    const merged = mergeCaptureReviewEdits(previous, incoming);
+
+    expect(merged[0]?.preferredTime).toBeNull();
+    expect(merged[0]?.estimatedMinutes).toBeNull();
+  });
 });

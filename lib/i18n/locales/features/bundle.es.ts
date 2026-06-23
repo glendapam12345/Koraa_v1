@@ -11,6 +11,8 @@ export const featuresEs = {
     deleteSubtasksFailed:
       'No se pudieron eliminar los pasos. Inténtalo de nuevo.',
     saveTaskFailed: 'No se pudo guardar la tarea. Inténtalo de nuevo.',
+    lifeAreaMoveUnavailable:
+      'Mover entre áreas requiere una actualización de la app. Intenta de nuevo más tarde.',
     saveMeditationFailed:
       'No se pudo guardar la meditación. Inténtalo de nuevo.',
     refreshFailed: 'No se pudo actualizar. Inténtalo de nuevo.',
@@ -223,10 +225,17 @@ export const featuresEs = {
     areaReviewMoveAreaUpA11y: 'Subir área en la lista',
     areaReviewMoveAreaDownA11y: 'Bajar área en la lista',
     previewDateBtn: 'Fecha',
+    previewDurationBtn: 'Duración',
+    previewWhenBtn: 'Hora',
     previewTimeBtn: 'Tiempo',
     previewPriorityBtn: 'Prioridad',
     previewNoDate: 'Sin fecha',
     previewDurationMinutes: '{{count}} min',
+    preferredTimeHint: 'Elige a qué hora te gustaría hacer este paso (opcional).',
+    preferredTimeConfirm: 'Usar esta hora',
+    preferredTimePickOther: 'Elegir otra hora',
+    preferredTimeClear: 'Quitar hora',
+    preferredTimeClearA11y: 'Quitar hora preferida de este paso',
     capturePriorityLow: 'Baja',
     capturePriorityMedium: 'Media',
     capturePriorityHigh: 'Alta',
@@ -321,6 +330,8 @@ export const featuresEs = {
     releaseTaskA11y: 'Soltar lo que escribiste. Koraa lo organizará después.',
     releaseConfirm: '💜 Guardé {{count}} cosas para ti.',
     releaseConfirmOne: '💜 Guardé 1 cosa para ti.',
+    batchPartialSave:
+      'Guardé {{saved}} de {{total}} pasos. Los que faltan siguen en revisión — puedes intentar de nuevo.',
     releaseRelief: 'Ya puedes dejar de pensar en eso.',
     guidanceDoneTitle: 'Ya quedó 💜',
     guidanceSaved: 'Guardé {{count}} cosas para ti.',

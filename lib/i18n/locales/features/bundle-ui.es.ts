@@ -503,6 +503,8 @@ export const uiEs = {
     addLooseTaskShort: 'Paso suelto',
     addStepShort: 'Añadir tareas',
     looseSectionTitle: 'Tareas sueltas',
+    looseTasksLoadFailed: 'No pudimos cargar las tareas sueltas. Toca para reintentar.',
+    looseTasksRetryA11y: 'Reintentar cargar tareas sueltas',
     loosePreviewTitle: 'Sin área todavía',
     looseSectionBody: 'Cosas que aún no van en un proyecto',
     viewLooseTasks: 'Ver todas las sueltas',

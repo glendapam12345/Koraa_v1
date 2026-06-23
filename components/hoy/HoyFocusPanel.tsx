@@ -29,6 +29,7 @@ import {
   buildFocusTaskDeadline,
   formatFocusTaskDuration,
   getFocusTaskEstimatedMinutes,
+  getFocusTaskPreferredTimeLabel,
   type HoyProjectInfo,
 } from '@/lib/hoy/focusTaskDisplay';
 import { buildHoyPlanAreaGroups } from '@/lib/hoy/buildHoyPlanAreaGroups';
@@ -195,6 +196,11 @@ export function HoyFocusPanel({
   ) => {
     const project = task.project_id ? projectsMap[task.project_id] : undefined;
     const minutes = getFocusTaskEstimatedMinutes(task, planningMeta[task.id]);
+    const preferredTimeLabel = getFocusTaskPreferredTimeLabel(
+      task,
+      locale,
+      planningMeta[task.id],
+    );
     const deadline = buildFocusTaskDeadline(task, project, locale, t);
     const progress = task.project_id ? projectProgress[task.project_id] : undefined;
     const onMove = bucket === 'waiting' ? onMoveWaitingTask : onMoveFocusTask;
@@ -205,7 +211,8 @@ export function HoyFocusPanel({
         content={task.content}
         completed={task.is_completed}
         index={index}
-        durationLabel={formatFocusTaskDuration(minutes)}
+        durationLabel={minutes > 0 ? formatFocusTaskDuration(minutes) : null}
+        preferredTimeLabel={preferredTimeLabel}
         deadlineLabel={deadline?.label ?? null}
         deadlineUrgent={deadline?.urgent ?? false}
         projectId={task.project_id ?? null}

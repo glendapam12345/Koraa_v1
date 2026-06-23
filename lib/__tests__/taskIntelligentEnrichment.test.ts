@@ -31,7 +31,7 @@ describe('taskIntelligentEnrichment', () => {
     expect(item.timing).toBe('later');
     expect(item.selectedDate).toBeNull();
     expect(item.effortFeel).toBe('heavy');
-    expect(item.estimatedMinutes).toBe(60);
+    expect(item.estimatedMinutes).toBeNull();
   });
 
   it('suggests today for quick errands', () => {

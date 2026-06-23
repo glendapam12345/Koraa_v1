@@ -4,6 +4,7 @@ import {
   formatProposalScheduleLabel,
 } from '@/lib/lifeAreas/experienceDataMappers';
 import { formatDurationLabel } from '@/lib/taskPlanningMeta';
+import { formatPreferredTimeLabel } from '@/lib/taskPreferredTime';
 import { getLifeAreaAccentColor } from '@/lib/lifeAreas/lifeAreaColors';
 import { makeCustomLifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
@@ -62,9 +63,9 @@ export function captureItemToPlannerTask(
     title: item.content,
     areaId: columnId,
     iconEmoji: '',
-    timeLabel: item.selectedDate
-      ? formatProposalScheduleLabel(item.selectedDate, locale)
-      : '',
+    timeLabel:
+      formatPreferredTimeLabel(item.preferredTime, locale) ??
+      (item.selectedDate ? formatProposalScheduleLabel(item.selectedDate, locale) : ''),
     durationLabel: item.estimatedMinutes ? formatDurationLabel(item.estimatedMinutes) : '',
     status: item.markImportant ? 'star' : 'pending',
     scheduledDate: item.selectedDate ?? '',

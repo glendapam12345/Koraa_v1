@@ -56,7 +56,13 @@ export function useVaciarTaskSave({
   const saveTask = useCallback(
     async (
       draft: VaciarTaskDraft,
-      options?: { effortFeel?: TaskEffort | null; reliefCapture?: boolean; suppressToast?: boolean },
+      options?: {
+        effortFeel?: TaskEffort | null;
+        reliefCapture?: boolean;
+        suppressToast?: boolean;
+        estimatedMinutes?: number | null;
+        preferredTime?: string | null;
+      },
     ): Promise<boolean> => {
       const validation = validateVaciarTaskDraft(draft);
       if (validation === 'empty') {
@@ -97,6 +103,19 @@ export function useVaciarTaskSave({
         }
         if (result.taskId && options?.effortFeel) {
           await setTaskEffort(result.taskId, options.effortFeel);
+        }
+
+        if (
+          result.taskId &&
+          (options?.estimatedMinutes || options?.preferredTime)
+        ) {
+          const { setTaskPlanningMeta } = await import('@/lib/taskPlanningMeta');
+          await setTaskPlanningMeta(result.taskId, {
+            energyRequired: 'normal',
+            notes: '',
+            ...(options.estimatedMinutes ? { estimatedMinutes: options.estimatedMinutes } : {}),
+            preferredTime: options.preferredTime ?? null,
+          });
         }
 
         const calendarSync = await syncSavedTaskToDeviceCalendar({

@@ -12,13 +12,14 @@ import {
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Calendar, Clock, Flag, ChevronDown, ChevronUp, Plus } from 'lucide-react-native';
+import { X, Calendar, Clock, Flag, ChevronDown, ChevronUp, Plus, AlarmClock } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { DateSelector } from '@/components/tasks/DateSelector';
 import { TaskEffortPicker } from '@/components/tasks/TaskEffortPicker';
 import { TaskDurationStepper } from '@/components/vnext/TaskDurationStepper';
+import { TaskPreferredTimePicker } from '@/components/vnext/TaskPreferredTimePicker';
 import { VnextSelectableChip } from '@/components/vnext/VnextSelectableChip';
 import { ProjectCreateForm } from '@/components/projects/ProjectCreateForm';
 import type { Task } from '@/components/tasks/TaskCard';
@@ -26,8 +27,10 @@ import type { TaskEffort } from '@/lib/taskPerceivedEffort';
 import { getPerceivedEffort, loadTaskEffortMap } from '@/lib/taskPerceivedEffort';
 import {
   effortToDefaultMinutes,
+  getStoredTaskPlanningMeta,
   getTaskPlanningMeta,
   loadTaskPlanningMetaMap,
+  type TaskPlanningMeta,
 } from '@/lib/taskPlanningMeta';
 import { getProjectEmoji } from '@/lib/projectEmoji';
 import { energyFromEffort, type TaskPlanEditPayload } from '@/lib/vnext/saveTaskPlanEdit';
@@ -47,6 +50,7 @@ import {
   type CapturePriority,
 } from '@/lib/review/capturePriority';
 import { formatProjectDueDate } from '@/lib/projectProgress';
+import { formatPreferredTimeLabel } from '@/lib/taskPreferredTime';
 
 type TaskPlanEditSheetProps = {
   visible: boolean;
@@ -103,9 +107,14 @@ export function TaskPlanEditSheet({
   const [capturePriority, setCapturePriority] = useState<CapturePriority>('medium');
   const [effort, setEffort] = useState<TaskEffort | null>(null);
   const [estimatedMinutes, setEstimatedMinutes] = useState(45);
+  const [preferredTime, setPreferredTime] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [metaReady, setMetaReady] = useState(false);
-  const [activePicker, setActivePicker] = useState<'date' | 'duration' | 'priority' | null>(null);
+  const [activePicker, setActivePicker] = useState<'date' | 'duration' | 'when' | 'priority' | null>(
+    null,
+  );
+  const [durationTouched, setDurationTouched] = useState(false);
+  const [whenTouched, setWhenTouched] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   useEffect(() => {
@@ -127,7 +136,10 @@ export function TaskPlanEditSheet({
     setEstimatedMinutes(
       planning.estimatedMinutes || effortToDefaultMinutes(task.perceivedEffort ?? undefined),
     );
+    setPreferredTime(planning.preferredTime ?? null);
     setNotes(planning.notes);
+    setDurationTouched(false);
+    setWhenTouched(false);
     setActivePicker(null);
     setShowMoreOptions(false);
     setShowCreateProject(false);
@@ -145,6 +157,7 @@ export function TaskPlanEditSheet({
       setEstimatedMinutes(
         loadedPlanning.estimatedMinutes || effortToDefaultMinutes(perceived ?? undefined),
       );
+      setPreferredTime(loadedPlanning.preferredTime ?? null);
       setNotes(loadedPlanning.notes);
     })();
     return () => {
@@ -218,12 +231,14 @@ export function TaskPlanEditSheet({
   );
 
   const durationLabel = t('vaciar.previewDurationMinutes', { count: estimatedMinutes });
+  const whenPillLabel =
+    formatPreferredTimeLabel(preferredTime, locale) ?? t('vaciar.previewWhenBtn');
   const priorityLabel = t(PRIORITY_LABEL_KEYS[capturePriority]);
   const datePillLabel = scheduledDate
     ? formatProjectDueDate(scheduledDate, locale)
     : t('vaciar.previewDateBtn');
 
-  const togglePicker = (picker: 'date' | 'duration' | 'priority') => {
+  const togglePicker = (picker: 'date' | 'duration' | 'when' | 'priority') => {
     setActivePicker((current) => (current === picker ? null : picker));
   };
 
@@ -288,6 +303,16 @@ export function TaskPlanEditSheet({
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  style={[styles.quickPill, activePicker === 'when' && styles.quickPillActive]}
+                  onPress={() => togglePicker('when')}
+                  activeOpacity={0.85}
+                >
+                  <AlarmClock size={14} color={THEME.colors.calm.lavenderDeep} />
+                  <Text style={styles.quickPillText} numberOfLines={1}>
+                    {whenPillLabel}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
                   style={[styles.quickPill, activePicker === 'priority' && styles.quickPillActive]}
                   onPress={() => togglePicker('priority')}
                   activeOpacity={0.85}
@@ -314,7 +339,23 @@ export function TaskPlanEditSheet({
                 <View style={styles.pickerWrap}>
                   <TaskDurationStepper
                     minutes={estimatedMinutes}
-                    onChange={setEstimatedMinutes}
+                    onChange={(minutes) => {
+                      setDurationTouched(true);
+                      setEstimatedMinutes(minutes);
+                    }}
+                    compact
+                  />
+                </View>
+              ) : null}
+
+              {activePicker === 'when' ? (
+                <View style={styles.pickerWrap}>
+                  <TaskPreferredTimePicker
+                    value={preferredTime}
+                    onChange={(value) => {
+                      setWhenTouched(true);
+                      setPreferredTime(value);
+                    }}
                     compact
                   />
                 </View>
@@ -472,11 +513,22 @@ export function TaskPlanEditSheet({
                   effort,
                   isPriority,
                   lifeAreaKey: projectId ? null : lifeAreaKey,
-                  planning: {
-                    estimatedMinutes,
-                    energyRequired: energyFromEffort(effort),
-                    notes: notes.trim(),
-                  },
+                  planning: (() => {
+                    const stored = getStoredTaskPlanningMeta(task.id);
+                    const planning: TaskPlanningMeta = {
+                      energyRequired: energyFromEffort(effort),
+                      notes: notes.trim(),
+                      preferredTime: whenTouched
+                        ? preferredTime
+                        : (stored?.preferredTime ?? null),
+                    };
+                    if (durationTouched) {
+                      planning.estimatedMinutes = estimatedMinutes;
+                    } else if (stored?.estimatedMinutes) {
+                      planning.estimatedMinutes = stored.estimatedMinutes;
+                    }
+                    return planning;
+                  })(),
                 });
               }}
               disabled={!canSave}

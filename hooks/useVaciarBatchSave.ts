@@ -11,6 +11,11 @@ export type SavedCaptureTask = {
   projectId: string | null;
 };
 
+export type BatchSaveResult = {
+  tasks: SavedCaptureTask[];
+  status: 'complete' | 'partial' | 'failed' | 'validation_failed';
+};
+
 type ToastFn = (message: string, type?: 'success' | 'error' | 'info') => void;
 
 type UseVaciarBatchSaveArgs = {
@@ -31,17 +36,17 @@ export function useVaciarBatchSave({
     async (
       items: VaciarBatchItem[],
       options?: { suppressToast?: boolean },
-    ): Promise<SavedCaptureTask[] | null> => {
+    ): Promise<BatchSaveResult> => {
       const valid = items.filter((item) => item.content.trim());
       if (valid.length === 0) {
         showToast(t('vaciar.enterTask'), 'info');
-        return null;
+        return { tasks: [], status: 'validation_failed' };
       }
 
       for (const item of valid) {
         if (item.assignToProject && !item.selectedProjectId) {
           showToast(t('vaciar.batchMissingProject', { task: item.content.slice(0, 40) }), 'info');
-          return null;
+          return { tasks: [], status: 'validation_failed' };
         }
       }
 
@@ -49,6 +54,15 @@ export function useVaciarBatchSave({
       let savedCount = 0;
       let reprioritized = false;
       const savedTasks: SavedCaptureTask[] = [];
+
+      const finishWithRefresh = async (
+        status: BatchSaveResult['status'],
+      ): Promise<BatchSaveResult> => {
+        if (savedTasks.length > 0) {
+          await onSaved();
+        }
+        return { tasks: savedTasks, status };
+      };
 
       try {
         for (const item of valid) {
@@ -59,11 +73,23 @@ export function useVaciarBatchSave({
 
           if (result.status === 'not_authenticated') {
             showToast(t('errors.notAuthenticated'), 'error');
-            return null;
+            return await finishWithRefresh(savedTasks.length > 0 ? 'partial' : 'failed');
           }
           if (result.status === 'error') {
-            showToast(t('errors.saveTaskFailed'), 'error');
-            return null;
+            if (!options?.suppressToast) {
+              if (savedTasks.length > 0) {
+                showToast(
+                  t('vaciar.batchPartialSave', {
+                    saved: savedTasks.length,
+                    total: valid.length,
+                  }),
+                  'info',
+                );
+              } else {
+                showToast(t('errors.saveTaskFailed'), 'error');
+              }
+            }
+            return await finishWithRefresh(savedTasks.length > 0 ? 'partial' : 'failed');
           }
 
           if (result.taskId && item.effortFeel) {
@@ -71,14 +97,13 @@ export function useVaciarBatchSave({
             await setTaskEffort(result.taskId, item.effortFeel);
           }
 
-          if (result.taskId && item.estimatedMinutes) {
-            const { setTaskPlanningMeta, getDefaultPlanningMeta } = await import(
-              '@/lib/taskPlanningMeta'
-            );
-            const base = getDefaultPlanningMeta();
+          if (result.taskId && (item.estimatedMinutes || item.preferredTime)) {
+            const { setTaskPlanningMeta } = await import('@/lib/taskPlanningMeta');
             await setTaskPlanningMeta(result.taskId, {
-              ...base,
-              estimatedMinutes: item.estimatedMinutes,
+              energyRequired: 'normal',
+              notes: '',
+              ...(item.estimatedMinutes ? { estimatedMinutes: item.estimatedMinutes } : {}),
+              preferredTime: item.preferredTime ?? null,
             });
           }
 
@@ -111,11 +136,20 @@ export function useVaciarBatchSave({
           showToast(toastMsg, reprioritized || !hasCheckInToday ? 'info' : 'success');
         }
 
-        return savedTasks;
+        return { tasks: savedTasks, status: 'complete' };
       } catch (error) {
         logger.error('Error guardando lote de tareas:', error);
-        showToast(t('errors.saveTaskFailed'), 'error');
-        return null;
+        if (!options?.suppressToast) {
+          if (savedTasks.length > 0) {
+            showToast(
+              t('vaciar.batchPartialSave', { saved: savedTasks.length, total: valid.length }),
+              'info',
+            );
+          } else {
+            showToast(t('errors.saveTaskFailed'), 'error');
+          }
+        }
+        return await finishWithRefresh(savedTasks.length > 0 ? 'partial' : 'failed');
       } finally {
         setIsSavingBatch(false);
       }

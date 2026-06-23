@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { DayTasks, Project } from '@/hooks/useWeekTasks';
 import type { Task } from '@/hooks/useTasks';
 import { buildSemanaPlannerModel } from '@/lib/semana/buildSemanaPlannerModel';
+import { loadTaskPlanningMetaMap } from '@/lib/taskPlanningMeta';
 import { WeekPlannerDragBoard } from '@/components/tasks/experience/WeekPlannerDragBoard';
 import { MoveTaskToDaySheet } from '@/components/tasks/experience/MoveTaskToDaySheet';
 import { TaskEditModal } from '@/components/tasks/TaskEditModal';
@@ -49,10 +50,21 @@ export function SemanaDraggableWeekBoard({
   );
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [quickAddTarget, setQuickAddTarget] = useState<ProjectQuickAddTarget | null>(null);
+  const [planningMetaVersion, setPlanningMetaVersion] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadTaskPlanningMetaMap().then(() => {
+      if (!cancelled) setPlanningMetaVersion((value) => value + 1);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [weekTasks]);
 
   const { days, areas } = useMemo(
     () => buildSemanaPlannerModel(weekTasks, projects, t('projectsUi.looseTitle'), locale),
-    [weekTasks, projects, t, locale],
+    [weekTasks, projects, t, locale, planningMetaVersion],
   );
 
   const tasksById = useMemo(() => {
@@ -87,6 +99,7 @@ export function SemanaDraggableWeekBoard({
 
   const { saving: planEditSaving, savePlan } = useTaskPlanEdit({
     onSaved: () => {
+      void loadTaskPlanningMetaMap().then(() => setPlanningMetaVersion((value) => value + 1));
       setEditingTask(null);
       onTasksChanged?.();
     },
@@ -124,9 +137,13 @@ export function SemanaDraggableWeekBoard({
           completed_at: nextCompleted ? new Date().toISOString() : null,
         })
         .eq('id', taskId);
-      if (!error) onTasksChanged?.();
+      if (error) {
+        showToast?.(t('errors.updateFailed'), 'error');
+        return;
+      }
+      onTasksChanged?.();
     },
-    [onTasksChanged, tasksById],
+    [onTasksChanged, showToast, t, tasksById],
   );
 
   const handleSavePlanEdit = useCallback(
@@ -139,11 +156,13 @@ export function SemanaDraggableWeekBoard({
   const handleDeleteEditingTask = useCallback(async () => {
     if (!editingTask) return;
     const { error } = await supabase.from('tasks').delete().eq('id', editingTask.id);
-    if (!error) {
-      setEditingTask(null);
-      onTasksChanged?.();
+    if (error) {
+      showToast?.(t('errors.deleteTaskFailed'), 'error');
+      return;
     }
-  }, [editingTask, onTasksChanged]);
+    setEditingTask(null);
+    onTasksChanged?.();
+  }, [editingTask, onTasksChanged, showToast, t]);
 
   const handleDeleteTask = useCallback(
     (taskId: string) => {
@@ -159,13 +178,17 @@ export function SemanaDraggableWeekBoard({
           onPress: () => {
             void (async () => {
               const { error } = await supabase.from('tasks').delete().eq('id', taskId);
-              if (!error) onTasksChanged?.();
+              if (error) {
+                showToast?.(t('errors.deleteTaskFailed'), 'error');
+                return;
+              }
+              onTasksChanged?.();
             })();
           },
         },
       ]);
     },
-    [onTasksChanged, t, tasksById],
+    [onTasksChanged, showToast, t, tasksById],
   );
 
   const handlePressAddToDay = useCallback((dayId: string, dayLabel: string) => {

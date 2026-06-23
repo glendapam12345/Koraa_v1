@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Pressable } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Check, ChevronRight, Clock, Calendar, Trash2, ChevronUp, ChevronDown, Pencil, Star } from 'lucide-react-native';
+import { Check, ChevronRight, Clock, Calendar, Trash2, ChevronUp, ChevronDown, Pencil, Star, AlarmClock } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -11,6 +11,7 @@ type HoyFocusTaskRowProps = {
   completed: boolean;
   index: number;
   durationLabel?: string | null;
+  preferredTimeLabel?: string | null;
   deadlineLabel?: string | null;
   deadlineUrgent?: boolean;
   projectId?: string | null;
@@ -34,6 +35,7 @@ export function HoyFocusTaskRow({
   completed,
   index,
   durationLabel,
+  preferredTimeLabel,
   deadlineLabel,
   deadlineUrgent = false,
   projectId,
@@ -167,8 +169,14 @@ export function HoyFocusTaskRow({
           accessibilityRole="button"
           accessibilityLabel={t('hoy.focusTaskOpenA11y', { task: content })}
         >
-        {durationLabel || deadlineLabel ? (
+        {durationLabel || preferredTimeLabel || deadlineLabel ? (
           <View style={styles.metaRow}>
+            {preferredTimeLabel ? (
+              <View style={styles.metaChip}>
+                <AlarmClock size={12} color={THEME.colors.text.secondary} />
+                <Text style={styles.metaText}>{preferredTimeLabel}</Text>
+              </View>
+            ) : null}
             {durationLabel ? (
               <View style={styles.metaChip}>
                 <Clock size={12} color={THEME.colors.text.secondary} />

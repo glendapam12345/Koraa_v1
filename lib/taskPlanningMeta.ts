@@ -2,9 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { VnextEnergyLevel } from '@/lib/vnext/types';
 
 export type TaskPlanningMeta = {
-  estimatedMinutes: number;
+  estimatedMinutes?: number;
   energyRequired: VnextEnergyLevel;
   notes: string;
+  /** Hora del día preferida para el paso (`HH:mm`, 24h). */
+  preferredTime?: string | null;
 };
 
 const STORAGE_KEY = 'koraa_task_planning_meta_v1';
@@ -43,6 +45,10 @@ export async function loadTaskPlanningMetaMap(): Promise<Record<string, TaskPlan
 
 export function getTaskPlanningMeta(taskId: string): TaskPlanningMeta {
   return cache[taskId] ?? getDefaultPlanningMeta();
+}
+
+export function getStoredTaskPlanningMeta(taskId: string): TaskPlanningMeta | null {
+  return cache[taskId] ?? null;
 }
 
 export async function setTaskPlanningMeta(

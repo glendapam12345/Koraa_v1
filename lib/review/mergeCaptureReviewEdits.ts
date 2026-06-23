@@ -24,6 +24,15 @@ export function mergeCaptureReviewEdits(
   return merged;
 }
 
+/** Respeta `null` explícito (p. ej. usuario quitó hora) — `??` no lo haría. */
+function pickMergedNullable<T>(
+  prev: T | null | undefined,
+  incoming: T | null | undefined,
+): T | null | undefined {
+  if (prev !== undefined) return prev;
+  return incoming;
+}
+
 function mergeCaptureReviewItem(
   prev: EnrichedCaptureItem,
   incoming: EnrichedCaptureItem,
@@ -33,7 +42,8 @@ function mergeCaptureReviewItem(
     content: prev.content,
     lifeAreaKey: prev.lifeAreaKey != null ? prev.lifeAreaKey : incoming.lifeAreaKey,
     selectedDate: prev.selectedDate ?? incoming.selectedDate,
-    estimatedMinutes: prev.estimatedMinutes ?? incoming.estimatedMinutes,
+    estimatedMinutes: pickMergedNullable(prev.estimatedMinutes, incoming.estimatedMinutes),
+    preferredTime: pickMergedNullable(prev.preferredTime, incoming.preferredTime),
     markImportant: prev.markImportant ?? incoming.markImportant,
     capturePriority: prev.capturePriority ?? incoming.capturePriority,
     assignToProject: prev.assignToProject,

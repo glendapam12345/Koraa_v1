@@ -1,6 +1,7 @@
 import { formatProjectDueDate } from '@/lib/projectProgress';
 import type { EnrichedCaptureItem } from '@/lib/taskIntelligentEnrichment';
 import type { AppLocale, TranslationKey } from '@/lib/i18n';
+import { formatPreferredTimeLabel } from '@/lib/taskPreferredTime';
 import {
   resolveCapturePriority,
   type CapturePriority,
@@ -29,6 +30,11 @@ export function buildPreviewTaskSummary(
 
   if (item.estimatedMinutes) {
     parts.push(t('vaciar.previewDurationMinutes', { count: item.estimatedMinutes }));
+  }
+
+  const whenLabel = formatPreferredTimeLabel(item.preferredTime, locale);
+  if (whenLabel) {
+    parts.push(whenLabel);
   }
 
   const priority = resolveCapturePriority(item);

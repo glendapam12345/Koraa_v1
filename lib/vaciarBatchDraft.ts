@@ -3,7 +3,6 @@ import type { AppLocale } from '@/lib/i18n';
 import { detectCategory } from '@/lib/categoryDetection';
 import type { TaskEffort } from '@/lib/taskPerceivedEffort';
 import type { TaskCaptureResult } from '@/lib/taskCaptureTypes';
-import { inferEstimatedMinutesFromText } from '@/lib/inferTaskEstimatedMinutes';
 import type { CapturePriority } from '@/lib/review/capturePriority';
 import { capturePriorityToIsPriority } from '@/lib/review/capturePriority';
 import {
@@ -22,6 +21,8 @@ export type VaciarBatchItem = {
   lifeAreaKey?: LifeAreaRef | null;
   /** Duración estimada en minutos (p. ej. 25 para un bloque de foco). */
   estimatedMinutes?: number | null;
+  /** Hora del día preferida (`HH:mm`, 24h). */
+  preferredTime?: string | null;
 };
 
 export type VaciarBatchDefaults = {
@@ -54,9 +55,7 @@ function rowToBatchItem(
     selectedProjectId: projectId ?? null,
     selectedDate: scheduledDate,
     effortFeel: resolvedEffort,
-    estimatedMinutes:
-      estimatedMinutes ??
-      inferEstimatedMinutesFromText(content, resolvedEffort ?? undefined),
+    estimatedMinutes: estimatedMinutes ?? null,
   };
 }
 

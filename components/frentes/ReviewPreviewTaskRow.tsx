@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
   Flag,
+  AlarmClock,
 } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -25,7 +26,9 @@ import {
 } from '@/lib/review/capturePriority';
 import { buildPreviewTaskSummary } from '@/lib/review/previewTaskSummary';
 import { TaskDurationStepper } from '@/components/vnext/TaskDurationStepper';
+import { TaskPreferredTimePicker } from '@/components/vnext/TaskPreferredTimePicker';
 import { effortToDefaultMinutes } from '@/lib/taskPlanningMeta';
+import { formatPreferredTimeLabel } from '@/lib/taskPreferredTime';
 
 type ReviewPreviewTaskRowProps = {
   item: EnrichedCaptureItem;
@@ -59,6 +62,7 @@ export function ReviewPreviewTaskRow({
   const [expanded, setExpanded] = useState(!compact);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showDurationPicker, setShowDurationPicker] = useState(false);
+  const [showWhenPicker, setShowWhenPicker] = useState(false);
   const [showPriorityPicker, setShowPriorityPicker] = useState(false);
 
   const activePriority = resolveCapturePriority(item);
@@ -70,7 +74,10 @@ export function ReviewPreviewTaskRow({
 
   const durationLabel = item.estimatedMinutes
     ? t('vaciar.previewDurationMinutes', { count: item.estimatedMinutes })
-    : t('vaciar.previewTimeBtn');
+    : t('vaciar.previewDurationBtn');
+
+  const whenLabel =
+    formatPreferredTimeLabel(item.preferredTime, locale) ?? t('vaciar.previewWhenBtn');
 
   const priorityLabel = activePriority
     ? t(PRIORITY_LABEL_KEYS[activePriority])
@@ -154,6 +161,7 @@ export function ReviewPreviewTaskRow({
                 setExpanded(false);
                 setShowDatePicker(false);
                 setShowDurationPicker(false);
+                setShowWhenPicker(false);
                 setShowPriorityPicker(false);
               }}
               activeOpacity={0.85}
@@ -171,6 +179,7 @@ export function ReviewPreviewTaskRow({
               onPress={() => {
                 setShowDatePicker((value) => !value);
                 setShowDurationPicker(false);
+                setShowWhenPicker(false);
                 setShowPriorityPicker(false);
               }}
               activeOpacity={0.85}
@@ -187,6 +196,7 @@ export function ReviewPreviewTaskRow({
               onPress={() => {
                 setShowDurationPicker((value) => !value);
                 setShowDatePicker(false);
+                setShowWhenPicker(false);
                 setShowPriorityPicker(false);
               }}
               activeOpacity={0.85}
@@ -199,11 +209,29 @@ export function ReviewPreviewTaskRow({
             </TouchableOpacity>
 
             <TouchableOpacity
+              style={[styles.actionBtn, showWhenPicker && styles.actionBtnActive]}
+              onPress={() => {
+                setShowWhenPicker((value) => !value);
+                setShowDatePicker(false);
+                setShowDurationPicker(false);
+                setShowPriorityPicker(false);
+              }}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+            >
+              <AlarmClock size={14} color={THEME.colors.calm.lavenderDeep} />
+              <Text style={styles.actionBtnText} numberOfLines={1}>
+                {whenLabel}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               style={[styles.actionBtn, showPriorityPicker && styles.actionBtnActive]}
               onPress={() => {
                 setShowPriorityPicker((value) => !value);
                 setShowDatePicker(false);
                 setShowDurationPicker(false);
+                setShowWhenPicker(false);
               }}
               activeOpacity={0.85}
               accessibilityRole="button"
@@ -272,6 +300,16 @@ export function ReviewPreviewTaskRow({
                   </Text>
                 </TouchableOpacity>
               ) : null}
+            </View>
+          ) : null}
+
+          {showWhenPicker ? (
+            <View style={styles.pickerWrap}>
+              <TaskPreferredTimePicker
+                value={item.preferredTime}
+                onChange={(preferredTime) => onChange({ ...item, preferredTime })}
+                compact
+              />
             </View>
           ) : null}
 

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import type { Task } from '@/components/tasks/TaskCard';
 import { buildProjectProgressMap, type ProjectProgressMap } from '@/lib/hoy/focusTaskDisplay';
 import {
@@ -19,6 +20,17 @@ export function useHoyFocusTaskMeta(tasks: Task[]) {
       cancelled = true;
     };
   }, [tasks]);
+
+  const reloadPlanningMeta = useCallback(async () => {
+    const map = await loadTaskPlanningMetaMap();
+    setPlanningMeta(map);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void reloadPlanningMeta();
+    }, [reloadPlanningMeta]),
+  );
 
   const projectProgress = useMemo(() => buildProjectProgressMap(tasks), [tasks]);
 

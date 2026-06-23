@@ -13,11 +13,11 @@ import {
   type ProjectProgress,
 } from '@/lib/projectProgress';
 import {
-  effortToDefaultMinutes,
   formatDurationLabel,
-  getTaskPlanningMeta,
+  getStoredTaskPlanningMeta,
   type TaskPlanningMeta,
 } from '@/lib/taskPlanningMeta';
+import { formatPreferredTimeLabel } from '@/lib/taskPreferredTime';
 
 export type ProjectProgressMap = Record<string, ProjectProgress>;
 
@@ -54,11 +54,22 @@ export function buildProjectProgressMap(tasks: Task[]): ProjectProgressMap {
 
 export function getFocusTaskEstimatedMinutes(
   task: Task,
-  planningMeta?: TaskPlanningMeta,
+  planningMeta?: TaskPlanningMeta | null,
 ): number {
-  const meta = planningMeta ?? getTaskPlanningMeta(task.id);
-  if (meta.estimatedMinutes > 0) return meta.estimatedMinutes;
-  return effortToDefaultMinutes(task.perceivedEffort);
+  const stored = planningMeta ?? getStoredTaskPlanningMeta(task.id);
+  if (stored?.estimatedMinutes && stored.estimatedMinutes > 0) {
+    return stored.estimatedMinutes;
+  }
+  return 0;
+}
+
+export function getFocusTaskPreferredTimeLabel(
+  task: Task,
+  locale: AppLocale,
+  planningMeta?: TaskPlanningMeta | null,
+): string | null {
+  const stored = planningMeta ?? getStoredTaskPlanningMeta(task.id);
+  return formatPreferredTimeLabel(stored?.preferredTime, locale);
 }
 
 export function formatFocusTaskDuration(minutes: number): string {

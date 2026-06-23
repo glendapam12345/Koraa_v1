@@ -483,6 +483,7 @@ export function AreasCompactPanel({
   const { t, locale } = useI18n();
   const [nextActions, setNextActions] = useState<NextActionMap>({});
   const [looseTasks, setLooseTasks] = useState<LooseTaskSummary[]>([]);
+  const [looseTasksLoadFailed, setLooseTasksLoadFailed] = useState(false);
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
   const [moveTargetForNewArea, setMoveTargetForNewArea] = useState<AreasMoveTarget | null>(null);
   const [looseMoveTarget, setLooseMoveTarget] = useState<AreasMoveTarget | null>(null);
@@ -571,9 +572,11 @@ export function AreasCompactPanel({
       .order('created_at', { ascending: false });
 
     if (error) {
-      setLooseTasks([]);
+      logger.error('Error cargando tareas sueltas:', error);
+      setLooseTasksLoadFailed(true);
       return;
     }
+    setLooseTasksLoadFailed(false);
     setLooseTasks((data as LooseTaskSummary[]) ?? []);
   }, [userId]);
 
@@ -685,7 +688,11 @@ export function AreasCompactPanel({
               task.id === taskId ? { ...task, life_area_key: previousAreaRef ?? null } : task,
             ),
           );
-          Alert.alert(t('errors.saveTaskFailed'));
+          Alert.alert(
+            result.reason === 'schema_missing'
+              ? t('errors.lifeAreaMoveUnavailable')
+              : t('errors.saveTaskFailed'),
+          );
           return;
         }
         onTaskQuickSaved?.(t('areasCompact.looseDragMoved'));
@@ -999,6 +1006,19 @@ export function AreasCompactPanel({
         }}
         onError={() => Alert.alert(t('errors.saveTaskFailed'))}
       />
+
+      {looseTasksLoadFailed ? (
+        <TouchableOpacity
+          style={styles.loadErrorBanner}
+          onPress={() => void loadLooseTasks()}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={t('areasCompact.looseTasksRetryA11y')}
+        >
+          <Text style={styles.loadErrorText}>{t('areasCompact.looseTasksLoadFailed')}</Text>
+          <Text style={styles.loadErrorRetry}>{t('errors.refreshFailed')}</Text>
+        </TouchableOpacity>
+      ) : null}
 
       {manageMode ? (
         <CalmCard style={styles.manageCard}>
@@ -1749,6 +1769,24 @@ const styles = StyleSheet.create({
   manageCancelText: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
+  },
+  loadErrorBanner: {
+    padding: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderWidth: 1,
+    borderColor: THEME.colors.semantic.danger,
+    gap: 4,
+  },
+  loadErrorText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  loadErrorRetry: {
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.bold,
   },
   hoyFooter: {
     marginTop: THEME.spacing.sm,

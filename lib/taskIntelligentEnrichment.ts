@@ -157,8 +157,7 @@ export function enrichCaptureItem(
     selectedProjectId: projectId,
     selectedDate: scheduledDate,
     timing,
-    estimatedMinutes:
-      item.estimatedMinutes ?? inferEstimatedMinutesFromText(item.content, effort),
+    estimatedMinutes: item.estimatedMinutes ?? null,
   };
 }
 

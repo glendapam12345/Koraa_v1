@@ -301,11 +301,12 @@ export default function SemanaScreen() {
         showToast(t('vnext.replanCalmToast'), 'info');
       }
       requestHoyRefresh();
+      void loadWeekTasks(getWeekMonday(selectedDate));
       router.replace('/(tabs)');
     } finally {
       setReplanApplying(false);
     }
-  }, [handleReplanCancel, replanDraft, showToast, t, user?.id]);
+  }, [handleReplanCancel, loadWeekTasks, replanDraft, selectedDate, showToast, t, user?.id]);
 
   const isRefreshing =
     viewMode === 'calendar'
@@ -368,6 +369,8 @@ export default function SemanaScreen() {
   const hiddenWeekDayCount = visibleWeekSlice.hiddenCount;
   const freeVisibleDateKeys = visibleWeekSlice.visibleDateKeys;
   const boardWeekTasks = replanDraft ?? visibleWeekTasks;
+  const visibleWeekTasksRef = useRef(visibleWeekTasks);
+  visibleWeekTasksRef.current = visibleWeekTasks;
 
   useEffect(() => {
     if (replanParam !== '1' || !user?.id) {
@@ -376,9 +379,8 @@ export default function SemanaScreen() {
       }
       return;
     }
-    if (replanBootstrappedRef.current || loading) return;
+    if (loading || replanBootstrappedRef.current) return;
 
-    replanBootstrappedRef.current = true;
     setReplanMode(true);
     setViewMode('list');
     setRangeMode('week');
@@ -386,6 +388,7 @@ export default function SemanaScreen() {
     router.setParams({ replan: undefined, replanReason: undefined });
 
     const reason = (replanReasonParam as WhatChangedReason) || 'priorities_changed';
+    let cancelled = false;
 
     void (async () => {
       setReplanLoading(true);
@@ -396,6 +399,7 @@ export default function SemanaScreen() {
           locale,
           t('projectsUi.looseTitle'),
         );
+        if (cancelled) return;
         if (!result.ok) {
           showToast(t('vnext.replanError'), 'error');
           setReplanMode(false);
@@ -404,11 +408,18 @@ export default function SemanaScreen() {
           return;
         }
         setReplanProposal(result.proposal);
-        setReplanDraft(applyAssignmentsToWeekTasks(visibleWeekTasks, result.assignments));
+        setReplanDraft(
+          applyAssignmentsToWeekTasks(visibleWeekTasksRef.current, result.assignments),
+        );
+        replanBootstrappedRef.current = true;
       } finally {
-        setReplanLoading(false);
+        if (!cancelled) setReplanLoading(false);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     loading,
     locale,
@@ -419,7 +430,6 @@ export default function SemanaScreen() {
     t,
     todayStr,
     user?.id,
-    visibleWeekTasks,
   ]);
 
   useEffect(() => {

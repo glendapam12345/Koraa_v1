@@ -2,6 +2,8 @@ import type { AppLocale } from '@/lib/i18n';
 import { getLocalDateString, parseLocalDateString } from '@/lib/dateLocal';
 import { getProjectEmoji } from '@/lib/projectEmoji';
 import { redistributeLooseTasks } from '@/lib/redistributeWorkload';
+import { formatDurationLabel, type TaskPlanningMeta } from '@/lib/taskPlanningMeta';
+import { formatPreferredTimeLabel } from '@/lib/taskPreferredTime';
 import type {
   DayTimelineModel,
   FloatingThoughtCard,
@@ -143,15 +145,16 @@ function shortDayLabel(iso: string, locale: AppLocale): string {
   return `${weekday} ${day}`;
 }
 
-function formatDuration(_task: ExperienceTask): string {
-  return '45 min';
+function formatDuration(meta?: TaskPlanningMeta): string {
+  if (!meta?.estimatedMinutes || meta.estimatedMinutes <= 0) return '';
+  return formatDurationLabel(meta.estimatedMinutes);
 }
 
-function formatTime(index: number): string {
-  const hour = 9 + index * 2;
-  const suffix = hour >= 12 ? 'PM' : 'AM';
-  const display = hour > 12 ? hour - 12 : hour;
-  return `${display}:00 ${suffix}`;
+function formatTaskTimeLabel(
+  meta: TaskPlanningMeta | undefined,
+  locale: AppLocale,
+): string {
+  return formatPreferredTimeLabel(meta?.preferredTime, locale) ?? '';
 }
 
 function taskStatus(task: ExperienceTask): WeekPlannerTask['status'] {
@@ -166,6 +169,7 @@ export function buildWeekPlannerDays(
   today: string,
   areaIndex: Map<string, LifeArea>,
   locale: AppLocale,
+  planningByTaskId?: Record<string, TaskPlanningMeta>,
 ): WeekPlannerDay[] {
   return weekDayDates.map((dateStr) => {
     const dayTasks = tasks.filter(
@@ -178,15 +182,16 @@ export function buildWeekPlannerDays(
         : `Hoy · ${dayLabel(dateStr, locale)}`
       : dayLabel(dateStr, locale);
 
-    const plannerTasks: WeekPlannerTask[] = dayTasks.map((task, index) => {
+    const plannerTasks: WeekPlannerTask[] = dayTasks.map((task) => {
       const area = resolveLifeArea(areaIndex, task.project_id);
+      const meta = planningByTaskId?.[task.id];
       return {
         id: task.id,
         title: task.content,
         areaId: area.id,
         iconEmoji: area.emoji,
-        timeLabel: formatTime(index),
-        durationLabel: formatDuration(task),
+        timeLabel: formatTaskTimeLabel(meta, locale),
+        durationLabel: formatDuration(meta),
         status: taskStatus(task),
         scheduledDate: dateStr,
       };

@@ -501,6 +501,8 @@ export const uiEn = {
     addLooseTaskShort: 'Loose step',
     addStepShort: 'Add tasks',
     looseSectionTitle: 'Loose tasks',
+    looseTasksLoadFailed: 'Could not load loose tasks. Tap to retry.',
+    looseTasksRetryA11y: 'Retry loading loose tasks',
     loosePreviewTitle: 'No area yet',
     looseSectionBody: 'Things not in a project yet',
     viewLooseTasks: 'View all loose tasks',

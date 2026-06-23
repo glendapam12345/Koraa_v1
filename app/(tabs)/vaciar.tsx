@@ -373,6 +373,7 @@ export default function VaciarScreen() {
           projectId: item.assignToProject ? item.selectedProjectId : null,
           scheduledDate: item.selectedDate,
           estimatedMinutes: item.estimatedMinutes ?? null,
+          preferredTime: item.preferredTime ?? null,
         })),
       });
       setOrganizedRefreshSignal((n) => n + 1);
@@ -468,12 +469,32 @@ export default function VaciarScreen() {
               selectedProjectId: item.selectedProjectId,
               selectedDate: item.selectedDate,
             },
-            { effortFeel: item.effortFeel, reliefCapture: true, suppressToast: true },
+            { effortFeel: item.effortFeel, reliefCapture: true, suppressToast: true,
+              estimatedMinutes: item.estimatedMinutes ?? null,
+              preferredTime: item.preferredTime ?? null,
+            },
           );
           if (!saved) return;
         } else {
-          const saved = await saveBatch(items, { suppressToast: true });
-          if (!saved || saved.length === 0) return;
+          const batchResult = await saveBatch(items, { suppressToast: true });
+          if (batchResult.status === 'validation_failed') return;
+
+          if (batchResult.status === 'partial') {
+            const savedCaptureIds = new Set(batchResult.tasks.map((entry) => entry.captureId));
+            const remaining = items.filter((item) => !savedCaptureIds.has(item.id));
+            setPreviewItems(remaining);
+            setHasTasks(true);
+            showToast(
+              t('vaciar.batchPartialSave', {
+                saved: batchResult.tasks.length,
+                total: items.length,
+              }),
+              'info',
+            );
+            return;
+          }
+
+          if (batchResult.status === 'failed' || batchResult.tasks.length === 0) return;
         }
 
         setHasTasks(true);
@@ -529,7 +550,27 @@ export default function VaciarScreen() {
     setIsRefiningPreview(false);
     setSavedOrganizedContext(null);
     setIsOrganizing(false);
+    setTaskInput('');
+    setHasSubtasks(false);
+    setSubtasks(['']);
+    setAssignToProject(false);
+    setSelectedProjectId(null);
+    setSelectedCategory('otros');
+    setSelectedDate(null);
+    setEffortFeel(null);
   }, []);
+
+  const applyFreshCapture = useCallback(() => {
+    resetCaptureFlow();
+    setSegment('capture');
+    router.setParams({
+      segment: 'capture',
+      fresh: undefined,
+      suggestion: undefined,
+      date: undefined,
+      projectId: undefined,
+    });
+  }, [resetCaptureFlow, router]);
 
   const handleBackToCapture = useCallback(() => {
     resetCaptureFlow();
@@ -541,7 +582,7 @@ export default function VaciarScreen() {
       setTaskInput(suggestion);
       setSegment('capture');
     }
-    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+    if (dateParam && dateParam.length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
       setSelectedDate(dateParam);
       if (segmentParam !== 'projects') {
         setSegment('capture');
@@ -570,13 +611,16 @@ export default function VaciarScreen() {
     }
   }, [segmentParam]);
 
+  useEffect(() => {
+    if (freshParam !== '1') return;
+    applyFreshCapture();
+  }, [applyFreshCapture, freshParam]);
+
   useFocusEffect(
     useCallback(() => {
       if (freshParam !== '1') return;
-      setSegment('capture');
-      resetCaptureFlow();
-      router.setParams({ segment: 'capture', fresh: undefined });
-    }, [freshParam, resetCaptureFlow, router]),
+      applyFreshCapture();
+    }, [applyFreshCapture, freshParam]),
   );
 
   useEffect(() => {
