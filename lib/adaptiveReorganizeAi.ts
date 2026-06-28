@@ -22,6 +22,8 @@ export type AdaptiveReorganizeAiInput = {
   tasks: ExperienceTask[];
   areaIndex: Map<string, LifeArea>;
   projects: { id: string; name: string; due_date?: string | null }[];
+  weekContext?: Record<string, unknown>;
+  taskPlanning?: Record<string, { estimatedMinutes?: number; preferredTime?: string | null }>;
 };
 
 type AiReorganizeResponse = {
@@ -195,14 +197,18 @@ export async function fetchAdaptiveReorganizePlan(
           reason: input.reason,
           today: input.today,
           week_dates: input.weekDates,
+          week_context: input.weekContext,
           tasks: openTasks.map((task) => ({
             id: task.id,
             content: task.content,
             project_id: task.project_id,
             scheduled_date: task.scheduled_date,
             is_priority: task.is_priority,
+            estimated_minutes: input.taskPlanning?.[task.id]?.estimatedMinutes,
+            preferred_time: input.taskPlanning?.[task.id]?.preferredTime,
           })),
           projects: input.projects,
+          task_planning: input.taskPlanning,
         },
       },
     );

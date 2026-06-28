@@ -57,6 +57,12 @@ const OPTION_META: Record<
     iconColor: THEME.colors.category.hogar,
     iconBg: THEME.colors.emotionTint.tranquila,
   },
+  week_balance: {
+    icon: Sparkles,
+    bg: THEME.colors.calm.mist,
+    iconColor: THEME.colors.calm.lavenderDeep,
+    iconBg: THEME.colors.calm.lavender,
+  },
 };
 
 type WhatChangedSheetProps = {

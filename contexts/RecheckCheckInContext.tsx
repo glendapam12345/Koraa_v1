@@ -13,7 +13,7 @@ import { getLocalDateString } from '@/lib/dateLocal';
 import { logger } from '@/lib/logger';
 import { track } from '@/lib/analytics';
 import { publishCheckInRefresh } from '@/lib/checkInRefresh';
-import { openHoyReplanPreview } from '@/lib/hoyReplanNavigation';
+import { saveRecheckReplanNudge } from '@/lib/recheckReplanNudge';
 import {
   DEFAULT_CHECK_IN_FOCUS,
   DEFAULT_CHECK_IN_TIME,
@@ -115,7 +115,14 @@ function RecheckModalHost() {
       setVisible(false);
 
       if (!snapshot.firstCheckIn) {
-        openHoyReplanPreview({ energyLevel: snapshot.energyLevel });
+        void (async () => {
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (user) {
+            await saveRecheckReplanNudge(user.id, snapshot.energyLevel);
+          }
+        })();
       }
     },
     [],

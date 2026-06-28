@@ -12,6 +12,7 @@ import { getCatalog } from '@/lib/i18n';
 import type { Task } from '@/components/tasks/TaskCard';
 import type { CheckInReplanSummary } from '@/lib/checkInReplanSummary';
 import { applyCheckInAdaptivePlan } from '@/lib/checkInAdaptivePlan';
+import { fetchAndApplyKoraaBrainFocusPlan } from '@/lib/ai/fetchAndApplyKoraaBrainFocusPlan';
 
 export type DailyCheckInInput = {
   userId: string;
@@ -20,6 +21,8 @@ export type DailyCheckInInput = {
   availableTime: string;
   focusLevel: string;
   locale: AppLocale;
+  displayName?: string;
+  emotionLabel?: string;
 };
 
 export type SaveCheckInResult = {
@@ -32,7 +35,10 @@ export type SaveCheckInResult = {
 
 export async function prioritizeTasksForCheckIn(
   userId: string,
-  input: Pick<DailyCheckInInput, 'energyLevel' | 'emotion' | 'availableTime' | 'focusLevel' | 'locale'>,
+  input: Pick<
+    DailyCheckInInput,
+    'energyLevel' | 'emotion' | 'availableTime' | 'focusLevel' | 'locale' | 'displayName' | 'emotionLabel'
+  >,
 ): Promise<void> {
   const { data: tasks, error: tasksError } = await supabase
     .from('tasks')
@@ -49,6 +55,22 @@ export async function prioritizeTasksForCheckIn(
     : tasks;
 
   if (!scopedTasks.length) return;
+
+  const brainResult = await fetchAndApplyKoraaBrainFocusPlan(
+    userId,
+    {
+      locale: input.locale,
+      displayName: input.displayName ?? '',
+      emotion: input.emotion,
+      emotionLabel: input.emotionLabel ?? input.emotion,
+      energyLevel: input.energyLevel,
+      availableTime: input.availableTime,
+      focusLevel: input.focusLevel,
+    },
+    scopedTasks as Task[],
+  );
+
+  if (brainResult.applied) return;
 
   const previousPriorityTaskIds = tasks
     .filter((task: { is_priority: boolean }) => task.is_priority)
@@ -158,6 +180,8 @@ export async function saveDailyCheckInAndPrioritize(input: DailyCheckInInput): P
     availableTime: input.availableTime,
     focusLevel: input.focusLevel,
     locale: input.locale,
+    displayName: input.displayName,
+    emotionLabel: input.emotionLabel,
   });
 
   let replan: SaveCheckInResult['replan'] = null;

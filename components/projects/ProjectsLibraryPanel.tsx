@@ -11,16 +11,26 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type
 import type { ScrollView as ScrollViewType, View as RNView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-import { FolderKanban, ChevronRight, Plus, Heart } from 'lucide-react-native';
+import { CalmCard } from '@/components/ui/calm/CalmCard';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { FolderKanban, ChevronRight, Plus, Heart, CalendarRange } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { openVaciarCapture } from '@/lib/vaciarNavigation';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 import { useProjectsLibrary } from '@/hooks/useProjectsLibrary';
+import { useUserLifeAreas } from '@/hooks/useUserLifeAreas';
+import { hasPersonalizedLifeAreasConfig } from '@/lib/lifeAreas/userLifeAreas';
 import { ProjectLibraryCard } from '@/components/projects/ProjectLibraryCard';
 import { ProjectsByAreaSection } from '@/components/projects/ProjectsByAreaSection';
 import { AreasCompactPanel } from '@/components/projects/AreasCompactPanel';
 import { AdaptiveExperienceProjectsCta } from '@/components/tasks/experience/AdaptiveExperienceProjectsCta';
+import { RedistributeWorkloadModal } from '@/components/tasks/RedistributeWorkloadModal';
+import type { Task } from '@/hooks/useTasks';
+import {
+  fetchRedistributeContext,
+  type RedistributeCheckInSnapshot,
+} from '@/lib/projects/fetchRedistributeContext';
 import { ProjectCreateModal } from '@/components/projects/ProjectCreateModal';
 import {
   ProjectQuickAddTaskModal,
@@ -105,6 +115,13 @@ export function ProjectsLibraryPanel({
   );
   const [quickAddTarget, setQuickAddTarget] = useState<ProjectQuickAddTarget | null>(null);
   const [projectFilter, setProjectFilter] = useState<'all' | 'withDate' | 'noDate'>('all');
+  const [redistributeOpen, setRedistributeOpen] = useState(false);
+  const [redistributeTasks, setRedistributeTasks] = useState<Task[]>([]);
+  const [redistributeCheckIn, setRedistributeCheckIn] = useState<RedistributeCheckInSnapshot>({
+    energyLevel: 0,
+    availableTime: '',
+    emotion: '',
+  });
   const projectCardRefs = useRef<Map<string, RNView>>(new Map());
   const lastRefreshSignalRef = useRef(refreshSignal ?? 0);
   const {
@@ -118,6 +135,15 @@ export function ProjectsLibraryPanel({
     refresh,
     reload,
   } = useProjectsLibrary(userId, { hasCheckInToday: externalCheckInToday });
+
+  const { config: lifeAreasConfig, loading: lifeAreasLoading } = useUserLifeAreas(userId);
+
+  const hasOrganizedAreas = useMemo(
+    () => hasPersonalizedLifeAreasConfig(lifeAreasConfig),
+    [lifeAreasConfig],
+  );
+
+  const showOrganizedLibraryEmpty = projects.length === 0 && looseCount === 0 && !hasOrganizedAreas;
 
   const reloadRef = useRef(reload);
   reloadRef.current = reload;
@@ -167,6 +193,34 @@ export function ProjectsLibraryPanel({
     }
     openVaciarCapture();
   }, [embedded, onGoCapture]);
+
+  const openRedistribute = useCallback(async () => {
+    if (!userId) return;
+    const context = await fetchRedistributeContext(userId);
+    setRedistributeTasks(context.tasks);
+    setRedistributeCheckIn(context.checkIn);
+    setRedistributeOpen(true);
+  }, [userId]);
+
+  const handleRedistributeApplied = useCallback(() => {
+    setRedistributeOpen(false);
+    void reload();
+    onTaskSaved?.(t('projects.redistributeApplied'));
+  }, [onTaskSaved, reload, t]);
+
+  const redistributeModal =
+    userId != null ? (
+      <RedistributeWorkloadModal
+        visible={redistributeOpen}
+        onClose={() => setRedistributeOpen(false)}
+        userId={userId}
+        tasks={redistributeTasks}
+        energyLevel={redistributeCheckIn.energyLevel}
+        availableTime={redistributeCheckIn.availableTime}
+        emotion={redistributeCheckIn.emotion}
+        onApplied={handleRedistributeApplied}
+      />
+    ) : null;
 
   const openQuickAdd = useCallback(
     (
@@ -250,13 +304,13 @@ export function ProjectsLibraryPanel({
 
   if (areasFirst) {
     const organizedContent =
-      loading ? (
+      loading || lifeAreasLoading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={THEME.colors.calm.lavenderDeep} />
           <Text style={styles.loadingText}>{t('projects.loading')}</Text>
         </View>
-      ) : projects.length === 0 && looseCount === 0 ? (
-        <View style={[styles.empty, styles.emptyEmbedded]}>
+      ) : showOrganizedLibraryEmpty ? (
+        <CalmCard style={[styles.empty, styles.emptyEmbedded]}>
           <LinearGradient
             colors={[THEME.colors.calm.mist, THEME.colors.calm.blush]}
             style={styles.emptyIconWrap}
@@ -265,25 +319,33 @@ export function ProjectsLibraryPanel({
           </LinearGradient>
           <Text style={styles.emptyTitle}>{t('projects.organizedEmptyTitle')}</Text>
           <Text style={styles.emptyText}>{t('projects.organizedEmptyBody')}</Text>
-          <TouchableOpacity
-            style={styles.addButton}
+          <CalmPrimaryButton
+            label={t('vaciar.segmentGoCapture')}
             onPress={goCapture}
-            activeOpacity={0.8}
-            accessibilityRole="button"
+            large
             accessibilityLabel={t('vaciar.segmentGoCaptureA11y')}
-          >
-            <LinearGradient
-              colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.addButtonGradient}
-            >
-              <Text style={styles.addButtonText}>{t('vaciar.segmentGoCapture')}</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+            style={styles.emptyPrimaryCta}
+          />
+        </CalmCard>
       ) : (
         <>
+          {totalIncomplete > 0 ? (
+            <CalmCard style={styles.actionsCardCompactOnly}>
+              <LibraryActionRow
+                icon={
+                  <CalendarRange
+                    size={22}
+                    color={THEME.colors.calm.lavenderDeep}
+                    strokeWidth={2.2}
+                  />
+                }
+                title={t('projects.redistributeCta')}
+                hint={t('projects.redistributeHint')}
+                onPress={() => void openRedistribute()}
+                accessibilityLabel={t('hoy.redistributeA11y')}
+              />
+            </CalmCard>
+          ) : null}
           <AreasCompactPanel
             userId={userId}
             projects={sortedProjects}
@@ -326,6 +388,7 @@ export function ProjectsLibraryPanel({
           onSaved={handleQuickAddSaved}
           onOpenFullCapture={onOpenFullCapture}
         />
+        {redistributeModal}
       </View>
     );
   }
@@ -337,7 +400,7 @@ export function ProjectsLibraryPanel({
         <Text style={styles.loadingText}>{t('projects.loading')}</Text>
       </View>
     ) : projects.length === 0 && looseCount === 0 && !areasFirst ? (
-      <View style={[styles.empty, embedded && styles.emptyEmbedded]}>
+      <CalmCard style={[styles.empty, embedded && styles.emptyEmbedded]}>
         <LinearGradient
           colors={[THEME.colors.calm.mist, THEME.colors.calm.blush]}
           style={styles.emptyIconWrap}
@@ -346,35 +409,22 @@ export function ProjectsLibraryPanel({
         </LinearGradient>
         <Text style={styles.emptyTitle}>{t('projects.emptyTitle')}</Text>
         <Text style={styles.emptyText}>{t('projects.emptyBody')}</Text>
-        <TouchableOpacity
-          style={styles.addButton}
+        <CalmPrimaryButton
+          label={t('projects.createProjectCta')}
           onPress={() => setShowCreateModal(true)}
-          activeOpacity={0.8}
-          accessibilityRole="button"
+          large
           accessibilityLabel={t('projects.createProjectA11y')}
-        >
-          <LinearGradient
-            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.addButtonGradient}
-          >
-            <Text style={styles.addButtonText}>{t('projects.createProjectCta')}</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.secondaryEmptyBtn}
+          style={styles.emptyPrimaryCta}
+        />
+        <CalmPrimaryButton
+          label={embedded ? t('vaciar.segmentGoCapture') : t('projects.goTasks')}
+          variant="soft"
           onPress={goCapture}
-          activeOpacity={0.8}
-          accessibilityRole="button"
           accessibilityLabel={
             embedded ? t('vaciar.segmentGoCaptureA11y') : t('projects.goTasksA11y')
           }
-        >
-          <Text style={styles.secondaryEmptyBtnText}>
-            {embedded ? t('vaciar.segmentGoCapture') : t('projects.goTasks')}
-          </Text>
-        </TouchableOpacity>
+          style={styles.emptySecondaryCta}
+        />
         {!embedded ? (
           <TouchableOpacity
             style={styles.backLink}
@@ -385,7 +435,7 @@ export function ProjectsLibraryPanel({
             <Text style={styles.backLinkText}>{t('projects.back')}</Text>
           </TouchableOpacity>
         ) : null}
-      </View>
+      </CalmCard>
     ) : (
       <>
         {embedded && onGoCapture && !areasFirst ? (
@@ -393,7 +443,7 @@ export function ProjectsLibraryPanel({
         ) : null}
 
         {!areasFirst && !loading && totalIncomplete > 0 ? (
-          <View style={styles.inventoryBanner}>
+          <CalmCard style={styles.inventoryBanner}>
             <Text style={styles.inventorySummary}>
               {hasCheckInToday
                 ? focusIncomplete > 0
@@ -415,10 +465,10 @@ export function ProjectsLibraryPanel({
                 <ChevronRight size={16} color={THEME.colors.calm.lavenderDeep} />
               </TouchableOpacity>
             ) : null}
-          </View>
+          </CalmCard>
         ) : null}
 
-        <View style={[styles.actionsCard, areasFirst && styles.actionsCardCompact]}>
+        <CalmCard style={[styles.actionsCard, areasFirst && styles.actionsCardCompact]}>
           {!areasFirst ? (
             <Text style={styles.actionsCardLabel}>{t('projects.libraryActionsTitle')}</Text>
           ) : null}
@@ -438,10 +488,28 @@ export function ProjectsLibraryPanel({
             onPress={() => openQuickAdd(null)}
             accessibilityLabel={t('projects.addA11y')}
           />
+          {totalIncomplete > 0 ? (
+            <>
+              <View style={styles.actionDivider} />
+              <LibraryActionRow
+                icon={
+                  <CalendarRange
+                    size={22}
+                    color={THEME.colors.calm.lavenderDeep}
+                    strokeWidth={2.2}
+                  />
+                }
+                title={t('projects.redistributeCta')}
+                hint={areasFirst ? '' : t('projects.redistributeHint')}
+                onPress={() => void openRedistribute()}
+                accessibilityLabel={t('hoy.redistributeA11y')}
+              />
+            </>
+          ) : null}
           {areasFirst ? (
             <Text style={styles.areasHint}>{t('projects.areasHint')}</Text>
           ) : null}
-        </View>
+        </CalmCard>
 
         {looseCount > 0 ? (
           <View style={styles.listSection}>
@@ -539,6 +607,7 @@ export function ProjectsLibraryPanel({
           onSaved={handleQuickAddSaved}
           onOpenFullCapture={onOpenFullCapture}
         />
+        {redistributeModal}
       </View>
     );
   }
@@ -582,6 +651,7 @@ export function ProjectsLibraryPanel({
         onSaved={handleQuickAddSaved}
         onOpenFullCapture={onOpenFullCapture}
       />
+      {redistributeModal}
     </>
   );
 }
@@ -589,14 +659,14 @@ export function ProjectsLibraryPanel({
 const styles = StyleSheet.create({
   embeddedWrap: {
     width: '100%',
-    gap: THEME.spacing.sm,
+    gap: THEME.layout.sectionGapCompact,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: THEME.spacing.md,
-    paddingTop: THEME.spacing.md,
+    paddingHorizontal: THEME.layout.screenPaddingX,
+    paddingTop: THEME.spacing.sm,
     paddingBottom: THEME.spacing.xl,
   },
   centered: {
@@ -605,9 +675,11 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.xl,
   },
   inventoryBanner: {
-    ...THEME.surfaces.panel,
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.sm,
+    gap: THEME.spacing.xs,
+    marginBottom: THEME.spacing.xs,
+    padding: THEME.spacing.sm,
+    backgroundColor: THEME.colors.calm.mist,
+    borderColor: THEME.colors.calm.lavender,
   },
   inventorySummary: {
     ...THEME.typography.caption,
@@ -618,18 +690,21 @@ const styles = StyleSheet.create({
   inventorySub: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
-    marginTop: THEME.spacing.xs,
     lineHeight: 20,
   },
   inventoryFeelBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: THEME.spacing.sm,
-    paddingTop: THEME.spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: THEME.colors.calm.border,
-    minHeight: THEME.sizes.touchTarget,
+    alignSelf: 'flex-start',
+    gap: THEME.spacing.xs,
+    marginTop: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.calm.lavender,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    minHeight: 36,
   },
   inventoryFeelText: {
     ...THEME.typography.caption,
@@ -638,22 +713,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actionsCard: {
-    ...THEME.surfaces.elevated,
-    padding: THEME.spacing.md,
     gap: THEME.spacing.sm,
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
+    padding: THEME.spacing.sm,
+    backgroundColor: THEME.colors.fill[100],
+    borderColor: THEME.colors.calm.border,
   },
   actionsCardCompact: {
     paddingVertical: THEME.spacing.sm,
-    marginBottom: THEME.spacing.sm,
+    marginBottom: 0,
+  },
+  actionsCardCompactOnly: {
+    gap: 0,
+    padding: THEME.spacing.sm,
+    backgroundColor: THEME.colors.calm.mist,
+    borderColor: THEME.colors.calm.lavender,
   },
   actionsCardLabel: {
-    ...THEME.typography.meta,
+    ...THEME.typography.caption,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
-    marginBottom: 2,
+    lineHeight: 16,
   },
   actionRow: {
     flexDirection: 'row',
@@ -667,25 +749,27 @@ const styles = StyleSheet.create({
   actionIcon: {
     width: 44,
     height: 44,
-    borderRadius: THEME.borderRadius.standard,
+    borderRadius: THEME.borderRadius.rounded,
     backgroundColor: THEME.colors.calm.mist,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   actionIconCreate: {
     backgroundColor: THEME.colors.calm.lavender,
     borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
+    borderColor: THEME.colors.calm.lavenderDeep,
   },
   actionTextWrap: {
     flex: 1,
     minWidth: 0,
-    gap: 2,
+    gap: 4,
   },
   actionTitle: {
     ...THEME.typography.body,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
+    lineHeight: 22,
   },
   actionHint: {
     ...THEME.typography.small,
@@ -693,19 +777,19 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   actionDivider: {
-    height: 1,
+    height: StyleSheet.hairlineWidth,
     backgroundColor: THEME.colors.calm.border,
-    marginVertical: 2,
+    marginVertical: 4,
   },
   areasHint: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     lineHeight: 18,
-    marginTop: 2,
+    marginTop: 4,
   },
   listSection: {
     gap: THEME.spacing.sm,
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
   },
   filterRow: {
     flexDirection: 'row',
@@ -714,16 +798,14 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.xs,
   },
   filterPill: {
+    ...THEME.surfaces.chip,
     paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: 8,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.calm.mist,
+    paddingVertical: THEME.spacing.xs,
     minHeight: 36,
     justifyContent: 'center',
   },
   filterPillActive: {
-    backgroundColor: THEME.colors.calm.lavender,
-    borderWidth: 1,
+    backgroundColor: THEME.colors.calm.lavenderDeep,
     borderColor: THEME.colors.calm.lavenderDeep,
   },
   filterPillText: {
@@ -733,14 +815,16 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   filterPillTextActive: {
-    color: THEME.colors.calm.lavenderDeep,
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
   },
   sectionLabel: {
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.secondary,
-    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    lineHeight: 16,
     paddingHorizontal: 2,
   },
   loadingText: {
@@ -750,21 +834,20 @@ const styles = StyleSheet.create({
   },
   empty: {
     alignItems: 'center',
-    paddingVertical: THEME.spacing.xl,
-    paddingHorizontal: THEME.spacing.lg,
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.lg,
+    paddingHorizontal: THEME.spacing.sm,
   },
   emptyEmbedded: {
-    ...THEME.surfaces.elevated,
     paddingVertical: THEME.spacing.lg,
-    borderRadius: THEME.borderRadius.rounded,
   },
   emptyIconWrap: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 96,
+    height: 96,
+    borderRadius: THEME.borderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.xs,
     overflow: 'hidden',
   },
   emptyTitle: {
@@ -775,54 +858,26 @@ const styles = StyleSheet.create({
   emptyText: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
-    marginTop: THEME.spacing.sm,
     textAlign: 'center',
     lineHeight: 22,
-    paddingHorizontal: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.xs,
   },
-  addButton: {
-    marginTop: THEME.spacing.lg,
-    borderRadius: THEME.borderRadius.pill,
-    overflow: 'hidden',
-    ...THEME.shadows.soft,
+  emptyPrimaryCta: {
+    marginTop: THEME.spacing.sm,
+    alignSelf: 'stretch',
   },
-  addButtonGradient: {
-    paddingVertical: THEME.spacing.sm + 4,
-    paddingHorizontal: THEME.spacing.xl,
-  },
-  addButtonText: {
-    ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.onGradient,
-  },
-  secondaryEmptyBtn: {
-    marginTop: THEME.spacing.md,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.lg,
-  },
-  secondaryEmptyBtnText: {
-    ...THEME.typography.body,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.medium,
+  emptySecondaryCta: {
+    marginTop: THEME.spacing.xs,
+    alignSelf: 'stretch',
   },
   backLink: {
-    marginTop: THEME.spacing.md,
+    marginTop: THEME.spacing.sm,
     paddingVertical: THEME.spacing.xs,
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
   },
   backLinkText: {
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
-  },
-  organizedCaptureLink: {
-    alignSelf: 'center',
-    paddingVertical: THEME.spacing.sm,
-    minHeight: THEME.sizes.touchTarget,
-    justifyContent: 'center',
-  },
-  organizedCaptureText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.bold,
-    textAlign: 'center',
   },
 });

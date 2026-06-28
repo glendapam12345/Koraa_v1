@@ -266,7 +266,12 @@ function AreaColumn({
       <View
         ref={columnRef}
         onLayout={onMeasure}
-        style={[styles.column, styles.columnDropTarget, isHover ? styles.columnHover : null]}
+        style={[
+          styles.column,
+          { borderLeftColor: column.color },
+          styles.columnDropTarget,
+          isHover ? styles.columnHover : null,
+        ]}
       >
         <View style={styles.columnHeaderRow}>
           <Text style={styles.columnEmoji}>{column.emoji}</Text>
@@ -285,11 +290,17 @@ function AreaColumn({
       onLayout={onMeasure}
       style={[
         styles.column,
+        { borderLeftColor: column.color, borderColor: `${column.color}55` },
         column.isLoose ? styles.columnLoose : null,
         isHover ? styles.columnHover : null,
       ]}
     >
-      <View style={styles.columnHeader}>
+      <View
+        style={[
+          styles.columnHeader,
+          { backgroundColor: column.isLoose ? THEME.colors.calm.mist : `${column.color}22` },
+        ]}
+      >
         <TouchableOpacity
           style={styles.columnHeaderMain}
           activeOpacity={canRename ? 0.7 : 1}
@@ -301,6 +312,9 @@ function AreaColumn({
           }
         >
           <View style={styles.columnHeaderRow}>
+            {!column.isLoose ? (
+              <View style={[styles.columnColorDot, { backgroundColor: column.color }]} />
+            ) : null}
             <Text style={styles.columnEmoji}>{column.emoji}</Text>
             <Text style={styles.columnTitle}>{column.name}</Text>
             {taskCount > 0 ? (
@@ -773,12 +787,14 @@ const styles = StyleSheet.create({
   column: {
     gap: THEME.spacing.xs,
     padding: THEME.spacing.sm,
+    borderLeftWidth: 3,
     borderRadius: THEME.borderRadius.rounded,
     backgroundColor: THEME.colors.fill[100],
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
     overflow: 'hidden',
     alignSelf: 'stretch',
+    ...THEME.shadows.soft,
   },
   columnDropTarget: {
     minHeight: 96,
@@ -804,12 +820,19 @@ const styles = StyleSheet.create({
   columnHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: THEME.spacing.xs,
     paddingHorizontal: 2,
-    paddingBottom: 4,
+    paddingVertical: THEME.spacing.xs,
     marginBottom: 2,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: THEME.colors.calm.border,
+    borderRadius: THEME.borderRadius.standard,
+  },
+  columnColorDot: {
+    width: THEME.spacing.xs,
+    height: THEME.spacing.xs,
+    borderRadius: THEME.spacing.xs / 2,
+    flexShrink: 0,
   },
   columnHeaderMain: {
     flex: 1,
@@ -823,9 +846,8 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.xs,
   },
   columnEmoji: {
-    fontSize: 16,
-    lineHeight: 22,
-    marginTop: 1,
+    ...THEME.typography.displayEmojiSm,
+    flexShrink: 0,
   },
   columnTitle: {
     ...THEME.typography.body,

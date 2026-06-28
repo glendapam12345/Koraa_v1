@@ -3,9 +3,11 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import { useWeekTasks, type DayTasks, type WeekDayCheckIn } from '@/hooks/useWeekTasks';
+import { useWeekTasks, type DayTasks, type WeekDayCheckIn, getWeekBoundsForStart } from '@/hooks/useWeekTasks';
 import { useMonthCalendar } from '@/hooks/useMonthCalendar';
 import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
+import { useCheckIn } from '@/hooks/useCheckIn';
+import { DEFAULT_CHECK_IN_TIME } from '@/lib/checkInDefaults';
 import { getSupabaseEnvStatus } from '@/lib/envCheck';
 import {
   Download,
@@ -24,6 +26,13 @@ import { SemanaTodayCheckInBanner } from '@/components/semana/SemanaTodayCheckIn
 import { SemanaFreeLimitCard } from '@/components/semana/SemanaFreeLimitCard';
 import { SemanaDraggableWeekBoard } from '@/components/semana/SemanaDraggableWeekBoard';
 import { SemanaReplanPreviewBar } from '@/components/semana/SemanaReplanPreviewBar';
+import { SemanaWeeklyBriefCard } from '@/components/semana/SemanaWeeklyBriefCard';
+import { SemanaWeekCapacityBar } from '@/components/semana/SemanaWeekCapacityBar';
+import { ReorganizeDayProposalSections } from '@/components/hoy/ReorganizeDayProposalSections';
+import { useKoraaWeeklyBrief } from '@/hooks/useKoraaWeeklyBrief';
+import { buildWeekCapacitySnapshot } from '@/lib/hoy/weekCapacity';
+import { loadTaskPlanningMetaMap, type TaskPlanningMeta } from '@/lib/taskPlanningMeta';
+import { getDisplayName } from '@/lib/displayName';
 import { SemanaRangePicker } from '@/components/semana/SemanaRangePicker';
 import { useSemanaTaskDrag } from '@/hooks/useSemanaTaskDrag';
 import { Toast } from '@/components/Toast';
@@ -60,6 +69,8 @@ import {
   applyDayReplanAssignments,
   buildDayReplanPlan,
 } from '@/lib/vnext/executeDayReflectionReplan';
+import { buildWeeklyBriefReplanPlan } from '@/lib/ai/buildWeeklyBriefReplanPlan';
+import { canSuggestWeekReplan } from '@/lib/ai/inferWeekReplanReason';
 import type { ReorganizeWeekProposal, WhatChangedReason } from '@/lib/lifeAreas/types';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
@@ -111,6 +122,8 @@ export default function SemanaScreen() {
   const [replanProposal, setReplanProposal] = useState<ReorganizeWeekProposal | null>(null);
   const [replanLoading, setReplanLoading] = useState(false);
   const [replanApplying, setReplanApplying] = useState(false);
+  const [replanUsedAi, setReplanUsedAi] = useState(false);
+  const [planningMeta, setPlanningMeta] = useState<Record<string, TaskPlanningMeta>>({});
   const replanBootstrappedRef = useRef(false);
   const planAheadFloor = useMemo(() => getNextWeekMonday(todayStr), [todayStr]);
   const showToast = useCallback(
@@ -121,8 +134,9 @@ export default function SemanaScreen() {
     [],
   );
 
-  const { weekTasks, projects, loading, loadWeekTasks, loadDateRange, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast, locale);
+  const { weekTasks, checkInsByDate, projects, loading, loadWeekTasks, loadDateRange, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast, locale);
   const { hasCheckInToday, refresh: refreshCheckInToday } = useHasCheckInToday(user?.id);
+  const { time: todayCheckInTime, loadTodayCheckIn } = useCheckIn(showToast);
   const { days: calendarDays, tasksByDate, loading: monthLoading, loadMonth } = useMonthCalendar(
     calendarYear,
     calendarMonth,
@@ -133,6 +147,17 @@ export default function SemanaScreen() {
   const supabaseEnvOk = envStatus.url && envStatus.key;
 
   const currentWeekBounds = useMemo(() => getWeekBounds(), [getWeekBounds]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const map = await loadTaskPlanningMetaMap();
+      if (!cancelled) setPlanningMeta(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (rangeMode !== 'month') return;
@@ -216,7 +241,8 @@ export default function SemanaScreen() {
   useFocusEffect(
     useCallback(() => {
       void refreshCheckInToday();
-    }, [refreshCheckInToday]),
+      void loadTodayCheckIn();
+    }, [loadTodayCheckIn, refreshCheckInToday]),
   );
 
   useFocusEffect(
@@ -272,6 +298,7 @@ export default function SemanaScreen() {
     setReplanMode(false);
     setReplanDraft(null);
     setReplanProposal(null);
+    setReplanUsedAi(false);
     replanBootstrappedRef.current = false;
   }, []);
 
@@ -330,6 +357,87 @@ export default function SemanaScreen() {
     return filteredWeekTasks.filter(({ day }) => getWeekMonday(day.dateStr) === monday);
   }, [filteredWeekTasks, selectedDate]);
 
+  const showWeeklyBrief =
+    !replanMode && (viewMode === 'calendar' || (viewMode === 'list' && rangeMode === 'week'));
+
+  const briefWeekStart = useMemo(() => {
+    const anchor = viewMode === 'calendar' ? selectedDate : rangeAnchorDate;
+    return getWeekMonday(anchor);
+  }, [viewMode, selectedDate, rangeAnchorDate]);
+
+  const briefWeekEnd = useMemo(
+    () => getWeekBoundsForStart(briefWeekStart).end,
+    [briefWeekStart],
+  );
+
+  const briefWeekTasks = useMemo(() => {
+    if (viewMode === 'calendar') return calendarWeekTasks;
+    return filteredWeekTasks.filter(
+      ({ day }) => getWeekMonday(day.dateStr) === briefWeekStart,
+    );
+  }, [viewMode, calendarWeekTasks, filteredWeekTasks, briefWeekStart]);
+
+  const briefCheckInsByDate = useMemo(() => {
+    if (viewMode === 'list') return checkInsByDate;
+    const map: Record<string, WeekDayCheckIn> = {};
+    for (const day of calendarDays) {
+      if (getWeekMonday(day.dateStr) !== briefWeekStart) continue;
+      if (day.emotion) {
+        map[day.dateStr] = {
+          emotion: day.emotion,
+          energy_level: day.energyLevel ?? 0,
+        };
+      }
+    }
+    return map;
+  }, [viewMode, checkInsByDate, calendarDays, briefWeekStart]);
+
+  const displayName = useMemo(
+    () => getDisplayName(user ?? null, t('yo.welcomeName')),
+    [user, t],
+  );
+
+  const {
+    headline: weeklyBriefHeadline,
+    summary: weeklyBriefSummary,
+    gentleAdvice: weeklyBriefAdvice,
+    fromAi: weeklyBriefFromAi,
+    loading: weeklyBriefLoading,
+    weekContext: weeklyBriefContext,
+  } = useKoraaWeeklyBrief({
+    userId: user?.id,
+    displayName,
+    locale,
+    weekStart: briefWeekStart,
+    weekEnd: briefWeekEnd,
+    weekTasks: briefWeekTasks,
+    checkInsByDate: briefCheckInsByDate,
+    enabled: showWeeklyBrief && !loading && !monthLoading,
+  });
+
+  const todayAvailableTime = todayCheckInTime.trim() || DEFAULT_CHECK_IN_TIME;
+
+  const weekCapacity = useMemo(
+    () =>
+      buildWeekCapacitySnapshot({
+        weekTasks: briefWeekTasks,
+        planningMeta,
+        todayAvailableTime,
+        maxStepsPerDay:
+          weeklyBriefContext?.today?.energyLevel && weeklyBriefContext.today.energyLevel <= 2
+            ? 2
+            : 3,
+      }),
+    [briefWeekTasks, planningMeta, todayAvailableTime, weeklyBriefContext],
+  );
+
+  const showWeeklyReplanCta = useMemo(
+    () =>
+      Boolean(weeklyBriefContext && canSuggestWeekReplan(weeklyBriefContext)) ||
+      Boolean(weekCapacity?.isWeekImbalanced),
+    [weeklyBriefContext, weekCapacity],
+  );
+
   const listSourceTasks = useMemo(() => {
     const base =
       rangeMode === 'month'
@@ -372,6 +480,60 @@ export default function SemanaScreen() {
   const visibleWeekTasksRef = useRef(visibleWeekTasks);
   visibleWeekTasksRef.current = visibleWeekTasks;
 
+  const applyReplanResult = useCallback(
+    (
+      result: Awaited<ReturnType<typeof buildDayReplanPlan>>,
+      anchorDate: string,
+      sourceWeekTasks: DayTasks[],
+    ) => {
+      if (!result.ok) {
+        showToast(t('vnext.replanError'), 'error');
+        setReplanMode(false);
+        setReplanDraft(null);
+        setReplanProposal(null);
+        setReplanUsedAi(false);
+        replanBootstrappedRef.current = false;
+        return false;
+      }
+      setReplanProposal(result.proposal);
+      setReplanUsedAi(result.usedAi);
+      setRangeAnchorDate(anchorDate);
+      setReplanDraft(applyAssignmentsToWeekTasks(sourceWeekTasks, result.assignments));
+      replanBootstrappedRef.current = true;
+      return true;
+    },
+    [showToast, t],
+  );
+
+  const handleWeeklyBriefAdjust = useCallback(async () => {
+    if (!user?.id || !weeklyBriefContext || replanLoading) return;
+
+    setReplanMode(true);
+    setViewMode('list');
+    setRangeMode('week');
+    setReplanLoading(true);
+
+    try {
+      const result = await buildWeeklyBriefReplanPlan(
+        user.id,
+        locale,
+        t('projectsUi.looseTitle'),
+        weeklyBriefContext,
+      );
+      applyReplanResult(result, weeklyBriefContext.weekStart, briefWeekTasks);
+    } finally {
+      setReplanLoading(false);
+    }
+  }, [
+    user?.id,
+    weeklyBriefContext,
+    replanLoading,
+    locale,
+    t,
+    applyReplanResult,
+    briefWeekTasks,
+  ]);
+
   useEffect(() => {
     if (replanParam !== '1' || !user?.id) {
       if (replanParam !== '1' && !replanMode) {
@@ -404,10 +566,12 @@ export default function SemanaScreen() {
           showToast(t('vnext.replanError'), 'error');
           setReplanMode(false);
           setReplanDraft(null);
+          setReplanUsedAi(false);
           replanBootstrappedRef.current = false;
           return;
         }
         setReplanProposal(result.proposal);
+        setReplanUsedAi(result.usedAi);
         setReplanDraft(
           applyAssignmentsToWeekTasks(visibleWeekTasksRef.current, result.assignments),
         );
@@ -595,6 +759,24 @@ export default function SemanaScreen() {
           {hasCheckInToday === false ? <SemanaTodayCheckInBanner /> : null}
         </View>
 
+        {showWeeklyBrief && !replanMode ? (
+          <SemanaWeeklyBriefCard
+            headline={weeklyBriefHeadline}
+            summary={weeklyBriefSummary}
+            gentleAdvice={weeklyBriefAdvice}
+            fromAi={weeklyBriefFromAi}
+            loading={weeklyBriefLoading}
+            showAdjustCta={showWeeklyReplanCta}
+            adjustingWeek={replanLoading}
+            onAdjustWeek={() => void handleWeeklyBriefAdjust()}
+            weekCapacitySlot={
+              !weeklyBriefLoading && weekCapacity ? (
+                <SemanaWeekCapacityBar capacity={weekCapacity} />
+              ) : null
+            }
+          />
+        ) : null}
+
         {replanMode ? null : (
         <CalmSegmentedControl
           segments={[
@@ -616,14 +798,25 @@ export default function SemanaScreen() {
         )}
 
         {replanMode ? (
-          <SemanaReplanPreviewBar
-            headline={replanProposal?.headline}
-            subline={replanProposal?.subline}
-            loading={replanLoading}
-            applying={replanApplying}
-            onAccept={() => void handleReplanAccept()}
-            onCancel={handleReplanCancel}
-          />
+          <>
+            <SemanaReplanPreviewBar
+              headline={replanProposal?.headline}
+              subline={replanProposal?.subline}
+              usedAi={replanUsedAi}
+              loading={replanLoading}
+              applying={replanApplying}
+              onAccept={() => void handleReplanAccept()}
+              onCancel={handleReplanCancel}
+            />
+            {replanProposal &&
+            (replanProposal.kept.length > 0 || replanProposal.moved.length > 0) ? (
+              <ReorganizeDayProposalSections
+                kept={replanProposal.kept}
+                moved={replanProposal.moved}
+                planningMeta={planningMeta}
+              />
+            ) : null}
+          </>
         ) : null}
 
         {viewMode === 'calendar' && !replanMode ? (

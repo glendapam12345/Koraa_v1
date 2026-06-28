@@ -5,19 +5,35 @@ import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { TipsCategoryGrid } from '@/components/tips/TipsCategoryGrid';
+import { KoraaDailyTipsSection } from '@/components/koraa/KoraaDailyTipsSection';
+import { resolveTipsByIds } from '@/lib/ai/resolveBriefTips';
+import { openTipsCategory } from '@/lib/tipsNavigation';
 import type { TipCategoryId, TipsUserContext } from '@/lib/tipsTypes';
 import { getCatalogCountByCategory, getDisplayTipsCountByCategory } from '@/lib/tipsAccess';
-import { openTipsCategory } from '@/lib/tipsNavigation';
+import type { ScoredTip } from '@/lib/tipsPersonalization';
 
 const CATEGORY_ORDER: TipCategoryId[] = ['mindset', 'rest', 'action', 'productivity'];
 
 type ParaMiTipsSectionProps = {
   context: TipsUserContext;
+  highlightTipIds?: string[];
+  tipLead?: string;
+  fromAi?: boolean;
 };
 
-export function ParaMiTipsSection({ context }: ParaMiTipsSectionProps) {
+export function ParaMiTipsSection({
+  context,
+  highlightTipIds = [],
+  tipLead = '',
+  fromAi = false,
+}: ParaMiTipsSectionProps) {
   const { t, locale } = useI18n();
   const { isSubscribed } = useSubscription();
+
+  const highlightedTips = useMemo(
+    () => resolveTipsByIds(highlightTipIds, locale),
+    [highlightTipIds, locale],
+  );
 
   const catalogTotals = useMemo(() => getCatalogCountByCategory(locale), [locale]);
 
@@ -62,6 +78,12 @@ export function ParaMiTipsSection({ context }: ParaMiTipsSectionProps) {
     openTipsCategory(router, category, context);
   };
 
+  const openTip = (tip: ScoredTip) => {
+    openTipsCategory(router, tip.category, context);
+  };
+
+  const sectionLead = tipLead || t('parami.tipsSectionLead');
+
   return (
     <View
       style={styles.wrap}
@@ -71,7 +93,18 @@ export function ParaMiTipsSection({ context }: ParaMiTipsSectionProps) {
       <Text style={styles.title} accessibilityRole="header">
         {t('parami.tipsSectionTitle')}
       </Text>
-      <Text style={styles.lead}>{t('parami.tipsSectionLead')}</Text>
+      {highlightedTips.length > 0 ? (
+        <KoraaDailyTipsSection
+          tips={highlightedTips}
+          tipLead={tipLead}
+          fromAi={fromAi}
+          titleKey="koraaDailyTips.paramiTitle"
+          embedded
+          onOpenTip={openTip}
+        />
+      ) : (
+        <Text style={styles.lead}>{sectionLead}</Text>
+      )}
       <TipsCategoryGrid
         order={CATEGORY_ORDER}
         labels={labels}

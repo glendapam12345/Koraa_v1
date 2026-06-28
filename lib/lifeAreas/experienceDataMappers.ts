@@ -133,6 +133,13 @@ const PROPOSAL_COPY: Record<
       en: 'You had momentum — without overloading today.',
     },
   },
+  week_balance: {
+    headline: { es: 'Equilibrio suave para la semana', en: 'A gentle balance for the week' },
+    subline: {
+      es: 'Repartí carga desde el día más lleno — revisa y ajusta.',
+      en: 'Spread load from the fullest day — review and adjust.',
+    },
+  },
 };
 
 function shortDayLabel(iso: string, locale: AppLocale): string {
@@ -328,6 +335,47 @@ export function buildAdaptiveReorganizePlan(
     }
 
     todayTasks.forEach((task) => keep(task.id));
+  } else if (reason === 'week_balance') {
+    const counts = new Map<string, number>();
+    for (const date of weekDates) counts.set(date, 0);
+    for (const task of open) {
+      const date =
+        task.scheduled_date && weekDates.includes(task.scheduled_date)
+          ? task.scheduled_date
+          : today;
+      counts.set(date, (counts.get(date) ?? 0) + 1);
+    }
+
+    let busiest = today;
+    let busiestCount = 0;
+    for (const [date, count] of counts.entries()) {
+      if (count > busiestCount) {
+        busiest = date;
+        busiestCount = count;
+      }
+    }
+
+    const maxPerDay = 3;
+    const movable = open.filter(
+      (task) =>
+        (task.scheduled_date === busiest || (!task.scheduled_date && busiest === today)) &&
+        !task.is_priority,
+    );
+
+    for (const task of movable) {
+      if ((counts.get(busiest) ?? 0) <= maxPerDay) break;
+      const target = weekDates.find(
+        (date) => date >= today && (counts.get(date) ?? 0) < maxPerDay && date !== busiest,
+      );
+      if (!target) break;
+      assign(task.id, target);
+      counts.set(busiest, (counts.get(busiest) ?? 1) - 1);
+      counts.set(target, (counts.get(target) ?? 0) + 1);
+    }
+
+    open.forEach((task) => {
+      if (!assignments.has(task.id) && !movedIds.has(task.id)) keep(task.id);
+    });
   }
 
   // Ensure unassigned open tasks without explicit keep get a gentle spread

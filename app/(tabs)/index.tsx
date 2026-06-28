@@ -32,6 +32,7 @@ import { getTodayPriorityStats } from '@/lib/priorityProgress';
 import { useHoyDeleteTask, useHoyAllCompleteConfetti } from '@/hooks/useHoyTaskActions';
 import { useTaskPlanEdit } from '@/hooks/useTaskPlanEdit';
 import { useHoyPrioritization } from '@/hooks/useHoyPrioritization';
+import { useKoraaDailyBrief } from '@/hooks/useKoraaDailyBrief';
 import { useHoyTaskExpansion } from '@/hooks/useHoyTaskExpansion';
 import { useHoyProjectsMap } from '@/hooks/useHoyProjectsMap';
 import { useHoyScreenBootstrap } from '@/hooks/useHoyScreenBootstrap';
@@ -188,8 +189,11 @@ export default function TodayScreen() {
 
   const { currentStreak, loadStreak } = useStreak(user?.id);
   const {
+    hoyLiteCompactLayout,
     hoyRestOfDayExpanded,
     setShowSecondaryModules,
+    handleShowMoreForHoy,
+    handleOptOutHoyLite,
     checkInReplanCoachLine,
   } = useHoyScreenLayout({
     userId: user?.id,
@@ -288,7 +292,7 @@ export default function TodayScreen() {
     setShowQuickOnboarding,
   });
 
-  const { explanation } = useHoyPrioritization({
+  const { explanation, prioritizationPlan } = useHoyPrioritization({
     tasks,
     incompleteTasks,
     todayMood,
@@ -299,6 +303,45 @@ export default function TodayScreen() {
     locale,
     t,
   });
+
+  const focusCountForCoach = useMemo(() => {
+    if (prioritizationPlan?.prioritizedTasks.length) {
+      return prioritizationPlan.prioritizedTasks.length;
+    }
+    return todayPriorityStats.pending;
+  }, [prioritizationPlan, todayPriorityStats.pending]);
+
+  const focusTasksForCoach = useMemo(
+    () =>
+      (prioritizationPlan?.prioritizedTasks ?? []).map((task) => ({
+        id: task.id,
+        content: task.content,
+      })),
+    [prioritizationPlan],
+  );
+
+  const { coachLine: aiCoachLine, tipIds: dailyTipIds, tipLead: dailyTipLead, fromAi: dailyTipsFromAi, focusTaskIds: aiFocusTaskIds, planHeadline: aiPlanHeadline, focusFromAi } =
+    useKoraaDailyBrief({
+      userId: user?.id,
+      displayName,
+      todayMood,
+      todayEmotionLabel,
+      energyLevel,
+      availableTime: time,
+      focusLevel,
+      suggestion: explanation.suggestion,
+      focusCount: focusCountForCoach,
+      focusTasks: focusTasksForCoach,
+      pendingCount: incompleteTasks.length,
+      locale,
+      incompleteTasks,
+    });
+
+  const coachSuggestion = useMemo(() => {
+    if (checkInReplanCoachLine) return checkInReplanCoachLine;
+    if (aiCoachLine) return aiCoachLine;
+    return explanation.suggestion;
+  }, [checkInReplanCoachLine, aiCoachLine, explanation.suggestion]);
 
   const getCategoryColor = useCallback((category: string) => {
     const key = normalizeCategoryKey(category) ?? category.trim().toLowerCase();
@@ -332,7 +375,12 @@ export default function TodayScreen() {
           onCareModePress={() => setCareModeSheet(crisisModeActive ? 'deactivate' : 'activate')}
         />
 
-        {!loading ? <HoyCompanionHeader displayName={displayName} /> : null}
+        {!loading ? (
+          <HoyCompanionHeader
+            displayName={displayName}
+            hasCheckInToday={Boolean(todayMood)}
+          />
+        ) : null}
 
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -349,6 +397,9 @@ export default function TodayScreen() {
             time={time}
             focusLevel={focusLevel}
             todayPriorityStats={todayPriorityStats}
+            compactLayout={hoyLiteCompactLayout}
+            onShowFullView={() => void handleOptOutHoyLite()}
+            onShowMoreForToday={handleShowMoreForHoy}
             user={user}
             tasks={tasks}
             incompleteTasksForToday={incompleteTasksForToday}
@@ -367,7 +418,13 @@ export default function TodayScreen() {
             restOfDayExpanded={hoyRestOfDayExpanded}
             onCollapseRestOfDay={() => setShowSecondaryModules(false)}
             displayName={displayName}
-            coachSuggestion={checkInReplanCoachLine ?? explanation.suggestion}
+            coachSuggestion={coachSuggestion}
+            dailyTipIds={dailyTipIds}
+            dailyTipLead={dailyTipLead}
+            dailyTipsFromAi={dailyTipsFromAi}
+            aiFocusTaskIds={aiFocusTaskIds}
+            aiPlanHeadline={aiPlanHeadline}
+            focusFromAi={focusFromAi}
             onDeleteTask={handleDeleteTask}
             onChangeEmotion={openQuickRecheck}
             crisisMode={crisisModeActive}

@@ -28,6 +28,8 @@ import { ParaMiPatternsLockedPreview } from '@/components/parami/ParaMiPatternsL
 import { PremiumBadge } from '@/components/premium/PremiumBadge';
 import { EmergencyKitEntryCard } from '@/components/emergencyKit/EmergencyKitEntryCard';
 import { generateEmotionalInsights } from '@/lib/emotionalInsights';
+import { getLocalDateString } from '@/lib/dateLocal';
+import { useKoraaTipHighlights } from '@/hooks/useKoraaTipHighlights';
 import type { TipsUserContext } from '@/lib/tipsTypes';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
@@ -87,12 +89,22 @@ export default function ParaMiScreen() {
   }, [period, t]);
 
   const tipsContext = useMemo((): TipsUserContext => {
+    const today = getLocalDateString();
+    const todayEntry = periodData.find((day) => day.date === today && day.hasCheckIn);
     const latest = periodData[periodData.length - 1];
+    const source = todayEntry ?? (latest?.hasCheckIn ? latest : null);
     return {
-      emotion: latest?.emotion?.toLowerCase() ?? 'tranquila',
-      energyLevel: latest?.energyLevel ?? 3,
+      emotion: source?.emotion?.toLowerCase() ?? 'tranquila',
+      energyLevel: source?.energyLevel ?? 3,
     };
   }, [periodData]);
+
+  const { tipIds: highlightTipIds, tipLead, fromAi: tipsFromAi } = useKoraaTipHighlights({
+    userId: user?.id,
+    emotion: tipsContext.emotion,
+    energyLevel: tipsContext.energyLevel,
+    locale,
+  });
 
   const moodChartSize = period === 'month' ? 'month' : period === 'twoWeeks' ? 'fortnight' : 'week';
 
@@ -181,7 +193,12 @@ export default function ParaMiScreen() {
         )}
       </View>
 
-      <ParaMiTipsSection context={tipsContext} />
+      <ParaMiTipsSection
+        context={tipsContext}
+        highlightTipIds={highlightTipIds}
+        tipLead={tipLead}
+        fromAi={tipsFromAi}
+      />
 
       <EmergencyKitEntryCard compact />
     </CalmScreen>

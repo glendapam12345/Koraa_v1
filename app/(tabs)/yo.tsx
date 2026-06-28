@@ -10,6 +10,7 @@ import {
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { getFirstSessionTourStorageKey } from '@/lib/firstSessionTour';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   Settings,
@@ -18,6 +19,7 @@ import {
   RotateCcw,
   Crown,
   ChevronRight,
+  Route,
 } from 'lucide-react-native';
 import { logger } from '@/lib/logger';
 import { openPaywall } from '@/lib/paywallNavigation';
@@ -33,6 +35,7 @@ import Constants from 'expo-constants';
 import { useYoProfile } from '@/hooks/useYoProfile';
 import { YoEditProfileModal } from '@/components/yo/YoEditProfileModal';
 import { YoMenuRow } from '@/components/yo/YoMenuRow';
+import { KoraaHowItWorksModal } from '@/components/onboarding/KoraaHowItWorksModal';
 
 export default function ProfileScreen() {
   const { t, locale } = useI18n();
@@ -40,6 +43,7 @@ export default function ProfileScreen() {
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showKoraaGuide, setShowKoraaGuide] = useState(false);
 
   const profileState = useYoProfile({
     userId: user?.id,
@@ -216,6 +220,14 @@ export default function ProfileScreen() {
           />
           <View style={styles.menuDivider} />
           <YoMenuRow
+            icon={<Route size={22} color={THEME.colors.calm.lavenderDeep} />}
+            title={t('koraaGuide.menuTitle')}
+            subtitle={t('koraaGuide.menuSubtitle')}
+            onPress={() => setShowKoraaGuide(true)}
+            accessibilityLabel={t('koraaGuide.menuA11y')}
+            accessibilityHint={t('koraaGuide.menuHint')}
+          />
+          <YoMenuRow
             icon={<Settings size={22} color={THEME.colors.calm.lavenderDeep} />}
             title={t('yo.settings')}
             subtitle={t('yo.settingsSub')}
@@ -231,6 +243,9 @@ export default function ProfileScreen() {
               onPress={async () => {
                 try {
                   await AsyncStorage.removeItem('hasSeenQuickOnboarding');
+                  if (user?.id) {
+                    await AsyncStorage.removeItem(getFirstSessionTourStorageKey(user.id));
+                  }
                   Alert.alert(t('yo.devResetTitle'), t('yo.devResetBody'), [
                     { text: t('errors.ok') },
                   ]);
@@ -281,6 +296,11 @@ export default function ProfileScreen() {
         onAddInterest={addInterest}
         onRemoveInterest={removeInterest}
         onSave={handleSaveProfile}
+      />
+
+      <KoraaHowItWorksModal
+        visible={showKoraaGuide}
+        onClose={() => setShowKoraaGuide(false)}
       />
     </View>
   );

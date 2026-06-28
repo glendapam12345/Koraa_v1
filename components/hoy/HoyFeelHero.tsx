@@ -69,9 +69,9 @@ export function HoyFeelHero({
         end={{ x: 1, y: 1 }}
         style={[styles.card, styles.cardBorder]}
       >
-        <Text style={styles.eyebrow}>{t('hoy.feelHeroEyebrow')}</Text>
+        <Text style={styles.eyebrow}>{t('hoy.startHereEyebrow')}</Text>
         <Text style={styles.inviteTitle}>{t('hoy.feelHeroQuestion')}</Text>
-        <Text style={styles.koraaLine}>{t('hoy.feelHeroPurpose')}</Text>
+        <Text style={styles.koraaLine}>{t('hoy.feelHeroPurposeShort')}</Text>
         <Text style={styles.linkLine}>{t('hoy.feelHeroCompactCta')} →</Text>
       </LinearGradient>
     </Pressable>

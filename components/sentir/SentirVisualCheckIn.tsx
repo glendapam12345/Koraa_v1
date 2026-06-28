@@ -17,6 +17,7 @@ import { VisualStepSlider } from '@/components/sentir/VisualStepSlider';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { saveDailyCheckInAndPrioritize } from '@/lib/checkInService';
+import { getDisplayName } from '@/lib/displayName';
 import {
   DEFAULT_CHECK_IN_FOCUS,
   DEFAULT_CHECK_IN_TIME,
@@ -108,6 +109,7 @@ export function SentirVisualCheckIn({
     setSaving(true);
     setError(null);
     try {
+      const emotionLabel = emotions.find((item) => item.id === emotion)?.label ?? emotion;
       const result = await saveDailyCheckInAndPrioritize({
         userId: user.id,
         emotion,
@@ -115,6 +117,8 @@ export function SentirVisualCheckIn({
         availableTime,
         focusLevel,
         locale,
+        displayName: getDisplayName(user, ''),
+        emotionLabel,
       });
 
       if (!result.success) {

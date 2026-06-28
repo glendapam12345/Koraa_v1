@@ -51,7 +51,8 @@ export type WhatChangedReason =
   | 'less_time'
   | 'tired'
   | 'priorities_changed'
-  | 'more_energy';
+  | 'more_energy'
+  | 'week_balance';
 
 export type FloatingThoughtCard = {
   id: string;

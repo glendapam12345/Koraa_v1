@@ -1,25 +1,16 @@
 import { useEffect } from 'react';
 import { router } from 'expo-router';
-import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { AppLoadingGate } from '@/components/AppLoadingGate';
-import { ONBOARDING_PAYWALL_PARAMS } from '@/lib/finishOnboarding';
+import { ONBOARDING_AREAS_ROUTE } from '@/lib/onboardingNavigation';
 
-/** Legacy: el paso de áreas ya no forma parte del onboarding. */
+/** Legacy: redirige al paso de áreas del onboarding. */
 export default function OnboardingProjectsRedirect() {
-  const { user } = useAuth();
   const { t } = useI18n();
 
   useEffect(() => {
-    if (!user?.id) {
-      router.replace('/onboarding/welcome');
-      return;
-    }
-    router.replace({
-      pathname: '/paywall',
-      params: ONBOARDING_PAYWALL_PARAMS,
-    });
-  }, [user?.id]);
+    router.replace(ONBOARDING_AREAS_ROUTE);
+  }, []);
 
   return <AppLoadingGate message={t('boot.loadingDay')} />;
 }

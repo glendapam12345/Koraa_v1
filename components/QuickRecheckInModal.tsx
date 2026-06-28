@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 import { saveDailyCheckInAndPrioritize } from '@/lib/checkInService';
+import { getDisplayName } from '@/lib/displayName';
 import { publishCheckInCelebration } from '@/lib/checkInCelebration';
 import { DEFAULT_CHECK_IN_FOCUS, DEFAULT_CHECK_IN_TIME } from '@/lib/checkInDefaults';
 import { scheduleRecheckReminder } from '@/hooks/useNotifications';
@@ -91,6 +92,7 @@ export function QuickRecheckInModal({
     setSaving(true);
     setError(null);
     try {
+      const emotionLabel = emotion ? t(`sentir.emotions.${emotion}` as TranslationKey) : emotion;
       const result = await saveDailyCheckInAndPrioritize({
         userId: user.id,
         emotion,
@@ -98,6 +100,8 @@ export function QuickRecheckInModal({
         availableTime: time || DEFAULT_CHECK_IN_TIME,
         focusLevel: focus || DEFAULT_CHECK_IN_FOCUS,
         locale,
+        displayName: getDisplayName(user, ''),
+        emotionLabel,
       });
 
       if (!result.success) {

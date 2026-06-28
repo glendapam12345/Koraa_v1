@@ -8,7 +8,16 @@ import { OnboardingScreenShell, onboardingTypography } from '@/components/onboar
 import { Sparkles } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { completeOnboardingForUser } from '@/lib/finishOnboarding';
+import { ONBOARDING_AREAS_ROUTE } from '@/lib/onboardingNavigation';
 import { useI18n } from '@/contexts/I18nContext';
+import type { TranslationKey } from '@/lib/i18n';
+
+const PREVIEW_STEP_KEYS = [
+  'onboarding.setupFlow.step1Title',
+  'onboarding.setupFlow.step2Title',
+  'onboarding.setupFlow.step3Title',
+  'onboarding.setupFlow.step4Title',
+] as const;
 
 export default function WelcomeScreen() {
   const { user } = useAuth();
@@ -36,7 +45,7 @@ export default function WelcomeScreen() {
         <>
           <CalmPrimaryButton
             label={t('onboarding.welcome.quickStart')}
-            onPress={() => router.push('/onboarding/emotion')}
+            onPress={() => router.push(ONBOARDING_AREAS_ROUTE)}
             accessibilityHint={t('onboarding.welcome.quickStartHint')}
           />
           <TouchableOpacity
@@ -78,14 +87,58 @@ export default function WelcomeScreen() {
       <Text style={onboardingTypography.subtitle}>{t('onboarding.welcome.subtitle')}</Text>
 
       <OnboardingHighlightCard
-        title={t('onboarding.howItWorks.adaptTitle')}
+        title={t('onboarding.welcome.previewTitle')}
         body={t('onboarding.welcome.description')}
       />
+
+      <View
+        style={styles.previewList}
+        accessibilityRole="summary"
+        accessibilityLabel={t('onboardingA11y.howItWorksStepsGroup')}
+      >
+        {PREVIEW_STEP_KEYS.map((key, index) => (
+          <View key={key} style={styles.previewRow}>
+            <View style={styles.previewBadge}>
+              <Text style={styles.previewBadgeText}>{index + 1}</Text>
+            </View>
+            <Text style={styles.previewLabel}>{t(key as TranslationKey)}</Text>
+          </View>
+        ))}
+      </View>
     </OnboardingScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
+  previewList: {
+    gap: THEME.spacing.xs,
+    marginTop: THEME.spacing.sm,
+  },
+  previewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
+    paddingVertical: 6,
+  },
+  previewBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: THEME.colors.calm.lavender,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewBadgeText: {
+    ...THEME.typography.micro,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+  },
+  previewLabel: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    fontFamily: THEME.fonts.heading.medium,
+    flex: 1,
+  },
   secondaryButton: {
     marginTop: THEME.spacing.md,
     alignItems: 'center',

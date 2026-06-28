@@ -38,11 +38,16 @@ type AreasPlannerDragBoardProps = {
 
 const DROP_HIT_SLOP = 28;
 
+function headerTint(color: string): string {
+  return `${color}22`;
+}
+
 function AreaColumn({
   column,
   areas,
   appearance = 'areas',
   isHover,
+  dragActive,
   onMeasure,
   columnRef,
   onRequestMoveSheet,
@@ -62,6 +67,7 @@ function AreaColumn({
   areas: LifeArea[];
   appearance?: 'areas' | 'hoy';
   isHover: boolean;
+  dragActive: boolean;
   onMeasure: () => void;
   columnRef: (node: View | null) => void;
   onRequestMoveSheet?: (taskId: string, columnId: string) => void;
@@ -79,6 +85,7 @@ function AreaColumn({
 }) {
   const isEmpty = column.tasks.length === 0;
   const isHoy = appearance === 'hoy';
+  const showDropTarget = isEmpty && dragActive;
 
   return (
     <View
@@ -87,18 +94,31 @@ function AreaColumn({
       style={[
         styles.column,
         isHoy && styles.columnHoy,
-        !isHoy && { borderLeftColor: column.color },
+        !isHoy && { borderLeftColor: column.color, borderColor: `${column.color}55` },
+        showDropTarget && styles.columnDropTarget,
         isHover && (isHoy ? styles.columnHoverHoy : styles.columnHover),
-        isEmpty && styles.columnEmpty,
+        isEmpty && !dragActive && styles.columnEmpty,
       ]}
     >
-      <View style={styles.columnHeader}>
+      <View
+        style={[
+          styles.columnHeader,
+          !isHoy && { backgroundColor: headerTint(column.color) },
+          isHoy && styles.columnHeaderHoy,
+        ]}
+      >
+        {!isHoy ? (
+          <View style={[styles.columnColorDot, { backgroundColor: column.color }]} />
+        ) : null}
         <Text style={styles.columnEmoji}>{column.emoji}</Text>
         <Text style={styles.columnName} numberOfLines={1}>
           {column.name}
         </Text>
-        <Text style={[styles.columnCount, isHoy && styles.columnCountHoy]}>{column.tasks.length}</Text>
+        <Text style={[styles.columnCount, isHoy && styles.columnCountHoy]}>
+          {column.tasks.length}
+        </Text>
       </View>
+
       {column.tasks.length > 0 ? (
         <View style={styles.tasks}>
           {column.tasks.map((task) => (
@@ -132,7 +152,9 @@ function AreaColumn({
           ))}
         </View>
       ) : (
-        <Text style={styles.emptyColumnHint}>{emptyColumnHint}</Text>
+        <Text style={[styles.emptyColumnHint, showDropTarget && styles.emptyColumnHintActive]}>
+          {emptyColumnHint}
+        </Text>
       )}
     </View>
   );
@@ -221,6 +243,8 @@ export function AreasPlannerDragBoard({
     [findDropColumn, onMoveTask],
   );
 
+  const dragActive = draggingTaskId != null;
+
   return (
     <View style={styles.board} onLayout={measureColumns}>
       {columns.map((column) => (
@@ -229,7 +253,8 @@ export function AreasPlannerDragBoard({
           column={column}
           areas={areas}
           appearance={appearance}
-          isHover={hoverColumnId === column.id && draggingTaskId != null}
+          isHover={hoverColumnId === column.id && dragActive}
+          dragActive={dragActive}
           onMeasure={measureColumns}
           columnRef={(node) => {
             columnRefs.current.set(column.id, node);
@@ -254,16 +279,16 @@ export function AreasPlannerDragBoard({
 
 const styles = StyleSheet.create({
   board: {
-    gap: THEME.spacing.sm,
+    gap: THEME.layout.sectionGapCompact,
   },
   column: {
-    gap: THEME.spacing.xs,
-    padding: THEME.spacing.sm,
+    borderLeftWidth: 3,
     borderRadius: THEME.borderRadius.rounded,
     backgroundColor: THEME.colors.fill[100],
     borderWidth: 1,
-    borderColor: THEME.colors.calm.lavenderDeep,
-    borderLeftWidth: 3,
+    borderColor: THEME.colors.calm.border,
+    overflow: 'hidden',
+    ...THEME.shadows.soft,
   },
   columnHoy: {
     borderLeftWidth: 1,
@@ -271,6 +296,11 @@ const styles = StyleSheet.create({
   },
   columnEmpty: {
     minHeight: 56,
+  },
+  columnDropTarget: {
+    minHeight: 72,
+    borderStyle: 'dashed',
+    backgroundColor: THEME.colors.calm.mist,
   },
   columnHover: {
     borderColor: THEME.colors.calm.lavenderDeep,
@@ -284,27 +314,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: THEME.spacing.xs,
-    minHeight: 28,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.sm,
+    minHeight: THEME.sizes.touchTarget,
+  },
+  columnHeaderHoy: {
+    backgroundColor: THEME.colors.calm.mist,
+  },
+  columnColorDot: {
+    width: THEME.spacing.xs,
+    height: THEME.spacing.xs,
+    borderRadius: THEME.spacing.xs / 2,
+    flexShrink: 0,
   },
   columnEmoji: {
-    fontSize: 16,
-    lineHeight: 20,
+    ...THEME.typography.displayEmojiSm,
+    flexShrink: 0,
   },
   columnName: {
-    ...THEME.typography.caption,
+    ...THEME.typography.body,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
     flex: 1,
+    lineHeight: 22,
   },
   columnCount: {
     ...THEME.typography.micro,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.calm.lavenderDeep,
-    backgroundColor: THEME.colors.calm.mist,
-    paddingHorizontal: 8,
+    backgroundColor: THEME.colors.calm.lavender,
+    paddingHorizontal: THEME.spacing.xs,
     paddingVertical: 2,
     borderRadius: THEME.borderRadius.pill,
     overflow: 'hidden',
+    minWidth: 22,
+    textAlign: 'center',
   },
   columnCountHoy: {
     color: THEME.colors.text.secondary,
@@ -314,12 +358,22 @@ const styles = StyleSheet.create({
   },
   tasks: {
     gap: THEME.spacing.xs,
+    padding: THEME.spacing.sm,
+    paddingTop: 0,
   },
   emptyColumnHint: {
-    ...THEME.typography.small,
+    ...THEME.typography.caption,
     color: THEME.colors.text.tertiary,
     fontStyle: 'italic',
-    lineHeight: 16,
-    paddingHorizontal: 2,
+    lineHeight: 18,
+    paddingHorizontal: THEME.spacing.sm,
+    paddingBottom: THEME.spacing.sm,
+  },
+  emptyColumnHintActive: {
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
+    fontStyle: 'normal',
+    textAlign: 'center',
+    paddingVertical: THEME.spacing.sm,
   },
 });

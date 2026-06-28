@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Plus, PencilLine } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
+import { CalmCard } from '@/components/ui/calm/CalmCard';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 import {
@@ -54,7 +55,9 @@ export function ProjectsByAreaSection({
   return (
     <View style={styles.wrap}>
       {!hideExplainer && explainer ? (
-        <Text style={styles.explainer}>{explainer}</Text>
+        <CalmCard style={styles.explainerCard}>
+          <Text style={styles.explainer}>{explainer}</Text>
+        </CalmCard>
       ) : null}
       {groups.map((group, index) => (
         <AreaGroup
@@ -91,15 +94,26 @@ function AreaGroup({
 }) {
   const { t } = useI18n();
   const theme = frontThemeForKey(area.key, themeIndex);
+  const areaLabel = t(`lifeAreas.${area.key}` as TranslationKey);
 
   return (
-    <View style={[styles.areaCard, { backgroundColor: theme.bg, borderColor: theme.border }]}>
-      <View style={styles.areaHeader}>
-        <Text style={styles.areaEmoji}>{area.emoji}</Text>
+    <View
+      style={[
+        styles.areaCard,
+        {
+          borderLeftColor: theme.accent,
+          borderColor: theme.border,
+          backgroundColor: THEME.colors.fill[100],
+        },
+      ]}
+    >
+      <View style={[styles.areaHeader, { backgroundColor: theme.bg }]}>
+        <View style={[styles.areaColorDot, { backgroundColor: theme.accent }]} />
+        <Text style={styles.areaEmoji} accessibilityLabel={areaLabel}>
+          {area.emoji}
+        </Text>
         <View style={styles.areaHeaderText}>
-          <Text style={[styles.areaTitle, { color: theme.accent }]}>
-            {t(`lifeAreas.${area.key}` as TranslationKey)}
-          </Text>
+          <Text style={[styles.areaTitle, { color: theme.accent }]}>{areaLabel}</Text>
           <Text style={styles.areaSub}>
             {projects.length === 0
               ? t('projects.areaEmpty')
@@ -109,37 +123,45 @@ function AreaGroup({
           </Text>
         </View>
       </View>
-      <View style={styles.projectList}>
-        {projects.map((project) => (
-          <ProjectLibraryCard
-            key={project.id}
-            mode="project"
-            project={project}
-            userId={userId}
-            onAddTask={onAddTask}
-            compact
-          />
-        ))}
+
+      <View style={styles.areaBody}>
+        {projects.length > 0 ? (
+          <View style={styles.projectList}>
+            {projects.map((project) => (
+              <ProjectLibraryCard
+                key={project.id}
+                mode="project"
+                project={project}
+                userId={userId}
+                onAddTask={onAddTask}
+                compact
+              />
+            ))}
+          </View>
+        ) : null}
+
         <View style={styles.areaActionsRow}>
           <TouchableOpacity
-            style={styles.areaActionBtn}
+            style={styles.areaActionBtnPrimary}
             onPress={() => onCreateProjectInArea?.(area.key)}
             activeOpacity={0.86}
             accessibilityRole="button"
-            accessibilityLabel={t('projects.createInAreaA11y', { area: t(`lifeAreas.${area.key}` as TranslationKey) })}
+            accessibilityLabel={t('projects.createInAreaA11y', { area: areaLabel })}
           >
             <Plus size={14} color={THEME.colors.calm.lavenderDeep} />
             <Text style={styles.areaActionText}>{t('projects.createInArea')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.areaActionBtn}
+            style={styles.areaActionBtnMuted}
             onPress={() => onEditAreas?.()}
             activeOpacity={0.86}
             accessibilityRole="button"
             accessibilityLabel={t('projects.editAreasA11y')}
           >
-            <PencilLine size={14} color={THEME.colors.calm.lavenderDeep} />
-            <Text style={styles.areaActionText}>{t('projects.editAreas')}</Text>
+            <PencilLine size={14} color={THEME.colors.text.secondary} />
+            <Text style={[styles.areaActionText, styles.areaActionTextMuted]}>
+              {t('projects.editAreas')}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -149,33 +171,47 @@ function AreaGroup({
 
 const styles = StyleSheet.create({
   wrap: {
-    gap: THEME.spacing.md,
+    gap: THEME.layout.sectionGapCompact,
+  },
+  explainerCard: {
+    padding: THEME.spacing.sm,
+    backgroundColor: THEME.colors.calm.mist,
+    borderColor: THEME.colors.calm.border,
   },
   explainer: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
     lineHeight: 20,
-    paddingHorizontal: 2,
   },
   areaCard: {
+    borderLeftWidth: 3,
     borderRadius: THEME.borderRadius.rounded,
     borderWidth: 1,
-    padding: THEME.spacing.sm,
-    gap: THEME.spacing.sm,
+    overflow: 'hidden',
     ...THEME.shadows.soft,
   },
   areaHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.sm,
+    minHeight: THEME.sizes.touchTarget,
+  },
+  areaColorDot: {
+    width: THEME.spacing.xs,
+    height: THEME.spacing.xs,
+    borderRadius: THEME.spacing.xs / 2,
+    flexShrink: 0,
   },
   areaEmoji: {
-    fontSize: 24,
-    lineHeight: 28,
+    ...THEME.typography.displayEmojiMd,
+    flexShrink: 0,
   },
   areaHeaderText: {
     flex: 1,
-    gap: 2,
+    minWidth: 0,
+    gap: 4,
   },
   areaTitle: {
     ...THEME.typography.body,
@@ -189,35 +225,51 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     flexShrink: 1,
   },
+  areaBody: {
+    padding: THEME.spacing.sm,
+    gap: THEME.spacing.sm,
+  },
   projectList: {
-    gap: 8,
+    gap: THEME.spacing.xs,
   },
   areaActionsRow: {
-    flexDirection: 'column',
-    gap: THEME.spacing.xs,
-    marginTop: 2,
-  },
-  areaActionBtn: {
-    width: '100%',
-    minHeight: THEME.sizes.touchTarget,
-    borderRadius: THEME.borderRadius.pill,
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
-    backgroundColor: THEME.colors.calm.card,
-    alignItems: 'center',
-    justifyContent: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: THEME.spacing.sm,
+    paddingTop: THEME.spacing.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: THEME.colors.calm.border,
+  },
+  areaActionBtnPrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
     paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: 8,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.calm.lavender,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    minHeight: 36,
+  },
+  areaActionBtnMuted: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.pill,
+    minHeight: 36,
   },
   areaActionText: {
     ...THEME.typography.caption,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
-    textAlign: 'center',
-    flexShrink: 1,
     lineHeight: 18,
+    flexShrink: 1,
+  },
+  areaActionTextMuted: {
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
   },
 });

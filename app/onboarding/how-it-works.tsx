@@ -6,15 +6,34 @@ import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingHighlightCard } from '@/components/onboarding/OnboardingHighlightCard';
 import { OnboardingProgressDots } from '@/components/onboarding/OnboardingProgressDots';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
-import { PenTool, Heart, Sparkles, Route } from 'lucide-react-native';
+import { LayoutGrid, HeartHandshake, PenLine, Heart, Route } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { completeOnboardingForUser } from '@/lib/finishOnboarding';
+import { ONBOARDING_AREAS_ROUTE } from '@/lib/onboardingNavigation';
 import { useI18n } from '@/contexts/I18nContext';
+import type { TranslationKey } from '@/lib/i18n';
 
-const STEPS = [
-  { icon: PenTool, titleKey: 'onboarding.howItWorks.step1Title', bodyKey: 'onboarding.howItWorks.step1Body' },
-  { icon: Heart, titleKey: 'onboarding.howItWorks.step2Title', bodyKey: 'onboarding.howItWorks.step2Body' },
-  { icon: Sparkles, titleKey: 'onboarding.howItWorks.step3Title', bodyKey: 'onboarding.howItWorks.step3Body' },
+const SETUP_STEPS = [
+  {
+    icon: LayoutGrid,
+    titleKey: 'onboarding.setupFlow.step1Title',
+    bodyKey: 'onboarding.setupFlow.step1Body',
+  },
+  {
+    icon: HeartHandshake,
+    titleKey: 'onboarding.setupFlow.step2Title',
+    bodyKey: 'onboarding.setupFlow.step2Body',
+  },
+  {
+    icon: PenLine,
+    titleKey: 'onboarding.setupFlow.step3Title',
+    bodyKey: 'onboarding.setupFlow.step3Body',
+  },
+  {
+    icon: Heart,
+    titleKey: 'onboarding.setupFlow.step4Title',
+    bodyKey: 'onboarding.setupFlow.step4Body',
+  },
 ] as const;
 
 export default function HowItWorksScreen() {
@@ -41,7 +60,7 @@ export default function HowItWorksScreen() {
         <>
           <CalmPrimaryButton
             label={t('onboarding.howItWorks.startCheckIn')}
-            onPress={() => router.push('/onboarding/emotion')}
+            onPress={() => router.push(ONBOARDING_AREAS_ROUTE)}
             accessibilityHint={t('onboardingA11y.howItWorksCheckInHint')}
           />
           <TouchableOpacity
@@ -73,7 +92,7 @@ export default function HowItWorksScreen() {
         accessibilityRole="summary"
         accessibilityLabel={t('onboardingA11y.howItWorksStepsGroup')}
       >
-        {STEPS.map((step, index) => {
+        {SETUP_STEPS.map((step, index) => {
           const Icon = step.icon;
           return (
             <View
@@ -83,8 +102,8 @@ export default function HowItWorksScreen() {
               accessibilityRole="text"
               accessibilityLabel={t('onboardingA11y.flowStep', {
                 step: index + 1,
-                title: t(step.titleKey),
-                body: t(step.bodyKey),
+                title: t(step.titleKey as TranslationKey),
+                body: t(step.bodyKey as TranslationKey),
               })}
             >
               <View style={styles.stepBadge}>
@@ -93,9 +112,9 @@ export default function HowItWorksScreen() {
               <View style={styles.stepBody}>
                 <View style={styles.stepTitleRow}>
                   <Icon size={18} color={THEME.colors.gradient.blue} />
-                  <Text style={styles.stepTitle}>{t(step.titleKey)}</Text>
+                  <Text style={styles.stepTitle}>{t(step.titleKey as TranslationKey)}</Text>
                 </View>
-                <Text style={styles.stepDesc}>{t(step.bodyKey)}</Text>
+                <Text style={styles.stepDesc}>{t(step.bodyKey as TranslationKey)}</Text>
               </View>
             </View>
           );
@@ -103,11 +122,11 @@ export default function HowItWorksScreen() {
       </View>
 
       <OnboardingHighlightCard
-        title={t('onboarding.howItWorks.adaptTitle')}
-        body={t('onboarding.howItWorks.adaptBody')}
+        title={t('onboarding.setupFlow.dailyTitle')}
+        body={t('onboarding.setupFlow.dailyBody')}
       />
 
-      <OnboardingProgressDots total={3} activeIndex={2} style={styles.dotContainer} />
+      <OnboardingProgressDots total={4} activeIndex={3} style={styles.dotContainer} />
     </OnboardingScreenShell>
   );
 }

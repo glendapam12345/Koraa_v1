@@ -13,6 +13,9 @@ import {
   getTipsForCategory,
   type ScoredTip,
 } from '@/lib/tipsPersonalization';
+import { applyTipHighlights } from '@/lib/ai/applyTipHighlights';
+import { useAuth } from '@/contexts/AuthContext';
+import { useKoraaTipHighlights } from '@/hooks/useKoraaTipHighlights';
 import { TipDetailExpanded, TipGridCard } from '@/components/tips/TipGridCard';
 import { executeTipAction, getTipActionLabel } from '@/lib/tipActions';
 import { openPaywall } from '@/lib/paywallNavigation';
@@ -49,6 +52,7 @@ function parseCategory(raw: string | string[] | undefined): TipCategoryId | null
 export default function TipsCategoryScreen() {
   const insets = useSafeAreaInsets();
   const { t, locale } = useI18n();
+  const { user } = useAuth();
   const { isSubscribed } = useSubscription();
   const { category: catParam, emotion, energy } = useLocalSearchParams<{
     category?: string;
@@ -65,10 +69,24 @@ export default function TipsCategoryScreen() {
     [emotion, energy],
   );
 
-  const allTips = useMemo(
-    () => (category ? getTipsForCategory(category, ctx, locale) : []),
-    [category, ctx, locale],
-  );
+  const { tipIds: highlightTipIds, tipLead: aiTipLead } = useKoraaTipHighlights({
+    userId: user?.id,
+    emotion: ctx.emotion,
+    energyLevel: ctx.energyLevel,
+    locale,
+  });
+
+  const categoryHighlightIds = useMemo(() => {
+    if (!category) return [];
+    const base = getTipsForCategory(category, ctx, locale);
+    return highlightTipIds.filter((id) => base.some((tip) => tip.id === id));
+  }, [category, ctx, locale, highlightTipIds]);
+
+  const allTips = useMemo(() => {
+    if (!category) return [];
+    const base = getTipsForCategory(category, ctx, locale);
+    return applyTipHighlights(base, categoryHighlightIds);
+  }, [category, ctx, locale, categoryHighlightIds]);
 
   const tips = useMemo(
     () => (isSubscribed ? allTips : allTips.slice(0, FREE_TIPS_LIMIT)),
@@ -137,7 +155,10 @@ export default function TipsCategoryScreen() {
     );
   }
 
-  const lead = getCategoryLead(category, ctx, locale);
+  const lead =
+    categoryHighlightIds.length > 0 && aiTipLead
+      ? aiTipLead
+      : getCategoryLead(category, ctx, locale);
   const showMoreToggle = gridTips.length > 0;
   const catalogTotal = getCatalogCountByCategory(locale)[category];
   const lockedCount = getLockedTipsInCategory(category, locale, isSubscribed);

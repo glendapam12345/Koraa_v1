@@ -43,6 +43,17 @@ export const EMPTY_USER_LIFE_AREAS: UserLifeAreasConfig = {
   customExamples: {},
 };
 
+/** True when the user has customized areas beyond the default empty catalog. */
+export function hasPersonalizedLifeAreasConfig(config: UserLifeAreasConfig): boolean {
+  if (config.custom.length > 0) return true;
+  if (config.hiddenAreaRefs && config.hiddenAreaRefs.length > 0) return true;
+  if (config.columnOrder && config.columnOrder.length > 0) return true;
+  if (Object.keys(config.labels).length > 0) return true;
+  if (config.examples && Object.keys(config.examples).length > 0) return true;
+  if (config.customExamples && Object.keys(config.customExamples).length > 0) return true;
+  return false;
+}
+
 export type ResolvedLifeArea = {
   ref: LifeAreaRef;
   name: string;

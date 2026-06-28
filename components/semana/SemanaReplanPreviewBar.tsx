@@ -7,6 +7,7 @@ import { CalmCard } from '@/components/ui/calm/CalmCard';
 type SemanaReplanPreviewBarProps = {
   headline?: string | null;
   subline?: string | null;
+  usedAi?: boolean;
   loading?: boolean;
   applying?: boolean;
   onAccept: () => void;
@@ -16,6 +17,7 @@ type SemanaReplanPreviewBarProps = {
 export function SemanaReplanPreviewBar({
   headline,
   subline,
+  usedAi = false,
   loading = false,
   applying = false,
   onAccept,
@@ -26,7 +28,14 @@ export function SemanaReplanPreviewBar({
   return (
     <View style={styles.wrap}>
       <CalmCard style={styles.card}>
-        <Text style={styles.eyebrow}>{t('semana.replanEyebrow')}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.eyebrow}>{t('semana.replanEyebrow')}</Text>
+          {usedAi ? (
+            <View style={styles.aiPill}>
+              <Text style={styles.aiPillText}>{t('semana.weeklyBriefAiBadge')}</Text>
+            </View>
+          ) : null}
+        </View>
         <Text style={styles.title}>{headline ?? t('semana.replanDefaultHeadline')}</Text>
         {subline ? <Text style={styles.subline}>{subline}</Text> : null}
         <Text style={styles.hint}>{t('semana.replanDragHint')}</Text>
@@ -57,6 +66,26 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.xs,
     backgroundColor: THEME.colors.calm.mist,
     borderColor: THEME.colors.calm.lavender,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: THEME.spacing.xs,
+  },
+  aiPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.calm.lavender,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.lavenderDeep,
+  },
+  aiPillText: {
+    ...THEME.typography.small,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 16,
   },
   eyebrow: {
     ...THEME.typography.caption,

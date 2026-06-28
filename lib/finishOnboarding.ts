@@ -7,7 +7,12 @@ import {
 } from '@/lib/lifeAreas/userLifeAreas';
 import { logger } from '@/lib/logger';
 import { markOnboardingCompleted } from '@/lib/onboardingGate';
-import { buildDefaultOnboardingAreaConfig } from '@/lib/review/onboardingAreaSelection';
+import {
+  buildAreaConfigFromOnboardingSelections,
+  buildDefaultOnboardingAreaConfig,
+  type OnboardingAreaSelection,
+} from '@/lib/review/onboardingAreaSelection';
+import { normalizeOnboardingActivities } from '@/lib/onboardingActivities';
 
 export function needsDefaultLifeAreasSeed(config: UserLifeAreasConfig): boolean {
   return !config.columnOrder?.length;
@@ -28,6 +33,63 @@ export async function seedDefaultLifeAreasForUser(userId: string): Promise<boole
     .eq('id', userId);
 
   return !error;
+}
+
+/** Guarda áreas + ejemplos elegidos en onboarding (paso previo al check-in). */
+export async function saveOnboardingLifeAreasForUser(
+  userId: string,
+  selections: OnboardingAreaSelection[],
+): Promise<{ error: Error | null }> {
+  const { data } = await fetchProfilePreferences(userId);
+  const otherPrefs = data?.other_preferences ?? {};
+  const current = parseUserLifeAreasFromPreferences(otherPrefs);
+  const next = buildAreaConfigFromOnboardingSelections(current, selections);
+  const merged = mergeUserLifeAreasIntoPreferences(otherPrefs, next);
+  const { error } = await supabase
+    .from('profiles')
+    .update({ other_preferences: merged })
+    .eq('id', userId);
+
+  if (error) {
+    return { error: new Error(error.message) };
+  }
+  return { error: null };
+}
+
+export async function saveDefaultOnboardingLifeAreasForUser(
+  userId: string,
+): Promise<{ error: Error | null }> {
+  const { data } = await fetchProfilePreferences(userId);
+  const otherPrefs = data?.other_preferences ?? {};
+  const current = parseUserLifeAreasFromPreferences(otherPrefs);
+  const next = buildDefaultOnboardingAreaConfig(current);
+  const merged = mergeUserLifeAreasIntoPreferences(otherPrefs, next);
+  const { error } = await supabase
+    .from('profiles')
+    .update({ other_preferences: merged })
+    .eq('id', userId);
+
+  if (error) {
+    return { error: new Error(error.message) };
+  }
+  return { error: null };
+}
+
+/** Guarda actividades frecuentes elegidas en onboarding. */
+export async function saveOnboardingFavoriteActivitiesForUser(
+  userId: string,
+  activities: string[],
+): Promise<{ error: Error | null }> {
+  const normalized = normalizeOnboardingActivities(activities);
+  const { error } = await supabase
+    .from('profiles')
+    .update({ favorite_activities: normalized })
+    .eq('id', userId);
+
+  if (error) {
+    return { error: new Error(error.message) };
+  }
+  return { error: null };
 }
 
 export async function completeOnboardingForUser(

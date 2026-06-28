@@ -7,13 +7,13 @@ import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingChe
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
 import { Toast } from '@/components/Toast';
 import { Focus } from 'lucide-react-native';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { track } from '@/lib/analytics';
-import { fetchCurrentStreak, isStreakMilestone } from '@/lib/streak';
 import { publishCheckInCelebration } from '@/lib/checkInCelebration';
-import { getLocalDateString } from '@/lib/dateLocal';
 import { completeOnboardingForUser, ONBOARDING_PAYWALL_PARAMS } from '@/lib/finishOnboarding';
+import { saveDailyCheckInAndPrioritize } from '@/lib/checkInService';
+import { getDisplayName } from '@/lib/displayName';
+import { markPrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 
@@ -39,326 +39,132 @@ export default function FocusScreen() {
     setToastType(type);
   };
 
-  const prioritizeTasksBasedOnCheckIn = async (
-    energyLevel: number,
-    emotionValue: string,
-    availableTime: string,
-    focusLevel: string
-  ) => {
-    if (!user) return;
-
-    try {
-      // Importar algoritmo de priorización inteligente
-      const { prioritizeTasksIntelligently } = await import('@/lib/smartPrioritization');
-      
-      // Obtener todas las tareas no completadas con sus subtareas
-      const { data: tasks, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_completed', false)
-        .order('created_at', { ascending: false });
-
-      if (tasksError) {
-        console.error('Error obteniendo tareas:', tasksError);
-        return;
-      }
-
-      if (!tasks || tasks.length === 0) return;
-      const previousPriorityTaskIds = tasks
-        .filter((task: { id: string; is_priority: boolean }) => task.is_priority)
-        .map((task: { id: string }) => task.id);
-
-      // Organizar tareas con subtareas
-      const tasksMap = new Map<string, any>();
-      const mainTasks: any[] = [];
-
-      tasks.forEach((task: any) => {
-        const taskWithSubtasks = {
-          ...task,
-          subtasks: [],
-        };
-        tasksMap.set(task.id, taskWithSubtasks);
-
-        if (!task.parent_task_id) {
-          mainTasks.push(taskWithSubtasks);
-        }
-      });
-
-      // Asignar subtareas a sus padres
-      tasks.forEach((task: any) => {
-        if (task.parent_task_id) {
-          const parent = tasksMap.get(task.parent_task_id);
-          const child = tasksMap.get(task.id);
-          if (parent && child) {
-            parent.subtasks.push(child);
-          }
-        }
-      });
-
-      // Guardar total de tareas antes de priorizar (para validación de valor)
-      // Usar AsyncStorage ya que no tenemos tabla user_metadata en Supabase
-      const totalTasksBefore = mainTasks.length;
-      try {
-        const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-        const today = getLocalDateString();
-        await AsyncStorage.setItem(
-          `prioritization_${user.id}_${today}`,
-          JSON.stringify({
-            totalTasksBefore,
-            date: today,
-          })
-        );
-      } catch (err) {
-        console.log('Error guardando metadata (no crítico):', err);
-      }
-
-      // Usar algoritmo de priorización inteligente
-      const prioritizedTasks = prioritizeTasksIntelligently(
-        mainTasks,
-        {
-          energyLevel,
-          emotion: emotionValue,
-          availableTime,
-          focusLevel,
-        },
-        locale,
-      );
-
-      // Primero, quitar prioridad a todas las tareas
-      const { error: unprioritizeError } = await supabase
-        .from('tasks')
-        .update({ is_priority: false })
-        .eq('user_id', user.id)
-        .eq('is_completed', false);
-
-      if (unprioritizeError) {
-        console.error('Error removiendo prioridad:', unprioritizeError);
-        return;
-      }
-
-      // Luego, priorizar las tareas seleccionadas por el algoritmo
-      if (prioritizedTasks.length > 0) {
-        const taskIds = prioritizedTasks.map(t => t.id);
-        const { error: prioritizeError } = await supabase
-          .from('tasks')
-          .update({ is_priority: true })
-          .in('id', taskIds);
-
-        if (prioritizeError) {
-          console.error('Error priorizando tareas:', prioritizeError);
-          // Rollback al estado previo para no dejar al usuario sin prioridades.
-          if (previousPriorityTaskIds.length > 0) {
-            const { error: rollbackError } = await supabase
-              .from('tasks')
-              .update({ is_priority: true })
-              .in('id', previousPriorityTaskIds);
-            if (rollbackError) {
-              console.error('Error haciendo rollback de prioridades:', rollbackError);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error inesperado en priorización:', error);
-    }
-  };
-
   const handleContinue = async () => {
     if (!selectedFocus || !emotion || !energy || !time || !user) return;
 
-    // Validar que energy sea un número válido
-    const energyLevel = parseInt(energy);
-    if (isNaN(energyLevel) || energyLevel < 1 || energyLevel > 5) {
+    const energyLevel = parseInt(energy, 10);
+    if (Number.isNaN(energyLevel) || energyLevel < 1 || energyLevel > 5) {
       showToast(t('onboarding.focus.invalidEnergy'), 'error');
       return;
     }
 
     setIsSaving(true);
 
-    // Timeout de seguridad: resetear estado después de 10 segundos si algo falla
-    const safetyTimeout = setTimeout(() => {
-      console.warn('Timeout de seguridad: reseteando isSaving');
-      setIsSaving(false);
-    }, 10000);
-
     try {
-      const today = getLocalDateString();
+      const emotionStored = emotion.trim().toLowerCase();
+      const emotionLabel = t(`sentir.emotions.${emotionStored}` as TranslationKey);
 
-      // Guardar check-in
-      // Misma clave que Sentir (agotada, tranquila, …) para priorización y UI en Hoy
-      const emotionStored =
-        emotion && emotion.length > 0 ? emotion.trim().toLowerCase() : '';
-
-      // Intentar guardar en Supabase primero
-      const { error: checkInError } = await supabase
-        .from('daily_check_ins')
-        .upsert({
-          user_id: user.id,
-          date: today,
-          emotion: emotionStored,
-          energy_level: energyLevel,
-          available_time: time,
-          focus_level: selectedFocus,
-        }, { onConflict: 'user_id,date' });
-
-      let checkInSavedOffline = false;
-
-      // Si hay error de red, guardar offline
-      if (checkInError) {
-        const isNetworkError = checkInError.message?.toLowerCase().includes('network') || 
-                              checkInError.message?.toLowerCase().includes('fetch') ||
-                              checkInError.message?.toLowerCase().includes('connection');
-        
-        if (isNetworkError) {
-          // Guardar offline
-          const { saveCheckInOffline } = await import('@/lib/offlineStorage');
-          await saveCheckInOffline({
-            date: today,
-            emotion: emotionStored,
-            energy_level: energyLevel,
-            available_time: time,
-            focus_level: selectedFocus,
-          });
-          checkInSavedOffline = true;
-          showToast(t('onboarding.focus.savedOffline'), 'info');
-        } else {
-          console.error('Error guardando check-in:', checkInError);
-          clearTimeout(safetyTimeout);
-          setIsSaving(false);
-          showToast(t('onboarding.focus.saveCheckInError'), 'error');
-          return;
-        }
-      }
-
-      // Priorizar tareas automáticamente basado en el check-in (no bloquear si falla)
-      prioritizeTasksBasedOnCheckIn(energyLevel, emotion, time, selectedFocus).catch((error) => {
-        console.error('Error en priorización (no crítico):', error);
-        // No bloquear el flujo si la priorización falla
+      const result = await saveDailyCheckInAndPrioritize({
+        userId: user.id,
+        emotion: emotionStored,
+        energyLevel,
+        availableTime: time,
+        focusLevel: selectedFocus,
+        locale,
+        displayName: getDisplayName(user, ''),
+        emotionLabel,
       });
 
-      // Limpiar timeout de seguridad
-      clearTimeout(safetyTimeout);
+      if (!result.success) {
+        showToast(result.errorMessage ?? t('onboarding.focus.saveCheckInError'), 'error');
+        return;
+      }
 
-      // Resetear estado de guardado ANTES de navegar
-      setIsSaving(false);
+      if (result.offline) {
+        showToast(t('onboarding.focus.savedOffline'), 'info');
+      }
 
-      // Pequeño delay para asegurar que la priorización se complete
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Programar notificaciones diarias después del check-in
       try {
         const { scheduleDailyReminder, scheduleRecheckReminder } = await import('@/hooks/useNotifications');
         await scheduleDailyReminder();
         await scheduleRecheckReminder(locale);
-      } catch (err) {
-        console.log('Error programando notificaciones (no crítico):', err);
+      } catch {
+        /* no crítico */
       }
+
+      await markPrioritiesReadyToast();
 
       void track('check_in_completed', {
         source: 'onboarding',
-        offline: checkInSavedOffline,
+        offline: Boolean(result.offline),
       });
 
-      let celebrationAfterSync: { streak: number; milestone: boolean } | null = null;
-      if (!checkInSavedOffline && user) {
-        try {
-          const streak = await fetchCurrentStreak(supabase, user.id);
-          celebrationAfterSync = { streak, milestone: isStreakMilestone(streak) };
-        } catch (e) {
-          console.warn('fetchCurrentStreak tras check-in:', e);
-        }
+      const { error: onboardingError } = await completeOnboardingForUser(user.id, {
+        seedAreas: false,
+      });
+      if (onboardingError) {
+        showToast(t('onboarding.focus.closeOnboardingError'), 'error');
+        return;
       }
 
-      // Cierra onboarding: áreas por defecto + paywall → app (sin paso extra de áreas).
-      try {
-        const { error: onboardingError } = await completeOnboardingForUser(user.id);
-        if (onboardingError) {
-          showToast(t('onboarding.focus.closeOnboardingError'), 'error');
-          return;
-        }
-        router.replace({
-          pathname: '/paywall',
-          params: ONBOARDING_PAYWALL_PARAMS,
-        });
-      } catch (navError) {
-        console.error('Error en navegación:', navError);
-        router.replace('/(tabs)');
-      }
+      router.replace({
+        pathname: '/paywall',
+        params: ONBOARDING_PAYWALL_PARAMS,
+      });
 
-      if (celebrationAfterSync) {
-        const payload = celebrationAfterSync;
-        setTimeout(() => publishCheckInCelebration(payload), 450);
+      if (result.celebration) {
+        setTimeout(() => publishCheckInCelebration(result.celebration!), 450);
       }
-    } catch (error) {
-      console.error('Error:', error);
-      clearTimeout(safetyTimeout);
-      setIsSaving(false);
+    } catch {
       showToast(t('onboarding.focus.genericError'), 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   return (
     <>
-    <OnboardingScreenShell
-      footer={
-        <CalmPrimaryButton
-          label={isSaving ? t('onboarding.focus.saving') : t('onboarding.focus.start')}
-          onPress={handleContinue}
-          disabled={!selectedFocus || isSaving}
-          accessibilityLabel={
-            isSaving ? t('onboarding.focus.saving') : t('onboarding.focus.start')
-          }
-          accessibilityHint={t('onboardingA11y.continueFocusHint')}
-          accessibilityState={{ disabled: !selectedFocus || isSaving, busy: isSaving }}
-        />
-      }
-    >
-      <View style={onboardingTypography.iconContainer}>
-        <View style={onboardingTypography.iconCircle}>
-          <Focus size={32} color={THEME.colors.gradient.pink} />
+      <OnboardingScreenShell
+        footer={
+          <CalmPrimaryButton
+            label={isSaving ? t('onboarding.focus.saving') : t('onboarding.focus.start')}
+            onPress={() => void handleContinue()}
+            disabled={!selectedFocus || isSaving}
+            accessibilityLabel={
+              isSaving ? t('onboarding.focus.saving') : t('onboarding.focus.start')
+            }
+            accessibilityHint={t('onboardingA11y.continueFocusHint')}
+            accessibilityState={{ disabled: !selectedFocus || isSaving, busy: isSaving }}
+          />
+        }
+      >
+        <View style={onboardingTypography.iconContainer}>
+          <View style={onboardingTypography.iconCircle}>
+            <Focus size={32} color={THEME.colors.gradient.pink} />
+          </View>
         </View>
-      </View>
 
-      <OnboardingCheckInProgress step={4} />
-      <Text style={onboardingTypography.title}>{t('onboarding.focus.title')}</Text>
-      <Text style={onboardingTypography.titleAccent}>{t('onboarding.focus.titleAccent')}</Text>
-      <Text style={onboardingTypography.subtitle}>{t('onboarding.focus.subtitle')}</Text>
+        <OnboardingCheckInProgress step={4} />
+        <Text style={onboardingTypography.title}>{t('onboarding.focus.title')}</Text>
+        <Text style={onboardingTypography.titleAccent}>{t('onboarding.focus.titleAccent')}</Text>
+        <Text style={onboardingTypography.subtitle}>{t('onboarding.focus.subtitle')}</Text>
 
-      <View style={styles.optionsContainer} accessibilityRole="radiogroup">
+        <View style={styles.optionsContainer} accessibilityRole="radiogroup">
           {FOCUS_OPTIONS.map((option) => (
             <TouchableOpacity
               key={option.id}
               onPress={() => setSelectedFocus(option.id)}
-              style={[
-                styles.option,
-                selectedFocus === option.id && styles.optionSelected,
-              ]}
+              style={[styles.option, selectedFocus === option.id && styles.optionSelected]}
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel={t('onboardingA11y.selectFocus', { label: t(option.labelKey) })}
               accessibilityHint={t('onboardingA11y.selectOptionHint')}
               accessibilityState={{ selected: selectedFocus === option.id }}
             >
-              <Text style={[
-                styles.optionText,
-                selectedFocus === option.id && styles.optionTextSelected,
-              ]}>
+              <Text
+                style={[styles.optionText, selectedFocus === option.id && styles.optionTextSelected]}
+              >
                 {t(option.labelKey)}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
-    </OnboardingScreenShell>
+      </OnboardingScreenShell>
 
-    {toastMessage && (
-      <Toast
-        message={toastMessage}
-        type={toastType}
-        onHide={() => setToastMessage(null)}
-      />
-    )}
-  </>
+      {toastMessage ? (
+        <Toast message={toastMessage} type={toastType} onHide={() => setToastMessage(null)} />
+      ) : null}
+    </>
   );
 }
 

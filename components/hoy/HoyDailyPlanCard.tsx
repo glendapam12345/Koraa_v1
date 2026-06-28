@@ -16,6 +16,8 @@ type HoyDailyPlanCardProps = {
   prioritiesTotal: number;
   allFocusDone: boolean;
   hasCheckIn?: boolean;
+  planHeadline?: string;
+  planFromAi?: boolean;
   focusedProject?: FocusedProjectInfo | null;
   onClearFocusedProject?: () => void;
   prioritiesSlot?: ReactNode;
@@ -25,6 +27,7 @@ type HoyDailyPlanCardProps = {
   onToggleWaiting?: () => void;
   waitingSlot?: ReactNode;
   footerSlot?: ReactNode;
+  capacitySummarySlot?: ReactNode;
 };
 
 export function HoyDailyPlanCard({
@@ -35,6 +38,8 @@ export function HoyDailyPlanCard({
   prioritiesTotal,
   allFocusDone,
   hasCheckIn = false,
+  planHeadline = '',
+  planFromAi = false,
   focusedProject = null,
   onClearFocusedProject,
   prioritiesSlot,
@@ -44,6 +49,7 @@ export function HoyDailyPlanCard({
   onToggleWaiting,
   waitingSlot,
   footerSlot,
+  capacitySummarySlot,
 }: HoyDailyPlanCardProps) {
   const { t } = useI18n();
 
@@ -71,9 +77,18 @@ export function HoyDailyPlanCard({
     <CalmCard style={styles.card}>
       <View style={styles.headerSoft}>
         <View style={styles.header}>
-          <Text style={styles.title}>{t('hoy.planTitle')}</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>{t('hoy.planTitle')}</Text>
+            {planFromAi ? (
+              <View style={styles.aiPill}>
+                <Text style={styles.aiPillText}>{t('koraaDailyTips.planAiBadge')}</Text>
+              </View>
+            ) : null}
+          </View>
           <Text style={styles.subtitle}>
-            {focusedProject
+            {planHeadline
+              ? planHeadline
+              : focusedProject
               ? t('hoy.planSubtitleWithProject', { name: focusedProject.name })
               : crisisMode
                 ? t('hoy.planSubtitleCare')
@@ -86,6 +101,7 @@ export function HoyDailyPlanCard({
               <Text style={styles.progressText}>{progressLabel}</Text>
             </View>
           ) : null}
+          {capacitySummarySlot}
         </View>
       </View>
 
@@ -149,6 +165,26 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: 6,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  aiPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.calm.lavender,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.lavenderDeep,
+  },
+  aiPillText: {
+    ...THEME.typography.small,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 16,
   },
   title: {
     ...THEME.typography.h3,

@@ -13,7 +13,10 @@ import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { ReorganizeDayProposalSections } from '@/components/hoy/ReorganizeDayProposalSections';
+import { HoyDayCapacityBar } from '@/components/hoy/HoyDayCapacityBar';
 import type { WhatChangedReason, ReorganizeWeekProposal } from '@/lib/lifeAreas/types';
+import type { DayCapacitySnapshot } from '@/lib/hoy/dayCapacity';
+import type { TaskPlanningMeta } from '@/lib/taskPlanningMeta';
 import { getFirstName } from '@/lib/displayName';
 
 const REORGANIZE_REASONS: WhatChangedReason[] = [
@@ -29,6 +32,7 @@ const REASON_EMOJI: Record<WhatChangedReason, string> = {
   new_event: '⭐',
   priorities_changed: '🙂',
   more_energy: '⚡',
+  week_balance: '📅',
 };
 
 type ReorganizeDayFlowProps = {
@@ -39,6 +43,8 @@ type ReorganizeDayFlowProps = {
   proposal: ReorganizeWeekProposal | null;
   buildingPreview: boolean;
   applying: boolean;
+  capacity?: DayCapacitySnapshot | null;
+  planningMeta?: Record<string, TaskPlanningMeta>;
   onSelectReason: (reason: WhatChangedReason) => void;
   onConfirm: () => void;
   onBack: () => void;
@@ -53,6 +59,8 @@ export function ReorganizeDayFlow({
   proposal,
   buildingPreview,
   applying,
+  capacity = null,
+  planningMeta = {},
   onSelectReason,
   onConfirm,
   onBack,
@@ -87,6 +95,9 @@ export function ReorganizeDayFlow({
         >
           {step === 'reason' ? (
             <>
+              {capacity && capacity.stepCount > 0 ? (
+                <HoyDayCapacityBar capacity={capacity} />
+              ) : null}
               <Text style={styles.question}>{t('reorganizeDay.whatChanged')}</Text>
               <View style={styles.reasonGrid}>
                 {REORGANIZE_REASONS.map((reason) => {
@@ -133,7 +144,14 @@ export function ReorganizeDayFlow({
                   {proposal.subline ? (
                     <Text style={styles.proposalSubline}>{proposal.subline}</Text>
                   ) : null}
-                  <ReorganizeDayProposalSections kept={proposal.kept} moved={proposal.moved} />
+                  {capacity && capacity.stepCount > 0 ? (
+                    <HoyDayCapacityBar capacity={capacity} />
+                  ) : null}
+                  <ReorganizeDayProposalSections
+                    kept={proposal.kept}
+                    moved={proposal.moved}
+                    planningMeta={planningMeta}
+                  />
                 </>
               ) : null}
 

@@ -12,6 +12,7 @@ import {
   ChevronRight,
   FolderKanban,
   ListTodo,
+  GripVertical,
   Pencil,
   Plus,
   Trash2,
@@ -29,6 +30,7 @@ import {
   resolveAreasPanelColumnOrder,
   removeAreaFromUserConfig,
   createCustomLifeArea,
+  hasPersonalizedLifeAreasConfig,
   type ResolvedLifeArea,
   type UserLifeAreasConfig,
 } from '@/lib/lifeAreas/userLifeAreas';
@@ -53,6 +55,12 @@ import {
 } from '@/lib/looseTasks';
 import { purgeExpiredLooseCompletedTasks } from '@/lib/purgeExpiredLooseCompletedTasks';
 import { AreasQuickAddBar } from '@/components/projects/AreasQuickAddBar';
+import { AreasPlannerDragBoard } from '@/components/projects/AreasPlannerDragBoard';
+import {
+  buildAreaPlannerColumns,
+  countOrganizableLooseTasks,
+} from '@/lib/projects/buildAreaPlannerColumns';
+import type { LifeArea } from '@/lib/lifeAreas/types';
 import {
   AreasMoveToAreaSheet,
   type AreasMoveTarget,
@@ -162,19 +170,9 @@ function ProjectCard({
             <Text style={[styles.projectName, compact && styles.projectNameCompact]} numberOfLines={compact ? 1 : undefined}>
               {project.name}
             </Text>
-            {compact ? (
-              <TouchableOpacity
-                style={styles.projectCompactAddBtn}
-                onPress={() => onAddTask(project.id)}
-                hitSlop={8}
-                activeOpacity={0.85}
-                accessibilityRole="button"
-                accessibilityLabel={t('areasCompact.addTaskToProject')}
-              >
-                <Plus size={16} color={THEME.colors.calm.lavenderDeep} />
-              </TouchableOpacity>
+            {!compact ? (
+              <ChevronRight size={16} color={THEME.colors.text.tertiary} />
             ) : null}
-            <ChevronRight size={16} color={THEME.colors.text.tertiary} />
           </View>
           {!compact ? (
             <Text style={[styles.projectPercent, { color: project.color }]}>
@@ -228,6 +226,31 @@ function ProjectCard({
           </Text>
         )}
       </TouchableOpacity>
+
+      {compact ? (
+        <View style={styles.projectCompactActions}>
+          <TouchableOpacity
+            style={styles.projectCompactAddBtn}
+            onPress={() => onAddTask(project.id)}
+            hitSlop={8}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={t('areasCompact.addTaskToProject')}
+          >
+            <Plus size={16} color={THEME.colors.calm.lavenderDeep} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.projectCompactOpenBtn}
+            onPress={() => router.push(`/project/${project.id}`)}
+            hitSlop={8}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={t('areasCompact.openProject')}
+          >
+            <ChevronRight size={16} color={THEME.colors.text.tertiary} />
+          </TouchableOpacity>
+        </View>
+      ) : null}
 
       {!compact ? (
         <View style={styles.projectActions}>
@@ -365,9 +388,9 @@ function AreaSection({
   });
 
   return (
-    <View style={[styles.areaShell, { borderLeftColor: theme.accent }]}>
+    <View style={[styles.areaShell, { borderLeftColor: theme.accent, borderColor: theme.border }]}>
       <TouchableOpacity
-        style={styles.areaHeaderMain}
+        style={[styles.areaHeaderMain, { backgroundColor: theme.bg }]}
         onPress={() => setExpanded((v) => !v)}
         activeOpacity={0.85}
         accessibilityRole="button"
@@ -489,6 +512,7 @@ export function AreasCompactPanel({
   const [looseMoveTarget, setLooseMoveTarget] = useState<AreasMoveTarget | null>(null);
   const [editingLooseTask, setEditingLooseTask] = useState<Task | null>(null);
   const [manageMode, setManageMode] = useState(false);
+  const [organizeDragMode, setOrganizeDragMode] = useState(false);
   const [showEmptyAreas, setShowEmptyAreas] = useState(false);
   const [draftConfig, setDraftConfig] = useState<UserLifeAreasConfig | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
@@ -548,16 +572,43 @@ export function AreasCompactPanel({
   const emptyAreaCount = allGroups.length - activeGroups.length;
   const displayGroups = showEmptyAreas ? allGroups : activeGroups;
 
+  const organizableLooseCount = useMemo(
+    () => countOrganizableLooseTasks(allGroups),
+    [allGroups],
+  );
+
+  const plannerColumns = useMemo(
+    () => (organizeDragMode ? buildAreaPlannerColumns(allGroups) : []),
+    [allGroups, organizeDragMode],
+  );
+
+  const plannerAreas = useMemo<LifeArea[]>(
+    () =>
+      allGroups.map((group) => ({
+        id: group.area.ref,
+        name: group.area.name,
+        emoji: group.area.emoji,
+        color: group.area.color,
+      })),
+    [allGroups],
+  );
+
+  const looseTaskById = useMemo(
+    () => new Map(looseTasks.map((task) => [task.id, task] as const)),
+    [looseTasks],
+  );
+
   const manageAreaList = useMemo(() => {
     return resolveAreaColumnOrder(activeConfig).map((ref) =>
       resolveLifeAreaDisplay(ref, activeConfig, getDefaultLabel, getPresetCustomLabel),
     );
   }, [activeConfig, getDefaultLabel, getPresetCustomLabel]);
 
-  const totalOpenTasks = useMemo(
-    () => projects.reduce((sum, p) => sum + p.incompleteCount, 0) + looseCount,
-    [projects, looseCount],
-  );
+  const totalOpenTasks = useMemo(() => {
+    const projectTasks = projects.reduce((sum, project) => sum + project.incompleteCount, 0);
+    const looseOpen = looseTasksLoadFailed ? looseCount : looseTasks.length;
+    return projectTasks + looseOpen;
+  }, [projects, looseCount, looseTasks.length, looseTasksLoadFailed]);
 
   const loadLooseTasks = useCallback(async () => {
     await purgeExpiredLooseCompletedTasks(userId);
@@ -735,7 +786,7 @@ export function AreasCompactPanel({
   useEffect(() => {
     if (!userId) return;
     void loadLooseTasks();
-  }, [userId, loadLooseTasks]);
+  }, [userId, loadLooseTasks, looseCount]);
 
   useEffect(() => {
     void loadNextActions();
@@ -887,6 +938,7 @@ export function AreasCompactPanel({
   };
 
   const startManageMode = useCallback(() => {
+    setOrganizeDragMode(false);
     setDraftConfig(lifeAreasConfig);
     setManageMode(true);
   }, [lifeAreasConfig]);
@@ -937,65 +989,72 @@ export function AreasCompactPanel({
     );
   }
 
-  if (projects.length === 0 && looseCount === 0 && lifeAreasConfig.custom.length === 0) {
+  if (projects.length === 0 && looseCount === 0 && !hasPersonalizedLifeAreasConfig(lifeAreasConfig)) {
     return (
       <View style={styles.empty}>
         <Text style={styles.emptyTitle}>{t('areasCompact.emptyTitle')}</Text>
         <Text style={styles.emptyBody}>{t('areasCompact.emptyBody')}</Text>
         {onGoCapture ? (
-          <TouchableOpacity style={styles.captureCta} onPress={onGoCapture} activeOpacity={0.88}>
-            <Text style={styles.captureCtaText}>{t('vaciar.segmentGoCapture')}</Text>
-          </TouchableOpacity>
-        ) : null}
-        <View style={styles.hoyFooter}>
-          <Text style={styles.hoyFooterHint}>{t('areasCompact.backToHoyHint')}</Text>
           <CalmPrimaryButton
-            label={t('areasCompact.backToHoyCta')}
-            onPress={() => router.push('/(tabs)')}
-            large
-            accessibilityLabel={t('areasCompact.backToHoyA11y')}
+            label={t('vaciar.segmentGoCapture')}
+            onPress={onGoCapture}
+            style={styles.captureCtaBtn}
           />
-        </View>
+        ) : null}
       </View>
     );
   }
 
   return (
     <View style={styles.root}>
-      <View style={styles.chrome}>
-        <View style={styles.chromeText}>
-          <Text style={styles.chromeTitle}>{t('areasCompact.headlineShort')}</Text>
-          <Text style={styles.chromeMeta}>
-            {t('areasCompact.overviewStats', {
-              projects: countLabel(
-                projects.length,
-                'areasCompact.projectOne',
-                'areasCompact.projectMany',
-                t,
-              ),
-              tasks: countLabel(
-                totalOpenTasks,
-                'areasCompact.taskOpenOne',
-                'areasCompact.taskOpenMany',
-                t,
-              ),
-            })}
-          </Text>
+      <CalmCard style={styles.overviewCard}>
+        <View style={styles.chrome}>
+          <View style={styles.chromeText}>
+            <Text style={styles.chromeTitle}>{t('areasCompact.headlineShort')}</Text>
+            <Text style={styles.chromeMeta}>
+              {t('areasCompact.overviewStats', {
+                projects: countLabel(
+                  projects.length,
+                  'areasCompact.projectOne',
+                  'areasCompact.projectMany',
+                  t,
+                ),
+                tasks: countLabel(
+                  totalOpenTasks,
+                  'areasCompact.taskOpenOne',
+                  'areasCompact.taskOpenMany',
+                  t,
+                ),
+              })}
+            </Text>
+          </View>
+          <View style={styles.chromeActions}>
+            {!manageMode && organizableLooseCount > 0 ? (
+              <TouchableOpacity
+                style={[styles.chromeIconBtn, organizeDragMode && styles.chromeIconBtnActive]}
+                onPress={() => setOrganizeDragMode((current) => !current)}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={t('areasCompact.organizeToggle')}
+                accessibilityState={{ selected: organizeDragMode }}
+              >
+                <GripVertical size={16} color={THEME.colors.calm.lavenderDeep} />
+              </TouchableOpacity>
+            ) : null}
+            {!manageMode ? (
+              <TouchableOpacity
+                style={styles.chromeIconBtn}
+                onPress={startManageMode}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={t('areasCompact.manageAreasA11y')}
+              >
+                <Pencil size={16} color={THEME.colors.calm.lavenderDeep} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
         </View>
-        <View style={styles.chromeActions}>
-          {!manageMode ? (
-            <TouchableOpacity
-              style={styles.chromeIconBtn}
-              onPress={startManageMode}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityLabel={t('areasCompact.manageAreasA11y')}
-            >
-              <Pencil size={16} color={THEME.colors.calm.lavenderDeep} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </View>
+      </CalmCard>
 
       <AreasQuickAddBar
         compact
@@ -1008,16 +1067,17 @@ export function AreasCompactPanel({
       />
 
       {looseTasksLoadFailed ? (
-        <TouchableOpacity
-          style={styles.loadErrorBanner}
-          onPress={() => void loadLooseTasks()}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel={t('areasCompact.looseTasksRetryA11y')}
-        >
-          <Text style={styles.loadErrorText}>{t('areasCompact.looseTasksLoadFailed')}</Text>
-          <Text style={styles.loadErrorRetry}>{t('errors.refreshFailed')}</Text>
-        </TouchableOpacity>
+        <CalmCard style={styles.loadErrorBanner}>
+          <TouchableOpacity
+            onPress={() => void loadLooseTasks()}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={t('areasCompact.looseTasksRetryA11y')}
+          >
+            <Text style={styles.loadErrorText}>{t('areasCompact.looseTasksLoadFailed')}</Text>
+            <Text style={styles.loadErrorRetry}>{t('errors.refreshFailed')}</Text>
+          </TouchableOpacity>
+        </CalmCard>
       ) : null}
 
       {manageMode ? (
@@ -1062,7 +1122,7 @@ export function AreasCompactPanel({
         </CalmCard>
       ) : (
         <>
-          {allGroups.length > 0 && emptyAreaCount > 0 ? (
+          {allGroups.length > 0 && emptyAreaCount > 0 && !organizeDragMode ? (
             <TouchableOpacity
               style={styles.emptyAreasToggle}
               onPress={() => setShowEmptyAreas((current) => !current)}
@@ -1082,38 +1142,55 @@ export function AreasCompactPanel({
             </TouchableOpacity>
           ) : null}
 
-          {displayGroups.map((group) => (
-            <AreaSection
-              key={group.area.ref}
-              area={group.area}
-              areaIndex={group.areaIndex}
-              projects={group.projects}
-              looseTasks={group.looseTasks}
-              nextActions={nextActions}
-              locale={locale}
-              defaultExpanded={group.projects.length > 0 || group.looseTasks.length > 0}
-              onAddTask={onAddTask}
-              onCreateProject={onCreateProject}
-              onDeleteProject={handleDeleteProject}
-              onEditLooseTask={handleEditLooseTask}
-              onDeleteLooseTask={handleDeleteLooseTask}
-              onMoveLooseTask={handleRequestMoveLooseTask}
-            />
-          ))}
+          {organizeDragMode ? (
+            <CalmCard style={styles.organizeCard}>
+              <Text style={styles.organizeTitle}>{t('areasCompact.organizeDragTitle')}</Text>
+              <Text style={styles.organizeHint}>{t('areasCompact.organizeDragHint')}</Text>
+              <AreasPlannerDragBoard
+                columns={plannerColumns}
+                areas={plannerAreas}
+                onMoveTask={(taskId, _sourceColumnId, targetColumnId) =>
+                  handleMoveLooseTask(taskId, targetColumnId as LifeAreaRef)
+                }
+                onRequestMoveSheet={(taskId) => {
+                  const task = looseTaskById.get(taskId);
+                  if (task) handleRequestMoveLooseTask(task);
+                }}
+                onPressTask={(taskId) => {
+                  const task = looseTaskById.get(taskId);
+                  if (task) handleEditLooseTask(task);
+                }}
+                onDeleteTask={(taskId) => {
+                  const task = looseTaskById.get(taskId);
+                  if (task) handleDeleteLooseTask(task);
+                }}
+                emptyColumnHint={t('areasCompact.looseDragDropHere')}
+                moveA11yLabel={(title) => t('areasCompact.moveTaskA11y', { task: title })}
+                deleteA11yLabel={(title) => t('looseTasks.deleteTaskA11y', { task: title })}
+              />
+            </CalmCard>
+          ) : (
+            displayGroups.map((group) => (
+              <AreaSection
+                key={group.area.ref}
+                area={group.area}
+                areaIndex={group.areaIndex}
+                projects={group.projects}
+                looseTasks={group.looseTasks}
+                nextActions={nextActions}
+                locale={locale}
+                defaultExpanded={group.projects.length > 0 || group.looseTasks.length > 0}
+                onAddTask={onAddTask}
+                onCreateProject={onCreateProject}
+                onDeleteProject={handleDeleteProject}
+                onEditLooseTask={handleEditLooseTask}
+                onDeleteLooseTask={handleDeleteLooseTask}
+                onMoveLooseTask={handleRequestMoveLooseTask}
+              />
+            ))
+          )}
         </>
       )}
-
-      {!manageMode ? (
-        <View style={styles.hoyFooter}>
-          <Text style={styles.hoyFooterHint}>{t('areasCompact.backToHoyHint')}</Text>
-          <CalmPrimaryButton
-            label={t('areasCompact.backToHoyCta')}
-            onPress={() => router.push('/(tabs)')}
-            large
-            accessibilityLabel={t('areasCompact.backToHoyA11y')}
-          />
-        </View>
-      ) : null}
 
       <TaskEditModal
         visible={editingLooseTask != null}
@@ -1183,18 +1260,23 @@ export function AreasCompactPanel({
 
 const styles = StyleSheet.create({
   root: {
-    gap: THEME.spacing.sm,
+    gap: THEME.layout.sectionGapCompact,
+  },
+  overviewCard: {
+    gap: THEME.spacing.xs,
+    padding: THEME.spacing.sm,
+    backgroundColor: THEME.colors.calm.mist,
+    borderColor: THEME.colors.calm.lavender,
   },
   chrome: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: THEME.spacing.sm,
-    paddingHorizontal: 2,
   },
   chromeText: {
     flex: 1,
-    gap: 2,
+    gap: 4,
     minWidth: 0,
   },
   chromeTitle: {
@@ -1214,9 +1296,9 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.xs,
   },
   chromeIconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: THEME.sizes.touchTarget,
+    height: THEME.sizes.touchTarget,
+    borderRadius: THEME.borderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: THEME.colors.fill[100],
@@ -1240,16 +1322,13 @@ const styles = StyleSheet.create({
     color: THEME.colors.calm.lavenderDeep,
     lineHeight: 18,
   },
-  topActions: {
-    gap: THEME.spacing.sm,
-  },
   manageAddAreaBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
     flexWrap: 'wrap',
-    gap: 6,
-    paddingVertical: 8,
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.xs,
     paddingHorizontal: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.pill,
     backgroundColor: THEME.colors.fill[100],
@@ -1264,89 +1343,6 @@ const styles = StyleSheet.create({
     color: THEME.colors.calm.lavenderDeep,
     flexShrink: 1,
     lineHeight: 18,
-  },
-  topActionLoose: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: THEME.spacing.sm,
-    padding: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.calm.blush,
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.lavender,
-    minHeight: THEME.sizes.touchTarget,
-  },
-  topActionArea: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.sm,
-    padding: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.fill[100],
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
-    minHeight: THEME.sizes.touchTarget,
-  },
-  topActionIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: THEME.colors.fill[100],
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.lavender,
-  },
-  topActionIconWrapMuted: {
-    backgroundColor: THEME.colors.calm.mist,
-    borderColor: THEME.colors.calm.border,
-  },
-  topActionText: {
-    flex: 1,
-    flexShrink: 1,
-    gap: 2,
-    minWidth: 0,
-  },
-  topActionTitle: {
-    ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-    lineHeight: 22,
-    flexShrink: 1,
-  },
-  topActionMeta: {
-    ...THEME.typography.caption,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.medium,
-    lineHeight: 18,
-    flexShrink: 1,
-  },
-  explainerCard: {
-    gap: THEME.spacing.xs,
-    backgroundColor: THEME.colors.calm.mist,
-    borderColor: THEME.colors.calm.border,
-    padding: THEME.spacing.sm,
-  },
-  headline: {
-    ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-    lineHeight: 24,
-    flexShrink: 1,
-  },
-  explainer: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-    lineHeight: 24,
-    flexShrink: 1,
-  },
-  overviewStats: {
-    ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.calm.lavenderDeep,
-    marginTop: 4,
-    lineHeight: 20,
-    flexShrink: 1,
   },
   centered: {
     paddingVertical: THEME.spacing.xl,
@@ -1368,20 +1364,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-  captureCta: {
-    marginTop: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.lg,
-    paddingVertical: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.calm.lavenderDeep,
-  },
-  captureCtaText: {
-    ...THEME.typography.body,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
+  captureCtaBtn: {
+    marginTop: THEME.spacing.xs,
+    alignSelf: 'stretch',
   },
   areaShell: {
-    borderLeftWidth: 4,
+    borderLeftWidth: 3,
     borderRadius: THEME.borderRadius.rounded,
     backgroundColor: THEME.colors.fill[100],
     borderWidth: 1,
@@ -1396,27 +1384,18 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.sm,
     minHeight: THEME.sizes.touchTarget,
-    backgroundColor: THEME.colors.calm.mist,
   },
   areaColorDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: THEME.spacing.xs,
+    height: THEME.spacing.xs,
+    borderRadius: THEME.spacing.xs / 2,
     flexShrink: 0,
   },
   areaHeaderText: {
     flex: 1,
     flexShrink: 1,
-    gap: 2,
+    gap: 4,
     minWidth: 0,
-  },
-  areaEyebrow: {
-    ...THEME.typography.micro,
-    fontFamily: THEME.fonts.heading.bold,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    lineHeight: 14,
-    flexShrink: 1,
   },
   areaName: {
     ...THEME.typography.body,
@@ -1452,12 +1431,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   projectCardCompact: {
-    borderWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: THEME.borderRadius.standard,
+    borderWidth: 1,
     backgroundColor: THEME.colors.calm.mist,
   },
   projectMain: {
+    flex: 1,
+    minWidth: 0,
     padding: THEME.spacing.sm,
-    gap: 6,
+    gap: THEME.spacing.xs,
   },
   projectTopBlock: {
     gap: 4,
@@ -1465,14 +1449,14 @@ const styles = StyleSheet.create({
   projectTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: THEME.spacing.xs,
   },
   projectDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: THEME.spacing.xs,
+    height: THEME.spacing.xs,
+    borderRadius: THEME.spacing.xs / 2,
     flexShrink: 0,
-    marginTop: 6,
+    marginTop: 4,
   },
   projectName: {
     ...THEME.typography.body,
@@ -1485,15 +1469,30 @@ const styles = StyleSheet.create({
   projectNameCompact: {
     minWidth: 0,
   },
+  projectCompactActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingRight: THEME.spacing.xs,
+    flexShrink: 0,
+  },
   projectCompactAddBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: THEME.borderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: THEME.colors.calm.lavender,
     borderWidth: 1,
     borderColor: THEME.colors.calm.lavenderDeep,
+    flexShrink: 0,
+  },
+  projectCompactOpenBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: THEME.borderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
     flexShrink: 0,
   },
   projectPercent: {
@@ -1505,13 +1504,13 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 6,
-    borderRadius: 3,
+    borderRadius: THEME.borderRadius.pill,
     backgroundColor: THEME.colors.calm.mist,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: THEME.borderRadius.pill,
     minWidth: 0,
   },
   projectProgressDetail: {
@@ -1541,10 +1540,10 @@ const styles = StyleSheet.create({
   projectActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 10,
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.xs,
     paddingHorizontal: THEME.spacing.sm,
-    minHeight: 40,
+    minHeight: THEME.sizes.touchTarget,
   },
   projectActionText: {
     ...THEME.typography.small,
@@ -1569,8 +1568,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingVertical: 4,
-    minHeight: 32,
+    paddingVertical: THEME.spacing.xs,
+    minHeight: 36,
   },
   areaActionLinkText: {
     ...THEME.typography.small,
@@ -1582,52 +1581,6 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     fontFamily: THEME.fonts.heading.medium,
   },
-  areaActions: {
-    gap: THEME.spacing.xs,
-    paddingTop: THEME.spacing.xs,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: THEME.colors.calm.border,
-  },
-  areaActionPrimary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.standard,
-    backgroundColor: THEME.colors.calm.lavender,
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.lavenderDeep,
-    minHeight: 44,
-  },
-  areaActionPrimaryText: {
-    ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.calm.lavenderDeep,
-    textAlign: 'center',
-    flexShrink: 1,
-    lineHeight: 18,
-  },
-  areaActionSecondary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: THEME.spacing.sm,
-    minHeight: 40,
-  },
-  areaActionSecondaryText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    fontFamily: THEME.fonts.heading.medium,
-    textAlign: 'center',
-    flexShrink: 1,
-    lineHeight: 18,
-  },
   looseInAreaBlock: {
     gap: THEME.spacing.xs,
   },
@@ -1637,66 +1590,8 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: THEME.colors.calm.border,
   },
-  looseInAreaLabel: {
-    ...THEME.typography.micro,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    lineHeight: 16,
-    flexShrink: 1,
-  },
   looseInAreaList: {
     gap: THEME.spacing.xs,
-  },
-  looseInAreaMore: {
-    alignSelf: 'flex-start',
-    paddingVertical: 4,
-    minHeight: 32,
-    justifyContent: 'center',
-  },
-  looseInAreaMoreText: {
-    ...THEME.typography.small,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.bold,
-    lineHeight: 18,
-    flexShrink: 1,
-  },
-  manageEntryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.pill,
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
-    backgroundColor: THEME.colors.fill[100],
-    minHeight: 36,
-  },
-  manageEntryText: {
-    ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.calm.lavenderDeep,
-    lineHeight: 18,
-  },
-  areaFilterRow: {
-    gap: 4,
-    paddingHorizontal: 2,
-  },
-  areaFilterSummary: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    lineHeight: 18,
-  },
-  areaFilterToggle: {
-    ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.calm.lavenderDeep,
-    lineHeight: 18,
-    alignSelf: 'flex-start',
-    paddingVertical: 4,
   },
   manageCard: {
     gap: THEME.spacing.sm,
@@ -1721,13 +1616,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: THEME.spacing.sm,
-    paddingVertical: 10,
+    paddingVertical: THEME.spacing.xs,
     paddingHorizontal: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.standard,
     backgroundColor: THEME.colors.fill[100],
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
-    minHeight: 44,
+    minHeight: THEME.sizes.touchTarget,
   },
   manageDot: {
     width: 10,
@@ -1771,12 +1666,10 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
   },
   loadErrorBanner: {
-    padding: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
-    borderWidth: 1,
-    borderColor: THEME.colors.semantic.danger,
     gap: 4,
+    padding: THEME.spacing.sm,
+    backgroundColor: THEME.colors.calm.blush,
+    borderColor: THEME.colors.semantic.danger,
   },
   loadErrorText: {
     ...THEME.typography.small,
@@ -1788,18 +1681,21 @@ const styles = StyleSheet.create({
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
   },
-  hoyFooter: {
-    marginTop: THEME.spacing.sm,
-    paddingTop: THEME.spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: THEME.colors.calm.border,
+  organizeCard: {
     gap: THEME.spacing.sm,
-    alignItems: 'stretch',
+    padding: THEME.spacing.sm,
+    backgroundColor: THEME.colors.calm.mist,
+    borderColor: THEME.colors.calm.lavender,
   },
-  hoyFooterHint: {
+  organizeTitle: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    lineHeight: 22,
+  },
+  organizeHint: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 20,
   },
 });

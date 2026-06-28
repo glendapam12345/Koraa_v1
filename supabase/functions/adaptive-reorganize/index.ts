@@ -20,6 +20,7 @@ type ReorganizeRequest = {
   reason?: string;
   today?: string;
   week_dates?: string[];
+  week_context?: Record<string, unknown>;
   tasks?: ReorganizeTaskInput[];
   projects?: { id: string; name: string }[];
 };
@@ -57,7 +58,7 @@ function jsonResponse(body: unknown, status = 200) {
 function buildSystemPrompt(locale: 'es' | 'en'): string {
   if (locale === 'en') {
     return `You reorganize a gentle wellness task week for Koraa (anti-pressure, not productivity guilt).
-Given: today (YYYY-MM-DD), week_dates (array of ISO dates), reason (what changed), open tasks, optional projects.
+Given: today (YYYY-MM-DD), week_dates (array of ISO dates), reason (what changed), open tasks, optional projects, optional week_context (check-ins, openCount per day, busiest day).
 Return ONLY valid JSON:
 {"headline":"...","subline":"...","moved":[{"taskId":"uuid","title":"...","areaEmoji":"...","areaColor":"#hex","fromLabel":"optional","toLabel":"weekday"}],"kept":[{"taskId":"uuid","title":"...","areaEmoji":"...","areaColor":"#hex"}],"freedHoursLabel":"2h or null","assignments":[{"id":"uuid","scheduled_date":"YYYY-MM-DD"}]}
 Rules:
@@ -66,11 +67,12 @@ Rules:
 - reason less_time/tired: spread load; keep 1-2 priority tasks on today max when tired.
 - reason priorities_changed: pull is_priority tasks toward today; push others later.
 - reason more_energy: pull 1-2 tasks from later days to today if gentle.
+- reason week_balance: use week_context — move steps FROM the fullest day(s) TO lighter days; respect low energy today; keep is_priority near today max 2 if tired.
 - moved/kept must match assignments logically. Warm brief Spanish/English copy in headline/subline.
 - Never use productivity, guilt, or "priorities" pressure language.`;
   }
   return `Reorganizas la semana de tareas suaves en Koraa (sin presión ni culpa).
-Entrada: today (AAAA-MM-DD), week_dates, reason (qué cambió), tareas abiertas, proyectos opcionales.
+Entrada: today (AAAA-MM-DD), week_dates, reason (qué cambió), tareas abiertas, proyectos opcionales, week_context opcional (check-ins, openCount por día, día más lleno).
 Responde SOLO JSON válido:
 {"headline":"...","subline":"...","moved":[{"taskId":"uuid","title":"...","areaEmoji":"...","areaColor":"#hex","fromLabel":"opcional","toLabel":"día"}],"kept":[{"taskId":"uuid","title":"...","areaEmoji":"...","areaColor":"#hex"}],"freedHoursLabel":"2h o null","assignments":[{"id":"uuid","scheduled_date":"AAAA-MM-DD"}]}
 Reglas:
@@ -79,6 +81,7 @@ Reglas:
 - less_time/tired: reparte carga; si tired, máx 1-2 prioridades hoy.
 - priorities_changed: acerca is_priority a hoy; empuja el resto.
 - more_energy: trae 1-2 tareas de días posteriores a hoy si es suave.
+- week_balance: usa week_context — mueve pasos DESDE el día más lleno HACIA días livianos; respeta poca energía hoy; is_priority cerca de hoy (máx 2 si tired).
 - moved/kept coherentes con assignments. Tono cálido en headline/subline.
 - Sin lenguaje de productividad ni culpa.`;
 }
@@ -93,6 +96,7 @@ async function callOpenAI(
     reason: payload.reason ?? 'less_time',
     today: payload.today ?? '',
     week_dates: payload.week_dates ?? [],
+    week_context: payload.week_context ?? null,
     tasks: payload.tasks ?? [],
     projects: payload.projects ?? [],
   });

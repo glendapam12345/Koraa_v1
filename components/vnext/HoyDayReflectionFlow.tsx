@@ -2,6 +2,8 @@ import { View, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { ReorganizeDayFlow } from '@/components/hoy/ReorganizeDayFlow';
 import type { WhatChangedReason, ReorganizeWeekProposal } from '@/lib/lifeAreas/types';
+import type { DayCapacitySnapshot } from '@/lib/hoy/dayCapacity';
+import type { TaskPlanningMeta } from '@/lib/taskPlanningMeta';
 
 type HoyDayReflectionFlowProps = {
   flowOpen: boolean;
@@ -11,6 +13,8 @@ type HoyDayReflectionFlowProps = {
   previewProposal: ReorganizeWeekProposal | null;
   buildingPreview: boolean;
   applying: boolean;
+  capacity?: DayCapacitySnapshot | null;
+  planningMeta?: Record<string, TaskPlanningMeta>;
   onClose: () => void;
   onSelectReason: (reason: WhatChangedReason) => void;
   onBackToReason: () => void;
@@ -25,6 +29,8 @@ export function HoyDayReflectionFlow({
   previewProposal,
   buildingPreview,
   applying,
+  capacity = null,
+  planningMeta = {},
   onClose,
   onSelectReason,
   onBackToReason,
@@ -40,6 +46,8 @@ export function HoyDayReflectionFlow({
         proposal={previewProposal}
         buildingPreview={buildingPreview}
         applying={applying}
+        capacity={capacity}
+        planningMeta={planningMeta}
         onSelectReason={onSelectReason}
         onConfirm={onConfirm}
         onBack={onBackToReason}

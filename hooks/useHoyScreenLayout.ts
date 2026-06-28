@@ -5,8 +5,8 @@ import { useFocusEffect } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
 import {
   resolveHoyLiteLayout,
-  optOutHoyLiteLayout,
   isHoyLiteCompactOptedOut,
+  optOutHoyLiteLayout,
 } from '@/lib/hoyLiteDay';
 import { consumePrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
 import { consumeCheckInReplanSummary } from '@/lib/checkInReplanSummary';
@@ -37,6 +37,7 @@ export function useHoyScreenLayout({
   const [hoyLiteCompactOptedOut, setHoyLiteCompactOptedOut] = useState(false);
   const [showSecondaryModules, setShowSecondaryModules] = useState(false);
   const [checkInReplanCoachLine, setCheckInReplanCoachLine] = useState<string | null>(null);
+
   const handleOptOutHoyLite = useCallback(async () => {
     if (!userId) return;
     await optOutHoyLiteLayout(userId);
@@ -116,6 +117,7 @@ export function useHoyScreenLayout({
 
   const hoyPreFlowActive = !loading && !todayMood;
   const hoyRestOfDayExpanded = Boolean(todayMood) && showSecondaryModules;
+  const hoyLiteCompactLayout = hoyLiteLayout === true && !hoyLiteCompactOptedOut;
 
   const handleShowMoreForHoy = useCallback(() => {
     setShowSecondaryModules(true);
@@ -133,17 +135,13 @@ export function useHoyScreenLayout({
     );
   }, [userId, showSecondaryModules, hoyPreFlowActive]);
 
-  const hoyLiteCompactLayout = Boolean(hoyLiteLayout && !hoyLiteCompactOptedOut);
-
   return {
-    hoyLiteLayout,
     hoyLiteCompactLayout,
-    hoyPreFlowActive,
     hoyRestOfDayExpanded,
     showSecondaryModules,
     setShowSecondaryModules,
-    handleOptOutHoyLite,
     handleShowMoreForHoy,
+    handleOptOutHoyLite,
     checkInReplanCoachLine,
   };
 }

@@ -955,63 +955,6 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.sm,
     gap: THEME.spacing.sm,
   },
-  optionalHintCard: {
-    ...THEME.surfaces.elevated,
-    borderColor: THEME.colors.tint.blue.border,
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.lg,
-  },
-  optionalHintHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: THEME.spacing.sm,
-  },
-  optionalHintTitle: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-    flex: 1,
-  },
-  optionalHintBodyWrap: {
-    marginTop: THEME.spacing.sm,
-  },
-  optionalHintBody: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    lineHeight: 20,
-  },
-  optionalHintBodySecond: {
-    marginTop: THEME.spacing.xs,
-  },
-  optionalHintDismissBtn: {
-    alignSelf: 'flex-end',
-    marginTop: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.xs,
-    paddingHorizontal: THEME.spacing.sm,
-  },
-  optionalHintDismissText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.gradient.blue,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  optionalHintCollapsedWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: THEME.spacing.xs,
-    gap: THEME.spacing.sm,
-  },
-  optionalHintCollapsedLine: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    flex: 1,
-  },
-  optionalHintDismissTextCompact: {
-    ...THEME.typography.caption,
-    color: THEME.colors.gradient.blue,
-    fontFamily: THEME.fonts.heading.bold,
-  },
   sectionLabel: {
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,

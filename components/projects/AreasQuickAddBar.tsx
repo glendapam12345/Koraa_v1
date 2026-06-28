@@ -91,7 +91,7 @@ export function AreasQuickAddBar({
 
   if (compact) {
     return (
-      <View style={styles.compactRow}>
+      <View style={styles.compactShell}>
         <TextInput
           style={styles.compactInput}
           value={content}
@@ -105,7 +105,7 @@ export function AreasQuickAddBar({
           onSubmitEditing={submitDraft}
         />
         <TouchableOpacity
-          style={styles.compactSaveBtn}
+          style={[styles.compactSaveBtn, (!content.trim() || saving) && styles.compactSaveBtnDisabled]}
           onPress={submitDraft}
           disabled={!content.trim() || saving}
           activeOpacity={0.85}
@@ -153,6 +153,13 @@ export function AreasQuickAddBar({
 }
 
 const styles = StyleSheet.create({
+  compactShell: {
+    ...THEME.surfaces.panel,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    padding: THEME.spacing.xs,
+  },
   compactSaveBtn: {
     width: THEME.sizes.touchTarget,
     height: THEME.sizes.touchTarget,
@@ -163,10 +170,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: THEME.colors.calm.lavenderDeep,
   },
-  compactRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.xs,
+  compactSaveBtnDisabled: {
+    opacity: 0.45,
   },
   compactInput: {
     ...THEME.typography.body,

@@ -3,21 +3,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
-const VACIAR_OPTIONAL_HINT_DISMISSED_KEY = (userId: string) =>
-  `koraa_vaciar_optional_hint_dismissed_v1_${userId}`;
-
-const VACIAR_FLOW_CARD_DISMISSED_KEY = (userId: string) =>
-  `koraa_vaciar_flow_card_dismissed_v1_${userId}`;
-
 const VACIAR_DICTATE_HINT_DISMISSED_KEY = (userId: string) =>
   `koraa_vaciar_dictate_hint_dismissed_v1_${userId}`;
 
 export function useVaciarHints(userId: string | undefined) {
   const [hasTasks, setHasTasks] = useState<boolean | null>(null);
-  const [optionalHintDismissed, setOptionalHintDismissed] = useState(false);
-  const [flowCardDismissed, setFlowCardDismissed] = useState(false);
   const [dictateHintDismissed, setDictateHintDismissed] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(false);
 
   const loadHintState = useCallback(async () => {
     try {
@@ -35,56 +26,19 @@ export function useVaciarHints(userId: string | undefined) {
         return;
       }
 
-      const userHasTasks = (data?.length || 0) > 0;
-      setHasTasks(userHasTasks);
+      setHasTasks((data?.length || 0) > 0);
 
-      let hintDismissedInStorage = false;
       try {
-        hintDismissedInStorage =
-          (await AsyncStorage.getItem(VACIAR_OPTIONAL_HINT_DISMISSED_KEY(user.id))) === '1';
-      } catch {
-        hintDismissedInStorage = false;
-      }
-      setOptionalHintDismissed(hintDismissedInStorage);
-
-      let flowCardDismissedInStorage = false;
-      try {
-        flowCardDismissedInStorage =
-          (await AsyncStorage.getItem(VACIAR_FLOW_CARD_DISMISSED_KEY(user.id))) === '1';
-      } catch {
-        flowCardDismissedInStorage = false;
-      }
-      setFlowCardDismissed(flowCardDismissedInStorage);
-
-      let dictateHintDismissedInStorage = false;
-      try {
-        dictateHintDismissedInStorage =
+        const dismissed =
           (await AsyncStorage.getItem(VACIAR_DICTATE_HINT_DISMISSED_KEY(user.id))) === '1';
+        setDictateHintDismissed(dismissed);
       } catch {
-        dictateHintDismissedInStorage = false;
-      }
-      setDictateHintDismissed(dictateHintDismissedInStorage);
-
-      if (!userHasTasks) {
-        setShowTooltip(hintDismissedInStorage);
-      } else {
-        setShowTooltip(false);
+        setDictateHintDismissed(false);
       }
     } catch (error) {
       logger.error('Error inesperado:', error);
     }
   }, []);
-
-  const dismissFlowCard = useCallback(async () => {
-    if (userId) {
-      try {
-        await AsyncStorage.setItem(VACIAR_FLOW_CARD_DISMISSED_KEY(userId), '1');
-      } catch {
-        /* no bloquear UI */
-      }
-    }
-    setFlowCardDismissed(true);
-  }, [userId]);
 
   const dismissDictateHint = useCallback(async () => {
     if (userId) {
@@ -97,28 +51,11 @@ export function useVaciarHints(userId: string | undefined) {
     setDictateHintDismissed(true);
   }, [userId]);
 
-  const dismissOptionalHint = useCallback(async () => {
-    if (userId) {
-      try {
-        await AsyncStorage.setItem(VACIAR_OPTIONAL_HINT_DISMISSED_KEY(userId), '1');
-      } catch {
-        /* no bloquear UI */
-      }
-    }
-    setOptionalHintDismissed(true);
-  }, [userId]);
-
   return {
     hasTasks,
     setHasTasks,
-    optionalHintDismissed,
-    flowCardDismissed,
     dictateHintDismissed,
-    showTooltip,
-    setShowTooltip,
     loadHintState,
-    dismissFlowCard,
     dismissDictateHint,
-    dismissOptionalHint,
   };
 }

@@ -7,9 +7,13 @@ import { TimeOfDayChip } from '@/components/hoy/TimeOfDayChip';
 
 type HoyCompanionHeaderProps = {
   displayName: string;
+  hasCheckInToday?: boolean;
 };
 
-export function HoyCompanionHeader({ displayName }: HoyCompanionHeaderProps) {
+export function HoyCompanionHeader({
+  displayName,
+  hasCheckInToday = true,
+}: HoyCompanionHeaderProps) {
   const { t } = useI18n();
   const { period, lateNight, greeting, timeChipLabel, greetingSubline } = useKoraaGreeting();
   const firstName = getFirstName(displayName);
@@ -18,9 +22,11 @@ export function HoyCompanionHeader({ displayName }: HoyCompanionHeaderProps) {
     ? formatNightReturnGreeting(t, firstName, period)
     : formatGreetingWithName(t, greeting, firstName);
 
-  const subline = lateNight
-    ? t('hoy.nightReturnSubline', { name: firstName })
-    : greetingSubline;
+  const subline = !hasCheckInToday
+    ? t('hoy.startHereCompanionSub')
+    : lateNight
+      ? t('hoy.nightReturnSubline', { name: firstName })
+      : greetingSubline;
 
   return (
     <View style={styles.wrap}>

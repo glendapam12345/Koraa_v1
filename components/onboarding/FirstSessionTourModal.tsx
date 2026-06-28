@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { View, Text, Modal, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -6,8 +6,8 @@ import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { markFirstSessionTourSeen } from '@/lib/firstSessionTour';
 import { markFirstFlowLandingComplete } from '@/lib/firstSessionFlow';
-import { Home, ListTodo, Calendar, Sparkles, User } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
+import { KORAA_GUIDE_STEPS } from '@/lib/koraaGuideSteps';
 
 type Props = {
   visible: boolean;
@@ -15,21 +15,12 @@ type Props = {
   onFinished: () => void;
 };
 
+/** Tour corto de primera sesión: 3 pasos del flujo core (Tareas → check-in → Hoy). */
 export function FirstSessionTourModal({ visible, userId, onFinished }: Props) {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
   const [stepIndex, setStepIndex] = useState(0);
-
-  const steps = useMemo(
-    () => [
-      { tabLabel: t('tabs.today'), title: t('tour.step1Title'), body: t('tour.step1Body'), Icon: Home },
-      { tabLabel: t('tabs.tasks'), title: t('tour.step2Title'), body: t('tour.step2Body'), Icon: ListTodo },
-      { tabLabel: t('tabs.week'), title: t('tour.step3Title'), body: t('tour.step3Body'), Icon: Calendar },
-      { tabLabel: t('tabs.paraMi'), title: t('tour.step4Title'), body: t('tour.step4Body'), Icon: Sparkles },
-      { tabLabel: t('tabs.profile'), title: t('tour.step5Title'), body: t('tour.step5Body'), Icon: User },
-    ],
-    [t],
-  );
+  const steps = KORAA_GUIDE_STEPS;
 
   useEffect(() => {
     if (visible) setStepIndex(0);
@@ -58,9 +49,9 @@ export function FirstSessionTourModal({ visible, userId, onFinished }: Props) {
           <View style={styles.iconWrap}>
             <Icon size={40} color={THEME.colors.gradient.blue} strokeWidth={2} />
           </View>
-          <Text style={styles.tabPill}>{step.tabLabel}</Text>
-          <Text style={styles.title}>{step.title}</Text>
-          <Text style={styles.body}>{step.body}</Text>
+          <Text style={styles.tabPill}>{t(step.labelKey)}</Text>
+          <Text style={styles.title}>{t(step.titleKey)}</Text>
+          <Text style={styles.body}>{t(step.bodyKey)}</Text>
           <View style={styles.dots}>
             {steps.map((_, i) => (
               <View key={i} style={[styles.dot, i === stepIndex && styles.dotActive]} />
@@ -96,12 +87,6 @@ const styles = StyleSheet.create({
     paddingTop: THEME.spacing.xl,
   },
   iconWrap: { alignSelf: 'center', marginBottom: THEME.spacing.md },
-  stepLabel: {
-    ...THEME.typography.meta,
-    color: THEME.colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: THEME.spacing.xs,
-  },
   tabPill: {
     ...THEME.typography.caption,
     color: THEME.colors.calm.lavenderDeep,

@@ -14,8 +14,9 @@ import { HoyGentleRhythmStrip } from '@/components/hoy/HoyGentleRhythmStrip';
 import { HoyMoveTasksLink } from '@/components/hoy/HoyMoveTasksLink';
 import { HoyLitePeekCard } from '@/components/hoy/HoyLitePeekCard';
 import { HoyPlanAreaBlock } from '@/components/hoy/HoyPlanAreaBlock';
+import { HoyDayCapacitySummary } from '@/components/hoy/HoyDayCapacitySummary';
+import { HoyAfternoonNudge } from '@/components/hoy/HoyAfternoonNudge';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
-import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { getEmotionEmoji } from '@/lib/emotionEmoji';
 import { isLateNight } from '@/lib/timeOfDayContext';
 import { CARE_MODE_MAX_FOCUS_STEPS, getCareModeTaskCounts } from '@/lib/hoyCareMode';
@@ -25,6 +26,7 @@ import type { AppLocale, TranslationKey } from '@/lib/i18n';
 import type { FocusedProjectInfo } from '@/hooks/useFocusedProject';
 import type { ProjectProgressMap } from '@/hooks/useHoyFocusTaskMeta';
 import type { TaskPlanningMeta } from '@/lib/taskPlanningMeta';
+import type { DayCapacitySnapshot } from '@/lib/hoy/dayCapacity';
 import {
   buildFocusTaskDeadline,
   formatFocusTaskDuration,
@@ -46,6 +48,8 @@ type HoyFocusPanelProps = {
   time?: string;
   focusLevel?: string;
   coachSuggestion: string;
+  aiPlanHeadline?: string;
+  focusFromAi?: boolean;
   priorityStats: FocusProgressStats;
   focusTasks: Task[];
   totalPending: number;
@@ -72,13 +76,15 @@ type HoyFocusPanelProps = {
   waitingTasksSlot?: ReactNode;
   /** Tareas fuera del plan principal de hoy. */
   waitingCount?: number;
-  /** Paso 3 opcional: reorganizar semana cuando cambió el día. */
-  reorganizeSlot?: ReactNode;
   onCareModeDismiss?: () => void;
   onCareModeLearnMore?: () => void;
   focusedProject?: FocusedProjectInfo | null;
   onClearFocusedProject?: () => void;
   lifeAreasConfig?: UserLifeAreasConfig;
+  dayCapacity?: DayCapacitySnapshot | null;
+  onAdjustDay?: () => void;
+  showAfternoonNudge?: boolean;
+  hideRhythmStrip?: boolean;
 };
 
 export function HoyFocusPanel({
@@ -90,6 +96,8 @@ export function HoyFocusPanel({
   focusLevel = '',
   todayMood,
   coachSuggestion,
+  aiPlanHeadline = '',
+  focusFromAi = false,
   priorityStats,
   focusTasks,
   totalPending,
@@ -112,12 +120,15 @@ export function HoyFocusPanel({
   crisisMode = false,
   waitingTasksSlot,
   waitingCount,
-  reorganizeSlot,
   onCareModeDismiss,
   onCareModeLearnMore,
   focusedProject = null,
   onClearFocusedProject,
   lifeAreasConfig,
+  dayCapacity = null,
+  onAdjustDay,
+  showAfternoonNudge = false,
+  hideRhythmStrip = false,
 }: HoyFocusPanelProps) {
   const { t } = useI18n();
   const getDefaultAreaLabel = (key: LifeAreaKey) => t(`lifeAreas.${key}` as TranslationKey);
@@ -302,7 +313,7 @@ export function HoyFocusPanel({
       <>
         <HoyMoveTasksLink embedded />
         {addTasksButton}
-        {!allFocusDone ? (
+        {!allFocusDone && !hideRhythmStrip ? (
           <HoyGentleRhythmStrip
             crisisMode={crisisMode}
             energyLevel={energyLevel}
@@ -343,13 +354,6 @@ export function HoyFocusPanel({
             {isLateNight() ? (
               <HoyNightCompanionCard todayMood={todayMood} energyLevel={energyLevel} />
             ) : null}
-            <CalmPrimaryButton
-              label={t('hoy.updateFeel')}
-              onPress={openFeel}
-              variant="soft"
-              accessibilityLabel={t('hoy.currentStateEditA11y')}
-              accessibilityHint={t('hoy.planEnergyChangedA11y')}
-            />
           </View>
         ) : (
           <>
@@ -376,6 +380,8 @@ export function HoyFocusPanel({
           prioritiesTotal={priorityStats.total}
           allFocusDone={allFocusDone}
           hasCheckIn={hasCheckIn}
+          planHeadline={aiPlanHeadline}
+          planFromAi={focusFromAi}
           focusedProject={focusedProject}
           onClearFocusedProject={onClearFocusedProject}
           prioritiesSlot={prioritiesSlot}
@@ -385,6 +391,18 @@ export function HoyFocusPanel({
           onToggleWaiting={toggleWaiting}
           waitingSlot={planWaitingSlot}
           footerSlot={planFooterSlot}
+          capacitySummarySlot={
+            hasCheckIn && dayCapacity && dayCapacity.stepCount > 0 ? (
+              <>
+                <HoyDayCapacitySummary
+                  capacity={dayCapacity}
+                  energyLevel={energyLevel}
+                  onAdjustDay={onAdjustDay}
+                />
+                {showAfternoonNudge ? <HoyAfternoonNudge /> : null}
+              </>
+            ) : null
+          }
         />
       ) : null}
 

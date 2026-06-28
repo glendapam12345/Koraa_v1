@@ -10,12 +10,19 @@ import {
   buildDayReplanPlan,
 } from '@/lib/vnext/executeDayReflectionReplan';
 import type { ReorganizeWeekProposal, WhatChangedReason } from '@/lib/lifeAreas/types';
+import {
+  resolveProactiveReflectionVariant,
+  shouldShowProactiveReflectionCard,
+  type ProactiveReflectionVariant,
+} from '@/lib/hoy/proactivePlanSignals';
 
 type UseHoyDayReflectionOptions = {
   userId?: string;
   hasCheckIn: boolean;
   priorityStats: FocusProgressStats;
   incompleteCount: number;
+  isOverloaded?: boolean;
+  energyLevel?: number;
   onTasksReload: () => void | Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 };
@@ -24,6 +31,9 @@ export function useHoyDayReflection({
   userId,
   hasCheckIn,
   incompleteCount,
+  isOverloaded = false,
+  energyLevel = 0,
+  priorityStats,
   onTasksReload,
   showToast,
 }: UseHoyDayReflectionOptions) {
@@ -65,11 +75,30 @@ export function useHoyDayReflection({
   const shouldShowCard = useMemo(
     () =>
       Boolean(userId) &&
-      hasCheckIn &&
       !checkingReflection &&
-      !reflectedToday &&
-      incompleteCount > 0,
-    [checkingReflection, hasCheckIn, incompleteCount, reflectedToday, userId],
+      shouldShowProactiveReflectionCard({
+        hasCheckIn,
+        reflectedToday,
+        incompleteCount,
+        isOverloaded,
+        energyLevel,
+        priorityStats,
+      }),
+    [
+      checkingReflection,
+      energyLevel,
+      hasCheckIn,
+      incompleteCount,
+      isOverloaded,
+      priorityStats,
+      reflectedToday,
+      userId,
+    ],
+  );
+
+  const reflectionVariant: ProactiveReflectionVariant = useMemo(
+    () => resolveProactiveReflectionVariant(energyLevel, priorityStats),
+    [energyLevel, priorityStats],
   );
 
   const resetFlow = useCallback(() => {
@@ -169,6 +198,7 @@ export function useHoyDayReflection({
 
   return {
     shouldShowCard,
+    reflectionVariant,
     flowOpen,
     step,
     selectedReason,

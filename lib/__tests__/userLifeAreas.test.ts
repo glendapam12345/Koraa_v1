@@ -2,6 +2,7 @@ import {
   createCustomLifeArea,
   EMPTY_USER_LIFE_AREAS,
   groupProjectsByResolvedLifeArea,
+  hasPersonalizedLifeAreasConfig,
   listActiveLifeAreas,
   parseUserLifeAreasFromPreferences,
   resolveAreasPanelColumnOrder,
@@ -82,5 +83,23 @@ describe('userLifeAreas', () => {
     expect(refs).toContain('health');
     expect(refs[refs.length - 1]).toBe('other');
     expect(refs.indexOf('health')).toBeLessThan(refs.indexOf('other'));
+  });
+
+  it('hasPersonalizedLifeAreasConfig is false for empty catalog', () => {
+    expect(hasPersonalizedLifeAreasConfig(EMPTY_USER_LIFE_AREAS)).toBe(false);
+  });
+
+  it('hasPersonalizedLifeAreasConfig is true for custom areas from onboarding', () => {
+    const config = buildDefaultOnboardingAreaConfig(EMPTY_USER_LIFE_AREAS);
+    expect(hasPersonalizedLifeAreasConfig(config)).toBe(true);
+  });
+
+  it('hasPersonalizedLifeAreasConfig is true for renamed built-in labels', () => {
+    expect(
+      hasPersonalizedLifeAreasConfig({
+        ...EMPTY_USER_LIFE_AREAS,
+        labels: { work: 'Mi trabajo' },
+      }),
+    ).toBe(true);
   });
 });
