@@ -3,7 +3,7 @@ import { Platform, type ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
-import { subscribeCheckInCelebration } from '@/lib/checkInCelebration';
+import { subscribeCheckInCelebration, consumeQueuedCheckInCelebration, publishCheckInCelebration } from '@/lib/checkInCelebration';
 import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
 import { subscribeCheckInRefresh } from '@/lib/checkInRefresh';
 import { getDisplayName } from '@/lib/displayName';
@@ -119,6 +119,17 @@ export function useHoyScreenBootstrap({
         await syncAll();
       } catch (error) {
         logger.debug('Sincronización offline:', error);
+      }
+    })();
+
+    void (async () => {
+      try {
+        const queued = await consumeQueuedCheckInCelebration();
+        if (queued) {
+          setTimeout(() => publishCheckInCelebration(queued), 450);
+        }
+      } catch (error) {
+        logger.debug('Error consuming queued celebration:', error);
       }
     })();
 

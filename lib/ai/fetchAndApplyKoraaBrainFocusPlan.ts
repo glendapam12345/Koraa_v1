@@ -7,10 +7,7 @@ import type { AppLocale } from '@/lib/i18n';
 import type { Task } from '@/components/tasks/TaskCard';
 import type { CheckInData } from '@/lib/smartPrioritization';
 
-function isAiEnabled(): boolean {
-  const flag = process.env.EXPO_PUBLIC_HOY_COACH_AI_ENABLED;
-  return flag === 'true' || flag === '1';
-}
+import { isKoraaBrainAiEnabled } from '@/lib/ai/isKoraaBrainEnabled';
 
 export type KoraaBrainFocusPlanInput = {
   locale: AppLocale;
@@ -31,7 +28,7 @@ export async function fetchAndApplyKoraaBrainFocusPlan(
   input: KoraaBrainFocusPlanInput,
   tasks: Task[],
 ): Promise<{ applied: boolean; focusTaskIds: string[]; focusFromAi: boolean }> {
-  if (!isAiEnabled()) {
+  if (!isKoraaBrainAiEnabled()) {
     return { applied: false, focusTaskIds: [], focusFromAi: false };
   }
 

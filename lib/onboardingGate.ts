@@ -62,3 +62,22 @@ export async function markOnboardingCompleted(userId: string): Promise<{ error: 
     return { error: e instanceof Error ? e : new Error('Unknown') };
   }
 }
+
+/**
+ * Marca onboarding solo si aún no estaba completado (evita writes en cada check-in).
+ * Si no se puede leer el perfil, intenta marcar igual para evitar loop de welcome.
+ */
+export async function markOnboardingCompletedIfNeeded(
+  userId: string,
+): Promise<{ error: Error | null; newlyCompleted: boolean }> {
+  const completed = await hasCompletedOnboarding(userId);
+  if (completed === true) {
+    return { error: null, newlyCompleted: false };
+  }
+
+  const result = await markOnboardingCompleted(userId);
+  return {
+    error: result.error,
+    newlyCompleted: !result.error,
+  };
+}

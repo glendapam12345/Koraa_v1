@@ -35,7 +35,8 @@ export async function saveOnboardingCaptureForUser(
   }
 
   const config = parseUserLifeAreasFromPreferences(data?.other_preferences ?? {});
-  const items = buildOnboardingCaptureItems(rawInput, locale, config);
+  const favoriteActivities = data?.favorite_activities ?? [];
+  const items = buildOnboardingCaptureItems(rawInput, locale, config, favoriteActivities);
   const attemptedCount = items.length;
   if (attemptedCount === 0) {
     return { error: null, savedCount: 0, attemptedCount: 0, partialFailure: false };

@@ -9,7 +9,7 @@ import { Toast } from '@/components/Toast';
 import { Focus } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { track } from '@/lib/analytics';
-import { publishCheckInCelebration } from '@/lib/checkInCelebration';
+import { queueCheckInCelebration } from '@/lib/checkInCelebration';
 import { goToOnboardingPaywall } from '@/lib/onboardingNavigation';
 import { saveDailyCheckInAndPrioritize } from '@/lib/checkInService';
 import { getDisplayName } from '@/lib/displayName';
@@ -92,14 +92,14 @@ export default function FocusScreen() {
 
       await markQuickOnboardingGuideSeen();
 
+      if (result.celebration) {
+        await queueCheckInCelebration(result.celebration);
+      }
+
       goToOnboardingPaywall();
 
       if (result.onboardingMarkFailed) {
         showToast(t('onboarding.focus.closeOnboardingError'), 'info');
-      }
-
-      if (result.celebration) {
-        setTimeout(() => publishCheckInCelebration(result.celebration!), 450);
       }
     } catch {
       showToast(t('onboarding.focus.genericError'), 'error');

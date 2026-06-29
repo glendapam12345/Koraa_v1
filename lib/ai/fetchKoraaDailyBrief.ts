@@ -28,10 +28,7 @@ export type FetchKoraaDailyBriefOptions = {
   skipCache?: boolean;
 };
 
-function isAiEnabled(): boolean {
-  const flag = process.env.EXPO_PUBLIC_HOY_COACH_AI_ENABLED;
-  return flag === 'true' || flag === '1';
-}
+import { isKoraaBrainAiEnabled } from '@/lib/ai/isKoraaBrainEnabled';
 
 function tipsContextFromDay(context: KoraaDayContext) {
   return {
@@ -251,7 +248,7 @@ export async function fetchKoraaDailyBrief(
     if (cached) return cached;
   }
 
-  if (!isAiEnabled()) {
+  if (!isKoraaBrainAiEnabled()) {
     await maybeCacheBrief(userId, context, local, taskCandidateIds);
     return local;
   }
@@ -274,12 +271,18 @@ export async function fetchKoraaDailyBrief(
 
     if (error) {
       await logInvokeFailure(error);
+      if (__DEV__) {
+        logger.debug('[koraa-brain] fallback local (invoke error)');
+      }
       await maybeCacheBrief(userId, context, local, taskCandidateIds);
       return local;
     }
 
     const parsed = parseDailyBriefPayload(data, context, tipCandidates, taskCandidates);
     if (!parsed) {
+      if (__DEV__) {
+        logger.debug('[koraa-brain] fallback local (invalid payload)');
+      }
       await maybeCacheBrief(userId, context, local, taskCandidateIds);
       return local;
     }

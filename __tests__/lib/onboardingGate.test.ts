@@ -1,4 +1,9 @@
-import { hasCompletedOnboarding, resolvePostAuthGate, WELCOME_ROUTE } from '@/lib/onboardingGate';
+import {
+  hasCompletedOnboarding,
+  markOnboardingCompletedIfNeeded,
+  resolvePostAuthGate,
+  WELCOME_ROUTE,
+} from '@/lib/onboardingGate';
 import { supabase } from '@/lib/supabase';
 
 jest.mock('@/lib/supabase', () => ({
@@ -62,5 +67,35 @@ describe('hasCompletedOnboarding', () => {
   it('returns null when profile read fails', async () => {
     mockProfileQuery({ data: null, error: { message: 'network' } });
     await expect(hasCompletedOnboarding('uid')).resolves.toBeNull();
+  });
+});
+
+describe('markOnboardingCompletedIfNeeded', () => {
+  beforeEach(() => {
+    fromMock.mockReset();
+  });
+
+  it('skips update when onboarding already completed', async () => {
+    mockProfileQuery({ data: { onboarding_completed: true }, error: null });
+    const result = await markOnboardingCompletedIfNeeded('uid');
+    expect(result).toEqual({ error: null, newlyCompleted: false });
+    expect(fromMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('marks profile when onboarding is pending', async () => {
+    const maybeSingleRead = jest
+      .fn()
+      .mockResolvedValue({ data: { onboarding_completed: false }, error: null });
+    const eqRead = jest.fn().mockReturnValue({ maybeSingle: maybeSingleRead });
+    const selectRead = jest.fn().mockReturnValue({ eq: eqRead });
+
+    const eqUpdate = jest.fn().mockResolvedValue({ error: null });
+    const update = jest.fn().mockReturnValue({ eq: eqUpdate });
+
+    fromMock.mockReturnValueOnce({ select: selectRead }).mockReturnValueOnce({ update });
+
+    const result = await markOnboardingCompletedIfNeeded('uid');
+    expect(result).toEqual({ error: null, newlyCompleted: true });
+    expect(update).toHaveBeenCalledWith({ onboarding_completed: true });
   });
 });

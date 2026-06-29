@@ -68,3 +68,18 @@ Reinicia Metro: `npm run dev:clear`
 ## Desactivar IA
 
 Quita o pon `EXPO_PUBLIC_HOY_COACH_AI_ENABLED=false` → solo reglas locales.
+
+## Koraa Brain (`koraa-brain`) — brief diario unificado
+
+Desde jun 2026, Hoy también puede invocar la Edge Function **`koraa-brain`** (modo `daily_brief`) vía `lib/ai/fetchKoraaDailyBrief.ts`.
+
+| Requisito | Detalle |
+|-----------|---------|
+| Flag cliente | `EXPO_PUBLIC_HOY_COACH_AI_ENABLED=true` |
+| Supabase | `EXPO_PUBLIC_SUPABASE_URL` + anon key configurados |
+| Deploy | `npx supabase functions deploy koraa-brain` |
+| Secretos | `OPENAI_API_KEY` (igual que hoy-coach) |
+
+Si falta el flag, la función no está desplegada o la red falla → **fallback local** (reglas en `lib/hoyDailyCoach.ts` + priorización). La app no muestra error al usuario; en desarrollo busca logs `[koraa-brain] fallback local` en Metro.
+
+Helper de diagnóstico: `getKoraaBrainClientStatus()` en `lib/ai/isKoraaBrainEnabled.ts`.

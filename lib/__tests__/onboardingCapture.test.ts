@@ -33,4 +33,18 @@ describe('onboardingCapture', () => {
     const items = buildOnboardingCaptureItems('Ir a correr 20 min', 'es', config);
     expect(items[0]?.lifeAreaKey).toBe(personalRef);
   });
+
+  it('infers area from favorite activities saved in onboarding', () => {
+    const config = buildDefaultOnboardingAreaConfig(EMPTY_USER_LIFE_AREAS);
+    const personalRef = makeCustomLifeAreaRef(BRAIN_DUMP_PRESET_CUSTOM_IDS.personal);
+
+    const items = buildOnboardingCaptureItems(
+      'Clase de yoga suave',
+      'es',
+      config,
+      ['yoga', 'leer'],
+    );
+
+    expect(items[0]?.lifeAreaKey).toBe(personalRef);
+  });
 });

@@ -2,8 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { prioritizeTasksIntelligently } from '@/lib/smartPrioritization';
-import { publishCheckInCelebration } from '@/lib/checkInCelebration';
-import { markOnboardingCompleted } from '@/lib/onboardingGate';
+import { markOnboardingCompletedIfNeeded } from '@/lib/onboardingGate';
 import { getFocusedProjectId } from '@/lib/focusedProjectStorage';
 import { logger } from '@/lib/logger';
 import { fetchCurrentStreak, isStreakMilestone } from '@/lib/streak';
@@ -212,8 +211,10 @@ export async function saveDailyCheckInAndPrioritize(input: DailyCheckInInput): P
     }
   }
 
-  const { error: onboardingError } = await markOnboardingCompleted(input.userId);
-  if (!onboardingError) {
+  const { error: onboardingError, newlyCompleted } = await markOnboardingCompletedIfNeeded(
+    input.userId,
+  );
+  if (newlyCompleted) {
     await seedHoyLiteFirstDayIfUnset(input.userId);
   }
   if (onboardingError) {
