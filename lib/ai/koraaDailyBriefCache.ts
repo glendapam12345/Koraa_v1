@@ -3,9 +3,25 @@ import type { KoraaDailyBrief, KoraaDayContext } from '@/lib/ai/types';
 
 const CACHE_PREFIX = 'koraa_daily_brief_v2';
 
-export function koraaDailyBriefCacheKey(userId: string, context: KoraaDayContext): string {
+/** Clave estable: check-in completo + huella de tareas candidatas. */
+export function koraaDailyBriefCacheKey(
+  userId: string,
+  context: KoraaDayContext,
+  taskCandidateIds: string[] = [],
+): string {
   const { date, checkIn } = context;
-  return `${CACHE_PREFIX}_${userId}_${date}_${checkIn.emotionKey}_${checkIn.energyLevel}_${context.locale}`;
+  const taskFingerprint = [...taskCandidateIds].sort().join(',');
+  return [
+    CACHE_PREFIX,
+    userId,
+    date,
+    checkIn.emotionKey,
+    String(checkIn.energyLevel),
+    checkIn.availableTime,
+    checkIn.focusLevel,
+    context.locale,
+    taskFingerprint,
+  ].join('\0');
 }
 
 export async function readKoraaDailyBriefCache(key: string): Promise<KoraaDailyBrief | null> {
@@ -49,7 +65,11 @@ export async function writeKoraaDailyBriefCache(
 export async function clearKoraaDailyBriefCache(userId: string): Promise<void> {
   try {
     const keys = await AsyncStorage.getAllKeys();
-    const mine = keys.filter((key) => key.startsWith(`${CACHE_PREFIX}_${userId}_`));
+    const modernHead = `${CACHE_PREFIX}\0${userId}\0`;
+    const legacyHead = `${CACHE_PREFIX}_${userId}_`;
+    const mine = keys.filter(
+      (key) => key.startsWith(modernHead) || key.startsWith(legacyHead),
+    );
     if (mine.length > 0) await AsyncStorage.multiRemove(mine);
   } catch {
     /* ignore */

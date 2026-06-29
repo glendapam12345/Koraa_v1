@@ -936,6 +936,9 @@ export const featuresEn = {
       skip: 'Skip for now',
       saving: 'Saving...',
       saveError: 'Could not save your tasks. You can capture them later in Tasks.',
+      partialSaveTitle: 'Some items saved',
+      partialSaveBody:
+        'We saved {{saved}} of {{total}} items. You can add the rest later in Tasks.',
     },
     howItWorks: {
       title: 'Your first',

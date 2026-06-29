@@ -212,9 +212,13 @@ async function maybeCacheBrief(
   userId: string | undefined,
   context: KoraaDayContext,
   brief: KoraaDailyBrief,
+  taskCandidateIds: string[] = [],
 ): Promise<void> {
   if (!userId || !shouldCacheBrief(context)) return;
-  await writeKoraaDailyBriefCache(koraaDailyBriefCacheKey(userId, context), brief);
+  await writeKoraaDailyBriefCache(
+    koraaDailyBriefCacheKey(userId, context, taskCandidateIds),
+    brief,
+  );
 }
 
 /** Tips: solo cache o reglas locales — evita llamadas IA con contexto vacío. */
@@ -234,20 +238,21 @@ export async function fetchKoraaDailyBrief(
 ): Promise<KoraaDailyBrief> {
   const tipCandidates = shortlistTipsForAi(tipsContextFromDay(context), context.locale);
   const taskCandidates = options?.taskCandidates ?? [];
+  const taskCandidateIds = taskCandidates.map((task) => task.id);
   const local = buildLocalBrief(context, tipCandidates, taskCandidates);
 
   if (!userId || !isSupabaseConfigured) {
     return local;
   }
 
-  const cacheKey = koraaDailyBriefCacheKey(userId, context);
+  const cacheKey = koraaDailyBriefCacheKey(userId, context, taskCandidateIds);
   if (!options?.skipCache) {
     const cached = await readKoraaDailyBriefCache(cacheKey);
     if (cached) return cached;
   }
 
   if (!isAiEnabled()) {
-    await maybeCacheBrief(userId, context, local);
+    await maybeCacheBrief(userId, context, local, taskCandidateIds);
     return local;
   }
 
@@ -259,7 +264,7 @@ export async function fetchKoraaDailyBrief(
   try {
     const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData.session?.access_token) {
-      await maybeCacheBrief(userId, context, local);
+      await maybeCacheBrief(userId, context, local, taskCandidateIds);
       return local;
     }
 
@@ -269,17 +274,17 @@ export async function fetchKoraaDailyBrief(
 
     if (error) {
       await logInvokeFailure(error);
-      await maybeCacheBrief(userId, context, local);
+      await maybeCacheBrief(userId, context, local, taskCandidateIds);
       return local;
     }
 
     const parsed = parseDailyBriefPayload(data, context, tipCandidates, taskCandidates);
     if (!parsed) {
-      await maybeCacheBrief(userId, context, local);
+      await maybeCacheBrief(userId, context, local, taskCandidateIds);
       return local;
     }
 
-    await maybeCacheBrief(userId, context, parsed);
+    await maybeCacheBrief(userId, context, parsed, taskCandidateIds);
     if (__DEV__ && parsed.fromAi) logger.debug('[koraa-brain] OK (IA)');
 
     return parsed;
@@ -293,7 +298,8 @@ export async function fetchKoraaDailyBrief(
 export async function getCachedKoraaDailyBrief(
   userId: string | undefined,
   context: KoraaDayContext,
+  taskCandidateIds: string[] = [],
 ): Promise<KoraaDailyBrief | null> {
   if (!userId) return null;
-  return readKoraaDailyBriefCache(koraaDailyBriefCacheKey(userId, context));
+  return readKoraaDailyBriefCache(koraaDailyBriefCacheKey(userId, context, taskCandidateIds));
 }

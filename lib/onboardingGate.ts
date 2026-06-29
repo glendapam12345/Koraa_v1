@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 
 /** Ruta fail-safe cuando no se puede leer el perfil o el usuario no completó onboarding */
 export const WELCOME_ROUTE = '/onboarding/welcome' as const;
-const TABS_ROUTE = '/(tabs)' as const;
+export const TABS_ROUTE = '/(tabs)' as const;
 
 export type PostAuthRoute = typeof WELCOME_ROUTE | typeof TABS_ROUTE;
 
@@ -38,6 +38,13 @@ export async function resolvePostAuthGate(userId: string): Promise<PostAuthGateR
     logger.debug('onboardingGate', e);
     return { status: 'error', reason: 'profile_read_failed' };
   }
+}
+
+/** `true` si onboarding completado; `null` si no se pudo leer el perfil. */
+export async function hasCompletedOnboarding(userId: string): Promise<boolean | null> {
+  const result = await resolvePostAuthGate(userId);
+  if (result.status === 'error') return null;
+  return result.route === TABS_ROUTE;
 }
 
 export async function markOnboardingCompleted(userId: string): Promise<{ error: Error | null }> {

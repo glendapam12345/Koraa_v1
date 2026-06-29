@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, type RefObject } from 'react';
 import { Platform, type ScrollView } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
@@ -10,6 +9,10 @@ import { subscribeCheckInRefresh } from '@/lib/checkInRefresh';
 import { getDisplayName } from '@/lib/displayName';
 import { getTimeOfDayGreetingKey, getTimeOfDayPeriod } from '@/lib/timeOfDayContext';
 import { logger } from '@/lib/logger';
+import {
+  hasSeenQuickOnboardingGuide,
+  markQuickOnboardingGuideSeen,
+} from '@/lib/quickOnboardingGuide';
 
 type ToastFn = (message: string, type?: 'success' | 'error' | 'info') => void;
 
@@ -121,10 +124,10 @@ export function useHoyScreenBootstrap({
 
     void (async () => {
       try {
-        const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenQuickOnboarding');
-        if (!hasSeenOnboarding) {
+        const seen = await hasSeenQuickOnboardingGuide();
+        if (!seen) {
           setTimeout(() => setShowQuickOnboarding(true), 800);
-          await AsyncStorage.setItem('hasSeenQuickOnboarding', 'true');
+          await markQuickOnboardingGuideSeen();
         }
       } catch (error) {
         logger.debug('Error checking onboarding:', error);

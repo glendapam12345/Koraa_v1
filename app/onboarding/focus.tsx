@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useState } from 'react';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
@@ -10,10 +10,11 @@ import { Focus } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { track } from '@/lib/analytics';
 import { publishCheckInCelebration } from '@/lib/checkInCelebration';
-import { completeOnboardingForUser, ONBOARDING_PAYWALL_PARAMS } from '@/lib/finishOnboarding';
+import { goToOnboardingPaywall } from '@/lib/onboardingNavigation';
 import { saveDailyCheckInAndPrioritize } from '@/lib/checkInService';
 import { getDisplayName } from '@/lib/displayName';
 import { markPrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
+import { markQuickOnboardingGuideSeen } from '@/lib/quickOnboardingGuide';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 
@@ -89,18 +90,13 @@ export default function FocusScreen() {
         offline: Boolean(result.offline),
       });
 
-      const { error: onboardingError } = await completeOnboardingForUser(user.id, {
-        seedAreas: false,
-      });
-      if (onboardingError) {
-        showToast(t('onboarding.focus.closeOnboardingError'), 'error');
-        return;
-      }
+      await markQuickOnboardingGuideSeen();
 
-      router.replace({
-        pathname: '/paywall',
-        params: ONBOARDING_PAYWALL_PARAMS,
-      });
+      goToOnboardingPaywall();
+
+      if (result.onboardingMarkFailed) {
+        showToast(t('onboarding.focus.closeOnboardingError'), 'info');
+      }
 
       if (result.celebration) {
         setTimeout(() => publishCheckInCelebration(result.celebration!), 450);

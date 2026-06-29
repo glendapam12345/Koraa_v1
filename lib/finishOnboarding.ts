@@ -7,6 +7,7 @@ import {
 } from '@/lib/lifeAreas/userLifeAreas';
 import { logger } from '@/lib/logger';
 import { markOnboardingCompleted } from '@/lib/onboardingGate';
+import { seedHoyLiteFirstDayIfUnset } from '@/lib/hoyLiteDay';
 import {
   buildAreaConfigFromOnboardingSelections,
   buildDefaultOnboardingAreaConfig,
@@ -102,7 +103,11 @@ export async function completeOnboardingForUser(
       logger.warn('finishOnboarding: no se pudieron guardar áreas por defecto');
     }
   }
-  return markOnboardingCompleted(userId);
+  const result = await markOnboardingCompleted(userId);
+  if (!result.error) {
+    await seedHoyLiteFirstDayIfUnset(userId);
+  }
+  return result;
 }
 
 export const ONBOARDING_PAYWALL_PARAMS = {

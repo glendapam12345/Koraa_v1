@@ -13,6 +13,8 @@ import type { Task } from '@/components/tasks/TaskCard';
 import type { CheckInReplanSummary } from '@/lib/checkInReplanSummary';
 import { applyCheckInAdaptivePlan } from '@/lib/checkInAdaptivePlan';
 import { fetchAndApplyKoraaBrainFocusPlan } from '@/lib/ai/fetchAndApplyKoraaBrainFocusPlan';
+import { clearKoraaDailyBriefCache } from '@/lib/ai/koraaDailyBriefCache';
+import { seedHoyLiteFirstDayIfUnset } from '@/lib/hoyLiteDay';
 
 export type DailyCheckInInput = {
   userId: string;
@@ -29,6 +31,8 @@ export type SaveCheckInResult = {
   success: boolean;
   offline?: boolean;
   errorMessage?: string;
+  /** Perfil no marcó onboarding_completed; el check-in sí se guardó. */
+  onboardingMarkFailed?: boolean;
   celebration?: { streak: number; milestone: boolean } | null;
   replan?: CheckInReplanSummary | null;
 };
@@ -174,6 +178,8 @@ export async function saveDailyCheckInAndPrioritize(input: DailyCheckInInput): P
     }
   }
 
+  await clearKoraaDailyBriefCache(input.userId);
+
   await prioritizeTasksForCheckIn(input.userId, {
     energyLevel: input.energyLevel,
     emotion: emotionStored,
@@ -206,11 +212,13 @@ export async function saveDailyCheckInAndPrioritize(input: DailyCheckInInput): P
     }
   }
 
-  void markOnboardingCompleted(input.userId).then(({ error }) => {
-    if (error) {
-      logger.debug('checkInService: onboarding mark failed', error.message);
-    }
-  });
+  const { error: onboardingError } = await markOnboardingCompleted(input.userId);
+  if (!onboardingError) {
+    await seedHoyLiteFirstDayIfUnset(input.userId);
+  }
+  if (onboardingError) {
+    logger.debug('checkInService: onboarding mark failed', onboardingError.message);
+  }
 
   let celebration: SaveCheckInResult['celebration'] = null;
   if (!offline) {
@@ -222,5 +230,11 @@ export async function saveDailyCheckInAndPrioritize(input: DailyCheckInInput): P
     }
   }
 
-  return { success: true, offline, celebration, replan };
+  return {
+    success: true,
+    offline,
+    onboardingMarkFailed: Boolean(onboardingError),
+    celebration,
+    replan,
+  };
 }

@@ -949,6 +949,9 @@ export const featuresEs = {
       saving: 'Guardando...',
       saveError:
         'No se pudieron guardar tus tareas. Puedes capturarlas después en Tareas.',
+      partialSaveTitle: 'Se guardó una parte',
+      partialSaveBody:
+        'Guardamos {{saved}} de {{total}} cosas. El resto puedes añadirlo después en Tareas.',
     },
     howItWorks: {
       title: 'Tu primer',

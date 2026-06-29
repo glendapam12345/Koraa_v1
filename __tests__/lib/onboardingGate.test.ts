@@ -1,4 +1,4 @@
-import { resolvePostAuthGate, WELCOME_ROUTE } from '@/lib/onboardingGate';
+import { hasCompletedOnboarding, resolvePostAuthGate, WELCOME_ROUTE } from '@/lib/onboardingGate';
 import { supabase } from '@/lib/supabase';
 
 jest.mock('@/lib/supabase', () => ({
@@ -41,5 +41,26 @@ describe('resolvePostAuthGate', () => {
     mockProfileQuery({ data: null, error: { message: 'network' } });
     const result = await resolvePostAuthGate('uid');
     expect(result).toEqual({ status: 'error', reason: 'profile_read_failed' });
+  });
+});
+
+describe('hasCompletedOnboarding', () => {
+  beforeEach(() => {
+    fromMock.mockReset();
+  });
+
+  it('returns true when onboarding is completed', async () => {
+    mockProfileQuery({ data: { onboarding_completed: true }, error: null });
+    await expect(hasCompletedOnboarding('uid')).resolves.toBe(true);
+  });
+
+  it('returns false when onboarding is not completed', async () => {
+    mockProfileQuery({ data: { onboarding_completed: false }, error: null });
+    await expect(hasCompletedOnboarding('uid')).resolves.toBe(false);
+  });
+
+  it('returns null when profile read fails', async () => {
+    mockProfileQuery({ data: null, error: { message: 'network' } });
+    await expect(hasCompletedOnboarding('uid')).resolves.toBeNull();
   });
 });

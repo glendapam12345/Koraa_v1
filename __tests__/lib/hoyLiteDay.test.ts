@@ -5,6 +5,7 @@ import {
   resolveHoyLiteLayout,
   isHoyLiteCompactOptedOut,
   optOutHoyLiteLayout,
+  seedHoyLiteFirstDayIfUnset,
   simulateHoyDayTwo,
 } from '@/lib/hoyLiteDay';
 
@@ -19,6 +20,33 @@ const userId = 'user-test-123';
 describe('hoyLiteDay', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('resolveHoyLiteLayout sin ancla no escribe ni activa lite', async () => {
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
+
+    await expect(resolveHoyLiteLayout(userId)).resolves.toBe(false);
+    expect(AsyncStorage.setItem).not.toHaveBeenCalled();
+  });
+
+  it('seedHoyLiteFirstDayIfUnset ancla el día de onboarding sin sobrescribir', async () => {
+    const today = getLocalDateString();
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
+
+    await seedHoyLiteFirstDayIfUnset(userId, today);
+
+    expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+      `koraa_hoy_first_open_calendar_day_v1_${userId}`,
+      today,
+    );
+
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(today);
+    await expect(resolveHoyLiteLayout(userId)).resolves.toBe(true);
+
+    jest.clearAllMocks();
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(today);
+    await seedHoyLiteFirstDayIfUnset(userId, getPreviousLocalDateString());
+    expect(AsyncStorage.setItem).not.toHaveBeenCalled();
   });
 
   it('resetHoyFirstDayPreview restaura vista lite del día actual', async () => {

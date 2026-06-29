@@ -41,12 +41,24 @@ export default function OnboardingCaptureScreen() {
 
     setSaving(true);
     const result = skipSave
-      ? { error: null, savedCount: 0 }
+      ? { error: null, savedCount: 0, attemptedCount: 0, partialFailure: false }
       : await saveOnboardingCaptureForUser(user.id, captureText, locale);
     setSaving(false);
 
     if (result.error) {
       Alert.alert(t('errors.continueFailed'), t('onboarding.capture.saveError'));
+      return;
+    }
+
+    if (result.partialFailure) {
+      Alert.alert(
+        t('onboarding.capture.partialSaveTitle'),
+        t('onboarding.capture.partialSaveBody', {
+          saved: result.savedCount,
+          total: result.attemptedCount,
+        }),
+        [{ text: t('errors.ok'), onPress: goToCheckIn }],
+      );
       return;
     }
 

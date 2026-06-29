@@ -8,7 +8,7 @@ import { OnboardingScreenShell, onboardingTypography } from '@/components/onboar
 import { Sparkles } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { completeOnboardingForUser } from '@/lib/finishOnboarding';
-import { ONBOARDING_AREAS_ROUTE } from '@/lib/onboardingNavigation';
+import { goToOnboardingPaywall, ONBOARDING_AREAS_ROUTE } from '@/lib/onboardingNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 
@@ -36,7 +36,7 @@ export default function WelcomeScreen() {
       Alert.alert(t('errors.continueFailed'), t('errors.saveProgressFailed'));
       return;
     }
-    router.replace('/(tabs)');
+    goToOnboardingPaywall();
   };
 
   return (

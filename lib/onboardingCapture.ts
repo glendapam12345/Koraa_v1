@@ -17,20 +17,28 @@ export {
   ONBOARDING_CAPTURE_MAX_ITEMS,
 };
 
+export type OnboardingCaptureSaveResult = {
+  error: Error | null;
+  savedCount: number;
+  attemptedCount: number;
+  partialFailure: boolean;
+};
+
 export async function saveOnboardingCaptureForUser(
   userId: string,
   rawInput: string,
   locale: AppLocale,
-): Promise<{ error: Error | null; savedCount: number }> {
+): Promise<OnboardingCaptureSaveResult> {
   const { data, error: profileError } = await fetchProfilePreferences(userId);
   if (profileError) {
-    return { error: new Error(profileError.message), savedCount: 0 };
+    return { error: new Error(profileError.message), savedCount: 0, attemptedCount: 0, partialFailure: false };
   }
 
   const config = parseUserLifeAreasFromPreferences(data?.other_preferences ?? {});
   const items = buildOnboardingCaptureItems(rawInput, locale, config);
-  if (items.length === 0) {
-    return { error: null, savedCount: 0 };
+  const attemptedCount = items.length;
+  if (attemptedCount === 0) {
+    return { error: null, savedCount: 0, attemptedCount: 0, partialFailure: false };
   }
 
   let savedCount = 0;
@@ -42,15 +50,24 @@ export async function saveOnboardingCaptureForUser(
     });
 
     if (result.status === 'not_authenticated') {
-      return { error: new Error('not_authenticated'), savedCount };
+      if (savedCount === 0) {
+        return {
+          error: new Error('not_authenticated'),
+          savedCount: 0,
+          attemptedCount,
+          partialFailure: false,
+        };
+      }
+      logger.warn('onboardingCapture: sesión perdida tras guardar parcialmente');
+      return { error: null, savedCount, attemptedCount, partialFailure: true };
     }
 
     if (result.status === 'error') {
       logger.warn('onboardingCapture: fallo al guardar tarea', item.content.slice(0, 40));
       if (savedCount === 0) {
-        return { error: new Error('save_failed'), savedCount: 0 };
+        return { error: new Error('save_failed'), savedCount: 0, attemptedCount, partialFailure: false };
       }
-      break;
+      return { error: null, savedCount, attemptedCount, partialFailure: true };
     }
 
     savedCount += 1;
@@ -60,5 +77,5 @@ export async function saveOnboardingCaptureForUser(
     void track('onboarding_capture_saved', { count: savedCount });
   }
 
-  return { error: null, savedCount };
+  return { error: null, savedCount, attemptedCount, partialFailure: false };
 }

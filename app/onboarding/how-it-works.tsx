@@ -9,7 +9,7 @@ import { OnboardingScreenShell, onboardingTypography } from '@/components/onboar
 import { LayoutGrid, HeartHandshake, PenLine, Heart, Route } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { completeOnboardingForUser } from '@/lib/finishOnboarding';
-import { ONBOARDING_AREAS_ROUTE } from '@/lib/onboardingNavigation';
+import { goToOnboardingPaywall, ONBOARDING_AREAS_ROUTE } from '@/lib/onboardingNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 
@@ -42,16 +42,18 @@ export default function HowItWorksScreen() {
   const [saving, setSaving] = useState(false);
 
   const finishToApp = async () => {
-    if (user) {
-      setSaving(true);
-      const { error } = await completeOnboardingForUser(user.id);
-      setSaving(false);
-      if (error) {
-        Alert.alert(t('errors.continueFailed'), t('errors.saveProgressFailed'));
-        return;
-      }
+    if (!user?.id) {
+      router.replace('/auth/login');
+      return;
     }
-    router.replace('/(tabs)');
+    setSaving(true);
+    const { error } = await completeOnboardingForUser(user.id);
+    setSaving(false);
+    if (error) {
+      Alert.alert(t('errors.continueFailed'), t('errors.saveProgressFailed'));
+      return;
+    }
+    goToOnboardingPaywall();
   };
 
   return (

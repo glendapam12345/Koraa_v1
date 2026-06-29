@@ -5,23 +5,36 @@ function optOutKey(userId: string): string {
   return `koraa_hoy_lite_opt_out_v1_${userId}`;
 }
 
-function firstOpenDayKey(userId: string): string {
+function firstLiteDayKey(userId: string): string {
   return `koraa_hoy_first_open_calendar_day_v1_${userId}`;
 }
 
 /**
- * Primer día calendario en que el usuario abre Hoy: mismo día que la primera apertura.
- * Día siguiente (local) → vista completa. El banner de orientación sigue visible todo ese día.
+ * Ancla el día 1 lite al completar onboarding (no sobrescribe si ya existe).
+ */
+export async function seedHoyLiteFirstDayIfUnset(
+  userId: string,
+  day: string = getLocalDateString(),
+): Promise<void> {
+  try {
+    const existing = await AsyncStorage.getItem(firstLiteDayKey(userId));
+    if (existing) return;
+    await AsyncStorage.setItem(firstLiteDayKey(userId), day);
+  } catch {
+    /* no-op */
+  }
+}
+
+/**
+ * Vista lite el mismo día calendario en que se completó onboarding.
+ * Sin ancla guardada → vista completa (no se infiere al abrir Hoy).
  */
 export async function resolveHoyLiteLayout(userId: string): Promise<boolean> {
   try {
     const today = getLocalDateString();
-    let first = await AsyncStorage.getItem(firstOpenDayKey(userId));
-    if (!first) {
-      await AsyncStorage.setItem(firstOpenDayKey(userId), today);
-      first = today;
-    }
-    return first === today;
+    const firstLiteDay = await AsyncStorage.getItem(firstLiteDayKey(userId));
+    if (!firstLiteDay) return false;
+    return firstLiteDay === today;
   } catch {
     return false;
   }
@@ -56,7 +69,7 @@ export async function resetHoyFirstDayPreview(userId: string): Promise<void> {
   const today = getLocalDateString();
   try {
     await AsyncStorage.multiRemove([optOutKey(userId), secondaryModulesKey(userId)]);
-    await AsyncStorage.setItem(firstOpenDayKey(userId), today);
+    await AsyncStorage.setItem(firstLiteDayKey(userId), today);
   } catch {
     /* no-op */
   }
@@ -69,7 +82,7 @@ export async function simulateHoyDayTwo(userId: string): Promise<void> {
   const yesterday = getPreviousLocalDateString();
   try {
     await AsyncStorage.multiRemove([optOutKey(userId), secondaryModulesKey(userId)]);
-    await AsyncStorage.setItem(firstOpenDayKey(userId), yesterday);
+    await AsyncStorage.setItem(firstLiteDayKey(userId), yesterday);
   } catch {
     /* no-op */
   }

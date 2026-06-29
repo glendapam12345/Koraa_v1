@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { getFirstSessionTourStorageKey } from '@/lib/firstSessionTour';
+import { QUICK_ONBOARDING_SEEN_KEY } from '@/lib/quickOnboardingGuide';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   Settings,
@@ -242,7 +243,7 @@ export default function ProfileScreen() {
               subtitle={t('yo.devResetSub')}
               onPress={async () => {
                 try {
-                  await AsyncStorage.removeItem('hasSeenQuickOnboarding');
+                  await AsyncStorage.removeItem(QUICK_ONBOARDING_SEEN_KEY);
                   if (user?.id) {
                     await AsyncStorage.removeItem(getFirstSessionTourStorageKey(user.id));
                   }
