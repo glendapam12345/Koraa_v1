@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { openVaciarCapture } from '@/lib/vaciarNavigation';
 import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
@@ -133,8 +133,7 @@ export function HoyFocusPanel({
   const { t } = useI18n();
   const getDefaultAreaLabel = (key: LifeAreaKey) => t(`lifeAreas.${key}` as TranslationKey);
   const getPresetCustomLabel = makePresetCustomAreaLabelGetter(t);
-  const [prioritiesExpanded, setPrioritiesExpanded] = useState(true);
-  const [waitingExpanded, setWaitingExpanded] = useState(true);
+  const [waitingExpanded, setWaitingExpanded] = useState(false);
 
   const emotionEmoji = getEmotionEmoji(todayMood);
   const incompleteFocusTasks = useMemo(() => {
@@ -151,11 +150,6 @@ export function HoyFocusPanel({
     return source;
   }, [crisisMode, focusTasks, orderedFocusTasks]);
 
-  useEffect(() => {
-    if (incompleteFocusTasks.length > 0) {
-      setPrioritiesExpanded(true);
-    }
-  }, [incompleteFocusTasks.length]);
   const nonFocusPending = Math.max(0, totalPending - incompleteFocusTasks.length);
   const allFocusDone =
     priorityStats.total > 0 && priorityStats.done >= priorityStats.total;
@@ -183,17 +177,8 @@ export function HoyFocusPanel({
 
   const hasCheckIn = Boolean(todayMood);
 
-  const visibleFocusTasks = useMemo(() => {
-    if (!prioritiesExpanded) return [];
-    return displayFocusTasks;
-  }, [displayFocusTasks, prioritiesExpanded]);
-
   const careCounts = crisisMode ? getCareModeTaskCounts(incompleteFocusTasks.length, nonFocusPending) : null;
   const restLinkCount = waitingCount ?? careCounts?.waitingCount ?? nonFocusPending;
-
-  const togglePriorities = () => {
-    setPrioritiesExpanded((open) => !open);
-  };
 
   const toggleWaiting = () => {
     setWaitingExpanded((open) => !open);
@@ -283,8 +268,8 @@ export function HoyFocusPanel({
 
   const prioritiesSlot = (
     <>
-      {visibleFocusTasks.length > 0 ? (
-        renderTasksByArea(visibleFocusTasks, 'priority')
+      {displayFocusTasks.length > 0 ? (
+        renderTasksByArea(displayFocusTasks, 'priority')
       ) : focusedProject ? (
         <View style={styles.focusedEmpty}>
           <Text style={styles.focusedEmptyTitle}>
@@ -385,8 +370,6 @@ export function HoyFocusPanel({
           focusedProject={focusedProject}
           onClearFocusedProject={onClearFocusedProject}
           prioritiesSlot={prioritiesSlot}
-          prioritiesExpanded={prioritiesExpanded}
-          onTogglePriorities={togglePriorities}
           waitingExpanded={waitingExpanded}
           onToggleWaiting={toggleWaiting}
           waitingSlot={planWaitingSlot}
@@ -419,6 +402,7 @@ export function HoyFocusPanel({
           ) : null}
 
           <CalmCard style={styles.focusCard}>
+            <Text style={styles.planSectionTitle}>{t('hoy.planTitle')}</Text>
             {allFocusDone ? (
               <Text style={styles.doneInline}>{t('hoy.planPrioritiesSubAllDone')}</Text>
             ) : focusTasks.length > 0 ? (
@@ -529,6 +513,12 @@ const styles = StyleSheet.create({
   focusCard: {
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.sm,
+    gap: THEME.spacing.sm,
+  },
+  planSectionTitle: {
+    ...THEME.typography.sectionTitle,
+    color: THEME.colors.text.main,
+    paddingHorizontal: THEME.spacing.xs,
   },
   focusBlock: {
     gap: THEME.spacing.sm,

@@ -222,6 +222,12 @@ export function TaskPlanEditSheet({
 
   const isPriority = capturePriorityToIsPriority(capturePriority);
   const canSave = Boolean(task && content.trim() && metaReady && !saving);
+  const storedMeta = task && metaReady ? getStoredTaskPlanningMeta(task.id) : null;
+
+  const hasDate = Boolean(scheduledDate);
+  const hasDuration = durationTouched || Boolean(storedMeta?.estimatedMinutes);
+  const hasWhen = Boolean(preferredTime);
+  const hasPriority = capturePriority !== 'medium';
 
   const selectableAreas: ResolvedLifeArea[] = listActiveLifeAreas(
     lifeAreasConfig,
@@ -230,12 +236,17 @@ export function TaskPlanEditSheet({
     lifeAreaKey,
   );
 
-  const durationLabel = t('vaciar.previewDurationMinutes', { count: estimatedMinutes });
-  const whenPillLabel =
-    formatPreferredTimeLabel(preferredTime, locale) ?? t('vaciar.previewWhenBtn');
-  const priorityLabel = t(PRIORITY_LABEL_KEYS[capturePriority]);
-  const datePillLabel = scheduledDate
-    ? formatProjectDueDate(scheduledDate, locale)
+  const durationLabel = hasDuration
+    ? t('vaciar.previewDurationMinutes', { count: estimatedMinutes })
+    : t('vaciar.previewDurationBtn');
+  const whenPillLabel = hasWhen
+    ? (formatPreferredTimeLabel(preferredTime, locale) ?? t('vaciar.previewWhenBtn'))
+    : t('vaciar.previewWhenBtn');
+  const priorityLabel = hasPriority
+    ? t(PRIORITY_LABEL_KEYS[capturePriority])
+    : t('vaciar.previewPriorityBtn');
+  const datePillLabel = hasDate
+    ? formatProjectDueDate(scheduledDate!, locale)
     : t('vaciar.previewDateBtn');
 
   const togglePicker = (picker: 'date' | 'duration' | 'when' | 'priority') => {
@@ -283,42 +294,86 @@ export function TaskPlanEditSheet({
 
               <View style={styles.quickPills}>
                 <TouchableOpacity
-                  style={[styles.quickPill, activePicker === 'date' && styles.quickPillActive]}
+                  style={[
+                    styles.quickPill,
+                    hasDate ? styles.quickPillFilled : styles.quickPillEmpty,
+                    activePicker === 'date' && styles.quickPillActive,
+                  ]}
                   onPress={() => togglePicker('date')}
                   activeOpacity={0.85}
+                  accessibilityState={{ selected: hasDate }}
                 >
-                  <Calendar size={14} color={THEME.colors.calm.lavenderDeep} />
-                  <Text style={styles.quickPillText} numberOfLines={1}>
+                  <Calendar
+                    size={14}
+                    color={hasDate ? THEME.colors.calm.lavenderDeep : THEME.colors.text.tertiary}
+                  />
+                  <Text
+                    style={[styles.quickPillText, !hasDate && styles.quickPillTextEmpty]}
+                    numberOfLines={1}
+                  >
                     {datePillLabel}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.quickPill, activePicker === 'duration' && styles.quickPillActive]}
+                  style={[
+                    styles.quickPill,
+                    hasDuration ? styles.quickPillFilled : styles.quickPillEmpty,
+                    activePicker === 'duration' && styles.quickPillActive,
+                  ]}
                   onPress={() => togglePicker('duration')}
                   activeOpacity={0.85}
+                  accessibilityState={{ selected: hasDuration }}
                 >
-                  <Clock size={14} color={THEME.colors.calm.lavenderDeep} />
-                  <Text style={styles.quickPillText} numberOfLines={1}>
+                  <Clock
+                    size={14}
+                    color={hasDuration ? THEME.colors.calm.lavenderDeep : THEME.colors.text.tertiary}
+                  />
+                  <Text
+                    style={[styles.quickPillText, !hasDuration && styles.quickPillTextEmpty]}
+                    numberOfLines={1}
+                  >
                     {durationLabel}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.quickPill, activePicker === 'when' && styles.quickPillActive]}
+                  style={[
+                    styles.quickPill,
+                    hasWhen ? styles.quickPillFilled : styles.quickPillEmpty,
+                    activePicker === 'when' && styles.quickPillActive,
+                  ]}
                   onPress={() => togglePicker('when')}
                   activeOpacity={0.85}
+                  accessibilityState={{ selected: hasWhen }}
                 >
-                  <AlarmClock size={14} color={THEME.colors.calm.lavenderDeep} />
-                  <Text style={styles.quickPillText} numberOfLines={1}>
+                  <AlarmClock
+                    size={14}
+                    color={hasWhen ? THEME.colors.calm.lavenderDeep : THEME.colors.text.tertiary}
+                  />
+                  <Text
+                    style={[styles.quickPillText, !hasWhen && styles.quickPillTextEmpty]}
+                    numberOfLines={1}
+                  >
                     {whenPillLabel}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.quickPill, activePicker === 'priority' && styles.quickPillActive]}
+                  style={[
+                    styles.quickPill,
+                    hasPriority ? styles.quickPillFilled : styles.quickPillEmpty,
+                    activePicker === 'priority' && styles.quickPillActive,
+                  ]}
                   onPress={() => togglePicker('priority')}
                   activeOpacity={0.85}
+                  accessibilityState={{ selected: hasPriority }}
                 >
-                  <Flag size={14} color={THEME.colors.calm.lavenderDeep} />
-                  <Text style={styles.quickPillText} numberOfLines={1}>
+                  <Flag
+                    size={14}
+                    color={hasPriority ? THEME.colors.calm.lavenderDeep : THEME.colors.text.tertiary}
+                  />
+                  <Text
+                    style={[styles.quickPillText, !hasPriority && styles.quickPillTextEmpty]}
+                    numberOfLines={1}
+                  >
                     {priorityLabel}
                   </Text>
                 </TouchableOpacity>
@@ -627,16 +682,25 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[100],
     borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
     flexGrow: 1,
     flexBasis: '30%',
     minWidth: 96,
   },
+  quickPillFilled: {
+    backgroundColor: THEME.colors.calm.lavender,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    borderStyle: 'solid',
+  },
+  quickPillEmpty: {
+    backgroundColor: THEME.colors.fill[100],
+    borderColor: THEME.colors.calm.border,
+    borderStyle: 'dashed',
+  },
   quickPillActive: {
     backgroundColor: THEME.colors.calm.lavender,
     borderColor: THEME.colors.calm.lavenderDeep,
+    borderStyle: 'solid',
   },
   quickPillText: {
     ...THEME.typography.caption,
@@ -644,6 +708,9 @@ const styles = StyleSheet.create({
     color: THEME.colors.calm.lavenderDeep,
     flexShrink: 1,
     lineHeight: 16,
+  },
+  quickPillTextEmpty: {
+    color: THEME.colors.text.tertiary,
   },
   pickerWrap: {
     gap: THEME.spacing.xs,

@@ -3,7 +3,7 @@ import { Sparkles } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
-import { TipGridCard } from '@/components/tips/TipGridCard';
+import { TipHighlightCarouselCard, TIP_HIGHLIGHT_CARD_WIDTH } from '@/components/tips/TipHighlightCarouselCard';
 import type { ScoredTip } from '@/lib/tipsPersonalization';
 import type { TranslationKey } from '@/lib/i18n';
 
@@ -13,6 +13,7 @@ type KoraaDailyTipsSectionProps = {
   fromAi?: boolean;
   titleKey?: TranslationKey;
   embedded?: boolean;
+  hideHeader?: boolean;
   onOpenTip: (tip: ScoredTip) => void;
 };
 
@@ -22,6 +23,7 @@ export function KoraaDailyTipsSection({
   fromAi = false,
   titleKey = 'koraaDailyTips.title',
   embedded = false,
+  hideHeader = false,
   onOpenTip,
 }: KoraaDailyTipsSectionProps) {
   const { t } = useI18n();
@@ -29,57 +31,74 @@ export function KoraaDailyTipsSection({
   if (tips.length === 0) return null;
 
   const forYouLabel = t('tips.forYouBadge');
+  const showSubheader = !hideHeader;
+
   const content = (
     <View
-      style={styles.inner}
+      style={[styles.inner, embedded && styles.innerEmbedded]}
       accessibilityRole="summary"
       accessibilityLabel={t('koraaDailyTips.a11ySection')}
     >
-      <View style={styles.header}>
-        <Sparkles size={14} color={THEME.colors.calm.lavenderDeep} />
-        <Text style={styles.title} accessibilityRole="header">
-          {t(titleKey)}
-        </Text>
-        {fromAi ? (
-          <View style={styles.aiPill}>
-            <Text style={styles.aiPillText}>{t('koraaDailyTips.aiBadge')}</Text>
-          </View>
-        ) : null}
-      </View>
+      {showSubheader ? (
+        <View style={styles.header}>
+          <Sparkles size={14} color={THEME.colors.calm.lavenderDeep} />
+          <Text style={styles.title} accessibilityRole="header">
+            {t(titleKey)}
+          </Text>
+          {fromAi ? (
+            <View style={styles.aiPill}>
+              <Text style={styles.aiPillText}>{t('koraaDailyTips.aiBadge')}</Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
       {tipLead ? <Text style={styles.lead}>{tipLead}</Text> : null}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        decelerationRate="fast"
+        snapToInterval={TIP_HIGHLIGHT_CARD_WIDTH + THEME.spacing.sm}
+        snapToAlignment="start"
       >
         {tips.map((tip) => (
-          <View key={tip.id} style={styles.cardSlot}>
-            <TipGridCard
-              tip={tip}
-              forYouLabel={forYouLabel}
-              onPress={() => onOpenTip(tip)}
-            />
-          </View>
+          <TipHighlightCarouselCard
+            key={tip.id}
+            tip={tip}
+            forYouLabel={forYouLabel}
+            onPress={() => onOpenTip(tip)}
+          />
         ))}
       </ScrollView>
     </View>
   );
 
-  if (embedded) return content;
+  if (embedded) {
+    return <View style={styles.embeddedPanel}>{content}</View>;
+  }
 
   return <CalmCard style={styles.card}>{content}</CalmCard>;
 }
-
-const CARD_WIDTH = 148;
 
 const styles = StyleSheet.create({
   card: {
     padding: THEME.spacing.sm,
     gap: THEME.spacing.xs,
   },
+  embeddedPanel: {
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.calm.blush,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    padding: THEME.spacing.sm,
+    gap: THEME.spacing.xs,
+  },
   inner: {
     gap: THEME.spacing.xs,
+  },
+  innerEmbedded: {
+    gap: THEME.spacing.sm,
   },
   header: {
     flexDirection: 'row',
@@ -107,16 +126,14 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   lead: {
-    ...THEME.typography.body,
+    ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-    lineHeight: 22,
+    lineHeight: 18,
   },
   scrollContent: {
     gap: THEME.spacing.sm,
     paddingTop: THEME.spacing.xs,
     paddingRight: THEME.spacing.xs,
-  },
-  cardSlot: {
-    width: CARD_WIDTH,
+    paddingBottom: 2,
   },
 });

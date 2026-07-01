@@ -430,6 +430,7 @@ export const uiEs = {
     exitConfirmLeaveHint: 'Sales sin guardar tu check-in de hoy',
   },
   tipsExtra: {
+    openTip: 'Leer consejo',
     a11yTipOpenHint: 'Toca para leer el consejo completo',
     a11yTipForYou: ', recomendado para mí',
     a11yTipExpanded: 'Consejo: {{title}}. {{body}}',

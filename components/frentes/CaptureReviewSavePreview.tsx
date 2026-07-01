@@ -4,7 +4,7 @@ import { Clock, ChevronRight } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { formatDurationLabel } from '@/lib/taskPlanningMeta';
-import { buildPreviewTaskSummary } from '@/lib/review/previewTaskSummary';
+import { buildPreviewTaskSummaryParts } from '@/lib/review/previewTaskSummary';
 import {
   applyCapturePriority,
   CAPTURE_PRIORITY_ORDER,
@@ -72,7 +72,7 @@ export function CaptureReviewSavePreview({
           const durationLabel = item.estimatedMinutes
             ? formatDurationLabel(item.estimatedMinutes)
             : t('vaciar.areaReviewSaveSummaryNoDuration');
-          const summary = buildPreviewTaskSummary(item, locale, t);
+          const summaryParts = buildPreviewTaskSummaryParts(item, locale, t);
           const activePriority = resolveCapturePriority(item);
 
           return (
@@ -92,8 +92,16 @@ export function CaptureReviewSavePreview({
                   <Text style={styles.rowTitle} numberOfLines={2}>
                     {item.content}
                   </Text>
-                  <Text style={styles.rowMeta} numberOfLines={1}>
-                    {summary}
+                  <Text style={styles.rowMeta} numberOfLines={2}>
+                    {summaryParts.map((part, index) => (
+                      <Text
+                        key={`${part.text}-${index}`}
+                        style={part.filled ? styles.rowMetaFilled : styles.rowMetaMissing}
+                      >
+                        {index > 0 ? ' · ' : ''}
+                        {part.text}
+                      </Text>
+                    ))}
                   </Text>
                 </View>
                 <Text
@@ -209,8 +217,14 @@ const styles = StyleSheet.create({
   },
   rowMeta: {
     ...THEME.typography.meta,
-    color: THEME.colors.text.secondary,
     lineHeight: 16,
+  },
+  rowMetaFilled: {
+    color: THEME.colors.text.secondary,
+  },
+  rowMetaMissing: {
+    color: THEME.colors.text.tertiary,
+    fontStyle: 'italic',
   },
   rowDuration: {
     ...THEME.typography.caption,

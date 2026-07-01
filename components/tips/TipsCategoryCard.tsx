@@ -12,7 +12,6 @@ type TipsCategoryCardProps = {
   tipCount: number;
   tipsLabel: string;
   countBadge?: string;
-  cardWidth?: number;
   onPress: () => void;
 };
 
@@ -23,7 +22,6 @@ export function TipsCategoryCard({
   tipCount,
   tipsLabel,
   countBadge,
-  cardWidth = undefined,
   onPress,
 }: TipsCategoryCardProps) {
   const { t } = useI18n();
@@ -71,10 +69,6 @@ const styles = StyleSheet.create({
   wrap: {
     height: CARD_HEIGHT,
     marginBottom: 0,
-  },
-  wrapFlex: {
-    flex: 1,
-    width: undefined,
   },
   card: {
     flex: 1,

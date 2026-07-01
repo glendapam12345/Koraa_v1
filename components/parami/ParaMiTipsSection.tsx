@@ -90,16 +90,23 @@ export function ParaMiTipsSection({
       accessibilityRole="summary"
       accessibilityLabel={t('parami.tipsSectionA11y')}
     >
-      <Text style={styles.title} accessibilityRole="header">
-        {t('parami.tipsSectionTitle')}
-      </Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title} accessibilityRole="header">
+          {t('parami.tipsSectionTitle')}
+        </Text>
+        {fromAi && highlightedTips.length > 0 ? (
+          <View style={styles.aiPill}>
+            <Text style={styles.aiPillText}>{t('koraaDailyTips.aiBadge')}</Text>
+          </View>
+        ) : null}
+      </View>
       {highlightedTips.length > 0 ? (
         <KoraaDailyTipsSection
           tips={highlightedTips}
-          tipLead={tipLead}
+          tipLead={tipLead || t('parami.tipsSectionLead')}
           fromAi={fromAi}
-          titleKey="koraaDailyTips.paramiTitle"
           embedded
+          hideHeader
           onOpenTip={openTip}
         />
       ) : (
@@ -125,9 +132,29 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: THEME.colors.calm.border,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   title: {
     ...THEME.typography.sectionTitle,
     color: THEME.colors.text.main,
+  },
+  aiPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.calm.lavender,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.lavenderDeep,
+  },
+  aiPillText: {
+    ...THEME.typography.small,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 16,
   },
   lead: {
     ...THEME.typography.meta,

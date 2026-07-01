@@ -426,6 +426,7 @@ export const uiEn = {
     exitConfirmLeaveHint: 'Leave without saving today’s check-in',
   },
   tipsExtra: {
+    openTip: 'Read tip',
     a11yTipOpenHint: 'Tap to read the full tip',
     a11yTipForYou: ', recommended for me',
     a11yTipExpanded: 'Tip: {{title}}. {{body}}',

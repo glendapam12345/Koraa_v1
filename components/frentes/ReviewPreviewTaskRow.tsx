@@ -24,7 +24,7 @@ import {
   resolveCapturePriority,
   type CapturePriority,
 } from '@/lib/review/capturePriority';
-import { buildPreviewTaskSummary } from '@/lib/review/previewTaskSummary';
+import { buildPreviewTaskSummary, buildPreviewTaskSummaryParts } from '@/lib/review/previewTaskSummary';
 import { TaskDurationStepper } from '@/components/vnext/TaskDurationStepper';
 import { TaskPreferredTimePicker } from '@/components/vnext/TaskPreferredTimePicker';
 import { effortToDefaultMinutes } from '@/lib/taskPlanningMeta';
@@ -68,23 +68,29 @@ export function ReviewPreviewTaskRow({
   const activePriority = resolveCapturePriority(item);
   const urgentLocked = isUrgentCapturePriority(activePriority);
 
-  const dateLabel = item.selectedDate
-    ? formatProjectDueDate(item.selectedDate, locale)
-    : null;
+  const hasDate = Boolean(item.selectedDate);
+  const hasDuration = Boolean(item.estimatedMinutes);
+  const hasWhen = Boolean(item.preferredTime);
+  const hasPriority = Boolean(activePriority);
 
-  const durationLabel = item.estimatedMinutes
-    ? t('vaciar.previewDurationMinutes', { count: item.estimatedMinutes })
+  const dateLabel = hasDate
+    ? formatProjectDueDate(item.selectedDate!, locale)
+    : t('vaciar.previewDateBtn');
+
+  const durationLabel = hasDuration
+    ? t('vaciar.previewDurationMinutes', { count: item.estimatedMinutes! })
     : t('vaciar.previewDurationBtn');
 
-  const whenLabel =
-    formatPreferredTimeLabel(item.preferredTime, locale) ?? t('vaciar.previewWhenBtn');
+  const whenLabel = hasWhen
+    ? (formatPreferredTimeLabel(item.preferredTime, locale) ?? t('vaciar.previewWhenBtn'))
+    : t('vaciar.previewWhenBtn');
 
-  const priorityLabel = activePriority
-    ? t(PRIORITY_LABEL_KEYS[activePriority])
+  const priorityLabel = hasPriority
+    ? t(PRIORITY_LABEL_KEYS[activePriority!])
     : t('vaciar.previewPriorityBtn');
 
-  const summary = useMemo(
-    () => buildPreviewTaskSummary(item, locale, t),
+  const summaryParts = useMemo(
+    () => buildPreviewTaskSummaryParts(item, locale, t),
     [item, locale, t],
   );
 
@@ -142,10 +148,20 @@ export function ReviewPreviewTaskRow({
           onPress={() => setExpanded(true)}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel={t('vaciar.previewAdjustTaskA11y', { summary })}
+          accessibilityLabel={t('vaciar.previewAdjustTaskA11y', {
+            summary: buildPreviewTaskSummary(item, locale, t),
+          })}
         >
-          <Text style={styles.summaryText} numberOfLines={1}>
-            {summary}
+          <Text style={styles.summaryText} numberOfLines={2}>
+            {summaryParts.map((part, index) => (
+              <Text
+                key={`${part.text}-${index}`}
+                style={part.filled ? styles.summaryFilled : styles.summaryMissing}
+              >
+                {index > 0 ? ' · ' : ''}
+                {part.text}
+              </Text>
+            ))}
           </Text>
           <View style={styles.adjustBtn}>
             <Text style={styles.adjustText}>{t('vaciar.previewAdjustTask')}</Text>
@@ -175,7 +191,11 @@ export function ReviewPreviewTaskRow({
 
           <View style={styles.actionRow}>
             <TouchableOpacity
-              style={[styles.actionBtn, showDatePicker && styles.actionBtnActive]}
+              style={[
+                styles.actionBtn,
+                hasDate ? styles.actionBtnFilled : styles.actionBtnEmpty,
+                showDatePicker && styles.actionBtnActive,
+              ]}
               onPress={() => {
                 setShowDatePicker((value) => !value);
                 setShowDurationPicker(false);
@@ -184,15 +204,29 @@ export function ReviewPreviewTaskRow({
               }}
               activeOpacity={0.85}
               accessibilityRole="button"
+              accessibilityState={{ selected: hasDate }}
             >
-              <Calendar size={14} color={THEME.colors.calm.lavenderDeep} />
-              <Text style={styles.actionBtnText} numberOfLines={1}>
-                {dateLabel ?? t('vaciar.previewDateBtn')}
+              <Calendar
+                size={14}
+                color={hasDate ? THEME.colors.calm.lavenderDeep : THEME.colors.text.tertiary}
+              />
+              <Text
+                style={[
+                  styles.actionBtnText,
+                  !hasDate && styles.actionBtnTextEmpty,
+                ]}
+                numberOfLines={1}
+              >
+                {dateLabel}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionBtn, showDurationPicker && styles.actionBtnActive]}
+              style={[
+                styles.actionBtn,
+                hasDuration ? styles.actionBtnFilled : styles.actionBtnEmpty,
+                showDurationPicker && styles.actionBtnActive,
+              ]}
               onPress={() => {
                 setShowDurationPicker((value) => !value);
                 setShowDatePicker(false);
@@ -201,15 +235,29 @@ export function ReviewPreviewTaskRow({
               }}
               activeOpacity={0.85}
               accessibilityRole="button"
+              accessibilityState={{ selected: hasDuration }}
             >
-              <Clock size={14} color={THEME.colors.calm.lavenderDeep} />
-              <Text style={styles.actionBtnText} numberOfLines={1}>
+              <Clock
+                size={14}
+                color={hasDuration ? THEME.colors.calm.lavenderDeep : THEME.colors.text.tertiary}
+              />
+              <Text
+                style={[
+                  styles.actionBtnText,
+                  !hasDuration && styles.actionBtnTextEmpty,
+                ]}
+                numberOfLines={1}
+              >
                 {durationLabel}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionBtn, showWhenPicker && styles.actionBtnActive]}
+              style={[
+                styles.actionBtn,
+                hasWhen ? styles.actionBtnFilled : styles.actionBtnEmpty,
+                showWhenPicker && styles.actionBtnActive,
+              ]}
               onPress={() => {
                 setShowWhenPicker((value) => !value);
                 setShowDatePicker(false);
@@ -218,15 +266,29 @@ export function ReviewPreviewTaskRow({
               }}
               activeOpacity={0.85}
               accessibilityRole="button"
+              accessibilityState={{ selected: hasWhen }}
             >
-              <AlarmClock size={14} color={THEME.colors.calm.lavenderDeep} />
-              <Text style={styles.actionBtnText} numberOfLines={1}>
+              <AlarmClock
+                size={14}
+                color={hasWhen ? THEME.colors.calm.lavenderDeep : THEME.colors.text.tertiary}
+              />
+              <Text
+                style={[
+                  styles.actionBtnText,
+                  !hasWhen && styles.actionBtnTextEmpty,
+                ]}
+                numberOfLines={1}
+              >
                 {whenLabel}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionBtn, showPriorityPicker && styles.actionBtnActive]}
+              style={[
+                styles.actionBtn,
+                hasPriority ? styles.actionBtnFilled : styles.actionBtnEmpty,
+                showPriorityPicker && styles.actionBtnActive,
+              ]}
               onPress={() => {
                 setShowPriorityPicker((value) => !value);
                 setShowDatePicker(false);
@@ -235,10 +297,19 @@ export function ReviewPreviewTaskRow({
               }}
               activeOpacity={0.85}
               accessibilityRole="button"
-              accessibilityState={{ expanded: showPriorityPicker }}
+              accessibilityState={{ expanded: showPriorityPicker, selected: hasPriority }}
             >
-              <Flag size={14} color={THEME.colors.calm.lavenderDeep} />
-              <Text style={styles.actionBtnText} numberOfLines={1}>
+              <Flag
+                size={14}
+                color={hasPriority ? THEME.colors.calm.lavenderDeep : THEME.colors.text.tertiary}
+              />
+              <Text
+                style={[
+                  styles.actionBtnText,
+                  !hasPriority && styles.actionBtnTextEmpty,
+                ]}
+                numberOfLines={1}
+              >
                 {priorityLabel}
               </Text>
             </TouchableOpacity>
@@ -409,9 +480,15 @@ const styles = StyleSheet.create({
   },
   summaryText: {
     ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
     flex: 1,
     lineHeight: 16,
+  },
+  summaryFilled: {
+    color: THEME.colors.text.secondary,
+  },
+  summaryMissing: {
+    color: THEME.colors.text.tertiary,
+    fontStyle: 'italic',
   },
   adjustBtn: {
     flexDirection: 'row',
@@ -447,15 +524,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.calm.mist,
     borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
     minHeight: 40,
     maxWidth: '100%',
+  },
+  actionBtnFilled: {
+    backgroundColor: THEME.colors.calm.lavender,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    borderStyle: 'solid',
+  },
+  actionBtnEmpty: {
+    backgroundColor: THEME.colors.fill[100],
+    borderColor: THEME.colors.calm.border,
+    borderStyle: 'dashed',
   },
   actionBtnActive: {
     backgroundColor: THEME.colors.calm.lavender,
     borderColor: THEME.colors.calm.lavenderDeep,
+    borderStyle: 'solid',
   },
   actionBtnText: {
     ...THEME.typography.small,
@@ -463,6 +549,10 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.medium,
     lineHeight: 16,
     flexShrink: 1,
+  },
+  actionBtnTextEmpty: {
+    color: THEME.colors.text.tertiary,
+    fontFamily: THEME.fonts.heading.medium,
   },
   pickerWrap: {
     paddingTop: THEME.spacing.xs,

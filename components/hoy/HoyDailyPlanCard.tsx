@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Clock, Star } from 'lucide-react-native';
+import { Clock } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
@@ -21,8 +21,6 @@ type HoyDailyPlanCardProps = {
   focusedProject?: FocusedProjectInfo | null;
   onClearFocusedProject?: () => void;
   prioritiesSlot?: ReactNode;
-  prioritiesExpanded?: boolean;
-  onTogglePriorities?: () => void;
   waitingExpanded?: boolean;
   onToggleWaiting?: () => void;
   waitingSlot?: ReactNode;
@@ -43,8 +41,6 @@ export function HoyDailyPlanCard({
   focusedProject = null,
   onClearFocusedProject,
   prioritiesSlot,
-  prioritiesExpanded = false,
-  onTogglePriorities,
   waitingExpanded = false,
   onToggleWaiting,
   waitingSlot,
@@ -52,14 +48,6 @@ export function HoyDailyPlanCard({
   capacitySummarySlot,
 }: HoyDailyPlanCardProps) {
   const { t } = useI18n();
-
-  const prioritiesSubtitle = allFocusDone
-    ? t('hoy.planPrioritiesSubAllDone')
-    : stepCount > 0
-      ? prioritiesExpanded
-        ? t('hoy.planPrioritiesSubOpen')
-        : t('hoy.planPrioritiesMany', { count: stepCount })
-      : t('hoy.planPrioritiesSubEmpty');
 
   const waitingSubtitle =
     waitingCount > 0
@@ -89,12 +77,12 @@ export function HoyDailyPlanCard({
             {planHeadline
               ? planHeadline
               : focusedProject
-              ? t('hoy.planSubtitleWithProject', { name: focusedProject.name })
-              : crisisMode
-                ? t('hoy.planSubtitleCare')
-                : hasCheckIn
-                  ? t('hoy.planSubtitleWithCheckIn')
-                  : t('hoy.planSubtitleNoCheckIn')}
+                ? t('hoy.planSubtitleWithProject', { name: focusedProject.name })
+                : crisisMode
+                  ? t('hoy.planSubtitleCare')
+                  : hasCheckIn
+                    ? t('hoy.planSubtitleWithCheckIn')
+                    : t('hoy.planSubtitleNoCheckIn')}
           </Text>
           {progressLabel ? (
             <View style={styles.progressPill}>
@@ -109,22 +97,16 @@ export function HoyDailyPlanCard({
         <HoyFocusedProjectStrip project={focusedProject} onClearFocus={onClearFocusedProject} />
       ) : null}
 
-      <View style={styles.sections}>
-        <HoyPlanExpandableRow
-          variant="accent"
-          compact
-          icon={<Star size={18} color={THEME.colors.calm.lavenderDeep} />}
-          title={t('hoy.planPrioritiesTitle')}
-          subtitle={prioritiesSubtitle}
-          expanded={prioritiesExpanded}
-          onToggle={() => onTogglePriorities?.()}
-          accessibilityLabel={t('hoy.planPrioritiesA11y', { count: stepCount })}
-        >
-          {prioritiesSlot ?? (
-            <Text style={styles.emptyHint}>{t('hoy.planPrioritiesSubEmpty')}</Text>
-          )}
-        </HoyPlanExpandableRow>
+      <View style={styles.prioritiesBody}>
+        {allFocusDone ? (
+          <Text style={styles.doneHint}>{t('hoy.planPrioritiesSubAllDone')}</Text>
+        ) : null}
+        {prioritiesSlot ?? (
+          <Text style={styles.emptyHint}>{t('hoy.planPrioritiesSubEmpty')}</Text>
+        )}
+      </View>
 
+      <View style={styles.waitingSection}>
         <HoyPlanExpandableRow
           variant="muted"
           compact
@@ -212,10 +194,24 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     lineHeight: 14,
   },
-  sections: {
+  prioritiesBody: {
     gap: THEME.spacing.xs,
-    padding: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
     paddingTop: THEME.spacing.sm,
+    paddingBottom: THEME.spacing.xs,
+  },
+  doneHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontStyle: 'italic',
+    lineHeight: 18,
+  },
+  waitingSection: {
+    paddingHorizontal: THEME.spacing.md,
+    paddingBottom: THEME.spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: THEME.colors.calm.border,
+    marginTop: THEME.spacing.xs,
   },
   footer: {
     gap: THEME.spacing.sm,
