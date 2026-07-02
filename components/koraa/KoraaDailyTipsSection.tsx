@@ -14,6 +14,8 @@ type KoraaDailyTipsSectionProps = {
   titleKey?: TranslationKey;
   embedded?: boolean;
   hideHeader?: boolean;
+  /** Hide "For me" pill when the section title already says it (Para mí). */
+  hideForYouBadge?: boolean;
   onOpenTip: (tip: ScoredTip) => void;
 };
 
@@ -24,13 +26,14 @@ export function KoraaDailyTipsSection({
   titleKey = 'koraaDailyTips.title',
   embedded = false,
   hideHeader = false,
+  hideForYouBadge = false,
   onOpenTip,
 }: KoraaDailyTipsSectionProps) {
   const { t } = useI18n();
 
   if (tips.length === 0) return null;
 
-  const forYouLabel = t('tips.forYouBadge');
+  const forYouLabel = hideForYouBadge ? undefined : t('tips.forYouBadge');
   const showSubheader = !hideHeader;
 
   const content = (

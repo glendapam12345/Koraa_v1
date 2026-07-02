@@ -61,7 +61,7 @@ function MoodFaceCell({
         {hasMood ? (
           <Text style={[styles.emoji, compact && styles.emojiSm]}>{emoji}</Text>
         ) : (
-          <Text style={[styles.emptyMark, compact && styles.emptyMarkSm]}>·</Text>
+          <View style={styles.emptyPlaceholder} />
         )}
       </View>
       <Text
@@ -76,18 +76,24 @@ function MoodFaceCell({
 
 export function MiniMoodTimeline({ days, monthNames, period }: MiniMoodTimelineProps) {
   const { t } = useI18n();
-  const withCheckIn = days.filter((d) => d.hasCheckIn).length;
+  const withMood = days.filter((d) => d.hasCheckIn && d.emotion).length;
   const isExtended = days.length > 7;
   const columns = gridColumns(days.length);
   const rows = chunkRows(days, columns);
 
   if (days.length === 0) return null;
 
+  if (withMood === 0) {
+    return (
+      <Text style={styles.emptyState}>{t('parami.moodTimelineEmpty')}</Text>
+    );
+  }
+
   return (
     <View
       style={styles.wrap}
       accessibilityLabel={t('paramiExtra.a11yMoodTimeline', {
-        checkIns: withCheckIn,
+        checkIns: withMood,
         total: days.length,
       })}
     >
@@ -126,11 +132,13 @@ export function MiniMoodTimeline({ days, monthNames, period }: MiniMoodTimelineP
         </View>
       )}
       <Text style={styles.legend}>
-        {days.length >= 30
-          ? t('parami.moodTimelineLegendMonth', { count: days.length })
-          : days.length === 14
-            ? t('parami.moodTimelineLegendFortnight', { count: days.length })
-            : t('parami.moodTimelineLegend')}
+        {withMood < days.length
+          ? t('parami.moodTimelineLegendSparse', { checkIns: withMood, total: days.length })
+          : days.length >= 30
+            ? t('parami.moodTimelineLegendMonth', { count: days.length })
+            : days.length === 14
+              ? t('parami.moodTimelineLegendFortnight', { count: days.length })
+              : t('parami.moodTimelineLegend')}
       </Text>
     </View>
   );
@@ -196,6 +204,15 @@ const styles = StyleSheet.create({
   faceBoxEmpty: {
     borderColor: THEME.colors.surfaceOverlay.medium,
     backgroundColor: THEME.colors.surfaceOverlay.veryFaint,
+    borderStyle: 'dashed',
+    opacity: 0.65,
+  },
+  emptyPlaceholder: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: THEME.colors.onGradientFaint,
+    opacity: 0.35,
   },
   emoji: {
     fontSize: 22,
@@ -205,15 +222,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 20,
   },
-  emptyMark: {
-    fontSize: 18,
-    lineHeight: 22,
-    color: THEME.colors.onGradientFaint,
-    opacity: 0.5,
-  },
-  emptyMarkSm: {
-    fontSize: THEME.typography.caption.fontSize,
-    lineHeight: 16,
+  emptyState: {
+    ...THEME.typography.caption,
+    color: THEME.colors.onGradientMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.xs,
   },
   dayLabel: {
     ...THEME.typography.micro,

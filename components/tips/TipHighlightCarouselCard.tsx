@@ -35,7 +35,7 @@ export function TipHighlightCarouselCard({
       accessibilityHint={onPress ? t('tipsExtra.a11yTipOpenHint') : undefined}
     >
       <LinearGradient
-        colors={[meta.gradient[0], meta.gradient[1]]}
+        colors={[meta.highlightGradient[0], meta.highlightGradient[1]]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.card}
@@ -60,7 +60,7 @@ export function TipHighlightCarouselCard({
 
         <View style={styles.footer}>
           <Text style={styles.openLabel}>{t('tipsExtra.openTip')}</Text>
-          <ChevronRight size={14} color={THEME.colors.onGradient} />
+          <ChevronRight size={14} color={THEME.colors.calm.lavenderDeep} />
         </View>
       </LinearGradient>
     </TouchableOpacity>
@@ -77,6 +77,8 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.card,
     padding: THEME.spacing.md,
     justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
     ...THEME.shadows.card,
   },
   topRow: {
@@ -92,29 +94,28 @@ const styles = StyleSheet.create({
   forYouPill: {
     maxWidth: 96,
     borderWidth: 1,
-    borderColor: THEME.colors.surfaceOverlay.border,
+    borderColor: THEME.colors.calm.lavenderDeep,
     borderRadius: THEME.borderRadius.pill,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    backgroundColor: THEME.colors.surfaceOverlay.light,
+    backgroundColor: THEME.colors.calm.card,
   },
   forYouText: {
     ...THEME.typography.micro,
-    color: THEME.colors.onGradient,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
     lineHeight: 12,
   },
   title: {
     ...THEME.typography.screenSubtitle,
-    color: THEME.colors.onGradient,
+    color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
     lineHeight: 20,
     marginTop: 2,
   },
   body: {
     ...THEME.typography.meta,
-    color: THEME.colors.onGradient,
-    opacity: 0.92,
+    color: THEME.colors.text.secondary,
     lineHeight: 16,
     flex: 1,
   },
@@ -126,8 +127,7 @@ const styles = StyleSheet.create({
   },
   openLabel: {
     ...THEME.typography.micro,
-    color: THEME.colors.onGradient,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
-    opacity: 0.9,
   },
 });

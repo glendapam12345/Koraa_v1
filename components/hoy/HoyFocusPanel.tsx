@@ -16,6 +16,7 @@ import { HoyLitePeekCard } from '@/components/hoy/HoyLitePeekCard';
 import { HoyPlanAreaBlock } from '@/components/hoy/HoyPlanAreaBlock';
 import { HoyDayCapacitySummary } from '@/components/hoy/HoyDayCapacitySummary';
 import { HoyAfternoonNudge } from '@/components/hoy/HoyAfternoonNudge';
+import { HoyDayAgenda } from '@/components/hoy/HoyDayAgenda';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
 import { getEmotionEmoji } from '@/lib/emotionEmoji';
 import { isLateNight } from '@/lib/timeOfDayContext';
@@ -35,6 +36,7 @@ import {
   type HoyProjectInfo,
 } from '@/lib/hoy/focusTaskDisplay';
 import { buildHoyPlanAreaGroups } from '@/lib/hoy/buildHoyPlanAreaGroups';
+import { buildHoyDayAgenda } from '@/lib/hoy/buildHoyDayAgenda';
 import { makePresetCustomAreaLabelGetter } from '@/lib/lifeAreas/makePresetCustomAreaLabelGetter';
 import type { UserLifeAreasConfig } from '@/lib/lifeAreas/userLifeAreas';
 import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
@@ -177,6 +179,26 @@ export function HoyFocusPanel({
 
   const hasCheckIn = Boolean(todayMood);
 
+  const activeFocusTasks = useMemo(
+    () => displayFocusTasks.filter((task) => !task.is_completed),
+    [displayFocusTasks],
+  );
+
+  const dayAgenda = useMemo(
+    () => buildHoyDayAgenda(activeFocusTasks, planningMeta, projectsMap, locale),
+    [activeFocusTasks, planningMeta, projectsMap, locale],
+  );
+
+  const untimedFocusTasks = useMemo(
+    () => activeFocusTasks.filter((task) => !dayAgenda.timedTaskIds.has(task.id)),
+    [activeFocusTasks, dayAgenda.timedTaskIds],
+  );
+
+  const focusTasksById = useMemo(
+    () => new Map(activeFocusTasks.map((task) => [task.id, task])),
+    [activeFocusTasks],
+  );
+
   const careCounts = crisisMode ? getCareModeTaskCounts(incompleteFocusTasks.length, nonFocusPending) : null;
   const restLinkCount = waitingCount ?? careCounts?.waitingCount ?? nonFocusPending;
 
@@ -268,18 +290,34 @@ export function HoyFocusPanel({
 
   const prioritiesSlot = (
     <>
-      {displayFocusTasks.length > 0 ? (
-        renderTasksByArea(displayFocusTasks, 'priority')
-      ) : focusedProject ? (
-        <View style={styles.focusedEmpty}>
-          <Text style={styles.focusedEmptyTitle}>
-            {t('hoy.focusedProjectEmptyTitle', { name: focusedProject.name })}
-          </Text>
-          <Text style={styles.focusedEmptyBody}>{t('hoy.focusedProjectEmptyBody')}</Text>
-        </View>
-      ) : (
-        <Text style={styles.emptyInline}>{t('hoy.planPrioritiesSubEmpty')}</Text>
-      )}
+      {dayAgenda.timed.length > 0 ? (
+        <HoyDayAgenda
+          items={dayAgenda.timed}
+          onOpenTask={(taskId) => {
+            const task = focusTasksById.get(taskId);
+            if (task) onOpenTask(task);
+          }}
+        />
+      ) : null}
+      {dayAgenda.timed.length > 0 && untimedFocusTasks.length > 0 ? (
+        <Text style={styles.untimedSectionTitle}>{t('hoy.dayAgendaUntimedTitle')}</Text>
+      ) : null}
+      {untimedFocusTasks.length > 0 ? (
+        renderTasksByArea(untimedFocusTasks, 'priority')
+      ) : dayAgenda.timed.length === 0 ? (
+        activeFocusTasks.length > 0 ? (
+          renderTasksByArea(activeFocusTasks, 'priority')
+        ) : focusedProject ? (
+          <View style={styles.focusedEmpty}>
+            <Text style={styles.focusedEmptyTitle}>
+              {t('hoy.focusedProjectEmptyTitle', { name: focusedProject.name })}
+            </Text>
+            <Text style={styles.focusedEmptyBody}>{t('hoy.focusedProjectEmptyBody')}</Text>
+          </View>
+        ) : (
+          <Text style={styles.emptyInline}>{t('hoy.planPrioritiesSubEmpty')}</Text>
+        )
+      ) : null}
     </>
   );
 
@@ -577,6 +615,13 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: THEME.spacing.xs,
     paddingVertical: THEME.spacing.xs,
+  },
+  untimedSectionTitle: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.secondary,
+    paddingTop: THEME.spacing.xs,
+    paddingHorizontal: 2,
   },
   emptyInline: {
     ...THEME.typography.body,

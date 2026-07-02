@@ -310,7 +310,7 @@ export function HoyTasksSection({
           tipLead={dailyTipLead}
           fromAi={dailyTipsFromAi}
           onOpenTip={(tip) =>
-            openTipsCategory(router, tip.category as TipCategoryId, tipsContext)
+            openTipsCategory(router, tip.category as TipCategoryId, tipsContext, tip.id)
           }
         />
       ) : null}

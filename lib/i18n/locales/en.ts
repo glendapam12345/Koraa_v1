@@ -365,7 +365,11 @@ export const en: DeepStrings<typeof es> = {
     moodCardTitle: 'This week has felt like this',
     moodCardTitleFortnight: 'These two weeks have felt like this',
     moodCardTitleMonth: 'These 30 days have felt like this',
-    moodTimelineLegend: 'Each face is a day · empty means no check-in that day',
+    moodTimelineLegend: 'Each face is a day you checked in',
+    moodTimelineLegendSparse:
+      '{{checkIns}} of {{total}} days with a check-in · the rest stay blank, no rush',
+    moodTimelineEmpty:
+      'When you do your first check-in, your days will show up here — no rush.',
     moodTimelineLegendMonth:
       '{{count}} days in order (oldest top-left) · face = check-in',
     moodTimelineLegendFortnight:
@@ -374,9 +378,12 @@ export const en: DeepStrings<typeof es> = {
     energyNoCheckIn: 'no check-in',
     energyWeekLabel: 'Week {{n}}',
     energyMonthRowLabel: '{{start}} – {{end}}',
-    energyChartNoCheckIns: 'No energy check-ins yet in {{period}}',
+    energyChartNoCheckIns:
+      'No energy logged in {{period}} yet. When you check in, it will show up here.',
     energyGridLegendWeek:
       '{{checkIns}} of {{days}} days with energy logged · scale 1–5',
+    energyGridLegendSparse:
+      '{{checkIns}} day(s) with energy in this period · scale 1–5',
     energyGridLegendFortnight:
       '{{days}} days across 2 weeks · {{checkIns}} with energy · scale 1–5',
     energyGridLegendMonth:
@@ -664,6 +671,11 @@ export const en: DeepStrings<typeof es> = {
     showAllSectionsToast: 'You will see all sections in Today',
     ...hoyExtraEn,
     planTitle: 'What matters today',
+    dayAgendaTitle: 'Through your day',
+    dayAgendaUntimedTitle: 'No set time',
+    dayAgendaNoDuration: 'no duration',
+    dayAgendaSectionA11y: '{{count}} timed steps in your day',
+    dayAgendaRowA11y: '{{time}}, {{task}}, {{duration}}',
     planSubtitleWithCheckIn: 'Based on how you feel and the time you have.',
     dayCapacityLine:
       'Energy {{energy}}/5 · ~{{available}} free · {{count}} steps ({{planned}} estimated)',

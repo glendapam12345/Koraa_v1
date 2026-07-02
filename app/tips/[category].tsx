@@ -54,13 +54,19 @@ export default function TipsCategoryScreen() {
   const { t, locale } = useI18n();
   const { user } = useAuth();
   const { isSubscribed } = useSubscription();
-  const { category: catParam, emotion, energy } = useLocalSearchParams<{
+  const { category: catParam, emotion, energy, focusTipId: focusTipParam } = useLocalSearchParams<{
     category?: string;
     emotion?: string;
     energy?: string;
+    focusTipId?: string;
   }>();
 
   const category = parseCategory(catParam);
+  const focusTipId = useMemo(() => {
+    const raw = Array.isArray(focusTipParam) ? focusTipParam[0] : focusTipParam;
+    const id = raw?.trim();
+    return id || null;
+  }, [focusTipParam]);
   const ctx = useMemo(
     () => ({
       emotion: (emotion ?? 'tranquila').toLowerCase(),
@@ -114,6 +120,12 @@ export default function TipsCategoryScreen() {
     setOverrideTip(null);
     setMoreOpen(false);
   }, [category, emotion, energy]);
+
+  useEffect(() => {
+    if (!focusTipId || allTips.length === 0) return;
+    const tip = allTips.find((item) => item.id === focusTipId);
+    if (tip) setOverrideTip(tip);
+  }, [focusTipId, allTips]);
 
   useEffect(() => {
     if (category && shownTip) {

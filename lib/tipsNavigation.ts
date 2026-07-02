@@ -7,6 +7,7 @@ export function openTipsCategory(
   router: RouterPush,
   category: TipCategoryId,
   context?: Pick<TipsUserContext, 'emotion' | 'energyLevel'>,
+  focusTipId?: string,
 ): void {
   router.push({
     pathname: '/tips/[category]',
@@ -14,6 +15,7 @@ export function openTipsCategory(
       category,
       emotion: (context?.emotion ?? 'tranquila').toLowerCase(),
       energy: String(context?.energyLevel ?? 3),
+      ...(focusTipId ? { focusTipId } : {}),
     },
   });
 }

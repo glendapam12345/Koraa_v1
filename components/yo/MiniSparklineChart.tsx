@@ -70,7 +70,12 @@ function EnergyGridCell({
             ]}
           />
         ) : (
-          <Text style={[styles.gridEmpty, onGradient && styles.gridEmptyOnGradient]}>·</Text>
+          <View
+            style={[
+              styles.gridTrackEmpty,
+              onGradient && styles.gridTrackEmptyOnGradient,
+            ]}
+          />
         )}
       </View>
       {bar.hasCheckIn && bar.energy != null ? (
@@ -94,7 +99,6 @@ function EnergyWeekList({
   max: number;
   onGradient: boolean;
 }) {
-  const { t } = useI18n();
   const labelColor = onGradient ? THEME.colors.onGradientMuted : THEME.colors.text.main;
   const trackColor = onGradient ? THEME.colors.surfaceOverlay.washLight : THEME.colors.calm.mist;
   const mutedColor = onGradient ? THEME.colors.onGradientFaint : THEME.colors.text.tertiary;
@@ -108,9 +112,13 @@ function EnergyWeekList({
               <Text style={[styles.dateLabel, { color: mutedColor }]} numberOfLines={1}>
                 {bar.dayLabel}
               </Text>
-              <View style={[styles.track, styles.trackEmpty, { backgroundColor: trackColor }]}>
-                <Text style={[styles.noCheckIn, { color: mutedColor }]}>{t('parami.energyNoCheckIn')}</Text>
-              </View>
+              <View
+                style={[
+                  styles.track,
+                  styles.trackEmpty,
+                  { backgroundColor: trackColor, borderColor: mutedColor },
+                ]}
+              />
               <Text style={[styles.score, styles.scoreEmpty, { color: mutedColor }]}>—</Text>
             </View>
           );
@@ -198,47 +206,53 @@ export function MiniSparklineChart({
         </Text>
       ) : null}
 
-      {useGrid ? (
-        <View style={styles.gridWrap}>
-          {rows.map((row, rowIndex) => (
-            <View key={`energy-row-${rowIndex}`} style={styles.gridRowBlock}>
-              {period === 'twoWeeks' ? (
-                <Text style={[styles.weekTag, onGradient && styles.weekTagOnGradient]}>
-                  {t('parami.energyWeekLabel', { n: rowIndex + 1 })}
-                </Text>
-              ) : period === 'month' && row.length > 0 ? (
-                <Text style={[styles.weekTag, onGradient && styles.weekTagOnGradient]}>
-                  {t('parami.energyMonthRowLabel', {
-                    start: row[0]!.dayLabel,
-                    end: row[row.length - 1]!.dayLabel,
-                  })}
-                </Text>
-              ) : null}
-              <View style={styles.gridRow}>
-                {row.map((bar) => (
-                  <EnergyGridCell
-                    key={bar.key}
-                    bar={bar}
-                    max={max}
-                    onGradient={onGradient}
-                    compact={bars.length >= 30}
-                  />
-                ))}
+      {checkInCount > 0 ? (
+        useGrid ? (
+          <View style={styles.gridWrap}>
+            {rows.map((row, rowIndex) => (
+              <View key={`energy-row-${rowIndex}`} style={styles.gridRowBlock}>
+                {period === 'twoWeeks' ? (
+                  <Text style={[styles.weekTag, onGradient && styles.weekTagOnGradient]}>
+                    {t('parami.energyWeekLabel', { n: rowIndex + 1 })}
+                  </Text>
+                ) : period === 'month' && row.length > 0 ? (
+                  <Text style={[styles.weekTag, onGradient && styles.weekTagOnGradient]}>
+                    {t('parami.energyMonthRowLabel', {
+                      start: row[0]!.dayLabel,
+                      end: row[row.length - 1]!.dayLabel,
+                    })}
+                  </Text>
+                ) : null}
+                <View style={styles.gridRow}>
+                  {row.map((bar) => (
+                    <EnergyGridCell
+                      key={bar.key}
+                      bar={bar}
+                      max={max}
+                      onGradient={onGradient}
+                      compact={bars.length >= 30}
+                    />
+                  ))}
+                </View>
               </View>
-            </View>
-          ))}
-        </View>
-      ) : (
-        <EnergyWeekList bars={bars} max={max} onGradient={onGradient} />
-      )}
+            ))}
+          </View>
+        ) : (
+          <EnergyWeekList bars={bars} max={max} onGradient={onGradient} />
+        )
+      ) : null}
 
-      <Text style={[styles.legend, { color: legendColor }, onGradient && styles.legendOnGradient]}>
-        {period === 'month'
-          ? t('parami.energyGridLegendMonth', { days: bars.length, checkIns: checkInCount })
-          : period === 'twoWeeks'
-            ? t('parami.energyGridLegendFortnight', { days: bars.length, checkIns: checkInCount })
-            : t('parami.energyGridLegendWeek', { checkIns: checkInCount, days: bars.length })}
-      </Text>
+      {checkInCount > 0 ? (
+        <Text style={[styles.legend, { color: legendColor }, onGradient && styles.legendOnGradient]}>
+          {checkInCount < bars.length
+            ? t('parami.energyGridLegendSparse', { checkIns: checkInCount, days: bars.length })
+            : period === 'month'
+              ? t('parami.energyGridLegendMonth', { days: bars.length, checkIns: checkInCount })
+              : period === 'twoWeeks'
+                ? t('parami.energyGridLegendFortnight', { days: bars.length, checkIns: checkInCount })
+                : t('parami.energyGridLegendWeek', { checkIns: checkInCount, days: bars.length })}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -283,15 +297,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   trackEmpty: {
-    alignItems: 'center',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    opacity: 0.55,
   },
   fill: {
     height: '100%',
     borderRadius: 6,
-  },
-  noCheckIn: {
-    ...THEME.typography.tiny,
-    textAlign: 'center',
   },
   score: {
     ...THEME.typography.small,
@@ -343,14 +355,17 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: THEME.borderRadius.standard,
   },
-  gridEmpty: {
-    ...THEME.typography.caption,
-    lineHeight: CELL_BAR_HEIGHT,
-    color: THEME.colors.text.tertiary,
-    opacity: 0.6,
+  gridTrackEmpty: {
+    width: '100%',
+    height: '100%',
+    borderRadius: THEME.borderRadius.standard,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: THEME.colors.text.tertiary,
+    opacity: 0.45,
   },
-  gridEmptyOnGradient: {
-    color: THEME.colors.onGradientFaint,
+  gridTrackEmptyOnGradient: {
+    borderColor: THEME.colors.onGradientFaint,
   },
   gridScore: {
     ...THEME.typography.micro,

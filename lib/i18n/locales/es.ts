@@ -362,7 +362,11 @@ export const es = {
     moodCardTitle: 'Esta semana se ha sentido así',
     moodCardTitleFortnight: 'Estas dos semanas se han sentido así',
     moodCardTitleMonth: 'Estos 30 días se han sentido así',
-    moodTimelineLegend: 'Cada carita es un día · sin check-in aparece vacío',
+    moodTimelineLegend: 'Cada carita es un día con check-in',
+    moodTimelineLegendSparse:
+      '{{checkIns}} de {{total}} días con check-in · los demás quedan en blanco, sin prisa',
+    moodTimelineEmpty:
+      'Cuando hagas tu primer check-in, tus días aparecerán aquí — sin prisa.',
     moodTimelineLegendMonth:
       '{{count}} días en orden (más antiguo arriba a la izquierda) · carita = check-in',
     moodTimelineLegendFortnight:
@@ -371,9 +375,12 @@ export const es = {
     energyNoCheckIn: 'sin check-in',
     energyWeekLabel: 'Semana {{n}}',
     energyMonthRowLabel: '{{start}} – {{end}}',
-    energyChartNoCheckIns: 'En {{period}} aún no hay check-ins con energía',
+    energyChartNoCheckIns:
+      'Aún no hay energía registrada en {{period}}. Cuando hagas check-in, aparecerá aquí.',
     energyGridLegendWeek:
       '{{checkIns}} de {{days}} días con energía registrada · escala 1–5',
+    energyGridLegendSparse:
+      '{{checkIns}} día(s) con energía en este periodo · escala 1–5',
     energyGridLegendFortnight:
       '{{days}} días en 2 semanas · {{checkIns}} con energía · escala 1–5',
     energyGridLegendMonth:
@@ -670,6 +677,11 @@ export const es = {
     showAllSectionsToast: 'Verás todas las secciones en Hoy',
     ...hoyExtra,
     planTitle: 'Qué importa hoy',
+    dayAgendaTitle: 'A lo largo del día',
+    dayAgendaUntimedTitle: 'Sin hora fija',
+    dayAgendaNoDuration: 'sin duración',
+    dayAgendaSectionA11y: '{{count}} pasos con hora en tu día',
+    dayAgendaRowA11y: '{{time}}, {{task}}, {{duration}}',
     planSubtitleWithCheckIn: 'Según cómo te sientes y el tiempo que tienes.',
     dayCapacityLine:
       'Energía {{energy}}/5 · ~{{available}} libres · {{count}} pasos ({{planned}} estimados)',

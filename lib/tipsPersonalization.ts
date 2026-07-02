@@ -189,10 +189,32 @@ export function getTipsDailyInsight(
 
 export const TIP_CATEGORY_META: Record<
   TipCategoryId,
-  { emoji: string; gradient: readonly [string, string] }
+  {
+    emoji: string;
+    /** Bold gradients for category grid cards */
+    gradient: readonly [string, string];
+    /** Softer, muted gradients for daily tip carousel — distinct from grid */
+    highlightGradient: readonly [string, string];
+  }
 > = {
-  mindset: { emoji: '🧘', gradient: ['#667eea', '#764ba2'] },
-  rest: { emoji: '🌙', gradient: ['#30cfd0', '#330867'] },
-  action: { emoji: '⚡', gradient: ['#fa709a', '#fee140'] },
-  productivity: { emoji: '📋', gradient: ['#4A90E2', '#FF6B6B'] },
+  mindset: {
+    emoji: '🧘',
+    gradient: ['#A588E0', '#7B61A8'],
+    highlightGradient: ['#C4B0E8', '#E2D4F5'],
+  },
+  rest: {
+    emoji: '🌙',
+    gradient: ['#30cfd0', '#330867'],
+    highlightGradient: ['#9DD4E3', '#C5EAF2'],
+  },
+  action: {
+    emoji: '⚡',
+    gradient: ['#fa709a', '#fee140'],
+    highlightGradient: ['#EDB0C8', '#F5D4E4'],
+  },
+  productivity: {
+    emoji: '📋',
+    gradient: ['#56BFD4', '#F4A69A'],
+    highlightGradient: ['#A8DDE8', '#F5D0C8'],
+  },
 };

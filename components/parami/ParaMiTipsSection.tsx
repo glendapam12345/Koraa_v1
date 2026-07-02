@@ -79,7 +79,7 @@ export function ParaMiTipsSection({
   };
 
   const openTip = (tip: ScoredTip) => {
-    openTipsCategory(router, tip.category, context);
+    openTipsCategory(router, tip.category, context, tip.id);
   };
 
   const sectionLead = tipLead || t('parami.tipsSectionLead');
@@ -103,10 +103,11 @@ export function ParaMiTipsSection({
       {highlightedTips.length > 0 ? (
         <KoraaDailyTipsSection
           tips={highlightedTips}
-          tipLead={tipLead || t('parami.tipsSectionLead')}
+          tipLead={tipLead || undefined}
           fromAi={fromAi}
           embedded
           hideHeader
+          hideForYouBadge
           onOpenTip={openTip}
         />
       ) : (
