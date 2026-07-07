@@ -11,8 +11,15 @@ import {
   getDailyReminderTime,
   setDailyReminderTime,
   formatReminderTime,
+  getTaskCaptureReminderEnabled,
+  setTaskCaptureReminderEnabled,
 } from '@/lib/notificationPreferences';
-import { scheduleDailyReminder, checkNotificationPermissions } from '@/hooks/useNotifications';
+import {
+  scheduleDailyReminder,
+  scheduleTaskCaptureReminder,
+  cancelTaskCaptureReminderForToday,
+  checkNotificationPermissions,
+} from '@/hooks/useNotifications';
 import { logger } from '@/lib/logger';
 import { getPasswordErrorKey } from '@/lib/passwordPolicy';
 import { resetHoyFirstDayPreview, simulateHoyDayTwo } from '@/lib/hoyLiteDay';
@@ -44,6 +51,7 @@ export function useSettingsScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pendingAction, setPendingAction] = useState<'change-password' | 'delete-account' | null>(null);
   const [notifReminderTime, setNotifReminderTime] = useState({ hour: 9, minute: 0 });
+  const [taskCaptureReminderEnabled, setTaskCaptureReminderEnabledState] = useState(true);
   const [notifSaving, setNotifSaving] = useState(false);
   const [resettingHoyPreview, setResettingHoyPreview] = useState(false);
   const [simulatingHoyDayTwo, setSimulatingHoyDayTwo] = useState(false);
@@ -64,6 +72,7 @@ export function useSettingsScreen() {
   useEffect(() => {
     if (Platform.OS === 'web') return;
     void getDailyReminderTime().then(setNotifReminderTime);
+    void getTaskCaptureReminderEnabled().then(setTaskCaptureReminderEnabledState);
   }, []);
 
   const resetState = useCallback(() => {
@@ -88,6 +97,7 @@ export function useSettingsScreen() {
           Alert.alert(t('settings.notifPermissionTitle'), t('settings.notifPermissionBody'));
         }
         await scheduleDailyReminder();
+        await scheduleTaskCaptureReminder();
         if (Platform.OS === 'ios' || Platform.OS === 'android') {
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
@@ -97,6 +107,35 @@ export function useSettingsScreen() {
         );
       } catch (e) {
         logger.error('Error guardando recordatorio:', e);
+        Alert.alert(t('settings.reminderSaveError'), t('common.retry'));
+      } finally {
+        setNotifSaving(false);
+      }
+    },
+    [t],
+  );
+
+  const handleToggleTaskCaptureReminder = useCallback(
+    async (enabled: boolean) => {
+      if (Platform.OS === 'web') return;
+      setNotifSaving(true);
+      try {
+        await setTaskCaptureReminderEnabled(enabled);
+        setTaskCaptureReminderEnabledState(enabled);
+        if (enabled) {
+          const ok = await checkNotificationPermissions();
+          if (!ok) {
+            Alert.alert(t('settings.notifPermissionTitle'), t('settings.notifPermissionBody'));
+          }
+          await scheduleTaskCaptureReminder();
+        } else {
+          await cancelTaskCaptureReminderForToday();
+        }
+        if (Platform.OS === 'ios' || Platform.OS === 'android') {
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      } catch (e) {
+        logger.error('Error guardando recordatorio de captura:', e);
         Alert.alert(t('settings.reminderSaveError'), t('common.retry'));
       } finally {
         setNotifSaving(false);
@@ -189,7 +228,10 @@ export function useSettingsScreen() {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         try {
           const ok = await checkNotificationPermissions();
-          if (ok) await scheduleDailyReminder(next);
+          if (ok) {
+            await scheduleDailyReminder(next);
+            await scheduleTaskCaptureReminder(next);
+          }
         } catch (e) {
           logger.debug('Reprogramar recordatorio tras cambio de idioma:', e);
         }
@@ -362,6 +404,7 @@ export function useSettingsScreen() {
     setConfirmPassword,
     pendingAction,
     notifReminderTime,
+    taskCaptureReminderEnabled,
     notifSaving,
     resettingHoyPreview,
     simulatingHoyDayTwo,
@@ -369,6 +412,7 @@ export function useSettingsScreen() {
     handleToggleDevPremiumSim,
     resetState,
     applyNotificationPreset,
+    handleToggleTaskCaptureReminder,
     handleResetHoyFirstDay,
     handleSimulateHoyDayTwo,
     selectLocale,

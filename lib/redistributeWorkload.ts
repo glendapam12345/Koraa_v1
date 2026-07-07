@@ -5,30 +5,7 @@
 
 import type { AppLocale } from '@/lib/i18n';
 import { translate } from '@/lib/i18n';
-import { getLocalDateString, toISODateLocal } from '@/lib/dateLocal';
-
-export { getLocalDateString, toISODateLocal };
-
-export function computeMaxTasksPerDay(
-  energyLevel: number,
-  availableTime: string,
-  emotion: string
-): number {
-  const neg = ['agotada', 'ansiosa', 'abrumada'].includes(emotion.toLowerCase());
-  let base = 4;
-  if (energyLevel <= 2 || neg) base = 2;
-  else if (energyLevel === 3) base = 3;
-  else if (energyLevel >= 4) base = 6;
-
-  const time = availableTime.toLowerCase();
-  if (availableTime.includes('Poco') || time.includes('little')) {
-    base = Math.max(1, Math.floor(base * 0.75));
-  }
-  if (availableTime.includes('Todo el día') || time.includes('all day')) {
-    base = Math.min(10, base + 2);
-  }
-  return base;
-}
+import { toISODateLocal } from '@/lib/dateLocal';
 
 export function parseISODateOnly(s: string): Date | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.trim());

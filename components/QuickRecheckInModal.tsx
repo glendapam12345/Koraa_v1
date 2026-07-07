@@ -78,14 +78,11 @@ export function QuickRecheckInModal({
     setError(null);
   }, [visible, initialEmotion, initialEnergy, initialTime, initialFocus]);
 
-  const canSubmit = firstCheckIn
-    ? Boolean(emotion && energy >= 1 && energy <= 5 && user)
-    : Boolean(emotion && energy >= 1 && energy <= 5 && time && focus && user);
-
-  const stepHint = useMemo(
-    () => (firstCheckIn ? t('quickRecheck.firstStepHint') : t('quickRecheck.stepHint')),
-    [firstCheckIn, t],
+  const canSubmit = Boolean(
+    emotion && energy >= 1 && energy <= 5 && time && focus && user,
   );
+
+  const stepHint = useMemo(() => t('quickRecheck.stepHint'), [t]);
 
   const handleSubmit = async () => {
     if (!canSubmit || !user) return;
@@ -200,43 +197,39 @@ export function QuickRecheckInModal({
               ))}
             </View>
 
-            {!firstCheckIn ? (
-              <>
-                <Text style={styles.sectionLabel}>{t('quickRecheck.timeLabel')}</Text>
-                <View style={styles.optionStack}>
-                  {TIME_OPTIONS.map((opt) => (
-                    <TouchableOpacity
-                      key={opt.id}
-                      style={[styles.optionRow, time === opt.id && styles.optionRowSelected]}
-                      onPress={() => setTime(opt.id)}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: time === opt.id }}
-                    >
-                      <Text style={[styles.optionText, time === opt.id && styles.optionTextSelected]}>
-                        {t(opt.labelKey)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+            <Text style={styles.sectionLabel}>{t('quickRecheck.timeLabel')}</Text>
+            <View style={styles.optionStack}>
+              {TIME_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.id}
+                  style={[styles.optionRow, time === opt.id && styles.optionRowSelected]}
+                  onPress={() => setTime(opt.id)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: time === opt.id }}
+                >
+                  <Text style={[styles.optionText, time === opt.id && styles.optionTextSelected]}>
+                    {t(opt.labelKey)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-                <Text style={styles.sectionLabel}>{t('quickRecheck.focusLabel')}</Text>
-                <View style={styles.optionStack}>
-                  {FOCUS_OPTIONS.map((opt) => (
-                    <TouchableOpacity
-                      key={opt.id}
-                      style={[styles.optionRow, focus === opt.id && styles.optionRowSelected]}
-                      onPress={() => setFocus(opt.id)}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: focus === opt.id }}
-                    >
-                      <Text style={[styles.optionText, focus === opt.id && styles.optionTextSelected]}>
-                        {t(opt.labelKey)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </>
-            ) : null}
+            <Text style={styles.sectionLabel}>{t('quickRecheck.focusLabel')}</Text>
+            <View style={styles.optionStack}>
+              {FOCUS_OPTIONS.map((opt) => (
+                <TouchableOpacity
+                  key={opt.id}
+                  style={[styles.optionRow, focus === opt.id && styles.optionRowSelected]}
+                  onPress={() => setFocus(opt.id)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: focus === opt.id }}
+                >
+                  <Text style={[styles.optionText, focus === opt.id && styles.optionTextSelected]}>
+                    {t(opt.labelKey)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
           </ScrollView>

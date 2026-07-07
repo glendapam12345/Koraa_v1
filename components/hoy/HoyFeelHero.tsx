@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
+import { CalmCard } from '@/components/ui/calm/CalmCard';
 import { useI18n } from '@/contexts/I18nContext';
 
 type HoyFeelHeroProps = {
@@ -29,12 +29,7 @@ export function HoyFeelHero({
         accessibilityLabel={t('hoy.currentStateEditA11y')}
         accessibilityHint={t('hoy.feelHeroTapUpdate')}
       >
-        <LinearGradient
-          colors={[THEME.colors.calm.blush, THEME.colors.fill[100], THEME.colors.calm.mist]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.card, styles.cardBorder]}
-        >
+        <CalmCard style={[styles.card, styles.cardSurface]}>
           <Text style={styles.eyebrow}>{t('hoy.focusMoodLabel')}</Text>
           <View style={styles.moodRow}>
             <Text style={styles.emoji} accessibilityLabel={emotionLabel}>
@@ -50,7 +45,8 @@ export function HoyFeelHero({
             </View>
           </View>
           <Text style={styles.koraaLine}>{t('hoy.feelHeroPurposeDone')}</Text>
-        </LinearGradient>
+          <Text style={styles.linkLine}>{t('hoy.updateFeel')} →</Text>
+        </CalmCard>
       </Pressable>
     );
   }
@@ -63,17 +59,12 @@ export function HoyFeelHero({
       accessibilityLabel={t('hoy.inicio.primaryCta')}
       accessibilityHint={t('hoy.feelHeroPurpose')}
     >
-      <LinearGradient
-        colors={[THEME.colors.calm.blush, THEME.colors.fill[100], THEME.colors.calm.mist]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.card, styles.cardBorder]}
-      >
+      <CalmCard style={[styles.card, styles.cardSurface]}>
         <Text style={styles.eyebrow}>{t('hoy.startHereEyebrow')}</Text>
         <Text style={styles.inviteTitle}>{t('hoy.feelHeroQuestion')}</Text>
         <Text style={styles.koraaLine}>{t('hoy.feelHeroPurposeShort')}</Text>
         <Text style={styles.linkLine}>{t('hoy.feelHeroCompactCta')} →</Text>
-      </LinearGradient>
+      </CalmCard>
     </Pressable>
   );
 }
@@ -87,20 +78,22 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
   card: {
-    borderRadius: THEME.borderRadius.rounded,
-    paddingVertical: 10,
-    paddingHorizontal: THEME.spacing.sm,
     gap: 4,
   },
-  cardBorder: {
+  cardSurface: {
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderColor: THEME.colors.tint.blue.border,
     borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
+    paddingVertical: 10,
+    paddingHorizontal: THEME.spacing.sm,
   },
   eyebrow: {
     ...THEME.typography.caption,
-    fontFamily: THEME.fonts.accent.italic,
+    fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.calm.lavenderDeep,
     lineHeight: 18,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   moodRow: {
     flexDirection: 'row',
@@ -130,9 +123,9 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.medium,
   },
   inviteTitle: {
-    ...THEME.typography.h3,
-    lineHeight: 26,
-    fontFamily: THEME.fonts.accent.italic,
+    ...THEME.typography.sectionTitle,
+    lineHeight: 24,
+    fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
     marginTop: 2,
   },

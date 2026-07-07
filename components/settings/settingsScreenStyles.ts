@@ -63,9 +63,25 @@ export const settingsScreenStyles = StyleSheet.create({
     alignItems: 'center',
     gap: THEME.spacing.sm,
   },
+  reminderToggleRow: {
+    alignItems: 'flex-start',
+    marginTop: THEME.spacing.sm,
+  },
+  toggleRowLeft: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 4,
+    paddingRight: THEME.spacing.sm,
+  },
   rowLabel: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
+  },
+  rowSubLabel: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
   },
   rowLabelDanger: {
     ...THEME.typography.body,

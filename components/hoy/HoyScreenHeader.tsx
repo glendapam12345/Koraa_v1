@@ -6,12 +6,19 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { HoyStreakPill } from '@/components/hoy/HoyStreakPill';
 import { HoyCareModeToggle } from '@/components/hoy/HoyCareModeToggle';
+import { TimeOfDayChip } from '@/components/hoy/TimeOfDayChip';
 import { useI18n } from '@/contexts/I18nContext';
-import { useKoraaGreeting } from '@/hooks/useKoraaGreeting';
+import { getFirstName } from '@/lib/displayName';
+import { formatGreetingWithName, formatNightReturnGreeting, useKoraaGreeting } from '@/hooks/useKoraaGreeting';
 
 type HoyScreenHeaderProps = {
-  /** Ocultar subtítulo cuando la pantalla de inicio ya explica el flujo. */
+  /** Nombre para el saludo personalizado (misma línea que Semana: un solo bloque de cabecera). */
+  displayName?: string;
+  hasCheckInToday?: boolean;
+  /** Ocultar subtítulo del saludo. */
   showSubtitle?: boolean;
+  /** Título compacto como Calendario (20px). */
+  compact?: boolean;
   /** Check-in embebido: solo racha + ayuda, sin título de tab. */
   minimal?: boolean;
   streak?: number;
@@ -20,9 +27,12 @@ type HoyScreenHeaderProps = {
   onCareModePress?: () => void;
 };
 
-/** Cabecera de Hoy: racha + ayuda. Tareas vive en la pestaña inferior. */
+/** Cabecera de Hoy: saludo + racha + ayuda (un bloque, sin duplicar título). */
 export function HoyScreenHeader({
+  displayName = '',
+  hasCheckInToday = true,
   showSubtitle = true,
+  compact = true,
   minimal = false,
   streak = 0,
   checkedInToday = false,
@@ -30,7 +40,18 @@ export function HoyScreenHeader({
   onCareModePress,
 }: HoyScreenHeaderProps) {
   const { t } = useI18n();
-  const { headerSubtitle } = useKoraaGreeting();
+  const { period, lateNight, greeting, timeChipLabel, greetingSubline } = useKoraaGreeting();
+  const firstName = getFirstName(displayName);
+
+  const title = lateNight
+    ? formatNightReturnGreeting(t, firstName, period)
+    : formatGreetingWithName(t, greeting, firstName);
+
+  const subtitle = !hasCheckInToday
+    ? t('hoy.startHereCompanionSub')
+    : lateNight
+      ? t('hoy.nightReturnSubline', { name: firstName })
+      : greetingSubline;
 
   const trailing = (
     <>
@@ -56,15 +77,22 @@ export function HoyScreenHeader({
   }
 
   return (
-    <ScreenHeader
-      title={t('tabs.today')}
-      subtitle={showSubtitle ? headerSubtitle : undefined}
-      trailing={trailing}
-    />
+    <View style={styles.wrap}>
+      <TimeOfDayChip period={period} label={timeChipLabel} />
+      <ScreenHeader
+        compact={compact}
+        title={title}
+        subtitle={showSubtitle ? subtitle : undefined}
+        trailing={trailing}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrap: {
+    gap: THEME.spacing.xs,
+  },
   minimalRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',

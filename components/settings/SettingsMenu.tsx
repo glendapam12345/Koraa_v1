@@ -16,8 +16,10 @@ type SettingsMenuProps = {
   locale: AppLocale;
   onSelectLocale: (locale: AppLocale) => void;
   reminderTime: { hour: number; minute: number };
+  taskCaptureReminderEnabled: boolean;
   notifSaving: boolean;
   onSelectReminderPreset: (hour: number, minute: number) => void;
+  onToggleTaskCaptureReminder: (enabled: boolean) => void;
   onResetHoyFirstDay: () => void;
   onSimulateHoyDayTwo: () => void;
   resettingHoyPreview: boolean;
@@ -38,8 +40,10 @@ export function SettingsMenu({
   locale,
   onSelectLocale,
   reminderTime,
+  taskCaptureReminderEnabled,
   notifSaving,
   onSelectReminderPreset,
+  onToggleTaskCaptureReminder,
   onResetHoyFirstDay,
   onSimulateHoyDayTwo,
   resettingHoyPreview,
@@ -80,8 +84,10 @@ export function SettingsMenu({
       ) : (
         <SettingsReminderSection
           reminderTime={reminderTime}
+          taskCaptureReminderEnabled={taskCaptureReminderEnabled}
           saving={notifSaving}
           onSelectPreset={onSelectReminderPreset}
+          onToggleTaskCaptureReminder={onToggleTaskCaptureReminder}
         />
       )}
 

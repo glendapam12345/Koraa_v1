@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
+import { CalmCard } from '@/components/ui/calm/CalmCard';
 import { useI18n } from '@/contexts/I18nContext';
 import { isLateNight } from '@/lib/timeOfDayContext';
 
@@ -89,6 +89,9 @@ export function HoyMoodHeroCard({
           {detailLine}
         </Text>
       ) : null}
+      {onPress ? (
+        <Text style={styles.updateLink}>{t('hoy.updateFeel')} →</Text>
+      ) : null}
     </>
   );
 
@@ -104,14 +107,9 @@ export function HoyMoodHeroCard({
       accessibilityLabel={onPress ? t('hoy.heroUpdateCheckIn') : undefined}
       accessibilityHint={onPress ? t('hoy.focusUpdateCheckInA11y') : undefined}
     >
-      <LinearGradient
-        colors={[THEME.colors.calm.blush, THEME.colors.fill[100], THEME.colors.calm.mist]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[cardStyles, styles.cardBorder]}
-      >
+      <CalmCard style={[cardStyles, styles.cardSurface]}>
         {content}
-      </LinearGradient>
+      </CalmCard>
     </Pressable>
   );
 }
@@ -142,20 +140,23 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   cardCompact: {
-    borderRadius: THEME.borderRadius.rounded,
     paddingVertical: 10,
     paddingHorizontal: THEME.spacing.sm,
     gap: 2,
   },
-  cardBorder: {
+  cardSurface: {
+    backgroundColor: THEME.colors.calm.mist,
+    borderColor: THEME.colors.calm.lavender,
     borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
+    gap: 4,
   },
   eyebrow: {
     ...THEME.typography.caption,
-    fontFamily: THEME.fonts.accent.italic,
+    fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.calm.lavenderDeep,
     lineHeight: 18,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   moodRow: {
     flexDirection: 'row',
@@ -176,9 +177,9 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   emotion: {
-    ...THEME.typography.h3,
-    lineHeight: 26,
-    fontFamily: THEME.fonts.accent.italic,
+    ...THEME.typography.sectionTitle,
+    lineHeight: 24,
+    fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
   },
   emotionCompact: {
@@ -209,5 +210,12 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     color: THEME.colors.text.secondary,
     marginTop: 2,
+  },
+  updateLink: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 18,
+    marginTop: 6,
   },
 });

@@ -40,7 +40,7 @@ import {
   getDailyReminderTime,
   setDailyReminderTime,
 } from '@/lib/notificationPreferences';
-import { checkNotificationPermissions, scheduleDailyReminder } from '@/hooks/useNotifications';
+import { checkNotificationPermissions, scheduleDailyReminder, scheduleTaskCaptureReminder } from '@/hooks/useNotifications';
 
 const STREAK_GOAL_LABEL_KEYS: Record<StreakGoalDays, 'hoy.streakGoalOption7' | 'hoy.streakGoalOption1Month' | 'hoy.streakGoalOption3Months' | 'hoy.streakGoalOption6Months'> = {
   7: 'hoy.streakGoalOption7',
@@ -106,6 +106,7 @@ export default function StreakScreen() {
         Alert.alert(t('settings.notifPermissionTitle'), t('settings.notifPermissionBody'));
       }
       await scheduleDailyReminder();
+      await scheduleTaskCaptureReminder();
       setReminderJustSaved(true);
       if (Platform.OS === 'ios' || Platform.OS === 'android') {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

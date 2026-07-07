@@ -232,7 +232,8 @@ export function HoyTasksSection({
     [dailyTipIds, locale],
   );
 
-  const showDailyTips = Boolean(todayMood) && dailyTips.length > 0 && !crisisMode && !compactLayout;
+  // Consejos destacados viven en Para mí — Hoy se queda en plan + check-in.
+  const showDailyTips = false;
 
   return (
     <View style={styles.root}>

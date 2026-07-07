@@ -14,6 +14,7 @@ import { HoyGentleRhythmStrip } from '@/components/hoy/HoyGentleRhythmStrip';
 import { HoyMoveTasksLink } from '@/components/hoy/HoyMoveTasksLink';
 import { HoyLitePeekCard } from '@/components/hoy/HoyLitePeekCard';
 import { HoyPlanAreaBlock } from '@/components/hoy/HoyPlanAreaBlock';
+import { HoyPlanSubsection } from '@/components/hoy/HoyPlanSubsection';
 import { HoyDayCapacitySummary } from '@/components/hoy/HoyDayCapacitySummary';
 import { HoyAfternoonNudge } from '@/components/hoy/HoyAfternoonNudge';
 import { HoyDayAgenda } from '@/components/hoy/HoyDayAgenda';
@@ -37,6 +38,7 @@ import {
 } from '@/lib/hoy/focusTaskDisplay';
 import { buildHoyPlanAreaGroups } from '@/lib/hoy/buildHoyPlanAreaGroups';
 import { buildHoyDayAgenda } from '@/lib/hoy/buildHoyDayAgenda';
+import { splitHoyPriorityTasks } from '@/lib/hoy/splitHoyPriorityTasks';
 import { makePresetCustomAreaLabelGetter } from '@/lib/lifeAreas/makePresetCustomAreaLabelGetter';
 import type { UserLifeAreasConfig } from '@/lib/lifeAreas/userLifeAreas';
 import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
@@ -259,6 +261,11 @@ export function HoyFocusPanel({
     return source.filter((task) => !task.is_completed);
   }, [orderedWaitingTasks, waitingExpanded]);
 
+  const untimedPrioritySplit = useMemo(
+    () => splitHoyPriorityTasks(untimedFocusTasks, projectsMap),
+    [untimedFocusTasks, projectsMap],
+  );
+
   const renderTasksByArea = (
     taskList: Task[],
     bucket: 'priority' | 'waiting',
@@ -288,6 +295,39 @@ export function HoyFocusPanel({
     );
   };
 
+  const renderPriorityTasksWithGrouping = (taskList: Task[]) => {
+    if (taskList.length === 0) return null;
+
+    const { pinned, flexible, useOneThingFraming } = splitHoyPriorityTasks(
+      taskList,
+      projectsMap,
+    );
+
+    if (pinned.length === 0) {
+      return renderTasksByArea(taskList, 'priority');
+    }
+
+    const pinnedTitle = useOneThingFraming
+      ? t('hoy.planOneThingTitle')
+      : t('hoy.planDueTodayTitle');
+    const pinnedHint = useOneThingFraming
+      ? t('hoy.planOneThingSub')
+      : t('hoy.planDueTodaySub', { count: pinned.length });
+
+    return (
+      <>
+        <HoyPlanSubsection title={pinnedTitle} hint={pinnedHint}>
+          {renderTasksByArea(pinned, 'priority')}
+        </HoyPlanSubsection>
+        {flexible.length > 0 ? (
+          <HoyPlanSubsection title={t('hoy.planFlexibleTitle')} hint={t('hoy.planFlexibleSub')}>
+            {renderTasksByArea(flexible, 'priority')}
+          </HoyPlanSubsection>
+        ) : null}
+      </>
+    );
+  };
+
   const prioritiesSlot = (
     <>
       {dayAgenda.timed.length > 0 ? (
@@ -299,14 +339,16 @@ export function HoyFocusPanel({
           }}
         />
       ) : null}
-      {dayAgenda.timed.length > 0 && untimedFocusTasks.length > 0 ? (
+      {dayAgenda.timed.length > 0 &&
+      untimedFocusTasks.length > 0 &&
+      untimedPrioritySplit.pinned.length === 0 ? (
         <Text style={styles.untimedSectionTitle}>{t('hoy.dayAgendaUntimedTitle')}</Text>
       ) : null}
       {untimedFocusTasks.length > 0 ? (
-        renderTasksByArea(untimedFocusTasks, 'priority')
+        renderPriorityTasksWithGrouping(untimedFocusTasks)
       ) : dayAgenda.timed.length === 0 ? (
         activeFocusTasks.length > 0 ? (
-          renderTasksByArea(activeFocusTasks, 'priority')
+          renderPriorityTasksWithGrouping(activeFocusTasks)
         ) : focusedProject ? (
           <View style={styles.focusedEmpty}>
             <Text style={styles.focusedEmptyTitle}>
@@ -472,7 +514,7 @@ export function HoyFocusPanel({
 
 const styles = StyleSheet.create({
   root: {
-    gap: THEME.layout.tabSectionGap,
+    gap: THEME.layout.sectionGapCompact,
   },
   heroStack: {
     gap: THEME.spacing.xs,
@@ -566,7 +608,7 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   areaGroupList: {
-    gap: THEME.spacing.md,
+    gap: THEME.spacing.sm,
     paddingTop: 2,
   },
   rhythmCard: {

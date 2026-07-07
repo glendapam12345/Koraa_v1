@@ -266,42 +266,6 @@ export const extEs = {
     refreshSleepA11y: 'Volver a leer las horas de sueño desde Salud',
   },
   redistribute: {
-    title: 'Aliviar carga',
-    close: 'Cerrar',
-    lead: 'Koraa reparte tus pendientes en el calendario según un ritmo acorde a tu energía y tiempo de hoy (~{{max}} tareas/día como guía). El último día concentra lo que falte para llegar a la entrega.',
-    byProject: 'Por proyecto',
-    loose: 'Sin proyecto',
-    projectLabel: 'Proyecto',
-    projectExplain:
-      'Elige un proyecto: Koraa repartirá solo sus tareas pendientes entre hoy y la fecha de entrega.',
-    retry: 'Reintentar',
-    noProjects:
-      'Aún no tienes proyectos en la lista. Crea uno al guardar una tarea desde la pestaña Tareas (asigna nombre y color) y vuelve aquí para repartir sus tareas.',
-    dueLabel: 'Fecha de entrega (AAAA-MM-DD)',
-    duePlaceholder: '2026-04-20',
-    saveDue: 'Guardar esta fecha en el proyecto',
-    noDueColumn:
-      'Tu base de datos aún no tiene la columna de fecha en proyectos. El reparto sí funciona; solo no se guardará esta fecha en el proyecto.',
-    tasksInProject: 'Tareas a repartir en este proyecto: {{count}}',
-    distributeDays: 'Distribuir en los próximos días',
-    daysCount: '{{count}} días',
-    looseCount: 'Tareas sueltas: {{count}}',
-    pickProject: 'Elige un proyecto.',
-    pickDue:
-      'Indica la fecha de entrega (AAAA-MM-DD) o asígnala al proyecto en la base de datos.',
-    previewTitle: 'Vista previa',
-    taskOne: 'tarea',
-    taskMany: 'tareas',
-    back: 'Atrás',
-    apply: 'Aplicar fechas',
-    calculate: 'Calcular reparto',
-    chooseProjectError: 'Elige un proyecto.',
-    chooseDueError:
-      'Indica la fecha de entrega (AAAA-MM-DD) o asígnala al proyecto en la base de datos.',
-    noPendingInProject: 'No hay tareas pendientes en ese proyecto.',
-    noLoosePending: 'No tienes tareas sueltas pendientes.',
-    partialDueSave:
-      'Las fechas de tareas se guardaron, pero no se pudo guardar la fecha en el proyecto.',
     warningInvalidDate: 'Usa la fecha como AAAA-MM-DD (ej. 2026-04-15).',
     warningDueBeforeToday: 'La fecha de entrega no puede ser antes de hoy.',
     warningInvalidToday: 'Fecha de hoy inválida.',
@@ -387,9 +351,6 @@ export const extEs = {
     createProjectA11y: 'Crear un proyecto nuevo',
     backToProjectList: 'Volver a la lista de proyectos',
     addTaskCta: 'Agregar tarea suelta',
-    redistributeCta: 'Repartir en la semana',
-    redistributeHint: 'Alivia carga repartiendo pendientes según tu energía de hoy',
-    redistributeApplied: 'Fechas actualizadas en el calendario.',
     dueDateInvalid: 'Revisa la fecha: usa el formato AAAA-MM-DD.',
     dueDateNone: 'Sin fecha',
     dueDateNoneChip: 'Sin fecha',
@@ -570,8 +531,8 @@ export const extEs = {
       'Si algo cambió, actualiza cómo te sientes y Koraa ajusta tus pasos sugeridos.',
     firstTitle: '¿Cómo estás?',
     firstSubtitle: 'Koraa usa esto para sugerir tus pasos de hoy.',
-    firstBadge: 'Check-in rápido',
-    firstStepHint: 'Elige emoción y energía — un minuto',
+    firstBadge: 'Check-in completo · 4 pasos',
+    firstStepHint: 'Emoción, energía, tiempo y cómo está tu mente',
     firstEmotionLabel: '¿Cómo te sientes?',
     firstSubmit: 'Ver qué importa hoy',
     fullCheckInBadge: 'Check-in completo · 4 pasos',
@@ -615,7 +576,7 @@ export const extEs = {
       'Pasó un rato y tus sugerencias siguen aquí. Actualiza en 1 min o alivia carga si hoy no da.',
     focusListLabel: 'Sugerencias para hoy:',
     updateCheckInCta: 'Actualizar cómo me siento',
-    lightenCta: 'Aliviar carga',
+    lightenCta: 'Repartir en la semana',
     dismissToday: 'Ahora no',
     dismissTodayA11y: 'Ocultar por hoy la sugerencia de actualizar check-in',
     dayChangedTitle: '¿Cambió algo desde tu check-in?',
@@ -626,7 +587,7 @@ export const extEs = {
     nothingDoneBody:
       'No pasa nada. Puedes actualizar según cómo estás ahora o aliviar carga para otro día.',
     nothingDoneUpdate: 'Actualizar en 1 min',
-    nothingDoneLighten: 'Aliviar carga',
+    nothingDoneLighten: 'Repartir en la semana',
   },
   recommendations: {
     title: 'Recomendaciones',
@@ -654,6 +615,9 @@ export const extEs = {
     weekGenericError: 'No se pudo cargar la semana. Revisa tu conexión.',
     notifTitle: '¿Cómo te sientes hoy?',
     notifBody: 'Un check-in en Hoy y Koraa sugiere qué podría importar hoy 💭',
+    taskCaptureNotifTitle: '¿Algo en mente?',
+    taskCaptureNotifBody:
+      'Si te queda pendiente anotar un paso, Koraa está aquí — sin prisa.',
     careModeNotifTitle: '¿Sigues ahí?',
     careModeNotifBody:
       'Tú puedes. Un check-in suave si te apetece — sin presión.',
@@ -878,9 +842,6 @@ export const extEs = {
     filterTodayHint: 'Muestra pendientes de hoy y tareas sin fecha',
     filterAllA11y: 'Ver todas las tareas pendientes',
     filterAllHint: 'Muestra todos los pendientes sin filtrar por fecha',
-    redistributeA11y: 'Aliviar carga, repartir tareas en el calendario',
-    redistributeHint:
-      'Abre el asistente para redistribuir tareas según tu energía',
     allProjectsA11y: 'Ver todos los proyectos',
     allProjectsHint: 'Abre la pantalla completa de proyectos',
     openProjectHint: 'Abre el detalle de este proyecto',
@@ -1233,7 +1194,8 @@ export const extEs = {
     taskEditDurationStepHint: 'Cada toque suma o resta {{step}} min',
   },
   reorganizeDay: {
-    title: 'Reorganizar mi día',
+    title: 'Ajustar mi día',
+    titleHint: 'Koraa sugiere qué dejar hoy y qué mover a otro día — tú confirmas.',
     whatChanged: '¿Qué ha cambiado?',
     reason: {
       tired: 'Agotada',

@@ -1,19 +1,4 @@
-import {
-  computeMaxTasksPerDay,
-  enumerateDaysInclusive,
-  parseISODateOnly,
-  redistributeTaskDates,
-} from '@/lib/redistributeWorkload';
-
-describe('computeMaxTasksPerDay', () => {
-  it('reduces load for negative emotions and low energy', () => {
-    expect(computeMaxTasksPerDay(1, 'Poco (1-2hrs)', 'agotada')).toBe(1);
-  });
-
-  it('allows more tasks with high energy', () => {
-    expect(computeMaxTasksPerDay(5, 'Todo el día', 'motivada')).toBeGreaterThanOrEqual(6);
-  });
-});
+import { redistributeTaskDates } from '@/lib/redistributeWorkload';
 
 describe('redistributeTaskDates', () => {
   it('spreads tasks across days up to maxPerDay', () => {

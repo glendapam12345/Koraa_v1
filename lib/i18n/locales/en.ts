@@ -61,9 +61,12 @@ export const en: DeepStrings<typeof es> = {
     changePassword: 'Change password',
     signOut: 'Sign out',
     deleteAccount: 'Delete account',
-    reminderTitle: 'Check-in reminder',
+    reminderTitle: 'Reminders',
     reminderHint:
-      'Current time: {{time}}. We will remind you to check in if you have not done it that day yet.',
+      'Check-in at {{time}} if you have not yet. You can turn the evening capture reminder on or off.',
+    taskCaptureReminderToggle: 'Reminder to capture steps',
+    taskCaptureReminderToggleHint:
+      'In the evening (~{{time}}), a gentle nudge if you have not added any steps that day.',
     reminderWebNote:
       'Push reminders are not available on web. Use the phone app to schedule your check-in reminder on Today.',
     notifPermissionTitle: 'Notification permissions',
@@ -71,7 +74,7 @@ export const en: DeepStrings<typeof es> = {
       'Enable notifications for Koraa in system settings to receive your check-in reminder.',
     reminderSavedTitle: 'Reminder saved',
     reminderSavedBody:
-      'We will remind you around {{time}} if you have not checked in that day yet.',
+      'Check-in at {{time}} if needed. In the evening, a gentle reminder to capture steps if you have not added any.',
     reminderSaveError: 'Could not save reminder',
     hoyFirstDaySection: 'Today experience',
     resetHoyFirstDay: 'Replay first-day view',
@@ -661,11 +664,11 @@ export const en: DeepStrings<typeof es> = {
     liteExpandedToast: 'Support and rest of day are visible — no rush.',
     litePeekTitle: 'Saved for later today',
     litePeekBodyWithRest:
-      'Gentle support (breathe, meditate), {{count}} tasks that can wait, and “Lighten load” are here — just collapsed so Today does not feel overwhelming.',
+      'Gentle support (breathe, meditate), {{count}} steps that can wait, and reorganizing your day if the plan feels long — tucked away so Today stays calm.',
     litePeekBodyNoRest:
-      'Gentle support (breathe, meditate) and “Lighten load” are here — just collapsed so Today does not feel overwhelming.',
+      'Gentle support (breathe, meditate), and reorganizing your day if the plan feels long — tucked away so Today stays calm.',
     litePeekShowMore: 'See more for today',
-    litePeekShowMoreA11y: 'Show support, rest of day, and lighten load',
+    litePeekShowMoreA11y: 'Show support, rest of day, and reorganize',
     litePeekShowMoreHint: 'Expands the sections tucked away in Today',
     showAllNow: 'Show everything now',
     showAllSectionsToast: 'You will see all sections in Today',
@@ -676,12 +679,14 @@ export const en: DeepStrings<typeof es> = {
     dayAgendaNoDuration: 'no duration',
     dayAgendaSectionA11y: '{{count}} timed steps in your day',
     dayAgendaRowA11y: '{{time}}, {{task}}, {{duration}}',
-    planSubtitleWithCheckIn: 'Based on how you feel and the time you have.',
+    planSubtitleWithCheckIn: 'Steps picked for today based on how you feel.',
     dayCapacityLine:
       'Energy {{energy}}/5 · ~{{available}} free · {{count}} steps ({{planned}} estimated)',
     dayCapacityOverload:
-      'Your plan runs a bit long for today — Koraa can help lighten it.',
-    dayCapacityAdjustCta: 'Reorganize my day',
+      'Your plan adds up to more time than you have today.',
+    dayCapacityAdjustHint:
+      'Koraa can suggest what to keep today and what to move to other days.',
+    dayCapacityAdjustCta: 'See what to move',
     afternoonNudgeLine: 'There’s still room for one small step — that’s enough.',
     dayReflectionAfternoonTitle: 'Did the day get away from you?',
     dayReflectionAfternoonBody:
@@ -703,10 +708,10 @@ export const en: DeepStrings<typeof es> = {
     postponeStep: 'For tomorrow',
     postponeStepA11y: 'Postpone {{task}} to tomorrow',
     postponeStepSuccess: 'Done — moved to tomorrow, no pressure',
-    dayReflectionTitle: "Didn't move forward like you hoped?",
+    dayReflectionTitle: 'Does today’s plan feel too long?',
     dayReflectionBody:
-      'Koraa can replan your steps using deadlines, your energy, and what matters today.',
-    dayReflectionCta: 'Reorganize my day',
+      'Koraa can suggest which steps to keep today and which to move to another day — you decide before applying.',
+    dayReflectionCta: 'See what to move',
     dayReflectionA11y: 'Reorganize today’s steps by energy and deadlines',
     moveStepUpA11y: 'Move {{task}} up in your plan',
     moveStepDownA11y: 'Move {{task}} down in your plan',
@@ -716,6 +721,12 @@ export const en: DeepStrings<typeof es> = {
     focusedProjectEmptyBody: 'Add steps in Organized or clear the focus.',
     planPrioritiesSubEmpty: 'When you have steps, they will show up here',
     planPrioritiesSubAllDone: 'You finished your steps — you can stop here',
+    planOneThingTitle: 'If you can only do one thing',
+    planOneThingSub: 'Due today — better not to postpone',
+    planDueTodayTitle: 'Due today',
+    planDueTodaySub: '{{count}} steps better not to postpone',
+    planFlexibleTitle: 'Good for today',
+    planFlexibleSub: 'Based on how you feel — you can move them if needed',
     planBreakBreatheA11y: 'Open quick guided breathing',
     planBreakMeditateA11y: 'Open guided meditation ritual',
     planWaitingTitle: 'Can wait',

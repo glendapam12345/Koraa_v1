@@ -37,6 +37,7 @@ export default function SettingsScreen() {
     setConfirmPassword,
     pendingAction,
     notifReminderTime,
+    taskCaptureReminderEnabled,
     notifSaving,
     resettingHoyPreview,
     simulatingHoyDayTwo,
@@ -44,6 +45,7 @@ export default function SettingsScreen() {
     handleToggleDevPremiumSim,
     resetState,
     applyNotificationPreset,
+    handleToggleTaskCaptureReminder,
     handleResetHoyFirstDay,
     handleSimulateHoyDayTwo,
     selectLocale,
@@ -92,8 +94,10 @@ export default function SettingsScreen() {
             locale={locale}
             onSelectLocale={(code) => void selectLocale(code)}
             reminderTime={notifReminderTime}
+            taskCaptureReminderEnabled={taskCaptureReminderEnabled}
             notifSaving={notifSaving}
             onSelectReminderPreset={(hour, minute) => void applyNotificationPreset(hour, minute)}
+            onToggleTaskCaptureReminder={(enabled) => void handleToggleTaskCaptureReminder(enabled)}
             onResetHoyFirstDay={handleResetHoyFirstDay}
             onSimulateHoyDayTwo={handleSimulateHoyDayTwo}
             resettingHoyPreview={resettingHoyPreview}

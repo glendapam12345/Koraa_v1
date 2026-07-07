@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Clock } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -63,7 +64,12 @@ export function HoyDailyPlanCard({
 
   return (
     <CalmCard style={styles.card}>
-      <View style={styles.headerSoft}>
+      <LinearGradient
+        colors={[...THEME.colors.gradientTint.dayToday]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerSoft}
+      >
         <View style={styles.header}>
           <View style={styles.titleRow}>
             <Text style={styles.title}>{t('hoy.planTitle')}</Text>
@@ -91,7 +97,7 @@ export function HoyDailyPlanCard({
           ) : null}
           {capacitySummarySlot}
         </View>
-      </View>
+      </LinearGradient>
 
       {focusedProject && onClearFocusedProject ? (
         <HoyFocusedProjectStrip project={focusedProject} onClearFocus={onClearFocusedProject} />
@@ -141,7 +147,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.md,
     paddingTop: THEME.spacing.md,
     paddingBottom: THEME.spacing.sm,
-    backgroundColor: THEME.colors.calm.blush,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: THEME.colors.calm.border,
   },
@@ -169,8 +174,8 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   title: {
-    ...THEME.typography.h3,
-    fontFamily: THEME.fonts.accent.italic,
+    ...THEME.typography.sectionTitle,
+    fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
   },
   subtitle: {
@@ -195,7 +200,7 @@ const styles = StyleSheet.create({
     lineHeight: 14,
   },
   prioritiesBody: {
-    gap: THEME.spacing.xs,
+    gap: 2,
     paddingHorizontal: THEME.spacing.md,
     paddingTop: THEME.spacing.sm,
     paddingBottom: THEME.spacing.xs,

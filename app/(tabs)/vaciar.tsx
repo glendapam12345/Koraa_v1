@@ -23,6 +23,7 @@ import { FocusedProjectBanner } from '@/components/projects/FocusedProjectBanner
 import { useVaciarHints } from '@/hooks/useVaciarHints';
 import { useVaciarTaskSave } from '@/hooks/useVaciarTaskSave';
 import { useVaciarBatchSave } from '@/hooks/useVaciarBatchSave';
+import { cancelTaskCaptureReminderForToday } from '@/hooks/useNotifications';
 import {
   advancedCaptureOptionsActive,
   buildEnrichedReleaseItems,
@@ -169,6 +170,7 @@ export default function VaciarScreen() {
       setSelectedProjectId(null);
       setSelectedCategory('otros');
       setSelectedDate(null);
+      void cancelTaskCaptureReminderForToday();
     },
     [resetTaskForm, setHasTasks],
   );

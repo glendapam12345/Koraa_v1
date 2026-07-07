@@ -13,7 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
-import { FolderKanban, ChevronRight, Plus, Heart, CalendarRange } from 'lucide-react-native';
+import { FolderKanban, ChevronRight, Plus, Heart } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { openVaciarCapture } from '@/lib/vaciarNavigation';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
@@ -25,12 +25,6 @@ import { ProjectLibraryCard } from '@/components/projects/ProjectLibraryCard';
 import { ProjectsByAreaSection } from '@/components/projects/ProjectsByAreaSection';
 import { AreasCompactPanel } from '@/components/projects/AreasCompactPanel';
 import { AdaptiveExperienceProjectsCta } from '@/components/tasks/experience/AdaptiveExperienceProjectsCta';
-import { RedistributeWorkloadModal } from '@/components/tasks/RedistributeWorkloadModal';
-import type { Task } from '@/hooks/useTasks';
-import {
-  fetchRedistributeContext,
-  type RedistributeCheckInSnapshot,
-} from '@/lib/projects/fetchRedistributeContext';
 import { ProjectCreateModal } from '@/components/projects/ProjectCreateModal';
 import {
   ProjectQuickAddTaskModal,
@@ -115,13 +109,6 @@ export function ProjectsLibraryPanel({
   );
   const [quickAddTarget, setQuickAddTarget] = useState<ProjectQuickAddTarget | null>(null);
   const [projectFilter, setProjectFilter] = useState<'all' | 'withDate' | 'noDate'>('all');
-  const [redistributeOpen, setRedistributeOpen] = useState(false);
-  const [redistributeTasks, setRedistributeTasks] = useState<Task[]>([]);
-  const [redistributeCheckIn, setRedistributeCheckIn] = useState<RedistributeCheckInSnapshot>({
-    energyLevel: 0,
-    availableTime: '',
-    emotion: '',
-  });
   const projectCardRefs = useRef<Map<string, RNView>>(new Map());
   const lastRefreshSignalRef = useRef(refreshSignal ?? 0);
   const {
@@ -193,34 +180,6 @@ export function ProjectsLibraryPanel({
     }
     openVaciarCapture();
   }, [embedded, onGoCapture]);
-
-  const openRedistribute = useCallback(async () => {
-    if (!userId) return;
-    const context = await fetchRedistributeContext(userId);
-    setRedistributeTasks(context.tasks);
-    setRedistributeCheckIn(context.checkIn);
-    setRedistributeOpen(true);
-  }, [userId]);
-
-  const handleRedistributeApplied = useCallback(() => {
-    setRedistributeOpen(false);
-    void reload();
-    onTaskSaved?.(t('projects.redistributeApplied'));
-  }, [onTaskSaved, reload, t]);
-
-  const redistributeModal =
-    userId != null ? (
-      <RedistributeWorkloadModal
-        visible={redistributeOpen}
-        onClose={() => setRedistributeOpen(false)}
-        userId={userId}
-        tasks={redistributeTasks}
-        energyLevel={redistributeCheckIn.energyLevel}
-        availableTime={redistributeCheckIn.availableTime}
-        emotion={redistributeCheckIn.emotion}
-        onApplied={handleRedistributeApplied}
-      />
-    ) : null;
 
   const openQuickAdd = useCallback(
     (
@@ -328,25 +287,7 @@ export function ProjectsLibraryPanel({
           />
         </CalmCard>
       ) : (
-        <>
-          {totalIncomplete > 0 ? (
-            <CalmCard style={styles.actionsCardCompactOnly}>
-              <LibraryActionRow
-                icon={
-                  <CalendarRange
-                    size={22}
-                    color={THEME.colors.calm.lavenderDeep}
-                    strokeWidth={2.2}
-                  />
-                }
-                title={t('projects.redistributeCta')}
-                hint={t('projects.redistributeHint')}
-                onPress={() => void openRedistribute()}
-                accessibilityLabel={t('hoy.redistributeA11y')}
-              />
-            </CalmCard>
-          ) : null}
-          <AreasCompactPanel
+        <AreasCompactPanel
             userId={userId}
             projects={sortedProjects}
             looseCount={looseCount}
@@ -359,7 +300,6 @@ export function ProjectsLibraryPanel({
             onTaskQuickSaved={(message) => onTaskSaved?.(message)}
             onPlanQuickAdd={openLoosePlanQuickAdd}
           />
-        </>
       );
 
     return (
@@ -388,7 +328,6 @@ export function ProjectsLibraryPanel({
           onSaved={handleQuickAddSaved}
           onOpenFullCapture={onOpenFullCapture}
         />
-        {redistributeModal}
       </View>
     );
   }
@@ -488,24 +427,6 @@ export function ProjectsLibraryPanel({
             onPress={() => openQuickAdd(null)}
             accessibilityLabel={t('projects.addA11y')}
           />
-          {totalIncomplete > 0 ? (
-            <>
-              <View style={styles.actionDivider} />
-              <LibraryActionRow
-                icon={
-                  <CalendarRange
-                    size={22}
-                    color={THEME.colors.calm.lavenderDeep}
-                    strokeWidth={2.2}
-                  />
-                }
-                title={t('projects.redistributeCta')}
-                hint={areasFirst ? '' : t('projects.redistributeHint')}
-                onPress={() => void openRedistribute()}
-                accessibilityLabel={t('hoy.redistributeA11y')}
-              />
-            </>
-          ) : null}
           {areasFirst ? (
             <Text style={styles.areasHint}>{t('projects.areasHint')}</Text>
           ) : null}
@@ -607,7 +528,6 @@ export function ProjectsLibraryPanel({
           onSaved={handleQuickAddSaved}
           onOpenFullCapture={onOpenFullCapture}
         />
-        {redistributeModal}
       </View>
     );
   }
@@ -651,7 +571,6 @@ export function ProjectsLibraryPanel({
         onSaved={handleQuickAddSaved}
         onOpenFullCapture={onOpenFullCapture}
       />
-      {redistributeModal}
     </>
   );
 }
@@ -722,12 +641,6 @@ const styles = StyleSheet.create({
   actionsCardCompact: {
     paddingVertical: THEME.spacing.sm,
     marginBottom: 0,
-  },
-  actionsCardCompactOnly: {
-    gap: 0,
-    padding: THEME.spacing.sm,
-    backgroundColor: THEME.colors.calm.mist,
-    borderColor: THEME.colors.calm.lavender,
   },
   actionsCardLabel: {
     ...THEME.typography.caption,

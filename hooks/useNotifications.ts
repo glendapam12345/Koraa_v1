@@ -3,12 +3,16 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
-import { getDailyReminderTime } from '@/lib/notificationPreferences';
+import { getDailyReminderTime, getTaskCaptureReminderTime, getTaskCaptureReminderEnabled } from '@/lib/notificationPreferences';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { type AppLocale, translate } from '@/lib/i18n';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { isCrisisModeActive } from '@/lib/emergencyKit/storage';
+import {
+  getNextTaskCaptureTriggerDate,
+  hasCapturedTasksToday,
+} from '@/lib/taskCaptureReminder';
 
 const LOCALE_STORAGE_KEY = 'koraa_app_locale_v1';
 
@@ -36,6 +40,7 @@ type Subscription = { remove: () => void };
 const DAILY_REMINDER_TYPE = 'daily_checkin_reminder';
 const RECHECK_REMINDER_TYPE = 'recheck_reminder';
 const CARE_MODE_REMINDER_TYPE = 'care_mode_checkin_reminder';
+const TASK_CAPTURE_REMINDER_TYPE = 'task_capture_reminder';
 
 const RECHECK_HOURS_AFTER_CHECKIN = 3;
 
@@ -78,6 +83,11 @@ export function useNotifications() {
           openRecheckCheckIn('notification');
         });
       }
+      if (notificationData?.type === TASK_CAPTURE_REMINDER_TYPE) {
+        import('@/lib/vaciarNavigation').then(({ openVaciarCapture }) => {
+          openVaciarCapture();
+        });
+      }
     });
     responseListener.current = subscription2;
 
@@ -96,6 +106,8 @@ export function useNotifications() {
     scheduleCareModeReminder,
     scheduleActiveReminders,
     scheduleRecheckReminder,
+    scheduleTaskCaptureReminder,
+    cancelTaskCaptureReminderForToday,
     cancelAllNotifications,
     checkNotificationPermissions,
   };
@@ -186,12 +198,14 @@ export async function scheduleActiveReminders(localeOverride?: AppLocale) {
   const crisisActive = await isCrisisModeActive();
   if (crisisActive) {
     await cancelNotificationsByType(DAILY_REMINDER_TYPE);
+    await cancelNotificationsByType(TASK_CAPTURE_REMINDER_TYPE);
     await scheduleCareModeReminder(localeOverride);
     return;
   }
 
   await cancelNotificationsByType(CARE_MODE_REMINDER_TYPE);
   await scheduleDailyReminder(localeOverride);
+  await scheduleTaskCaptureReminder(localeOverride);
 }
 
 /** Recordatorio diario suave mientras el modo cuidado está activo. */
@@ -295,6 +309,52 @@ export async function scheduleDailyReminder(localeOverride?: AppLocale) {
   }
 }
 
+/** Recordatorio vespertino suave para capturar pasos si aún no anotó nada hoy. */
+export async function scheduleTaskCaptureReminder(localeOverride?: AppLocale) {
+  if (Platform.OS === 'web') return;
+
+  try {
+    await cancelNotificationsByType(TASK_CAPTURE_REMINDER_TYPE);
+
+    if (await isCrisisModeActive()) return;
+
+    const enabled = await getTaskCaptureReminderEnabled();
+    if (!enabled) return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    if (await hasCapturedTasksToday(user.id)) return;
+
+    const { hour: reminderHour, minute: reminderMinute } = await getTaskCaptureReminderTime();
+    const locale = localeOverride ?? (await getStoredLocale());
+    const triggerDate = getNextTaskCaptureTriggerDate(reminderHour, reminderMinute);
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: translate(locale, 'hooks.taskCaptureNotifTitle'),
+        body: translate(locale, 'hooks.taskCaptureNotifBody'),
+        sound: true,
+        data: { type: TASK_CAPTURE_REMINDER_TYPE },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: triggerDate,
+      },
+    });
+  } catch (error) {
+    console.error('Error programando recordatorio de captura:', error);
+  }
+}
+
+/** Tras guardar un paso hoy: cancela el aviso vespertino pendiente. */
+export async function cancelTaskCaptureReminderForToday() {
+  if (Platform.OS === 'web') return;
+  await cancelNotificationsByType(TASK_CAPTURE_REMINDER_TYPE);
+}
+
 // Cancelar todas las notificaciones
 export async function cancelAllNotifications() {
   if (Platform.OS === 'web') {
@@ -304,6 +364,7 @@ export async function cancelAllNotifications() {
   await cancelNotificationsByType(DAILY_REMINDER_TYPE);
   await cancelNotificationsByType(RECHECK_REMINDER_TYPE);
   await cancelNotificationsByType(CARE_MODE_REMINDER_TYPE);
+  await cancelNotificationsByType(TASK_CAPTURE_REMINDER_TYPE);
 }
 
 // Verificar permisos de notificación

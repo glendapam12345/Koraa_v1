@@ -616,7 +616,7 @@ export const featuresEs = {
     planAheadIntro:
       'Semana que viene — arrastra tus pasos a los días que te queden bien.',
     plannerInteractHint:
-      'Toca el texto para editar · el círculo para completar · mantén presionado y arrastra · ↔ para mover · + Agregar paso en cada día',
+      'Toca el texto para editar · el círculo a la derecha para completar · mantén presionado y arrastra · ↔ para mover · + Agregar paso en cada día',
     plannerAddToDay: 'Agregar paso',
     plannerAddToDayA11y: 'Agregar paso al {{day}}',
     prev: 'Anterior',

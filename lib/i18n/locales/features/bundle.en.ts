@@ -606,7 +606,7 @@ export const featuresEn = {
     replanAcceptedToast: 'Done — your week is updated',
     planAheadIntro: 'Next week — drag your steps to the days that feel right.',
     plannerInteractHint:
-      'Tap text to edit · circle to complete · hold and drag · ↔ to move · + Add step on each day',
+      'Tap text to edit · circle on the right to complete · hold and drag · ↔ to move · + Add step on each day',
     plannerAddToDay: 'Add step',
     plannerAddToDayA11y: 'Add step to {{day}}',
     prev: 'Previous',

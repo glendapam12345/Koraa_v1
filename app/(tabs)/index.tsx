@@ -39,7 +39,6 @@ import { useHoyScreenBootstrap } from '@/hooks/useHoyScreenBootstrap';
 import type { TaskCompletedPayload } from '@/hooks/useTaskActions';
 import { CareModeGuideSheet } from '@/components/hoy/CareModeGuideSheet';
 import { CareModeSheet } from '@/components/hoy/CareModeSheet';
-import { HoyCompanionHeader } from '@/components/hoy/HoyCompanionHeader';
 import { useCrisisMode } from '@/hooks/useCrisisMode';
 import { useFocusedProject } from '@/hooks/useFocusedProject';
 import { subscribeHoyRefresh } from '@/lib/hoyRefreshBridge';
@@ -368,19 +367,13 @@ export default function TodayScreen() {
         }
       >
         <HoyScreenHeader
-          showSubtitle={false}
+          displayName={displayName}
+          hasCheckInToday={Boolean(todayMood)}
           streak={currentStreak}
           checkedInToday={Boolean(todayMood)}
           crisisModeActive={crisisModeActive}
           onCareModePress={() => setCareModeSheet(crisisModeActive ? 'deactivate' : 'activate')}
         />
-
-        {!loading ? (
-          <HoyCompanionHeader
-            displayName={displayName}
-            hasCheckInToday={Boolean(todayMood)}
-          />
-        ) : null}
 
         {loading ? (
           <View style={styles.loadingContainer}>

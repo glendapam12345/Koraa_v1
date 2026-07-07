@@ -99,6 +99,7 @@ export function ReorganizeDayFlow({
                 <HoyDayCapacityBar capacity={capacity} />
               ) : null}
               <Text style={styles.question}>{t('reorganizeDay.whatChanged')}</Text>
+              <Text style={styles.titleHint}>{t('reorganizeDay.titleHint')}</Text>
               <View style={styles.reasonGrid}>
                 {REORGANIZE_REASONS.map((reason) => {
                   const selected = selectedReason === reason;
@@ -223,6 +224,12 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
     lineHeight: 32,
+  },
+  titleHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 20,
+    marginTop: -THEME.spacing.xs,
   },
   reasonGrid: {
     flexDirection: 'row',

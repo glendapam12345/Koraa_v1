@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEY = 'koraa.dailyReminderTime';
+const TASK_CAPTURE_ENABLED_KEY = 'koraa.taskCaptureReminderEnabled';
 
 export type DailyReminderTime = { hour: number; minute: number };
 
@@ -52,4 +53,33 @@ export function formatReminderTime(t: DailyReminderTime): string {
   const h = t.hour.toString().padStart(2, '0');
   const m = t.minute.toString().padStart(2, '0');
   return `${h}:${m}`;
+}
+
+/** Recordatorio vespertino para vaciar tareas — ~9 h después del check-in, entre 15:00 y 20:00. */
+export function deriveTaskCaptureReminderTime(
+  checkIn: DailyReminderTime,
+): DailyReminderTime {
+  let hour = checkIn.hour + 9;
+  if (hour < 15) hour = 18;
+  if (hour > 20) hour = 20;
+  return { hour, minute: 0 };
+}
+
+export async function getTaskCaptureReminderTime(): Promise<DailyReminderTime> {
+  const checkIn = await getDailyReminderTime();
+  return deriveTaskCaptureReminderTime(checkIn);
+}
+
+export async function getTaskCaptureReminderEnabled(): Promise<boolean> {
+  try {
+    const raw = await AsyncStorage.getItem(TASK_CAPTURE_ENABLED_KEY);
+    if (raw === null) return true;
+    return raw === '1';
+  } catch {
+    return true;
+  }
+}
+
+export async function setTaskCaptureReminderEnabled(enabled: boolean): Promise<void> {
+  await AsyncStorage.setItem(TASK_CAPTURE_ENABLED_KEY, enabled ? '1' : '0');
 }

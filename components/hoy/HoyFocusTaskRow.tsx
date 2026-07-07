@@ -1,6 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Pressable } from 'react-native';
 import { useEffect, useRef } from 'react';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Check, ChevronRight, Clock, Calendar, Trash2, ChevronUp, ChevronDown, Pencil, Star, AlarmClock } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
@@ -98,17 +97,10 @@ export function HoyFocusTaskRow({
       >
         {completed ? (
           <View style={styles.checkDone}>
-            <Check size={16} color={THEME.colors.onGradient} strokeWidth={3} />
+            <Check size={14} color={THEME.colors.onGradient} strokeWidth={3} />
           </View>
         ) : (
-          <LinearGradient
-            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.checkRing}
-          >
-            <View style={styles.checkInner} />
-          </LinearGradient>
+          <View style={styles.checkRing} />
         )}
       </TouchableOpacity>
 
@@ -302,19 +294,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'stretch',
     gap: 10,
-    backgroundColor: THEME.colors.calm.card,
-    borderRadius: THEME.borderRadius.rounded,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.sm,
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
-    ...THEME.shadows.soft,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: THEME.colors.calm.border,
   },
   rowCompleted: {
-    backgroundColor: THEME.colors.calm.mist,
-    borderColor: 'transparent',
-    shadowOpacity: 0,
-    elevation: 0,
+    opacity: 0.72,
   },
   checkTouch: {
     alignSelf: 'flex-start',
@@ -325,23 +310,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkRing: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkInner: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: THEME.colors.calm.border,
     backgroundColor: THEME.colors.calm.card,
   },
   checkDone: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: THEME.colors.gradient.blue,
+    borderWidth: 2,
+    borderColor: THEME.colors.gradient.blue,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -376,17 +358,17 @@ const styles = StyleSheet.create({
   },
   index: {
     ...THEME.typography.caption,
-    color: THEME.colors.gradient.blue,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
     marginTop: 2,
     width: 14,
   },
   content: {
-    ...THEME.typography.screenSubtitle,
+    ...THEME.typography.body,
     flex: 1,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.medium,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   contentDone: {
     color: THEME.colors.text.secondary,

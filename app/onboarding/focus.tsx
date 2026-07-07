@@ -76,8 +76,10 @@ export default function FocusScreen() {
       }
 
       try {
-        const { scheduleDailyReminder, scheduleRecheckReminder } = await import('@/hooks/useNotifications');
+        const { scheduleDailyReminder, scheduleRecheckReminder, scheduleTaskCaptureReminder } =
+          await import('@/hooks/useNotifications');
         await scheduleDailyReminder();
+        await scheduleTaskCaptureReminder();
         await scheduleRecheckReminder(locale);
       } catch {
         /* no crítico */

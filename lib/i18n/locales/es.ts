@@ -56,9 +56,12 @@ export const es = {
     changePassword: 'Cambiar contraseña',
     signOut: 'Cerrar sesión',
     deleteAccount: 'Eliminar cuenta',
-    reminderTitle: 'Recordatorio de check-in',
+    reminderTitle: 'Recordatorios',
     reminderHint:
-      'Hora actual: {{time}}. Te recordamos hacer check-in si ese día aún no lo hiciste.',
+      'Check-in a las {{time}} si aún no lo hiciste. Puedes activar o desactivar el aviso vespertino para anotar pasos.',
+    taskCaptureReminderToggle: 'Recordatorio para anotar pasos',
+    taskCaptureReminderToggleHint:
+      'Por la tarde (~{{time}}), un aviso suave si ese día no capturaste ningún paso.',
     reminderWebNote:
       'En la versión web no hay recordatorios push. Usa la app en el teléfono para programar el aviso de check-in en Hoy.',
     notifPermissionTitle: 'Permisos de notificación',
@@ -66,7 +69,7 @@ export const es = {
       'Activa las notificaciones para Koraa en los ajustes del sistema para recibir el recordatorio de check-in.',
     reminderSavedTitle: 'Recordatorio guardado',
     reminderSavedBody:
-      'Te avisaremos sobre las {{time}} si aún no hiciste check-in ese día.',
+      'Check-in a las {{time}} si falta. Por la tarde, recordatorio suave para capturar pasos si no anotaste ninguno.',
     reminderSaveError: 'No se pudo guardar recordatorio',
     hoyFirstDaySection: 'Experiencia en Hoy',
     resetHoyFirstDay: 'Repetir vista del primer día',
@@ -667,11 +670,11 @@ export const es = {
     liteExpandedToast: 'Apoyo y resto del día visibles — sin prisa.',
     litePeekTitle: 'Guardado para más tarde hoy',
     litePeekBodyWithRest:
-      'Apoyo suave (respirar, meditar), {{count}} tareas que pueden esperar y «Aliviar carga» están aquí — solo que los dejamos colapsados para no abrumarte.',
+      'También están el apoyo suave (respirar, meditar), {{count}} pasos que pueden esperar y reorganizar tu día si el plan se siente largo — colapsados para no abrumarte.',
     litePeekBodyNoRest:
-      'Apoyo suave (respirar, meditar) y «Aliviar carga» están aquí — solo que los dejamos colapsados para no abrumarte.',
+      'También están el apoyo suave (respirar, meditar) y reorganizar tu día si el plan se siente largo — colapsados para no abrumarte.',
     litePeekShowMore: 'Ver más para hoy',
-    litePeekShowMoreA11y: 'Mostrar apoyo, resto del día y aliviar carga',
+    litePeekShowMoreA11y: 'Mostrar apoyo, resto del día y reorganizar',
     litePeekShowMoreHint: 'Expande las secciones guardadas en Hoy',
     showAllNow: 'Ver vista completa',
     showAllSectionsToast: 'Verás todas las secciones en Hoy',
@@ -682,12 +685,14 @@ export const es = {
     dayAgendaNoDuration: 'sin duración',
     dayAgendaSectionA11y: '{{count}} pasos con hora en tu día',
     dayAgendaRowA11y: '{{time}}, {{task}}, {{duration}}',
-    planSubtitleWithCheckIn: 'Según cómo te sientes y el tiempo que tienes.',
+    planSubtitleWithCheckIn: 'Pasos pensados para hoy según cómo te sientes.',
     dayCapacityLine:
       'Energía {{energy}}/5 · ~{{available}} libres · {{count}} pasos ({{planned}} estimados)',
     dayCapacityOverload:
-      'Tu plan es un poco largo para hoy — Koraa puede ayudarte a aligerarlo.',
-    dayCapacityAdjustCta: 'Reorganizar mi día',
+      'Tu plan suma más tiempo del que tienes hoy.',
+    dayCapacityAdjustHint:
+      'Koraa puede sugerir qué pasos dejar hoy y cuáles mover a otros días.',
+    dayCapacityAdjustCta: 'Ver qué mover',
     afternoonNudgeLine: 'Aún hay espacio para un paso pequeño — uno basta.',
     dayReflectionAfternoonTitle: '¿El día se complicó?',
     dayReflectionAfternoonBody:
@@ -709,10 +714,10 @@ export const es = {
     postponeStep: 'Para mañana',
     postponeStepA11y: 'Posponer {{task}} para mañana',
     postponeStepSuccess: 'Listo — lo movemos para mañana sin presión',
-    dayReflectionTitle: '¿No avanzaste como esperabas?',
+    dayReflectionTitle: '¿El plan de hoy se siente largo?',
     dayReflectionBody:
-      'Koraa puede replanear tus pasos según fechas límite, tu energía y lo que importa hoy.',
-    dayReflectionCta: 'Reorganizar mi día',
+      'Koraa puede proponer qué pasos dejar hoy y cuáles mover a otro día — tú decides antes de aplicar.',
+    dayReflectionCta: 'Ver qué mover',
     dayReflectionA11y: 'Reorganizar pasos del día según tu energía y fechas',
     moveStepUpA11y: 'Subir {{task}} en tu plan',
     moveStepDownA11y: 'Bajar {{task}} en tu plan',
@@ -723,6 +728,12 @@ export const es = {
       'Puedes agregar pasos en Organizado o quitar el enfoque.',
     planPrioritiesSubEmpty: 'Cuando tengas pasos, aparecerán aquí',
     planPrioritiesSubAllDone: 'Completaste tus pasos — puedes parar aquí',
+    planOneThingTitle: 'Si solo puedes con una cosa',
+    planOneThingSub: 'Tiene fecha hoy — conviene no posponerlo',
+    planDueTodayTitle: 'Tiene fecha hoy',
+    planDueTodaySub: '{{count}} pasos conviene no posponer',
+    planFlexibleTitle: 'Te conviene hoy',
+    planFlexibleSub: 'Según cómo te sientes — puedes moverlo si hace falta',
     planBreakBreatheA11y: 'Abrir respiro rápido guiado',
     planBreakMeditateA11y: 'Abrir ritual de meditación guiada',
     planWaitingTitle: 'Puede esperar',

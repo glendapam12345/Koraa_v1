@@ -7,8 +7,9 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
-import { ArrowRightLeft, Check, Circle, GripVertical, Star, Trash2 } from 'lucide-react-native';
+import { ArrowRightLeft, Check, GripVertical, Star, Trash2 } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
+import { useI18n } from '@/contexts/I18nContext';
 import type { LifeArea, WeekPlannerTask } from '@/lib/lifeAreas/types';
 
 const DRAG_THRESHOLD = 8;
@@ -75,6 +76,7 @@ export function DraggablePlannerTask({
   moveA11yLabel = 'Mover',
   deleteA11yLabel = 'Eliminar',
 }: DraggablePlannerTaskProps) {
+  const { t } = useI18n();
   const area = findArea(areas, task.areaId);
   const activation = resolveDragActivation(dragActivation, dragMode);
   const useHandleDrag = activation === 'handle';
@@ -190,6 +192,14 @@ export function DraggablePlannerTask({
   const isDone = task.status === 'done';
   const isPriority = task.status === 'star';
 
+  const handleToggleComplete = useCallback(() => {
+    onToggleComplete?.(task.id);
+  }, [onToggleComplete, task.id]);
+
+  const completeA11yLabel = isDone
+    ? t('semanaExtra.a11yWeekTaskCompleted')
+    : t('hoy.focusTaskToggleA11y', { task: task.title });
+
   const compactMeta = useMemo(() => {
     if (!compact) return null;
     const parts = [task.timeLabel, task.durationLabel].filter(Boolean);
@@ -204,18 +214,19 @@ export function DraggablePlannerTask({
   const statusControl = onToggleComplete ? (
     <TouchableOpacity
       style={styles.status}
-      onPress={() => onToggleComplete(task.id)}
+      onPress={handleToggleComplete}
       activeOpacity={0.7}
-      hitSlop={{ top: 8, bottom: 8, left: 8, right: 4 }}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: isDone }}
+      accessibilityLabel={completeA11yLabel}
     >
       {isDone ? (
-        <Check size={16} color={THEME.colors.semantic.success} strokeWidth={2.5} />
-      ) : isPriority ? (
-        <Star size={16} color={THEME.colors.accent.star} fill={THEME.colors.accent.star} />
+        <View style={styles.checkDone}>
+          <Check size={14} color={THEME.colors.onGradient} strokeWidth={3} />
+        </View>
       ) : (
-        <Circle size={16} color={THEME.colors.calm.lavenderDeep} strokeWidth={2} />
+        <View style={styles.checkRing} />
       )}
     </TouchableOpacity>
   ) : null;
@@ -242,9 +253,22 @@ export function DraggablePlannerTask({
       accessibilityHint={onPressTask ? 'Editar' : undefined}
     >
       <View style={styles.bodyTextCol}>
-        <Text style={compact ? styles.titleCompact : styles.title} numberOfLines={3}>
-          {task.title}
-        </Text>
+        <View style={styles.titleRow}>
+          {isPriority ? (
+            <Star
+              size={14}
+              color={THEME.colors.accent.star}
+              fill={THEME.colors.accent.star}
+              style={styles.priorityStar}
+            />
+          ) : null}
+          <Text
+            style={[compact ? styles.titleCompact : styles.title, isDone && styles.titleDone]}
+            numberOfLines={3}
+          >
+            {task.title}
+          </Text>
+        </View>
         {compact && compactMeta ? (
           <Text style={styles.metaCompact} numberOfLines={1}>
             {compactMeta}
@@ -281,11 +305,7 @@ export function DraggablePlannerTask({
           <Trash2 size={15} color={THEME.colors.semantic.danger} />
         </TouchableOpacity>
       ) : null}
-      {compact && !softBorder ? (
-        <View style={[styles.areaDot, { backgroundColor: accentColor }]} />
-      ) : !compact ? (
-        <Text style={styles.icon}>{task.iconEmoji}</Text>
-      ) : null}
+      {!compact ? <Text style={styles.icon}>{task.iconEmoji}</Text> : null}
     </View>
   );
 
@@ -304,32 +324,36 @@ export function DraggablePlannerTask({
     dragHandle
   );
 
+  const draggableBody = useHandleDrag ? (
+    body
+  ) : (
+    <GestureDetector gesture={pan}>
+      <Animated.View style={styles.dragSurface}>{body}</Animated.View>
+    </GestureDetector>
+  );
+
   const rowContent = (
     <>
       {useHandleDrag ? handleNode : null}
-      {statusControl}
-      {body}
+      {draggableBody}
       {actions}
+      {statusControl}
     </>
   );
 
-  if (useHandleDrag) {
-    return (
-      <Animated.View style={rowStyle} accessibilityHint="Arrastra desde los dados o toca para editar">
-        {rowContent}
-      </Animated.View>
-    );
-  }
-
   return (
-    <GestureDetector gesture={pan}>
-      <Animated.View
-        style={rowStyle}
-        accessibilityHint={useLongPressDrag ? 'Mantén presionado y arrastra para mover' : 'Arrastra para mover'}
-      >
-        {rowContent}
-      </Animated.View>
-    </GestureDetector>
+    <Animated.View
+      style={rowStyle}
+      accessibilityHint={
+        useHandleDrag
+          ? 'Arrastra desde los dados o toca para editar'
+          : useLongPressDrag
+            ? 'Mantén presionado y arrastra para mover'
+            : 'Arrastra para mover'
+      }
+    >
+      {rowContent}
+    </Animated.View>
   );
 }
 
@@ -387,13 +411,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
   },
-  areaDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    flexShrink: 0,
-    marginLeft: 2,
-  },
   icon: {
     fontSize: THEME.typography.displayEmojiSm.fontSize,
     lineHeight: 24,
@@ -404,22 +421,42 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  dragSurface: {
+    flex: 1,
+    minWidth: 0,
+  },
   bodyTextCol: {
     flex: 1,
     gap: 2,
     minWidth: 0,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    minWidth: 0,
+  },
+  priorityStar: {
+    marginTop: 3,
+    flexShrink: 0,
   },
   title: {
     ...THEME.typography.screenSubtitle,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
     lineHeight: 20,
+    flex: 1,
   },
   titleCompact: {
     ...THEME.typography.body,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
     lineHeight: 20,
+    flex: 1,
+  },
+  titleDone: {
+    color: THEME.colors.text.tertiary,
+    textDecorationLine: 'line-through',
   },
   metaCompact: {
     ...THEME.typography.small,
@@ -433,10 +470,26 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   status: {
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+  },
+  checkRing: {
+    width: 22,
+    height: 22,
+    borderRadius: THEME.borderRadius.full,
+    borderWidth: 2,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    backgroundColor: THEME.colors.fill[100],
+  },
+  checkDone: {
+    width: 22,
+    height: 22,
+    borderRadius: THEME.borderRadius.full,
+    backgroundColor: THEME.colors.semantic.success,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

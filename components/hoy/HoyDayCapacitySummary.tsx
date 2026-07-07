@@ -48,14 +48,18 @@ export function HoyDayCapacitySummary({
         <>
           <Text style={styles.overload}>{t('hoy.dayCapacityOverload')}</Text>
           {onAdjustDay ? (
-            <Pressable
-              onPress={onAdjustDay}
-              style={({ pressed }) => [styles.ctaBtn, pressed && styles.ctaPressed]}
-              accessibilityRole="button"
-              accessibilityLabel={t('hoy.dayCapacityAdjustCta')}
-            >
-              <Text style={styles.ctaLabel}>{t('hoy.dayCapacityAdjustCta')}</Text>
-            </Pressable>
+            <>
+              <Text style={styles.adjustHint}>{t('hoy.dayCapacityAdjustHint')}</Text>
+              <Pressable
+                onPress={onAdjustDay}
+                style={({ pressed }) => [styles.ctaBtn, pressed && styles.ctaPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={t('hoy.dayCapacityAdjustCta')}
+                accessibilityHint={t('hoy.dayCapacityAdjustHint')}
+              >
+                <Text style={styles.ctaLabel}>{t('hoy.dayCapacityAdjustCta')}</Text>
+              </Pressable>
+            </>
           ) : null}
         </>
       ) : null}
@@ -91,6 +95,11 @@ const styles = StyleSheet.create({
   overload: {
     ...THEME.typography.caption,
     color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 18,
+  },
+  adjustHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
     lineHeight: 18,
   },
   ctaBtn: {

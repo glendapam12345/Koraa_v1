@@ -263,42 +263,6 @@ export const extEn = {
     refreshSleepA11y: 'Re-read sleep hours from Health',
   },
   redistribute: {
-    title: 'Lighten load',
-    close: 'Close',
-    lead: 'Koraa spreads your pending tasks across the calendar at a pace that fits your energy and time today (~{{max}} tasks/day as a guide). The last day holds whatever is left before the due date.',
-    byProject: 'By project',
-    loose: 'No project',
-    projectLabel: 'Project',
-    projectExplain:
-      'Pick a project: Koraa will spread only its pending tasks between today and the due date.',
-    retry: 'Retry',
-    noProjects:
-      'You do not have projects yet. Create one when saving a task in Tasks (name and color), then come back here to spread its tasks.',
-    dueLabel: 'Due date (YYYY-MM-DD)',
-    duePlaceholder: '2026-04-20',
-    saveDue: 'Save this date on the project',
-    noDueColumn:
-      'Your database does not have a project due date column yet. Spreading still works; the date will not be saved on the project.',
-    tasksInProject: 'Tasks to spread in this project: {{count}}',
-    distributeDays: 'Spread over the next days',
-    daysCount: '{{count}} days',
-    looseCount: 'Loose tasks: {{count}}',
-    pickProject: 'Choose a project.',
-    pickDue:
-      'Enter the due date (YYYY-MM-DD) or set it on the project in the database.',
-    previewTitle: 'Preview',
-    taskOne: 'task',
-    taskMany: 'tasks',
-    back: 'Back',
-    apply: 'Apply dates',
-    calculate: 'Calculate spread',
-    chooseProjectError: 'Choose a project.',
-    chooseDueError:
-      'Enter the due date (YYYY-MM-DD) or set it on the project in the database.',
-    noPendingInProject: 'No pending tasks in that project.',
-    noLoosePending: 'You have no pending loose tasks.',
-    partialDueSave:
-      'Task dates were saved, but the project due date could not be saved.',
     warningInvalidDate: 'Use the date as YYYY-MM-DD (e.g. 2026-04-15).',
     warningDueBeforeToday: 'The due date cannot be before today.',
     warningInvalidToday: 'Invalid today date.',
@@ -384,9 +348,6 @@ export const extEn = {
     createProjectA11y: 'Create a new project',
     backToProjectList: 'Back to project list',
     addTaskCta: 'Add loose task',
-    redistributeCta: 'Spread across the week',
-    redistributeHint: 'Lighten your load by spreading tasks based on today’s energy',
-    redistributeApplied: 'Dates updated on your calendar.',
     dueDateInvalid: 'Check the date: use YYYY-MM-DD format.',
     dueDateNone: 'No date',
     dueDateNoneChip: 'No date',
@@ -566,8 +527,8 @@ export const extEn = {
       'If something changed, update how you feel and Koraa adjusts your suggested steps.',
     firstTitle: 'How are you?',
     firstSubtitle: 'Koraa uses this to suggest your steps for today.',
-    firstBadge: 'Quick check-in',
-    firstStepHint: 'Pick emotion and energy — about a minute',
+    firstBadge: 'Full check-in · 4 steps',
+    firstStepHint: 'Emotion, energy, time, and how your mind feels',
     firstEmotionLabel: 'How do you feel?',
     firstSubmit: 'See what matters today',
     fullCheckInBadge: 'Full check-in · 4 steps',
@@ -611,7 +572,7 @@ export const extEn = {
       'Some time has passed and your suggestions are still here. Update in 1 min or lighten your load if today is not the day.',
     focusListLabel: 'Suggestions for today:',
     updateCheckInCta: 'Update how I feel',
-    lightenCta: 'Lighten load',
+    lightenCta: 'Spread across the week',
     dismissToday: 'Not now',
     dismissTodayA11y: 'Hide update check-in suggestion for today',
     dayChangedTitle: 'Did something change since your check-in?',
@@ -622,7 +583,7 @@ export const extEn = {
     nothingDoneBody:
       'That’s okay. Update based on how you feel now, or lighten your load for another day.',
     nothingDoneUpdate: 'Update in 1 min',
-    nothingDoneLighten: 'Lighten load',
+    nothingDoneLighten: 'Spread across the week',
   },
   recommendations: {
     title: 'Recommendations',
@@ -649,7 +610,10 @@ export const extEn = {
     weekGenericError: 'Could not load the week. Check your connection.',
     notifTitle: 'How do you feel today?',
     notifBody:
-      'Check in on Today and Koraa suggests what might matter today 💭',
+      'A quick check-in on Today and Koraa suggests what might matter today 💭',
+    taskCaptureNotifTitle: 'Anything on your mind?',
+    taskCaptureNotifBody:
+      'If you still want to jot down a step, Koraa is here — no rush.',
     careModeNotifTitle: 'Still here?',
     careModeNotifBody:
       'You can. A gentle check-in if you feel like it — no pressure.',
@@ -869,8 +833,6 @@ export const extEn = {
     filterTodayHint: 'Shows today’s pending and tasks without a date',
     filterAllA11y: 'View all pending tasks',
     filterAllHint: 'Shows all pending tasks without date filter',
-    redistributeA11y: 'Lighten load, spread tasks on the calendar',
-    redistributeHint: 'Open the assistant to redistribute tasks by your energy',
     allProjectsA11y: 'View all projects',
     allProjectsHint: 'Open the full projects screen',
     openProjectHint: 'Open this project’s detail',
@@ -1218,7 +1180,8 @@ export const extEn = {
     taskEditDurationStepHint: 'Each tap adds or subtracts {{step}} min',
   },
   reorganizeDay: {
-    title: 'Reorganize my day',
+    title: 'Adjust my day',
+    titleHint: 'Koraa suggests what to keep today and what to move — you confirm.',
     whatChanged: 'What changed?',
     reason: {
       tired: 'Exhausted',
