@@ -6,33 +6,31 @@ import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingHighlightCard } from '@/components/onboarding/OnboardingHighlightCard';
 import { OnboardingProgressDots } from '@/components/onboarding/OnboardingProgressDots';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
-import { LayoutGrid, HeartHandshake, PenLine, Heart, Route } from 'lucide-react-native';
+import { Heart, Sparkles, ListTodo, Route } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { completeOnboardingForUser } from '@/lib/finishOnboarding';
-import { goToOnboardingPaywall, ONBOARDING_AREAS_ROUTE } from '@/lib/onboardingNavigation';
+import {
+  goToHoyAfterOnboarding,
+  ONBOARDING_EMOTION_ROUTE,
+} from '@/lib/onboardingNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 
 const SETUP_STEPS = [
   {
-    icon: LayoutGrid,
-    titleKey: 'onboarding.setupFlow.step1Title',
-    bodyKey: 'onboarding.setupFlow.step1Body',
-  },
-  {
-    icon: HeartHandshake,
-    titleKey: 'onboarding.setupFlow.step2Title',
-    bodyKey: 'onboarding.setupFlow.step2Body',
-  },
-  {
-    icon: PenLine,
-    titleKey: 'onboarding.setupFlow.step3Title',
-    bodyKey: 'onboarding.setupFlow.step3Body',
-  },
-  {
     icon: Heart,
-    titleKey: 'onboarding.setupFlow.step4Title',
-    bodyKey: 'onboarding.setupFlow.step4Body',
+    titleKey: 'onboarding.setupFlow.stepFeelTitle',
+    bodyKey: 'onboarding.setupFlow.stepFeelBody',
+  },
+  {
+    icon: Sparkles,
+    titleKey: 'onboarding.setupFlow.stepPlanTitle',
+    bodyKey: 'onboarding.setupFlow.stepPlanBody',
+  },
+  {
+    icon: ListTodo,
+    titleKey: 'onboarding.setupFlow.stepRestTitle',
+    bodyKey: 'onboarding.setupFlow.stepRestBody',
   },
 ] as const;
 
@@ -53,16 +51,18 @@ export default function HowItWorksScreen() {
       Alert.alert(t('errors.continueFailed'), t('errors.saveProgressFailed'));
       return;
     }
-    goToOnboardingPaywall();
+    await goToHoyAfterOnboarding(user.id);
   };
 
   return (
     <OnboardingScreenShell
+      ethereal
       footer={
         <>
           <CalmPrimaryButton
             label={t('onboarding.howItWorks.startCheckIn')}
-            onPress={() => router.push(ONBOARDING_AREAS_ROUTE)}
+            onPress={() => router.push(ONBOARDING_EMOTION_ROUTE)}
+            large
             accessibilityHint={t('onboardingA11y.howItWorksCheckInHint')}
           />
           <TouchableOpacity
@@ -113,7 +113,7 @@ export default function HowItWorksScreen() {
               </View>
               <View style={styles.stepBody}>
                 <View style={styles.stepTitleRow}>
-                  <Icon size={18} color={THEME.colors.gradient.blue} />
+                  <Icon size={18} color={THEME.colors.calm.lavenderDeep} />
                   <Text style={styles.stepTitle}>{t(step.titleKey as TranslationKey)}</Text>
                 </View>
                 <Text style={styles.stepDesc}>{t(step.bodyKey as TranslationKey)}</Text>
@@ -128,7 +128,7 @@ export default function HowItWorksScreen() {
         body={t('onboarding.setupFlow.dailyBody')}
       />
 
-      <OnboardingProgressDots total={4} activeIndex={3} style={styles.dotContainer} />
+      <OnboardingProgressDots total={3} activeIndex={2} style={styles.dotContainer} />
     </OnboardingScreenShell>
   );
 }
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: THEME.spacing.sm,
-    backgroundColor: THEME.colors.calm.card,
+    backgroundColor: 'rgba(255,255,255,0.78)',
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
     padding: THEME.spacing.sm,
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: THEME.colors.gradient.blue,
+    backgroundColor: THEME.colors.calm.lavenderDeep,
     alignItems: 'center',
     justifyContent: 'center',
   },

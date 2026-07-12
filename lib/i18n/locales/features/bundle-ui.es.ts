@@ -202,8 +202,8 @@ export const uiEs = {
     continueFree: 'Seguir con versión gratis',
     continueFreePrimary: 'Seguir gratis',
     onboardingSubtitle:
-      'Ya guardamos tu check-in. Premium es opcional — explora Koraa gratis cuando quieras.',
-    onboardingBannerTitle: 'Tu check-in ya está listo',
+      'Ya viste tu espacio en Hoy. Premium es opcional — explora Koraa gratis cuando quieras.',
+    onboardingBannerTitle: 'Tu plan de hoy ya está aquí',
     onboardingBannerBody:
       'Premium desbloquea Semana completa, consejos ilimitados y más. Tu plan gratis incluye check-in, tareas y vista de Hoy.',
     exploreFreeCta: 'Explorar Koraa gratis',

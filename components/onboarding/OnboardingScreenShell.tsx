@@ -1,19 +1,46 @@
 import type { ReactNode } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/constants/theme';
 
 type OnboardingScreenShellProps = {
   children: ReactNode;
   footer?: ReactNode;
+  /** Fondo más etéreo en welcome / momentos clave. */
+  ethereal?: boolean;
 };
 
-/** Shell lavender compartido para onboarding (alineado con tabs). */
-export function OnboardingScreenShell({ children, footer }: OnboardingScreenShellProps) {
+/** Shell calm compartido para onboarding (gradiente suave + footer sticky). */
+export function OnboardingScreenShell({
+  children,
+  footer,
+  ethereal = false,
+}: OnboardingScreenShellProps) {
   const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.root}>
+      {ethereal ? (
+        <LinearGradient
+          colors={[
+            THEME.colors.calm.mist,
+            THEME.colors.calm.blush,
+            THEME.colors.calm.background,
+          ]}
+          locations={[0, 0.45, 1]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : (
+        <LinearGradient
+          colors={[THEME.colors.calm.background, THEME.colors.calm.mist]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
       <ScrollView
         contentContainerStyle={[
           styles.content,
@@ -41,7 +68,7 @@ export const onboardingTypography = StyleSheet.create({
   titleAccent: {
     ...THEME.typography.h1,
     fontFamily: THEME.fonts.accent.italic,
-    color: THEME.colors.text.main,
+    color: THEME.colors.calm.lavenderDeep,
   },
   subtitle: {
     ...THEME.typography.screenSubtitle,
@@ -66,6 +93,7 @@ export const onboardingTypography = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
+    ...THEME.shadows.soft,
   },
 });
 
@@ -81,8 +109,8 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: THEME.spacing.lg,
     paddingTop: THEME.spacing.sm,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: THEME.colors.calm.border,
-    backgroundColor: THEME.colors.calm.background,
+    backgroundColor: 'rgba(248, 245, 252, 0.92)',
   },
 });

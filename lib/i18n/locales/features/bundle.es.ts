@@ -778,22 +778,22 @@ export const featuresEs = {
     checkInProgress: 'Paso {{current}} de {{total}}',
     checkInProgressA11y: 'Paso {{current}} de {{total}} del check-in',
     welcome: {
+      brand: 'Koraa',
       title: 'Koraa te',
       titleAccent: 'acompaña',
-      subtitle: 'Cuatro pasos suaves para empezar — sin presión',
+      subtitle: 'Un check-in corto (~1 min) y pasos suaves para hoy — sin presión',
       description:
-        'Tu mundo, lo que repites, lo pendiente y un check-in corto. Koraa sugiere qué importa hoy — el resto puede esperar.',
-      previewTitle: 'En unos minutos',
+        'Cuéntanos cómo te sientes. Koraa sugiere qué importa hoy — el resto puede esperar.',
+      previewTitle: 'Así empieza',
       exampleExhausted: 'Poca energía hoy',
       exampleEnergy: 'Energía: {{n}} / 5',
       exampleResultLow: 'Koraa sugiere solo 2 pasos suaves',
       exampleMotivated: 'Mucha energía hoy',
       exampleResultHigh: 'Koraa sugiere hasta 5 pasos — sin presión',
-      quickStart: 'Empezar configuración',
-      quickStartHint:
-        'Cuatro pasos cortos: áreas, actividades, captura y check-in. Puedes saltar lo opcional.',
-      seeHowItWorks: 'Ver los pasos',
-      skip: 'Explorar sin configurar',
+      quickStart: 'Empezar',
+      quickStartHint: 'Check-in de cuatro preguntas suaves. Luego ves tu plan en Hoy.',
+      seeHowItWorks: 'Ver cómo funciona',
+      skip: 'Explorar sin check-in',
     },
     intro2: {
       title: 'Vacía tu mente en',
@@ -956,9 +956,9 @@ export const featuresEs = {
         'Guardamos {{saved}} de {{total}} cosas. El resto puedes añadirlo después en Tareas.',
     },
     howItWorks: {
-      title: 'Tu primer',
-      titleAccent: 'recorrido',
-      subtitle: 'Cuatro pasos para que Koraa te conozca — luego el día a día es simple',
+      title: 'Así te',
+      titleAccent: 'acompaña',
+      subtitle: 'Tres ideas simples — sin presión',
       step1Title: 'Suelta lo pendiente',
       step1Body:
         'En Tareas, escribe lo que llevas en mente. Sin orden ni culpa.',
@@ -969,8 +969,8 @@ export const featuresEs = {
       adaptTitle: 'Se adapta a ti',
       adaptBody:
         'Poca energía → 2 pasos suaves\nMás energía → hasta 5 — sin prisa',
-      startCheckIn: 'Empezar configuración',
-      enterApp: 'Explorar sin configurar',
+      startCheckIn: 'Empezar check-in',
+      enterApp: 'Explorar sin check-in',
       continue: 'Continuar',
     },
     setupFlow: {
@@ -986,9 +986,15 @@ export const featuresEs = {
       step4Title: 'Check-in → Hoy',
       step4Body:
         'Di cómo te sientes (~1 min). Koraa sugiere unos pasos — sin presión.',
+      stepFeelTitle: 'Cómo te sientes',
+      stepFeelBody: 'Emoción, energía, tiempo y claridad — ~1 minuto.',
+      stepPlanTitle: 'Qué importa hoy',
+      stepPlanBody: 'Koraa sugiere unos pasos suaves. El resto puede esperar.',
+      stepRestTitle: 'Lo demás, a tu ritmo',
+      stepRestBody: 'Áreas, captura y detalles los afinas después — sin prisa.',
       dailyTitle: 'Después, cada día',
       dailyBody:
-        'Tareas → check-in → qué importa hoy.\nPoca energía: menos pasos. Sin culpa.',
+        'Check-in → qué importa hoy.\nPoca energía: menos pasos. Sin culpa.',
     },
   },
   hoy: {

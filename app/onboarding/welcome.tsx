@@ -1,22 +1,24 @@
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
-import { OnboardingHighlightCard } from '@/components/onboarding/OnboardingHighlightCard';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
-import { Sparkles } from 'lucide-react-native';
+import { Heart } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { completeOnboardingForUser } from '@/lib/finishOnboarding';
-import { goToOnboardingPaywall, ONBOARDING_AREAS_ROUTE } from '@/lib/onboardingNavigation';
+import {
+  goToHoyAfterOnboarding,
+  ONBOARDING_EMOTION_ROUTE,
+} from '@/lib/onboardingNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 
 const PREVIEW_STEP_KEYS = [
-  'onboarding.setupFlow.step1Title',
-  'onboarding.setupFlow.step2Title',
-  'onboarding.setupFlow.step3Title',
-  'onboarding.setupFlow.step4Title',
+  'onboarding.setupFlow.stepFeelTitle',
+  'onboarding.setupFlow.stepPlanTitle',
+  'onboarding.setupFlow.stepRestTitle',
 ] as const;
 
 export default function WelcomeScreen() {
@@ -36,16 +38,18 @@ export default function WelcomeScreen() {
       Alert.alert(t('errors.continueFailed'), t('errors.saveProgressFailed'));
       return;
     }
-    goToOnboardingPaywall();
+    await goToHoyAfterOnboarding(user.id);
   };
 
   return (
     <OnboardingScreenShell
+      ethereal
       footer={
         <>
           <CalmPrimaryButton
             label={t('onboarding.welcome.quickStart')}
-            onPress={() => router.push(ONBOARDING_AREAS_ROUTE)}
+            onPress={() => router.push(ONBOARDING_EMOTION_ROUTE)}
+            large
             accessibilityHint={t('onboarding.welcome.quickStartHint')}
           />
           <TouchableOpacity
@@ -76,26 +80,30 @@ export default function WelcomeScreen() {
         </>
       }
     >
-      <View style={onboardingTypography.iconContainer}>
-        <View style={onboardingTypography.iconCircle}>
-          <Sparkles size={32} color={THEME.colors.gradient.blue} />
-        </View>
+      <View style={styles.heroOrbWrap} accessibilityElementsHidden>
+        <LinearGradient
+          colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroOrb}
+        >
+          <Heart size={36} color={THEME.colors.onGradient} strokeWidth={2} fill="rgba(255,255,255,0.25)" />
+        </LinearGradient>
       </View>
 
+      <Text style={styles.brand}>{t('onboarding.welcome.brand')}</Text>
       <Text style={onboardingTypography.title}>{t('onboarding.welcome.title')}</Text>
       <Text style={onboardingTypography.titleAccent}>{t('onboarding.welcome.titleAccent')}</Text>
-      <Text style={onboardingTypography.subtitle}>{t('onboarding.welcome.subtitle')}</Text>
-
-      <OnboardingHighlightCard
-        title={t('onboarding.welcome.previewTitle')}
-        body={t('onboarding.welcome.description')}
-      />
+      <Text style={[onboardingTypography.subtitle, styles.lead]}>
+        {t('onboarding.welcome.subtitle')}
+      </Text>
 
       <View
-        style={styles.previewList}
+        style={styles.previewCard}
         accessibilityRole="summary"
         accessibilityLabel={t('onboardingA11y.howItWorksStepsGroup')}
       >
+        <Text style={styles.previewTitle}>{t('onboarding.welcome.previewTitle')}</Text>
         {PREVIEW_STEP_KEYS.map((key, index) => (
           <View key={key} style={styles.previewRow}>
             <View style={styles.previewBadge}>
@@ -110,9 +118,46 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  previewList: {
-    gap: THEME.spacing.xs,
+  heroOrbWrap: {
+    alignItems: 'center',
+    marginBottom: THEME.spacing.lg,
+  },
+  heroOrb: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...THEME.shadows.soft,
+  },
+  brand: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: THEME.spacing.xs,
+  },
+  lead: {
+    marginTop: THEME.spacing.xs,
+    marginBottom: THEME.spacing.md,
+    lineHeight: 24,
+  },
+  previewCard: {
     marginTop: THEME.spacing.sm,
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: 'rgba(255,255,255,0.72)',
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    gap: THEME.spacing.xs,
+    ...THEME.shadows.soft,
+  },
+  previewTitle: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+    marginBottom: 4,
   },
   previewRow: {
     flexDirection: 'row',
@@ -121,9 +166,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   previewBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: THEME.colors.calm.lavender,
     alignItems: 'center',
     justifyContent: 'center',
@@ -138,6 +183,7 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.medium,
     flex: 1,
+    lineHeight: 22,
   },
   secondaryButton: {
     marginTop: THEME.spacing.md,
@@ -148,11 +194,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.md,
     borderRadius: THEME.borderRadius.pill,
     borderWidth: 1.5,
-    borderColor: THEME.colors.gradient.blue,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    backgroundColor: 'rgba(255,255,255,0.55)',
   },
   secondaryText: {
     ...THEME.typography.body,
-    color: THEME.colors.gradient.blue,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
   },
   skipButton: {

@@ -19,7 +19,8 @@ export default function PaywallRoute() {
     router.replace(destination as '/');
   };
 
-  const context = source === 'onboarding' ? 'onboarding' : 'default';
+  const context =
+    source === 'onboarding' || source === 'post_hoy' ? 'onboarding' : 'default';
 
   return (
     <PaywallScreen

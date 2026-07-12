@@ -199,8 +199,8 @@ export const uiEn = {
     continueFree: 'Continue with free version',
     continueFreePrimary: 'Continue free',
     onboardingSubtitle:
-      'We saved your check-in. Premium is optional — explore Koraa for free anytime.',
-    onboardingBannerTitle: 'Your check-in is ready',
+      'You already saw Today. Premium is optional — explore Koraa for free anytime.',
+    onboardingBannerTitle: 'Your Today plan is here',
     onboardingBannerBody:
       'Premium unlocks full Week view, unlimited tips, and more. Your free plan includes check-in, tasks, and Today.',
     exploreFreeCta: 'Explore Koraa for free',

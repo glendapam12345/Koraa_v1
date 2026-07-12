@@ -19,6 +19,7 @@ export function resolvePaywallDismissRoute(options: {
   if (options.source === 'onboarding') {
     return options.next?.startsWith('/') ? options.next : '/(tabs)';
   }
+  // post_hoy y demás: volver a Hoy si se abrió con push
   if (options.canGoBack) return 'back';
   return options.next?.startsWith('/') ? options.next : '/(tabs)';
 }

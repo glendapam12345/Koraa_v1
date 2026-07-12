@@ -9,6 +9,8 @@ import {
   optOutHoyLiteLayout,
   consumeHoyDayTwoUnlockToast,
 } from '@/lib/hoyLiteDay';
+import { consumeDeferredOnboardingPaywall } from '@/lib/deferredOnboardingPaywall';
+import { openPostHoyPaywall } from '@/lib/onboardingNavigation';
 import { consumePrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
 import { consumeCheckInReplanSummary } from '@/lib/checkInReplanSummary';
 
@@ -68,6 +70,13 @@ export function useHoyScreenLayout({
           if (!cancelled && showDayTwoUnlock) {
             showToast(t('hoy.dayTwoUnlockToast'), 'info');
           }
+        }
+
+        const showPostHoyPaywall = await consumeDeferredOnboardingPaywall(userId);
+        if (!cancelled && showPostHoyPaywall) {
+          setTimeout(() => {
+            openPostHoyPaywall();
+          }, 2800);
         }
 
         try {
