@@ -6,7 +6,6 @@ import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
 import { Toast } from '@/components/Toast';
-import { Focus } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { track } from '@/lib/analytics';
 import { queueCheckInCelebration } from '@/lib/checkInCelebration';
@@ -120,6 +119,7 @@ export default function FocusScreen() {
             label={isSaving ? t('onboarding.focus.saving') : t('onboarding.focus.start')}
             onPress={() => void handleContinue()}
             disabled={!selectedFocus || isSaving}
+            large
             accessibilityLabel={
               isSaving ? t('onboarding.focus.saving') : t('onboarding.focus.start')
             }
@@ -128,12 +128,6 @@ export default function FocusScreen() {
           />
         }
       >
-        <View style={onboardingTypography.iconContainer}>
-          <View style={onboardingTypography.iconCircle}>
-            <Focus size={32} color={THEME.colors.gradient.pink} />
-          </View>
-        </View>
-
         <OnboardingCheckInProgress step={4} />
         <Text style={onboardingTypography.title}>{t('onboarding.focus.title')}</Text>
         <Text style={onboardingTypography.titleAccent}>{t('onboarding.focus.titleAccent')}</Text>
@@ -145,7 +139,7 @@ export default function FocusScreen() {
               key={option.id}
               onPress={() => setSelectedFocus(option.id)}
               style={[styles.option, selectedFocus === option.id && styles.optionSelected]}
-              activeOpacity={0.7}
+              activeOpacity={0.75}
               accessibilityRole="button"
               accessibilityLabel={t('onboardingA11y.selectFocus', { label: t(option.labelKey) })}
               accessibilityHint={t('onboardingA11y.selectOptionHint')}
@@ -171,7 +165,7 @@ export default function FocusScreen() {
 const styles = StyleSheet.create({
   optionsContainer: {
     gap: THEME.spacing.sm,
-    marginTop: THEME.spacing.md,
+    marginTop: THEME.spacing.xs,
   },
   option: {
     backgroundColor: THEME.colors.calm.card,
@@ -184,14 +178,14 @@ const styles = StyleSheet.create({
     ...THEME.shadows.soft,
   },
   optionSelected: {
-    borderWidth: 2,
-    borderColor: THEME.colors.gradient.blue,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    backgroundColor: THEME.colors.calm.mist,
   },
   optionText: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
   },
   optionTextSelected: {
-    fontFamily: THEME.fonts.heading.bold,
+    fontFamily: THEME.fonts.heading.medium,
   },
 });

@@ -1,12 +1,10 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
-import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { EmotionCard } from '@/components/EmotionCard';
 import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
-import { Sparkles } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 
@@ -24,6 +22,7 @@ export default function EmotionScreen() {
   const params = useLocalSearchParams();
   const preSelectedEmotion = params.emotion as string | undefined;
   const [selectedEmotion, setSelectedEmotion] = useState<string>(preSelectedEmotion || '');
+  const advanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (preSelectedEmotion) {
@@ -31,39 +30,29 @@ export default function EmotionScreen() {
     }
   }, [preSelectedEmotion]);
 
-  const handleContinue = () => {
-    if (selectedEmotion) {
+  useEffect(() => {
+    return () => {
+      if (advanceRef.current) clearTimeout(advanceRef.current);
+    };
+  }, []);
+
+  const handleSelect = (emotionId: string) => {
+    setSelectedEmotion(emotionId);
+    if (advanceRef.current) clearTimeout(advanceRef.current);
+    advanceRef.current = setTimeout(() => {
       router.push({
         pathname: '/onboarding/energy',
-        params: { emotion: selectedEmotion },
+        params: { emotion: emotionId },
       });
-    }
+    }, 380);
   };
 
   return (
-    <OnboardingScreenShell
-      footer={
-        <CalmPrimaryButton
-          label={t('onboarding.emotion.continue')}
-          onPress={handleContinue}
-          disabled={!selectedEmotion}
-          accessibilityLabel={t('onboarding.emotion.continue')}
-          accessibilityHint={t('onboardingA11y.continueEmotionHint')}
-        />
-      }
-    >
-      <View style={onboardingTypography.iconContainer}>
-        <View style={onboardingTypography.iconCircle}>
-          <Sparkles size={32} color={THEME.colors.gradient.blue} />
-        </View>
-      </View>
-
+    <OnboardingScreenShell>
       <OnboardingCheckInProgress step={1} />
       <Text style={onboardingTypography.title}>{t('onboarding.emotion.title')}</Text>
       <Text style={onboardingTypography.titleAccent}>{t('onboarding.emotion.titleAccent')}</Text>
       <Text style={onboardingTypography.subtitle}>{t('onboarding.emotion.subtitle')}</Text>
-      <Text style={styles.checkInHint}>{t('onboarding.emotion.checkInHint')}</Text>
-      <Text style={styles.inclusiveNote}>{t('sentir.inclusiveNote')}</Text>
 
       <View
         style={styles.emotionsGrid}
@@ -76,7 +65,7 @@ export default function EmotionScreen() {
               emoji={emotion.emoji}
               label={t(`sentir.emotions.${emotion.id}` as TranslationKey)}
               selected={selectedEmotion === emotion.id}
-              onPress={() => setSelectedEmotion(emotion.id)}
+              onPress={() => handleSelect(emotion.id)}
             />
           </View>
         ))}
@@ -86,21 +75,11 @@ export default function EmotionScreen() {
 }
 
 const styles = StyleSheet.create({
-  checkInHint: {
-    ...onboardingTypography.body,
-    marginBottom: THEME.spacing.sm,
-  },
-  inclusiveNote: {
-    ...THEME.typography.meta,
-    color: THEME.colors.text.metaOnFill,
-    lineHeight: 18,
-    marginBottom: THEME.spacing.lg,
-  },
   emotionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginHorizontal: -4,
-    marginTop: THEME.spacing.md,
+    marginTop: THEME.spacing.sm,
   },
   emotionWrapper: {
     width: '50%',

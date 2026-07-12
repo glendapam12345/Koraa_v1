@@ -1,7 +1,6 @@
-import { View, Text, Alert } from 'react-native';
+import { Text, Alert } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingHighlightCard } from '@/components/onboarding/OnboardingHighlightCard';
 import {
@@ -9,7 +8,6 @@ import {
   OnboardingCaptureSkipLink,
 } from '@/components/onboarding/OnboardingCaptureField';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
-import { PenLine } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { countOnboardingCaptureItems, saveOnboardingCaptureForUser } from '@/lib/onboardingCapture';
@@ -84,12 +82,6 @@ export default function OnboardingCaptureScreen() {
         </>
       }
     >
-      <View style={onboardingTypography.iconContainer}>
-        <View style={onboardingTypography.iconCircle}>
-          <PenLine size={32} color={THEME.colors.gradient.blue} />
-        </View>
-      </View>
-
       <Text style={onboardingTypography.title}>{t('onboarding.capture.title')}</Text>
       <Text style={onboardingTypography.titleAccent}>{t('onboarding.capture.titleAccent')}</Text>
       <Text style={onboardingTypography.subtitle}>{t('onboarding.capture.subtitle')}</Text>

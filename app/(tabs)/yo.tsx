@@ -31,7 +31,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
-import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import Constants from 'expo-constants';
 import { useYoProfile } from '@/hooks/useYoProfile';
 import { YoEditProfileModal } from '@/components/yo/YoEditProfileModal';
@@ -106,15 +105,6 @@ export default function ProfileScreen() {
     [profile.full_name, user?.user_metadata, t],
   );
 
-  const needsNamePrompt = useMemo(() => {
-    const fromProfile = profile.full_name?.trim();
-    const fromMeta =
-      typeof user?.user_metadata?.full_name === 'string'
-        ? user.user_metadata.full_name.trim()
-        : '';
-    return !fromProfile && !fromMeta;
-  }, [profile.full_name, user?.user_metadata?.full_name]);
-
   const avatarLetter = useMemo(() => {
     const fromProfile = profile.full_name?.trim();
     const fromMeta =
@@ -179,19 +169,6 @@ export default function ProfileScreen() {
             <ChevronRight size={20} color={THEME.colors.text.tertiary} />
           </TouchableOpacity>
         </CalmCard>
-
-        {needsNamePrompt ? (
-          <CalmCard style={styles.namePromptCard}>
-            <Text style={styles.namePromptTitle}>{t('yo.namePromptTitle')}</Text>
-            <Text style={styles.namePromptBody}>{t('yo.namePromptBody')}</Text>
-            <CalmPrimaryButton
-              label={t('yo.namePromptCta')}
-              onPress={openEditProfile}
-              variant="soft"
-              accessibilityLabel={t('yo.namePromptCta')}
-            />
-          </CalmCard>
-        ) : null}
 
         <CalmCard style={styles.menuCard}>
           <YoMenuRow
@@ -347,22 +324,6 @@ const styles = StyleSheet.create({
   headerEditHintText: {
     ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
-  },
-  namePromptCard: {
-    gap: THEME.spacing.sm,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
-    borderColor: THEME.colors.tint.blue.border,
-    borderWidth: 1,
-  },
-  namePromptTitle: {
-    ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-  },
-  namePromptBody: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    lineHeight: 20,
   },
   menuCard: {
     paddingVertical: THEME.spacing.xs,

@@ -1,11 +1,9 @@
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useState } from 'react';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
-import { Heart } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { completeOnboardingForUser } from '@/lib/finishOnboarding';
 import {
@@ -15,7 +13,7 @@ import {
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 
-const PREVIEW_STEP_KEYS = [
+const RHYTHM_KEYS = [
   'onboarding.setupFlow.stepFeelTitle',
   'onboarding.setupFlow.stepPlanTitle',
   'onboarding.setupFlow.stepRestTitle',
@@ -43,7 +41,7 @@ export default function WelcomeScreen() {
 
   return (
     <OnboardingScreenShell
-      ethereal
+      centered
       footer={
         <>
           <CalmPrimaryButton
@@ -52,16 +50,6 @@ export default function WelcomeScreen() {
             large
             accessibilityHint={t('onboarding.welcome.quickStartHint')}
           />
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => router.push('/onboarding/how-it-works')}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityLabel={t('onboarding.welcome.seeHowItWorks')}
-            accessibilityHint={t('onboardingA11y.welcomeSeeHowHint')}
-          >
-            <Text style={styles.secondaryText}>{t('onboarding.welcome.seeHowItWorks')}</Text>
-          </TouchableOpacity>
           <TouchableOpacity
             style={styles.skipButton}
             onPress={() => void handleSkipIntro()}
@@ -80,127 +68,64 @@ export default function WelcomeScreen() {
         </>
       }
     >
-      <View style={styles.heroOrbWrap} accessibilityElementsHidden>
-        <LinearGradient
-          colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.heroOrb}
-        >
-          <Heart size={36} color={THEME.colors.onGradient} strokeWidth={2} fill="rgba(255,255,255,0.25)" />
-        </LinearGradient>
-      </View>
-
       <Text style={styles.brand}>{t('onboarding.welcome.brand')}</Text>
       <Text style={onboardingTypography.title}>{t('onboarding.welcome.title')}</Text>
       <Text style={onboardingTypography.titleAccent}>{t('onboarding.welcome.titleAccent')}</Text>
-      <Text style={[onboardingTypography.subtitle, styles.lead]}>
-        {t('onboarding.welcome.subtitle')}
-      </Text>
+      <Text style={styles.lead}>{t('onboarding.welcome.subtitle')}</Text>
 
       <View
-        style={styles.previewCard}
+        style={styles.rhythm}
         accessibilityRole="summary"
         accessibilityLabel={t('onboardingA11y.howItWorksStepsGroup')}
       >
-        <Text style={styles.previewTitle}>{t('onboarding.welcome.previewTitle')}</Text>
-        {PREVIEW_STEP_KEYS.map((key, index) => (
-          <View key={key} style={styles.previewRow}>
-            <View style={styles.previewBadge}>
-              <Text style={styles.previewBadgeText}>{index + 1}</Text>
-            </View>
-            <Text style={styles.previewLabel}>{t(key as TranslationKey)}</Text>
-          </View>
+        <Text style={styles.rhythmTitle}>{t('onboarding.welcome.howItWorksTitle')}</Text>
+        {RHYTHM_KEYS.map((key, index) => (
+          <Text key={key} style={styles.rhythmLine}>
+            {index + 1}. {t(key as TranslationKey)}
+          </Text>
         ))}
+        <Text style={styles.rhythmHint}>{t('onboarding.welcome.howItWorksHint')}</Text>
       </View>
     </OnboardingScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  heroOrbWrap: {
-    alignItems: 'center',
-    marginBottom: THEME.spacing.lg,
-  },
-  heroOrb: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...THEME.shadows.soft,
-  },
   brand: {
     ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.bold,
+    fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.calm.lavenderDeep,
-    letterSpacing: 1.2,
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
-    marginBottom: THEME.spacing.xs,
+    marginBottom: THEME.spacing.sm,
   },
   lead: {
-    marginTop: THEME.spacing.xs,
-    marginBottom: THEME.spacing.md,
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
     lineHeight: 24,
+    marginTop: THEME.spacing.xs,
+    marginBottom: THEME.spacing.lg,
   },
-  previewCard: {
-    marginTop: THEME.spacing.sm,
-    padding: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: 'rgba(255,255,255,0.72)',
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
-    gap: THEME.spacing.xs,
-    ...THEME.shadows.soft,
+  rhythm: {
+    gap: 6,
+    paddingTop: THEME.spacing.sm,
   },
-  previewTitle: {
+  rhythmTitle: {
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.calm.lavenderDeep,
+    color: THEME.colors.text.secondary,
     marginBottom: 4,
   },
-  previewRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.sm,
-    paddingVertical: 6,
-  },
-  previewBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: THEME.colors.calm.lavender,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  previewBadgeText: {
-    ...THEME.typography.micro,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.calm.lavenderDeep,
-  },
-  previewLabel: {
+  rhythmLine: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
-    flex: 1,
-    lineHeight: 22,
+    lineHeight: 24,
   },
-  secondaryButton: {
-    marginTop: THEME.spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: THEME.sizes.touchTarget,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.pill,
-    borderWidth: 1.5,
-    borderColor: THEME.colors.calm.lavenderDeep,
-    backgroundColor: 'rgba(255,255,255,0.55)',
-  },
-  secondaryText: {
-    ...THEME.typography.body,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.bold,
+  rhythmHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginTop: THEME.spacing.sm,
+    lineHeight: 20,
   },
   skipButton: {
     marginTop: THEME.spacing.sm,
@@ -210,7 +135,7 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.sm,
   },
   skipText: {
-    ...THEME.typography.body,
+    ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
   },
 });

@@ -60,8 +60,13 @@ export function useYoProfile({
       }
 
       if (data) {
+        let fullName = data.full_name?.trim() || undefined;
+        if (!fullName && userId) {
+          const { syncProfileDisplayNameFromAuth } = await import('@/lib/syncProfileDisplayName');
+          fullName = await syncProfileDisplayNameFromAuth(userId, userMetadata);
+        }
         setProfile({
-          full_name: data.full_name?.trim() || undefined,
+          full_name: fullName,
           age: data.age ?? undefined,
           favorite_activities: data.favorite_activities,
           interests: data.interests,
@@ -74,7 +79,7 @@ export function useYoProfile({
       logger.error('Error inesperado:', error);
       setProfileError(t('yo.profileLoadError'));
     }
-  }, [userId, locale, t]);
+  }, [userId, userMetadata, locale, t]);
 
   const beginEditProfile = useCallback(() => {
     const fromProfile = profile.full_name?.trim() ?? '';

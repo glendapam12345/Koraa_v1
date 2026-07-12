@@ -1,58 +1,50 @@
 import type { ReactNode } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/constants/theme';
 
 type OnboardingScreenShellProps = {
   children: ReactNode;
   footer?: ReactNode;
-  /** Fondo más etéreo en welcome / momentos clave. */
-  ethereal?: boolean;
+  /** Contenido centrado verticalmente (welcome). */
+  centered?: boolean;
 };
 
-/** Shell calm compartido para onboarding (gradiente suave + footer sticky). */
+/**
+ * Shell calm del onboarding: fondo quieto, sin blobs ni gradientes ruidosos.
+ * Transmite calma — alineado con CalmScreen / tabs.
+ */
 export function OnboardingScreenShell({
   children,
   footer,
-  ethereal = false,
+  centered = false,
 }: OnboardingScreenShellProps) {
   const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.root}>
-      {ethereal ? (
-        <LinearGradient
-          colors={[
-            THEME.colors.calm.mist,
-            THEME.colors.calm.blush,
-            THEME.colors.calm.background,
-          ]}
-          locations={[0, 0.45, 1]}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 0.9, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-      ) : (
-        <LinearGradient
-          colors={[THEME.colors.calm.background, THEME.colors.calm.mist]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-      )}
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + THEME.spacing.xl },
+          centered && styles.contentCentered,
+          {
+            paddingTop: insets.top + (centered ? THEME.spacing.xl : THEME.spacing.xl),
+            paddingBottom: footer ? THEME.spacing.md : insets.bottom + THEME.spacing.xl,
+          },
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
         {children}
       </ScrollView>
+
       {footer ? (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + THEME.spacing.lg }]}>
+        <View
+          style={[
+            styles.footer,
+            { paddingBottom: insets.bottom + THEME.spacing.lg },
+          ]}
+        >
           {footer}
         </View>
       ) : null}
@@ -68,32 +60,19 @@ export const onboardingTypography = StyleSheet.create({
   titleAccent: {
     ...THEME.typography.h1,
     fontFamily: THEME.fonts.accent.italic,
-    color: THEME.colors.calm.lavenderDeep,
+    color: THEME.colors.text.main,
   },
   subtitle: {
     ...THEME.typography.screenSubtitle,
     color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.xs,
+    marginTop: THEME.spacing.xs,
+    marginBottom: THEME.spacing.md,
+    lineHeight: 24,
   },
   body: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
     lineHeight: 22,
-  },
-  iconContainer: {
-    alignItems: 'flex-end',
-    marginBottom: THEME.spacing.xl,
-  },
-  iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: THEME.colors.calm.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
-    ...THEME.shadows.soft,
   },
 });
 
@@ -103,14 +82,17 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.calm.background,
   },
   content: {
-    padding: THEME.spacing.lg,
-    paddingBottom: THEME.spacing.md,
+    paddingHorizontal: THEME.layout.screenPaddingX,
+    flexGrow: 1,
+  },
+  contentCentered: {
+    justifyContent: 'center',
   },
   footer: {
-    paddingHorizontal: THEME.spacing.lg,
+    paddingHorizontal: THEME.layout.screenPaddingX,
     paddingTop: THEME.spacing.sm,
+    backgroundColor: THEME.colors.calm.background,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: THEME.colors.calm.border,
-    backgroundColor: 'rgba(248, 245, 252, 0.92)',
   },
 });

@@ -1,7 +1,6 @@
-import { View, Text, Alert } from 'react-native';
+import { Text, Alert } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingHighlightCard } from '@/components/onboarding/OnboardingHighlightCard';
 import {
@@ -10,7 +9,6 @@ import {
   useOnboardingLifeAreasForm,
 } from '@/components/onboarding/OnboardingLifeAreasForm';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
-import { LayoutGrid } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import {
@@ -72,12 +70,6 @@ export default function OnboardingAreasScreen() {
         </>
       }
     >
-      <View style={onboardingTypography.iconContainer}>
-        <View style={onboardingTypography.iconCircle}>
-          <LayoutGrid size={32} color={THEME.colors.gradient.blue} />
-        </View>
-      </View>
-
       <Text style={onboardingTypography.title}>{t('onboarding.areas.title')}</Text>
       <Text style={onboardingTypography.titleAccent}>{t('onboarding.areas.titleAccent')}</Text>
       <Text style={onboardingTypography.subtitle}>{t('onboarding.areas.subtitle')}</Text>

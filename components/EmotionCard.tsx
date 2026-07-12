@@ -15,7 +15,7 @@ export function EmotionCard({ emoji, label, selected, onPress }: EmotionCardProp
     <TouchableOpacity
       onPress={onPress}
       style={[styles.container, selected && styles.selected]}
-      activeOpacity={0.7}
+      activeOpacity={0.75}
       accessibilityRole="button"
       accessibilityLabel={
         selected ? t('emotionCard.a11ySelected', { label }) : t('emotionCard.a11yOption', { label })
@@ -24,7 +24,7 @@ export function EmotionCard({ emoji, label, selected, onPress }: EmotionCardProp
       accessibilityState={{ selected }}
     >
       <Text style={styles.emoji}>{emoji}</Text>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, selected && styles.labelSelected]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -36,22 +36,27 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 120,
+    minHeight: 112,
     flex: 1,
     margin: 4,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
     ...THEME.shadows.soft,
   },
   selected: {
-    borderWidth: 2,
-    borderColor: THEME.colors.gradient.blue,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    backgroundColor: THEME.colors.calm.mist,
   },
   emoji: {
-    fontSize: 48,
+    fontSize: 40,
     marginBottom: THEME.spacing.xs,
   },
   label: {
     ...THEME.typography.caption,
     color: THEME.colors.text.main,
     textAlign: 'center',
+  },
+  labelSelected: {
+    fontFamily: THEME.fonts.heading.medium,
   },
 });

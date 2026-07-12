@@ -1,11 +1,9 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
-import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
-import { Battery } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 
@@ -21,75 +19,65 @@ export default function EnergyScreen() {
   const { t } = useI18n();
   const { emotion } = useLocalSearchParams<{ emotion: string }>();
   const [selectedEnergy, setSelectedEnergy] = useState<number>(0);
+  const advanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleContinue = () => {
-    if (selectedEnergy > 0 && emotion) {
+  useEffect(() => {
+    return () => {
+      if (advanceRef.current) clearTimeout(advanceRef.current);
+    };
+  }, []);
+
+  const handleSelect = (levelId: number) => {
+    setSelectedEnergy(levelId);
+    if (!emotion) return;
+    if (advanceRef.current) clearTimeout(advanceRef.current);
+    advanceRef.current = setTimeout(() => {
       router.push({
         pathname: '/onboarding/time',
-        params: { emotion, energy: selectedEnergy.toString() },
+        params: { emotion, energy: levelId.toString() },
       });
-    }
+    }, 380);
   };
 
   return (
-    <OnboardingScreenShell
-      footer={
-        <CalmPrimaryButton
-          label={t('onboarding.energy.continue')}
-          onPress={handleContinue}
-          disabled={selectedEnergy === 0}
-          accessibilityLabel={t('onboarding.energy.continue')}
-          accessibilityHint={t('onboardingA11y.continueEnergyHint')}
-        />
-      }
-    >
-      <View style={onboardingTypography.iconContainer}>
-        <View style={onboardingTypography.iconCircle}>
-          <Battery size={32} color={THEME.colors.gradient.pink} />
-        </View>
-      </View>
-
+    <OnboardingScreenShell>
       <OnboardingCheckInProgress step={2} />
       <Text style={onboardingTypography.title}>{t('onboarding.energy.title')}</Text>
       <Text style={onboardingTypography.titleAccent}>{t('onboarding.energy.titleAccent')}</Text>
       <Text style={onboardingTypography.subtitle}>{t('onboarding.energy.subtitle')}</Text>
 
       <View style={styles.optionsContainer} accessibilityRole="radiogroup">
-          {ENERGY_LEVELS.map((level) => (
-            <TouchableOpacity
-              key={level.id}
-              onPress={() => setSelectedEnergy(level.id)}
-              style={[
-                styles.option,
-                selectedEnergy === level.id && styles.optionSelected,
-              ]}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={t('onboardingA11y.selectEnergy', { label: t(level.key) })}
-              accessibilityHint={t('onboardingA11y.selectOptionHint')}
-              accessibilityState={{ selected: selectedEnergy === level.id }}
+        {ENERGY_LEVELS.map((level) => (
+          <TouchableOpacity
+            key={level.id}
+            onPress={() => handleSelect(level.id)}
+            style={[styles.option, selectedEnergy === level.id && styles.optionSelected]}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={t('onboardingA11y.selectEnergy', { label: t(level.key) })}
+            accessibilityHint={t('onboardingA11y.selectOptionHint')}
+            accessibilityState={{ selected: selectedEnergy === level.id }}
+          >
+            <View style={styles.barsContainer}>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.bar,
+                    index < level.bars && styles.barActive,
+                    selectedEnergy === level.id && index < level.bars && styles.barSelected,
+                  ]}
+                />
+              ))}
+            </View>
+            <Text
+              style={[styles.optionText, selectedEnergy === level.id && styles.optionTextSelected]}
             >
-              <View style={styles.barsContainer}>
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.bar,
-                      index < level.bars && styles.barActive,
-                      selectedEnergy === level.id && index < level.bars && styles.barSelected,
-                    ]}
-                  />
-                ))}
-              </View>
-              <Text style={[
-                styles.optionText,
-                selectedEnergy === level.id && styles.optionTextSelected,
-              ]}>
-                {t(level.key)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+              {t(level.key)}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </OnboardingScreenShell>
   );
 }
@@ -97,7 +85,7 @@ export default function EnergyScreen() {
 const styles = StyleSheet.create({
   optionsContainer: {
     gap: THEME.spacing.sm,
-    marginTop: THEME.spacing.md,
+    marginTop: THEME.spacing.xs,
   },
   option: {
     backgroundColor: THEME.colors.calm.card,
@@ -112,8 +100,8 @@ const styles = StyleSheet.create({
     ...THEME.shadows.soft,
   },
   optionSelected: {
-    borderWidth: 2,
-    borderColor: THEME.colors.gradient.blue,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    backgroundColor: THEME.colors.calm.mist,
   },
   barsContainer: {
     flexDirection: 'row',
@@ -129,13 +117,13 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.text.secondary,
   },
   barSelected: {
-    backgroundColor: THEME.colors.gradient.blue,
+    backgroundColor: THEME.colors.calm.lavenderDeep,
   },
   optionText: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
   },
   optionTextSelected: {
-    fontFamily: THEME.fonts.heading.bold,
+    fontFamily: THEME.fonts.heading.medium,
   },
 });

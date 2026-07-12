@@ -76,7 +76,7 @@ export function useHoyScreenLayout({
         if (!cancelled && showPostHoyPaywall) {
           setTimeout(() => {
             openPostHoyPaywall();
-          }, 2800);
+          }, 6500);
         }
 
         try {

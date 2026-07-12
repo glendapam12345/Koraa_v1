@@ -6,6 +6,7 @@ type OnboardingCheckInProgressProps = {
   step: 1 | 2 | 3 | 4;
 };
 
+/** Progreso quieto — una línea, sin barras ni puntos ruidosos. */
 export function OnboardingCheckInProgress({ step }: OnboardingCheckInProgressProps) {
   const { t } = useI18n();
 
@@ -23,8 +24,8 @@ export function OnboardingCheckInProgress({ step }: OnboardingCheckInProgressPro
 const styles = StyleSheet.create({
   label: {
     ...THEME.typography.caption,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.bold,
-    marginBottom: THEME.spacing.xs,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
+    marginBottom: THEME.spacing.sm,
   },
 });

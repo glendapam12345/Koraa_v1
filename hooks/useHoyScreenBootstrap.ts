@@ -52,9 +52,15 @@ export function useHoyScreenBootstrap({
 
   const loadProfileName = useCallback(async () => {
     if (!user?.id) return;
+    const { syncProfileDisplayNameFromAuth } = await import('@/lib/syncProfileDisplayName');
+    const synced = await syncProfileDisplayNameFromAuth(user.id, user.user_metadata);
+    if (synced) {
+      setProfileFullName(synced);
+      return;
+    }
     const { data } = await fetchProfilePreferences(user.id);
     setProfileFullName(data?.full_name?.trim() || undefined);
-  }, [user?.id]);
+  }, [user?.id, user?.user_metadata]);
 
   const displayName = useMemo(
     () =>
