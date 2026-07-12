@@ -668,6 +668,7 @@ export const es = {
     moodHeroLiteWithSteps: '{{count}} pasos sugeridos arriba — uno basta.',
     moodHeroLiteNoSteps: 'Sin pasos aún. Anota lo que llevas y vuelve aquí.',
     liteExpandedToast: 'Apoyo y resto del día visibles — sin prisa.',
+    dayTwoUnlockToast: 'Hoy muestra un poco más — solo si te sirve.',
     litePeekTitle: 'Guardado para más tarde hoy',
     litePeekBodyWithRest:
       'También están el apoyo suave (respirar, meditar), {{count}} pasos que pueden esperar y reorganizar tu día si el plan se siente largo — colapsados para no abrumarte.',

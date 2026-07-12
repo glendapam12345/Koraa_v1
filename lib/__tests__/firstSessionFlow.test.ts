@@ -29,6 +29,17 @@ describe('firstSessionFlow', () => {
     await expect(shouldLandOnTasksFirst(userId)).resolves.toBe(false);
   });
 
+  it('first landing settles on Hoy without forcing Tareas', async () => {
+    // Contract: callers mark landing complete and stay on default Hoy tab.
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
+    await expect(shouldLandOnTasksFirst(userId)).resolves.toBe(true);
+    await markFirstFlowLandingComplete(userId);
+    expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+      getFirstFlowLandingKey(userId),
+      '1',
+    );
+  });
+
   it('markFirstFlowLandingComplete persists flag', async () => {
     await markFirstFlowLandingComplete(userId);
     expect(AsyncStorage.setItem).toHaveBeenCalledWith(

@@ -58,6 +58,7 @@ describe('hoyLiteDay', () => {
     expect(AsyncStorage.multiRemove).toHaveBeenCalledWith([
       `koraa_hoy_lite_opt_out_v1_${userId}`,
       `hoy_secondary_modules_${userId}_v1`,
+      `koraa_hoy_day_two_unlock_toast_v1_${userId}`,
     ]);
     expect(AsyncStorage.setItem).toHaveBeenCalledWith(
       `koraa_hoy_first_open_calendar_day_v1_${userId}`,
@@ -84,6 +85,7 @@ describe('hoyLiteDay', () => {
     expect(AsyncStorage.multiRemove).toHaveBeenCalledWith([
       `koraa_hoy_lite_opt_out_v1_${userId}`,
       `hoy_secondary_modules_${userId}_v1`,
+      `koraa_hoy_day_two_unlock_toast_v1_${userId}`,
     ]);
     expect(AsyncStorage.setItem).toHaveBeenCalledWith(
       `koraa_hoy_first_open_calendar_day_v1_${userId}`,
@@ -114,5 +116,40 @@ describe('hoyLiteDay', () => {
       `koraa_hoy_lite_opt_out_v1_${userId}`,
       '1',
     );
+  });
+
+  it('consumeHoyDayTwoUnlockToast solo una vez al salir de lite', async () => {
+    const yesterday = getPreviousLocalDateString();
+    (AsyncStorage.getItem as jest.Mock).mockImplementation(async (key: string) => {
+      if (key === `koraa_hoy_first_open_calendar_day_v1_${userId}`) return yesterday;
+      if (key === `koraa_hoy_day_two_unlock_toast_v1_${userId}`) return null;
+      return null;
+    });
+
+    const { consumeHoyDayTwoUnlockToast } = await import('@/lib/hoyLiteDay');
+    await expect(consumeHoyDayTwoUnlockToast(userId)).resolves.toBe(true);
+    expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+      `koraa_hoy_day_two_unlock_toast_v1_${userId}`,
+      '1',
+    );
+
+    (AsyncStorage.getItem as jest.Mock).mockImplementation(async (key: string) => {
+      if (key === `koraa_hoy_first_open_calendar_day_v1_${userId}`) return yesterday;
+      if (key === `koraa_hoy_day_two_unlock_toast_v1_${userId}`) return '1';
+      return null;
+    });
+    await expect(consumeHoyDayTwoUnlockToast(userId)).resolves.toBe(false);
+  });
+
+  it('consumeHoyDayTwoUnlockToast no dispara en día lite', async () => {
+    const today = getLocalDateString();
+    (AsyncStorage.getItem as jest.Mock).mockImplementation(async (key: string) => {
+      if (key === `koraa_hoy_first_open_calendar_day_v1_${userId}`) return today;
+      return null;
+    });
+
+    const { consumeHoyDayTwoUnlockToast } = await import('@/lib/hoyLiteDay');
+    await expect(consumeHoyDayTwoUnlockToast(userId)).resolves.toBe(false);
+    expect(AsyncStorage.setItem).not.toHaveBeenCalled();
   });
 });

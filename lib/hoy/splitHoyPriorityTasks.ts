@@ -2,8 +2,8 @@ import type { Task } from '@/hooks/useTasks';
 import { getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
 import type { HoyProjectInfo } from '@/lib/hoy/focusTaskDisplay';
 
-/** Máximo de pasos para el encuadre "si solo puedes con una cosa". */
-export const HOY_ONE_THING_MAX = 2;
+/** Solo 1 paso usa el encuadre "si solo puedes con una cosa"; 2+ → "tiene fecha hoy". */
+export const HOY_ONE_THING_MAX = 1;
 
 /**
  * Paso con fecha hoy, vencido o proyecto que vence hoy — conviene no posponer.
@@ -27,7 +27,7 @@ export function isHoyTimeSensitiveTask(
 export type SplitHoyPriorityResult = {
   pinned: Task[];
   flexible: Task[];
-  /** 1–2 pasos con fecha — copy más personal; 3+ usa "tiene fecha hoy". */
+  /** Exactamente 1 paso con fecha — copy "si solo puedes con una cosa". */
   useOneThingFraming: boolean;
 };
 
@@ -51,6 +51,6 @@ export function splitHoyPriorityTasks(
   return {
     pinned,
     flexible,
-    useOneThingFraming: pinned.length > 0 && pinned.length <= HOY_ONE_THING_MAX,
+    useOneThingFraming: pinned.length === HOY_ONE_THING_MAX,
   };
 }

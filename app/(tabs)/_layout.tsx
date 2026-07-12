@@ -8,12 +8,11 @@ import { resolvePostAuthGate } from '@/lib/onboardingGate';
 import { TimeoutError, withTimeout } from '@/lib/withTimeout';
 import { logger } from '@/lib/logger';
 import { AppLoadingGate } from '@/components/AppLoadingGate';
-import { hasSeenFirstSessionTour, markFirstSessionTourSeen } from '@/lib/firstSessionTour';
+import { hasSeenFirstSessionTour } from '@/lib/firstSessionTour';
 import {
   markFirstFlowLandingComplete,
   shouldLandOnTasksFirst,
 } from '@/lib/firstSessionFlow';
-import { resolveHoyLiteLayout } from '@/lib/hoyLiteDay';
 import { FirstSessionTourModal } from '@/components/onboarding/FirstSessionTourModal';
 import { SupabaseHealthBanner } from '@/components/SupabaseHealthBanner';
 import { useSupabaseHealth } from '@/hooks/useSupabaseHealth';
@@ -93,12 +92,7 @@ export default function TabLayout() {
     void (async () => {
       const seen = await hasSeenFirstSessionTour(userId);
       if (cancelled || seen) return;
-      const liteDay = await resolveHoyLiteLayout(userId);
-      if (cancelled) return;
-      if (liteDay) {
-        await markFirstSessionTourSeen(userId);
-        return;
-      }
+      // Día 1 lite también ve el tour corto — no auto-dismiss.
       setShowFirstSessionTour(true);
     })();
     return () => {
@@ -107,21 +101,18 @@ export default function TabLayout() {
   }, [allowed, userId]);
 
   useEffect(() => {
-    if (!allowed || !userId || hasCheckInToday === null) return;
+    if (!allowed || !userId) return;
     let cancelled = false;
     void (async () => {
       const needsLanding = await shouldLandOnTasksFirst(userId);
       if (cancelled || !needsLanding) return;
-
+      // Primera entrada: quedarse en Hoy (FeelHero / plan), no mandar a Tareas vacías.
       await markFirstFlowLandingComplete(userId);
-      if (hasCheckInToday) return;
-
-      router.replace('/(tabs)/vaciar');
     })();
     return () => {
       cancelled = true;
     };
-  }, [allowed, userId, hasCheckInToday]);
+  }, [allowed, userId]);
 
   if (loading || !userId) {
     return <AppLoadingGate message={t('boot.loadingProfile')} />;

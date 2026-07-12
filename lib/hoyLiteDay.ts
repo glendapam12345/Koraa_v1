@@ -68,7 +68,11 @@ function secondaryModulesKey(userId: string): string {
 export async function resetHoyFirstDayPreview(userId: string): Promise<void> {
   const today = getLocalDateString();
   try {
-    await AsyncStorage.multiRemove([optOutKey(userId), secondaryModulesKey(userId)]);
+    await AsyncStorage.multiRemove([
+      optOutKey(userId),
+      secondaryModulesKey(userId),
+      dayTwoUnlockKey(userId),
+    ]);
     await AsyncStorage.setItem(firstLiteDayKey(userId), today);
   } catch {
     /* no-op */
@@ -81,9 +85,39 @@ export async function resetHoyFirstDayPreview(userId: string): Promise<void> {
 export async function simulateHoyDayTwo(userId: string): Promise<void> {
   const yesterday = getPreviousLocalDateString();
   try {
-    await AsyncStorage.multiRemove([optOutKey(userId), secondaryModulesKey(userId)]);
+    await AsyncStorage.multiRemove([
+      optOutKey(userId),
+      secondaryModulesKey(userId),
+      dayTwoUnlockKey(userId),
+    ]);
     await AsyncStorage.setItem(firstLiteDayKey(userId), yesterday);
   } catch {
     /* no-op */
+  }
+}
+
+function dayTwoUnlockKey(userId: string): string {
+  return `koraa_hoy_day_two_unlock_toast_v1_${userId}`;
+}
+
+/**
+ * True la primera vez que Hoy deja de ser lite (día 2+).
+ * Consume el flag para no repetir el toast.
+ */
+export async function consumeHoyDayTwoUnlockToast(userId: string): Promise<boolean> {
+  try {
+    const firstLiteDay = await AsyncStorage.getItem(firstLiteDayKey(userId));
+    if (!firstLiteDay) return false;
+
+    const today = getLocalDateString();
+    if (firstLiteDay === today) return false;
+
+    const alreadyShown = await AsyncStorage.getItem(dayTwoUnlockKey(userId));
+    if (alreadyShown === '1') return false;
+
+    await AsyncStorage.setItem(dayTwoUnlockKey(userId), '1');
+    return true;
+  } catch {
+    return false;
   }
 }

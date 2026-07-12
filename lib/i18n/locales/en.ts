@@ -662,6 +662,7 @@ export const en: DeepStrings<typeof es> = {
     moodHeroLiteNoSteps:
       'No steps yet. Capture what is on your mind and come back here.',
     liteExpandedToast: 'Support and rest of day are visible — no rush.',
+    dayTwoUnlockToast: 'Today shows a bit more — only if it helps.',
     litePeekTitle: 'Saved for later today',
     litePeekBodyWithRest:
       'Gentle support (breathe, meditate), {{count}} steps that can wait, and reorganizing your day if the plan feels long — tucked away so Today stays calm.',

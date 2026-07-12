@@ -58,16 +58,15 @@ describe('splitHoyPriorityTasks', () => {
     expect(result.useOneThingFraming).toBe(true);
   });
 
-  it('uses due-today framing when more than two pinned', () => {
+  it('uses due-today framing when more than one pinned', () => {
     const tasks = [
       { id: 'a', scheduled_date: today, project_id: null },
       { id: 'b', scheduled_date: today, project_id: null },
-      { id: 'c', scheduled_date: today, project_id: null },
     ] as never[];
 
     const result = splitHoyPriorityTasks(tasks, {}, today);
 
-    expect(result.pinned).toHaveLength(3);
+    expect(result.pinned).toHaveLength(2);
     expect(result.useOneThingFraming).toBe(false);
   });
 });

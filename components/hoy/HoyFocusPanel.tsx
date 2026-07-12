@@ -455,13 +455,15 @@ export function HoyFocusPanel({
           waitingSlot={planWaitingSlot}
           footerSlot={planFooterSlot}
           capacitySummarySlot={
-            hasCheckIn && dayCapacity && dayCapacity.stepCount > 0 ? (
+            (hasCheckIn && dayCapacity?.isOverloaded) || showAfternoonNudge ? (
               <>
-                <HoyDayCapacitySummary
-                  capacity={dayCapacity}
-                  energyLevel={energyLevel}
-                  onAdjustDay={onAdjustDay}
-                />
+                {hasCheckIn && dayCapacity?.isOverloaded ? (
+                  <HoyDayCapacitySummary
+                    capacity={dayCapacity}
+                    energyLevel={energyLevel}
+                    onAdjustDay={onAdjustDay}
+                  />
+                ) : null}
                 {showAfternoonNudge ? <HoyAfternoonNudge /> : null}
               </>
             ) : null

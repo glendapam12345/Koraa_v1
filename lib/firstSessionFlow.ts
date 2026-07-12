@@ -6,7 +6,7 @@ export function getFirstFlowLandingKey(userId: string): string {
   return `${LANDING_PREFIX}${userId}`;
 }
 
-/** True until the user has been guided to Tareas on first tabs entry. */
+/** True until first tabs entry has been settled (stay on Hoy). */
 export async function shouldLandOnTasksFirst(userId: string): Promise<boolean> {
   try {
     return (await AsyncStorage.getItem(getFirstFlowLandingKey(userId))) !== '1';

@@ -7,6 +7,7 @@ import {
   resolveHoyLiteLayout,
   isHoyLiteCompactOptedOut,
   optOutHoyLiteLayout,
+  consumeHoyDayTwoUnlockToast,
 } from '@/lib/hoyLiteDay';
 import { consumePrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
 import { consumeCheckInReplanSummary } from '@/lib/checkInReplanSummary';
@@ -61,6 +62,13 @@ export function useHoyScreenLayout({
         if (cancelled) return;
         setHoyLiteLayout(lite);
         setHoyLiteCompactOptedOut(compactOptedOut);
+
+        if (!lite) {
+          const showDayTwoUnlock = await consumeHoyDayTwoUnlockToast(userId);
+          if (!cancelled && showDayTwoUnlock) {
+            showToast(t('hoy.dayTwoUnlockToast'), 'info');
+          }
+        }
 
         try {
           const secondaryRaw = await AsyncStorage.getItem(`hoy_secondary_modules_${userId}_v1`);
