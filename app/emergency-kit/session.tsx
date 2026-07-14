@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Heart, Sparkles } from 'lucide-react-native';
+import { Heart } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
@@ -36,6 +36,8 @@ export default function EmergencyKitSessionScreen() {
   const [response, setResponse] = useState<EmergencyKitSessionState | null>(null);
   const [addModule, setAddModule] = useState<EmergencyKitModuleId | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [modulesOpen, setModulesOpen] = useState(false);
+  const [insightOpen, setInsightOpen] = useState(false);
 
   const loadSession = useCallback(async () => {
     setSessionError(false);
@@ -65,6 +67,8 @@ export default function EmergencyKitSessionScreen() {
     () => ai?.prioritizedModules ?? [],
     [ai?.prioritizedModules],
   );
+  const primaryModule = moduleOrder[0];
+  const extraModules = moduleOrder.slice(1);
 
   if (!sessionReady || sessionLoading) {
     return (
@@ -103,7 +107,7 @@ export default function EmergencyKitSessionScreen() {
   }
 
   return (
-    <CalmScreen topInset="lg" gap={THEME.layout.sectionGapCompact}>
+    <CalmScreen topInset="md" gap={THEME.layout.sectionGapCompact}>
       <EmergencyKitBackHeader
         title={t('emergencyKit.sessionTitle')}
         subtitle={t(`emergencyKit.events.${eventId}`)}
@@ -128,43 +132,99 @@ export default function EmergencyKitSessionScreen() {
       ) : null}
 
       <View style={styles.supportCard}>
-        <View style={styles.supportHeader}>
-          <Sparkles size={20} color={THEME.colors.calm.lavenderDeep} />
-          <Text style={styles.supportLabel}>{t('emergencyKit.supportMessageTitle')}</Text>
-          {ai.fromAi ? (
-            <Text style={styles.aiBadge}>{t('emergencyKit.aiPersonalized')}</Text>
-          ) : null}
-        </View>
+        <Text style={styles.supportLabel}>{t('emergencyKit.supportMessageTitle')}</Text>
+        {ai.fromAi ? <Text style={styles.aiBadge}>{t('emergencyKit.aiPersonalized')}</Text> : null}
         <Text style={styles.supportBody}>{ai.supportMessage}</Text>
       </View>
-
-      {ai.patternInsight ? (
-        <View style={styles.insightCard}>
-          <Text style={styles.insightLabel}>{t('emergencyKit.patternTitle')}</Text>
-          <Text style={styles.insightBody}>{ai.patternInsight}</Text>
-        </View>
-      ) : null}
 
       <View style={styles.actionsCard}>
         <Text style={styles.actionsTitle}>{t('emergencyKit.gentleActionsTitle')}</Text>
         {ai.gentleActions.map((action) => (
           <View key={action} style={styles.actionRow}>
-            <Text style={styles.actionCheck}>✓</Text>
+            <Text style={styles.actionBullet}>·</Text>
             <Text style={styles.actionText}>{action}</Text>
           </View>
         ))}
       </View>
 
-      {moduleOrder.map((moduleId) => (
+      {ai.patternInsight ? (
+        <>
+          {!insightOpen ? (
+            <TouchableOpacity
+              style={styles.softToggle}
+              onPress={() => setInsightOpen(true)}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={t('emergencyKit.patternTitle')}
+            >
+              <Text style={styles.softToggleText}>{t('emergencyKit.patternTitle')}</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.insightCard}>
+              <Text style={styles.insightLabel}>{t('emergencyKit.patternTitle')}</Text>
+              <Text style={styles.insightBody}>{ai.patternInsight}</Text>
+              <TouchableOpacity
+                onPress={() => setInsightOpen(false)}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={t('emergencyKit.modulesHide')}
+              >
+                <Text style={styles.softToggleText}>{t('emergencyKit.modulesHide')}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </>
+      ) : null}
+
+      {primaryModule ? (
         <EmergencyKitModuleSection
-          key={moduleId}
-          moduleId={moduleId}
+          moduleId={primaryModule}
           items={items}
           recommendedIds={ai.recommendedItemIds}
-          onAdd={() => setAddModule(moduleId)}
+          onAdd={() => setAddModule(primaryModule)}
           onDelete={(id) => void deleteItem(id)}
         />
-      ))}
+      ) : null}
+
+      {extraModules.length > 0 ? (
+        <>
+          {!modulesOpen ? (
+            <TouchableOpacity
+              style={styles.softToggle}
+              onPress={() => setModulesOpen(true)}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={t('emergencyKit.modulesMore', { count: extraModules.length })}
+            >
+              <Text style={styles.softToggleText}>
+                {t('emergencyKit.modulesMore', { count: extraModules.length })}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={styles.softToggle}
+                onPress={() => setModulesOpen(false)}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={t('emergencyKit.modulesHide')}
+              >
+                <Text style={styles.softToggleText}>{t('emergencyKit.modulesHide')}</Text>
+              </TouchableOpacity>
+              {extraModules.map((moduleId) => (
+                <EmergencyKitModuleSection
+                  key={moduleId}
+                  moduleId={moduleId}
+                  items={items}
+                  recommendedIds={ai.recommendedItemIds}
+                  onAdd={() => setAddModule(moduleId)}
+                  onDelete={(id) => void deleteItem(id)}
+                />
+              ))}
+            </>
+          )}
+        </>
+      ) : null}
 
       {addModule ? (
         <EmergencyKitAddItemModal
@@ -193,7 +253,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   errorCard: {
-    ...THEME.surfaces.elevated,
+    backgroundColor: THEME.colors.calm.mist,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
     padding: THEME.spacing.md,
     gap: THEME.spacing.xs,
   },
@@ -221,26 +284,21 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   supportCard: {
-    backgroundColor: THEME.surfaces.tinted.backgroundColor,
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
-    gap: THEME.spacing.sm,
-    borderWidth: 1,
-    borderColor: THEME.surfaces.tinted.borderColor,
-  },
-  supportHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: THEME.spacing.xs,
-    flexWrap: 'wrap',
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
   },
   supportLabel: {
-    ...THEME.typography.h3,
-    flex: 1,
+    ...THEME.typography.meta,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
   },
   aiBadge: {
     ...THEME.typography.small,
-    color: THEME.colors.calm.lavenderDeep,
+    color: THEME.colors.text.tertiary,
   },
   supportBody: {
     ...THEME.typography.body,
@@ -248,15 +306,17 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   insightCard: {
-    backgroundColor: THEME.surfaces.muted.backgroundColor,
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     gap: THEME.spacing.xs,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
   },
   insightLabel: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.text.secondary,
+    color: THEME.colors.calm.lavenderDeep,
   },
   insightBody: {
     ...THEME.typography.body,
@@ -264,24 +324,27 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   actionsCard: {
-    backgroundColor: THEME.surfaces.elevated.backgroundColor,
+    backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     gap: THEME.spacing.sm,
     borderWidth: 1,
-    borderColor: THEME.surfaces.elevated.borderColor,
+    borderColor: THEME.colors.calm.border,
   },
   actionsTitle: {
-    ...THEME.typography.h3,
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
   },
   actionRow: {
     flexDirection: 'row',
     gap: THEME.spacing.xs,
     alignItems: 'flex-start',
   },
-  actionCheck: {
+  actionBullet: {
     ...THEME.typography.body,
     color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 22,
   },
   actionText: {
     ...THEME.typography.body,
@@ -291,13 +354,24 @@ const styles = StyleSheet.create({
   },
   changeLink: {
     alignSelf: 'flex-start',
-    minHeight: 36,
+    minHeight: THEME.sizes.touchTarget,
     justifyContent: 'center',
   },
   changeLinkText: {
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.calm.lavenderDeep,
-    textDecorationLine: 'underline',
+  },
+  softToggle: {
+    alignSelf: 'center',
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+    paddingHorizontal: THEME.spacing.md,
+  },
+  softToggleText: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.calm.lavenderDeep,
+    textAlign: 'center',
   },
 });

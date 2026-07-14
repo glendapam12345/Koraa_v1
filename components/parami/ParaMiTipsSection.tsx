@@ -5,35 +5,24 @@ import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { TipsCategoryGrid } from '@/components/tips/TipsCategoryGrid';
-import { KoraaDailyTipsSection } from '@/components/koraa/KoraaDailyTipsSection';
-import { resolveTipsByIds } from '@/lib/ai/resolveBriefTips';
 import { openTipsCategory } from '@/lib/tipsNavigation';
 import type { TipCategoryId, TipsUserContext } from '@/lib/tipsTypes';
 import { getCatalogCountByCategory, getDisplayTipsCountByCategory } from '@/lib/tipsAccess';
-import type { ScoredTip } from '@/lib/tipsPersonalization';
 
 const CATEGORY_ORDER: TipCategoryId[] = ['mindset', 'rest', 'action', 'productivity'];
 
 type ParaMiTipsSectionProps = {
   context: TipsUserContext;
+  /** @deprecated Tip destacado eliminado — se mantiene por compatibilidad de llamadas. */
   highlightTipIds?: string[];
   tipLead?: string;
   fromAi?: boolean;
 };
 
-export function ParaMiTipsSection({
-  context,
-  highlightTipIds = [],
-  tipLead = '',
-  fromAi = false,
-}: ParaMiTipsSectionProps) {
+/** Categorías de consejos — ritmo de espacio 8pt consistente. */
+export function ParaMiTipsSection({ context }: ParaMiTipsSectionProps) {
   const { t, locale } = useI18n();
   const { isSubscribed } = useSubscription();
-
-  const highlightedTips = useMemo(
-    () => resolveTipsByIds(highlightTipIds, locale),
-    [highlightTipIds, locale],
-  );
 
   const catalogTotals = useMemo(() => getCatalogCountByCategory(locale), [locale]);
 
@@ -46,17 +35,6 @@ export function ParaMiTipsSection({
     () =>
       Object.fromEntries(
         CATEGORY_ORDER.map((id) => [id, t(`tips.categories.${id}` as 'tips.categories.rest')]),
-      ) as Record<TipCategoryId, string>,
-    [t],
-  );
-
-  const subtitles = useMemo(
-    () =>
-      Object.fromEntries(
-        CATEGORY_ORDER.map((id) => [
-          id,
-          t(`tips.categorySubtitles.${id}` as 'tips.categorySubtitles.rest'),
-        ]),
       ) as Record<TipCategoryId, string>,
     [t],
   );
@@ -78,45 +56,25 @@ export function ParaMiTipsSection({
     openTipsCategory(router, category, context);
   };
 
-  const openTip = (tip: ScoredTip) => {
-    openTipsCategory(router, tip.category, context, tip.id);
-  };
-
-  const sectionLead = tipLead || t('parami.tipsSectionLead');
-
   return (
     <View
       style={styles.wrap}
       accessibilityRole="summary"
       accessibilityLabel={t('parami.tipsSectionA11y')}
     >
-      <View style={styles.titleRow}>
+      <View style={styles.header}>
         <Text style={styles.title} accessibilityRole="header">
           {t('parami.tipsSectionTitle')}
         </Text>
-        {fromAi && highlightedTips.length > 0 ? (
-          <View style={styles.aiPill}>
-            <Text style={styles.aiPillText}>{t('koraaDailyTips.aiBadge')}</Text>
-          </View>
+        <Text style={styles.lead}>{t('parami.tipsSectionLead')}</Text>
+        {!isSubscribed ? (
+          <Text style={styles.planNote}>{t('parami.tipsFreePlanNote')}</Text>
         ) : null}
       </View>
-      {highlightedTips.length > 0 ? (
-        <KoraaDailyTipsSection
-          tips={highlightedTips}
-          tipLead={tipLead || undefined}
-          fromAi={fromAi}
-          embedded
-          hideHeader
-          hideForYouBadge
-          onOpenTip={openTip}
-        />
-      ) : (
-        <Text style={styles.lead}>{sectionLead}</Text>
-      )}
+
       <TipsCategoryGrid
         order={CATEGORY_ORDER}
         labels={labels}
-        subtitles={subtitles}
         counts={counts}
         countBadges={countBadges}
         tipsLabel={t('parami.tipsCountLabel')}
@@ -128,38 +86,28 @@ export function ParaMiTipsSection({
 
 const styles = StyleSheet.create({
   wrap: {
-    gap: THEME.spacing.sm,
-    paddingTop: THEME.spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: THEME.colors.calm.border,
+    gap: THEME.spacing.md,
   },
-  titleRow: {
-    flexDirection: 'row',
+  header: {
+    gap: THEME.spacing.xs,
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
   },
   title: {
     ...THEME.typography.sectionTitle,
     color: THEME.colors.text.main,
-  },
-  aiPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.calm.lavender,
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.lavenderDeep,
-  },
-  aiPillText: {
-    ...THEME.typography.small,
-    fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.calm.lavenderDeep,
-    lineHeight: 16,
+    textAlign: 'center',
   },
   lead: {
     ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  planNote: {
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
+    textAlign: 'center',
     lineHeight: 18,
   },
 });

@@ -53,12 +53,18 @@ export function ParaMiPeriodBar({
     });
   }, [daysBack, t, locale]);
 
-  const segments = periods.map(({ id, labelKey, premium }) => ({
-    id,
-    label: t(labelKey),
-    accessibilityLabel: t(labelKey),
-    locked: premium && !isSubscribed,
-  }));
+  const segments = periods.map(({ id, labelKey, premium }) => {
+    const locked = premium && !isSubscribed;
+    const base = t(labelKey);
+    return {
+      id,
+      label: locked ? `${base} · ${t('parami.periodPremiumBadge')}` : base,
+      accessibilityLabel: locked
+        ? `${base}. ${t('parami.periodPremiumBadge')}`
+        : base,
+      locked,
+    };
+  });
 
   const handleChange = (id: ParaMiPeriodId) => {
     const meta = periods.find((p) => p.id === id);
@@ -75,7 +81,7 @@ export function ParaMiPeriodBar({
         segments={segments}
         value={period}
         onChange={handleChange}
-        variant="chip"
+        variant="track"
         scrollable
       />
       <Text style={styles.periodRange}>{periodRangeLabel}</Text>

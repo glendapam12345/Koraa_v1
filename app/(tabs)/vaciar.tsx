@@ -723,7 +723,7 @@ export default function VaciarScreen() {
           }
           onScroll={isCaptureSegment ? handleCaptureScroll : undefined}
           topInset={isCaptureSegment ? 'md' : 'lg'}
-          gap={isCaptureSegment ? THEME.spacing.sm : THEME.layout.tabSectionGap}
+          gap={isCaptureSegment ? THEME.layout.sectionGap : THEME.layout.tabSectionGap}
           keyboardShouldPersistTaps="always"
           keyboardDismissMode="interactive"
           automaticallyAdjustKeyboardInsets={isCaptureSegment}

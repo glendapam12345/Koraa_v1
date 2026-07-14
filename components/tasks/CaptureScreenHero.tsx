@@ -1,13 +1,10 @@
 import { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { Sparkles } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { getFirstName } from '@/lib/displayName';
-import { KoraaMascotAvatar } from '@/components/branding/KoraaMascotAvatar';
 import { formatGreetingWithName, formatNightReturnGreeting, useKoraaGreeting } from '@/hooks/useKoraaGreeting';
-import { TimeOfDayChip } from '@/components/hoy/TimeOfDayChip';
 
 export type CaptureHeroLiveState = {
   isThinking: boolean;
@@ -20,10 +17,11 @@ type CaptureScreenHeroProps = {
   liveState?: CaptureHeroLiveState | null;
 };
 
+/** Hero calm de Capturar: una pregunta, una línea de apoyo. */
 export function CaptureScreenHero({ displayName, liveState }: CaptureScreenHeroProps) {
   const { t } = useI18n();
   const firstName = getFirstName(displayName);
-  const { period, greeting, timeChipLabel, lateNight } = useKoraaGreeting();
+  const { period, greeting, lateNight } = useKoraaGreeting();
 
   const greetingLine = useMemo(() => {
     if (lateNight) return formatNightReturnGreeting(t, firstName, period);
@@ -45,18 +43,8 @@ export function CaptureScreenHero({ displayName, liveState }: CaptureScreenHeroP
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.topRow}>
-        <View style={styles.wordmarkRow}>
-          <Text style={styles.wordmark}>koraa</Text>
-          <Sparkles size={16} color={THEME.colors.calm.lavenderDeep} />
-        </View>
-        <KoraaMascotAvatar size={44} />
-      </View>
-
-      <TimeOfDayChip period={period} label={timeChipLabel} />
-
       <Text style={styles.greeting}>{greetingLine}</Text>
-        <Text style={styles.prompt}>{t('frentes.brainDumpTitle')}</Text>
+      <Text style={styles.prompt}>{t('vaciar.brainDumpSimpleTitle')}</Text>
       <Animated.Text
         key={subtitle}
         entering={FadeIn.duration(220)}
@@ -70,43 +58,25 @@ export function CaptureScreenHero({ displayName, liveState }: CaptureScreenHeroP
 
 const styles = StyleSheet.create({
   wrap: {
-    gap: THEME.spacing.xs,
-    paddingBottom: THEME.spacing.xs,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: THEME.spacing.xs,
-  },
-  wordmarkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  wordmark: {
-    ...THEME.typography.titleCompact,
-    lineHeight: 26,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-    letterSpacing: -0.5,
+    gap: 8,
+    paddingBottom: THEME.spacing.sm,
   },
   greeting: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
+    lineHeight: 18,
+  },
+  prompt: {
     ...THEME.typography.h2,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
+    fontSize: 28,
     lineHeight: 34,
-  },
-  prompt: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    lineHeight: 24,
-    fontFamily: THEME.fonts.heading.bold,
   },
   subtitle: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
     lineHeight: 22,
-    fontFamily: THEME.fonts.heading.medium,
   },
 });

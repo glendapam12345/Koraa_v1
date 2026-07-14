@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Plus } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
@@ -128,8 +127,28 @@ export function SemanaDaySection({
     },
   }[emptyVariant];
 
-  const renderCheckInChip = () =>
-    checkInChipText ? (
+  const renderCheckInChip = () => {
+    if (energyLevel != null && energyLevel > 0) {
+      const wordKey =
+        energyLevel <= 1
+          ? 'hoy.energyWord1'
+          : energyLevel === 2
+            ? 'hoy.energyWord2'
+            : energyLevel === 3
+              ? 'hoy.energyWord3'
+              : energyLevel === 4
+                ? 'hoy.energyWord4'
+                : 'hoy.energyWord5';
+      return (
+        <View style={styles.energyBadge}>
+          <Text style={styles.energyBadgeText}>
+            {t('semana.energyDayBadge', { word: t(wordKey as never) })}
+          </Text>
+        </View>
+      );
+    }
+    if (!checkInChipText) return null;
+    return (
       <View
         style={[
           styles.dayCheckInChip,
@@ -140,48 +159,20 @@ export function SemanaDaySection({
           {checkInChipText}
         </Text>
       </View>
-    ) : null;
+    );
+  };
 
-  const renderHeader = () => {
-    if (isToday) {
-      return (
-        <LinearGradient
-          colors={THEME.colors.gradientTint.dayToday}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[
-            styles.dayHeader,
-            styles.dayHeaderToday,
-            emotionAccent ? { borderLeftColor: emotionAccent, borderLeftWidth: 4 } : null,
-          ]}
-        >
-          <Text style={[styles.dayLabel, styles.dayLabelToday]} numberOfLines={1}>
-            {title}
-          </Text>
-          <View style={styles.todayHeaderRight}>
-            {renderCheckInChip()}
-            <View style={styles.todayBadge}>
-              <Text style={styles.todayBadgeText}>{t('semana.today')}</Text>
-            </View>
-          </View>
-        </LinearGradient>
-      );
-    }
-
-    return (
-      <View
-        style={[
-          styles.dayHeader,
-          emotionAccent ? { borderLeftWidth: 4, borderLeftColor: emotionAccent } : null,
-        ]}
-      >
+  const renderHeader = () => (
+    <View style={[styles.dayHeader, isToday && styles.dayHeaderToday]}>
+      <View style={styles.dayHeaderText}>
         <Text style={styles.dayLabel} numberOfLines={1}>
           {title}
         </Text>
-        {renderCheckInChip()}
+        {isToday ? <Text style={styles.todaySoft}>{t('semana.today')}</Text> : null}
       </View>
-    );
-  };
+      {renderCheckInChip()}
+    </View>
+  );
 
   return (
     <View
@@ -283,12 +274,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.md,
     paddingHorizontal: THEME.spacing.md,
     borderRadius: 0,
-    ...THEME.surfaces.muted,
-    borderBottomWidth: 1,
+    backgroundColor: THEME.colors.calm.mist,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: THEME.colors.calm.border,
+  },
+  dayHeaderToday: {
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
+  },
+  dayHeaderText: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  energyBadge: {
+    maxWidth: '52%',
+    borderRadius: THEME.borderRadius.pill,
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: 6,
+    backgroundColor: THEME.colors.calm.lavender,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.lavenderDeep,
+  },
+  energyBadgeText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
+    lineHeight: 16,
   },
   dayCheckInChip: {
     maxWidth: '48%',
@@ -304,10 +318,6 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     fontFamily: THEME.fonts.heading.medium,
   },
-  dayHeaderToday: {
-    borderLeftWidth: 4,
-    borderLeftColor: THEME.colors.surfaceOverlay.borderMedium,
-  },
   todayHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -318,17 +328,22 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.md,
   },
   dayLabel: {
-    ...THEME.typography.subheading,
-    lineHeight: 24,
+    ...THEME.typography.sectionTitle,
+    fontSize: 20,
+    lineHeight: 26,
     color: THEME.colors.text.main,
-    flex: 1,
+  },
+  todaySoft: {
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
   },
   dayLabelToday: {
-    color: THEME.colors.gradient.blue,
+    color: THEME.colors.text.main,
   },
   todayBadge: {
     marginLeft: THEME.spacing.sm,
-    backgroundColor: THEME.colors.gradient.blue,
+    backgroundColor: THEME.colors.calm.lavenderDeep,
     paddingHorizontal: THEME.spacing.xs,
     paddingVertical: 2,
     borderRadius: THEME.borderRadius.standard,
@@ -344,26 +359,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyDayEmoji: {
-    fontSize: 40,
+    fontSize: 36,
     marginBottom: THEME.spacing.xs,
   },
   emptyDayText: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
     marginBottom: 4,
+    textAlign: 'center',
   },
   emptyDayHint: {
     ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    fontStyle: 'italic',
+    color: THEME.colors.text.tertiary,
     marginBottom: THEME.spacing.md,
     textAlign: 'center',
+    lineHeight: 18,
   },
   heavyDayBanner: {
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
-    borderRadius: THEME.borderRadius.standard,
+    backgroundColor: THEME.colors.calm.mist,
+    borderRadius: THEME.borderRadius.rounded,
     borderWidth: 1,
-    borderColor: THEME.colors.tint.blue.border,
+    borderColor: THEME.colors.calm.border,
     padding: THEME.spacing.sm,
     marginBottom: THEME.spacing.sm,
     gap: 4,
@@ -376,7 +392,7 @@ const styles = StyleSheet.create({
   heavyDayCta: {
     ...THEME.typography.caption,
     color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.bold,
+    fontFamily: THEME.fonts.heading.medium,
   },
   addDayButtonOutlined: {
     flexDirection: 'row',
@@ -385,16 +401,16 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.xs,
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.standard,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: THEME.colors.gradient.blue,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    backgroundColor: THEME.colors.fill[100],
     marginTop: THEME.spacing.xs,
+    minHeight: THEME.sizes.touchTarget,
   },
   addDayButtonTextOutlined: {
-    ...THEME.typography.meta,
-    color: THEME.colors.gradient.blue,
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
   },
 });

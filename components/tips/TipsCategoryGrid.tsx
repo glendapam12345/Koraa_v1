@@ -13,57 +13,54 @@ type TipsCategoryGridProps = {
   onPressCategory: (category: TipCategoryId) => void;
 };
 
+/** Grid 2×N — limpio, con aire, como catálogo visual de tips. */
 export function TipsCategoryGrid({
   order,
   labels,
-  subtitles,
   counts,
   countBadges,
   tipsLabel,
   onPressCategory,
 }: TipsCategoryGridProps) {
-  const rowA: TipCategoryId[] = [order[0], order[1]];
-  const rowB: TipCategoryId[] = [order[2], order[3]];
-
-  const renderRow = (row: TipCategoryId[]) => (
-    <View style={styles.row}>
-      {row.map((category) => (
-        <View key={category} style={styles.cell}>
-          <TipsCategoryCard
-            category={category}
-            label={labels[category]}
-            subtitle={subtitles?.[category]}
-            tipCount={counts[category]}
-            countBadge={countBadges?.[category]}
-            tipsLabel={tipsLabel}
-            onPress={() => onPressCategory(category)}
-          />
-        </View>
-      ))}
-    </View>
-  );
+  const rows: TipCategoryId[][] = [];
+  for (let i = 0; i < order.length; i += 2) {
+    rows.push(order.slice(i, i + 2));
+  }
 
   return (
     <View style={styles.grid}>
-      {renderRow(rowA)}
-      {renderRow(rowB)}
+      {rows.map((row) => (
+        <View key={row.join('-')} style={styles.row}>
+          {row.map((category) => (
+            <TipsCategoryCard
+              key={category}
+              category={category}
+              label={labels[category]}
+              tipCount={counts[category]}
+              countBadge={countBadges?.[category]}
+              tipsLabel={tipsLabel}
+              onPress={() => onPressCategory(category)}
+            />
+          ))}
+          {row.length === 1 ? <View style={styles.spacer} /> : null}
+        </View>
+      ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   grid: {
-    gap: THEME.spacing.sm,
-    marginBottom: 0,
+    gap: THEME.spacing.md,
     alignSelf: 'stretch',
     width: '100%',
   },
   row: {
     flexDirection: 'row',
-    gap: THEME.spacing.sm,
+    gap: THEME.spacing.md,
     alignItems: 'stretch',
   },
-  cell: {
+  spacer: {
     flex: 1,
     minWidth: 0,
   },

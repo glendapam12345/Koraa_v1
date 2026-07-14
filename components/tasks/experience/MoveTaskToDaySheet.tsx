@@ -70,8 +70,8 @@ export function MoveTaskToDaySheet({
             })}
 
             <View style={styles.calendarSection}>
-              <Text style={styles.calendarTitle}>{t('semana.movePickCalendar')}</Text>
-              <Text style={styles.calendarHint}>{t('semana.movePickCalendarHint')}</Text>
+              <Text style={styles.calendarTitle}>{t('semanaExtra.movePickCalendar')}</Text>
+              <Text style={styles.calendarHint}>{t('semanaExtra.movePickCalendarHint')}</Text>
               <DateSelector
                 selectedDate={currentDayId}
                 onSelect={(date) => {

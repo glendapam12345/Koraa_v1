@@ -127,7 +127,7 @@ export default function StreakScreen() {
         style={styles.closeBtn}
         onPress={() => router.back()}
         accessibilityRole="button"
-        accessibilityLabel={t('common.close')}
+        accessibilityLabel={t('commonExtra.close')}
       >
         <X size={24} color={THEME.colors.text.main} />
       </TouchableOpacity>

@@ -4,7 +4,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 
 type HoyPlanExpandableRowProps = {
-  icon: ReactNode;
+  icon?: ReactNode;
   title: string;
   subtitle: string;
   expanded: boolean;
@@ -43,15 +43,17 @@ export function HoyPlanExpandableRow({
         accessibilityLabel={accessibilityLabel}
         accessibilityState={{ expanded }}
       >
-        <View
-          style={[
-            styles.iconWrap,
-            compact && styles.iconWrapCompact,
-            isAccent ? styles.iconWrapAccent : styles.iconWrapMuted,
-          ]}
-        >
-          {icon}
-        </View>
+        {icon ? (
+          <View
+            style={[
+              styles.iconWrap,
+              compact && styles.iconWrapCompact,
+              isAccent ? styles.iconWrapAccent : styles.iconWrapMuted,
+            ]}
+          >
+            {icon}
+          </View>
+        ) : null}
         <View style={styles.rowText}>
           <Text style={[styles.rowTitle, compact && styles.rowTitleCompact]}>{title}</Text>
           <Text style={[styles.rowSub, compact && styles.rowSubCompact]} numberOfLines={2}>
@@ -87,10 +89,10 @@ const styles = StyleSheet.create({
     minHeight: THEME.sizes.touchTarget,
   },
   rowCompact: {
-    paddingVertical: 10,
+    paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.sm,
-    minHeight: 52,
-    gap: 8,
+    minHeight: THEME.sizes.touchTarget + 8,
+    gap: THEME.spacing.sm,
   },
   rowAccent: {
     borderColor: THEME.colors.calm.border,

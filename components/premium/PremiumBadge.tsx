@@ -2,36 +2,49 @@ import { View, Text, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 
-/** Indicador compacto de suscripción activa (no ocupa media pantalla). */
-export function PremiumBadge() {
+type PremiumBadgeProps = {
+  compact?: boolean;
+};
+
+/** Indicador claro de suscripción activa. */
+export function PremiumBadge({ compact = false }: PremiumBadgeProps) {
   const { t } = useI18n();
 
   return (
     <View
-      style={styles.badge}
+      style={[styles.badge, compact && styles.badgeCompact]}
       accessibilityRole="text"
       accessibilityLabel={t('premiumActive.badgeA11y')}
     >
-      <Text style={styles.emoji} accessibilityElementsHidden>
-        ✨
-      </Text>
+      <Text style={[styles.text, compact && styles.textCompact]}>{t('premiumActive.shortLabel')}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   badge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: THEME.borderRadius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    backgroundColor: THEME.colors.calm.lavender,
     borderWidth: 1,
-    borderColor: THEME.colors.tint.blue.border,
+    borderColor: THEME.colors.calm.border,
+    minHeight: 32,
   },
-  emoji: {
-    fontSize: 18,
-    lineHeight: 22,
+  badgeCompact: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    minHeight: 22,
+  },
+  text: {
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.bold,
+  },
+  textCompact: {
+    fontSize: 11,
+    lineHeight: 14,
   },
 });

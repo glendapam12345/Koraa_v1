@@ -18,7 +18,7 @@ import { openVaciarCapture } from '@/lib/vaciarNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 import { SemanaCalendarGrid } from '@/components/semana/SemanaCalendarGrid';
-import { SemanaCalendarLegend } from '@/components/semana/SemanaCalendarLegend';
+import { TabScreenErrorBoundary } from '@/components/TabScreenErrorBoundary';
 import { SemanaWeekNav } from '@/components/semana/SemanaWeekNav';
 import { SemanaProjectFilter } from '@/components/semana/SemanaProjectFilter';
 import { SemanaDaySection } from '@/components/semana/SemanaDaySection';
@@ -36,7 +36,7 @@ import { getDisplayName } from '@/lib/displayName';
 import { SemanaRangePicker } from '@/components/semana/SemanaRangePicker';
 import { useSemanaTaskDrag } from '@/hooks/useSemanaTaskDrag';
 import { Toast } from '@/components/Toast';
-import { getLocalDateString } from '@/lib/dateLocal';
+import { getLocalDateString, parseLocalDateString } from '@/lib/dateLocal';
 import { requestHoyRefresh } from '@/lib/hoyRefreshBridge';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
@@ -59,7 +59,7 @@ import {
   type SemanaRangeMode,
 } from '@/lib/semana/rangeMode';
 import { monthCalendarToDayTasks } from '@/lib/semana/monthToDayTasks';
-import { parseMonthAnchor } from '@/lib/calendarGrid';
+import { parseMonthAnchor, shiftMonth } from '@/lib/calendarGrid';
 import {
   applyAssignmentsToWeekTasks,
   extractAssignmentsFromWeekDraft,
@@ -95,7 +95,7 @@ function formatCheckInChip(
   return `${t(`sentir.emotions.${emotionId}` as TranslationKey)} · ${checkIn.energy_level}/5`;
 }
 
-export default function SemanaScreen() {
+function SemanaScreen() {
   const { t, locale } = useI18n();
   const { planAhead: planAheadParam, replan: replanParam, replanReason: replanReasonParam } =
     useLocalSearchParams<{ planAhead?: string; replan?: string; replanReason?: string }>();
@@ -105,7 +105,7 @@ export default function SemanaScreen() {
   const { isSubscribed } = useSubscription();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info');
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>('calendar');
   const todayStr = getLocalDateString();
   const [rangeMode, setRangeMode] = useState<SemanaRangeMode>('week');
   const [rangeAnchorDate, setRangeAnchorDate] = useState<string>(todayStr);
@@ -203,25 +203,48 @@ export default function SemanaScreen() {
   const canGoNextMonth = isSubscribed;
   const monthNavLabel = `${monthNamesFull[calendarMonth]} ${calendarYear}`;
 
+  const syncCalendarMonthToDate = useCallback((dateStr: string) => {
+    const d = parseLocalDateString(dateStr);
+    setCalendarYear(d.getFullYear());
+    setCalendarMonth(d.getMonth());
+  }, []);
+
+  const pickDateInMonth = useCallback(
+    (year: number, monthIndex: number) => {
+      const today = parseLocalDateString(todayStr);
+      if (today.getFullYear() === year && today.getMonth() === monthIndex) {
+        return todayStr;
+      }
+      const selectedDay = parseLocalDateString(selectedDate).getDate();
+      const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+      return getLocalDateString(new Date(year, monthIndex, Math.min(selectedDay, lastDay)));
+    },
+    [selectedDate, todayStr],
+  );
+
+  const handleSelectCalendarDate = useCallback(
+    (dateStr: string) => {
+      setSelectedDate(dateStr);
+      syncCalendarMonthToDate(dateStr);
+    },
+    [syncCalendarMonthToDate],
+  );
+
   const handlePrevMonth = useCallback(() => {
     if (!canGoPrevMonth) return;
-    if (calendarMonth === 0) {
-      setCalendarYear((y) => y - 1);
-      setCalendarMonth(11);
-    } else {
-      setCalendarMonth((m) => m - 1);
-    }
-  }, [canGoPrevMonth, calendarMonth]);
+    const next = shiftMonth(calendarYear, calendarMonth, -1);
+    setCalendarYear(next.year);
+    setCalendarMonth(next.monthIndex);
+    setSelectedDate(pickDateInMonth(next.year, next.monthIndex));
+  }, [canGoPrevMonth, calendarYear, calendarMonth, pickDateInMonth]);
 
   const handleNextMonth = useCallback(() => {
     if (!canGoNextMonth) return;
-    if (calendarMonth === 11) {
-      setCalendarYear((y) => y + 1);
-      setCalendarMonth(0);
-    } else {
-      setCalendarMonth((m) => m + 1);
-    }
-  }, [canGoNextMonth, calendarMonth]);
+    const next = shiftMonth(calendarYear, calendarMonth, 1);
+    setCalendarYear(next.year);
+    setCalendarMonth(next.monthIndex);
+    setSelectedDate(pickDateInMonth(next.year, next.monthIndex));
+  }, [canGoNextMonth, calendarYear, calendarMonth, pickDateInMonth]);
 
   useEffect(() => {
     return subscribeCheckInRefresh(() => {
@@ -352,13 +375,7 @@ export default function SemanaScreen() {
     }));
   }, [weekTasks, selectedProjectId]);
 
-  const calendarWeekTasks = useMemo(() => {
-    const monday = getWeekMonday(selectedDate);
-    return filteredWeekTasks.filter(({ day }) => getWeekMonday(day.dateStr) === monday);
-  }, [filteredWeekTasks, selectedDate]);
-
-  const showWeeklyBrief =
-    !replanMode && (viewMode === 'calendar' || (viewMode === 'list' && rangeMode === 'week'));
+  const showWeeklyBrief = false;
 
   const briefWeekStart = useMemo(() => {
     const anchor = viewMode === 'calendar' ? selectedDate : rangeAnchorDate;
@@ -371,11 +388,10 @@ export default function SemanaScreen() {
   );
 
   const briefWeekTasks = useMemo(() => {
-    if (viewMode === 'calendar') return calendarWeekTasks;
     return filteredWeekTasks.filter(
       ({ day }) => getWeekMonday(day.dateStr) === briefWeekStart,
     );
-  }, [viewMode, calendarWeekTasks, filteredWeekTasks, briefWeekStart]);
+  }, [filteredWeekTasks, briefWeekStart]);
 
   const briefCheckInsByDate = useMemo(() => {
     if (viewMode === 'list') return checkInsByDate;
@@ -601,8 +617,11 @@ export default function SemanaScreen() {
     const fallback = freeVisibleDateKeys.has(todayStr)
       ? todayStr
       : [...freeVisibleDateKeys][0];
-    if (fallback) setSelectedDate(fallback);
-  }, [freeVisibleDateKeys, selectedDate, todayStr]);
+    if (fallback) {
+      setSelectedDate(fallback);
+      syncCalendarMonthToDate(fallback);
+    }
+  }, [freeVisibleDateKeys, selectedDate, todayStr, syncCalendarMonthToDate]);
 
   const handleLockedNavPress = useCallback(() => {
     openPaywall(router, '/(tabs)/semana');
@@ -744,7 +763,7 @@ export default function SemanaScreen() {
                 ? t('semana.replanIntro')
                 : planAheadMode
                   ? t('semana.planAheadIntro')
-                  : t('semana.introShort')
+                  : t('semana.introGlance')
             }
             trailing={
               <HeaderIconButton
@@ -793,7 +812,7 @@ export default function SemanaScreen() {
           ]}
           value={viewMode}
           onChange={setViewMode}
-          variant="accent"
+          variant="track"
         />
         )}
 
@@ -821,10 +840,6 @@ export default function SemanaScreen() {
 
         {viewMode === 'calendar' && !replanMode ? (
           <>
-            <View style={styles.calendarSection}>
-              <SemanaCalendarLegend />
-            </View>
-
             <SemanaWeekNav
               label={monthNavLabel}
               canGoPrev={canGoPrevMonth}
@@ -844,28 +859,12 @@ export default function SemanaScreen() {
                 <SemanaCalendarGrid
                   days={calendarDays}
                   selectedDate={selectedDate}
-                  onSelectDate={setSelectedDate}
+                  onSelectDate={handleSelectCalendarDate}
                   selectableDateKeys={freeVisibleDateKeys}
                   onLockedDatePress={handleLockedNavPress}
                 />
               </View>
             )}
-
-            {!monthLoading &&
-            calendarWeekTasks.some(({ tasks }) => tasks.some((task) => !task.is_completed)) ? (
-              <SemanaDraggableWeekBoard
-                weekTasks={calendarWeekTasks}
-                projects={projects}
-                userId={user?.id}
-                boardLayout="weekGrid"
-                onMoveTask={moveTaskToDay}
-                onTasksChanged={handleTasksChanged}
-                moving={movingTask}
-                onDraggingChange={setPlannerDragging}
-                hasCheckInToday={hasCheckInToday === true}
-                showToast={showToast}
-              />
-            ) : null}
 
             <SemanaDaySection
               dateStr={selectedDate}
@@ -1016,6 +1015,14 @@ export default function SemanaScreen() {
       </CalmScreen>
 
     </View>
+  );
+}
+
+export default function SemanaScreenRoute() {
+  return (
+    <TabScreenErrorBoundary screenName="semana">
+      <SemanaScreen />
+    </TabScreenErrorBoundary>
   );
 }
 

@@ -2,7 +2,7 @@ import type { Task } from '@/hooks/useTasks';
 import { HOY_DEFAULT_FOCUS_LIMIT } from '@/lib/hoyFocusTasks';
 
 export type HoyClaritySections = {
-  /** Máx. 5 pasos sugeridos para hoy (plan principal). */
+  /** Máx. 1 paso sugerido visible como foco (el resto puede esperar). */
   importantToday: Task[];
   /** @deprecated No se listan en Hoy — usar restCount. */
   couldAdvance: Task[];
@@ -13,7 +13,7 @@ export type HoyClaritySections = {
 };
 
 /**
- * Plan de Hoy: solo los pasos del foco (máx. 5).
+ * Plan de Hoy: solo el foco principal (máx. 1).
  * El inventario completo vive en Tareas — no se reparte en listas largas aquí.
  */
 export function buildHoyClaritySections(

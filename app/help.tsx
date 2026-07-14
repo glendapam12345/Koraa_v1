@@ -23,7 +23,6 @@ import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { EmergencyKitBackHeader } from '@/components/emergencyKit/EmergencyKitBackHeader';
-import { KoraaHowItWorksModal } from '@/components/onboarding/KoraaHowItWorksModal';
 
 type FaqItem = {
   id: string;
@@ -47,7 +46,6 @@ export default function HelpScreen() {
     [t],
   );
   const [expandedId, setExpandedId] = useState<string | null>('tasks');
-  const [showGuide, setShowGuide] = useState(false);
 
   const openUrl = useCallback(async (url: string, label: string) => {
     try {
@@ -65,15 +63,10 @@ export default function HelpScreen() {
   }, [t]);
 
   const openLegalUrl = useCallback(
-    (getter: () => string | null, label: string) => {
-      const url = getter();
-      if (!url) {
-        Alert.alert(label, t('help.linkNotConfigured'));
-        return;
-      }
-      void openUrl(url, label);
+    (getter: () => string, label: string) => {
+      void openUrl(getter(), label);
     },
-    [openUrl, t],
+    [openUrl],
   );
 
   const openSupportEmail = useCallback(async () => {
@@ -102,17 +95,6 @@ export default function HelpScreen() {
         contentStyle={{ paddingBottom: insets.bottom + THEME.spacing.xl }}
       >
         <ScreenIntroCard>{t('help.intro')}</ScreenIntroCard>
-
-        <CalmCard style={styles.guideCard}>
-          <Text style={styles.sectionTitle}>{t('help.howItWorksTitle')}</Text>
-          <Text style={styles.guideLead}>{t('help.howItWorksLead')}</Text>
-          <CalmPrimaryButton
-            label={t('help.replayGuide')}
-            onPress={() => setShowGuide(true)}
-            variant="soft"
-            accessibilityLabel={t('help.replayGuideA11y')}
-          />
-        </CalmCard>
 
         <Text style={styles.sectionTitle}>{t('help.faqTitle')}</Text>
         {faqItems.map((item) => {
@@ -176,8 +158,6 @@ export default function HelpScreen() {
           large
         />
       </CalmScreen>
-
-      <KoraaHowItWorksModal visible={showGuide} onClose={() => setShowGuide(false)} />
     </View>
   );
 }
@@ -195,15 +175,6 @@ const styles = StyleSheet.create({
     ...THEME.typography.subheading,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
-    marginBottom: THEME.spacing.xs,
-  },
-  guideCard: {
-    gap: THEME.spacing.sm,
-  },
-  guideLead: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-    lineHeight: 22,
     marginBottom: THEME.spacing.xs,
   },
   faqCard: {

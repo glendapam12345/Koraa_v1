@@ -18,7 +18,7 @@ function task(id: string, overrides: Partial<Task> = {}): Task {
 }
 
 describe('buildHoyClaritySections', () => {
-  it('shows only focus tasks in importantToday (max 5)', () => {
+  it('shows only focus tasks in importantToday (max 1)', () => {
     const tasks = [
       task('a', { is_priority: true }),
       task('b'),
@@ -31,8 +31,8 @@ describe('buildHoyClaritySections', () => {
     const focusIds = new Set(['a', 'b', 'c', 'd', 'e', 'f']);
     const sections = buildHoyClaritySections(tasks, focusIds);
 
-    expect(sections.importantToday.map((t) => t.id)).toEqual(['a', 'b', 'c', 'd', 'e']);
-    expect(sections.restCount).toBe(2);
+    expect(sections.importantToday.map((t) => t.id)).toEqual(['a']);
+    expect(sections.restCount).toBe(6);
     expect(sections.couldAdvance).toEqual([]);
     expect(sections.canWait).toEqual([]);
   });

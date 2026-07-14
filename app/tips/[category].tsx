@@ -204,11 +204,6 @@ export default function TipsCategoryScreen() {
       >
         <Text style={styles.lead}>{lead}</Text>
         <Text style={styles.optional}>{t('tips.categoryOptional')}</Text>
-        {!isSubscribed && lockedCount > 0 ? (
-          <Text style={styles.visibleCount}>
-            {t('tips.categoryVisibleCount', { visible: visibleCount, total: catalogTotal })}
-          </Text>
-        ) : null}
 
         {shownTip ? (
           renderExpanded(
@@ -273,6 +268,11 @@ export default function TipsCategoryScreen() {
             <Text style={styles.premiumHint}>
               {t('tips.categoryPremiumHint', { count: lockedCount })}
             </Text>
+            {!isSubscribed ? (
+              <Text style={styles.visibleCount}>
+                {t('tips.categoryVisibleCount', { visible: visibleCount, total: catalogTotal })}
+              </Text>
+            ) : null}
             <TouchableOpacity
               onPress={() =>
                 openPaywall(router, category ? `/tips/${category}` : undefined)
@@ -300,8 +300,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: THEME.layout.screenPaddingX,
     paddingBottom: THEME.spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.calm.border,
   },
   backBtn: {
     padding: THEME.spacing.xs,
@@ -339,32 +337,28 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.accent.italic,
   },
   optional: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    lineHeight: 20,
-    marginBottom: THEME.spacing.xs,
+    ...THEME.typography.meta,
+    color: THEME.colors.text.tertiary,
+    lineHeight: 18,
   },
   visibleCount: {
-    ...THEME.typography.caption,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.medium,
-    lineHeight: 20,
-    marginBottom: THEME.spacing.xs,
+    ...THEME.typography.meta,
+    color: THEME.colors.text.tertiary,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   moreToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: THEME.spacing.xs,
+    minHeight: THEME.sizes.touchTarget,
     paddingVertical: THEME.spacing.sm,
-    marginTop: THEME.spacing.xs,
-    ...THEME.surfaces.panel,
-    borderRadius: THEME.borderRadius.rounded,
   },
   moreToggleText: {
-    ...THEME.typography.body,
+    ...THEME.typography.caption,
     color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.bold,
+    fontFamily: THEME.fonts.heading.medium,
   },
   grid: {
     flexDirection: 'row',
@@ -373,19 +367,23 @@ const styles = StyleSheet.create({
   },
   backToPrimary: {
     alignSelf: 'center',
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
   },
   backToPrimaryText: {
     ...THEME.typography.caption,
-    color: THEME.colors.gradient.blue,
-    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
   },
   premiumBlock: {
     alignItems: 'center',
     gap: THEME.spacing.xs,
-    marginTop: THEME.spacing.md,
+    marginTop: THEME.spacing.sm,
     padding: THEME.spacing.md,
-    ...THEME.surfaces.panel,
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
   },
   premiumHint: {
     ...THEME.typography.caption,
@@ -396,7 +394,7 @@ const styles = StyleSheet.create({
   premiumCta: {
     ...THEME.typography.caption,
     color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.bold,
+    fontFamily: THEME.fonts.heading.medium,
   },
   error: {
     ...THEME.typography.body,

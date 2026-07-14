@@ -1,5 +1,4 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { useI18n } from '@/contexts/I18nContext';
@@ -59,21 +58,17 @@ export function TipDetailExpanded({ tip, eyebrow, actionLabel, onAction }: TipDe
     <View
       accessibilityRole="summary"
       accessibilityLabel={t('tipsExtra.a11yTipExpanded', { title: tip.title, body: tip.body })}
+      style={styles.expanded}
     >
-      <LinearGradient
-        colors={[THEME.colors.tint.blue.veryFaint, THEME.colors.calm.card]}
-        style={styles.expanded}
-      >
-        {eyebrow ? <Text style={styles.expandedEyebrow}>{eyebrow}</Text> : null}
-        <Text style={styles.expandedEmoji} importantForAccessibility="no" accessibilityElementsHidden>
-          {tip.emoji}
-        </Text>
-        <Text style={styles.expandedTitle}>{tip.title}</Text>
-        <Text style={styles.expandedBody}>{tip.body}</Text>
-        {actionLabel && onAction ? (
-          <CalmPrimaryButton label={actionLabel} onPress={onAction} variant="soft" />
-        ) : null}
-      </LinearGradient>
+      {eyebrow ? <Text style={styles.expandedEyebrow}>{eyebrow}</Text> : null}
+      <Text style={styles.expandedEmoji} importantForAccessibility="no" accessibilityElementsHidden>
+        {tip.emoji}
+      </Text>
+      <Text style={styles.expandedTitle}>{tip.title}</Text>
+      <Text style={styles.expandedBody}>{tip.body}</Text>
+      {actionLabel && onAction ? (
+        <CalmPrimaryButton label={actionLabel} onPress={onAction} variant="soft" />
+      ) : null}
     </View>
   );
 }
@@ -99,15 +94,17 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.xs,
   },
   forYouPill: {
-    backgroundColor: THEME.colors.gradient.pink,
+    backgroundColor: THEME.colors.calm.lavender,
     borderRadius: THEME.borderRadius.pill,
     paddingHorizontal: 8,
     paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.lavenderDeep,
   },
   forYouText: {
     ...THEME.typography.micro,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
   },
   emoji: {
     fontSize: THEME.typography.displayEmoji.fontSize,
@@ -125,16 +122,17 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.lg,
     marginBottom: THEME.spacing.sm,
     borderWidth: 1,
-    borderColor: THEME.colors.tint.blue.border,
+    borderColor: THEME.colors.calm.border,
+    backgroundColor: THEME.colors.calm.mist,
     gap: THEME.spacing.sm,
   },
   expandedEyebrow: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
+    ...THEME.typography.meta,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
   },
   expandedEmoji: {
-    fontSize: 40,
+    fontSize: 36,
   },
   expandedTitle: {
     ...THEME.typography.h2,

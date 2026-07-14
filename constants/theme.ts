@@ -155,9 +155,10 @@ export const THEME = {
     parami: {
       header: ['#4A90E2', '#7B61A8', '#FF6B6B'] as const,
       balanceCard: 'rgba(255, 255, 255, 0.14)',
-      moodCard: ['#6C5CE7', '#E85D75'] as const,
-      energyCard: ['#4A90E2', '#6BB6FF'] as const,
-      symptomsCard: ['#FF6B6B', '#7B61A8'] as const,
+      /** Soft mist gradients — readable dark text, Musa-like air without dark mode */
+      moodCard: ['#EDE6FA', '#F7F1F4'] as const,
+      energyCard: ['#E4F0FB', '#F0EBF8'] as const,
+      symptomsCard: ['#F6E8EF', '#F0EBF8'] as const,
     },
     /** Emergency Kit entry card */
     emergencyKit: {

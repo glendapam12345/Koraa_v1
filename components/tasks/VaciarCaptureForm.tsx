@@ -17,7 +17,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
-import { ChevronDown, ChevronUp, Mic, Sparkles, X } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Mic, X } from 'lucide-react-native';
 import { useTaskVoiceDictation } from '@/hooks/useTaskVoiceDictation';
 import { useLiveCaptureOrganization } from '@/hooks/useLiveCaptureOrganization';
 import { isExpoGoClient } from '@/lib/subscriptionEnvironment';
@@ -268,10 +268,7 @@ export function VaciarCaptureForm({
             {isSaving ? (
               <ActivityIndicator color={THEME.colors.onGradient} size="small" />
             ) : (
-              <>
-                <Text style={styles.releaseBtnText}>{releaseLabel}</Text>
-                <Sparkles size={14} color={THEME.colors.onGradient} />
-              </>
+              <Text style={styles.releaseBtnText}>{releaseLabel}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -436,17 +433,19 @@ const styles = StyleSheet.create({
     paddingBottom: THEME.spacing.xl,
   },
   captureWrap: {
-    gap: THEME.spacing.sm,
+    gap: THEME.layout.sectionGap,
     alignSelf: 'stretch',
   },
   captureIntro: {
-    gap: THEME.spacing.xs,
+    gap: 8,
+    paddingBottom: THEME.spacing.xs,
   },
   captureTitle: {
     ...THEME.typography.h2,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
-    lineHeight: 32,
+    fontSize: 28,
+    lineHeight: 34,
   },
   captureSubtitle: {
     ...THEME.typography.body,
@@ -457,8 +456,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   captureCard: {
-    minHeight: 200,
-    ...THEME.surfaces.elevated,
+    minHeight: 220,
+    backgroundColor: THEME.colors.fill[100],
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
     borderRadius: THEME.borderRadius.rounded,
     paddingHorizontal: THEME.spacing.md,
     paddingTop: THEME.spacing.md,
@@ -466,30 +467,30 @@ const styles = StyleSheet.create({
   },
   captureCardListening: {
     borderColor: THEME.colors.calm.lavenderDeep,
-    backgroundColor: THEME.colors.calm.lavender,
+    backgroundColor: THEME.colors.calm.mist,
   },
   captureCardLive: {
-    borderColor: THEME.colors.calm.lavenderDeep,
-    borderWidth: 1.5,
-    ...THEME.shadows.lavenderGlow,
+    borderColor: THEME.colors.calm.lavender,
   },
   input: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
     backgroundColor: 'transparent',
-    minHeight: 120,
+    minHeight: 140,
     width: '100%',
     padding: 0,
     margin: 0,
+    fontSize: 17,
+    lineHeight: 26,
     ...(Platform.OS === 'android' ? { fontFamily: THEME.fonts.heading.medium } : {}),
   },
   cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: THEME.spacing.sm,
-    paddingTop: THEME.spacing.xs,
-    borderTopWidth: 1,
+    marginTop: THEME.spacing.md,
+    paddingTop: THEME.spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: THEME.colors.calm.border,
   },
   toolRow: {
@@ -516,17 +517,17 @@ const styles = StyleSheet.create({
     borderRadius: THEME.borderRadius.pill,
     backgroundColor: THEME.colors.calm.lavenderDeep,
     minHeight: THEME.sizes.touchTarget,
-    minWidth: 120,
+    minWidth: 112,
     justifyContent: 'center',
   },
   releaseBtnDisabled: {
     opacity: 0.45,
   },
   releaseBtnText: {
-    ...THEME.typography.small,
+    ...THEME.typography.body,
     color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.bold,
-    lineHeight: 20,
+    lineHeight: 22,
   },
   voiceListening: {
     ...THEME.typography.small,

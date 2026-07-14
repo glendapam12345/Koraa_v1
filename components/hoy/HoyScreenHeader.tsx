@@ -1,25 +1,19 @@
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { CircleHelp } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { HoyStreakPill } from '@/components/hoy/HoyStreakPill';
 import { HoyCareModeToggle } from '@/components/hoy/HoyCareModeToggle';
-import { TimeOfDayChip } from '@/components/hoy/TimeOfDayChip';
 import { useI18n } from '@/contexts/I18nContext';
 import { getFirstName } from '@/lib/displayName';
 import { formatGreetingWithName, formatNightReturnGreeting, useKoraaGreeting } from '@/hooks/useKoraaGreeting';
 
 type HoyScreenHeaderProps = {
-  /** Nombre para el saludo personalizado (misma línea que Semana: un solo bloque de cabecera). */
   displayName?: string;
   hasCheckInToday?: boolean;
-  /** Ocultar subtítulo del saludo. */
   showSubtitle?: boolean;
-  /** Título compacto como Calendario (20px). */
   compact?: boolean;
-  /** Check-in embebido: solo racha + ayuda, sin título de tab. */
   minimal?: boolean;
   streak?: number;
   checkedInToday?: boolean;
@@ -27,12 +21,13 @@ type HoyScreenHeaderProps = {
   onCareModePress?: () => void;
 };
 
-/** Cabecera de Hoy: saludo + racha + ayuda (un bloque, sin duplicar título). */
+/**
+ * Cabecera Hoy al estilo mock: wordmark → saludo → headline de cuidado.
+ */
 export function HoyScreenHeader({
   displayName = '',
   hasCheckInToday = true,
   showSubtitle = true,
-  compact = true,
   minimal = false,
   streak = 0,
   checkedInToday = false,
@@ -40,18 +35,18 @@ export function HoyScreenHeader({
   onCareModePress,
 }: HoyScreenHeaderProps) {
   const { t } = useI18n();
-  const { period, lateNight, greeting, timeChipLabel, greetingSubline } = useKoraaGreeting();
+  const { period, lateNight, greeting } = useKoraaGreeting();
   const firstName = getFirstName(displayName);
 
-  const title = lateNight
+  const greetingLine = lateNight
     ? formatNightReturnGreeting(t, firstName, period)
     : formatGreetingWithName(t, greeting, firstName);
 
-  const subtitle = !hasCheckInToday
-    ? t('hoy.startHereCompanionSub')
+  const careHeadline = !hasCheckInToday
+    ? t('hoy.careHeadlineNoCheckIn')
     : lateNight
       ? t('hoy.nightReturnSubline', { name: firstName })
-      : greetingSubline;
+      : t('hoy.careHeadline');
 
   const trailing = (
     <>
@@ -78,20 +73,57 @@ export function HoyScreenHeader({
 
   return (
     <View style={styles.wrap}>
-      <TimeOfDayChip period={period} label={timeChipLabel} />
-      <ScreenHeader
-        compact={compact}
-        title={title}
-        subtitle={showSubtitle ? subtitle : undefined}
-        trailing={trailing}
-      />
+      <View style={styles.topRow}>
+        <Text style={styles.wordmark}>koraa</Text>
+        <View style={styles.trailing}>{trailing}</View>
+      </View>
+
+      <Text style={styles.greeting} accessibilityRole="header">
+        {greetingLine}
+      </Text>
+
+      {showSubtitle ? (
+        <Text style={styles.careHeadline}>{careHeadline}</Text>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
+    gap: THEME.spacing.sm,
+    paddingBottom: THEME.spacing.xs,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: THEME.spacing.sm,
+  },
+  wordmark: {
+    ...THEME.typography.titleCompact,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.bold,
+    letterSpacing: -0.4,
+    lineHeight: 26,
+  },
+  trailing: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: THEME.spacing.xs,
+  },
+  greeting: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.secondary,
+    lineHeight: 22,
+    marginTop: 2,
+  },
+  careHeadline: {
+    fontSize: 28,
+    lineHeight: 36,
+    fontFamily: THEME.fonts.accent.italic,
+    color: THEME.colors.text.main,
   },
   minimalRow: {
     flexDirection: 'row',

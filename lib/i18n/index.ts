@@ -39,7 +39,8 @@ export function translate(
   params?: Record<string, string | number>,
 ): string {
   const raw = getNestedValue(getCatalog(locale), key);
-  if (!raw) return key;
+  // Missing key → return key. Intentional empty string → '' (don't show the key).
+  if (raw === undefined) return key;
   return interpolate(raw, params);
 }
 

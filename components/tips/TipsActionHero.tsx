@@ -1,5 +1,4 @@
-import { Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Text, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
@@ -12,6 +11,7 @@ type TipsActionHeroProps = {
   onPausePress?: () => void;
 };
 
+/** Hero de acción calmado — mist, un mensaje + un CTA. */
 export function TipsActionHero({ content, emotionLabel, onPausePress }: TipsActionHeroProps) {
   const { t } = useI18n();
 
@@ -34,10 +34,7 @@ export function TipsActionHero({ content, emotionLabel, onPausePress }: TipsActi
       : t('tipsExtra.a11yActionHeroHint');
 
   return (
-    <LinearGradient
-      colors={[THEME.colors.calm.lavenderDeep, THEME.colors.gradient.blue]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+    <View
       style={styles.card}
       accessibilityRole="summary"
       accessibilityLabel={t(content.messageKey, messageParams)}
@@ -55,24 +52,27 @@ export function TipsActionHero({ content, emotionLabel, onPausePress }: TipsActi
         <Text style={styles.ctaText}>{t(content.ctaKey)}</Text>
         <ChevronRight size={18} color={THEME.colors.calm.lavenderDeep} />
       </TouchableOpacity>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: THEME.borderRadius.xl,
+    borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     gap: THEME.spacing.sm,
+    backgroundColor: THEME.colors.calm.mist,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
   },
   eyebrow: {
-    ...THEME.typography.caption,
-    color: THEME.colors.onGradientMuted,
+    ...THEME.typography.meta,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
   },
   message: {
     ...THEME.typography.body,
-    color: THEME.colors.onGradient,
+    color: THEME.colors.text.main,
     lineHeight: 24,
     fontFamily: THEME.fonts.heading.medium,
   },
@@ -85,6 +85,8 @@ const styles = StyleSheet.create({
     minHeight: THEME.sizes.touchTarget,
     borderRadius: THEME.borderRadius.pill,
     backgroundColor: THEME.colors.calm.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
     paddingHorizontal: THEME.spacing.md,
     paddingVertical: THEME.spacing.sm,
   },

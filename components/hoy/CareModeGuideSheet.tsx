@@ -43,7 +43,7 @@ export function CareModeGuideSheet({ visible, onClose, lastSession }: CareModeGu
               onPress={onClose}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel={t('common.close')}
+              accessibilityLabel={t('commonExtra.close')}
               style={styles.closeButton}
             >
               <X size={22} color={THEME.colors.text.secondary} />

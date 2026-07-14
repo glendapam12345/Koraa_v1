@@ -100,8 +100,8 @@ function EnergyWeekList({
   onGradient: boolean;
 }) {
   const labelColor = onGradient ? THEME.colors.onGradientMuted : THEME.colors.text.main;
-  const trackColor = onGradient ? THEME.colors.surfaceOverlay.washLight : THEME.colors.calm.mist;
-  const mutedColor = onGradient ? THEME.colors.onGradientFaint : THEME.colors.text.tertiary;
+  const trackColor = onGradient ? THEME.colors.surfaceOverlay.washLight : THEME.colors.calm.card;
+  const mutedColor = onGradient ? THEME.colors.onGradientFaint : THEME.colors.text.secondary;
 
   return (
     <View style={styles.rows}>
@@ -188,7 +188,7 @@ export function MiniSparklineChart({
   const useGrid = period !== 'week' && bars.length > 7;
   const columns = energyGridColumns(bars.length);
   const rows = chunkEnergyRows(bars, columns);
-  const legendColor = onGradient ? THEME.colors.onGradientFaint : THEME.colors.text.tertiary;
+  const legendColor = onGradient ? THEME.colors.onGradientFaint : THEME.colors.text.secondary;
 
   return (
     <View style={styles.wrap}>
@@ -297,9 +297,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   trackEmpty: {
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
-    opacity: 0.55,
+    opacity: 0.85,
   },
   fill: {
     height: '100%',

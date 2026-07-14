@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback } from 'react';
-import { View, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,6 +39,7 @@ export default function ParaMiScreen() {
   const { t, locale } = useI18n();
   const { user } = useAuth();
   const [period, setPeriod] = useState<ParaMiPeriodId>('week');
+  const [patternsExpanded, setPatternsExpanded] = useState(false);
 
   const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
   const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
@@ -126,10 +127,12 @@ export default function ParaMiScreen() {
     hasInsightData,
   );
 
+  const hasPatternHero = Boolean(patternInsight) || patternInsightLoading;
+
   return (
     <CalmScreen
       topInset="md"
-      gap={THEME.layout.sectionGapCompact}
+      gap={THEME.layout.sectionGap}
       refreshControl={
         <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={THEME.colors.calm.lavenderDeep} />
       }
@@ -147,15 +150,17 @@ export default function ParaMiScreen() {
         onPeriodChange={setPeriod}
       />
 
+      {/* Hero: un patrón o un insight — centrado */}
+      <ParaMiPatternInsightCard insight={patternInsight} loading={patternInsightLoading} />
       <ParaMiInsights
         insights={insights}
         locked={showPremiumLocked}
         hasEnoughData={hasInsightData}
         loading={loading}
+        hidden={hasPatternHero}
       />
 
-      <ParaMiPatternInsightCard insight={patternInsight} loading={patternInsightLoading} />
-
+      {/* Apoyo visual: ánimo (energía/emociones detrás de progressive disclosure) */}
       <View style={styles.patternsSection}>
         {showPremiumLocked ? (
           <ParaMiPatternsLockedPreview moodTitle={moodCardTitle} />
@@ -171,28 +176,53 @@ export default function ParaMiScreen() {
               <MiniMoodTimeline days={periodData} monthNames={monthNames} period={period} />
             </ParaMiMusaCard>
 
-            <ParaMiPatternCard
-              title={t('yo.patternEnergyTitle')}
-              body={t('parami.energyCardBody')}
-              locked={false}
-              empty={false}
-              chartSize={moodChartSize}
-            >
-              <MiniSparklineChart days={periodData} monthNames={monthNames} period={period} />
-            </ParaMiPatternCard>
+            {!patternsExpanded ? (
+              <TouchableOpacity
+                style={styles.moreToggle}
+                onPress={() => setPatternsExpanded(true)}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={t('parami.patternsMoreCta')}
+              >
+                <Text style={styles.moreToggleText}>{t('parami.patternsMoreCta')}</Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={styles.moreToggle}
+                  onPress={() => setPatternsExpanded(false)}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('parami.patternsMoreHide')}
+                >
+                  <Text style={styles.moreToggleText}>{t('parami.patternsMoreHide')}</Text>
+                </TouchableOpacity>
 
-            <ParaMiPatternCard
-              title={t('parami.symptomsCardTitle')}
-              body={t('parami.symptomsCardBody')}
-              locked={false}
-              empty={!hasPatternData}
-            >
-              {hasPatternData ? <MiniEmotionBars items={emotionMix} /> : null}
-            </ParaMiPatternCard>
+                <ParaMiPatternCard
+                  title={t('yo.patternEnergyTitle')}
+                  body={t('parami.energyCardBody')}
+                  locked={false}
+                  empty={false}
+                  chartSize={moodChartSize}
+                >
+                  <MiniSparklineChart days={periodData} monthNames={monthNames} period={period} />
+                </ParaMiPatternCard>
+
+                <ParaMiPatternCard
+                  title={t('parami.symptomsCardTitle')}
+                  body={t('parami.symptomsCardBody')}
+                  locked={false}
+                  empty={!hasPatternData}
+                >
+                  {hasPatternData ? <MiniEmotionBars items={emotionMix} /> : null}
+                </ParaMiPatternCard>
+              </>
+            )}
           </>
         )}
       </View>
 
+      {/* Consejos visuales */}
       <ParaMiTipsSection
         context={tipsContext}
         highlightTipIds={highlightTipIds}
@@ -208,5 +238,17 @@ export default function ParaMiScreen() {
 const styles = StyleSheet.create({
   patternsSection: {
     gap: THEME.layout.sectionGapCompact,
+  },
+  moreToggle: {
+    alignSelf: 'center',
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+    paddingHorizontal: THEME.spacing.md,
+  },
+  moreToggleText: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.calm.lavenderDeep,
+    textAlign: 'center',
   },
 });

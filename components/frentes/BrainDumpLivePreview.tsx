@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { Sparkles } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { CaptureLiveSkeleton } from '@/components/tasks/CaptureLiveSkeleton';
@@ -14,6 +13,7 @@ type BrainDumpLivePreviewProps = {
   isUpdating?: boolean;
 };
 
+/** Sección de apoyo: preview suave mientras escribes (progressive disclosure). */
 export function BrainDumpLivePreview({
   preview,
   isThinking,
@@ -39,12 +39,9 @@ export function BrainDumpLivePreview({
 
   return (
     <Animated.View entering={FadeIn.duration(280)} style={styles.wrap}>
-      <View style={styles.header}>
-        <Sparkles size={16} color={THEME.colors.calm.lavenderDeep} />
-        <Text style={styles.headerTitle}>
-          {headerIsThinking ? t('vaciar.liveThinking') : t('vaciar.liveAreaDetectedTitle')}
-        </Text>
-      </View>
+      <Text style={styles.headerTitle}>
+        {headerIsThinking ? t('vaciar.liveThinking') : t('vaciar.liveAreaDetectedTitle')}
+      </Text>
 
       {showSkeleton ? (
         <>
@@ -106,75 +103,62 @@ export function BrainDumpLivePreview({
 const styles = StyleSheet.create({
   wrap: {
     gap: THEME.spacing.sm,
-    padding: THEME.spacing.md,
-    borderRadius: 24,
-    backgroundColor: THEME.colors.calm.card,
-    borderWidth: 1,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.calm.mist,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: THEME.colors.calm.border,
-    ...THEME.shadows.soft,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
   },
   headerTitle: {
-    ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-    flex: 1,
-    lineHeight: 22,
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
   },
   thinkingText: {
     ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
+    color: THEME.colors.text.tertiary,
     lineHeight: 18,
-    fontStyle: 'italic',
   },
   subline: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
-    lineHeight: 22,
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
   },
   columnsStack: {
     gap: THEME.spacing.sm,
   },
   column: {
-    gap: THEME.spacing.xs,
-    padding: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.fill[100],
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
+    gap: 6,
+    paddingVertical: THEME.spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: THEME.colors.calm.border,
   },
   columnHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingBottom: 6,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: THEME.colors.calm.border,
   },
   columnEmoji: {
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 16,
+    lineHeight: 20,
   },
   columnLabel: {
     ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
     flex: 1,
-    lineHeight: 20,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
+    lineHeight: 22,
   },
   columnCount: {
-    ...THEME.typography.caption,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.medium,
+    ...THEME.typography.small,
+    color: THEME.colors.text.tertiary,
+    lineHeight: 16,
   },
   taskList: {
     gap: 4,
-    paddingTop: 2,
+    paddingLeft: 24,
   },
   taskRow: {
     flexDirection: 'row',
@@ -182,28 +166,26 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   taskBullet: {
-    ...THEME.typography.body,
-    color: THEME.colors.calm.lavenderDeep,
-    lineHeight: 17,
-    marginTop: -1,
+    ...THEME.typography.caption,
+    color: THEME.colors.text.tertiary,
+    lineHeight: 20,
   },
   taskLine: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
-    lineHeight: 17,
+    ...THEME.typography.caption,
     flex: 1,
+    color: THEME.colors.text.secondary,
+    lineHeight: 20,
   },
   moreTasks: {
-    ...THEME.typography.micro,
+    ...THEME.typography.small,
     color: THEME.colors.text.tertiary,
-    fontStyle: 'italic',
+    paddingLeft: 12,
     lineHeight: 16,
-    paddingLeft: 14,
   },
   adjustHint: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    lineHeight: 18,
+    ...THEME.typography.small,
+    color: THEME.colors.text.tertiary,
+    lineHeight: 16,
     fontStyle: 'italic',
   },
 });

@@ -1,8 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { X } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import {
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { ChevronDown, ChevronUp, X } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
-import { EmotionCard } from '@/components/EmotionCard';
+import { FeelingEnergyScale } from '@/components/checkin/FeelingEnergyScale';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -21,6 +29,15 @@ const EMOTION_EMOJIS: Record<(typeof EMOTION_IDS)[number], string> = {
   motivada: '✨',
   abrumada: '🥺',
   enfocada: '🌿',
+};
+
+/** Mapa suave energía → emoción por defecto si aún no eligió. */
+const ENERGY_DEFAULT_EMOTION: Record<number, (typeof EMOTION_IDS)[number]> = {
+  1: 'agotada',
+  2: 'agotada',
+  3: 'tranquila',
+  4: 'motivada',
+  5: 'enfocada',
 };
 
 const TIME_OPTIONS: { id: string; labelKey: TranslationKey }[] = [
@@ -42,7 +59,6 @@ type QuickRecheckInModalProps = {
   visible: boolean;
   onClose: () => void;
   onComplete: (snapshot: { energyLevel: number; firstCheckIn: boolean }) => void;
-  /** Primer check-in del día: emoción + energía (tiempo/enfoque con defaults). */
   firstCheckIn?: boolean;
   initialEmotion?: string;
   initialEnergy?: number;
@@ -50,6 +66,10 @@ type QuickRecheckInModalProps = {
   initialFocus?: string;
 };
 
+/**
+ * Check-in calm (mock): pregunta → escala 1–5 → emoción suave → Continuar.
+ * Tiempo/enfoque viven en progressive disclosure.
+ */
 export function QuickRecheckInModal({
   visible,
   onClose,
@@ -66,33 +86,41 @@ export function QuickRecheckInModal({
   const [energy, setEnergy] = useState(initialEnergy);
   const [time, setTime] = useState(initialTime || DEFAULT_CHECK_IN_TIME);
   const [focus, setFocus] = useState(initialFocus || DEFAULT_CHECK_IN_FOCUS);
+  const [note, setNote] = useState('');
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!visible) return;
     setEmotion(initialEmotion);
-    setEnergy(initialEnergy);
+    setEnergy(initialEnergy || 3);
     setTime(initialTime || DEFAULT_CHECK_IN_TIME);
     setFocus(initialFocus || DEFAULT_CHECK_IN_FOCUS);
+    setNote('');
+    setAdvancedOpen(false);
     setError(null);
   }, [visible, initialEmotion, initialEnergy, initialTime, initialFocus]);
 
-  const canSubmit = Boolean(
-    emotion && energy >= 1 && energy <= 5 && time && focus && user,
-  );
+  const resolvedEmotion = emotion || ENERGY_DEFAULT_EMOTION[energy] || 'tranquila';
+  const canSubmit = Boolean(energy >= 1 && energy <= 5 && time && focus && user);
 
-  const stepHint = useMemo(() => t('quickRecheck.stepHint'), [t]);
+  const handleEnergyChange = (level: number) => {
+    setEnergy(level);
+    if (!emotion) {
+      setEmotion(ENERGY_DEFAULT_EMOTION[level] ?? 'tranquila');
+    }
+  };
 
   const handleSubmit = async () => {
     if (!canSubmit || !user) return;
     setSaving(true);
     setError(null);
     try {
-      const emotionLabel = emotion ? t(`sentir.emotions.${emotion}` as TranslationKey) : emotion;
+      const emotionLabel = t(`sentir.emotions.${resolvedEmotion}` as TranslationKey);
       const result = await saveDailyCheckInAndPrioritize({
         userId: user.id,
-        emotion,
+        emotion: resolvedEmotion,
         energyLevel: energy,
         availableTime: time || DEFAULT_CHECK_IN_TIME,
         focusLevel: focus || DEFAULT_CHECK_IN_FOCUS,
@@ -133,20 +161,16 @@ export function QuickRecheckInModal({
       onRequestClose={onClose}
       accessibilityViewIsModal
     >
-      <View style={styles.overlay} accessibilityRole="none">
+      <View style={styles.overlay}>
         <View style={styles.sheet}>
           <View style={styles.header}>
             <View style={styles.headerText}>
-              <Text style={styles.fullBadge}>
-                {firstCheckIn ? t('quickRecheck.firstBadge') : t('quickRecheck.fullCheckInBadge')}
-              </Text>
               <Text style={styles.title}>
-                {firstCheckIn ? t('quickRecheck.firstTitle') : t('quickRecheck.title')}
+                {firstCheckIn ? t('quickRecheck.mockTitle') : t('quickRecheck.mockTitleUpdate')}
               </Text>
               <Text style={styles.subtitle}>
-                {firstCheckIn ? t('quickRecheck.firstSubtitle') : t('quickRecheck.subtitle')}
+                {firstCheckIn ? t('quickRecheck.mockSubtitle') : t('quickRecheck.mockSubtitleUpdate')}
               </Text>
-              <Text style={styles.hint}>{stepHint}</Text>
             </View>
             <TouchableOpacity
               onPress={onClose}
@@ -158,90 +182,131 @@ export function QuickRecheckInModal({
             </TouchableOpacity>
           </View>
 
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-            <Text style={styles.sectionLabel}>
-              {firstCheckIn ? t('quickRecheck.firstEmotionLabel') : t('quickRecheck.emotionLabel')}
-            </Text>
-            <View style={styles.emotionsGrid}>
-              {EMOTION_IDS.map((id) => (
-                <View key={id} style={styles.emotionWrap}>
-                  <EmotionCard
-                    emoji={EMOTION_EMOJIS[id]}
-                    label={t(`sentir.emotions.${id}`)}
-                    selected={emotion === id}
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <FeelingEnergyScale value={energy} onChange={handleEnergyChange} />
+
+            <Text style={styles.sectionLabel}>{t('quickRecheck.emotionLabel')}</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.emotionRow}
+            >
+              {EMOTION_IDS.map((id) => {
+                const selected = resolvedEmotion === id;
+                return (
+                  <TouchableOpacity
+                    key={id}
+                    style={[styles.emotionChip, selected && styles.emotionChipSelected]}
                     onPress={() => setEmotion(id)}
-                  />
-                </View>
-              ))}
-            </View>
-
-            <Text style={styles.sectionLabel}>{t('quickRecheck.energyLabel')}</Text>
-            <View style={styles.energyRow} accessibilityRole="radiogroup">
-              {[1, 2, 3, 4, 5].map((level) => (
-                <TouchableOpacity
-                  key={level}
-                  style={[styles.energyChip, energy === level && styles.energyChipSelected]}
-                  onPress={() => setEnergy(level)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: energy === level }}
-                  accessibilityLabel={t('onboardingA11y.selectEnergy', {
-                    label: String(level),
-                  })}
-                >
-                  <Text
-                    style={[styles.energyChipText, energy === level && styles.energyChipTextSelected]}
+                    activeOpacity={0.85}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={t(`sentir.emotions.${id}`)}
                   >
-                    {level}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+                    <Text style={styles.emotionEmoji}>{EMOTION_EMOJIS[id]}</Text>
+                    <Text
+                      style={[styles.emotionChipText, selected && styles.emotionChipTextSelected]}
+                      numberOfLines={1}
+                    >
+                      {t(`sentir.emotions.${id}`)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
 
-            <Text style={styles.sectionLabel}>{t('quickRecheck.timeLabel')}</Text>
-            <View style={styles.optionStack}>
-              {TIME_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={opt.id}
-                  style={[styles.optionRow, time === opt.id && styles.optionRowSelected]}
-                  onPress={() => setTime(opt.id)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: time === opt.id }}
-                >
-                  <Text style={[styles.optionText, time === opt.id && styles.optionTextSelected]}>
-                    {t(opt.labelKey)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <Text style={styles.sectionLabel}>{t('quickRecheck.noteLabel')}</Text>
+            <TextInput
+              style={styles.noteInput}
+              value={note}
+              onChangeText={setNote}
+              placeholder={t('quickRecheck.notePlaceholder')}
+              placeholderTextColor={THEME.colors.text.tertiary}
+              multiline
+              maxLength={280}
+              accessibilityLabel={t('quickRecheck.noteLabel')}
+            />
+            <Text style={styles.noteHint}>{t('quickRecheck.noteHint')}</Text>
 
-            <Text style={styles.sectionLabel}>{t('quickRecheck.focusLabel')}</Text>
-            <View style={styles.optionStack}>
-              {FOCUS_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={opt.id}
-                  style={[styles.optionRow, focus === opt.id && styles.optionRowSelected]}
-                  onPress={() => setFocus(opt.id)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: focus === opt.id }}
-                >
-                  <Text style={[styles.optionText, focus === opt.id && styles.optionTextSelected]}>
-                    {t(opt.labelKey)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <TouchableOpacity
+              style={styles.advancedToggle}
+              onPress={() => setAdvancedOpen((open) => !open)}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: advancedOpen }}
+              accessibilityLabel={t('quickRecheck.advancedToggle')}
+            >
+              <Text style={styles.advancedToggleText}>{t('quickRecheck.advancedToggle')}</Text>
+              {advancedOpen ? (
+                <ChevronUp size={18} color={THEME.colors.text.tertiary} />
+              ) : (
+                <ChevronDown size={18} color={THEME.colors.text.tertiary} />
+              )}
+            </TouchableOpacity>
+
+            {advancedOpen ? (
+              <View style={styles.advancedPanel}>
+                <Text style={styles.sectionLabel}>{t('quickRecheck.timeLabel')}</Text>
+                <View style={styles.optionStack}>
+                  {TIME_OPTIONS.map((opt) => (
+                    <TouchableOpacity
+                      key={opt.id}
+                      style={[styles.optionRow, time === opt.id && styles.optionRowSelected]}
+                      onPress={() => setTime(opt.id)}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: time === opt.id }}
+                    >
+                      <Text
+                        style={[styles.optionText, time === opt.id && styles.optionTextSelected]}
+                      >
+                        {t(opt.labelKey)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <Text style={styles.sectionLabel}>{t('quickRecheck.focusLabel')}</Text>
+                <View style={styles.optionStack}>
+                  {FOCUS_OPTIONS.map((opt) => (
+                    <TouchableOpacity
+                      key={opt.id}
+                      style={[styles.optionRow, focus === opt.id && styles.optionRowSelected]}
+                      onPress={() => setFocus(opt.id)}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: focus === opt.id }}
+                    >
+                      <Text
+                        style={[styles.optionText, focus === opt.id && styles.optionTextSelected]}
+                      >
+                        {t(opt.labelKey)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            ) : null}
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
           </ScrollView>
 
           <View style={styles.footer}>
             <CalmPrimaryButton
-              label={firstCheckIn ? t('quickRecheck.firstSubmit') : t('quickRecheck.submit')}
+              label={
+                saving
+                  ? t('quickRecheck.saving')
+                  : firstCheckIn
+                    ? t('quickRecheck.continue')
+                    : t('quickRecheck.continueUpdate')
+              }
               onPress={() => void handleSubmit()}
               disabled={!canSubmit || saving}
               loading={saving}
               large
-              accessibilityHint={stepHint}
+              accessibilityHint={t('quickRecheck.submitHint')}
             />
           </View>
         </View>
@@ -263,105 +328,129 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: THEME.colors.calm.border,
     maxHeight: '92%',
-    ...THEME.shadows.soft,
   },
   header: {
     flexDirection: 'row',
-    padding: THEME.spacing.md,
-    paddingBottom: THEME.spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.calm.border,
+    paddingHorizontal: THEME.spacing.md,
+    paddingTop: THEME.spacing.lg,
+    paddingBottom: THEME.spacing.md,
+    gap: THEME.spacing.sm,
   },
-  headerText: { flex: 1, gap: 4 },
-  fullBadge: {
-    ...THEME.typography.meta,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.calm.lavenderDeep,
-    alignSelf: 'flex-start',
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
-    paddingVertical: 4,
-    paddingHorizontal: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.pill,
-    overflow: 'hidden',
-    marginBottom: 4,
+  headerText: {
+    flex: 1,
+    gap: 8,
   },
   title: {
-    ...THEME.typography.h3,
-    color: THEME.colors.text.main,
+    fontSize: 26,
+    lineHeight: 32,
     fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
   },
   subtitle: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
-  },
-  hint: {
-    ...THEME.typography.meta,
-    color: THEME.colors.gradient.blue,
-    fontFamily: THEME.fonts.heading.medium,
+    lineHeight: 22,
   },
   closeBtn: {
     padding: THEME.spacing.xs,
-    marginLeft: THEME.spacing.sm,
+    minWidth: THEME.sizes.touchTarget,
+    minHeight: THEME.sizes.touchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scroll: {
-    padding: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
     paddingBottom: THEME.spacing.lg,
-    gap: THEME.spacing.sm,
+    gap: THEME.spacing.md,
   },
   sectionLabel: {
     ...THEME.typography.caption,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-    marginTop: THEME.spacing.xs,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.heading.medium,
   },
-  emotionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -4,
-  },
-  emotionWrap: {
-    width: '50%',
-    paddingBottom: THEME.spacing.xs,
-  },
-  energyRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  emotionRow: {
     gap: THEME.spacing.xs,
+    paddingVertical: 2,
   },
-  energyChip: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: THEME.borderRadius.standard,
+  emotionChip: {
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.rounded,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
+    backgroundColor: THEME.colors.fill[100],
+    minWidth: 76,
+  },
+  emotionChipSelected: {
+    borderColor: THEME.colors.calm.lavenderDeep,
+    backgroundColor: THEME.colors.calm.mist,
+  },
+  emotionEmoji: {
+    fontSize: 22,
+    lineHeight: 26,
+  },
+  emotionChipText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 14,
+  },
+  emotionChipTextSelected: {
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  noteInput: {
+    ...THEME.typography.body,
+    minHeight: 72,
+    borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    backgroundColor: THEME.colors.calm.mist,
+    paddingHorizontal: THEME.spacing.md,
+    paddingVertical: THEME.spacing.sm,
+    color: THEME.colors.text.main,
+    textAlignVertical: 'top',
+  },
+  noteHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.tertiary,
+    lineHeight: 16,
+    marginTop: -8,
+  },
+  advancedToggle: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: THEME.colors.calm.card,
+    gap: 6,
+    minHeight: THEME.sizes.touchTarget,
   },
-  energyChipSelected: {
-    borderColor: THEME.colors.gradient.blue,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
-  },
-  energyChipText: {
+  advancedToggleText: {
     ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.tertiary,
+    fontFamily: THEME.fonts.heading.medium,
   },
-  energyChipTextSelected: {
-    color: THEME.colors.gradient.blue,
+  advancedPanel: {
+    gap: THEME.spacing.sm,
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.calm.mist,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
   },
   optionStack: { gap: THEME.spacing.xs },
   optionRow: {
     minHeight: THEME.sizes.touchTarget,
-    borderRadius: THEME.borderRadius.standard,
+    borderRadius: THEME.borderRadius.rounded,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
     paddingHorizontal: THEME.spacing.md,
     justifyContent: 'center',
+    backgroundColor: THEME.colors.fill[100],
   },
   optionRowSelected: {
-    borderColor: THEME.colors.gradient.blue,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    backgroundColor: THEME.colors.calm.lavender,
   },
   optionText: {
     ...THEME.typography.body,
@@ -369,16 +458,16 @@ const styles = StyleSheet.create({
   },
   optionTextSelected: {
     fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.gradient.blue,
+    color: THEME.colors.calm.lavenderDeep,
   },
   errorText: {
-    ...THEME.typography.meta,
+    ...THEME.typography.caption,
     color: THEME.colors.semantic.danger,
-    marginTop: THEME.spacing.xs,
   },
   footer: {
     padding: THEME.spacing.md,
-    borderTopWidth: 1,
+    paddingBottom: THEME.spacing.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: THEME.colors.calm.border,
   },
 });

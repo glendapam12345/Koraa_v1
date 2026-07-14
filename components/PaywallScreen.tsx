@@ -11,8 +11,7 @@ import {
   View,
 } from 'react-native';
 import { PURCHASES_ERROR_CODE, type PurchasesPackage } from 'react-native-purchases';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Check, Crown, X } from 'lucide-react-native';
+import { Check, X } from 'lucide-react-native';
 import { getPrivacyPolicyUrl, getTermsOfServiceUrl } from '@/constants/legalUrls';
 import { THEME } from '@/constants/theme';
 import { useSubscription } from '@/contexts/SubscriptionContext';
@@ -29,6 +28,7 @@ import { canProcessInAppPurchases, isExpoGoClient } from '@/lib/subscriptionEnvi
 import { PaywallComparisonCard } from '@/components/premium/PaywallComparisonCard';
 import { PaywallContextBanner } from '@/components/premium/PaywallContextBanner';
 import { PaywallPlanCard } from '@/components/premium/PaywallPlanCard';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 
 type PaywallScreenProps = {
   onClose?: () => void;
@@ -51,6 +51,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [benefitsOpen, setBenefitsOpen] = useState(false);
 
   const packages = useMemo(() => currentOffering?.availablePackages ?? [], [currentOffering?.availablePackages]);
   const sortedPackages = useMemo(() => sortPackagesForDisplay(packages), [packages]);
@@ -151,11 +152,6 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
 
   const openLegalUrl = async (kind: 'terms' | 'privacy') => {
     const url = kind === 'terms' ? getTermsOfServiceUrl() : getPrivacyPolicyUrl();
-    if (!url) {
-      const label = kind === 'terms' ? t('paywall.terms') : t('paywall.privacy');
-      Alert.alert(t('paywall.linkUnavailable', { label }), t('paywall.linkUnavailableBody'));
-      return;
-    }
     try {
       await Linking.openURL(url);
     } catch {
@@ -283,16 +279,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <LinearGradient
-          colors={
-            isSubscribed
-              ? [THEME.colors.calm.lavenderDeep, THEME.colors.gradient.blue]
-              : [THEME.colors.gradient.blue, THEME.colors.gradient.pink]
-          }
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.hero}
-        >
+        <View style={[styles.hero, isSubscribed && styles.heroSubscribed]}>
           <TouchableOpacity
             activeOpacity={0.75}
             style={styles.closeButton}
@@ -303,21 +290,19 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
               isOnboardingContext ? t('paywallExtra.a11yCloseOnboardingHint') : t('paywallExtra.a11yCloseHint')
             }
           >
-            <X size={18} color={THEME.colors.onGradient} />
+            <X size={18} color={THEME.colors.calm.lavenderDeep} />
           </TouchableOpacity>
 
-          <View style={styles.heroIconWrap}>
-            {isSubscribed ? (
-              <Check size={22} color={THEME.colors.onGradient} />
-            ) : (
-              <Crown size={22} color={THEME.colors.onGradient} />
-            )}
-          </View>
+          {isSubscribed ? (
+            <View style={styles.heroIconWrap}>
+              <Check size={20} color={THEME.colors.calm.lavenderDeep} />
+            </View>
+          ) : null}
 
           <Text style={styles.title}>{isSubscribed ? t('paywall.subscribedTitle') : t('paywall.title')}</Text>
           <Text style={styles.subtitle}>{heroSubtitle}</Text>
           <Text style={styles.heroHint}>{heroHint}</Text>
-        </LinearGradient>
+        </View>
 
         {!isSubscribed ? (
           <TouchableOpacity
@@ -340,25 +325,34 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
         {isExpoGo && !isSubscribed ? <PaywallContextBanner variant="expoGo" /> : null}
         {showDevSimBanner ? <PaywallContextBanner variant="devSim" /> : null}
 
-        <PaywallComparisonCard isSubscribed={isSubscribed} />
+        {!isSubscribed ? (
+          <>
+            <TouchableOpacity
+              style={styles.benefitsToggle}
+              onPress={() => setBenefitsOpen((open) => !open)}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: benefitsOpen }}
+              accessibilityLabel={
+                benefitsOpen ? t('paywall.benefitsToggleHide') : t('paywall.benefitsToggleShow')
+              }
+            >
+              <Text style={styles.benefitsToggleText}>
+                {benefitsOpen ? t('paywall.benefitsToggleHide') : t('paywall.benefitsToggleShow')}
+              </Text>
+            </TouchableOpacity>
+            {benefitsOpen ? <PaywallComparisonCard isSubscribed={false} /> : null}
+          </>
+        ) : (
+          <PaywallComparisonCard isSubscribed />
+        )}
 
         {isSubscribed ? (
-          <TouchableOpacity
+          <CalmPrimaryButton
+            label={t('paywall.subscribedContinue')}
             onPress={handleContinueFree}
-            activeOpacity={0.85}
-            style={styles.continueButton}
-            accessibilityRole="button"
             accessibilityLabel={t('paywall.subscribedContinueA11y')}
-          >
-            <LinearGradient
-              colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.continueButtonGradient}
-            >
-              <Text style={styles.continueButtonText}>{t('paywall.subscribedContinue')}</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+          />
         ) : (
           <>
             <Text style={styles.sectionTitle}>{t('paywallExtra.choosePlanTitle')}</Text>
@@ -369,7 +363,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
 
             {subscriptionLoading && packages.length === 0 ? (
               <View style={styles.loadingPlans}>
-                <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
+                <ActivityIndicator size="large" color={THEME.colors.calm.lavenderDeep} />
                 <Text style={styles.loadingPlansText}>{t('paywallExtra.loadingPlans')}</Text>
               </View>
             ) : sortedPackages.length > 0 ? (
@@ -464,7 +458,12 @@ const styles = StyleSheet.create({
   hero: {
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
-    ...THEME.shadows.soft,
+    backgroundColor: THEME.colors.calm.mist,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  heroSubscribed: {
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
   },
   closeButton: {
     alignSelf: 'flex-end',
@@ -473,35 +472,33 @@ const styles = StyleSheet.create({
     borderRadius: THEME.sizes.touchTarget / 2,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: THEME.colors.surfaceOverlay.medium,
+    backgroundColor: THEME.colors.calm.card,
     borderWidth: 1,
-    borderColor: THEME.colors.surfaceOverlay.borderStrong,
+    borderColor: THEME.colors.calm.border,
   },
   heroIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: THEME.colors.surfaceOverlay.medium,
-    marginTop: THEME.spacing.xs,
+    backgroundColor: THEME.colors.calm.lavender,
     marginBottom: THEME.spacing.sm,
   },
   title: {
     ...THEME.typography.h2,
-    color: THEME.colors.onGradient,
+    color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
   },
   subtitle: {
     ...THEME.typography.body,
-    color: THEME.colors.onGradient,
-    opacity: 0.95,
+    color: THEME.colors.text.secondary,
     lineHeight: 24,
+    marginTop: 4,
   },
   heroHint: {
     ...THEME.typography.small,
-    color: THEME.colors.onGradient,
-    opacity: 0.9,
+    color: THEME.colors.text.tertiary,
     marginTop: THEME.spacing.xs,
     lineHeight: 20,
   },
@@ -513,9 +510,20 @@ const styles = StyleSheet.create({
   },
   skipLinkText: {
     ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
-    textDecorationLine: 'underline',
+  },
+  benefitsToggle: {
+    alignSelf: 'center',
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+    paddingHorizontal: THEME.spacing.md,
+  },
+  benefitsToggleText: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.calm.lavenderDeep,
+    textAlign: 'center',
   },
   sectionTitle: {
     ...THEME.typography.caption,
@@ -573,21 +581,6 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     lineHeight: 20,
-  },
-  continueButton: {
-    borderRadius: THEME.borderRadius.pill,
-    overflow: 'hidden',
-  },
-  continueButtonGradient: {
-    minHeight: THEME.sizes.touchTarget,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: THEME.spacing.md,
-  },
-  continueButtonText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
   },
   footerActions: {
     marginTop: THEME.spacing.xs,

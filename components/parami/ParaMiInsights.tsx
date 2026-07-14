@@ -9,17 +9,22 @@ type ParaMiInsightsProps = {
   locked: boolean;
   hasEnoughData: boolean;
   loading: boolean;
+  /** Oculta el bloque si ya hay hero de patrón (1 insight a la vez). */
+  hidden?: boolean;
 };
 
+/** Un solo insight hero — sin lista competitiva. */
 export function ParaMiInsights({
   insights,
   locked,
   hasEnoughData,
   loading,
+  hidden = false,
 }: ParaMiInsightsProps) {
   const { t } = useI18n();
+  const primary = insights[0];
 
-  if (loading || locked) return null;
+  if (hidden || loading || locked) return null;
 
   return (
     <View
@@ -27,25 +32,19 @@ export function ParaMiInsights({
       accessibilityRole="summary"
       accessibilityLabel={t('paramiExtra.a11yInsightsSection')}
     >
-      {!hasEnoughData ? (
+      {!hasEnoughData || !primary ? (
         <Text style={styles.empty}>{t('parami.noInsightYet')}</Text>
       ) : (
         <CalmCard style={styles.card}>
-          {insights.map((insight, index) => (
-            <View
-              key={`${insight.type}-${index}`}
-              style={[styles.row, index > 0 ? styles.rowDivider : null]}
-            >
-              {insight.emoji ? (
-                <Text style={styles.emoji} accessibilityElementsHidden importantForAccessibility="no">
-                  {insight.emoji}
-                </Text>
-              ) : (
-                <View style={styles.emojiSpacer} />
-              )}
-              <Text style={styles.message}>{insight.message}</Text>
-            </View>
-          ))}
+          <Text style={styles.eyebrow}>{t('parami.insightHeroEyebrow')}</Text>
+          <View style={styles.row}>
+            {primary.emoji ? (
+              <Text style={styles.emoji} accessibilityElementsHidden importantForAccessibility="no">
+                {primary.emoji}
+              </Text>
+            ) : null}
+            <Text style={styles.message}>{primary.message}</Text>
+          </View>
         </CalmCard>
       )}
     </View>
@@ -62,34 +61,33 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   card: {
-    paddingVertical: THEME.spacing.xs,
-    paddingHorizontal: THEME.spacing.sm,
-    gap: 0,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
+    gap: THEME.spacing.xs,
+    backgroundColor: THEME.colors.calm.mist,
+    borderColor: THEME.colors.calm.border,
+  },
+  eyebrow: {
+    ...THEME.typography.meta,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: THEME.spacing.xs,
-    minHeight: 40,
-    paddingVertical: 6,
-  },
-  rowDivider: {
-    borderTopWidth: 1,
-    borderTopColor: THEME.colors.calm.border,
   },
   emoji: {
     fontSize: THEME.typography.body.fontSize,
-    lineHeight: 20,
+    lineHeight: 22,
     width: 22,
     textAlign: 'center',
-  },
-  emojiSpacer: {
-    width: 22,
+    marginTop: 1,
   },
   message: {
-    ...THEME.typography.caption,
+    ...THEME.typography.body,
     color: THEME.colors.text.main,
-    lineHeight: 18,
+    lineHeight: 22,
     flex: 1,
   },
 });

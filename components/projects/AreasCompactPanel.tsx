@@ -1264,9 +1264,10 @@ const styles = StyleSheet.create({
   },
   overviewCard: {
     gap: THEME.spacing.xs,
-    padding: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
     backgroundColor: THEME.colors.calm.mist,
-    borderColor: THEME.colors.calm.lavender,
+    borderColor: THEME.colors.calm.border,
   },
   chrome: {
     flexDirection: 'row',
@@ -1280,10 +1281,11 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   chromeTitle: {
-    ...THEME.typography.body,
+    ...THEME.typography.sectionTitle,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
-    lineHeight: 22,
+    fontSize: 22,
+    lineHeight: 28,
   },
   chromeMeta: {
     ...THEME.typography.caption,

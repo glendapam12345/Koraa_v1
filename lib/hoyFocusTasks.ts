@@ -43,7 +43,8 @@ export function isTaskWaitingForToday(
   return isTaskExplicitlyForToday(task, today);
 }
 
-export const HOY_DEFAULT_FOCUS_LIMIT = 5;
+/** Máx. pasos visibles como foco principal en Hoy (mock: 1 decisión). */
+export const HOY_DEFAULT_FOCUS_LIMIT = 1;
 
 function scopeToFocusedProject<T extends Pick<Task, 'project_id'>>(
   items: T[],

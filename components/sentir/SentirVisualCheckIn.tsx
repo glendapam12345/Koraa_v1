@@ -9,7 +9,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
@@ -171,36 +170,25 @@ export function SentirVisualCheckIn({
       ) : null}
 
       {!embedded ? (
-        <LinearGradient
-          colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.hero}
-        >
-          <View style={styles.bubble}>
-            <Text style={styles.bubbleText}>{t('sentir.visualCheckIn.bubble')}</Text>
-          </View>
+        <View style={styles.heroCalm}>
+          <Text style={styles.heroCalmTitle}>{t('quickRecheck.mockTitle')}</Text>
+          <Text style={styles.heroCalmSub}>{t('quickRecheck.mockSubtitle')}</Text>
           <Text style={styles.heroNote}>{t('sentir.inclusiveNote')}</Text>
-        </LinearGradient>
+        </View>
       ) : (
-        <LinearGradient
-          colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.heroEmbedded, compactEmbedded && styles.heroEmbeddedCompact]}
-        >
+        <View style={[styles.heroCalmEmbedded, compactEmbedded && styles.heroCalmEmbeddedCompact]}>
           <Text
             style={[
-              styles.heroEmbeddedBubble,
-              compactEmbedded && styles.heroEmbeddedBubbleCompact,
+              styles.heroCalmTitleEmbedded,
+              compactEmbedded && styles.heroCalmTitleCompact,
             ]}
           >
-            {t('sentir.visualCheckIn.bubble')}
+            {t('quickRecheck.mockTitle')}
           </Text>
           {!compactEmbedded ? (
-            <Text style={styles.heroEmbeddedNote}>{t('sentir.visualCheckIn.gridSubtitle')}</Text>
+            <Text style={styles.heroCalmSubEmbedded}>{t('quickRecheck.mockSubtitle')}</Text>
           ) : null}
-        </LinearGradient>
+        </View>
       )}
 
       {embedded ? (
@@ -391,6 +379,56 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.metaOnFill,
     lineHeight: 18,
     textAlign: 'center',
+  },
+  heroCalm: {
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.lg,
+    marginBottom: THEME.spacing.md,
+    gap: 8,
+    backgroundColor: THEME.colors.calm.mist,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  heroCalmEmbedded: {
+    borderRadius: THEME.borderRadius.rounded,
+    padding: THEME.spacing.md,
+    marginBottom: THEME.spacing.md,
+    gap: 6,
+    backgroundColor: THEME.colors.calm.mist,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  heroCalmEmbeddedCompact: {
+    padding: THEME.spacing.sm,
+    marginBottom: THEME.spacing.sm,
+  },
+  heroCalmTitle: {
+    fontSize: 26,
+    lineHeight: 32,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+  },
+  heroCalmTitleEmbedded: {
+    fontSize: 22,
+    lineHeight: 28,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    textAlign: 'center',
+  },
+  heroCalmTitleCompact: {
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  heroCalmSub: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    lineHeight: 22,
+  },
+  heroCalmSubEmbedded: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   heroEmbedded: {
     borderRadius: THEME.borderRadius.xl,

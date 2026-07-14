@@ -15,10 +15,15 @@ type TipsCategoryCardProps = {
   onPress: () => void;
 };
 
+const CARD_HEIGHT = 176;
+const LABEL_SLOT_HEIGHT = 44;
+
+/**
+ * Tarjeta de categoría — altura fija y slots alineados (emoji / título / pastilla).
+ */
 export function TipsCategoryCard({
   category,
   label,
-  subtitle,
   tipCount,
   tipsLabel,
   countBadge,
@@ -26,90 +31,91 @@ export function TipsCategoryCard({
 }: TipsCategoryCardProps) {
   const { t } = useI18n();
   const meta = TIP_CATEGORY_META[category];
+  const countText = countBadge ?? `${tipCount} ${tipsLabel}`;
 
   return (
     <TouchableOpacity
       style={styles.wrap}
       onPress={onPress}
-      activeOpacity={0.88}
+      activeOpacity={0.9}
       accessibilityRole="button"
       accessibilityLabel={t('tips.openCategoryA11y', { category: label })}
       accessibilityHint={t('tipsExtra.a11yCategoryHint')}
     >
       <LinearGradient
-        colors={[meta.gradient[0], meta.gradient[1]]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        colors={[meta.highlightGradient[0], meta.highlightGradient[1], THEME.colors.calm.mist]}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
         style={styles.card}
       >
-        <Text style={styles.emoji}>{meta.emoji}</Text>
-        <View style={styles.labelBlock}>
+        <View style={styles.illustration} accessibilityElementsHidden>
+          <Text style={styles.emoji}>{meta.emoji}</Text>
+        </View>
+        <View style={styles.labelSlot}>
           <Text style={styles.label} numberOfLines={2}>
             {label}
           </Text>
-          {subtitle ? (
-            <Text style={styles.subtitle} numberOfLines={2}>
-              {subtitle}
-            </Text>
-          ) : null}
         </View>
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>
-            {countBadge ?? `${tipCount} ${tipsLabel}`}
-          </Text>
+          <Text style={styles.badgeText}>{countText}</Text>
         </View>
       </LinearGradient>
     </TouchableOpacity>
   );
 }
 
-const CARD_HEIGHT = 152;
-
 const styles = StyleSheet.create({
   wrap: {
-    height: CARD_HEIGHT,
-    marginBottom: 0,
+    flex: 1,
+    minWidth: 0,
   },
   card: {
-    flex: 1,
-    borderRadius: THEME.borderRadius.card,
-    padding: THEME.spacing.md,
+    height: CARD_HEIGHT,
+    borderRadius: THEME.borderRadius.xl,
+    paddingTop: THEME.spacing.md,
+    paddingBottom: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.sm,
+    alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: CARD_HEIGHT,
-    ...THEME.shadows.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  illustration: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.55)',
   },
   emoji: {
     fontSize: 32,
+    lineHeight: 40,
   },
-  labelBlock: {
-    flex: 1,
+  labelSlot: {
+    height: LABEL_SLOT_HEIGHT,
+    width: '100%',
     justifyContent: 'center',
-    marginVertical: THEME.spacing.xs,
-    gap: 2,
+    paddingHorizontal: 4,
   },
   label: {
-    ...THEME.typography.screenSubtitle,
-    color: THEME.colors.onGradient,
-    fontFamily: THEME.fonts.heading.bold,
-    lineHeight: 20,
-  },
-  subtitle: {
-    ...THEME.typography.meta,
-    color: THEME.colors.onGradient,
-    opacity: 0.9,
+    ...THEME.typography.cardTitle,
+    color: THEME.colors.text.main,
+    textAlign: 'center',
   },
   badge: {
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: THEME.colors.surfaceOverlay.border,
     borderRadius: THEME.borderRadius.pill,
     paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: 4,
-    backgroundColor: THEME.colors.surfaceOverlay.light,
+    paddingVertical: 6,
+    backgroundColor: THEME.colors.calm.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    minHeight: 28,
+    justifyContent: 'center',
   },
   badgeText: {
     ...THEME.typography.caption,
-    color: THEME.colors.onGradient,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
   },
 });

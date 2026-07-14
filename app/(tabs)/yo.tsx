@@ -2,30 +2,36 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Alert,
   Platform,
   RefreshControl,
+  Share,
+  Linking,
 } from 'react-native';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { getFirstSessionTourStorageKey } from '@/lib/firstSessionTour';
 import { QUICK_ONBOARDING_SEEN_KEY } from '@/lib/quickOnboardingGuide';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   Settings,
-  Edit,
   Folder,
   RotateCcw,
   Crown,
-  ChevronRight,
   Route,
+  LifeBuoy,
+  LogOut,
+  UserPlus,
+  Shield,
+  Mail,
 } from 'lucide-react-native';
 import { logger } from '@/lib/logger';
 import { openPaywall } from '@/lib/paywallNavigation';
 import { getDisplayName } from '@/lib/displayName';
 import * as Haptics from 'expo-haptics';
+import * as WebBrowser from 'expo-web-browser';
 import { useI18n } from '@/contexts/I18nContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
@@ -35,15 +41,19 @@ import Constants from 'expo-constants';
 import { useYoProfile } from '@/hooks/useYoProfile';
 import { YoEditProfileModal } from '@/components/yo/YoEditProfileModal';
 import { YoMenuRow } from '@/components/yo/YoMenuRow';
+import { YoSpaceHero } from '@/components/yo/YoSpaceHero';
 import { KoraaHowItWorksModal } from '@/components/onboarding/KoraaHowItWorksModal';
+import { getPrivacyPolicyUrl, getSupportMailtoUrl, SUPPORT_EMAIL } from '@/constants/legalUrls';
 
 export default function ProfileScreen() {
   const { t, locale } = useI18n();
   const { editProfile: editProfileParam } = useLocalSearchParams<{ editProfile?: string }>();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
   const [refreshing, setRefreshing] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showKoraaGuide, setShowKoraaGuide] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   const profileState = useYoProfile({
     userId: user?.id,
@@ -132,11 +142,83 @@ export default function ProfileScreen() {
     }
   };
 
+  const showPremiumCta = !subscriptionLoading && !isSubscribed;
+
+  const handleSignOut = useCallback(() => {
+    Alert.alert(t('yo.signOutConfirmTitle'), t('yo.signOutConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('settings.signOut'),
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            setSigningOut(true);
+            try {
+              await signOut();
+              router.replace('/auth/login');
+            } catch (error) {
+              logger.error('Error al cerrar sesión:', error);
+              Alert.alert(t('yo.signOutErrorTitle'), t('yo.signOutErrorBody'));
+            } finally {
+              setSigningOut(false);
+            }
+          })();
+        },
+      },
+    ]);
+  }, [signOut, t]);
+
+  const handleInviteFriend = useCallback(async () => {
+    const message = t('yo.inviteShareMessage');
+    try {
+      await Share.share(
+        Platform.OS === 'ios'
+          ? { message }
+          : { message, title: t('yo.inviteFriend') },
+      );
+    } catch (error) {
+      logger.error('Error al compartir invitación:', error);
+      Alert.alert(t('yo.inviteErrorTitle'), t('yo.inviteErrorBody'));
+    }
+  }, [t]);
+
+  const handleOpenPrivacy = useCallback(async () => {
+    const url = getPrivacyPolicyUrl();
+    try {
+      if (Platform.OS === 'web') {
+        await Linking.openURL(url);
+        return;
+      }
+      await WebBrowser.openBrowserAsync(url);
+    } catch (error) {
+      logger.error('Error al abrir privacidad:', error);
+      Alert.alert(t('help.openLinkError'), t('help.openLinkHint', { label: t('yo.privacy') }));
+    }
+  }, [t]);
+
+  const handleOpenSupport = useCallback(async () => {
+    const mailto = getSupportMailtoUrl();
+    try {
+      await Linking.openURL(mailto);
+    } catch (error) {
+      logger.error('Error al abrir soporte:', error);
+      Alert.alert(t('yo.support'), t('yo.supportFallbackBody', { email: SUPPORT_EMAIL }), [
+        {
+          text: t('yo.copyEmail'),
+          onPress: () => {
+            void Share.share({ message: SUPPORT_EMAIL }).catch(() => undefined);
+          },
+        },
+        { text: t('errors.ok') },
+      ]);
+    }
+  }, [t]);
+
   return (
     <View style={styles.container}>
       <CalmScreen
-        topInset="lg"
-        gap={THEME.layout.tabSectionGap}
+        topInset="md"
+        gap={THEME.layout.sectionGapCompact}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -145,58 +227,59 @@ export default function ProfileScreen() {
           />
         }
       >
-        <ScreenHeader title={t('tabs.profile')} subtitle={t('yo.spaceSubtitle')} />
+        <ScreenHeader compact title={t('tabs.profile')} subtitle={t('yo.spaceSubtitle')} />
 
-        <CalmCard>
-          <TouchableOpacity
-            style={styles.header}
-            onPress={openEditProfile}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel={t('yoExtra.editProfileA11y')}
-            accessibilityHint={t('yoExtra.editProfileHint')}
-          >
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{avatarLetter}</Text>
-            </View>
-            <View style={styles.headerText}>
-              <Text style={styles.name}>{displayName}</Text>
-              <Text style={styles.email} numberOfLines={1}>
-                {user?.email}
-              </Text>
-              <Text style={styles.headerEditHintText}>{t('yo.tapToEdit')}</Text>
-            </View>
-            <ChevronRight size={20} color={THEME.colors.text.tertiary} />
-          </TouchableOpacity>
-        </CalmCard>
+        <YoSpaceHero
+          displayName={displayName}
+          email={user?.email}
+          avatarLetter={avatarLetter}
+          showPremiumBadge={isSubscribed && !subscriptionLoading}
+          viewProfileLabel={t('yo.viewProfile')}
+          onPress={openEditProfile}
+          accessibilityLabel={t('yoExtra.editProfileA11y')}
+          accessibilityHint={t('yoExtra.editProfileHint')}
+        />
 
         <CalmCard style={styles.menuCard}>
+          {showPremiumCta ? (
+            <YoMenuRow
+              icon={<Crown size={22} color={THEME.colors.calm.lavenderDeep} />}
+              title={t('yo.premiumCta')}
+              onPress={() => openPaywall(router, '/(tabs)/yo')}
+              accessibilityLabel={t('yo.premiumCta')}
+              accessibilityHint={t('yoExtra.subscriptionHint')}
+              showDivider
+            />
+          ) : (
+            <YoMenuRow
+              icon={<Crown size={22} color={THEME.colors.calm.lavenderDeep} />}
+              title={t('yo.subscription')}
+              onPress={() => openPaywall(router, '/(tabs)/yo')}
+              accessibilityLabel={t('yo.subscription')}
+              accessibilityHint={t('yoExtra.subscriptionHint')}
+              showDivider
+            />
+          )}
+
           <YoMenuRow
-            icon={<Edit size={22} color={THEME.colors.calm.lavenderDeep} />}
-            title={t('yo.editProfile')}
-            onPress={openEditProfile}
-            accessibilityLabel={t('yoExtra.editProfileA11y')}
-            accessibilityHint={t('yoExtra.editProfileMenuHint', {
-              activities: profile.favorite_activities?.length || 0,
-              interests: profile.interests?.length || 0,
-            })}
+            icon={<Settings size={22} color={THEME.colors.calm.lavenderDeep} />}
+            title={t('yo.settings')}
+            onPress={() => router.push('/settings')}
+            accessibilityLabel={t('yo.settings')}
+            accessibilityHint={t('yoExtra.settingsHint')}
+            showDivider
           />
+
           <YoMenuRow
             icon={<Folder size={22} color={THEME.colors.calm.lavenderDeep} />}
             title={t('yo.manageProjects')}
+            subtitle={t('yo.manageProjectsSub')}
             onPress={() => router.push('/proyectos')}
             accessibilityLabel={t('yoExtra.manageProjectsA11y')}
             accessibilityHint={t('yoExtra.manageProjectsHint')}
+            showDivider
           />
-          <YoMenuRow
-            icon={<Crown size={22} color={THEME.colors.calm.lavenderDeep} />}
-            title={t('yo.subscription')}
-            subtitle={t('yo.subscriptionSub')}
-            onPress={() => openPaywall(router, '/(tabs)/yo')}
-            accessibilityLabel={t('yo.subscription')}
-            accessibilityHint={t('yoExtra.subscriptionHint')}
-          />
-          <View style={styles.menuDivider} />
+
           <YoMenuRow
             icon={<Route size={22} color={THEME.colors.calm.lavenderDeep} />}
             title={t('koraaGuide.menuTitle')}
@@ -204,15 +287,46 @@ export default function ProfileScreen() {
             onPress={() => setShowKoraaGuide(true)}
             accessibilityLabel={t('koraaGuide.menuA11y')}
             accessibilityHint={t('koraaGuide.menuHint')}
+            showDivider
           />
+
           <YoMenuRow
-            icon={<Settings size={22} color={THEME.colors.calm.lavenderDeep} />}
-            title={t('yo.settings')}
-            subtitle={t('yo.settingsSub')}
-            onPress={() => router.push('/settings')}
-            accessibilityLabel={t('yo.settings')}
-            accessibilityHint={t('yoExtra.settingsHint')}
+            icon={<UserPlus size={22} color={THEME.colors.calm.lavenderDeep} />}
+            title={t('yo.inviteFriend')}
+            onPress={() => void handleInviteFriend()}
+            accessibilityLabel={t('yo.inviteFriend')}
+            accessibilityHint={t('yo.inviteFriendHint')}
+            showDivider
           />
+
+          <YoMenuRow
+            icon={<Mail size={22} color={THEME.colors.calm.lavenderDeep} />}
+            title={t('yo.support')}
+            onPress={() => void handleOpenSupport()}
+            accessibilityLabel={t('yo.support')}
+            accessibilityHint={t('yo.supportHint')}
+            showDivider
+          />
+
+          <YoMenuRow
+            icon={<Shield size={22} color={THEME.colors.calm.lavenderDeep} />}
+            title={t('yo.privacy')}
+            onPress={() => void handleOpenPrivacy()}
+            accessibilityLabel={t('yo.privacy')}
+            accessibilityHint={t('yo.privacyHint')}
+            showDivider
+          />
+
+          <YoMenuRow
+            icon={<LifeBuoy size={22} color={THEME.colors.calm.lavenderDeep} />}
+            title={t('yo.help')}
+            subtitle={t('yo.helpHint')}
+            onPress={() => router.push('/help')}
+            accessibilityLabel={t('yo.help')}
+            accessibilityHint={t('yo.helpHint')}
+            showDivider
+          />
+
           {__DEV__ ? (
             <YoMenuRow
               icon={<RotateCcw size={22} color={THEME.colors.text.secondary} />}
@@ -240,17 +354,24 @@ export default function ProfileScreen() {
               }}
               accessibilityLabel={t('yoExtra.devResetA11y')}
               accessibilityHint={t('yoExtra.devResetHint')}
+              showDivider
             />
           ) : null}
+
+          <YoMenuRow
+            icon={<LogOut size={22} color={THEME.colors.text.secondary} />}
+            title={signingOut ? t('yo.signingOut') : t('settings.signOut')}
+            onPress={handleSignOut}
+            accessibilityLabel={t('settings.signOut')}
+            destructive
+          />
         </CalmCard>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Koraa v{Constants.expoConfig?.version ?? '1.0.0'}</Text>
-          <Text style={styles.footerSubtext}>
-            {t('yo.footerTagline')}{' '}
-            <Text style={styles.footerAccent}>{t('yo.footerAccent')}</Text>
-            {'\n'}
-            {t('yo.footerTaglineEnd')}
+          <Text style={styles.footerText}>
+            {t('yo.versionLabel', {
+              version: Constants.expoConfig?.version ?? '1.0.0',
+            })}
           </Text>
         </View>
       </CalmScreen>
@@ -289,68 +410,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: THEME.colors.calm.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.md,
-  },
-  headerText: {
-    flex: 1,
-    minWidth: 0,
-    gap: 2,
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: THEME.borderRadius.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: THEME.colors.calm.lavender,
-  },
-  avatarText: {
-    ...THEME.typography.titleCompact,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  name: {
-    ...THEME.typography.h3,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  email: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-  },
-  headerEditHintText: {
-    ...THEME.typography.meta,
-    color: THEME.colors.text.secondary,
-  },
   menuCard: {
     paddingVertical: THEME.spacing.xs,
     paddingHorizontal: 0,
     gap: 0,
-  },
-  menuDivider: {
-    height: 1,
-    backgroundColor: THEME.colors.calm.border,
-    marginHorizontal: THEME.spacing.md,
+    overflow: 'hidden',
   },
   footer: {
     alignItems: 'center',
     paddingTop: THEME.spacing.sm,
+    paddingBottom: THEME.spacing.md,
   },
   footerText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    marginBottom: THEME.spacing.xs,
-  },
-  footerSubtext: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  footerAccent: {
-    fontFamily: THEME.fonts.accent.italic,
+    ...THEME.typography.small,
+    color: THEME.colors.text.tertiary,
   },
 });

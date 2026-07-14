@@ -37,7 +37,7 @@ export function CareModeSheet({
             onPress={onClose}
             activeOpacity={0.7}
             accessibilityRole="button"
-            accessibilityLabel={t('common.close')}
+            accessibilityLabel={t('commonExtra.close')}
           >
             <X size={22} color={THEME.colors.text.secondary} />
           </TouchableOpacity>

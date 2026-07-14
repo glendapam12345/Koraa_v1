@@ -42,8 +42,9 @@ import { CareModeSheet } from '@/components/hoy/CareModeSheet';
 import { useCrisisMode } from '@/hooks/useCrisisMode';
 import { useFocusedProject } from '@/hooks/useFocusedProject';
 import { subscribeHoyRefresh } from '@/lib/hoyRefreshBridge';
+import { TabScreenErrorBoundary } from '@/components/TabScreenErrorBoundary';
 
-export default function TodayScreen() {
+function TodayScreen() {
   const { t, locale } = useI18n();
   const [showQuickOnboarding, setShowQuickOnboarding] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -480,6 +481,14 @@ export default function TodayScreen() {
         lastSession={lastSession}
       />
     </View>
+  );
+}
+
+export default function TodayScreenRoute() {
+  return (
+    <TabScreenErrorBoundary screenName="hoy">
+      <TodayScreen />
+    </TabScreenErrorBoundary>
   );
 }
 

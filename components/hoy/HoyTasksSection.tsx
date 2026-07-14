@@ -284,7 +284,7 @@ export function HoyTasksSection({
         dayCapacity={dayCapacity}
         onAdjustDay={reflection.openReflection}
         showAfternoonNudge={showAfternoonNudge}
-        hideRhythmStrip={showDailyTips}
+        hideRhythmStrip
       />
 
       {recheckNudge && !crisisMode && !compactLayout ? (

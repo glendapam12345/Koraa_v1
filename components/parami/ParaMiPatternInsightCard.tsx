@@ -1,8 +1,6 @@
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { Sparkles } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
-import { CalmCard } from '@/components/ui/calm/CalmCard';
 import type { ParamiPatternInsightState } from '@/hooks/useParamiPatternInsight';
 
 type ParaMiPatternInsightCardProps = {
@@ -10,6 +8,7 @@ type ParaMiPatternInsightCardProps = {
   loading?: boolean;
 };
 
+/** Hero de patrón — centrado, con aire, una sola respiración. */
 export function ParaMiPatternInsightCard({
   insight,
   loading = false,
@@ -27,52 +26,43 @@ export function ParaMiPatternInsightCard({
   if (!insight) return null;
 
   return (
-    <View accessibilityRole="summary">
-      <CalmCard style={styles.card}>
-      <View style={styles.header}>
-        <Sparkles size={12} color={THEME.colors.calm.lavenderDeep} />
-        <Text style={styles.eyebrow}>{t('parami.patternInsightEyebrow')}</Text>
-        {insight.fromAi ? (
-          <View style={styles.aiPill}>
-            <Text style={styles.aiPillText}>{t('parami.patternInsightAiBadge')}</Text>
-          </View>
-        ) : null}
-      </View>
-
+    <View style={styles.hero} accessibilityRole="summary">
+      <Text style={styles.eyebrow}>{t('parami.patternInsightEyebrow')}</Text>
+      {insight.fromAi ? (
+        <View style={styles.aiPill}>
+          <Text style={styles.aiPillText}>{t('parami.patternInsightAiBadge')}</Text>
+        </View>
+      ) : null}
       <Text style={styles.patternNote}>{insight.patternNote}</Text>
       <Text style={styles.gentleTip}>{insight.gentleTip}</Text>
-      </CalmCard>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   loadingWrap: {
-    paddingVertical: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.lg,
     alignItems: 'center',
   },
-  card: {
-    gap: THEME.spacing.xs,
-    padding: THEME.spacing.md,
+  hero: {
+    alignItems: 'center',
+    paddingVertical: THEME.spacing.lg,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.xl,
     backgroundColor: THEME.colors.calm.mist,
+    borderWidth: 1,
     borderColor: THEME.colors.calm.border,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    gap: THEME.spacing.sm,
   },
   eyebrow: {
     ...THEME.typography.meta,
     color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.bold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-    flex: 1,
+    fontFamily: THEME.fonts.heading.medium,
+    textAlign: 'center',
   },
   aiPill: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: THEME.borderRadius.pill,
     backgroundColor: THEME.colors.calm.card,
   },
@@ -84,12 +74,16 @@ const styles = StyleSheet.create({
   patternNote: {
     ...THEME.typography.body,
     color: THEME.colors.text.main,
-    lineHeight: 22,
+    lineHeight: 26,
+    textAlign: 'center',
+    fontFamily: THEME.fonts.heading.medium,
   },
   gentleTip: {
-    ...THEME.typography.small,
+    ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    lineHeight: 20,
+    lineHeight: 22,
+    textAlign: 'center',
     fontFamily: THEME.fonts.accent.italic,
+    maxWidth: 320,
   },
 });

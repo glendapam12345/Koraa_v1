@@ -1,7 +1,5 @@
 import type { ReactNode } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Clock } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
@@ -29,16 +27,16 @@ type HoyDailyPlanCardProps = {
   capacitySummarySlot?: ReactNode;
 };
 
+/**
+ * Sección de apoyo del Design System: el plan corto de hoy.
+ * Un título, un subtítulo corto, pasos (máx. 3), y "puede esperar" solo si aplica.
+ */
 export function HoyDailyPlanCard({
-  stepCount,
   waitingCount,
   crisisMode,
-  prioritiesDone,
-  prioritiesTotal,
   allFocusDone,
   hasCheckIn = false,
   planHeadline = '',
-  planFromAi = false,
   focusedProject = null,
   onClearFocusedProject,
   prioritiesSlot,
@@ -50,54 +48,27 @@ export function HoyDailyPlanCard({
 }: HoyDailyPlanCardProps) {
   const { t } = useI18n();
 
-  const waitingSubtitle =
-    waitingCount > 0
-      ? waitingExpanded
-        ? t('hoy.planWaitingSubOpen')
-        : t('hoy.planWaitingSub', { count: waitingCount })
-      : t('hoy.planWaitingSubEmpty');
+  const waitingSubtitle = waitingExpanded
+    ? t('hoy.planWaitingSubOpen')
+    : t('hoy.planWaitingSub', { count: waitingCount });
 
-  const progressLabel =
-    prioritiesTotal > 0 && (stepCount > 0 || waitingCount > 0)
-      ? t('hoy.planProgressPill', { done: prioritiesDone, total: prioritiesTotal })
-      : null;
+  const subtitle = planHeadline
+    ? planHeadline
+    : focusedProject
+      ? t('hoy.planSubtitleWithProject', { name: focusedProject.name })
+      : crisisMode
+        ? t('hoy.planSubtitleCare')
+        : hasCheckIn
+          ? t('hoy.planSubtitleWithCheckIn')
+          : t('hoy.planSubtitleNoCheckIn');
 
   return (
     <CalmCard style={styles.card}>
-      <LinearGradient
-        colors={[...THEME.colors.gradientTint.dayToday]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerSoft}
-      >
-        <View style={styles.header}>
-          <View style={styles.titleRow}>
-            <Text style={styles.title}>{t('hoy.planTitle')}</Text>
-            {planFromAi ? (
-              <View style={styles.aiPill}>
-                <Text style={styles.aiPillText}>{t('koraaDailyTips.planAiBadge')}</Text>
-              </View>
-            ) : null}
-          </View>
-          <Text style={styles.subtitle}>
-            {planHeadline
-              ? planHeadline
-              : focusedProject
-                ? t('hoy.planSubtitleWithProject', { name: focusedProject.name })
-                : crisisMode
-                  ? t('hoy.planSubtitleCare')
-                  : hasCheckIn
-                    ? t('hoy.planSubtitleWithCheckIn')
-                    : t('hoy.planSubtitleNoCheckIn')}
-          </Text>
-          {progressLabel ? (
-            <View style={styles.progressPill}>
-              <Text style={styles.progressText}>{progressLabel}</Text>
-            </View>
-          ) : null}
-          {capacitySummarySlot}
-        </View>
-      </LinearGradient>
+      <View style={styles.header}>
+        <Text style={styles.title}>{t('hoy.planTitle')}</Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
+        {capacitySummarySlot}
+      </View>
 
       {focusedProject && onClearFocusedProject ? (
         <HoyFocusedProjectStrip project={focusedProject} onClearFocus={onClearFocusedProject} />
@@ -112,22 +83,23 @@ export function HoyDailyPlanCard({
         )}
       </View>
 
-      <View style={styles.waitingSection}>
-        <HoyPlanExpandableRow
-          variant="muted"
-          compact
-          icon={<Clock size={18} color={THEME.colors.text.secondary} />}
-          title={t('hoy.planWaitingTitle')}
-          subtitle={waitingSubtitle}
-          expanded={waitingExpanded}
-          onToggle={() => onToggleWaiting?.()}
-          accessibilityLabel={t('hoy.planWaitingA11y', { count: waitingCount })}
-        >
-          {waitingSlot ?? (
-            <Text style={styles.emptyHint}>{t('hoy.planWaitingSubEmpty')}</Text>
-          )}
-        </HoyPlanExpandableRow>
-      </View>
+      {waitingCount > 0 ? (
+        <View style={styles.waitingSection}>
+          <HoyPlanExpandableRow
+            variant="muted"
+            compact
+            title={t('hoy.planWaitingTitle')}
+            subtitle={waitingSubtitle}
+            expanded={waitingExpanded}
+            onToggle={() => onToggleWaiting?.()}
+            accessibilityLabel={t('hoy.planWaitingA11y', { count: waitingCount })}
+          >
+            {waitingSlot ?? (
+              <Text style={styles.emptyHint}>{t('hoy.planWaitingSubEmpty')}</Text>
+            )}
+          </HoyPlanExpandableRow>
+        </View>
+      ) : null}
 
       {footerSlot ? <View style={styles.footer}>{footerSlot}</View> : null}
     </CalmCard>
@@ -143,92 +115,54 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.calm.border,
     borderWidth: 1,
   },
-  headerSoft: {
-    paddingHorizontal: THEME.spacing.md,
-    paddingTop: THEME.spacing.md,
-    paddingBottom: THEME.spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: THEME.colors.calm.border,
-  },
   header: {
-    gap: 6,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
     gap: 8,
-  },
-  aiPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.calm.lavender,
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.lavenderDeep,
-  },
-  aiPillText: {
-    ...THEME.typography.small,
-    fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.calm.lavenderDeep,
-    lineHeight: 16,
+    paddingHorizontal: THEME.spacing.md,
+    paddingTop: THEME.spacing.lg,
+    paddingBottom: THEME.spacing.md,
   },
   title: {
     ...THEME.typography.sectionTitle,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
+    fontSize: 22,
+    lineHeight: 28,
   },
   subtitle: {
-    ...THEME.typography.caption,
+    ...THEME.typography.body,
     color: THEME.colors.text.secondary,
-    lineHeight: 18,
-  },
-  progressPill: {
-    alignSelf: 'flex-start',
-    marginTop: 2,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.fill[100],
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
-  },
-  progressText: {
-    ...THEME.typography.micro,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.secondary,
-    lineHeight: 14,
+    lineHeight: 22,
   },
   prioritiesBody: {
-    gap: 2,
+    gap: 4,
     paddingHorizontal: THEME.spacing.md,
-    paddingTop: THEME.spacing.sm,
-    paddingBottom: THEME.spacing.xs,
+    paddingBottom: THEME.spacing.md,
   },
   doneHint: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
     fontStyle: 'italic',
-    lineHeight: 18,
+    lineHeight: 20,
+    marginBottom: THEME.spacing.xs,
   },
   waitingSection: {
     paddingHorizontal: THEME.spacing.md,
-    paddingBottom: THEME.spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: THEME.colors.calm.border,
-    marginTop: THEME.spacing.xs,
-  },
-  footer: {
-    gap: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
+    paddingTop: THEME.spacing.sm,
     paddingBottom: THEME.spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: THEME.colors.calm.border,
+  },
+  footer: {
+    gap: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.md,
+    paddingBottom: THEME.spacing.lg,
+    paddingTop: THEME.spacing.xs,
   },
   emptyHint: {
     ...THEME.typography.body,
     color: THEME.colors.text.tertiary,
     fontStyle: 'italic',
     lineHeight: 22,
+    paddingVertical: THEME.spacing.md,
   },
 });

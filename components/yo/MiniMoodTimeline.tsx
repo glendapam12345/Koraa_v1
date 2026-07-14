@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   },
   weekTag: {
     ...THEME.typography.micro,
-    color: THEME.colors.onGradientMuted,
+    color: THEME.colors.text.secondary,
     fontFamily: THEME.fonts.heading.bold,
   },
   weekRow: {
@@ -202,16 +202,16 @@ const styles = StyleSheet.create({
   },
   faceBoxFilled: {},
   faceBoxEmpty: {
-    borderColor: THEME.colors.surfaceOverlay.medium,
-    backgroundColor: THEME.colors.surfaceOverlay.veryFaint,
+    borderColor: THEME.colors.calm.lavender,
+    backgroundColor: THEME.colors.calm.card,
     borderStyle: 'dashed',
-    opacity: 0.65,
+    borderWidth: 1.5,
   },
   emptyPlaceholder: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: THEME.colors.onGradientFaint,
+    backgroundColor: THEME.colors.calm.lavenderDeep,
     opacity: 0.35,
   },
   emoji: {
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     ...THEME.typography.caption,
-    color: THEME.colors.onGradientMuted,
+    color: THEME.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
     paddingVertical: THEME.spacing.sm,
@@ -232,11 +232,13 @@ const styles = StyleSheet.create({
   },
   dayLabel: {
     ...THEME.typography.micro,
-    color: THEME.colors.onGradientFaint,
+    color: THEME.colors.text.secondary,
     textAlign: 'center',
+    fontFamily: THEME.fonts.heading.medium,
   },
   dayLabelCompact: {
     ...THEME.typography.tiny,
+    color: THEME.colors.text.secondary,
   },
   dayLabelMonth: {
     fontSize: 8,
@@ -244,9 +246,8 @@ const styles = StyleSheet.create({
   },
   legend: {
     ...THEME.typography.micro,
-    color: THEME.colors.onGradientFaint,
+    color: THEME.colors.text.secondary,
     textAlign: 'center',
-    opacity: 0.9,
     marginTop: 2,
   },
 });

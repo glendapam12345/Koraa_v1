@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
-import { CalmCard } from '@/components/ui/calm/CalmCard';
+import { Lock } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { openPaywall } from '@/lib/paywallNavigation';
@@ -31,7 +31,12 @@ export function ParaMiPatternCard({
   const { t } = useI18n();
 
   return (
-    <CalmCard style={styles.card}>
+    <View style={styles.card}>
+      {locked ? (
+        <View style={styles.lockRow} accessibilityElementsHidden>
+          <Lock size={14} color={THEME.colors.calm.lavenderDeep} />
+        </View>
+      ) : null}
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.body}>{body}</Text>
 
@@ -56,42 +61,52 @@ export function ParaMiPatternCard({
           ) : null}
         </View>
       )}
-    </CalmCard>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    gap: 6,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.sm,
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.xl,
+    backgroundColor: THEME.colors.calm.mist,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    minHeight: 148,
+  },
+  lockRow: {
+    alignItems: 'center',
   },
   title: {
-    ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.bold,
+    ...THEME.typography.cardTitle,
     color: THEME.colors.text.main,
+    textAlign: 'center',
   },
   body: {
     ...THEME.typography.meta,
     color: THEME.colors.text.secondary,
     lineHeight: 18,
+    textAlign: 'center',
   },
   empty: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
     lineHeight: 22,
     marginTop: THEME.spacing.xs,
+    textAlign: 'center',
   },
   chartWrap: {
     position: 'relative',
-    minHeight: 56,
-    marginTop: 4,
+    minHeight: 64,
+    marginTop: THEME.spacing.xs,
   },
   chartWrapFortnight: {
-    minHeight: 80,
+    minHeight: 88,
   },
   chartWrapMonth: {
-    minHeight: 96,
+    minHeight: 104,
   },
   chartDimmed: {
     opacity: 0.45,

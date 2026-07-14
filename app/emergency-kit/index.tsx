@@ -46,7 +46,7 @@ export default function EmergencyKitCheckInScreen() {
   };
 
   return (
-    <CalmScreen topInset="lg" gap={THEME.layout.sectionGapCompact}>
+    <CalmScreen topInset="md" gap={THEME.layout.sectionGapCompact}>
       <EmergencyKitBackHeader
         title={t('emergencyKit.checkInTitle')}
         subtitle={t('emergencyKit.checkInSubtitle')}
@@ -121,7 +121,7 @@ export default function EmergencyKitCheckInScreen() {
 
 const styles = StyleSheet.create({
   resumeCard: {
-    ...THEME.surfaces.muted,
+    backgroundColor: THEME.colors.calm.mist,
     padding: THEME.spacing.sm,
     gap: 4,
     borderRadius: THEME.borderRadius.rounded,
@@ -130,12 +130,12 @@ const styles = StyleSheet.create({
   },
   resumeLabel: {
     ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.bold,
+    fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.calm.lavenderDeep,
   },
   resumeHint: {
     ...THEME.typography.small,
-    color: THEME.colors.text.secondary,
+    color: THEME.colors.text.tertiary,
     lineHeight: 18,
   },
   grid: {
@@ -158,8 +158,10 @@ const styles = StyleSheet.create({
   otherInput: {
     ...THEME.typography.body,
     lineHeight: 24,
-    backgroundColor: THEME.surfaces.muted.backgroundColor,
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
     padding: THEME.spacing.sm,
     minHeight: 100,
     color: THEME.colors.text.main,
@@ -168,8 +170,10 @@ const styles = StyleSheet.create({
   otherInputShort: {
     ...THEME.typography.body,
     lineHeight: 24,
-    backgroundColor: THEME.surfaces.muted.backgroundColor,
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.rounded,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
     padding: THEME.spacing.sm,
     minHeight: THEME.sizes.touchTarget,
     color: THEME.colors.text.main,

@@ -51,10 +51,14 @@ export function ProjectsByAreaSection({
     ? groupAllLifeAreas(projects)
     : groupProjectsByLifeArea(projects);
   const explainer = t('projects.areaGroupedExplainer');
+  const showExplainer =
+    !hideExplainer &&
+    Boolean(explainer.trim()) &&
+    explainer !== 'projects.areaGroupedExplainer';
 
   return (
     <View style={styles.wrap}>
-      {!hideExplainer && explainer ? (
+      {showExplainer ? (
         <CalmCard style={styles.explainerCard}>
           <Text style={styles.explainer}>{explainer}</Text>
         </CalmCard>

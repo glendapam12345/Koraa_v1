@@ -1,5 +1,6 @@
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
+
 type EmergencyKitEventCardProps = {
   emoji: string;
   label: string;
@@ -33,21 +34,22 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: '46%',
     maxWidth: '48%',
-    backgroundColor: THEME.surfaces.elevated.backgroundColor,
+    backgroundColor: THEME.colors.calm.mist,
     borderRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.sm,
     alignItems: 'center',
     gap: THEME.spacing.xs,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    ...THEME.shadows.soft,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    minHeight: 88,
+    justifyContent: 'center',
   },
   cardSelected: {
     borderColor: THEME.colors.calm.lavenderDeep,
-    backgroundColor: THEME.colors.calm.lavender,
+    backgroundColor: THEME.colors.tint.blue.veryFaint,
   },
   emoji: {
-    fontSize: THEME.typography.displayEmoji.fontSize,
+    fontSize: 28,
   },
   label: {
     ...THEME.typography.caption,
