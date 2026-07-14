@@ -6,7 +6,6 @@ import {
   Platform,
   RefreshControl,
   Share,
-  Linking,
 } from 'react-native';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { THEME } from '@/constants/theme';
@@ -24,14 +23,11 @@ import {
   LifeBuoy,
   LogOut,
   UserPlus,
-  Shield,
-  Mail,
 } from 'lucide-react-native';
 import { logger } from '@/lib/logger';
 import { openPaywall } from '@/lib/paywallNavigation';
 import { getDisplayName } from '@/lib/displayName';
 import * as Haptics from 'expo-haptics';
-import * as WebBrowser from 'expo-web-browser';
 import { useI18n } from '@/contexts/I18nContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
@@ -43,7 +39,6 @@ import { YoEditProfileModal } from '@/components/yo/YoEditProfileModal';
 import { YoMenuRow } from '@/components/yo/YoMenuRow';
 import { YoSpaceHero } from '@/components/yo/YoSpaceHero';
 import { KoraaHowItWorksModal } from '@/components/onboarding/KoraaHowItWorksModal';
-import { getPrivacyPolicyUrl, getSupportMailtoUrl, SUPPORT_EMAIL } from '@/constants/legalUrls';
 
 export default function ProfileScreen() {
   const { t, locale } = useI18n();
@@ -182,38 +177,6 @@ export default function ProfileScreen() {
     }
   }, [t]);
 
-  const handleOpenPrivacy = useCallback(async () => {
-    const url = getPrivacyPolicyUrl();
-    try {
-      if (Platform.OS === 'web') {
-        await Linking.openURL(url);
-        return;
-      }
-      await WebBrowser.openBrowserAsync(url);
-    } catch (error) {
-      logger.error('Error al abrir privacidad:', error);
-      Alert.alert(t('help.openLinkError'), t('help.openLinkHint', { label: t('yo.privacy') }));
-    }
-  }, [t]);
-
-  const handleOpenSupport = useCallback(async () => {
-    const mailto = getSupportMailtoUrl();
-    try {
-      await Linking.openURL(mailto);
-    } catch (error) {
-      logger.error('Error al abrir soporte:', error);
-      Alert.alert(t('yo.support'), t('yo.supportFallbackBody', { email: SUPPORT_EMAIL }), [
-        {
-          text: t('yo.copyEmail'),
-          onPress: () => {
-            void Share.share({ message: SUPPORT_EMAIL }).catch(() => undefined);
-          },
-        },
-        { text: t('errors.ok') },
-      ]);
-    }
-  }, [t]);
-
   return (
     <View style={styles.container}>
       <CalmScreen
@@ -296,27 +259,10 @@ export default function ProfileScreen() {
             onPress={() => void handleInviteFriend()}
             accessibilityLabel={t('yo.inviteFriend')}
             accessibilityHint={t('yo.inviteFriendHint')}
-            showDivider
           />
+        </CalmCard>
 
-          <YoMenuRow
-            icon={<Mail size={22} color={THEME.colors.calm.lavenderDeep} />}
-            title={t('yo.support')}
-            onPress={() => void handleOpenSupport()}
-            accessibilityLabel={t('yo.support')}
-            accessibilityHint={t('yo.supportHint')}
-            showDivider
-          />
-
-          <YoMenuRow
-            icon={<Shield size={22} color={THEME.colors.calm.lavenderDeep} />}
-            title={t('yo.privacy')}
-            onPress={() => void handleOpenPrivacy()}
-            accessibilityLabel={t('yo.privacy')}
-            accessibilityHint={t('yo.privacyHint')}
-            showDivider
-          />
-
+        <CalmCard style={styles.menuCard}>
           <YoMenuRow
             icon={<LifeBuoy size={22} color={THEME.colors.calm.lavenderDeep} />}
             title={t('yo.help')}

@@ -1,4 +1,4 @@
-import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { X, Route } from 'lucide-react-native';
@@ -38,36 +38,42 @@ export function KoraaHowItWorksModal({
             <X size={24} color={THEME.colors.text.main} />
           </TouchableOpacity>
 
-          <View style={styles.iconContainer}>
-            <Route size={40} color={THEME.colors.gradient.blue} />
-          </View>
-
-          <Text style={styles.title}>{t(titleKey)}</Text>
-          <Text style={styles.subtitle}>{t(subtitleKey)}</Text>
-
-          <View
-            style={styles.stepsContainer}
-            accessibilityRole="summary"
-            accessibilityLabel={t('koraaGuide.stepsA11y')}
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
           >
-            {KORAA_GUIDE_STEPS.map((step, index) => (
-              <View key={step.titleKey} style={styles.step}>
-                <Text style={styles.stepNumber}>{index + 1}</Text>
-                <View style={styles.stepContent}>
-                  <Text style={styles.stepLabel}>{t(step.labelKey)}</Text>
-                  <Text style={styles.stepTitle}>{t(step.titleKey)}</Text>
-                  <Text style={styles.stepDescription}>{t(step.bodyKey)}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
+            <View style={styles.iconContainer}>
+              <Route size={36} color={THEME.colors.gradient.blue} />
+            </View>
 
-          <View style={styles.adaptCardWrap}>
-            <OnboardingHighlightCard
-              title={t('onboarding.howItWorks.adaptTitle')}
-              body={t('onboarding.howItWorks.adaptBody')}
-            />
-          </View>
+            <Text style={styles.title}>{t(titleKey)}</Text>
+            <Text style={styles.subtitle}>{t(subtitleKey)}</Text>
+
+            <View
+              style={styles.stepsContainer}
+              accessibilityRole="summary"
+              accessibilityLabel={t('koraaGuide.stepsA11y')}
+            >
+              {KORAA_GUIDE_STEPS.map((step) => (
+                <View key={step.titleKey} style={styles.step}>
+                  <View style={styles.stepContent}>
+                    <Text style={styles.stepLabel}>{t(step.labelKey)}</Text>
+                    <Text style={styles.stepTitle}>{t(step.titleKey)}</Text>
+                    <Text style={styles.stepDescription}>{t(step.bodyKey)}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.adaptCardWrap}>
+              <OnboardingHighlightCard
+                title={t('onboarding.howItWorks.adaptTitle')}
+                body={t('onboarding.howItWorks.adaptBody')}
+              />
+            </View>
+          </ScrollView>
 
           <TouchableOpacity
             style={styles.startButton}
@@ -97,30 +103,39 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.overlayStrong,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: THEME.spacing.lg,
+    padding: THEME.spacing.md,
   },
   modalContent: {
     backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.rounded,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
-    padding: THEME.spacing.lg,
+    paddingHorizontal: THEME.spacing.md,
+    paddingTop: THEME.spacing.md,
+    paddingBottom: THEME.spacing.md,
     width: '100%',
     maxWidth: 400,
-    maxHeight: '92%',
+    maxHeight: '88%',
     ...THEME.shadows.soft,
   },
   closeButton: {
     position: 'absolute',
-    top: THEME.spacing.md,
-    right: THEME.spacing.md,
+    top: THEME.spacing.sm,
+    right: THEME.spacing.sm,
     padding: THEME.spacing.xs,
     zIndex: 1,
   },
+  scroll: {
+    flexGrow: 0,
+    flexShrink: 1,
+  },
+  scrollContent: {
+    paddingBottom: THEME.spacing.sm,
+    paddingTop: THEME.spacing.xs,
+  },
   iconContainer: {
     alignItems: 'center',
-    marginBottom: THEME.spacing.sm,
-    marginTop: THEME.spacing.xs,
+    marginBottom: THEME.spacing.xs,
   },
   title: {
     ...THEME.typography.h2,
@@ -133,7 +148,7 @@ const styles = StyleSheet.create({
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
     textAlign: 'center',
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.sm,
     lineHeight: 22,
   },
   stepsContainer: {
@@ -144,21 +159,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
-  stepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: THEME.colors.gradient.blue,
-    color: THEME.colors.onGradient,
-    textAlign: 'center',
-    lineHeight: 28,
-    ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.bold,
-    marginRight: THEME.spacing.sm,
-  },
   stepContent: {
     flex: 1,
     gap: 2,
+    paddingLeft: 2,
   },
   stepLabel: {
     ...THEME.typography.caption,
@@ -176,11 +180,12 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   adaptCardWrap: {
-    marginBottom: THEME.spacing.md,
+    marginBottom: THEME.spacing.xs,
   },
   startButton: {
     borderRadius: THEME.borderRadius.rounded,
     overflow: 'hidden',
+    marginTop: THEME.spacing.xs,
     ...THEME.shadows.soft,
   },
   startButtonGradient: {

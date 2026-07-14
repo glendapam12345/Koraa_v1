@@ -266,7 +266,7 @@ export const en: DeepStrings<typeof es> = {
     privacy: 'Privacy',
     privacyHint: 'Opens the privacy policy',
     help: 'Help',
-    helpHint: 'FAQ, Premium, and support',
+    helpHint: 'FAQ, privacy, and support',
     signOutConfirmTitle: 'Sign out',
     signOutConfirmBody: 'Are you sure you want to leave Koraa?',
     signOutErrorTitle: "Couldn't sign out",

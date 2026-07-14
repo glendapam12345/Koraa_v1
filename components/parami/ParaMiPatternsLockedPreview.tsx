@@ -57,13 +57,12 @@ export function ParaMiPatternsLockedPreview({
 const styles = StyleSheet.create({
   card: {
     gap: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.lg,
+    paddingVertical: THEME.spacing.md,
     paddingHorizontal: THEME.spacing.md,
     borderRadius: THEME.borderRadius.xl,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
     alignItems: 'center',
-    minHeight: 220,
   },
   premiumPill: {
     flexDirection: 'row',

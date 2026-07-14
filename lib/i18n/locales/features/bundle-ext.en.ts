@@ -218,24 +218,24 @@ export const extEn = {
   appleHealth: {
     sectionTitle: 'Health app',
     disconnectedHint:
-      'Connect with your iPhone Health app to open your sleep schedule and let Koraa soften suggestions when you rested little — no goals, no guilt.',
+      'Let Koraa read your sleep (no goals, no guilt). On TestFlight we ask permission here; bedtime schedule is edited in the Health app.',
     connectedHint:
-      'Connected with Health. You can review or adjust your sleep schedule anytime; Koraa still suggests gentle steps based on how you feel.',
-    connect: 'Connect with Health',
+      'Connected. Koraa can soften today based on your rest. To change bedtime/wake times, edit them in Health — shortcut below.',
+    connect: 'Allow sleep reading',
     disconnect: 'Disconnect',
-    connectA11y: 'Connect Koraa with the Health app',
+    connectA11y: 'Allow Koraa to read sleep from the Health app',
     disconnectA11y: 'Disconnect the Health app',
-    openSleep: 'Open sleep schedule in Health',
-    openSleepA11y: 'Open the sleep section in the Health app',
+    openSleep: 'Edit sleep schedule in Health',
+    openSleepA11y: 'Open the Health app to edit your sleep schedule',
     connectSuccessTitle: 'Health connected',
     connectSuccessBody:
-      'The Health app opened. If you like, set your bedtime and wake time there — Koraa will not pressure you with targets.',
+      'Health opened. If you like, set bedtime there — Koraa won’t set targets. You can Disconnect later if you prefer.',
     connectErrorTitle: 'Could not open Health',
     connectErrorBody:
       'Try again from Settings or open the Health app manually.',
     disconnectTitle: 'Disconnect Health?',
     disconnectBody:
-      'Koraa will stop showing shortcuts to sleep in Health. Your check-ins and suggested steps stay the same.',
+      'Koraa will stop using Health sleep data and the shortcut. Your check-ins and suggested steps stay the same.',
     disconnectConfirm: 'Disconnect',
     unavailableTitle: 'iPhone only',
     unavailableBody:
@@ -247,7 +247,7 @@ export const extEn = {
     openError:
       'We could not open the Health app. Open it manually on your iPhone.',
     connectSuccessBodyHealthKit:
-      'Koraa can read your sleep hours to soften today’s steps. Health also opened in case you want to adjust your schedule.',
+      'Done: Koraa can read your sleep hours to soften today. Edit bedtime in the Health app only if you need to.',
     permissionDeniedTitle: 'Sleep permission',
     permissionDeniedBody:
       'Without sleep access in Health, Koraa cannot read your hours. Enable it in Settings → Health → Data Access → Koraa.',
@@ -255,9 +255,9 @@ export const extEn = {
       'According to Health, last night ~{{hours}} h. Today Koraa suggests fewer steps — no guilt.',
     connectedNoDataHint:
       'Connected. No sleep data from last night in Health yet; when available, Koraa will use it gently.',
-    healthKitNote: 'Sleep reading is active on iPhone builds (TestFlight).',
+    healthKitNote: 'Sleep reading is on. Editing the schedule happens in Health (shortcut below).',
     expoGoNote:
-      'In Expo Go we only open Health. For automatic sleep reading, use the TestFlight build.',
+      'In Expo Go we can’t read sleep: connecting opens Health. For automatic reading, use TestFlight.',
     sleepLoading: 'Checking sleep in Health…',
     refreshSleep: 'Refresh last night’s sleep',
     refreshSleepA11y: 'Re-read sleep hours from Health',

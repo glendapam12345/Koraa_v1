@@ -263,7 +263,7 @@ export const es = {
     privacy: 'Privacidad',
     privacyHint: 'Abre la política de privacidad',
     help: 'Ayuda',
-    helpHint: 'FAQ, Premium y soporte',
+    helpHint: 'FAQ, privacidad y soporte',
     signOutConfirmTitle: 'Cerrar sesión',
     signOutConfirmBody: '¿Segura de que quieres salir de Koraa?',
     signOutErrorTitle: 'No se pudo cerrar sesión',

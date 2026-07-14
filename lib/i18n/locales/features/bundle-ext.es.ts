@@ -221,24 +221,24 @@ export const extEs = {
   appleHealth: {
     sectionTitle: 'App Salud',
     disconnectedHint:
-      'Conecta con la app Salud de tu iPhone para abrir tu horario de sueño y ajustar las sugerencias de Koraa cuando descansas poco — sin metas ni culpa.',
+      'Permite a Koraa leer tu sueño (sin metas ni culpa). En TestFlight pide permiso aquí; el horario de dormir se edita en la app Salud.',
     connectedHint:
-      'Conectado con Salud. Puedes revisar o ajustar tu horario de sueño cuando quieras; Koraa sigue sugiriendo pasos suaves según cómo te sientes.',
-    connect: 'Conectar con Salud',
+      'Conectado. Koraa puede suavizar hoy según tu descanso. Si quieres cambiar a qué hora duermes, edítalo en Salud — abajo hay un atajo.',
+    connect: 'Permitir lectura de sueño',
     disconnect: 'Desconectar',
-    connectA11y: 'Conectar Koraa con la app Salud',
+    connectA11y: 'Permitir que Koraa lea el sueño desde la app Salud',
     disconnectA11y: 'Desconectar la app Salud',
-    openSleep: 'Abrir horario de sueño en Salud',
-    openSleepA11y: 'Abrir la sección de sueño en la app Salud',
+    openSleep: 'Editar horario de sueño en Salud',
+    openSleepA11y: 'Abrir la app Salud para editar el horario de sueño',
     connectSuccessTitle: 'Salud conectada',
     connectSuccessBody:
-      'Se abrió la app Salud. Si quieres, configura tu hora de dormir y despertar ahí — Koraa no te presiona con metas.',
+      'Se abrió Salud. Si quieres, configura ahí tu hora de dormir — Koraa no te marca metas. Luego puedes volver y usar Desconectar si prefieres.',
     connectErrorTitle: 'No se pudo abrir Salud',
     connectErrorBody:
       'Inténtalo de nuevo desde Ajustes o abre la app Salud manualmente.',
     disconnectTitle: '¿Desconectar Salud?',
     disconnectBody:
-      'Koraa dejará de mostrar accesos directos al sueño en Salud. Tus check-ins y pasos sugeridos siguen igual.',
+      'Koraa dejará de usar el sueño de Salud y de mostrar el atajo. Tus check-ins y pasos sugeridos siguen igual.',
     disconnectConfirm: 'Desconectar',
     unavailableTitle: 'Solo en iPhone',
     unavailableBody:
@@ -250,7 +250,7 @@ export const extEs = {
     openError:
       'No pudimos abrir la app Salud. Ábrela manualmente desde tu iPhone.',
     connectSuccessBodyHealthKit:
-      'Koraa puede leer tus horas de sueño para suavizar los pasos de hoy. También se abrió Salud por si quieres ajustar tu horario.',
+      'Listo: Koraa puede leer tus horas de sueño para suavizar hoy. El horario de dormir se edita en la app Salud si lo necesitas.',
     permissionDeniedTitle: 'Permiso de sueño',
     permissionDeniedBody:
       'Sin acceso a sueño en Salud, Koraa no puede leer tus horas. Puedes activarlo en Ajustes → Salud → Acceso a datos → Koraa.',
@@ -258,9 +258,9 @@ export const extEs = {
       'Según Salud, anoche ~{{hours}} h. Hoy Koraa sugiere menos pasos — sin culpa.',
     connectedNoDataHint:
       'Conectado. Aún no hay datos de sueño de anoche en Salud; cuando los tengas, Koraa los usará con suavidad.',
-    healthKitNote: 'Lectura de sueño activa en builds de iPhone (TestFlight).',
+    healthKitNote: 'Lectura de sueño activa. Editar el horario es en la app Salud (atajo abajo).',
     expoGoNote:
-      'En Expo Go solo abrimos Salud. Para leer sueño automáticamente, usa el build de TestFlight.',
+      'En Expo Go no podemos leer sueño: al conectar abrimos Salud. Para lectura automática usa TestFlight.',
     sleepLoading: 'Consultando sueño en Salud…',
     refreshSleep: 'Actualizar sueño de anoche',
     refreshSleepA11y: 'Volver a leer las horas de sueño desde Salud',

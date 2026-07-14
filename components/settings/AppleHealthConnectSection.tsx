@@ -151,15 +151,17 @@ export function AppleHealthConnectSection() {
         </TouchableOpacity>
       ) : null}
 
-      <TouchableOpacity
-        style={styles.secondaryBtn}
-        onPress={() => void openSleep()}
-        activeOpacity={0.85}
-        accessibilityRole="button"
-        accessibilityLabel={t('appleHealth.openSleepA11y')}
-      >
-        <Text style={styles.secondaryBtnText}>{t('appleHealth.openSleep')}</Text>
-      </TouchableOpacity>
+      {connected ? (
+        <TouchableOpacity
+          style={styles.secondaryBtn}
+          onPress={() => void openSleep()}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={t('appleHealth.openSleepA11y')}
+        >
+          <Text style={styles.secondaryBtnText}>{t('appleHealth.openSleep')}</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }

@@ -304,43 +304,49 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
           <Text style={styles.heroHint}>{heroHint}</Text>
         </View>
 
-        {!isSubscribed ? (
-          <TouchableOpacity
-            onPress={handleContinueFree}
-            activeOpacity={0.85}
-            disabled={plansDisabled}
-            style={styles.skipLink}
-            accessibilityRole="button"
-            accessibilityLabel={skipLabel}
-            accessibilityHint={
-              isOnboardingContext ? t('paywallExtra.exploreFreeHint') : t('paywallExtra.a11yContinueFreeHint')
-            }
-            accessibilityState={{ disabled: plansDisabled }}
-          >
-            <Text style={styles.skipLinkText}>{skipLabel}</Text>
-          </TouchableOpacity>
-        ) : null}
-
         {isOnboardingContext && !isSubscribed ? <PaywallContextBanner variant="onboarding" /> : null}
         {isExpoGo && !isSubscribed ? <PaywallContextBanner variant="expoGo" /> : null}
         {showDevSimBanner ? <PaywallContextBanner variant="devSim" /> : null}
 
         {!isSubscribed ? (
           <>
-            <TouchableOpacity
-              style={styles.benefitsToggle}
-              onPress={() => setBenefitsOpen((open) => !open)}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: benefitsOpen }}
-              accessibilityLabel={
-                benefitsOpen ? t('paywall.benefitsToggleHide') : t('paywall.benefitsToggleShow')
-              }
-            >
-              <Text style={styles.benefitsToggleText}>
-                {benefitsOpen ? t('paywall.benefitsToggleHide') : t('paywall.benefitsToggleShow')}
+            <View style={styles.secondaryLinksRow}>
+              <TouchableOpacity
+                onPress={handleContinueFree}
+                activeOpacity={0.85}
+                disabled={plansDisabled}
+                style={styles.secondaryLink}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 4 }}
+                accessibilityRole="button"
+                accessibilityLabel={skipLabel}
+                accessibilityHint={
+                  isOnboardingContext
+                    ? t('paywallExtra.exploreFreeHint')
+                    : t('paywallExtra.a11yContinueFreeHint')
+                }
+                accessibilityState={{ disabled: plansDisabled }}
+              >
+                <Text style={styles.secondaryLinkText}>{skipLabel}</Text>
+              </TouchableOpacity>
+              <Text style={styles.secondaryLinkSeparator} accessibilityElementsHidden>
+                ·
               </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.secondaryLink}
+                onPress={() => setBenefitsOpen((open) => !open)}
+                activeOpacity={0.85}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: benefitsOpen }}
+                accessibilityLabel={
+                  benefitsOpen ? t('paywall.benefitsToggleHide') : t('paywall.benefitsToggleShow')
+                }
+              >
+                <Text style={styles.secondaryLinkText}>
+                  {benefitsOpen ? t('paywall.benefitsToggleHide') : t('paywall.benefitsToggleShow')}
+                </Text>
+              </TouchableOpacity>
+            </View>
             {benefitsOpen ? <PaywallComparisonCard isSubscribed={false} /> : null}
           </>
         ) : (
@@ -452,12 +458,14 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: THEME.layout.screenPaddingX,
-    paddingVertical: THEME.spacing.md,
-    gap: THEME.spacing.md,
+    paddingTop: THEME.spacing.sm,
+    paddingBottom: THEME.spacing.md,
+    gap: THEME.spacing.sm,
   },
   hero: {
     borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.md,
+    padding: THEME.spacing.sm,
+    paddingTop: THEME.spacing.xs,
     backgroundColor: THEME.colors.calm.mist,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
@@ -467,23 +475,24 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     alignSelf: 'flex-end',
-    width: THEME.sizes.touchTarget,
-    height: THEME.sizes.touchTarget,
-    borderRadius: THEME.sizes.touchTarget / 2,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: THEME.colors.calm.card,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
+    marginBottom: 2,
   },
   heroIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: THEME.colors.calm.lavender,
-    marginBottom: THEME.spacing.sm,
+    marginBottom: THEME.spacing.xs,
   },
   title: {
     ...THEME.typography.h2,
@@ -493,37 +502,35 @@ const styles = StyleSheet.create({
   subtitle: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
-    lineHeight: 24,
-    marginTop: 4,
+    lineHeight: 22,
+    marginTop: 2,
   },
   heroHint: {
     ...THEME.typography.small,
     color: THEME.colors.text.tertiary,
-    marginTop: THEME.spacing.xs,
-    lineHeight: 20,
+    marginTop: 4,
+    lineHeight: 18,
   },
-  skipLink: {
-    alignSelf: 'center',
-    minHeight: THEME.sizes.touchTarget,
+  secondaryLinksRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: THEME.spacing.sm,
+    flexWrap: 'wrap',
+    gap: 6,
+    paddingVertical: 2,
   },
-  skipLinkText: {
+  secondaryLink: {
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+  },
+  secondaryLinkText: {
     ...THEME.typography.caption,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
   },
-  benefitsToggle: {
-    alignSelf: 'center',
-    minHeight: THEME.sizes.touchTarget,
-    justifyContent: 'center',
-    paddingHorizontal: THEME.spacing.md,
-  },
-  benefitsToggleText: {
+  secondaryLinkSeparator: {
     ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.calm.lavenderDeep,
-    textAlign: 'center',
+    color: THEME.colors.text.tertiary,
   },
   sectionTitle: {
     ...THEME.typography.caption,

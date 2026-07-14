@@ -78,7 +78,7 @@ export function useAppleHealthConnection(t: (key: TranslationKey) => string) {
         await setAppleHealthConnected(true);
         setConnected(true);
         await refreshSleep();
-        await openAppleHealthSleep({ t });
+        // Stay in Koraa — opening Health is a separate optional shortcut.
         return { ok: true, healthKit: true };
       }
     }
