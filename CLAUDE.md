@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 > About this file: CLAUDE.md provides Claude Code with persistent context about your project. It's automatically loaded into every conversation, eliminating the need to repeat project information.
 
 ---
@@ -18,8 +20,10 @@ Koraa is a mobile-first **emotional wellness** app with gentle task support — 
 - **Language**: TypeScript 5.9.2 (strict mode enabled)
 - **Framework**: Expo SDK 54 (~54.0.35), React Native 0.81.5, React 19.1.0
 - **Navigation**: Expo Router ~6.0.24 (file-based routing)
-- **Backend**: Supabase 2.58+ (Auth + PostgreSQL + Edge Functions)
-- **Monetization**: RevenueCat (`react-native-purchases`)
+- **Backend**: Supabase 2.58+ (Auth + PostgreSQL + Edge Functions Deno)
+- **AI (opcional)**: Edge Functions Deno — `koraa-brain`, `hoy-coach`, `koraa-daily-brief`, `emergency-kit`, `task-capture-ai`, `parami-patterns`, `adaptive-reorganize` (todas con fallback local; ver `lib/*Ai.ts`)
+- **Monetization**: RevenueCat (`react-native-purchases`) + webhook (`revenuecat-webhook`)
+- **Salud**: Apple HealthKit vía `react-native-health` (solo build nativo iOS; ver `lib/appleHealth*.ts`)
 - **UI**: `THEME` tokens, `CalmScreen` / `CalmCard` / `CalmPrimaryButton`, Lucide icons
 - **Fonts**: DM Sans (Medium/Bold), Libre Baskerville (Italic)
 - **i18n**: ES/EN vía `I18nContext` (`lib/i18n/`)
@@ -36,25 +40,31 @@ Koraa is a mobile-first **emotional wellness** app with gentle task support — 
 │   ├── auth/               # login, signup, forgot-password
 │   ├── sentir.tsx          # Modal check-in (Sentir)
 │   ├── focus-session.tsx   # Pomodoro 25 min
+│   ├── proyectos.tsx, project/[id].tsx   # Proyectos / frentes
+│   ├── emergency-kit/      # Kit de calma (index + session)
+│   ├── streak.tsx, reset-password.tsx
 │   ├── settings.tsx, help.tsx, paywall.tsx
-│   ├── (tabs)/             # Tab navigation (auth-gated)
+│   ├── (tabs)/             # Tab navigation (auth-gated, gate en _layout)
 │   │   ├── index.tsx       # Hoy — check-in + pasos sugeridos
-│   │   ├── vaciar.tsx      # Tareas — captura (tab oculta en barra)
+│   │   ├── vaciar.tsx      # Tareas — captura
 │   │   ├── semana.tsx      # Calendario semanal
-│   │   ├── tips.tsx        # Consejos
 │   │   ├── parami.tsx      # Para mí — insights
-│   │   └── yo.tsx          # Tu espacio — premium, ajustes
-│   ├── onboarding/       # welcome → emotion/energy/time/focus
+│   │   ├── yo.tsx          # Tu espacio — premium, ajustes
+│   │   ├── frentes.tsx     # href:null (oculta en barra)
+│   │   └── tips.tsx        # href:null — Consejos (oculta en barra)
+│   ├── onboarding/       # welcome → intro → emotion/energy/time/focus → areas/projects/capture
 │   └── tips/[category].tsx
 ├── components/
 │   ├── hoy/                # Hoy descompuesto (HoyFocusPanel, etc.)
 │   ├── ui/calm/            # CalmScreen, CalmCard, CalmPrimaryButton
 │   └── tasks/              # TaskCard, AddToGoogleCalendarButton, …
 ├── constants/theme.ts      # Design system (THEME)
-├── contexts/               # AuthContext, I18nContext, SubscriptionContext
-├── hooks/                  # useTasks, useCheckIn, useGoogleCalendarConnection, …
-├── lib/                    # supabase, smartPrioritization, googleCalendar, i18n
-├── supabase/migrations/    # SQL + functions (hoy-coach, revenuecat-webhook)
+├── contexts/               # AuthContext, I18nContext, SubscriptionContext, RecheckCheckInContext
+├── hooks/                  # useTasks, useCheckIn, useHoy*, useFrentes*, useAppleHealthConnection, …
+├── lib/                    # supabase, smartPrioritization, googleCalendar, i18n, hoy/, frentes/, projects/, emergencyKit/
+├── supabase/
+│   ├── migrations/         # SQL (schema, RLS, projects, app_events, subscriptions)
+│   └── functions/          # Edge Functions Deno (ver AI arriba + revenuecat-webhook)
 └── app.config.js           # Única config Expo (sin app.json duplicado)
 ```
 
@@ -100,7 +110,7 @@ See individual README files in each subdirectory for usage guidelines.
 
 **Norte de producto / diseño (v1):** [2026-07-11_koraa_design_system_v1.md](development_guidelines/running/2026-07-11_koraa_design_system_v1.md) — calma antes que productividad; 1 hero / 1 CTA / 1 sección de apoyo; progressive disclosure; copy anti-presión. Rediseño Hoy: [2026-07-11_hoy_redesign_design_system_v1.md](development_guidelines/running/2026-07-11_hoy_redesign_design_system_v1.md). Rediseño Tareas: [2026-07-11_tareas_redesign_design_system_v1.md](development_guidelines/running/2026-07-11_tareas_redesign_design_system_v1.md). Rediseño check-in: [2026-07-11_checkin_redesign_design_system_v1.md](development_guidelines/running/2026-07-11_checkin_redesign_design_system_v1.md). Rediseño Calendario: [2026-07-11_calendario_redesign_design_system_v1.md](development_guidelines/running/2026-07-11_calendario_redesign_design_system_v1.md). Rediseño Para mí: [2026-07-12_parami_redesign_design_system_v1.md](development_guidelines/running/2026-07-12_parami_redesign_design_system_v1.md). Rediseño Yo: [2026-07-12_yo_redesign_design_system_v1.md](development_guidelines/running/2026-07-12_yo_redesign_design_system_v1.md). Rediseño Paywall: [2026-07-12_paywall_redesign_design_system_v1.md](development_guidelines/running/2026-07-12_paywall_redesign_design_system_v1.md). Rediseño Consejos: [2026-07-12_consejos_redesign_design_system_v1.md](development_guidelines/running/2026-07-12_consejos_redesign_design_system_v1.md). Rediseño Kit de calma: [2026-07-12_kit_calma_redesign_design_system_v1.md](development_guidelines/running/2026-07-12_kit_calma_redesign_design_system_v1.md).
 
-**TestFlight iOS:** v**1.0.3**, build **34** (`app.config.js`). Release: [2026-06-15_testflight_build_34_v103.md](development_guidelines/delivered/2026-06-15_testflight_build_34_v103.md). `eas build --platform ios --profile production`.
+**TestFlight iOS:** v**1.0.5**, build **40** (`app.config.js`). Histórico: [2026-06-15_testflight_build_34_v103.md](development_guidelines/delivered/2026-06-15_testflight_build_34_v103.md). Build/submit: `npm run build:ios` / `npm run submit:ios`.
 
 **Google Calendar (export tareas):** [GOOGLE_CALENDAR_API_SETUP.md](development_guidelines/learnings/GOOGLE_CALENDAR_API_SETUP.md). Coach IA opcional: [HOY_COACH_AI_EDGE_FUNCTION.md](development_guidelines/learnings/HOY_COACH_AI_EDGE_FUNCTION.md).
 
@@ -148,9 +158,10 @@ See individual README files in each subdirectory for usage guidelines.
 
 ### Testing Requirements
 
-- **Unit tests:** Jest (`jest.config.simple.js`) — `npm run test:unit` (lógica en `lib/`, 13 suites)
-- **Hooks:** `npm run test:hooks` (config `jest.config.hooks.js` si existe)
-- **Verificación local:** `npx expo-doctor` + `npm run verify:local` antes de marcar trabajo completo
+- **Unit tests:** Jest (`jest.config.simple.js`) — `npm run test:unit` (lógica pura en `lib/`, `lib/__tests__/`)
+- **Hooks:** `npm run test:hooks` (config `jest.config.hooks.js`, entorno `jsdom`/`jest-expo`)
+- **Suite completa:** `npm run test` (`jest.config.js`); un archivo/test con `-t` o path (ver Common Commands)
+- **Verificación local:** `npm run verify:local` (o `verify:all`) antes de marcar trabajo completo
 - Componentes/pantallas: sin cobertura automatizada aún; QA manual en simulador/dispositivo
 
 ### Documentation
@@ -177,11 +188,26 @@ npx expo-doctor                # Salud del proyecto Expo (obligatorio pre-releas
 npm run env:bootstrap          # Crea .env desde .env.example si no existe
 npm run check:supabase         # .env, DNS, /auth/v1/health
 npm run check:supabase:migrations
-npm run test:unit              # Tests unitarios lib/
-npm run verify:local           # metro + legacy + supabase + schema + calendar + test:unit
+npm run check:copy             # Lint de copy/CTAs (voz anti-presión)
+npm run verify:local           # metro + legacy + supabase + schema + migrations + calendar + test:unit
+npm run verify:all             # expo-doctor + typecheck + lint + test (suite completa)
+
+# Tests
+npm run test                   # Jest completo (jest.config.js)
+npm run test:unit              # Solo lib/ (jest.config.simple.js)
+npm run test:hooks             # Solo hooks (jest.config.hooks.js)
+npx jest --config jest.config.simple.js path/al/archivo.test.ts   # Un solo archivo
+npx jest --config jest.config.simple.js -t "nombre del test"      # Un solo test por nombre
+
+# Edge Functions (Supabase, project-ref oucczxqlxsqoqvetmedm)
+npm run deploy:ai-functions    # Despliega TODAS las funciones AI
+npm run deploy:hoy-coach       # (o :koraa-brain, :koraa-daily-brief, :emergency-kit,
+                               #  :task-capture-ai, :parami-patterns, :adaptive-reorganize)
 
 # Building
-npm run build:web              # Export web build using Expo
+npm run build:web              # Export web build (Expo)
+npm run build:ios              # EAS build iOS producción
+npm run submit:ios             # EAS submit iOS producción
 ```
 
 ### Additional Expo Commands
@@ -323,11 +349,15 @@ Before making any code changes:
 
 ### Database Schema
 
-- **profiles**: User profiles with `id` (references auth.users), `email`, `full_name`, `onboarding_completed`
-- **daily_check_ins**: Daily emotional state with `user_id`, `date`, `emotion`, `energy_level` (1-5), `available_time`, `focus_level`
-- **tasks**: User tasks with `user_id`, `content`, `category`, `is_completed`, `is_priority`, `completed_at`
-- All tables have RLS enabled with policies for authenticated users
-- Timestamps: `created_at`, `updated_at` on relevant tables
+- **profiles**: User profiles — `id` (references auth.users), `email`, `full_name`, `onboarding_completed`, columnas de personalización/preferencias
+- **daily_check_ins**: Daily emotional state — `user_id`, `date`, `emotion`, `energy_level` (1-5), `available_time`, `focus_level`
+- **tasks**: User tasks — `user_id`, `content`, `category`, `is_completed`, `is_priority`, `completed_at`, `parent_task_id` (subtasks), `life_area_key`, `project_id`
+- **projects**: Proyectos/frentes con `life_area_key`, `due_date`, `notes` y scheduling semanal (mig. `20260212…`, `20260618…`)
+- **meditations**: Sesiones de meditación/kit de calma
+- **subscriptions**: Estado RevenueCat sincronizado vía webhook
+- **app_events**: Analítica de producto (`lib/analytics.ts`)
+- Profiles se autocrean por trigger on signup (`20260321120000_profiles_trigger_on_signup.sql`); borrado de cuenta vía RPC `delete_user_account`
+- All tables have RLS enabled with policies for authenticated users; timestamps `created_at`/`updated_at`
 
 ### API Conventions
 
@@ -395,7 +425,7 @@ Onboarding obligatorio y tabs con sesión: [onboarding_gate_and_tabs_auth.md](de
 
 ## 🔄 Maintenance
 
-**Last Updated**: June 2026
+**Last Updated**: July 2026
 
 **Maintained By**: Development Team
 
