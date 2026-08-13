@@ -12,7 +12,13 @@ import {
 import { consumeDeferredOnboardingPaywall } from '@/lib/deferredOnboardingPaywall';
 import { openPostHoyPaywall } from '@/lib/onboardingNavigation';
 import { consumePrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
+import {
+  consumeReturnTomorrowToast,
+  peekReturnTomorrowToast,
+} from '@/lib/returnTomorrowToast';
 import { consumeCheckInReplanSummary } from '@/lib/checkInReplanSummary';
+import { consumePatternHoyApply } from '@/lib/patternHoyBridge';
+import { track } from '@/lib/analytics';
 
 type ToastFn = (message: string, type?: 'success' | 'error' | 'info') => void;
 
@@ -40,6 +46,7 @@ export function useHoyScreenLayout({
   const [hoyLiteCompactOptedOut, setHoyLiteCompactOptedOut] = useState(false);
   const [showSecondaryModules, setShowSecondaryModules] = useState(false);
   const [checkInReplanCoachLine, setCheckInReplanCoachLine] = useState<string | null>(null);
+  const [patternHoyCoachLine, setPatternHoyCoachLine] = useState<string | null>(null);
 
   const handleOptOutHoyLite = useCallback(async () => {
     if (!userId) return;
@@ -105,6 +112,7 @@ export function useHoyScreenLayout({
         await Promise.all([loadTodayCheckIn(), loadTasks()]);
         if (cancelled) return;
         const showPrioritiesReady = await consumePrioritiesReadyToast();
+        const returnTomorrowTime = await peekReturnTomorrowToast();
         const replanSummary = userId ? await consumeCheckInReplanSummary(userId) : null;
         if (cancelled) return;
 
@@ -122,8 +130,23 @@ export function useHoyScreenLayout({
             );
           }
           showToast(toastParts.join(' · '), 'info');
-        } else if (showPrioritiesReady) {
-          showToast(t('sentir.checkInSavedToast'), 'success');
+          // Deja el toast de “mañana a las X” para el próximo focus — no lo consumas aquí.
+        } else {
+          const patternApply = await consumePatternHoyApply();
+          if (cancelled) return;
+          if (patternApply) {
+            setPatternHoyCoachLine(patternApply.tip);
+            showToast(t('hoy.patternApplyToast'), 'info');
+            void track('pattern_hoy_consumed', {
+              mode: patternApply.mode,
+              pattern_type: patternApply.patternType ?? 'unknown',
+            });
+          } else if (returnTomorrowTime) {
+            await consumeReturnTomorrowToast();
+            showToast(t('sentir.returnTomorrowToast', { time: returnTomorrowTime }), 'info');
+          } else if (showPrioritiesReady) {
+            showToast(t('sentir.checkInSavedToast'), 'success');
+          }
         }
       })();
       return () => {
@@ -153,6 +176,7 @@ export function useHoyScreenLayout({
   }, [userId, showSecondaryModules, hoyPreFlowActive]);
 
   return {
+    hoyLiteLayout,
     hoyLiteCompactLayout,
     hoyRestOfDayExpanded,
     showSecondaryModules,
@@ -160,5 +184,6 @@ export function useHoyScreenLayout({
     handleShowMoreForHoy,
     handleOptOutHoyLite,
     checkInReplanCoachLine,
+    patternHoyCoachLine,
   };
 }

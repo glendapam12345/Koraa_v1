@@ -22,7 +22,7 @@ function isAiEnabled(): boolean {
 
 function cacheKey(userId: string, input: ParamiPatternInput): string {
   const lastDay = input.days[input.days.length - 1]?.date ?? 'unknown';
-  return `${CACHE_PREFIX}_${userId}_${input.period}_${lastDay}_${input.locale}`;
+  return `${CACHE_PREFIX}_${userId}_${input.period}_${lastDay}_${input.locale}_${input.tasks?.length ?? 0}_${input.isPremium ? '1' : '0'}`;
 }
 
 async function readCache(key: string): Promise<ParamiPatternInsight | null> {
@@ -117,7 +117,14 @@ export async function fetchParamiPatternInsight(
   const key = cacheKey(userId, input);
   const cached = await readCache(key);
   if (cached) {
-    return { ...cached, fromAi: true };
+    return {
+      ...cached,
+      source: local.source,
+      correlationLabel: local.correlationLabel,
+      applyMode: local.applyMode,
+      patternType: local.patternType,
+      fromAi: true,
+    };
   }
 
   try {
@@ -142,10 +149,18 @@ export async function fetchParamiPatternInsight(
 
     const source = (data as { source?: string })?.source;
     const fromAi = source === 'openai';
+    const merged = {
+      ...insight,
+      source: local.source,
+      correlationLabel: local.correlationLabel,
+      applyMode: local.applyMode,
+      patternType: local.patternType,
+      fromAi,
+    };
     if (fromAi) {
       await writeCache(key, insight);
     }
-    return { ...insight, fromAi };
+    return merged;
   } catch (err) {
     await logInvokeFailure(err);
     return local;

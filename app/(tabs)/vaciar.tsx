@@ -45,6 +45,7 @@ import { applyInferredLifeAreas } from '@/lib/review/inferCaptureItemLifeArea';
 import { ensureBrainDumpPresetInConfig } from '@/lib/review/brainDumpAreaPreset';
 import { useUserLifeAreas } from '@/hooks/useUserLifeAreas';
 import { logger } from '@/lib/logger';
+import { getDisplayName } from '@/lib/displayName';
 
 type CaptureFlowStep = 'input' | 'preview' | 'organized';
 
@@ -809,6 +810,13 @@ export default function VaciarScreen() {
                   onInputFocusChange={setCaptureInputFocused}
                   inputFocused={captureInputFocused}
                   brainDumpOnly
+                  displayName={getDisplayName(
+                    {
+                      user_metadata: user.user_metadata as Record<string, unknown>,
+                      email: user.email,
+                    },
+                    t('yo.welcomeName'),
+                  )}
                 />
               ) : null}
 

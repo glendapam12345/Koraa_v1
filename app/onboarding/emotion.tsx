@@ -53,6 +53,7 @@ export default function EmotionScreen() {
       <Text style={onboardingTypography.title}>{t('onboarding.emotion.title')}</Text>
       <Text style={onboardingTypography.titleAccent}>{t('onboarding.emotion.titleAccent')}</Text>
       <Text style={onboardingTypography.subtitle}>{t('onboarding.emotion.subtitle')}</Text>
+      <Text style={[onboardingTypography.body, styles.hint]}>{t('onboarding.emotion.checkInHint')}</Text>
 
       <View
         style={styles.emotionsGrid}
@@ -66,6 +67,7 @@ export default function EmotionScreen() {
               label={t(`sentir.emotions.${emotion.id}` as TranslationKey)}
               selected={selectedEmotion === emotion.id}
               onPress={() => handleSelect(emotion.id)}
+              tintKey={emotion.id}
             />
           </View>
         ))}
@@ -75,14 +77,17 @@ export default function EmotionScreen() {
 }
 
 const styles = StyleSheet.create({
+  hint: {
+    marginBottom: THEME.spacing.md,
+  },
   emotionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: -4,
+    marginHorizontal: -2,
     marginTop: THEME.spacing.sm,
   },
   emotionWrapper: {
-    width: '50%',
+    width: '33.33%',
     paddingBottom: THEME.spacing.xs,
   },
 });

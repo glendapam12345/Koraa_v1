@@ -3,7 +3,12 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
-import { getDailyReminderTime, getTaskCaptureReminderTime, getTaskCaptureReminderEnabled } from '@/lib/notificationPreferences';
+import {
+  formatReminderTime,
+  getDailyReminderTime,
+  getTaskCaptureReminderTime,
+  getTaskCaptureReminderEnabled,
+} from '@/lib/notificationPreferences';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { type AppLocale, translate } from '@/lib/i18n';
 import { getLocalDateString } from '@/lib/dateLocal';
@@ -13,6 +18,9 @@ import {
   getNextTaskCaptureTriggerDate,
   hasCapturedTasksToday,
 } from '@/lib/taskCaptureReminder';
+import { resolveDailyReminderSchedulePlan } from '@/lib/dailyReminderSchedule';
+import { markReturnTomorrowToast } from '@/lib/returnTomorrowToast';
+import { track } from '@/lib/analytics';
 
 const LOCALE_STORAGE_KEY = 'koraa_app_locale_v1';
 
@@ -44,6 +52,13 @@ const TASK_CAPTURE_REMINDER_TYPE = 'task_capture_reminder';
 
 const RECHECK_HOURS_AFTER_CHECKIN = 3;
 
+export type EnsureReturnTomorrowResult = {
+  scheduled: boolean;
+  timeLabel: string | null;
+  permissionGranted: boolean;
+  mode: 'daily_recurring' | 'tomorrow_once' | null;
+};
+
 export function useNotifications() {
   const notificationListener = useRef<Subscription | null>(null);
   const responseListener = useRef<Subscription | null>(null);
@@ -53,21 +68,17 @@ export function useNotifications() {
       return;
     }
 
-    // Solicitar permisos al montar
-    registerForPushNotificationsAsync();
+    void registerForPushNotificationsAsync();
 
-    // Listener para notificaciones recibidas cuando la app está en primer plano
     const subscription1 = Notifications.addNotificationReceivedListener((notification) => {
       console.log('Notificación recibida:', notification);
     });
     notificationListener.current = subscription1;
 
-    // Listener para cuando el usuario toca la notificación
     const subscription2 = Notifications.addNotificationResponseReceivedListener((response) => {
       console.log('Usuario tocó la notificación:', response);
       const notificationData = response.notification.request.content.data;
-      
-      // Navegar a la pantalla correspondiente según el tipo de notificación
+
       if (notificationData?.type === 'daily_checkin_reminder') {
         import('expo-router').then(({ router }) => {
           router.push(CHECK_IN_ROUTE);
@@ -107,6 +118,7 @@ export function useNotifications() {
     scheduleActiveReminders,
     scheduleRecheckReminder,
     scheduleTaskCaptureReminder,
+    ensureReturnTomorrowReminder,
     cancelTaskCaptureReminderForToday,
     cancelAllNotifications,
     checkNotificationPermissions,
@@ -129,7 +141,9 @@ export async function scheduleRecheckReminder(localeOverride?: AppLocale) {
   try {
     await cancelNotificationsByType(RECHECK_REMINDER_TYPE);
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
 
     const today = getLocalDateString();
@@ -163,9 +177,7 @@ export async function scheduleRecheckReminder(localeOverride?: AppLocale) {
   }
 }
 
-async function registerForPushNotificationsAsync() {
-  let token;
-
+async function ensureNotificationPermissionStatus(): Promise<string> {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'default',
@@ -176,19 +188,21 @@ async function registerForPushNotificationsAsync() {
   }
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-  
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-  
+  if (existingStatus === 'granted') return existingStatus;
+
+  const { status } = await Notifications.requestPermissionsAsync();
+  return status;
+}
+
+async function registerForPushNotificationsAsync() {
+  const finalStatus = await ensureNotificationPermissionStatus();
+
   if (finalStatus !== 'granted') {
     console.log('Permisos de notificación no otorgados');
     return null;
   }
 
-  return token;
+  return null;
 }
 
 /** Programa el recordatorio adecuado según si el modo cuidado está activo. */
@@ -218,7 +232,9 @@ export async function scheduleCareModeReminder(localeOverride?: AppLocale) {
     const crisisActive = await isCrisisModeActive();
     if (!crisisActive) return;
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return;
 
     const { hour: reminderHour, minute: reminderMinute } = await getDailyReminderTime();
@@ -242,25 +258,76 @@ export async function scheduleCareModeReminder(localeOverride?: AppLocale) {
   }
 }
 
+/**
+ * Tras un check-in: asegura permiso + recordatorio para mañana y deja toast suave en Hoy.
+ * Corrige el hueco donde scheduleDailyReminder salía temprano si ya había check-in hoy.
+ */
+export async function ensureReturnTomorrowReminder(
+  localeOverride?: AppLocale,
+): Promise<EnsureReturnTomorrowResult> {
+  if (Platform.OS === 'web') {
+    return { scheduled: false, timeLabel: null, permissionGranted: false, mode: null };
+  }
+
+  const time = await getDailyReminderTime();
+  const timeLabel = formatReminderTime(time);
+
+  try {
+    const permissionStatus = await ensureNotificationPermissionStatus();
+    const permissionGranted = permissionStatus === 'granted';
+
+    if (!permissionGranted) {
+      void track('return_reminder_scheduled', {
+        scheduled: false,
+        permission_granted: false,
+      });
+      return { scheduled: false, timeLabel, permissionGranted: false, mode: null };
+    }
+
+    const mode = await scheduleDailyReminder(localeOverride);
+    if (mode) {
+      await markReturnTomorrowToast(timeLabel);
+    }
+
+    void track('return_reminder_scheduled', {
+      scheduled: Boolean(mode),
+      permission_granted: true,
+      mode: mode ?? 'none',
+    });
+
+    return {
+      scheduled: Boolean(mode),
+      timeLabel,
+      permissionGranted: true,
+      mode,
+    };
+  } catch (error) {
+    console.error('Error asegurando recordatorio de retorno:', error);
+    return { scheduled: false, timeLabel, permissionGranted: false, mode: null };
+  }
+}
+
 /** Reprograma el recordatorio diario (p. ej. tras cambiar idioma en Ajustes). */
-export async function scheduleDailyReminder(localeOverride?: AppLocale) {
+export async function scheduleDailyReminder(
+  localeOverride?: AppLocale,
+): Promise<'daily_recurring' | 'tomorrow_once' | null> {
   if (Platform.OS === 'web') {
     console.log('Las notificaciones no están disponibles en web');
-    return;
+    return null;
   }
 
   try {
     if (await isCrisisModeActive()) {
       await scheduleCareModeReminder(localeOverride);
-      return;
+      return null;
     }
 
-    // Cancelar solo recordatorios diarios de check-in, no todas las notificaciones.
     await cancelNotificationsByType(DAILY_REMINDER_TYPE);
 
-    // Verificar si ya hay check-in hoy
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
 
     const today = getLocalDateString();
     const { data: checkIn } = await supabase
@@ -270,42 +337,57 @@ export async function scheduleDailyReminder(localeOverride?: AppLocale) {
       .eq('date', today)
       .maybeSingle();
 
-    // Si ya hay check-in hoy, no programar notificación
-    if (checkIn) {
-      return;
-    }
-
     const { hour: reminderHour, minute: reminderMinute } = await getDailyReminderTime();
     const locale = localeOverride ?? (await getStoredLocale());
+    const content = {
+      title: translate(locale, 'hooks.notifTitle'),
+      body: translate(locale, 'hooks.notifBody'),
+      sound: true as const,
+      data: { type: DAILY_REMINDER_TYPE },
+    };
 
-    // Programar notificación para hoy si aún no pasó la hora
-    const now = new Date();
-    const reminderTime = new Date();
-    reminderTime.setHours(reminderHour, reminderMinute, 0, 0);
-
-    // Si la hora ya pasó hoy, programar para mañana
-    if (reminderTime <= now) {
-      reminderTime.setDate(reminderTime.getDate() + 1);
-    }
-
-    // Programar notificación diaria recurrente
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: translate(locale, 'hooks.notifTitle'),
-        body: translate(locale, 'hooks.notifBody'),
-        sound: true,
-        data: { type: DAILY_REMINDER_TYPE },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour: reminderHour,
-        minute: reminderMinute,
-      } as Notifications.DailyTriggerInput,
+    const plan = resolveDailyReminderSchedulePlan({
+      hasCheckInToday: Boolean(checkIn),
+      now: new Date(),
+      reminderHour,
+      reminderMinute,
     });
 
-    console.log('Recordatorio diario programado para las', reminderHour + ':' + reminderMinute);
+    if (plan.mode === 'tomorrow_once' && plan.triggerDate) {
+      // One-shots para los próximos días: sin DAILY hoy (evitar ping post check-in),
+      // pero la cadena no muere si la persona no abre la app mañana.
+      const bridgeDays = 7;
+      for (let dayOffset = 1; dayOffset <= bridgeDays; dayOffset++) {
+        const fireAt = new Date(plan.triggerDate);
+        fireAt.setDate(plan.triggerDate.getDate() + (dayOffset - 1));
+        await Notifications.scheduleNotificationAsync({
+          content,
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: fireAt,
+          },
+        });
+      }
+    } else {
+      await Notifications.scheduleNotificationAsync({
+        content,
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour: reminderHour,
+          minute: reminderMinute,
+        } as Notifications.DailyTriggerInput,
+      });
+    }
+
+    console.log(
+      'Recordatorio diario programado',
+      plan.mode,
+      reminderHour + ':' + String(reminderMinute).padStart(2, '0'),
+    );
+    return plan.mode;
   } catch (error) {
     console.error('Error programando recordatorio:', error);
+    return null;
   }
 }
 
@@ -355,7 +437,6 @@ export async function cancelTaskCaptureReminderForToday() {
   await cancelNotificationsByType(TASK_CAPTURE_REMINDER_TYPE);
 }
 
-// Cancelar todas las notificaciones
 export async function cancelAllNotifications() {
   if (Platform.OS === 'web') {
     console.log('Las notificaciones no están disponibles en web');
@@ -367,7 +448,6 @@ export async function cancelAllNotifications() {
   await cancelNotificationsByType(TASK_CAPTURE_REMINDER_TYPE);
 }
 
-// Verificar permisos de notificación
 export async function checkNotificationPermissions(): Promise<boolean> {
   if (Platform.OS === 'web') {
     return false;

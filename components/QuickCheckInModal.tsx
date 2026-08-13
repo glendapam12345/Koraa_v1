@@ -73,6 +73,7 @@ export function QuickCheckInModal({ visible, onClose }: QuickCheckInModalProps) 
                     label={t(`sentir.emotions.${id}`)}
                     selected={selectedEmotion === id}
                     onPress={() => setSelectedEmotion(id)}
+                    tintKey={id}
                   />
                 </View>
               ))}

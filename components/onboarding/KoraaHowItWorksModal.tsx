@@ -1,11 +1,10 @@
 import { View, Text, Modal, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
-import { X, Route } from 'lucide-react-native';
+import { X } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
-import { KORAA_GUIDE_STEPS } from '@/lib/koraaGuideSteps';
-import { OnboardingHighlightCard } from '@/components/onboarding/OnboardingHighlightCard';
+import { OnboardingFlowSteps } from '@/components/onboarding/OnboardingFlowSteps';
 
 type KoraaHowItWorksModalProps = {
   visible: boolean;
@@ -44,35 +43,9 @@ export function KoraaHowItWorksModal({
             showsVerticalScrollIndicator={false}
             bounces={false}
           >
-            <View style={styles.iconContainer}>
-              <Route size={36} color={THEME.colors.gradient.blue} />
-            </View>
-
             <Text style={styles.title}>{t(titleKey)}</Text>
             <Text style={styles.subtitle}>{t(subtitleKey)}</Text>
-
-            <View
-              style={styles.stepsContainer}
-              accessibilityRole="summary"
-              accessibilityLabel={t('koraaGuide.stepsA11y')}
-            >
-              {KORAA_GUIDE_STEPS.map((step) => (
-                <View key={step.titleKey} style={styles.step}>
-                  <View style={styles.stepContent}>
-                    <Text style={styles.stepLabel}>{t(step.labelKey)}</Text>
-                    <Text style={styles.stepTitle}>{t(step.titleKey)}</Text>
-                    <Text style={styles.stepDescription}>{t(step.bodyKey)}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-
-            <View style={styles.adaptCardWrap}>
-              <OnboardingHighlightCard
-                title={t('onboarding.howItWorks.adaptTitle')}
-                body={t('onboarding.howItWorks.adaptBody')}
-              />
-            </View>
+            <OnboardingFlowSteps />
           </ScrollView>
 
           <TouchableOpacity
@@ -133,10 +106,6 @@ const styles = StyleSheet.create({
     paddingBottom: THEME.spacing.sm,
     paddingTop: THEME.spacing.xs,
   },
-  iconContainer: {
-    alignItems: 'center',
-    marginBottom: THEME.spacing.xs,
-  },
   title: {
     ...THEME.typography.h2,
     color: THEME.colors.text.main,
@@ -150,37 +119,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: THEME.spacing.sm,
     lineHeight: 22,
-  },
-  stepsContainer: {
-    marginBottom: THEME.spacing.sm,
-    gap: THEME.spacing.sm,
-  },
-  step: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  stepContent: {
-    flex: 1,
-    gap: 2,
-    paddingLeft: 2,
-  },
-  stepLabel: {
-    ...THEME.typography.caption,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  stepTitle: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
-  },
-  stepDescription: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    lineHeight: 18,
-  },
-  adaptCardWrap: {
-    marginBottom: THEME.spacing.xs,
   },
   startButton: {
     borderRadius: THEME.borderRadius.rounded,

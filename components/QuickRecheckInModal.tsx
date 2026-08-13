@@ -19,7 +19,10 @@ import { saveDailyCheckInAndPrioritize } from '@/lib/checkInService';
 import { getDisplayName } from '@/lib/displayName';
 import { publishCheckInCelebration } from '@/lib/checkInCelebration';
 import { DEFAULT_CHECK_IN_FOCUS, DEFAULT_CHECK_IN_TIME } from '@/lib/checkInDefaults';
-import { scheduleRecheckReminder } from '@/hooks/useNotifications';
+import {
+  ensureReturnTomorrowReminder,
+  scheduleRecheckReminder,
+} from '@/hooks/useNotifications';
 
 const EMOTION_IDS = ['agotada', 'tranquila', 'ansiosa', 'motivada', 'abrumada', 'enfocada'] as const;
 const EMOTION_EMOJIS: Record<(typeof EMOTION_IDS)[number], string> = {
@@ -136,6 +139,7 @@ export function QuickRecheckInModal({
 
       try {
         await scheduleRecheckReminder(locale);
+        await ensureReturnTomorrowReminder(locale);
       } catch {
         /* non-critical */
       }

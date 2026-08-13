@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { getFirstName } from '@/lib/displayName';
 import { formatGreetingWithName, formatNightReturnGreeting, useKoraaGreeting } from '@/hooks/useKoraaGreeting';
+import { KoraaMascotAvatar } from '@/components/branding/KoraaMascotAvatar';
 
 export type CaptureHeroLiveState = {
   isThinking: boolean;
@@ -17,7 +19,7 @@ type CaptureScreenHeroProps = {
   liveState?: CaptureHeroLiveState | null;
 };
 
-/** Hero calm de Capturar: una pregunta, una línea de apoyo. */
+/** Hero calm de Capturar: marca + una pregunta + apoyo. */
 export function CaptureScreenHero({ displayName, liveState }: CaptureScreenHeroProps) {
   const { t } = useI18n();
   const firstName = getFirstName(displayName);
@@ -42,7 +44,15 @@ export function CaptureScreenHero({ displayName, liveState }: CaptureScreenHeroP
   }, [lateNight, liveState, t]);
 
   return (
-    <View style={styles.wrap}>
+    <LinearGradient
+      colors={[...THEME.colors.calm.heroWash]}
+      start={{ x: 0.1, y: 0 }}
+      end={{ x: 0.95, y: 1 }}
+      style={styles.wrap}
+    >
+      <View style={styles.mascotRow} accessibilityElementsHidden>
+        <KoraaMascotAvatar size={88} variant="ellie" breathe />
+      </View>
       <Text style={styles.greeting}>{greetingLine}</Text>
       <Text style={styles.prompt}>{t('vaciar.brainDumpSimpleTitle')}</Text>
       <Animated.Text
@@ -52,31 +62,44 @@ export function CaptureScreenHero({ displayName, liveState }: CaptureScreenHeroP
       >
         {liveState?.itemCount ? t('frentes.brainDumpSubActive') : subtitle}
       </Animated.Text>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
     gap: 8,
-    paddingBottom: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.xl,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    marginBottom: THEME.spacing.xs,
+    ...THEME.shadows.soft,
+  },
+  mascotRow: {
+    alignItems: 'center',
+    marginBottom: THEME.spacing.xs,
   },
   greeting: {
     ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
     lineHeight: 18,
+    textAlign: 'center',
   },
   prompt: {
     ...THEME.typography.h2,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 26,
+    lineHeight: 32,
+    textAlign: 'center',
   },
   subtitle: {
     ...THEME.typography.body,
     color: THEME.colors.text.secondary,
     lineHeight: 22,
+    textAlign: 'center',
   },
 });

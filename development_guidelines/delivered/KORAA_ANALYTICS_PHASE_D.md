@@ -21,6 +21,9 @@
   - `tip_action_tapped` (`action`, opcional `category`, `tip_id`)
   - `recheck_opened`, `recheck_completed` (`source`)
   - `profile_saved`
+  - `return_reminder_scheduled` (`scheduled`, `permission_granted`, opcional `mode`: `daily_recurring` | `tomorrow_once` | `none`) — tras check-in, asegura aviso para mañana
+  - `first_session_micro_step_completed` (`source`) — primer paso sugerido completado en el día 1 (vista lite)
+  - `task_postponed` (`to_tomorrow`) — pasó un paso de hoy a mañana
 
 ## Cómo activar en el proyecto Supabase
 

@@ -2,13 +2,20 @@ import { TextStyle, ViewStyle } from 'react-native';
 
 /** Single source for calm palette — used by colors.calm and surfaces.* */
 const CALM = {
-  background: '#F8F5FC',
-  card: '#FFFFFF',
-  lavender: '#EDE6FA',
-  lavenderDeep: '#7B61A8',
-  blush: '#F9EEF5',
-  mist: '#F0EBF8',
-  border: '#E6DDF2',
+  /** Soft lilac wash — airy, closer to brand vision (not muddy gray) */
+  background: '#F3ECFA',
+  /** Crisp card on lilac */
+  card: '#FFFCFF',
+  lavender: '#E0D0F5',
+  /** Brand purple — more vivid than muted mist */
+  lavenderDeep: '#5C3D9E',
+  blush: '#F8E6F0',
+  mist: '#EDE3F8',
+  border: '#D5C4EB',
+  /** CalmScreen atmosphere (top → bottom) */
+  screenWash: ['#E8D4F6', '#F6E8F2', '#F3ECFA'] as const,
+  /** Soft hero card wash (Hoy focus, tip detail) */
+  heroWash: ['#E6D4F6', '#F7E8F2'] as const,
 } as const;
 
 const SHADOW_CARD = {
@@ -42,8 +49,10 @@ export const THEME = {
       metaOnFill: '#595959',
     },
     gradient: {
-      blue: '#4A90E2',
-      pink: '#FF6B6B',
+      /** Brand CTA start — vivid purple (vision board) */
+      blue: '#6C5CE7',
+      /** Brand CTA end — coral pink */
+      pink: '#FF6B8A',
     },
     /** @deprecated Prefer `calm.mist` */
     background: {
@@ -58,7 +67,7 @@ export const THEME = {
     /** Light dark scrim on glass cards */
     scrimLight: 'rgba(0, 0, 0, 0.18)',
     /** Semi-opaque calm background wash */
-    calmScrim: 'rgba(248, 245, 252, 0.92)',
+    calmScrim: 'rgba(243, 236, 250, 0.94)',
     /** Text/icon on gradient buttons and dark surfaces */
     onGradient: '#FFFFFF',
     onGradientSoft: 'rgba(255, 255, 255, 0.95)',
@@ -113,16 +122,16 @@ export const THEME = {
     /** Blue/pink with alpha for tints */
     tint: {
       blue: {
-        soft: 'rgba(74, 144, 226, 0.15)',
-        light: 'rgba(74, 144, 226, 0.12)',
-        faint: 'rgba(74, 144, 226, 0.1)',
-        veryLight: 'rgba(74, 144, 226, 0.08)',
-        veryFaint: 'rgba(74, 144, 226, 0.06)',
-        border: 'rgba(74, 144, 226, 0.25)',
+        soft: 'rgba(108, 92, 231, 0.15)',
+        light: 'rgba(108, 92, 231, 0.12)',
+        faint: 'rgba(108, 92, 231, 0.1)',
+        veryLight: 'rgba(108, 92, 231, 0.08)',
+        veryFaint: 'rgba(108, 92, 231, 0.06)',
+        border: 'rgba(108, 92, 231, 0.25)',
       },
       pink: {
-        soft: 'rgba(255, 107, 107, 0.1)',
-        border: 'rgba(255, 107, 107, 0.25)',
+        soft: 'rgba(255, 107, 138, 0.1)',
+        border: 'rgba(255, 107, 138, 0.25)',
       },
     },
     /** Error/danger surface (e.g. error message box) */
@@ -137,39 +146,39 @@ export const THEME = {
       star: '#F5C842',
     },
     /** Chart/confetti palette (array for graphs and celebrations) */
-    chartPalette: ['#6BB6FF', '#4A90E2', '#52C9A2', '#2E9D7A', '#FFD93D', '#FFB84D', '#FF9F66', '#FF7F50', '#FF6B6B', '#E55555', '#B794F6', '#9B7EDE'] as const,
-    confettiPalette: ['#FF6B6B', '#4A90E2', '#9B59B6', '#FFD700', '#FF1493', '#00CED1'] as const,
+    chartPalette: ['#6BB6FF', '#6C5CE7', '#52C9A2', '#2E9D7A', '#FFD93D', '#FFB84D', '#FF9F66', '#FF7F50', '#FF6B8A', '#E55555', '#B794F6', '#9B7EDE'] as const,
+    confettiPalette: ['#FF6B8A', '#6C5CE7', '#9B59B6', '#FFD700', '#FF1493', '#00CED1'] as const,
     /** Meditation buttons: done (gray), morning (salmon→pink), evening (purple) */
     meditationGradient: {
       done: ['#E8E8E8', '#F5F5F5'] as const,
-      morning: ['#FFA07A', '#FF6B6B'] as const,
+      morning: ['#FFA07A', '#FF6B8A'] as const,
       evening: ['#9B59B6', '#6C5CE7'] as const,
     },
-    /** Gradient tints for headers/cards (blue→pink soft) */
+    /** Gradient tints for headers/cards (purple→pink soft) */
     gradientTint: {
-      header: ['rgba(74, 144, 226, 0.08)', 'rgba(255, 107, 107, 0.06)', 'transparent'] as const,
-      weekNav: ['rgba(74, 144, 226, 0.12)', 'rgba(255, 107, 107, 0.08)'] as const,
-      dayToday: ['rgba(74, 144, 226, 0.2)', 'rgba(255, 107, 107, 0.12)'] as const,
+      header: ['rgba(108, 92, 231, 0.1)', 'rgba(255, 107, 138, 0.07)', 'transparent'] as const,
+      weekNav: ['rgba(108, 92, 231, 0.12)', 'rgba(255, 107, 138, 0.08)'] as const,
+      dayToday: ['rgba(108, 92, 231, 0.2)', 'rgba(255, 107, 138, 0.12)'] as const,
     },
     /** Para mí, headers premium, cards de patrón */
     parami: {
-      header: ['#4A90E2', '#7B61A8', '#FF6B6B'] as const,
+      header: ['#6C5CE7', '#9B59B6', '#FF6B8A'] as const,
       balanceCard: 'rgba(255, 255, 255, 0.14)',
-      /** Soft mist gradients — readable dark text, Musa-like air without dark mode */
-      moodCard: ['#EDE6FA', '#F7F1F4'] as const,
-      energyCard: ['#E4F0FB', '#F0EBF8'] as const,
-      symptomsCard: ['#F6E8EF', '#F0EBF8'] as const,
+      /** Richer lilac → blush (vision mood cards, still dark-text friendly) */
+      moodCard: ['#E4D4F8', '#F8DCE8'] as const,
+      energyCard: ['#DCE8FB', '#EDE4F8'] as const,
+      symptomsCard: ['#F6E0EC', '#EDE4F8'] as const,
     },
     /** Emergency Kit entry card */
     emergencyKit: {
-      card: ['#6B5B95', '#9B8EC4', '#C4B5E8'] as const,
+      card: ['#5C3D9E', '#8B6BC4', '#C9B6E8'] as const,
     },
     /** Carousel slot gradients (Tips / recommendations — one pair per slot) */
     carousel: {
       slotGradients: [
-        ['#4A90E2', '#5B8FD9'],
-        ['#FF6B6B', '#E85D75'],
-        ['#3EB489', '#4A90E2'],
+        ['#6C5CE7', '#8B7CF0'],
+        ['#FF6B8A', '#E85D75'],
+        ['#3EB489', '#6C5CE7'],
         ['#9B59B6', '#9B7EDE'],
         ['#F4A261', '#FFA500'],
         ['#2A9D8F', '#48CAE4'],
@@ -177,13 +186,13 @@ export const THEME = {
     },
     /** Emotion check-in tints (soft background per emotion) */
     emotionTint: {
-      enfocada: 'rgba(82, 201, 162, 0.22)',
-      motivada: 'rgba(255, 217, 61, 0.25)',
-      tranquila: 'rgba(118, 214, 114, 0.22)',
-      ansiosa: 'rgba(255, 176, 69, 0.22)',
-      agotada: 'rgba(107, 182, 255, 0.22)',
-      abrumada: 'rgba(255, 123, 69, 0.22)',
-      default: 'rgba(118, 214, 114, 0.15)',
+      enfocada: 'rgba(82, 201, 162, 0.32)',
+      motivada: 'rgba(255, 217, 61, 0.35)',
+      tranquila: 'rgba(118, 214, 114, 0.32)',
+      ansiosa: 'rgba(255, 176, 69, 0.32)',
+      agotada: 'rgba(107, 182, 255, 0.32)',
+      abrumada: 'rgba(255, 123, 69, 0.32)',
+      default: 'rgba(180, 150, 220, 0.28)',
     },
   },
 
@@ -352,6 +361,21 @@ export const THEME = {
       borderWidth: 1,
       borderColor: CALM.border,
     } as ViewStyle,
+    /** Hero soft — foco Hoy / tip expandido (temperatura sin white-on-white) */
+    hero: {
+      backgroundColor: CALM.lavender,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: CALM.border,
+      ...SHADOW_CARD,
+    } as ViewStyle,
+    /** Panel blush — apoyo suave */
+    soft: {
+      backgroundColor: CALM.blush,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: CALM.border,
+    } as ViewStyle,
     /** Chips inactivos (filtros, pills). */
     chip: {
       backgroundColor: CALM.mist,
@@ -367,7 +391,7 @@ export const THEME = {
     } as ViewStyle,
     /** Paneles secundarios colapsables (hints, bloques vacíos). */
     panel: {
-      backgroundColor: CALM.mist,
+      backgroundColor: CALM.blush,
       borderRadius: 16,
       borderWidth: 1,
       borderColor: CALM.border,
@@ -400,9 +424,9 @@ export const THEME = {
     lavenderGlow: {
       shadowColor: CALM.lavenderDeep,
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.12,
-      shadowRadius: 12,
-      elevation: 3,
+      shadowOpacity: 0.22,
+      shadowRadius: 14,
+      elevation: 4,
     },
   },
 

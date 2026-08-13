@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { X, Bell } from 'lucide-react-native';
+import { X, Bell, Sparkles } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -53,7 +53,7 @@ export default function StreakScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
   const { user } = useAuth();
-  const { currentStreak, loadStreak } = useStreak(user?.id);
+  const { currentStreak, usedGrace, loadStreak } = useStreak(user?.id);
   const { hasCheckInToday, refresh: refreshCheckIn } = useHasCheckInToday(user?.id);
   const [savedReminder, setSavedReminder] = useState({ hour: 9, minute: 0 });
   const [draftReminder, setDraftReminder] = useState({ hour: 9, minute: 0 });
@@ -148,7 +148,11 @@ export default function StreakScreen() {
             <View style={styles.ringOuter}>
               <View style={[styles.ringFill, { height: `${Math.max(12, ringProgress * 100)}%` }]} />
               <View style={styles.ringInner}>
-                <Text style={styles.fireLarge}>🔥</Text>
+                {usedGrace && !checkedInToday ? (
+                  <Sparkles size={32} color={THEME.colors.onGradient} strokeWidth={2} />
+                ) : (
+                  <Text style={styles.fireLarge}>🔥</Text>
+                )}
               </View>
             </View>
           </StreakAura>
@@ -243,7 +247,16 @@ export default function StreakScreen() {
           />
         </View>
 
-        <Text style={styles.softNote}>{t('hoy.streakSoftNote')}</Text>
+        <View style={styles.graceCard}>
+          <Text style={styles.softNote}>{t('hoy.streakSoftNote')}</Text>
+          <Text style={styles.softNote}>{t('hoy.streakGraceNote')}</Text>
+          {usedGrace ? (
+            <View style={styles.graceActiveRow}>
+              <Sparkles size={14} color={THEME.colors.calm.lavenderDeep} strokeWidth={2} />
+              <Text style={styles.graceActive}>{t('hoy.streakGraceActive')}</Text>
+            </View>
+          ) : null}
+        </View>
 
         {!checkedInToday ? (
           <CalmPrimaryButton
@@ -401,12 +414,35 @@ const styles = StyleSheet.create({
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
   },
+  graceCard: {
+    gap: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.xl,
+    backgroundColor: THEME.colors.calm.mist,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
   softNote: {
     ...THEME.typography.small,
-    color: THEME.colors.text.tertiary,
+    color: THEME.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
-    paddingHorizontal: THEME.spacing.sm,
+  },
+  graceActiveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 2,
+  },
+  graceActive: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.calm.lavenderDeep,
+    textAlign: 'center',
+    lineHeight: 20,
+    flexShrink: 1,
   },
   todayDone: {
     flexDirection: 'row',

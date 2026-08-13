@@ -1,8 +1,9 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { useMemo, useState, useEffect } from 'react';
-import { ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { useMemo, useEffect } from 'react';
+import { ChevronLeft } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
@@ -16,7 +17,7 @@ import {
 import { applyTipHighlights } from '@/lib/ai/applyTipHighlights';
 import { useAuth } from '@/contexts/AuthContext';
 import { useKoraaTipHighlights } from '@/hooks/useKoraaTipHighlights';
-import { TipDetailExpanded, TipGridCard } from '@/components/tips/TipGridCard';
+import { TipDetailExpanded } from '@/components/tips/TipGridCard';
 import { executeTipAction, getTipActionLabel } from '@/lib/tipActions';
 import { openPaywall } from '@/lib/paywallNavigation';
 import { tipsGoBack } from '@/lib/tipsNavigation';
@@ -99,16 +100,13 @@ export default function TipsCategoryScreen() {
     [allTips, isSubscribed],
   );
 
-  const [overrideTip, setOverrideTip] = useState<ScoredTip | null>(null);
-  const [moreOpen, setMoreOpen] = useState(false);
-
-  const primaryTip = tips[0] ?? null;
-  const shownTip = overrideTip ?? primaryTip;
-
-  const gridTips = useMemo(() => {
-    if (!shownTip) return tips;
-    return tips.filter((tip) => tip.id !== shownTip.id);
-  }, [tips, shownTip]);
+  /** Orden: tip enfocado primero (si viene de Hoy), luego el resto — todos mismo peso visual. */
+  const orderedTips = useMemo(() => {
+    if (!focusTipId) return tips;
+    const focused = tips.find((tip) => tip.id === focusTipId);
+    if (!focused) return tips;
+    return [focused, ...tips.filter((tip) => tip.id !== focusTipId)];
+  }, [tips, focusTipId]);
 
   useEffect(() => {
     if (category) {
@@ -117,26 +115,16 @@ export default function TipsCategoryScreen() {
   }, [category, emotion]);
 
   useEffect(() => {
-    setOverrideTip(null);
-    setMoreOpen(false);
-  }, [category, emotion, energy]);
-
-  useEffect(() => {
-    if (!focusTipId || allTips.length === 0) return;
-    const tip = allTips.find((item) => item.id === focusTipId);
-    if (tip) setOverrideTip(tip);
-  }, [focusTipId, allTips]);
-
-  useEffect(() => {
-    if (category && shownTip) {
-      trackTipViewed(category, shownTip.id);
+    if (category && orderedTips[0]) {
+      trackTipViewed(category, orderedTips[0].id);
     }
-  }, [category, shownTip]);
+  }, [category, orderedTips]);
 
-  const renderExpanded = (tip: ScoredTip, eyebrow?: string) => (
+  const renderTip = (tip: ScoredTip, index: number) => (
     <TipDetailExpanded
+      key={tip.id}
       tip={tip}
-      eyebrow={eyebrow}
+      eyebrow={index === 0 ? t('tips.categoryPrimaryEyebrow') : undefined}
       actionLabel={tip.action ? getTipActionLabel(tip.action, t) : undefined}
       onAction={
         tip.action
@@ -146,12 +134,31 @@ export default function TipsCategoryScreen() {
             }
           : undefined
       }
+      optionalAppLabel={
+        tip.optionalApp ? getTipActionLabel(tip.optionalApp, t) : undefined
+      }
+      onOptionalApp={
+        tip.optionalApp
+          ? () => {
+              trackTipActionTapped(tip.optionalApp!, category!, tip.id);
+              void executeTipAction(tip.optionalApp!, t);
+            }
+          : undefined
+      }
     />
   );
 
   if (!category) {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
+        <LinearGradient
+          colors={[...THEME.colors.calm.screenWash]}
+          locations={[0, 0.45, 1]}
+          start={{ x: 0.15, y: 0 }}
+          end={{ x: 0.85, y: 1 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
         <TouchableOpacity
           onPress={() => tipsGoBack(router)}
           style={styles.backBtn}
@@ -171,13 +178,20 @@ export default function TipsCategoryScreen() {
     categoryHighlightIds.length > 0 && aiTipLead
       ? aiTipLead
       : getCategoryLead(category, ctx, locale);
-  const showMoreToggle = gridTips.length > 0;
   const catalogTotal = getCatalogCountByCategory(locale)[category];
   const lockedCount = getLockedTipsInCategory(category, locale, isSubscribed);
   const visibleCount = isSubscribed ? catalogTotal : Math.min(catalogTotal, FREE_TIPS_LIMIT);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
+      <LinearGradient
+        colors={[...THEME.colors.calm.screenWash]}
+        locations={[0, 0.45, 1]}
+        start={{ x: 0.15, y: 0 }}
+        end={{ x: 0.85, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => tipsGoBack(router)}
@@ -185,7 +199,7 @@ export default function TipsCategoryScreen() {
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
         >
-          <ChevronLeft size={28} color={THEME.colors.text.main} />
+          <ChevronLeft size={28} color={THEME.colors.calm.lavenderDeep} />
         </TouchableOpacity>
         <View style={styles.headerTitleCol}>
           <Text style={styles.headerTitle} numberOfLines={1} accessibilityRole="header">
@@ -205,63 +219,9 @@ export default function TipsCategoryScreen() {
         <Text style={styles.lead}>{lead}</Text>
         <Text style={styles.optional}>{t('tips.categoryOptional')}</Text>
 
-        {shownTip ? (
-          renderExpanded(
-            shownTip,
-            overrideTip ? undefined : t('tips.categoryPrimaryEyebrow'),
-          )
-        ) : null}
-
-        {overrideTip && primaryTip ? (
-          <TouchableOpacity
-            onPress={() => setOverrideTip(null)}
-            style={styles.backToPrimary}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={t('tips.backToGrid')}
-            accessibilityHint={t('tipsExtra.a11yBackToGridHint')}
-          >
-            <Text style={styles.backToPrimaryText}>{t('tips.backToGrid')}</Text>
-          </TouchableOpacity>
-        ) : null}
-
-        {showMoreToggle ? (
-          <TouchableOpacity
-            onPress={() => setMoreOpen((open) => !open)}
-            activeOpacity={0.85}
-            style={styles.moreToggle}
-            accessibilityRole="button"
-            accessibilityState={{ expanded: moreOpen }}
-            accessibilityLabel={
-              moreOpen ? t('tips.categoryMoreHide') : t('tips.categoryMoreToggle', { count: gridTips.length })
-            }
-          >
-            <Text style={styles.moreToggleText}>
-              {moreOpen ? t('tips.categoryMoreHide') : t('tips.categoryMoreToggle', { count: gridTips.length })}
-            </Text>
-            {moreOpen ? (
-              <ChevronUp size={18} color={THEME.colors.calm.lavenderDeep} />
-            ) : (
-              <ChevronDown size={18} color={THEME.colors.calm.lavenderDeep} />
-            )}
-          </TouchableOpacity>
-        ) : null}
-
-        {moreOpen && showMoreToggle ? (
-          <View style={styles.grid} accessibilityRole="list">
-            {gridTips.map((tip) => (
-              <TipGridCard
-                key={tip.id}
-                tip={tip}
-                forYouLabel={t('tips.forYouBadge')}
-                onPress={() => {
-                  setOverrideTip(tip);
-                  setMoreOpen(false);
-                }}
-              />
-            ))}
-          </View>
-        ) : null}
+        <View style={styles.list} accessibilityRole="list">
+          {orderedTips.map((tip, index) => renderTip(tip, index))}
+        </View>
 
         {lockedCount > 0 ? (
           <View style={styles.premiumBlock}>
@@ -341,39 +301,15 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.tertiary,
     lineHeight: 18,
   },
+  list: {
+    gap: THEME.spacing.sm,
+    marginTop: THEME.spacing.xs,
+  },
   visibleCount: {
     ...THEME.typography.meta,
     color: THEME.colors.text.tertiary,
     textAlign: 'center',
     lineHeight: 18,
-  },
-  moreToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: THEME.spacing.xs,
-    minHeight: THEME.sizes.touchTarget,
-    paddingVertical: THEME.spacing.sm,
-  },
-  moreToggleText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  backToPrimary: {
-    alignSelf: 'center',
-    minHeight: THEME.sizes.touchTarget,
-    justifyContent: 'center',
-  },
-  backToPrimaryText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.medium,
   },
   premiumBlock: {
     alignItems: 'center',

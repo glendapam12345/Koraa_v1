@@ -41,5 +41,35 @@ describe('buildParamiPatternInsight', () => {
     expect(result.summary).toContain('4');
     expect(result.patternNote.length).toBeGreaterThan(10);
     expect(result.gentleTip.length).toBeGreaterThan(10);
+    expect(result.source).toBe('feel');
+    expect(result.correlationLabel).toBeTruthy();
+    expect(result.applyMode).toBe('open_hoy');
+  });
+
+  it('prefers work insight for premium when completions follow energy', () => {
+    const days = [
+      day('2026-08-03', 'motivada', 5),
+      day('2026-08-04', 'motivada', 4),
+      day('2026-08-05', 'agotada', 2),
+      day('2026-08-06', 'agotada', 1),
+    ];
+    const result = buildParamiPatternInsight({
+      locale: 'es',
+      period: 'week',
+      days,
+      emotionMix: [{ id: 'motivada', count: 2, color: '#aaa' }],
+      isPremium: true,
+      tasks: [
+        { id: 'a', is_completed: true, completed_at: '2026-08-03T16:00:00', scheduled_date: '2026-08-03' },
+        { id: 'b', is_completed: true, completed_at: '2026-08-03T17:00:00', scheduled_date: '2026-08-03' },
+        { id: 'c', is_completed: true, completed_at: '2026-08-04T16:00:00', scheduled_date: '2026-08-04' },
+        { id: 'd', is_completed: true, completed_at: '2026-08-04T18:00:00', scheduled_date: '2026-08-04' },
+      ],
+    });
+
+    expect(result.source).toBe('work');
+    expect(result.patternNote.toLowerCase()).toContain('energía');
+    expect(result.applyMode).toBe('one_step');
+    expect(result.correlationLabel?.toLowerCase()).toContain('ánimo');
   });
 });

@@ -625,9 +625,9 @@ export const extEn = {
     taskCaptureNotifTitle: 'Anything on your mind?',
     taskCaptureNotifBody:
       'If you still want to jot down a step, Koraa is here — no rush.',
-    careModeNotifTitle: 'Still here?',
+    careModeNotifTitle: 'Today shrinks',
     careModeNotifBody:
-      'You can. A gentle check-in if you feel like it — no pressure.',
+      'One step is enough. You do not have to perform — we are here.',
     recheckNotifTitle: 'Did your day change?',
     recheckNotifBody:
       'Update how you feel and Koraa adjusts your suggested steps in a minute.',

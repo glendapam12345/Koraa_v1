@@ -43,6 +43,13 @@ import { useCrisisMode } from '@/hooks/useCrisisMode';
 import { useFocusedProject } from '@/hooks/useFocusedProject';
 import { subscribeHoyRefresh } from '@/lib/hoyRefreshBridge';
 import { TabScreenErrorBoundary } from '@/components/TabScreenErrorBoundary';
+import { track } from '@/lib/analytics';
+import {
+  hasCompletedFirstSessionMicroStep,
+  markFirstSessionMicroStepCompleted,
+  shouldHighlightFirstSessionMicroStep,
+} from '@/lib/firstSessionMicroStep';
+import { getHoyPriorityPlanTasks } from '@/lib/hoyFocusTasks';
 
 function TodayScreen() {
   const { t, locale } = useI18n();
@@ -187,14 +194,16 @@ function TodayScreen() {
     confettiTimeoutRef,
   });
 
-  const { currentStreak, loadStreak } = useStreak(user?.id);
+  const { currentStreak, usedGrace, loadStreak } = useStreak(user?.id);
   const {
+    hoyLiteLayout,
     hoyLiteCompactLayout,
     hoyRestOfDayExpanded,
     setShowSecondaryModules,
     handleShowMoreForHoy,
     handleOptOutHoyLite,
     checkInReplanCoachLine,
+    patternHoyCoachLine,
   } = useHoyScreenLayout({
     userId: user?.id,
     loading,
@@ -220,6 +229,35 @@ function TodayScreen() {
       return !date || date === today;
     });
   }, [incompleteTasks]);
+
+  const [firstSessionMicroDone, setFirstSessionMicroDone] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setFirstSessionMicroDone(false);
+      return;
+    }
+    let cancelled = false;
+    void hasCompletedFirstSessionMicroStep(user.id).then((done) => {
+      if (!cancelled) setFirstSessionMicroDone(done);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  const hasFocusTaskForMicro = useMemo(
+    () => getHoyPriorityPlanTasks(incompleteTasksForToday).some((task) => !task.is_completed),
+    [incompleteTasksForToday],
+  );
+
+  const firstSessionMicroStep = shouldHighlightFirstSessionMicroStep({
+    isLiteDay: hoyLiteLayout === true,
+    hasCheckIn: Boolean(todayMood),
+    hasFocusTask: hasFocusTaskForMicro,
+    alreadyCompleted: firstSessionMicroDone,
+    crisisMode: crisisModeActive,
+  });
 
   const todayPriorityStats = useMemo(() => getTodayPriorityStats(tasks), [tasks]);
 
@@ -250,7 +288,14 @@ function TodayScreen() {
       }
 
       if (payload.isFirstPriorityToday) {
-        showToast(lowEnergy ? t('hoy.firstStepDoneLow') : t('hoy.firstStepDone'), 'success');
+        if (hoyLiteLayout === true && user?.id && !firstSessionMicroDone) {
+          void markFirstSessionMicroStepCompleted(user.id);
+          setFirstSessionMicroDone(true);
+          void track('first_session_micro_step_completed', { source: 'hoy' });
+          showToast(t('hoy.firstSessionMicroStepDone'), 'success');
+        } else {
+          showToast(lowEnergy ? t('hoy.firstStepDoneLow') : t('hoy.firstStepDone'), 'success');
+        }
       } else if (payload.remainingPriorities === 1) {
         showToast(t('hoy.focusOneRemaining'), 'success');
       } else {
@@ -261,7 +306,16 @@ function TodayScreen() {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     },
-    [todayMood, energyLevel, showToast, t, tasks],
+    [
+      todayMood,
+      energyLevel,
+      showToast,
+      t,
+      tasks,
+      hoyLiteLayout,
+      user?.id,
+      firstSessionMicroDone,
+    ],
   );
 
   const { toggleTask, clearToggleTimers } = useTaskActions({
@@ -339,9 +393,10 @@ function TodayScreen() {
 
   const coachSuggestion = useMemo(() => {
     if (checkInReplanCoachLine) return checkInReplanCoachLine;
+    if (patternHoyCoachLine) return patternHoyCoachLine;
     if (aiCoachLine) return aiCoachLine;
     return explanation.suggestion;
-  }, [checkInReplanCoachLine, aiCoachLine, explanation.suggestion]);
+  }, [checkInReplanCoachLine, patternHoyCoachLine, aiCoachLine, explanation.suggestion]);
 
   const getCategoryColor = useCallback((category: string) => {
     const key = normalizeCategoryKey(category) ?? category.trim().toLowerCase();
@@ -370,8 +425,10 @@ function TodayScreen() {
         <HoyScreenHeader
           displayName={displayName}
           hasCheckInToday={Boolean(todayMood)}
+          showSubtitle={!todayMood}
           streak={currentStreak}
           checkedInToday={Boolean(todayMood)}
+          softGrace={usedGrace}
           crisisModeActive={crisisModeActive}
           onCareModePress={() => setCareModeSheet(crisisModeActive ? 'deactivate' : 'activate')}
         />
@@ -392,6 +449,7 @@ function TodayScreen() {
             focusLevel={focusLevel}
             todayPriorityStats={todayPriorityStats}
             compactLayout={hoyLiteCompactLayout}
+            firstSessionMicroStep={firstSessionMicroStep}
             onShowFullView={() => void handleOptOutHoyLite()}
             onShowMoreForToday={handleShowMoreForHoy}
             user={user}

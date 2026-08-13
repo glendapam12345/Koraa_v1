@@ -199,22 +199,22 @@ export const TIP_CATEGORY_META: Record<
 > = {
   mindset: {
     emoji: '🧘',
-    gradient: ['#A588E0', '#7B61A8'],
+    gradient: ['#1B3A6B', '#2EC4B6'],
     highlightGradient: ['#C4B0E8', '#E2D4F5'],
   },
   rest: {
     emoji: '🌙',
-    gradient: ['#30cfd0', '#330867'],
+    gradient: ['#0F3D3E', '#1B6B4A'],
     highlightGradient: ['#9DD4E3', '#C5EAF2'],
   },
   action: {
     emoji: '⚡',
-    gradient: ['#fa709a', '#fee140'],
+    gradient: ['#E85D4C', '#F5C542'],
     highlightGradient: ['#EDB0C8', '#F5D4E4'],
   },
   productivity: {
     emoji: '📋',
-    gradient: ['#56BFD4', '#F4A69A'],
+    gradient: ['#6B4C9A', '#C45B8C'],
     highlightGradient: ['#A8DDE8', '#F5D0C8'],
   },
 };

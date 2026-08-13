@@ -257,6 +257,16 @@ export async function executeTipAction(
   }
 }
 
+/** CTAs que se quedan dentro de Koraa (camino principal cuando hay botón). */
+export function isInAppTipAction(action: TipAction): boolean {
+  return action === 'hoy' || action === 'vaciar' || action === 'focus_session';
+}
+
+/** Apps externas — solo como enlace secundario opcional. */
+export function isOptionalExternalTipAction(action: TipAction): boolean {
+  return action === 'spotify' || action === 'apple_music';
+}
+
 export function getTipActionLabel(
   action: TipAction,
   t: (key: TranslationKey) => string,
@@ -264,7 +274,7 @@ export function getTipActionLabel(
   switch (action) {
     case 'spotify':
     case 'apple_music':
-      return t('tips.actionOpenMusic');
+      return t('tips.actionOptionalMusic');
     case 'notes':
       return t('tips.actionOpenNotes');
     case 'reminders':

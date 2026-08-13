@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import type { DayData } from '@/lib/checkInDayData';
 import type { YoHistoryEntry } from '@/components/yo/YoCheckInHistory';
 import { getLocalDateString } from '@/lib/dateLocal';
+import type { BehaviorTaskSnapshot } from '@/lib/behaviorInsights';
 
 const DEFAULT_PROGRESS_DAYS = 30;
 
@@ -29,6 +30,7 @@ export function useCheckInInsightsData(
 
   const [progressData, setProgressData] = useState<DayData[]>([]);
   const [historyEntries, setHistoryEntries] = useState<YoHistoryEntry[]>([]);
+  const [behaviorTasks, setBehaviorTasks] = useState<BehaviorTaskSnapshot[]>([]);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(
@@ -42,13 +44,20 @@ export function useCheckInInsightsData(
       const rangeStart = getLocalDateString(rangeStartDate);
       const rangeEnd = getLocalDateString(today);
 
-      const { data: rows } = await supabase
-        .from('daily_check_ins')
-        .select('date, emotion, energy_level')
-        .eq('user_id', userId)
-        .gte('date', rangeStart)
-        .lte('date', rangeEnd)
-        .order('date', { ascending: true });
+      const [{ data: rows }, { data: taskRows }] = await Promise.all([
+        supabase
+          .from('daily_check_ins')
+          .select('date, emotion, energy_level')
+          .eq('user_id', userId)
+          .gte('date', rangeStart)
+          .lte('date', rangeEnd)
+          .order('date', { ascending: true }),
+        supabase
+          .from('tasks')
+          .select('id, is_completed, completed_at, scheduled_date')
+          .eq('user_id', userId)
+          .or(`completed_at.gte.${rangeStart},scheduled_date.gte.${rangeStart}`),
+      ]);
 
       for (const row of rows ?? []) {
         if (row.date && row.emotion) {
@@ -74,6 +83,19 @@ export function useCheckInInsightsData(
         });
       }
       setProgressData(days);
+      setBehaviorTasks(
+        (taskRows ?? []).flatMap((row) => {
+          if (!row.id) return [];
+          return [
+            {
+              id: String(row.id),
+              is_completed: Boolean(row.is_completed),
+              completed_at: row.completed_at ? String(row.completed_at) : null,
+              scheduled_date: row.scheduled_date ? String(row.scheduled_date) : null,
+            },
+          ];
+        }),
+      );
 
       if (includeHistory) {
         const history: YoHistoryEntry[] = (rows ?? [])
@@ -95,5 +117,5 @@ export function useCheckInInsightsData(
     [monthNames, dayLabels, progressDays, includeHistory],
   );
 
-  return { progressData, historyEntries, loading, load };
+  return { progressData, historyEntries, behaviorTasks, loading, load };
 }

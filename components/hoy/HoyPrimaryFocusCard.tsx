@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Check, Star } from 'lucide-react-native';
+import { Check, Sparkles, Star } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
 import { useI18n } from '@/contexts/I18nContext';
@@ -10,6 +11,10 @@ type HoyPrimaryFocusCardProps = {
   metaLabel?: string | null;
   onToggleComplete: () => void;
   onOpenDetails: () => void;
+  /** Día 1: resalta un solo paso sin presión. */
+  firstSessionNudge?: boolean;
+  /** Evita tarjeta doble cuando ya hay un CalmCard padre. */
+  embedded?: boolean;
 };
 
 /** Un solo foco del día — card grande al estilo mock. */
@@ -19,19 +24,32 @@ export function HoyPrimaryFocusCard({
   metaLabel,
   onToggleComplete,
   onOpenDetails,
+  firstSessionNudge = false,
+  embedded = false,
 }: HoyPrimaryFocusCardProps) {
   const { t } = useI18n();
+  const nudge = firstSessionNudge && !completed;
 
-  return (
-    <CalmCard style={[styles.card, completed && styles.cardDone]}>
+  const inner = (
+    <>
       <View style={styles.topRow}>
-        <Text style={styles.eyebrow}>{t('hoy.todayFocusEyebrow')}</Text>
-        <Star
-          size={18}
-          color={THEME.colors.calm.lavenderDeep}
-          fill={THEME.colors.calm.lavenderDeep}
-        />
+        <View style={[styles.eyebrowPill, nudge && styles.eyebrowPillNudge]}>
+          {nudge ? (
+            <Sparkles size={12} color={THEME.colors.calm.lavenderDeep} strokeWidth={2} />
+          ) : (
+            <Star
+              size={12}
+              color={THEME.colors.calm.lavenderDeep}
+              fill={THEME.colors.calm.lavenderDeep}
+            />
+          )}
+          <Text style={styles.eyebrow}>
+            {nudge ? t('hoy.firstSessionMicroEyebrow') : t('hoy.todayFocusEyebrow')}
+          </Text>
+        </View>
       </View>
+
+      {nudge ? <Text style={styles.nudgeHint}>{t('hoy.firstSessionMicroHint')}</Text> : null}
 
       <TouchableOpacity
         onPress={onOpenDetails}
@@ -63,12 +81,38 @@ export function HoyPrimaryFocusCard({
             <Check size={14} color={THEME.colors.onGradient} strokeWidth={3} />
           </View>
         ) : (
-          <View style={styles.checkRing} />
+          <View style={[styles.checkRing, nudge && styles.checkRingNudge]} />
         )}
         <Text style={styles.checkLabel}>
           {completed ? t('hoy.todayFocusDone') : t('hoy.todayFocusMark')}
         </Text>
       </TouchableOpacity>
+    </>
+  );
+
+  if (nudge && !embedded) {
+    return (
+      <LinearGradient
+        colors={[...THEME.colors.parami.moodCard]}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.95, y: 1 }}
+        style={[styles.nudgeShell, completed && styles.cardDone]}
+      >
+        {inner}
+      </LinearGradient>
+    );
+  }
+
+  if (embedded) {
+    return <View style={[styles.embedded, completed && styles.cardDone]}>{inner}</View>;
+  }
+
+  return (
+    <CalmCard
+      variant="hero"
+      style={[styles.card, completed && styles.cardDone, firstSessionNudge && styles.cardNudge]}
+    >
+      {inner}
     </CalmCard>
   );
 }
@@ -78,23 +122,57 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.sm,
     paddingVertical: THEME.spacing.md,
     paddingHorizontal: THEME.spacing.md,
-    backgroundColor: THEME.colors.fill[100],
-    borderColor: THEME.colors.calm.lavender,
+    borderColor: THEME.colors.calm.border,
     borderWidth: 1,
+  },
+  embedded: {
+    gap: THEME.spacing.sm,
+  },
+  nudgeShell: {
+    gap: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.xl,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
   },
   cardDone: {
     opacity: 0.72,
+  },
+  cardNudge: {
+    borderColor: THEME.colors.tint.blue.border,
   },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  eyebrowPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.calm.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  eyebrowPillNudge: {
+    backgroundColor: THEME.colors.calm.card,
+    borderColor: THEME.colors.tint.blue.border,
+  },
   eyebrow: {
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.calm.lavenderDeep,
-    lineHeight: 18,
+    lineHeight: 16,
+  },
+  nudgeHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 20,
+    fontFamily: THEME.fonts.accent.italic,
   },
   title: {
     ...THEME.typography.h3,
@@ -127,6 +205,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: THEME.colors.calm.border,
     backgroundColor: THEME.colors.calm.card,
+  },
+  checkRingNudge: {
+    borderColor: THEME.colors.calm.lavenderDeep,
   },
   checkDone: {
     width: 24,

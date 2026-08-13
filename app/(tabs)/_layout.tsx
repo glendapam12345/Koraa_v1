@@ -152,8 +152,10 @@ export default function TabLayout() {
           tabBarActiveTintColor: THEME.colors.calm.lavenderDeep,
           tabBarInactiveTintColor: THEME.colors.text.secondary,
           tabBarStyle: {
-            backgroundColor: THEME.colors.calm.card,
+            backgroundColor: THEME.colors.calm.mist,
             borderTopWidth: 0,
+            borderWidth: 1,
+            borderColor: THEME.colors.calm.border,
             height: 64 + insets.bottom,
             paddingBottom: insets.bottom + 8,
             paddingTop: 10,
@@ -163,10 +165,11 @@ export default function TabLayout() {
             position: 'absolute',
             left: 0,
             right: 0,
-            ...THEME.shadows.soft,
+            ...THEME.shadows.lavenderGlow,
           },
           tabBarLabelStyle: {
             ...THEME.typography.small,
+            fontFamily: THEME.fonts.heading.medium,
           },
         }}
       >

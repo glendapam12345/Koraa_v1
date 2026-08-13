@@ -98,11 +98,11 @@ export const en: DeepStrings<typeof es> = {
     simulateHoyDayTwoDoneBody: 'Open the Today tab to see the day-2 view.',
     careModeSection: 'Care mode',
     careModeActiveHint:
-      'Care mode is on — Today shows one gentle step; the rest can wait.',
-    exitCareMode: 'Exit care mode',
+      'Today shrinks: one gentle step; the rest can wait. You do not have to perform.',
+    exitCareMode: 'Back to a usual day',
     exitCareModeHint:
-      'Turns off care mode and shows suggested steps again on Today',
-    exitCareModeDoneTitle: 'Care mode off',
+      'Today stops shrinking and suggested steps come back',
+    exitCareModeDoneTitle: 'Today is back to its rhythm',
     exitCareModeDoneBody:
       'Suggested steps are back on Today whenever you are ready.',
     devPremiumSection: 'Premium (development only)',
@@ -197,7 +197,7 @@ export const en: DeepStrings<typeof es> = {
       'Common questions, Free vs Premium, and how to reach us. The daily Koraa rhythm lives under “How Koraa works” (Your space).',
     howItWorksTitle: 'The daily rhythm',
     howItWorksLead:
-      '1. Tasks — note what is on your mind\n2. Today — quick check-in (~1 min)\n3. Today — suggested steps based on how you feel',
+      '1. Capture — write what is on your mind\n2. Check in — say how you feel (~1 min)\n3. Adapt — Koraa keeps a few steps\n4. One step — do one, no guilt',
     replayGuide: 'See how Koraa works',
     replayGuideA11y: 'Open the short how Koraa works guide',
     faqTitle: 'Frequently asked questions',
@@ -326,7 +326,7 @@ export const en: DeepStrings<typeof es> = {
       'One check-in on Today is enough to start the day with you.',
     streakEmpty: "Whenever you're ready, log how you feel on Today.",
     streakExplainer:
-      'Koraa does not count consecutive days. It simply meets you when you check in again.',
+      'Your rhythm counts the days you come back to feel. One soft day off does not break it.',
     streakExplainerDismiss: 'Got it',
     streakLevelStarting: 'Every day you return counts',
     streakLevelOnTrack: 'A week together',
@@ -391,13 +391,14 @@ export const en: DeepStrings<typeof es> = {
     tipsSectionA11y: 'Tips by category',
     tipsCountLabel: 'tips',
     tipsCountFreeBadge: '{{visible}} of {{total}}',
-    tipsFreePlanNote: 'Free includes a few tips per theme · all tips with Premium',
+    tipsFreePlanNote: 'A few tips per theme are enough · more with Premium if you want',
     patternUnlockHint: 'Premium',
     patternUnlockA11y: 'Unlock pattern chart',
     patternsLockedTitle: 'How your week has felt',
     patternsLockedBody:
-      'A gentle peek. Full mood and energy patterns unlock with Premium.',
-    patternsLockedFreeNote: 'Free: check-in and Today. Patterns & longer periods: Premium.',
+      'A gentle peek. Premium shows how your mood changes what you close — not only how you felt.',
+    patternsLockedFreeNote:
+      'Free: check-in and Today. How you move and longer periods: Premium (7-day trial).',
     patternsLockedCta: 'Unlock with Premium',
     moodCardTitle: 'This week has felt like this',
     moodCardTitleFortnight: 'These two weeks have felt like this',
@@ -444,6 +445,56 @@ export const en: DeepStrings<typeof es> = {
     moodCardTapHint: 'Tap to understand your patterns',
     moodCardTapA11y: 'Open how you have been feeling explained',
     patternInsightEyebrow: 'Your patterns',
+    patternInsightWorkEyebrow: 'How you move',
+    patternCorrelationWork: 'Mood × what you close',
+    patternCorrelationFeel: 'How you have been feeling',
+    patternApplyHoyCta: 'Use this in Today',
+    patternApplyHoyHint: 'Carry this gentle nudge into your Today screen',
+    behaviorHeadline: 'How you move over {{period}}',
+    behaviorNeedCheckIns:
+      'A few more check-ins and Koraa can describe your patterns more clearly.',
+    behaviorSummary:
+      '{{count}} days logged. This is not productivity — it is how your state changes what you close.',
+    behaviorFreeSummary:
+      'You checked in {{count}} days. {{emotion}} showed up most — that already says something about your rhythm.',
+    behaviorFreeSummaryPlain:
+      'You showed up {{count}} times. Below is what Koraa notices between how you feel and what you close.',
+    behaviorPremiumTease:
+      'With more days, Premium goes deeper: which hours you close more, and which days ask for one step.',
+    behaviorRhythmSoft:
+      'Across {{days}} check-in days, you closed about {{avg}} steps a day. Not a goal — your real pace.',
+    behaviorRhythmSoftTip:
+      'Tomorrow keep one step on top in Today. If you close that, the day already counts.',
+    behaviorEnergyMore:
+      'On higher-energy days ({{high}}/5) you usually close {{highAvg}} steps. On lower days, {{lowAvg}}.',
+    behaviorEnergyTip:
+      'On low-energy days, one small step on Today already counts. You do not have to match the high days.',
+    behaviorEnergySame:
+      'You close at a similar pace on high or low energy. One step already counts, either way.',
+    behaviorEnergySameTip:
+      'Your follow-through is not only about mood. Keep choosing one light step.',
+    behaviorEmotionMore:
+      'When you feel {{emotion}}, you usually close more. On heavier days, one is enough.',
+    behaviorEmotionTip:
+      'If a heavy day arrives, Today can leave you one step — not a list.',
+    behaviorHourMorning:
+      'Most of what you close lands in the morning. That looks like your lightest window.',
+    behaviorHourAfternoon:
+      'Most of what you close lands in the afternoon. That looks like your real window.',
+    behaviorHourEvening:
+      'You tend to close more in the evening. The end of the day can still be enough.',
+    behaviorHourNight:
+      'You close more later at night. If it feels right, one short step is enough — no need to stretch the day.',
+    behaviorTipMorning: 'Tomorrow, Today can put the smallest step first.',
+    behaviorTipAfternoon: 'Today can suggest the light step mid-afternoon — no rush.',
+    behaviorTipEvening: 'If you arrive tired, one evening close already makes the day.',
+    behaviorTipNight: 'At night, one is enough. The rest can wait until tomorrow.',
+    behaviorWeekdaySoft:
+      'On {{day}} your energy usually drops and more steps stay open. That day, one is enough.',
+    behaviorWeekdayTip: 'Leave the light step on top in Today. That is rhythm, not laziness.',
+    behaviorOpenSteps:
+      '{{open}} dated steps are still open. It is okay to move them — this is not a debt.',
+    behaviorOpenTip: 'On Today you can move one to tomorrow. Your rhythm does not break.',
     patternInsightAiBadge: 'AI explanation',
     patternInsightPatternLabel: 'What we notice',
     patternInsightTipLabel: 'For tomorrow',
@@ -467,7 +518,7 @@ export const en: DeepStrings<typeof es> = {
       'Check in for a few days and observations about your rhythm will appear here.',
     insightsLockedTitle: 'Insights with Premium',
     insightsLockedBody:
-      'Koraa summarizes energy and emotion patterns in clear phrases. Premium shows them here.',
+      'Premium (and the 7-day trial) shows how your mood changes what you close — not only how you felt.',
     insightActionHoy: 'See suggestions in Today',
     insightActionTips: 'See gentle ideas',
   },
@@ -494,6 +545,7 @@ export const en: DeepStrings<typeof es> = {
     exitConfirmStay: 'Continue check-in',
     exitConfirmLeave: 'Not now',
     checkInSavedToast: 'Done. Today has gentle suggestions for you ✨',
+    returnTomorrowToast: 'Tomorrow at {{time}} I’ll check in with you — no pressure',
     title: 'How are you',
     titleAccent: 'feeling',
     subtitle: 'today?',
@@ -511,20 +563,20 @@ export const en: DeepStrings<typeof es> = {
       continue: 'See what matters today',
       seeWhatMatters: 'See what matters today',
       error: 'Could not save your check-in. Please try again.',
-      adjustTimeFocus: 'More context: time and how your mind feels',
-      advancedToggle: 'Add more context (optional)',
-      adjustHint: 'Available time and how clear your mind feels today',
-      quickBadge: 'Quick check-in',
-      quickSubtitle: 'Emotion and energy · the rest uses gentle defaults',
-      gridSubtitle: 'Pick the emotion that fits how you feel right now',
+      adjustTimeFocus: 'Also: time and how your head feels',
+      advancedToggle: 'More context (optional)',
+      adjustHint: 'How much time you have, and if your head feels foggy or clear',
+      quickBadge: 'Gentle check-in',
+      quickSubtitle: 'Emotion and energy · the rest can wait',
+      gridSubtitle: 'Tap the one closest to how you feel',
     },
     emotions: {
-      agotada: 'Exhausted',
+      agotada: 'Low energy',
       tranquila: 'Calm',
       ansiosa: 'Anxious',
-      motivada: 'Motivated',
+      motivada: 'Up for it',
       abrumada: 'Overwhelmed',
-      enfocada: 'Clear-headed',
+      enfocada: 'Present',
     },
   },
   koraaDailyTips: {
@@ -598,7 +650,7 @@ export const en: DeepStrings<typeof es> = {
     startHereHint: 'Opens quick check-in to see suggested steps',
     feelHeroPurposeDone: 'If your day changed, you can update',
     feelHeroTapUpdate: 'Update how you feel',
-    feelHeroCompactCta: 'Share how I feel',
+    feelHeroCompactCta: 'How I feel',
     careHeadline: "Let's take care of you today.",
     careHeadlineNoCheckIn: "Let's start with how you feel.",
     energyTodayLabel: 'Your energy today',
@@ -614,11 +666,19 @@ export const en: DeepStrings<typeof es> = {
     energyCare4: 'Good energy: put it into one thing.',
     energyCare5: 'Lots of energy — pick one thing and care for it.',
     todayFocusEyebrow: "Today's focus",
+    firstSessionMicroEyebrow: 'One step is enough today',
+    firstSessionMicroHint: 'Mark this when you can — the rest can wait.',
+    firstSessionMicroStepDone: 'One step on your first day. That’s already enough ✨',
+    firstSessionEmptyTitle: 'Jot a tiny step',
+    firstSessionEmptyBody:
+      'If you like, write one small thing in Tasks. Then come back here — one is enough.',
     todayFocusMark: 'Mark as done',
     todayFocusDone: 'Done — enough',
     breathNudgeTitle: 'Take a small breath',
     breathNudgeBody: 'Two minutes can change your whole day.',
     streakPillA11y: '{{count}}-day streak. Open your rhythm',
+    streakPillGraceA11y:
+      '{{count}}-day rhythm, with one soft day off. Open your rhythm — no pressure',
     streakPillHint: 'Open streak, reminders, and gentle goals',
     streakScreenEyebrow: 'Your rhythm with Koraa',
     streakScreenTodayYes: "You're here today ✨",
@@ -638,6 +698,9 @@ export const en: DeepStrings<typeof es> = {
       'One nudge at the time you choose — when it feels right.',
     streakSoftNote:
       "It's not a competition. Koraa just celebrates when you return.",
+    streakGraceNote:
+      'One day without a check-in does not break your rhythm. Life counts too.',
+    streakGraceActive: 'Your rhythm continues — one soft day is already included.',
     streakCheckInCta: 'Check in now',
     streakReminderSaved: 'Saved',
     supportChipPauseA11y: 'Open a quiet time-with-yourself timer',
@@ -652,7 +715,8 @@ export const en: DeepStrings<typeof es> = {
     focusListHint: 'Check ✓ when done. The rest is below — no pressure.',
     moodHeroEnergy: 'Energy {{level}}/5',
     moodHeroPlanLead: 'Your plan is below — built for how you feel today.',
-    crisisBannerTitle: 'Care mode active',
+    crisisBannerTitle: 'Today shrinks',
+    crisisBannerSub: 'One step is enough. You do not have to perform.',
     crisisBannerDismiss: 'Exit care mode',
     crisisBannerDismissShort: 'Exit',
     crisisBannerCta: 'Back to Emergency Kit',
@@ -661,34 +725,34 @@ export const en: DeepStrings<typeof es> = {
       'You do not have to perform today. Getting through the day can be enough.',
     crisisOpenKitCta: 'Open Emergency Kit',
     careModeToggleOff: 'Turn on care mode',
-    careModeToggleOn: 'Care mode is on',
-    careModeToggleHintOff: 'Shows one gentle step and less pressure on Today',
-    careModeToggleHintOn: 'Opens options to turn off care mode',
-    careModeActivateTitle: 'Turn on care mode?',
+    careModeToggleOn: 'Today shrinks',
+    careModeToggleHintOff: 'Shrinks Today to one gentle step — no pressure to perform',
+    careModeToggleHintOn: 'Opens options to return to a usual day',
+    careModeActivateTitle: 'A smaller day?',
     careModeActivateLead:
-      'For days when you need less pressure — not more to do.',
-    careModeActivateBullet1: 'Today shows one gentle step; the rest can wait.',
+      'When it hurts, Koraa does not ask you to be productive. It just shrinks Today.',
+    careModeActivateBullet1: 'One gentle step. The rest can wait.',
     careModeActivateBullet2:
-      'Emergency Kit stays nearby if you want emotional support.',
-    careModeActivateBullet3:
-      'You can turn it off anytime with the heart or Exit.',
-    careModeActivateCta: 'Yes, care mode on',
+      'Today stays quiet: fewer nudges, more room.',
+    careModeActivateBullet3: 'The heart turns it off whenever you want.',
+    careModeActivateCta: 'Yes, shrink Today',
     careModeActivateCtaHint:
       'Activates care mode on Today for the next 48 hours',
     careModeActivateCancel: 'Not now',
-    careModeDeactivateTitle: 'Turn off care mode?',
+    careModeDeactivateTitle: 'Back to a usual day?',
     careModeDeactivateBody:
-      'Suggested steps will show on Today again whenever you are ready.',
-    careModeDeactivateCta: 'Turn off care mode',
+      'Suggested steps come back to Today when you feel ready. No rush.',
+    careModeDeactivateCta: 'Back to a usual day',
     careModeHowItWorks: 'How does it work?',
     careModeHowItWorksShort: 'How?',
     careModeHowItWorksHint: 'Opens an explanation of what changes on Today',
-    careModeGuideTitle: 'What care mode does for you',
-    careModeGuideLead: 'You turned it on — here is how Today changes:',
+    careModeGuideTitle: 'Today shrinks when it hurts',
+    careModeGuideLead: 'Not another list. Permission to do less:',
     careModeGuideStep1: '1. One gentle step below — enough for today.',
-    careModeGuideStep2:
-      '2. The rest of your tasks stay in Tasks, without pressure.',
-    careModeGuideStep3: '3. Tap the heart when you want to turn care mode off.',
+    careModeGuideStep2: '2. The rest waits in Tasks, without guilt.',
+    careModeGuideStep3: '3. The heart turns it off when you are ready.',
+    careModeGuideGotIt: 'Got it',
+    careModeGuideKitLink: 'A little company (optional)',
     moveTasksLink: 'Move tasks in Calendar',
     moveTasksA11y: 'Open calendar to move tasks between days',
     supportAbrumada:
@@ -716,6 +780,7 @@ export const en: DeepStrings<typeof es> = {
     moodHeroLiteNoSteps:
       'No steps yet. Capture what is on your mind and come back here.',
     liteExpandedToast: 'Support and rest of day are visible — no rush.',
+    patternApplyToast: 'Today already has your For Me nudge',
     dayTwoUnlockToast: 'Today shows a bit more — only if it helps.',
     litePeekTitle: 'Saved for later today',
     litePeekBodyWithRest:
@@ -856,7 +921,7 @@ export const en: DeepStrings<typeof es> = {
     free3: 'For Me: 1 week, 7-day history, 3 tips per category',
     locked1: 'Calendar: 7 days + change week and month',
     locked2: 'Tips: full library beyond the 3-tip limit',
-    locked3: 'For Me: 2-week and 30-day periods + text insights',
+    locked3: 'For Me: 2-week / 30-day ranges + how your mood changes what you close',
     premiumBadge: 'Premium',
     currentPrice: 'Current price',
     cancelAnytime: 'You can cancel anytime.',

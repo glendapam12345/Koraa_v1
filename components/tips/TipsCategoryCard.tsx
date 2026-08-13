@@ -43,8 +43,8 @@ export function TipsCategoryCard({
       accessibilityHint={t('tipsExtra.a11yCategoryHint')}
     >
       <LinearGradient
-        colors={[meta.highlightGradient[0], meta.highlightGradient[1], THEME.colors.calm.mist]}
-        start={{ x: 0.2, y: 0 }}
+        colors={[...meta.gradient]}
+        start={{ x: 0.15, y: 0 }}
         end={{ x: 0.9, y: 1 }}
         style={styles.card}
       >
@@ -77,8 +77,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: THEME.spacing.sm,
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
+    borderWidth: 0,
   },
   illustration: {
     width: 64,
@@ -86,7 +85,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.55)',
+    backgroundColor: 'rgba(255,255,255,0.22)',
   },
   emoji: {
     fontSize: 32,
@@ -100,22 +99,22 @@ const styles = StyleSheet.create({
   },
   label: {
     ...THEME.typography.cardTitle,
-    color: THEME.colors.text.main,
+    color: THEME.colors.onGradient,
     textAlign: 'center',
   },
   badge: {
     borderRadius: THEME.borderRadius.pill,
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: 6,
-    backgroundColor: THEME.colors.calm.card,
+    backgroundColor: 'rgba(255,255,255,0.22)',
     borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
+    borderColor: 'rgba(255,255,255,0.35)',
     minHeight: 28,
     justifyContent: 'center',
   },
   badgeText: {
     ...THEME.typography.caption,
-    color: THEME.colors.calm.lavenderDeep,
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.medium,
   },
 });

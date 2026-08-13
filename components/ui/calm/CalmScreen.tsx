@@ -16,6 +16,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/constants/theme';
 import { screenContentBase } from '@/lib/screenLayout';
@@ -89,9 +90,21 @@ export const CalmScreen = forwardRef<ScrollViewType, CalmScreenProps>(function C
     </View>
   );
 
+  const atmosphere = (
+    <LinearGradient
+      colors={[...THEME.colors.calm.screenWash]}
+      locations={[0, 0.45, 1]}
+      start={{ x: 0.15, y: 0 }}
+      end={{ x: 0.85, y: 1 }}
+      style={StyleSheet.absoluteFill}
+      pointerEvents="none"
+    />
+  );
+
   if (!scroll) {
     return (
       <View style={styles.root}>
+        {atmosphere}
         <View style={styles.fill}>{body}</View>
       </View>
     );
@@ -99,8 +112,11 @@ export const CalmScreen = forwardRef<ScrollViewType, CalmScreenProps>(function C
 
   return (
     <View style={styles.root}>
+      {atmosphere}
       <ScrollView
         ref={ref}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
         scrollEnabled={scrollEnabled}
         nestedScrollEnabled
         showsVerticalScrollIndicator={false}
@@ -121,6 +137,13 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: THEME.colors.calm.background,
+  },
+  scroll: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   inner: {},
   fill: {

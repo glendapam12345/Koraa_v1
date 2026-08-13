@@ -95,11 +95,11 @@ export const es = {
       'Abre la pestaña Hoy para ver la vista del día 2.',
     careModeSection: 'Modo cuidado',
     careModeActiveHint:
-      'Modo cuidado activo — en Hoy ves un paso suave; lo demás puede esperar.',
-    exitCareMode: 'Salir del modo cuidado',
+      'Hoy se achica: un paso suave; lo demás puede esperar. No te pedimos rendir.',
+    exitCareMode: 'Volver al día habitual',
     exitCareModeHint:
-      'Desactiva el modo cuidado y vuelven los pasos sugeridos en Hoy',
-    exitCareModeDoneTitle: 'Modo cuidado desactivado',
+      'Hoy deja de achicarse y vuelven los pasos sugeridos',
+    exitCareModeDoneTitle: 'Hoy vuelve a su ritmo',
     exitCareModeDoneBody: 'Los pasos sugeridos vuelven a Hoy cuando quieras.',
     devPremiumSection: 'Premium (solo desarrollo)',
     devPremiumHint:
@@ -194,7 +194,7 @@ export const es = {
       'Dudas frecuentes, gratis vs Premium, y cómo contactarnos. El ritmo diario de Koraa está en «Cómo funciona Koraa» (Tu espacio).',
     howItWorksTitle: 'El ritmo del día',
     howItWorksLead:
-      '1. Tareas — anota lo que llevas en mente\n2. Hoy — check-in rápido (~1 min)\n3. Hoy — pasos sugeridos según cómo te sientes',
+      '1. Suelta — escribe lo que llevas en la cabeza\n2. Siente — di cómo estás (~1 min)\n3. Se adapta — Koraa deja pocos pasos\n4. Un paso — haz uno, sin culpa',
     replayGuide: 'Ver cómo funciona Koraa',
     replayGuideA11y: 'Abrir la guía corta de cómo funciona Koraa',
     faqTitle: 'Preguntas frecuentes',
@@ -323,7 +323,7 @@ export const es = {
     returnInviteSub: 'Un check-in en Hoy basta para empezar el día contigo.',
     streakEmpty: 'Cuando quieras, registra cómo te sientes en Hoy.',
     streakExplainer:
-      'Koraa no cuenta días seguidos. Solo acompaña cuando vuelves a registrar cómo te sientes.',
+      'Tu ritmo cuenta los días en que vuelves a sentir. Un día libre no lo rompe.',
     streakExplainerDismiss: 'Entendido',
     streakLevelStarting: 'Cada día que vuelves cuenta',
     streakLevelOnTrack: 'Una semana contigo',
@@ -388,13 +388,14 @@ export const es = {
     tipsSectionA11y: 'Consejos por categoría',
     tipsCountLabel: 'consejos',
     tipsCountFreeBadge: '{{visible}} de {{total}}',
-    tipsFreePlanNote: 'Gratis: unos consejos por tema · todos con Premium',
+    tipsFreePlanNote: 'Unos consejos por tema bastan · hay más con Premium si quieres',
     patternUnlockHint: 'Premium',
     patternUnlockA11y: 'Desbloquear gráfica de patrones',
     patternsLockedTitle: 'Cómo se ha sentido tu semana',
     patternsLockedBody:
-      'Un vistazo suave. El patrón completo de ánimo y energía se abre con Premium.',
-    patternsLockedFreeNote: 'Gratis: check-in y Hoy. Patrones y periodos largos: Premium.',
+      'Un vistazo suave. Premium muestra cómo tu ánimo cambia lo que cierras — no solo cómo te sentiste.',
+    patternsLockedFreeNote:
+      'Gratis: check-in y Hoy. Cómo te mueves y periodos largos: Premium (7 días de prueba).',
     patternsLockedCta: 'Abrir con Premium',
     moodCardTitle: 'Esta semana se ha sentido así',
     moodCardTitleFortnight: 'Estas dos semanas se han sentido así',
@@ -441,6 +442,56 @@ export const es = {
     moodCardTapHint: 'Toca para entender tus patrones',
     moodCardTapA11y: 'Abrir explicación de cómo te has sentido',
     patternInsightEyebrow: 'Tus patrones',
+    patternInsightWorkEyebrow: 'Cómo te mueves',
+    patternCorrelationWork: 'Ánimo × lo que cierras',
+    patternCorrelationFeel: 'Cómo te has sentido',
+    patternApplyHoyCta: 'Usar esto en Hoy',
+    patternApplyHoyHint: 'Lleva este ajuste suave a tu pantalla de Hoy',
+    behaviorHeadline: 'Cómo te mueves en {{period}}',
+    behaviorNeedCheckIns:
+      'Con unos check-ins más, Koraa podrá describir tus patrones con más claridad.',
+    behaviorSummary:
+      '{{count}} días registrados. Esto no es productividad — es cómo tu estado cambia lo que cierras.',
+    behaviorFreeSummary:
+      'Registraste {{count}} días. {{emotion}} apareció más — y eso ya dice algo de tu ritmo.',
+    behaviorFreeSummaryPlain:
+      'Volviste {{count}} veces. Abajo va lo que Koraa nota entre cómo te sientes y lo que cierras.',
+    behaviorPremiumTease:
+      'Con más días, Premium profundiza: en qué horas cierras más y qué días pedir un solo paso.',
+    behaviorRhythmSoft:
+      'En {{days}} días con check-in, cerraste unos {{avg}} pasos por día. No es una meta — es tu ritmo real.',
+    behaviorRhythmSoftTip:
+      'Mañana deja un solo paso arriba en Hoy. Si cierras ese, el día ya cuenta.',
+    behaviorEnergyMore:
+      'En días con más energía ({{high}}/5) sueles cerrar {{highAvg}} pasos. En días más bajos, {{lowAvg}}.',
+    behaviorEnergyTip:
+      'En días bajos, un paso pequeño en Hoy ya cuenta. No tienes que igualar los días altos.',
+    behaviorEnergySame:
+      'Cierras un ritmo parecido con alta o baja energía. Un paso ya cuenta, sin importar el día.',
+    behaviorEnergySameTip:
+      'Tu constancia no depende solo del ánimo. Sigue eligiendo un paso liviano.',
+    behaviorEmotionMore:
+      'Cuando te sientes {{emotion}}, sueles cerrar más. En días más pesados, uno basta.',
+    behaviorEmotionTip:
+      'Si llega un día pesado, Hoy puede dejarte un solo paso — no una lista.',
+    behaviorHourMorning:
+      'La mayoría de lo que cierras cae por la mañana. Esa parece tu ventana más liviana.',
+    behaviorHourAfternoon:
+      'La mayoría de lo que cierras cae por la tarde. Esa parece tu ventana real.',
+    behaviorHourEvening:
+      'Sueles cerrar más al atardecer. El final del día también puede ser suficiente.',
+    behaviorHourNight:
+      'Cierras más entrada la noche. Si te nace, un paso corto basta — sin alargar el día.',
+    behaviorTipMorning: 'Mañana, Hoy puede poner primero el paso más chiquito.',
+    behaviorTipAfternoon: 'Hoy puede sugerir el paso liviano a media tarde — sin prisa.',
+    behaviorTipEvening: 'Si llegas cansada, un solo cierre al atardecer ya es el día.',
+    behaviorTipNight: 'De noche, uno basta. El resto puede esperar a mañana.',
+    behaviorWeekdaySoft:
+      'Los {{day}} tu energía suele bajar y también quedan más pasos abiertos. Ese día, uno solo basta.',
+    behaviorWeekdayTip: 'Ese día deja lo liviano arriba en Hoy. No es flojera — es ritmo.',
+    behaviorOpenSteps:
+      '{{open}} pasos con fecha siguen abiertos. Está bien moverlos — no es una deuda.',
+    behaviorOpenTip: 'En Hoy puedes pasar uno a mañana. Tu ritmo no se rompe por eso.',
     patternInsightAiBadge: 'Explicación con IA',
     patternInsightPatternLabel: 'Lo que notamos',
     patternInsightTipLabel: 'Para mañana',
@@ -465,7 +516,7 @@ export const es = {
       'Haz check-in unos días y aquí aparecerán observaciones sobre tu ritmo.',
     insightsLockedTitle: 'Insights con Premium',
     insightsLockedBody:
-      'Koraa resume patrones de energía y emoción en frases claras. Con Premium los ves aquí.',
+      'Premium (y los 7 días de prueba) muestran cómo tu ánimo cambia lo que cierras — no solo cómo te sentiste.',
     insightActionHoy: 'Ver sugerencias en Hoy',
     insightActionTips: 'Ver ideas suaves',
   },
@@ -493,6 +544,7 @@ export const es = {
     exitConfirmStay: 'Seguir check-in',
     exitConfirmLeave: 'Ahora no',
     checkInSavedToast: 'Listo. Hoy ya tiene sugerencias para ti ✨',
+    returnTomorrowToast: 'Mañana a las {{time}} te acompaño un momento — sin presión',
     title: '¿Cómo te',
     titleAccent: 'sientes',
     subtitle: 'hoy?',
@@ -511,13 +563,12 @@ export const es = {
       continue: 'Ver qué importa hoy',
       seeWhatMatters: 'Ver qué importa hoy',
       error: 'No se pudo guardar tu check-in. Inténtalo de nuevo.',
-      adjustTimeFocus: 'Más contexto: tiempo y cómo está tu mente',
-      advancedToggle: 'Agregar más contexto (opcional)',
-      adjustHint: 'Tiempo disponible y cómo se siente tu mente hoy',
-      quickBadge: 'Check-in rápido',
-      quickSubtitle:
-        'Emoción y energía · el resto con valores suaves por defecto',
-      gridSubtitle: 'Elige la emoción que más se acerque a cómo te sientes',
+      adjustTimeFocus: 'También: tiempo y cómo anda tu cabeza',
+      advancedToggle: 'Más contexto (opcional)',
+      adjustHint: 'Cuánto tiempo tienes y si tu cabeza anda más revuelta o más clara',
+      quickBadge: 'Check-in suave',
+      quickSubtitle: 'Emoción y energía · el resto puede esperar',
+      gridSubtitle: 'Toca la que más se acerque a cómo te sientes',
     },
     emotions: {
       agotada: 'Sin energía',
@@ -525,7 +576,7 @@ export const es = {
       ansiosa: 'Con ansiedad',
       motivada: 'Con ganas',
       abrumada: 'Abrumada',
-      enfocada: 'Con claridad',
+      enfocada: 'Presente',
     },
   },
   koraaDailyTips: {
@@ -601,7 +652,7 @@ export const es = {
     startHereHint: 'Abre el check-in rápido para ver pasos sugeridos',
     feelHeroPurposeDone: 'Si cambió tu día, puedes actualizar',
     feelHeroTapUpdate: 'Actualizar cómo te sientes',
-    feelHeroCompactCta: 'Contar cómo estoy',
+    feelHeroCompactCta: 'Cómo me siento',
     careHeadline: 'Hoy cuidamos de ti.',
     careHeadlineNoCheckIn: 'Empecemos por cómo te sientes.',
     energyTodayLabel: 'Tu energía hoy',
@@ -617,11 +668,19 @@ export const es = {
     energyCare4: 'Buen impulso: canalízalo en una sola cosa.',
     energyCare5: 'Mucha energía — elige una cosa y cuídala.',
     todayFocusEyebrow: 'Lo de hoy',
+    firstSessionMicroEyebrow: 'Un paso basta hoy',
+    firstSessionMicroHint: 'Marca este cuando puedas — el resto puede esperar.',
+    firstSessionMicroStepDone: 'Un paso en tu primer día. Eso ya es suficiente ✨',
+    firstSessionEmptyTitle: 'Anota un paso chiquito',
+    firstSessionEmptyBody:
+      'Si te apetece, escribe una cosa pequeña en Tareas. Luego vuelve aquí — uno basta.',
     todayFocusMark: 'Marcar como hecho',
     todayFocusDone: 'Hecho — suficiente',
     breathNudgeTitle: 'Un respiro corto',
     breathNudgeBody: 'Dos minutos pueden cambiar el día.',
     streakPillA11y: 'Racha de {{count}} días. Abrir tu ritmo',
+    streakPillGraceA11y:
+      'Ritmo de {{count}} días, con un día libre. Abrir tu ritmo — sin presión',
     streakPillHint: 'Abre tu racha, recordatorios y objetivos suaves',
     streakScreenEyebrow: 'Tu ritmo con Koraa',
     streakScreenTodayYes: 'Hoy ya pasaste por aquí ✨',
@@ -640,6 +699,9 @@ export const es = {
     streakReminderBody:
       'Un aviso al día que elijas — para volver cuando te venga bien.',
     streakSoftNote: 'No es una competencia. Koraa solo celebra cuando vuelves.',
+    streakGraceNote:
+      'Un día sin check-in no rompe tu ritmo. La vida también cuenta.',
+    streakGraceActive: 'Tu ritmo sigue — un día libre ya está incluido.',
     streakCheckInCta: 'Hacer check-in ahora',
     streakReminderSaved: 'Guardado',
     supportChipPauseA11y: 'Abrir un ratito contigo con temporizador',
@@ -655,7 +717,8 @@ export const es = {
       'Marca ✓ si puedes. Puedes parar después de una — lo demás puede esperar.',
     moodHeroEnergy: 'Energía {{level}}/5',
     moodHeroPlanLead: 'Abajo está tu plan — hecho para cómo te sientes hoy.',
-    crisisBannerTitle: 'Modo cuidado activo',
+    crisisBannerTitle: 'Hoy se achica',
+    crisisBannerSub: 'Un paso basta. No tienes que rendir.',
     crisisBannerDismiss: 'Salir del modo cuidado',
     crisisBannerDismissShort: 'Salir',
     crisisBannerCta: 'Volver al Kit de calma',
@@ -664,36 +727,39 @@ export const es = {
       'Hoy no tienes que rendir. Puede bastar con atravesar el día.',
     crisisOpenKitCta: 'Abrir Kit de calma',
     careModeToggleOff: 'Activar modo cuidado',
-    careModeToggleOn: 'Modo cuidado activo',
-    careModeToggleHintOff: 'Muestra un paso suave y menos presión en Hoy',
-    careModeToggleHintOn: 'Abre opciones para desactivar el modo cuidado',
-    careModeActivateTitle: '¿Activar modo cuidado?',
+    careModeToggleOn: 'Hoy se achica',
+    careModeToggleHintOff: 'Achica Hoy a un paso suave — sin pedirte rendir',
+    careModeToggleHintOn: 'Abre opciones para volver al día habitual',
+    careModeActivateTitle: '¿Un día más chico?',
     careModeActivateLead:
-      'Para días en los que necesitas menos presión — no más cosas por hacer.',
+      'Cuando duele, Koraa no te pide ser productiva. Solo achica Hoy.',
     careModeActivateBullet1:
-      'Hoy muestra un paso suave; lo demás puede esperar.',
+      'Un paso suave. Lo demás puede esperar.',
     careModeActivateBullet2:
-      'El Kit de calma queda cerca si quieres apoyo emocional.',
+      'Hoy se queda quieto: menos avisos, más espacio.',
     careModeActivateBullet3:
-      'Puedes apagarlo cuando quieras con el corazón o Salir.',
-    careModeActivateCta: 'Sí, activar modo cuidado',
+      'El corazón lo apaga cuando quieras.',
+    careModeActivateCta: 'Sí, achicar Hoy',
     careModeActivateCtaHint:
       'Activa el modo cuidado en Hoy durante las próximas 48 horas',
     careModeActivateCancel: 'Ahora no',
-    careModeDeactivateTitle: '¿Desactivar modo cuidado?',
+    careModeDeactivateTitle: '¿Volver al día habitual?',
     careModeDeactivateBody:
-      'Los pasos sugeridos volverán a Hoy cuando te sientas lista.',
-    careModeDeactivateCta: 'Desactivar modo cuidado',
+      'Los pasos sugeridos vuelven a Hoy cuando te sientas lista. Sin prisa.',
+    careModeDeactivateCta: 'Volver al día habitual',
     careModeHowItWorks: '¿Cómo funciona?',
     careModeHowItWorksShort: '¿Cómo?',
     careModeHowItWorksHint: 'Abre una explicación de qué cambia en Hoy',
-    careModeGuideTitle: 'Qué hace el modo cuidado por ti',
-    careModeGuideLead: 'Lo activaste — así cambia Hoy:',
+    careModeGuideTitle: 'Hoy se achica cuando duele',
+    careModeGuideLead:
+      'No es otra lista. Es permiso de hacer menos:',
     careModeGuideStep1: '1. Un paso suave abajo — suficiente para hoy.',
     careModeGuideStep2:
-      '2. El resto de tus tareas quedan en Tareas, sin presión.',
+      '2. El resto espera en Tareas, sin culpa.',
     careModeGuideStep3:
-      '3. Toca el corazón cuando quieras desactivar el modo cuidado.',
+      '3. El corazón lo apaga cuando estés lista.',
+    careModeGuideGotIt: 'Entendido',
+    careModeGuideKitLink: 'Un rato de compañía (opcional)',
     moveTasksLink: 'Mover tareas en Calendario',
     moveTasksA11y: 'Abrir calendario para mover tareas entre días',
     supportAbrumada:
@@ -722,6 +788,7 @@ export const es = {
     moodHeroLiteWithSteps: '{{count}} pasos sugeridos arriba — uno basta.',
     moodHeroLiteNoSteps: 'Sin pasos aún. Anota lo que llevas y vuelve aquí.',
     liteExpandedToast: 'Apoyo y resto del día visibles — sin prisa.',
+    patternApplyToast: 'Hoy ya tiene tu ajuste de Para mí',
     dayTwoUnlockToast: 'Hoy muestra un poco más — solo si te sirve.',
     litePeekTitle: 'Guardado para más tarde hoy',
     litePeekBodyWithRest:
@@ -864,7 +931,7 @@ export const es = {
     free3: 'Para mí: 1 semana, historial 7 días, 3 consejos por categoría',
     locked1: 'Calendario: 7 días + cambiar semana y mes',
     locked2: 'Consejos: biblioteca completa sin límite de 3',
-    locked3: 'Para mí: periodos 2 semanas y 30 días + insights textuales',
+    locked3: 'Para mí: 2 semanas / 30 días + cómo tu ánimo cambia lo que cierras',
     premiumBadge: 'Premium',
     currentPrice: 'Precio actual',
     cancelAnytime: 'Puedes cancelar cuando quieras.',

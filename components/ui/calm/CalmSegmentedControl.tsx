@@ -130,12 +130,14 @@ const styles = StyleSheet.create({
   rowTrack: {
     padding: THEME.spacing.xs / 2,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.calm.mist,
+    backgroundColor: THEME.colors.calm.lavender,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
   },
   rowAccent: {
     padding: THEME.spacing.xs / 2,
     borderRadius: THEME.borderRadius.pill,
-    backgroundColor: THEME.colors.calm.card,
+    backgroundColor: THEME.colors.calm.blush,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
   },

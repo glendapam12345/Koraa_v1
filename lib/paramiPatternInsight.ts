@@ -2,14 +2,27 @@ import type { DayData } from '@/lib/checkInDayData';
 import type { AppLocale } from '@/lib/i18n';
 import { getCatalog, translate } from '@/lib/i18n';
 import { generateEmotionalInsights } from '@/lib/emotionalInsights';
+import {
+  applyModeForBehaviorType,
+  buildBehaviorInsights,
+  type BehaviorTaskSnapshot,
+  type PatternHoyApplyMode,
+} from '@/lib/behaviorInsights';
 import type { EmotionMixItem } from '@/lib/checkInPatterns';
 import type { ParaMiPeriodId } from '@/components/parami/ParaMiPeriodBar';
+import { getLocalDateString } from '@/lib/dateLocal';
 
 export type ParamiPatternInsight = {
   headline: string;
   summary: string;
   patternNote: string;
   gentleTip: string;
+  source?: 'feel' | 'work';
+  /** Etiqueta corta: correlación ánimo × cierres. */
+  correlationLabel?: string;
+  /** Cómo aplicar el tip en Hoy. */
+  applyMode?: PatternHoyApplyMode;
+  patternType?: string;
 };
 
 export type ParamiPatternInput = {
@@ -17,6 +30,8 @@ export type ParamiPatternInput = {
   period: ParaMiPeriodId;
   days: DayData[];
   emotionMix: EmotionMixItem[];
+  tasks?: BehaviorTaskSnapshot[];
+  isPremium?: boolean;
 };
 
 function periodLabel(locale: AppLocale, period: ParaMiPeriodId): string {
@@ -37,44 +52,44 @@ function emotionLabel(locale: AppLocale, emotion: string): string {
 
 /** Resumen local empático cuando la IA no está disponible. */
 export function buildParamiPatternInsight(input: ParamiPatternInput): ParamiPatternInsight {
-  const { locale, period, days, emotionMix } = input;
+  const { locale, period, days, emotionMix, tasks = [], isPremium = false } = input;
   const checkIns = days.filter((d) => d.hasCheckIn);
   const periodName = periodLabel(locale, period);
-  const insights = generateEmotionalInsights(days, 0, locale);
+  const feelInsights = generateEmotionalInsights(days, 0, locale);
+  const workInsights = buildBehaviorInsights(days, tasks, locale, getLocalDateString());
 
   const topEmotion = emotionMix[0];
   const topLabel = topEmotion ? emotionLabel(locale, topEmotion.id) : null;
+  const workLead = workInsights[0];
 
   const avgEnergy =
     checkIns.length > 0
       ? checkIns.reduce((sum, d) => sum + (d.energyLevel ?? 0), 0) / checkIns.length
       : 0;
 
-  const headline =
-    locale === 'en'
+  const headline = workLead
+    ? translate(locale, 'parami.behaviorHeadline', { period: periodName.toLowerCase() })
+    : locale === 'en'
       ? `Your rhythm over ${periodName.toLowerCase()}`
       : `Tu ritmo en ${periodName.toLowerCase()}`;
 
   let summary: string;
   if (checkIns.length < 3) {
-    summary =
-      locale === 'en'
-        ? 'A few more check-ins and Koraa can describe your patterns more clearly.'
-        : 'Con unos check-ins más, Koraa podrá describir tus patrones con más claridad.';
+    summary = translate(locale, 'parami.behaviorNeedCheckIns');
+  } else if (workLead) {
+    summary = translate(locale, 'parami.behaviorSummary', { count: checkIns.length });
   } else if (topLabel) {
-    summary =
-      locale === 'en'
-        ? `You checked in ${checkIns.length} times. ${topLabel} showed up most often — every day counts, not just the easy ones.`
-        : `Registraste ${checkIns.length} días. ${topLabel} apareció con más frecuencia — cuentan todos los días, no solo los livianos.`;
+    summary = translate(locale, 'parami.behaviorFreeSummary', {
+      count: checkIns.length,
+      emotion: topLabel,
+    });
   } else {
-    summary =
-      locale === 'en'
-        ? `You showed up ${checkIns.length} times. That consistency already says something gentle about your rhythm.`
-        : `Volviste ${checkIns.length} veces. Esa constancia suave ya dice algo de tu ritmo.`;
+    summary = translate(locale, 'parami.behaviorFreeSummaryPlain', { count: checkIns.length });
   }
 
   const patternNote =
-    insights[0]?.message ??
+    workLead?.message ??
+    feelInsights[0]?.message ??
     (avgEnergy >= 3.5
       ? locale === 'en'
         ? 'Your energy stayed mostly steady — room for small steps without pushing.'
@@ -84,12 +99,29 @@ export function buildParamiPatternInsight(input: ParamiPatternInput): ParamiPatt
         : 'Algunos días pidieron más descanso — escuchar eso también es parte del patrón.');
 
   const gentleTip =
-    insights[1]?.message ??
-    (locale === 'en'
-      ? 'One minute in Hoy tomorrow is enough. No streak pressure — just your pace.'
-      : 'Un minuto en Hoy mañana basta. Sin presión de racha — solo tu ritmo.');
+    workLead?.tip ??
+    feelInsights[1]?.message ??
+    (!isPremium && checkIns.length >= 3
+      ? translate(locale, 'parami.behaviorPremiumTease')
+      : locale === 'en'
+        ? 'One minute in Today tomorrow is enough. No streak pressure — just your pace.'
+        : 'Un minuto en Hoy mañana basta. Sin presión de racha — solo tu ritmo.');
 
-  return { headline, summary, patternNote, gentleTip };
+  const applyMode = applyModeForBehaviorType(workLead?.type);
+  const correlationLabel = workLead
+    ? translate(locale, 'parami.patternCorrelationWork')
+    : translate(locale, 'parami.patternCorrelationFeel');
+
+  return {
+    headline,
+    summary,
+    patternNote,
+    gentleTip,
+    source: workLead ? 'work' : 'feel',
+    correlationLabel,
+    applyMode,
+    patternType: workLead?.type,
+  };
 }
 
 /** Payload compacto para la Edge Function. */
@@ -117,5 +149,8 @@ export function buildParamiPatternPayload(input: ParamiPatternInput) {
       energy: d.energyLevel ?? 0,
       label: d.dayLabel,
     })),
+    completedCount: (input.tasks ?? []).filter((task) => task.is_completed && task.completed_at)
+      .length,
+    isPremium: Boolean(input.isPremium),
   };
 }

@@ -629,9 +629,9 @@ export const extEs = {
     taskCaptureNotifTitle: '¿Algo en mente?',
     taskCaptureNotifBody:
       'Si te queda pendiente anotar un paso, Koraa está aquí — sin prisa.',
-    careModeNotifTitle: '¿Sigues ahí?',
+    careModeNotifTitle: 'Hoy se achica',
     careModeNotifBody:
-      'Tú puedes. Un check-in suave si te apetece — sin presión.',
+      'Un paso basta. No tienes que rendir — estamos aquí.',
     recheckNotifTitle: '¿Cambió tu día?',
     recheckNotifBody:
       'Actualiza cómo te sientes y Koraa ajusta tus pasos sugeridos en un minuto.',

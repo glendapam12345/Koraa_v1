@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/constants/theme';
 
@@ -11,8 +12,7 @@ type OnboardingScreenShellProps = {
 };
 
 /**
- * Shell calm del onboarding: fondo quieto, sin blobs ni gradientes ruidosos.
- * Transmite calma — alineado con CalmScreen / tabs.
+ * Shell calm del onboarding: atmósfera lavanda suave, alineado con CalmScreen.
  */
 export function OnboardingScreenShell({
   children,
@@ -23,7 +23,16 @@ export function OnboardingScreenShell({
 
   return (
     <View style={styles.root}>
+      <LinearGradient
+        colors={[...THEME.colors.calm.screenWash]}
+        locations={[0, 0.45, 1]}
+        start={{ x: 0.15, y: 0 }}
+        end={{ x: 0.85, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={[
           styles.content,
           centered && styles.contentCentered,
@@ -81,6 +90,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: THEME.colors.calm.background,
   },
+  scroll: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
   content: {
     paddingHorizontal: THEME.layout.screenPaddingX,
     flexGrow: 1,
@@ -91,8 +104,8 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: THEME.layout.screenPaddingX,
     paddingTop: THEME.spacing.sm,
-    backgroundColor: THEME.colors.calm.background,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: THEME.colors.calm.border,
+    backgroundColor: THEME.colors.calmScrim,
   },
 });

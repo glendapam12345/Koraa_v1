@@ -23,7 +23,10 @@ import {
 } from '@/lib/checkInDefaults';
 import { publishCheckInCelebration } from '@/lib/checkInCelebration';
 import { markPrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
-import { scheduleRecheckReminder } from '@/hooks/useNotifications';
+import {
+  ensureReturnTomorrowReminder,
+  scheduleRecheckReminder,
+} from '@/hooks/useNotifications';
 import { track } from '@/lib/analytics';
 import type { TranslationKey } from '@/lib/i18n';
 
@@ -127,6 +130,7 @@ export function SentirVisualCheckIn({
 
       try {
         await scheduleRecheckReminder(locale);
+        await ensureReturnTomorrowReminder(locale);
       } catch {
         /* non-critical */
       }
@@ -199,21 +203,28 @@ export function SentirVisualCheckIn({
         >
           {emotions.map((item) => {
             const selected = emotion === item.id;
+            const tintKey = item.id as keyof typeof THEME.colors.emotionTint;
+            const tint =
+              THEME.colors.emotionTint[tintKey] ?? THEME.colors.emotionTint.default;
             return (
               <TouchableOpacity
                 key={item.id}
-                style={[
-                  styles.emotionGridCell,
-                  { width: emotionCellWidth, minHeight: emotionCellWidth * 0.92 },
-                  selected && styles.emotionGridCellSelected,
-                ]}
+                style={[styles.emotionGridCell, { width: emotionCellWidth }]}
                 onPress={() => selectEmotion(item.id)}
                 activeOpacity={0.85}
                 accessibilityRole="radio"
                 accessibilityState={{ selected }}
                 accessibilityLabel={item.label}
               >
-                <Text style={styles.emotionGridEmoji}>{item.emoji}</Text>
+                <View
+                  style={[
+                    styles.emotionGridCircle,
+                    { backgroundColor: tint },
+                    selected && styles.emotionGridCircleSelected,
+                  ]}
+                >
+                  <Text style={styles.emotionGridEmoji}>{item.emoji}</Text>
+                </View>
                 <Text
                   style={[styles.emotionGridLabel, selected && styles.emotionGridLabelSelected]}
                   numberOfLines={2}
@@ -283,7 +294,7 @@ export function SentirVisualCheckIn({
           </TouchableOpacity>
           {advancedOpen ? (
             <View style={styles.advancedPanel}>
-              <Text style={styles.advancedFieldLabel}>{t('onboarding.time.title')}</Text>
+              <Text style={styles.advancedFieldLabel}>{t('onboarding.time.titleAccent')}</Text>
               <View style={styles.optionRow}>
                 {TIME_OPTIONS.map((option) => {
                   const selected = availableTime === option.id;
@@ -304,6 +315,7 @@ export function SentirVisualCheckIn({
                 })}
               </View>
               <Text style={styles.advancedFieldLabel}>{t('onboarding.focus.title')}</Text>
+              <Text style={styles.advancedFieldHint}>{t('onboarding.focus.softHint')}</Text>
               <View style={styles.optionRow}>
                 {FOCUS_OPTIONS.map((option) => {
                   const selected = focusLevel === option.id;
@@ -468,34 +480,40 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.xs,
   },
   emotionGridCell: {
-    backgroundColor: THEME.colors.calm.card,
-    borderRadius: THEME.borderRadius.rounded,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingVertical: THEME.spacing.xs,
+  },
+  emotionGridCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: THEME.colors.calm.border,
+    marginBottom: THEME.spacing.xs,
     ...THEME.shadows.soft,
   },
-  emotionGridCellSelected: {
-    borderColor: THEME.colors.gradient.blue,
-    borderWidth: 2,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
+  emotionGridCircleSelected: {
+    borderColor: THEME.colors.calm.lavenderDeep,
+    borderWidth: 2.5,
+    ...THEME.shadows.lavenderGlow,
+    transform: [{ scale: 1.06 }],
   },
   emotionGridEmoji: {
-    fontSize: 44,
-    marginBottom: THEME.spacing.xs,
+    fontSize: 32,
   },
   emotionGridLabel: {
-    ...THEME.typography.meta,
+    ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
     textAlign: 'center',
-    lineHeight: 17,
+    lineHeight: 18,
+    paddingHorizontal: 2,
   },
   emotionGridLabelSelected: {
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
   },
   hero: {
     borderRadius: THEME.borderRadius.rounded,
@@ -570,14 +588,21 @@ const styles = StyleSheet.create({
     gap: THEME.spacing.sm,
     padding: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
+    backgroundColor: THEME.colors.calm.mist,
     borderWidth: 1,
-    borderColor: THEME.colors.tint.blue.border,
+    borderColor: THEME.colors.calm.border,
   },
   advancedFieldLabel: {
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
+  },
+  advancedFieldHint: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.accent.italic,
+    lineHeight: 18,
+    marginTop: -4,
   },
   optionRow: {
     flexDirection: 'row',

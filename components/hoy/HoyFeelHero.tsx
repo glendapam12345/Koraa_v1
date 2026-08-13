@@ -21,14 +21,6 @@ const ENERGY_WORD_KEYS: Record<1 | 2 | 3 | 4 | 5, TranslationKey> = {
   5: 'hoy.energyWord5',
 };
 
-const ENERGY_CARE_KEYS: Record<1 | 2 | 3 | 4 | 5, TranslationKey> = {
-  1: 'hoy.energyCare1',
-  2: 'hoy.energyCare2',
-  3: 'hoy.energyCare3',
-  4: 'hoy.energyCare4',
-  5: 'hoy.energyCare5',
-};
-
 function clampEnergy(level: number): 1 | 2 | 3 | 4 | 5 {
   const n = Math.round(level);
   if (n <= 1) return 1;
@@ -36,7 +28,10 @@ function clampEnergy(level: number): 1 | 2 | 3 | 4 | 5 {
   return n as 2 | 3 | 4;
 }
 
-/** Hero de energía al estilo mock: mascota + nivel + mensaje suave. */
+/**
+ * Sin check-in: hero grande (CTA principal).
+ * Con check-in: franja compacta — el foco del día es el protagonista.
+ */
 export function HoyFeelHero({
   hasCheckIn,
   emotionLabel = '',
@@ -47,6 +42,9 @@ export function HoyFeelHero({
 
   if (hasCheckIn && emotionLabel) {
     const level = energyLevel > 0 ? clampEnergy(energyLevel) : null;
+    const energyLine = level
+      ? t('hoy.energyTodayValue', { word: t(ENERGY_WORD_KEYS[level]), level })
+      : emotionLabel;
 
     return (
       <Pressable
@@ -56,39 +54,31 @@ export function HoyFeelHero({
         accessibilityLabel={t('hoy.currentStateEditA11y')}
         accessibilityHint={t('hoy.feelHeroTapUpdate')}
       >
-        <CalmCard style={[styles.card, styles.cardEnergy]}>
-          <View style={styles.mascotCenter} accessibilityElementsHidden>
-            <KoraaMascotAvatar size={80} />
+        <View style={styles.compactRow}>
+          <View style={styles.compactMascot} accessibilityElementsHidden>
+            <KoraaMascotAvatar size={56} variant="ellie" breathe />
           </View>
-          <Text style={styles.energyEyebrowCentered}>{t('hoy.energyTodayLabel')}</Text>
-          {level ? (
-            <Text style={styles.energyHeadlineCentered}>
-              {t('hoy.energyTodayValue', {
-                word: t(ENERGY_WORD_KEYS[level]),
-                level,
-              })}
+          <View style={styles.compactCopy}>
+            <Text style={styles.compactEyebrow}>{t('hoy.energyTodayLabel')}</Text>
+            <Text style={styles.compactHeadline} numberOfLines={1}>
+              {energyLine}
             </Text>
-          ) : (
-            <Text style={styles.energyHeadlineCentered}>{emotionLabel}</Text>
-          )}
-          {level ? (
-            <View style={styles.barRow} accessibilityRole="progressbar">
-              {[1, 2, 3, 4, 5].map((segment) => (
-                <View
-                  key={segment}
-                  style={[
-                    styles.barSegment,
-                    segment <= level ? styles.barSegmentOn : styles.barSegmentOff,
-                  ]}
-                />
-              ))}
-            </View>
-          ) : null}
-          <Text style={styles.careLineCentered}>
-            {level ? t(ENERGY_CARE_KEYS[level]) : t('hoy.feelHeroPurposeDone')}
-          </Text>
-          <Text style={styles.linkLineCentered}>{t('hoy.updateFeel')}</Text>
-        </CalmCard>
+            {level ? (
+              <View style={styles.compactBarRow} accessibilityRole="progressbar">
+                {[1, 2, 3, 4, 5].map((segment) => (
+                  <View
+                    key={segment}
+                    style={[
+                      styles.compactBarSegment,
+                      segment <= level ? styles.barSegmentOn : styles.barSegmentOff,
+                    ]}
+                  />
+                ))}
+              </View>
+            ) : null}
+          </View>
+          <Text style={styles.compactLink}>{t('hoy.updateFeel')}</Text>
+        </View>
       </Pressable>
     );
   }
@@ -101,9 +91,9 @@ export function HoyFeelHero({
       accessibilityLabel={t('hoy.inicio.primaryCta')}
       accessibilityHint={t('hoy.feelHeroPurpose')}
     >
-      <CalmCard style={[styles.card, styles.cardInvite]}>
+      <CalmCard variant="hero" style={[styles.card, styles.cardInvite]}>
         <View style={styles.mascotCenter} accessibilityElementsHidden>
-          <KoraaMascotAvatar size={88} />
+          <KoraaMascotAvatar size={120} variant="ellie" breathe />
         </View>
         <Text style={styles.inviteTitleCentered}>{t('hoy.feelHeroQuestion')}</Text>
         <Text style={styles.koraaLineCentered}>{t('hoy.feelHeroPurposeShort')}</Text>
@@ -121,53 +111,46 @@ const styles = StyleSheet.create({
   pressablePressed: {
     opacity: 0.92,
   },
-  card: {
-    gap: THEME.spacing.sm,
+  compactRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  cardEnergy: {
-    backgroundColor: THEME.colors.calm.mist,
-    borderColor: THEME.colors.calm.lavender,
+    gap: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.calm.lavender,
     borderWidth: 1,
-    paddingVertical: THEME.spacing.lg,
-    paddingHorizontal: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.xl,
+    borderColor: THEME.colors.calm.border,
   },
-  cardInvite: {
-    backgroundColor: THEME.colors.tint.blue.veryFaint,
-    borderColor: THEME.colors.tint.blue.border,
-    borderWidth: 1,
-    paddingVertical: THEME.spacing.lg,
-    paddingHorizontal: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.xl,
+  compactMascot: {
+    flexShrink: 0,
   },
-  mascotCenter: {
-    marginBottom: THEME.spacing.xs,
+  compactCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
   },
-  energyEyebrowCentered: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    textAlign: 'center',
+  compactEyebrow: {
+    ...THEME.typography.meta,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
   },
-  energyHeadlineCentered: {
-    ...THEME.typography.sectionTitle,
-    fontSize: 22,
-    lineHeight: 28,
+  compactHeadline: {
+    ...THEME.typography.body,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
-    textAlign: 'center',
+    lineHeight: 20,
   },
-  barRow: {
+  compactBarRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 4,
     marginTop: 2,
-    alignSelf: 'stretch',
-    maxWidth: 220,
+    maxWidth: 120,
   },
-  barSegment: {
+  compactBarSegment: {
     flex: 1,
-    height: 8,
-    borderRadius: 4,
+    height: 5,
+    borderRadius: 3,
   },
   barSegmentOn: {
     backgroundColor: THEME.colors.calm.lavenderDeep,
@@ -175,11 +158,25 @@ const styles = StyleSheet.create({
   barSegmentOff: {
     backgroundColor: THEME.colors.calm.border,
   },
-  careLineCentered: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-    lineHeight: 22,
-    textAlign: 'center',
+  compactLink: {
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
+    flexShrink: 0,
+  },
+  card: {
+    gap: THEME.spacing.sm,
+    alignItems: 'center',
+  },
+  cardInvite: {
+    borderColor: THEME.colors.calm.border,
+    borderWidth: 1,
+    paddingVertical: THEME.spacing.lg,
+    paddingHorizontal: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.xl,
+  },
+  mascotCenter: {
+    marginBottom: THEME.spacing.xs,
   },
   inviteTitleCentered: {
     ...THEME.typography.sectionTitle,
@@ -191,16 +188,15 @@ const styles = StyleSheet.create({
   },
   koraaLineCentered: {
     ...THEME.typography.body,
-    lineHeight: 22,
     color: THEME.colors.text.secondary,
+    lineHeight: 22,
     textAlign: 'center',
   },
   linkLineCentered: {
     ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.calm.lavenderDeep,
-    lineHeight: 18,
+    fontFamily: THEME.fonts.heading.medium,
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 2,
   },
 });

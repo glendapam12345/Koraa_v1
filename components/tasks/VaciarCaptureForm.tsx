@@ -24,6 +24,7 @@ import { isExpoGoClient } from '@/lib/subscriptionEnvironment';
 import { BrainDumpLivePreview } from '@/components/frentes/BrainDumpLivePreview';
 import { TaskCaptureOrganize } from '@/components/tasks/TaskCaptureOrganize';
 import type { CaptureHeroLiveState } from '@/components/tasks/CaptureScreenHero';
+import { CaptureScreenHero } from '@/components/tasks/CaptureScreenHero';
 import type { TaskEffort } from '@/lib/taskPerceivedEffort';
 
 const CAPTURE_INPUT_ACCESSORY_ID = 'vaciar-capture-save-accessory';
@@ -62,6 +63,8 @@ type VaciarCaptureFormProps = {
   inputFocused?: boolean;
   /** Solo brain dump: sin opciones avanzadas de captura individual. */
   brainDumpOnly?: boolean;
+  /** Nombre para el hero de captura (Tareas). */
+  displayName?: string;
 };
 
 export function VaciarCaptureForm({
@@ -97,6 +100,7 @@ export function VaciarCaptureForm({
   onInputFocusChange,
   inputFocused = false,
   brainDumpOnly = false,
+  displayName = '',
 }: VaciarCaptureFormProps) {
   const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
@@ -181,10 +185,18 @@ export function VaciarCaptureForm({
           <Text style={styles.captureSubtitle}>{t('vaciar.captureSubtitle')}</Text>
         </View>
       ) : brainDumpOnly && !inputFocused && !hasText ? (
-        <View style={styles.captureIntro}>
-          <Text style={styles.captureTitle}>{t('vaciar.brainDumpSimpleTitle')}</Text>
-          <Text style={styles.captureSubtitle}>{t('vaciar.brainDumpSimpleSub')}</Text>
-        </View>
+        <CaptureScreenHero
+          displayName={displayName}
+          liveState={
+            hasText
+              ? {
+                  isThinking: liveOrg.isThinking,
+                  areaCount: liveOrg.areaCount,
+                  itemCount: liveOrg.itemCount,
+                }
+              : null
+          }
+        />
       ) : null}
 
       <View
@@ -457,20 +469,23 @@ const styles = StyleSheet.create({
   },
   captureCard: {
     minHeight: 220,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.card,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
-    borderRadius: THEME.borderRadius.rounded,
+    borderRadius: THEME.borderRadius.xl,
     paddingHorizontal: THEME.spacing.md,
     paddingTop: THEME.spacing.md,
     paddingBottom: THEME.spacing.sm,
+    ...THEME.shadows.soft,
   },
   captureCardListening: {
     borderColor: THEME.colors.calm.lavenderDeep,
-    backgroundColor: THEME.colors.calm.mist,
+    backgroundColor: THEME.colors.calm.lavender,
+    ...THEME.shadows.lavenderGlow,
   },
   captureCardLive: {
-    borderColor: THEME.colors.calm.lavender,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    backgroundColor: THEME.colors.calm.blush,
   },
   input: {
     ...THEME.typography.body,

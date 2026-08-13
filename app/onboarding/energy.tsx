@@ -38,12 +38,14 @@ export default function EnergyScreen() {
   return (
     <OnboardingScreenShell>
       <OnboardingCheckInProgress step={2} />
-      <Text style={styles.title}>{t('quickRecheck.mockTitle')}</Text>
-      <Text style={onboardingTypography.subtitle}>{t('quickRecheck.mockSubtitle')}</Text>
+      <Text style={onboardingTypography.title}>{t('onboarding.energy.title')}</Text>
+      <Text style={onboardingTypography.titleAccent}>{t('onboarding.energy.titleAccent')}</Text>
+      <Text style={onboardingTypography.subtitle}>{t('onboarding.energy.subtitle')}</Text>
 
       <View style={styles.scaleWrap}>
         <FeelingEnergyScale value={selectedEnergy || 0} onChange={handleSelect} />
       </View>
+      <Text style={styles.adaptHint}>{t('onboarding.energy.adaptHint')}</Text>
 
       {selectedEnergy > 0 ? (
         <CalmPrimaryButton
@@ -58,15 +60,16 @@ export default function EnergyScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    fontSize: 28,
-    lineHeight: 34,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-    marginBottom: THEME.spacing.xs,
-  },
   scaleWrap: {
     marginTop: THEME.spacing.md,
+  },
+  adaptHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.accent.italic,
+    textAlign: 'center',
+    marginTop: THEME.spacing.md,
+    lineHeight: 20,
   },
   cta: {
     marginTop: THEME.spacing.lg,

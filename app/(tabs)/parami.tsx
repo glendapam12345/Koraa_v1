@@ -26,7 +26,6 @@ import { useParamiPatternInsight } from '@/hooks/useParamiPatternInsight';
 import type { ParamiPatternInput } from '@/lib/paramiPatternInsight';
 import { ParaMiPatternsLockedPreview } from '@/components/parami/ParaMiPatternsLockedPreview';
 import { PremiumBadge } from '@/components/premium/PremiumBadge';
-import { EmergencyKitEntryCard } from '@/components/emergencyKit/EmergencyKitEntryCard';
 import { generateEmotionalInsights } from '@/lib/emotionalInsights';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { useKoraaTipHighlights } from '@/hooks/useKoraaTipHighlights';
@@ -56,7 +55,7 @@ export default function ParaMiScreen() {
     [t],
   );
 
-  const { progressData, loading, load } = useCheckInInsightsData(monthNames, dayLabels);
+  const { progressData, behaviorTasks, loading, load } = useCheckInInsightsData(monthNames, dayLabels);
 
   const refresh = useCallback(() => {
     if (user?.id) {
@@ -118,8 +117,10 @@ export default function ParaMiScreen() {
       period,
       days: periodData,
       emotionMix,
+      tasks: behaviorTasks,
+      isPremium: isSubscribed,
     };
-  }, [hasInsightData, locale, period, periodData, emotionMix]);
+  }, [hasInsightData, locale, period, periodData, emotionMix, behaviorTasks, isSubscribed]);
 
   const { insight: patternInsight, loading: patternInsightLoading } = useParamiPatternInsight(
     user?.id,
@@ -229,8 +230,6 @@ export default function ParaMiScreen() {
         tipLead={tipLead}
         fromAi={tipsFromAi}
       />
-
-      <EmergencyKitEntryCard compact />
     </CalmScreen>
   );
 }

@@ -1,4 +1,4 @@
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 
@@ -7,14 +7,22 @@ type EmotionCardProps = {
   label: string;
   selected: boolean;
   onPress: () => void;
+  /** Optional soft tint key from THEME.colors.emotionTint */
+  tintKey?: keyof typeof THEME.colors.emotionTint;
 };
 
-export function EmotionCard({ emoji, label, selected, onPress }: EmotionCardProps) {
+/** Un tap — círculo visual (inspiración Musa), estados de capacidad, no síntomas. */
+export function EmotionCard({ emoji, label, selected, onPress, tintKey }: EmotionCardProps) {
   const { t } = useI18n();
+  const tint =
+    tintKey && THEME.colors.emotionTint[tintKey]
+      ? THEME.colors.emotionTint[tintKey]
+      : THEME.colors.emotionTint.default;
+
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={[styles.container, selected && styles.selected]}
+      style={styles.container}
       activeOpacity={0.75}
       accessibilityRole="button"
       accessibilityLabel={
@@ -23,40 +31,61 @@ export function EmotionCard({ emoji, label, selected, onPress }: EmotionCardProp
       accessibilityHint={selected ? t('emotionCard.a11ySelectedHint') : t('emotionCard.a11yHint')}
       accessibilityState={{ selected }}
     >
-      <Text style={styles.emoji}>{emoji}</Text>
-      <Text style={[styles.label, selected && styles.labelSelected]}>{label}</Text>
+      <View
+        style={[
+          styles.circle,
+          { backgroundColor: tint },
+          selected && styles.circleSelected,
+        ]}
+      >
+        <Text style={styles.emoji}>{emoji}</Text>
+      </View>
+      <Text style={[styles.label, selected && styles.labelSelected]} numberOfLines={2}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: THEME.colors.calm.card,
-    borderRadius: THEME.borderRadius.rounded,
-    padding: THEME.spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    flex: 1,
+    marginHorizontal: 2,
+    marginBottom: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    minHeight: 118,
+  },
+  circle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 112,
-    flex: 1,
-    margin: 4,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: THEME.colors.calm.border,
+    marginBottom: THEME.spacing.xs,
     ...THEME.shadows.soft,
   },
-  selected: {
+  circleSelected: {
     borderColor: THEME.colors.calm.lavenderDeep,
-    backgroundColor: THEME.colors.calm.mist,
+    borderWidth: 2.5,
+    ...THEME.shadows.lavenderGlow,
+    transform: [{ scale: 1.06 }],
   },
   emoji: {
-    fontSize: 40,
-    marginBottom: THEME.spacing.xs,
+    fontSize: 32,
   },
   label: {
     ...THEME.typography.caption,
     color: THEME.colors.text.main,
     textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: 2,
   },
   labelSelected: {
     fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.calm.lavenderDeep,
   },
 });

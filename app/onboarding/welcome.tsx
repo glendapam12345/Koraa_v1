@@ -1,9 +1,11 @@
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, View } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
+import { OnboardingFlowSteps } from '@/components/onboarding/OnboardingFlowSteps';
+import { KoraaMascotAvatar } from '@/components/branding/KoraaMascotAvatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { completeOnboardingForUser } from '@/lib/finishOnboarding';
 import {
@@ -11,13 +13,6 @@ import {
   ONBOARDING_EMOTION_ROUTE,
 } from '@/lib/onboardingNavigation';
 import { useI18n } from '@/contexts/I18nContext';
-import type { TranslationKey } from '@/lib/i18n';
-
-const RHYTHM_KEYS = [
-  'onboarding.setupFlow.stepFeelTitle',
-  'onboarding.setupFlow.stepPlanTitle',
-  'onboarding.setupFlow.stepRestTitle',
-] as const;
 
 export default function WelcomeScreen() {
   const { user } = useAuth();
@@ -41,7 +36,6 @@ export default function WelcomeScreen() {
 
   return (
     <OnboardingScreenShell
-      centered
       footer={
         <>
           <CalmPrimaryButton
@@ -68,29 +62,23 @@ export default function WelcomeScreen() {
         </>
       }
     >
+      <View style={styles.mascot} accessibilityElementsHidden>
+        <KoraaMascotAvatar size={112} variant="ellie" breathe />
+      </View>
       <Text style={styles.brand}>{t('onboarding.welcome.brand')}</Text>
       <Text style={onboardingTypography.title}>{t('onboarding.welcome.title')}</Text>
       <Text style={onboardingTypography.titleAccent}>{t('onboarding.welcome.titleAccent')}</Text>
       <Text style={styles.lead}>{t('onboarding.welcome.subtitle')}</Text>
-
-      <View
-        style={styles.rhythm}
-        accessibilityRole="summary"
-        accessibilityLabel={t('onboardingA11y.howItWorksStepsGroup')}
-      >
-        <Text style={styles.rhythmTitle}>{t('onboarding.welcome.howItWorksTitle')}</Text>
-        {RHYTHM_KEYS.map((key, index) => (
-          <Text key={key} style={styles.rhythmLine}>
-            {index + 1}. {t(key as TranslationKey)}
-          </Text>
-        ))}
-        <Text style={styles.rhythmHint}>{t('onboarding.welcome.howItWorksHint')}</Text>
-      </View>
+      <OnboardingFlowSteps />
     </OnboardingScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
+  mascot: {
+    alignItems: 'center',
+    marginBottom: THEME.spacing.sm,
+  },
   brand: {
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.medium,
@@ -104,28 +92,7 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     lineHeight: 24,
     marginTop: THEME.spacing.xs,
-    marginBottom: THEME.spacing.lg,
-  },
-  rhythm: {
-    gap: 6,
-    paddingTop: THEME.spacing.sm,
-  },
-  rhythmTitle: {
-    ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.secondary,
-    marginBottom: 4,
-  },
-  rhythmLine: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.main,
-    lineHeight: 24,
-  },
-  rhythmHint: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    marginTop: THEME.spacing.sm,
-    lineHeight: 20,
+    marginBottom: THEME.spacing.md,
   },
   skipButton: {
     marginTop: THEME.spacing.sm,

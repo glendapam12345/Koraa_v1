@@ -77,10 +77,12 @@ type HoyFocusPanelProps = {
   onAdjustDay?: () => void;
   showAfternoonNudge?: boolean;
   hideRhythmStrip?: boolean;
+  /** Día 1: resalta un solo micro-paso sin presión. */
+  firstSessionMicroStep?: boolean;
 };
 
 /**
- * Hoy al estilo mock: energía → 1 foco → puede esperar → respiro suave.
+ * Hoy: 1 hero (sentir o franja) → 1 foco → 1 apoyo (“puede esperar”).
  */
 export function HoyFocusPanel({
   locale,
@@ -109,9 +111,12 @@ export function HoyFocusPanel({
   dayCapacity = null,
   onAdjustDay,
   showAfternoonNudge = false,
+  firstSessionMicroStep = false,
+  coachSuggestion,
 }: HoyFocusPanelProps) {
   const { t } = useI18n();
   const [waitingExpanded, setWaitingExpanded] = useState(false);
+  const coachLine = coachSuggestion.trim();
 
   const emotionEmoji = getEmotionEmoji(todayMood);
   const incompleteFocusTasks = useMemo(() => {
@@ -252,6 +257,7 @@ export function HoyFocusPanel({
       content={primaryTask.content}
       completed={primaryTask.is_completed}
       metaLabel={primaryMeta}
+      firstSessionNudge={firstSessionMicroStep}
       onToggleComplete={() => onToggleTask(primaryTask.id)}
       onOpenDetails={() => onOpenTask(primaryTask)}
     />
@@ -264,8 +270,16 @@ export function HoyFocusPanel({
     </CalmCard>
   ) : (
     <CalmCard style={styles.doneCard}>
-      <Text style={styles.emptyTitle}>{t('hoy.focusEmptyTitle')}</Text>
-      <Text style={styles.emptyBody}>{t('hoy.focusEmptyBody')}</Text>
+      <Text style={styles.emptyTitle}>
+        {firstSessionMicroStep || compactLayout
+          ? t('hoy.firstSessionEmptyTitle')
+          : t('hoy.focusEmptyTitle')}
+      </Text>
+      <Text style={styles.emptyBody}>
+        {firstSessionMicroStep || compactLayout
+          ? t('hoy.firstSessionEmptyBody')
+          : t('hoy.focusEmptyBody')}
+      </Text>
       {addTasksButton}
     </CalmCard>
   );
@@ -283,6 +297,11 @@ export function HoyFocusPanel({
       {!compactLayout ? (
         <>
           {feelHero}
+          {coachLine ? (
+            <Text style={styles.coachLine} accessibilityRole="text">
+              {coachLine}
+            </Text>
+          ) : null}
           {isLateNight() ? (
             <HoyNightCompanionCard todayMood={todayMood} energyLevel={energyLevel} />
           ) : null}
@@ -294,7 +313,8 @@ export function HoyFocusPanel({
             />
           ) : null}
 
-          {(hasCheckIn && dayCapacity?.isOverloaded) || showAfternoonNudge ? (
+          {(hasCheckIn && dayCapacity?.isOverloaded) ||
+          (showAfternoonNudge && !dayCapacity?.isOverloaded) ? (
             <View style={styles.capacityCluster}>
               {hasCheckIn && dayCapacity?.isOverloaded ? (
                 <HoyDayCapacitySummary
@@ -303,14 +323,14 @@ export function HoyFocusPanel({
                   onAdjustDay={onAdjustDay}
                 />
               ) : null}
-              {showAfternoonNudge ? <HoyAfternoonNudge /> : null}
+              {showAfternoonNudge && !dayCapacity?.isOverloaded ? <HoyAfternoonNudge /> : null}
             </View>
           ) : null}
 
           {focusBlock}
 
           {restLinkCount > 0 ? (
-            <CalmCard style={styles.waitingCard}>
+            <CalmCard variant="soft" style={styles.waitingCard}>
               <HoyPlanExpandableRow
                 variant="muted"
                 compact
@@ -337,31 +357,41 @@ export function HoyFocusPanel({
             </TouchableOpacity>
           ) : null}
 
-          {!crisisMode && hasCheckIn ? <HoyBreathNudge /> : null}
+          {!crisisMode && hasCheckIn && energyLevel > 0 && energyLevel <= 2 ? (
+            <HoyBreathNudge />
+          ) : null}
         </>
       ) : (
         <>
           {feelHero}
+          {coachLine ? (
+            <Text style={styles.coachLine} accessibilityRole="text">
+              {coachLine}
+            </Text>
+          ) : null}
 
-          <CalmCard style={styles.focusCard}>
-            {allFocusDone ? (
+          {allFocusDone ? (
+            <CalmCard style={styles.focusCard}>
               <Text style={styles.doneInline}>{t('hoy.planPrioritiesSubAllDone')}</Text>
-            ) : primaryTask ? (
-              <HoyPrimaryFocusCard
-                content={primaryTask.content}
-                completed={primaryTask.is_completed}
-                metaLabel={primaryMeta}
-                onToggleComplete={() => onToggleTask(primaryTask.id)}
-                onOpenDetails={() => onOpenTask(primaryTask)}
-              />
-            ) : (
+            </CalmCard>
+          ) : primaryTask ? (
+            <HoyPrimaryFocusCard
+              content={primaryTask.content}
+              completed={primaryTask.is_completed}
+              metaLabel={primaryMeta}
+              firstSessionNudge={firstSessionMicroStep}
+              onToggleComplete={() => onToggleTask(primaryTask.id)}
+              onOpenDetails={() => onOpenTask(primaryTask)}
+            />
+          ) : (
+            <CalmCard style={styles.focusCard}>
               <View style={styles.emptyBlock}>
-                <Text style={styles.emptyTitle}>{t('hoy.focusEmptyTitle')}</Text>
-                <Text style={styles.emptyBody}>{t('hoy.focusEmptyBody')}</Text>
+                <Text style={styles.emptyTitle}>{t('hoy.firstSessionEmptyTitle')}</Text>
+                <Text style={styles.emptyBody}>{t('hoy.firstSessionEmptyBody')}</Text>
                 {addTasksButton}
               </View>
-            )}
-          </CalmCard>
+            </CalmCard>
+          )}
 
           {!crisisMode && primaryTask ? addTasksButton : null}
 
@@ -385,10 +415,16 @@ const styles = StyleSheet.create({
   capacityCluster: {
     gap: THEME.spacing.sm,
   },
+  coachLine: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.accent.italic,
+    lineHeight: 22,
+    textAlign: 'center',
+    paddingHorizontal: THEME.spacing.sm,
+  },
   waitingCard: {
     padding: THEME.spacing.sm,
-    backgroundColor: THEME.colors.fill[100],
-    borderColor: THEME.colors.calm.border,
   },
   doneCard: {
     gap: THEME.spacing.sm,
@@ -401,7 +437,7 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.md,
     borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.fill[100],
+    backgroundColor: THEME.colors.calm.lavender,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
     minHeight: THEME.sizes.touchTarget,

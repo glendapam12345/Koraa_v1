@@ -76,9 +76,12 @@ export default function FocusScreen() {
       }
 
       try {
-        const { scheduleDailyReminder, scheduleRecheckReminder, scheduleTaskCaptureReminder } =
-          await import('@/hooks/useNotifications');
-        await scheduleDailyReminder();
+        const {
+          ensureReturnTomorrowReminder,
+          scheduleRecheckReminder,
+          scheduleTaskCaptureReminder,
+        } = await import('@/hooks/useNotifications');
+        await ensureReturnTomorrowReminder(locale);
         await scheduleTaskCaptureReminder();
         await scheduleRecheckReminder(locale);
       } catch {
@@ -129,9 +132,13 @@ export default function FocusScreen() {
         }
       >
         <OnboardingCheckInProgress step={4} />
-        <Text style={onboardingTypography.title}>{t('onboarding.focus.title')}</Text>
-        <Text style={onboardingTypography.titleAccent}>{t('onboarding.focus.titleAccent')}</Text>
+      <Text style={onboardingTypography.title}>{t('onboarding.focus.title')}</Text>
+      <Text style={onboardingTypography.titleAccent}>{t('onboarding.focus.titleAccent')}</Text>
+      {t('onboarding.focus.subtitle') ? (
         <Text style={onboardingTypography.subtitle}>{t('onboarding.focus.subtitle')}</Text>
+      ) : (
+        <Text style={styles.softHint}>{t('onboarding.focus.softHint')}</Text>
+      )}
 
         <View style={styles.optionsContainer} accessibilityRole="radiogroup">
           {FOCUS_OPTIONS.map((option) => (
@@ -163,6 +170,14 @@ export default function FocusScreen() {
 }
 
 const styles = StyleSheet.create({
+  softHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontFamily: THEME.fonts.accent.italic,
+    lineHeight: 20,
+    marginTop: THEME.spacing.xs,
+    marginBottom: THEME.spacing.md,
+  },
   optionsContainer: {
     gap: THEME.spacing.sm,
     marginTop: THEME.spacing.xs,

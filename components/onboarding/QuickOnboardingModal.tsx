@@ -5,7 +5,7 @@ type QuickOnboardingModalProps = {
   onClose: () => void;
 };
 
-/** Primera visita a Hoy — misma guía de 3 pasos que Ayuda y Tu espacio. */
+/** Primera visita a Hoy — misma guía de 4 pasos que Ayuda y Tu espacio. */
 export function QuickOnboardingModal({ visible, onClose }: QuickOnboardingModalProps) {
   return (
     <KoraaHowItWorksModal

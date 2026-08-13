@@ -76,6 +76,7 @@ export type HoyTasksSectionProps = {
   setTasks: Dispatch<SetStateAction<Task[]>>;
   focusedProject?: FocusedProjectInfo | null;
   onClearFocusedProject?: () => void;
+  firstSessionMicroStep?: boolean;
 };
 
 export function HoyTasksSection({
@@ -123,6 +124,7 @@ export function HoyTasksSection({
   setTasks,
   focusedProject = null,
   onClearFocusedProject,
+  firstSessionMicroStep = false,
 }: HoyTasksSectionProps) {
   const { locale, t } = useI18n();
   const { config: lifeAreasConfig } = useUserLifeAreas(user?.id);
@@ -274,6 +276,7 @@ export function HoyTasksSection({
         compactLayout={compactLayout}
         onShowFullView={onShowFullView}
         crisisMode={crisisMode}
+        firstSessionMicroStep={firstSessionMicroStep}
         waitingCount={waitingTasks.length}
         waitingTasksSlot={null}
         onCareModeDismiss={onCareModeDismiss}
@@ -316,7 +319,7 @@ export function HoyTasksSection({
         />
       ) : null}
 
-      {!compactLayout && !crisisMode && reflection.shouldShowCard ? (
+      {!compactLayout && !crisisMode && reflection.shouldShowCard && allFocusDone ? (
         <HoyDayReflectionCard
           onPress={reflection.openReflection}
           variant={reflection.reflectionVariant}

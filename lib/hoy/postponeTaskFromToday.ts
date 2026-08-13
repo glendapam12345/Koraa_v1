@@ -1,5 +1,6 @@
 import { getNextLocalDateString } from '@/lib/dateLocal';
 import { supabase } from '@/lib/supabase';
+import { track } from '@/lib/analytics';
 
 export async function postponeTaskFromToday(
   taskId: string,
@@ -17,5 +18,6 @@ export async function postponeTaskFromToday(
     return { ok: false, error: error.message };
   }
 
+  void track('task_postponed', { to_tomorrow: true });
   return { ok: true, scheduledDate };
 }

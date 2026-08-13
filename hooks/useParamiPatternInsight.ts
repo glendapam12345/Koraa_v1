@@ -13,7 +13,7 @@ export function useParamiPatternInsight(
   const [loading, setLoading] = useState(false);
 
   const inputKey = input
-    ? `${input.period}_${input.days.length}_${input.days[input.days.length - 1]?.date ?? ''}_${input.emotionMix[0]?.id ?? ''}`
+    ? `${input.period}_${input.days.length}_${input.days[input.days.length - 1]?.date ?? ''}_${input.emotionMix[0]?.id ?? ''}_${input.tasks?.length ?? 0}_${input.isPremium ? '1' : '0'}`
     : '';
 
   useEffect(() => {

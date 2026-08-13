@@ -17,6 +17,7 @@ type HoyScreenHeaderProps = {
   minimal?: boolean;
   streak?: number;
   checkedInToday?: boolean;
+  softGrace?: boolean;
   crisisModeActive?: boolean;
   onCareModePress?: () => void;
 };
@@ -31,6 +32,7 @@ export function HoyScreenHeader({
   minimal = false,
   streak = 0,
   checkedInToday = false,
+  softGrace = false,
   crisisModeActive = false,
   onCareModePress,
 }: HoyScreenHeaderProps) {
@@ -53,7 +55,7 @@ export function HoyScreenHeader({
       {onCareModePress ? (
         <HoyCareModeToggle active={crisisModeActive} onPress={onCareModePress} />
       ) : null}
-      <HoyStreakPill streak={streak} checkedInToday={checkedInToday} />
+      <HoyStreakPill streak={streak} checkedInToday={checkedInToday} softGrace={softGrace} />
       <HeaderIconButton
         onPress={() => router.push('/help')}
         accessibilityLabel={t('settings.help')}

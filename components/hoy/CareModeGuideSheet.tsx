@@ -20,6 +20,7 @@ type CareModeGuideSheetProps = {
   lastSession: EmergencyKitSessionState | null;
 };
 
+/** Explica Care Mode: Hoy se achica. El Kit queda opcional si ya hubo sesión. */
 export function CareModeGuideSheet({ visible, onClose, lastSession }: CareModeGuideSheetProps) {
   const { t } = useI18n();
   const { isSubscribed, isLoading: subscriptionLoading } = useSubscription();
@@ -66,12 +67,25 @@ export function CareModeGuideSheet({ visible, onClose, lastSession }: CareModeGu
             </View>
 
             <CalmPrimaryButton
-              label={lastSession ? t('hoy.crisisBannerCta') : t('hoy.crisisOpenKitCta')}
-              onPress={handleOpenKit}
-              disabled={subscriptionLoading}
-              variant="soft"
-              accessibilityHint={t('hoy.crisisBannerCtaHint')}
+              label={t('hoy.careModeGuideGotIt')}
+              onPress={onClose}
+              large
+              accessibilityHint={t('hoy.careModeHowItWorksHint')}
             />
+
+            {lastSession ? (
+              <TouchableOpacity
+                onPress={handleOpenKit}
+                disabled={subscriptionLoading}
+                style={styles.kitLink}
+                accessibilityRole="button"
+                accessibilityLabel={t('hoy.careModeGuideKitLink')}
+                accessibilityHint={t('hoy.crisisBannerCtaHint')}
+                accessibilityState={{ disabled: subscriptionLoading }}
+              >
+                <Text style={styles.kitLinkText}>{t('hoy.careModeGuideKitLink')}</Text>
+              </TouchableOpacity>
+            ) : null}
           </ScrollView>
         </View>
       </View>
@@ -132,11 +146,21 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   steps: {
-    gap: 8,
+    gap: THEME.spacing.xs,
   },
   step: {
     ...THEME.typography.caption,
     color: THEME.colors.text.main,
     lineHeight: 20,
+  },
+  kitLink: {
+    alignItems: 'center',
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+    marginTop: THEME.spacing.xs,
+  },
+  kitLinkText: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
   },
 });
