@@ -3,20 +3,21 @@ import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 
 type OnboardingCheckInProgressProps = {
-  step: 1 | 2 | 3 | 4;
+  step: number;
+  total?: number;
 };
 
 /** Progreso quieto — una línea, sin barras ni puntos ruidosos. */
-export function OnboardingCheckInProgress({ step }: OnboardingCheckInProgressProps) {
+export function OnboardingCheckInProgress({ step, total = 2 }: OnboardingCheckInProgressProps) {
   const { t } = useI18n();
 
   return (
     <Text
       style={styles.label}
       accessibilityRole="text"
-      accessibilityLabel={t('onboarding.checkInProgressA11y', { current: step, total: 4 })}
+      accessibilityLabel={t('onboarding.checkInProgressA11y', { current: step, total })}
     >
-      {t('onboarding.checkInProgress', { current: step, total: 4 })}
+      {t('onboarding.checkInProgress', { current: step, total })}
     </Text>
   );
 }

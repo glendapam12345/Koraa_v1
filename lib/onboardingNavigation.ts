@@ -1,12 +1,12 @@
 import { router } from 'expo-router';
 import type { Href } from 'expo-router';
 import { ONBOARDING_PAYWALL_PARAMS } from '@/lib/finishOnboarding';
-import { scheduleDeferredOnboardingPaywall } from '@/lib/deferredOnboardingPaywall';
 
 /** Rutas tipadas del stack de onboarding. */
 export const ONBOARDING_AREAS_ROUTE = '/onboarding/areas' as Href;
 export const ONBOARDING_ACTIVITIES_ROUTE = '/onboarding/activities' as Href;
 export const ONBOARDING_CAPTURE_ROUTE = '/onboarding/capture' as Href;
+export const ONBOARDING_NAME_ROUTE = '/onboarding/name' as Href;
 export const ONBOARDING_EMOTION_ROUTE = '/onboarding/emotion' as Href;
 export const TABS_ROUTE = '/(tabs)' as Href;
 
@@ -19,10 +19,10 @@ export function goToOnboardingPaywall(): void {
 }
 
 /**
- * Tras onboarding: entra a Hoy y agenda paywall suave (opcional) tras ver el plan.
+ * Tras onboarding: entra a Hoy.
+ * Paywall NO se agenda en day-1 (valor primero; premium desde Yo).
  */
-export async function goToHoyAfterOnboarding(userId: string): Promise<void> {
-  await scheduleDeferredOnboardingPaywall(userId);
+export async function goToHoyAfterOnboarding(_userId: string): Promise<void> {
   router.replace(TABS_ROUTE);
 }
 

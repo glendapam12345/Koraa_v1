@@ -14,6 +14,8 @@ import { applyCheckInAdaptivePlan } from '@/lib/checkInAdaptivePlan';
 import { fetchAndApplyKoraaBrainFocusPlan } from '@/lib/ai/fetchAndApplyKoraaBrainFocusPlan';
 import { clearKoraaDailyBriefCache } from '@/lib/ai/koraaDailyBriefCache';
 import { seedHoyLiteFirstDayIfUnset } from '@/lib/hoyLiteDay';
+import { trackCohortDay0Once } from '@/lib/retentionD1';
+import { track } from '@/lib/analytics';
 
 export type DailyCheckInInput = {
   userId: string;
@@ -216,6 +218,8 @@ export async function saveDailyCheckInAndPrioritize(input: DailyCheckInInput): P
   );
   if (newlyCompleted) {
     await seedHoyLiteFirstDayIfUnset(input.userId);
+    void track('onboarding_completed', { source: 'check_in' });
+    await trackCohortDay0Once(input.userId, undefined, 'check_in');
   }
   if (onboardingError) {
     logger.debug('checkInService: onboarding mark failed', onboardingError.message);

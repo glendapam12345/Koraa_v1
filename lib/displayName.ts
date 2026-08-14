@@ -4,6 +4,15 @@ type NameSource = {
   email?: string | null;
 };
 
+const MIN_NAME_LENGTH = 2;
+
+/** Normaliza y valida un nombre corto para saludos. */
+export function normalizeDisplayName(raw: string): string | null {
+  const trimmed = raw.trim().replace(/\s+/g, ' ');
+  if (trimmed.length < MIN_NAME_LENGTH) return null;
+  return trimmed;
+}
+
 /** Nombre para saludos (perfil → metadata; nunca usa el correo). */
 export function getDisplayName(
   source: NameSource | null | undefined,

@@ -507,6 +507,36 @@ export const en: DeepStrings<typeof es> = {
     patternsNeedCheckIns:
       'Check in on Today for a few days and your charts will appear here.',
     energyCardBody: 'When your body asks for more and when to slow down.',
+    chartMoodInsight:
+      '{{emotion}} showed up in {{pct}}% of your check-ins ({{count}} days). That’s how this stretch has felt.',
+    chartMoodInsightPlain:
+      '{{checkIns}} of {{total}} days with a mood marked — your rhythm is starting to show.',
+    chartEnergyInsightSteady:
+      'Average energy {{avg}} across {{checkIns}} check-ins. Steady enough for small steps.',
+    chartEnergyInsightLow:
+      'Average energy {{avg}}. {{lowDays}} of {{checkIns}} days asked for more rest (≤2).',
+    chartEmotionInsight:
+      '{{emotion}} showed up in {{pct}}% of your check-ins ({{count}} times) — no judgment, just what repeats most.',
+    rhythmEyebrow: 'Period rhythm',
+    rhythmUntilToday: 'Until today',
+    rhythmMoodLabel: 'Mood',
+    rhythmEnergyLabel: 'Energy',
+    rhythmLevel: {
+      soft: 'Soft',
+      steady: 'Steady',
+      mixed: 'Mixed',
+      tender: 'Needs care',
+    },
+    rhythmMood: {
+      low: 'More sensitive',
+      mid: 'Medium',
+      high: 'Lighter',
+    },
+    rhythmEnergy: {
+      low: 'Low',
+      mid: 'Medium',
+      high: 'High',
+    },
     unlockCta: 'Explore full patterns',
     premiumSectionNote:
       'Premium unlocks the full calendar, every tip, and unlimited For Me.',
@@ -781,6 +811,8 @@ export const en: DeepStrings<typeof es> = {
       'No steps yet. Capture what is on your mind and come back here.',
     liteExpandedToast: 'Support and rest of day are visible — no rush.',
     patternApplyToast: 'Today already has your For Me nudge',
+    patternApplyToastOneStep: 'Today kept just one step on top',
+    patternApplyToastEasyFirst: 'Today put the lightest step first',
     dayTwoUnlockToast: 'Today shows a bit more — only if it helps.',
     litePeekTitle: 'Saved for later today',
     litePeekBodyWithRest:

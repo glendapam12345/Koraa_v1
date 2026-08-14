@@ -24,6 +24,11 @@
   - `return_reminder_scheduled` (`scheduled`, `permission_granted`, opcional `mode`: `daily_recurring` | `tomorrow_once` | `none`) — tras check-in, asegura aviso para mañana
   - `first_session_micro_step_completed` (`source`) — primer paso sugerido completado en el día 1 (vista lite)
   - `task_postponed` (`to_tomorrow`) — pasó un paso de hoy a mañana
+  - `onboarding_completed` (`source`) — cohorte día 0
+  - `cohort_day0` (`local_date`, `source`) — ancla de retención D1 (una vez)
+  - `returned_d1` (`day0`, `local_date`, `expected_d1`) — volvió el día calendario siguiente
+
+**Métrica norte D1:** [2026-08-13_returned_d1_metric.md](./2026-08-13_returned_d1_metric.md).
 
 ## Cómo activar en el proyecto Supabase
 

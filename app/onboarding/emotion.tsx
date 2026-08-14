@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { EmotionCard } from '@/components/EmotionCard';
 import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
+import { OnboardingEllieCoach } from '@/components/onboarding/OnboardingEllieCoach';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
@@ -49,11 +50,11 @@ export default function EmotionScreen() {
 
   return (
     <OnboardingScreenShell>
-      <OnboardingCheckInProgress step={1} />
+      <OnboardingCheckInProgress step={1} total={2} />
+      <OnboardingEllieCoach message={t('onboarding.ellie.emotion')} mood="breathing" size={52} />
       <Text style={onboardingTypography.title}>{t('onboarding.emotion.title')}</Text>
       <Text style={onboardingTypography.titleAccent}>{t('onboarding.emotion.titleAccent')}</Text>
       <Text style={onboardingTypography.subtitle}>{t('onboarding.emotion.subtitle')}</Text>
-      <Text style={[onboardingTypography.body, styles.hint]}>{t('onboarding.emotion.checkInHint')}</Text>
 
       <View
         style={styles.emotionsGrid}

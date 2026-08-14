@@ -3,14 +3,13 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingHighlightCard } from '@/components/onboarding/OnboardingHighlightCard';
-import {
-  OnboardingCaptureField,
-  OnboardingCaptureSkipLink,
-} from '@/components/onboarding/OnboardingCaptureField';
+import { OnboardingCaptureField } from '@/components/onboarding/OnboardingCaptureField';
+import { OnboardingEllieCoach } from '@/components/onboarding/OnboardingEllieCoach';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { countOnboardingCaptureItems, saveOnboardingCaptureForUser } from '@/lib/onboardingCapture';
+import { seedDefaultLifeAreasForUser } from '@/lib/finishOnboarding';
 import { ONBOARDING_EMOTION_ROUTE } from '@/lib/onboardingNavigation';
 
 export default function OnboardingCaptureScreen() {
@@ -26,21 +25,20 @@ export default function OnboardingCaptureScreen() {
     router.push(ONBOARDING_EMOTION_ROUTE);
   };
 
-  const saveAndContinue = async (skipSave: boolean) => {
+  const saveAndContinue = async () => {
     if (!user?.id) {
       router.replace('/auth/login');
       return;
     }
 
-    if (!skipSave && !hasContent) {
+    if (!hasContent) {
       Alert.alert(t('onboarding.capture.emptyTitle'), t('onboarding.capture.emptyBody'));
       return;
     }
 
     setSaving(true);
-    const result = skipSave
-      ? { error: null, savedCount: 0, attemptedCount: 0, partialFailure: false }
-      : await saveOnboardingCaptureForUser(user.id, captureText, locale);
+    await seedDefaultLifeAreasForUser(user.id);
+    const result = await saveOnboardingCaptureForUser(user.id, captureText, locale);
     setSaving(false);
 
     if (result.error) {
@@ -60,28 +58,29 @@ export default function OnboardingCaptureScreen() {
       return;
     }
 
+    if (result.savedCount === 0) {
+      Alert.alert(t('onboarding.capture.emptyTitle'), t('onboarding.capture.emptyBody'));
+      return;
+    }
+
     goToCheckIn();
   };
 
   return (
     <OnboardingScreenShell
       footer={
-        <>
-          <CalmPrimaryButton
-            label={saving ? t('onboarding.capture.saving') : t('onboarding.capture.continue')}
-            onPress={() => void saveAndContinue(false)}
-            disabled={saving || !hasContent}
-            accessibilityHint={t('onboardingA11y.captureContinueHint')}
-            accessibilityState={{ disabled: saving || !hasContent, busy: saving }}
-          />
-          <OnboardingCaptureSkipLink
-            label={t('onboarding.capture.skip')}
-            disabled={saving}
-            onPress={() => void saveAndContinue(true)}
-          />
-        </>
+        <CalmPrimaryButton
+          label={saving ? t('onboarding.capture.saving') : t('onboarding.capture.continue')}
+          onPress={() => void saveAndContinue()}
+          disabled={saving || !hasContent}
+          loading={saving}
+          large
+          accessibilityHint={t('onboardingA11y.captureContinueHint')}
+          accessibilityState={{ disabled: saving || !hasContent, busy: saving }}
+        />
       }
     >
+      <OnboardingEllieCoach message={t('onboarding.ellie.capture')} mood="grateful" size={56} />
       <Text style={onboardingTypography.title}>{t('onboarding.capture.title')}</Text>
       <Text style={onboardingTypography.titleAccent}>{t('onboarding.capture.titleAccent')}</Text>
       <Text style={onboardingTypography.subtitle}>{t('onboarding.capture.subtitle')}</Text>

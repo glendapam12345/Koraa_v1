@@ -60,9 +60,14 @@ module.exports = {
     slug: 'koraav1-1',
     version: '1.0.5',
     orientation: 'portrait',
-    icon: './assets/images/koraa-logo.png',
+    icon: './assets/images/koraa-icon-ellie.png',
     scheme: 'myapp',
     userInterfaceStyle: 'automatic',
+    splash: {
+      image: './assets/images/splash-ellie-mascot-only.png',
+      resizeMode: 'contain',
+      backgroundColor: '#E8D4F6',
+    },
     updates: {
       url: 'https://u.expo.dev/ef96554d-08d3-4cb6-a5fe-4217d7295541',
       enabled: enableOtaUpdates,
@@ -109,11 +114,15 @@ module.exports = {
     },
     android: {
       package: 'com.impermanencecasaartisitca.koraav1',
+      adaptiveIcon: {
+        foregroundImage: './assets/images/koraa-icon-ellie.png',
+        backgroundColor: '#E8D4F6',
+      },
     },
     web: {
       bundler: 'metro',
       output: 'single',
-      favicon: './assets/images/favicon.png',
+      favicon: './assets/images/favicon-ellie.png',
     },
     plugins: [
       'expo-localization',
@@ -121,6 +130,15 @@ module.exports = {
       'expo-font',
       'expo-web-browser',
       'expo-secure-store',
+      [
+        'expo-splash-screen',
+        {
+          image: './assets/images/splash-ellie-mascot-only.png',
+          imageWidth: 180,
+          resizeMode: 'contain',
+          backgroundColor: '#E8D4F6',
+        },
+      ],
       '@react-native-community/datetimepicker',
       [
         'expo-calendar',
@@ -135,7 +153,8 @@ module.exports = {
       [
         'expo-notifications',
         {
-          color: '#6A8DFF',
+          icon: './assets/images/notification-icon-ellie.png',
+          color: '#5C3D9E',
           defaultChannel: 'default',
         },
       ],

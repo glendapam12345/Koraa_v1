@@ -191,7 +191,9 @@ export const TIP_CATEGORY_META: Record<
   TipCategoryId,
   {
     emoji: string;
-    /** Bold gradients for category grid cards */
+    /** Mood Ellie asset for category cards */
+    moodImage: number;
+    /** Soft pastel gradients — tenue, readable with dark text */
     gradient: readonly [string, string];
     /** Softer, muted gradients for daily tip carousel — distinct from grid */
     highlightGradient: readonly [string, string];
@@ -199,22 +201,26 @@ export const TIP_CATEGORY_META: Record<
 > = {
   mindset: {
     emoji: '🧘',
-    gradient: ['#1B3A6B', '#2EC4B6'],
-    highlightGradient: ['#C4B0E8', '#E2D4F5'],
+    moodImage: require('@/assets/images/ellie-mood-breathing.png'),
+    gradient: ['#E8F4F2', '#D8EAEF'],
+    highlightGradient: ['#E8F4F2', '#F2F7FA'],
   },
   rest: {
     emoji: '🌙',
-    gradient: ['#0F3D3E', '#1B6B4A'],
-    highlightGradient: ['#9DD4E3', '#C5EAF2'],
+    moodImage: require('@/assets/images/ellie-mood-sleepy.png'),
+    gradient: ['#E8EEF8', '#E2E6F5'],
+    highlightGradient: ['#E8EEF8', '#F3F5FB'],
   },
   action: {
     emoji: '⚡',
-    gradient: ['#E85D4C', '#F5C542'],
-    highlightGradient: ['#EDB0C8', '#F5D4E4'],
+    moodImage: require('@/assets/images/ellie-mood-happy.png'),
+    gradient: ['#F8EDE6', '#F5E4DC'],
+    highlightGradient: ['#F8EDE6', '#FBF5F1'],
   },
   productivity: {
     emoji: '📋',
-    gradient: ['#6B4C9A', '#C45B8C'],
-    highlightGradient: ['#A8DDE8', '#F5D0C8'],
+    moodImage: require('@/assets/images/ellie-mood-grateful.png'),
+    gradient: ['#F0E8F6', '#EDE0F2'],
+    highlightGradient: ['#F0E8F6', '#F7F2FA'],
   },
 };

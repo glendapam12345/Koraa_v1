@@ -29,7 +29,6 @@ export default function SignupScreen() {
   const { signUpWithEmail, verifySignupOtp, resendSignupOtp } = useAuth();
 
   const [step, setStep] = useState<Step>('signup');
-  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [confirmEmail, setConfirmEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -47,13 +46,7 @@ export default function SignupScreen() {
   }, [resendCooldown]);
 
   const handleSignup = async () => {
-    if (
-      !email.trim() ||
-      !confirmEmail.trim() ||
-      !password ||
-      !confirmPassword ||
-      !fullName.trim()
-    ) {
+    if (!email.trim() || !confirmEmail.trim() || !password || !confirmPassword) {
       setError(t('auth.signup.fillAllFields'));
       return;
     }
@@ -76,7 +69,7 @@ export default function SignupScreen() {
     setError('');
     setIsLoading(true);
 
-    const { error: signupError, needsConfirmation } = await signUpWithEmail(email, password, fullName);
+    const { error: signupError, needsConfirmation } = await signUpWithEmail(email, password);
     setIsLoading(false);
 
     if (needsConfirmation) {
@@ -171,20 +164,6 @@ export default function SignupScreen() {
           </View>
 
           <View style={styles.form}>
-            <View style={styles.field}>
-              <Text style={styles.label}>{t('common.name')}</Text>
-              <TextInput
-                style={styles.input}
-                value={fullName}
-                onChangeText={setFullName}
-                placeholder={t('auth.signup.namePlaceholder')}
-                placeholderTextColor={THEME.colors.text.tertiary}
-                autoCapitalize="words"
-                editable={!isLoading}
-                accessibilityLabel={t('authA11y.fullName')}
-                accessibilityHint={t('authA11y.fullNameHint')}
-              />
-            </View>
             <View style={styles.field}>
               <Text style={styles.label}>{t('common.email')}</Text>
               <TextInput

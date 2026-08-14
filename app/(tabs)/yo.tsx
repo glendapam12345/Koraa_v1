@@ -33,6 +33,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import Constants from 'expo-constants';
 import { useYoProfile } from '@/hooks/useYoProfile';
 import { YoEditProfileModal } from '@/components/yo/YoEditProfileModal';
@@ -109,6 +110,13 @@ export default function ProfileScreen() {
       ),
     [profile.full_name, user?.user_metadata, t],
   );
+
+  const hasRealName = useMemo(() => {
+    const fromProfile = profile.full_name?.trim();
+    const fromMeta =
+      typeof user?.user_metadata?.full_name === 'string' ? user.user_metadata.full_name.trim() : '';
+    return Boolean(fromProfile || fromMeta);
+  }, [profile.full_name, user?.user_metadata?.full_name]);
 
   const avatarLetter = useMemo(() => {
     const fromProfile = profile.full_name?.trim();
@@ -191,6 +199,19 @@ export default function ProfileScreen() {
         }
       >
         <ScreenHeader compact title={t('tabs.profile')} subtitle={t('yo.spaceSubtitle')} />
+
+        {!hasRealName ? (
+          <CalmCard style={styles.namePromptCard}>
+            <Text style={styles.namePromptTitle}>{t('yo.namePromptTitle')}</Text>
+            <Text style={styles.namePromptBody}>{t('yo.namePromptBody')}</Text>
+            <CalmPrimaryButton
+              label={t('yo.namePromptCta')}
+              onPress={openEditProfile}
+              variant="soft"
+              accessibilityHint={t('yoExtra.editProfileHint')}
+            />
+          </CalmCard>
+        ) : null}
 
         <YoSpaceHero
           displayName={displayName}
@@ -355,6 +376,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: THEME.colors.calm.background,
+  },
+  namePromptCard: {
+    gap: THEME.spacing.sm,
+  },
+  namePromptTitle: {
+    ...THEME.typography.h3,
+    color: THEME.colors.text.main,
+  },
+  namePromptBody: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.secondary,
+    lineHeight: 22,
   },
   menuCard: {
     paddingVertical: THEME.spacing.xs,

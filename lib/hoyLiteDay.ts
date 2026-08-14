@@ -9,6 +9,15 @@ function firstLiteDayKey(userId: string): string {
   return `koraa_hoy_first_open_calendar_day_v1_${userId}`;
 }
 
+/** Día calendario anclado al completar onboarding (AAAA-MM-DD), si existe. */
+export async function getHoyLiteFirstOpenDay(userId: string): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(firstLiteDayKey(userId));
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Ancla el día 1 lite al completar onboarding (no sobrescribe si ya existe).
  */

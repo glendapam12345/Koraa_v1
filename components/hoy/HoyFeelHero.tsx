@@ -56,7 +56,7 @@ export function HoyFeelHero({
       >
         <View style={styles.compactRow}>
           <View style={styles.compactMascot} accessibilityElementsHidden>
-            <KoraaMascotAvatar size={56} variant="ellie" breathe />
+            <KoraaMascotAvatar size={44} variant="ellie" breathe />
           </View>
           <View style={styles.compactCopy}>
             <Text style={styles.compactEyebrow}>{t('hoy.energyTodayLabel')}</Text>
@@ -92,12 +92,16 @@ export function HoyFeelHero({
       accessibilityHint={t('hoy.feelHeroPurpose')}
     >
       <CalmCard variant="hero" style={[styles.card, styles.cardInvite]}>
-        <View style={styles.mascotCenter} accessibilityElementsHidden>
-          <KoraaMascotAvatar size={120} variant="ellie" breathe />
+        <View style={styles.inviteRow}>
+          <View style={styles.inviteMascot} accessibilityElementsHidden>
+            <KoraaMascotAvatar size={64} variant="ellie" breathe />
+          </View>
+          <View style={styles.inviteCopy}>
+            <Text style={styles.inviteTitle}>{t('hoy.feelHeroQuestion')}</Text>
+            <Text style={styles.koraaLine}>{t('hoy.feelHeroPurposeShort')}</Text>
+            <Text style={styles.linkLine}>{t('hoy.feelHeroCompactCta')}</Text>
+          </View>
         </View>
-        <Text style={styles.inviteTitleCentered}>{t('hoy.feelHeroQuestion')}</Text>
-        <Text style={styles.koraaLineCentered}>{t('hoy.feelHeroPurposeShort')}</Text>
-        <Text style={styles.linkLineCentered}>{t('hoy.feelHeroCompactCta')}</Text>
       </CalmCard>
     </Pressable>
   );
@@ -166,37 +170,43 @@ const styles = StyleSheet.create({
   },
   card: {
     gap: THEME.spacing.sm,
-    alignItems: 'center',
   },
   cardInvite: {
     borderColor: THEME.colors.calm.border,
     borderWidth: 1,
-    paddingVertical: THEME.spacing.lg,
+    paddingVertical: THEME.spacing.md,
     paddingHorizontal: THEME.spacing.md,
     borderRadius: THEME.borderRadius.xl,
   },
-  mascotCenter: {
-    marginBottom: THEME.spacing.xs,
+  inviteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.sm,
   },
-  inviteTitleCentered: {
+  inviteMascot: {
+    flexShrink: 0,
+  },
+  inviteCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
+  },
+  inviteTitle: {
     ...THEME.typography.sectionTitle,
-    fontSize: 24,
-    lineHeight: 30,
+    fontSize: 20,
+    lineHeight: 26,
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
-    textAlign: 'center',
   },
-  koraaLineCentered: {
-    ...THEME.typography.body,
+  koraaLine: {
+    ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    lineHeight: 22,
-    textAlign: 'center',
+    lineHeight: 18,
   },
-  linkLineCentered: {
+  linkLine: {
     ...THEME.typography.caption,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
-    textAlign: 'center',
     marginTop: 2,
   },
 });

@@ -376,12 +376,11 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   gridLabel: {
-    ...THEME.typography.tiny,
+    ...THEME.typography.micro,
     textAlign: 'center',
   },
   gridLabelCompact: {
-    fontSize: 8,
-    lineHeight: 10,
+    ...THEME.typography.micro,
   },
   legend: {
     ...THEME.typography.micro,

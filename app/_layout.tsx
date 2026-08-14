@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Linking, View, StyleSheet, Platform } from 'react-native';
@@ -23,12 +23,14 @@ import { useNotifications, scheduleActiveReminders } from '@/hooks/useNotificati
 import { AnalyticsScreenTracker } from '@/components/AnalyticsScreenTracker';
 import { RecheckCheckInProvider } from '@/contexts/RecheckCheckInContext';
 import { initializeRevenueCat } from '@/lib/revenuecat';
+import { EllieBootSplash } from '@/components/branding/EllieBootSplash';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const processedUrlRef = useRef<string | null>(null);
   const isApplyingSessionRef = useRef(false);
+  const [showBootSplash, setShowBootSplash] = useState(true);
   const [fontsLoaded, fontError] = useFonts({
     'DMSans-Medium': DMSans_500Medium,
     'DMSans-Bold': DMSans_700Bold,
@@ -36,11 +38,11 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync().catch(() => {
-        // Ignore errors
-      });
-    }
+    if (!(fontsLoaded || fontError)) return;
+    // Misma pantalla rosa: ocultar nativo al instante; boot solo un instante con blink.
+    void SplashScreen.hideAsync().catch(() => {});
+    const t = setTimeout(() => setShowBootSplash(false), 900);
+    return () => clearTimeout(t);
   }, [fontsLoaded, fontError]);
 
   // Programar notificaciones diarias cuando la app carga
@@ -115,7 +117,11 @@ export default function RootLayout() {
   }, [router]);
 
   if (!fontsLoaded && !fontError) {
-    return null;
+    return (
+      <View style={styles.root}>
+        <EllieBootSplash />
+      </View>
+    );
   }
 
   return (
@@ -163,6 +169,7 @@ export default function RootLayout() {
               <Stack.Screen name="+not-found" />
             </Stack>
               <StatusBar style="auto" />
+              <EllieBootSplash visible={showBootSplash} />
             </View>
           </SafeAreaProvider>
         </SubscriptionProvider>

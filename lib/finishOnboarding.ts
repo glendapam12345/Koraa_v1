@@ -8,6 +8,8 @@ import {
 import { logger } from '@/lib/logger';
 import { markOnboardingCompleted } from '@/lib/onboardingGate';
 import { seedHoyLiteFirstDayIfUnset } from '@/lib/hoyLiteDay';
+import { trackCohortDay0Once } from '@/lib/retentionD1';
+import { track } from '@/lib/analytics';
 import {
   buildAreaConfigFromOnboardingSelections,
   buildDefaultOnboardingAreaConfig,
@@ -106,6 +108,8 @@ export async function completeOnboardingForUser(
   const result = await markOnboardingCompleted(userId);
   if (!result.error) {
     await seedHoyLiteFirstDayIfUnset(userId);
+    void track('onboarding_completed', { source: 'finish_onboarding' });
+    await trackCohortDay0Once(userId, undefined, 'onboarding');
   }
   return result;
 }

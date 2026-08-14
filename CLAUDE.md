@@ -350,6 +350,8 @@ Base legal para suscripciones y App Review: [KORAA_TERMS_OF_USE.md](development_
 
 Medición de producto (tabla `app_events`, `lib/analytics.ts`): [KORAA_ANALYTICS_PHASE_D.md](development_guidelines/delivered/KORAA_ANALYTICS_PHASE_D.md). Opcional: `EXPO_PUBLIC_ANALYTICS_ENABLED=false`.
 
+**Métrica norte `returned_d1`:** [2026-08-13_returned_d1_metric.md](development_guidelines/delivered/2026-08-13_returned_d1_metric.md) — cohorte onboarding → vuelta al día calendario siguiente.
+
 Onboarding obligatorio y tabs con sesión: [onboarding_gate_and_tabs_auth.md](development_guidelines/delivered/onboarding_gate_and_tabs_auth.md).
 
 ### Design System

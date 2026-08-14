@@ -237,12 +237,12 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.medium,
   },
   dayLabelCompact: {
-    ...THEME.typography.tiny,
+    ...THEME.typography.micro,
     color: THEME.colors.text.secondary,
   },
   dayLabelMonth: {
-    fontSize: 8,
-    lineHeight: 11,
+    ...THEME.typography.micro,
+    color: THEME.colors.text.secondary,
   },
   legend: {
     ...THEME.typography.micro,

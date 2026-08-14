@@ -10,7 +10,7 @@ import {
   getTaskCaptureReminderEnabled,
 } from '@/lib/notificationPreferences';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { type AppLocale, translate } from '@/lib/i18n';
+import { type AppLocale } from '@/lib/i18n';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import { isCrisisModeActive } from '@/lib/emergencyKit/storage';
@@ -21,6 +21,8 @@ import {
 import { resolveDailyReminderSchedulePlan } from '@/lib/dailyReminderSchedule';
 import { markReturnTomorrowToast } from '@/lib/returnTomorrowToast';
 import { track } from '@/lib/analytics';
+import { pickNotificationCopy } from '@/lib/notificationCopyBank';
+import { loadNotificationContext } from '@/lib/notificationContext';
 
 const LOCALE_STORAGE_KEY = 'koraa_app_locale_v1';
 
@@ -159,13 +161,15 @@ export async function scheduleRecheckReminder(localeOverride?: AppLocale) {
     const locale = localeOverride ?? (await getStoredLocale());
     const triggerDate = new Date();
     triggerDate.setHours(triggerDate.getHours() + RECHECK_HOURS_AFTER_CHECKIN);
+    const ctx = await loadNotificationContext(user.id);
+    const copy = await pickNotificationCopy(locale, 'recheck', ctx);
 
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: translate(locale, 'hooks.recheckNotifTitle'),
-        body: translate(locale, 'hooks.recheckNotifBody'),
+        title: copy.title,
+        body: copy.body,
         sound: true,
-        data: { type: RECHECK_REMINDER_TYPE },
+        data: { type: RECHECK_REMINDER_TYPE, copyId: copy.id },
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -239,13 +243,15 @@ export async function scheduleCareModeReminder(localeOverride?: AppLocale) {
 
     const { hour: reminderHour, minute: reminderMinute } = await getDailyReminderTime();
     const locale = localeOverride ?? (await getStoredLocale());
+    const ctx = await loadNotificationContext(user.id);
+    const copy = await pickNotificationCopy(locale, 'care', ctx);
 
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: translate(locale, 'hooks.careModeNotifTitle'),
-        body: translate(locale, 'hooks.careModeNotifBody'),
+        title: copy.title,
+        body: copy.body,
         sound: true,
-        data: { type: CARE_MODE_REMINDER_TYPE },
+        data: { type: CARE_MODE_REMINDER_TYPE, copyId: copy.id },
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -339,12 +345,7 @@ export async function scheduleDailyReminder(
 
     const { hour: reminderHour, minute: reminderMinute } = await getDailyReminderTime();
     const locale = localeOverride ?? (await getStoredLocale());
-    const content = {
-      title: translate(locale, 'hooks.notifTitle'),
-      body: translate(locale, 'hooks.notifBody'),
-      sound: true as const,
-      data: { type: DAILY_REMINDER_TYPE },
-    };
+    const baseCtx = await loadNotificationContext(user.id);
 
     const plan = resolveDailyReminderSchedulePlan({
       hasCheckInToday: Boolean(checkIn),
@@ -354,23 +355,28 @@ export async function scheduleDailyReminder(
     });
 
     if (plan.mode === 'tomorrow_once' && plan.triggerDate) {
-      // One-shots para los próximos días: sin DAILY hoy (evitar ping post check-in),
-      // pero la cadena no muere si la persona no abre la app mañana.
-      const bridgeDays = 7;
-      for (let dayOffset = 1; dayOffset <= bridgeDays; dayOffset++) {
-        const fireAt = new Date(plan.triggerDate);
-        fireAt.setDate(plan.triggerDate.getDate() + (dayOffset - 1));
-        await Notifications.scheduleNotificationAsync({
-          content,
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: fireAt,
-          },
-        });
-      }
-    } else {
+      const copy = await pickNotificationCopy(locale, 'daily', baseCtx);
       await Notifications.scheduleNotificationAsync({
-        content,
+        content: {
+          title: copy.title,
+          body: copy.body,
+          sound: true,
+          data: { type: DAILY_REMINDER_TYPE, copyId: copy.id },
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: plan.triggerDate,
+        },
+      });
+    } else {
+      const copy = await pickNotificationCopy(locale, 'daily', baseCtx);
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: copy.title,
+          body: copy.body,
+          sound: true,
+          data: { type: DAILY_REMINDER_TYPE, copyId: copy.id },
+        },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
           hour: reminderHour,
@@ -413,13 +419,15 @@ export async function scheduleTaskCaptureReminder(localeOverride?: AppLocale) {
     const { hour: reminderHour, minute: reminderMinute } = await getTaskCaptureReminderTime();
     const locale = localeOverride ?? (await getStoredLocale());
     const triggerDate = getNextTaskCaptureTriggerDate(reminderHour, reminderMinute);
+    const ctx = await loadNotificationContext(user.id);
+    const copy = await pickNotificationCopy(locale, 'capture', ctx);
 
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: translate(locale, 'hooks.taskCaptureNotifTitle'),
-        body: translate(locale, 'hooks.taskCaptureNotifBody'),
+        title: copy.title,
+        body: copy.body,
         sound: true,
-        data: { type: TASK_CAPTURE_REMINDER_TYPE },
+        data: { type: TASK_CAPTURE_REMINDER_TYPE, copyId: copy.id },
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,

@@ -6,6 +6,8 @@ import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { openPaywall } from '@/lib/paywallNavigation';
 import { PremiumLockOverlay } from '@/components/premium/PremiumLockOverlay';
+import { ParaMiChartInsightFooter } from '@/components/parami/ParaMiChartInsightFooter';
+import type { ParamiChartInsight } from '@/lib/paramiChartInsights';
 
 type ParaMiPatternCardProps = {
   title: string;
@@ -14,6 +16,8 @@ type ParaMiPatternCardProps = {
   empty?: boolean;
   emptyMessage?: string;
   chartSize?: 'week' | 'fortnight' | 'month';
+  /** Pie estilo Musa: cifra + interpretación personal. */
+  insight?: ParamiChartInsight | null;
   children?: ReactNode;
   paywallReturnTo?: string;
 };
@@ -26,6 +30,7 @@ export function ParaMiPatternCard({
   emptyMessage,
   children,
   chartSize = 'week',
+  insight = null,
   paywallReturnTo = '/(tabs)/parami',
 }: ParaMiPatternCardProps) {
   const { t } = useI18n();
@@ -43,23 +48,26 @@ export function ParaMiPatternCard({
       {empty ? (
         <Text style={styles.empty}>{emptyMessage ?? t('parami.patternsNeedCheckIns')}</Text>
       ) : (
-        <View
-          style={[
-            styles.chartWrap,
-            chartSize === 'fortnight' && styles.chartWrapFortnight,
-            chartSize === 'month' && styles.chartWrapMonth,
-          ]}
-        >
-          <View style={locked ? styles.chartDimmed : undefined}>{children}</View>
-          {locked ? (
-            <PremiumLockOverlay
-              onPress={() => openPaywall(router, paywallReturnTo)}
-              accessibilityLabel={t('parami.patternUnlockA11y')}
-              hint={t('parami.patternUnlockHint')}
-              tone="surface"
-            />
-          ) : null}
-        </View>
+        <>
+          <View
+            style={[
+              styles.chartWrap,
+              chartSize === 'fortnight' && styles.chartWrapFortnight,
+              chartSize === 'month' && styles.chartWrapMonth,
+            ]}
+          >
+            <View style={locked ? styles.chartDimmed : undefined}>{children}</View>
+            {locked ? (
+              <PremiumLockOverlay
+                onPress={() => openPaywall(router, paywallReturnTo)}
+                accessibilityLabel={t('parami.patternUnlockA11y')}
+                hint={t('parami.patternUnlockHint')}
+                tone="surface"
+              />
+            ) : null}
+          </View>
+          {!locked && insight ? <ParaMiChartInsightFooter insight={insight} /> : null}
+        </>
       )}
     </View>
   );
@@ -85,15 +93,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   body: {
-    ...THEME.typography.meta,
+    ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    lineHeight: 18,
+    lineHeight: 20,
     textAlign: 'center',
   },
   empty: {
-    ...THEME.typography.body,
+    ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    lineHeight: 22,
+    lineHeight: 20,
     marginTop: THEME.spacing.xs,
     textAlign: 'center',
   },

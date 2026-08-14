@@ -504,6 +504,36 @@ export const es = {
     patternsNeedCheckIns:
       'Haz check-in en Hoy unos días y aquí aparecerán tus gráficas.',
     energyCardBody: 'Cuándo tu cuerpo pide más y cuándo conviene frenar.',
+    chartMoodInsight:
+      '{{emotion}} estuvo en {{pct}}% de tus check-ins ({{count}} días). Así se ha sentido tu semana.',
+    chartMoodInsightPlain:
+      '{{checkIns}} de {{total}} días con ánimo marcado — tu ritmo empieza a verse.',
+    chartEnergyInsightSteady:
+      'Energía media {{avg}} en {{checkIns}} check-ins. Bastante estable para pasos pequeños.',
+    chartEnergyInsightLow:
+      'Energía media {{avg}}. {{lowDays}} de {{checkIns}} días pidieron más descanso (≤2).',
+    chartEmotionInsight:
+      '{{emotion}} apareció en {{pct}}% de tus check-ins ({{count}} veces) — sin juicio, solo lo que más se repite.',
+    rhythmEyebrow: 'Ritmo del periodo',
+    rhythmUntilToday: 'Hasta hoy',
+    rhythmMoodLabel: 'Ánimo',
+    rhythmEnergyLabel: 'Energía',
+    rhythmLevel: {
+      soft: 'Suave',
+      steady: 'Estable',
+      mixed: 'Mezclado',
+      tender: 'Pide cuidado',
+    },
+    rhythmMood: {
+      low: 'Más sensible',
+      mid: 'Medio',
+      high: 'Más liviano',
+    },
+    rhythmEnergy: {
+      low: 'Baja',
+      mid: 'Media',
+      high: 'Alta',
+    },
     unlockCta: 'Explorar patrones completos',
     premiumSectionNote:
       'Premium desbloquea calendario completo, todos los consejos y Para mí sin límites.',
@@ -789,6 +819,8 @@ export const es = {
     moodHeroLiteNoSteps: 'Sin pasos aún. Anota lo que llevas y vuelve aquí.',
     liteExpandedToast: 'Apoyo y resto del día visibles — sin prisa.',
     patternApplyToast: 'Hoy ya tiene tu ajuste de Para mí',
+    patternApplyToastOneStep: 'Hoy dejó un solo paso arriba',
+    patternApplyToastEasyFirst: 'Hoy puso lo más liviano primero',
     dayTwoUnlockToast: 'Hoy muestra un poco más — solo si te sirve.',
     litePeekTitle: 'Guardado para más tarde hoy',
     litePeekBodyWithRest:

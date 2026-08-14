@@ -142,8 +142,7 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.medium,
   },
   headline: {
-    fontSize: 22,
-    lineHeight: 28,
+    ...THEME.typography.sectionTitle,
     fontFamily: THEME.fonts.accent.italic,
     color: THEME.colors.text.main,
     textAlign: 'center',
@@ -153,7 +152,7 @@ const styles = StyleSheet.create({
   summary: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    lineHeight: 22,
+    lineHeight: 20,
     textAlign: 'center',
     maxWidth: 340,
     marginBottom: THEME.spacing.sm,
@@ -165,9 +164,9 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.xs,
   },
   patternNote: {
-    ...THEME.typography.body,
+    ...THEME.typography.caption,
     color: THEME.colors.text.main,
-    lineHeight: 26,
+    lineHeight: 22,
     textAlign: 'center',
     fontFamily: THEME.fonts.heading.medium,
     maxWidth: 340,
@@ -186,7 +185,7 @@ const styles = StyleSheet.create({
   gentleTip: {
     ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    lineHeight: 22,
+    lineHeight: 20,
     textAlign: 'center',
     fontFamily: THEME.fonts.accent.italic,
     maxWidth: 320,

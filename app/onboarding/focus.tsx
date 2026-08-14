@@ -4,17 +4,11 @@ import { useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
+import { OnboardingEllieCoach } from '@/components/onboarding/OnboardingEllieCoach';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
 import { Toast } from '@/components/Toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { track } from '@/lib/analytics';
-import { queueCheckInCelebration } from '@/lib/checkInCelebration';
-import { goToHoyAfterOnboarding } from '@/lib/onboardingNavigation';
-import { saveDailyCheckInAndPrioritize } from '@/lib/checkInService';
-import { seedDefaultLifeAreasForUser } from '@/lib/finishOnboarding';
-import { getDisplayName } from '@/lib/displayName';
-import { markPrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
-import { markQuickOnboardingGuideSeen } from '@/lib/quickOnboardingGuide';
+import { completeOnboardingCheckInAndGoHoy } from '@/lib/completeOnboardingCheckIn';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 
@@ -26,8 +20,13 @@ const FOCUS_OPTIONS: { id: string; labelKey: TranslationKey }[] = [
   { id: 'Súper enfocada', labelKey: 'onboarding.focus.veryFocused' },
 ];
 
+/** Legacy path (time → focus). Flujo corto Empezar termina en energy. */
 export default function FocusScreen() {
-  const { emotion, energy, time } = useLocalSearchParams<{ emotion: string; energy: string; time: string }>();
+  const { emotion, energy, time } = useLocalSearchParams<{
+    emotion: string;
+    energy: string;
+    time: string;
+  }>();
   const { user } = useAuth();
   const { t, locale } = useI18n();
   const [selectedFocus, setSelectedFocus] = useState<string>('');
@@ -50,20 +49,17 @@ export default function FocusScreen() {
     }
 
     setIsSaving(true);
-
     try {
       const emotionStored = emotion.trim().toLowerCase();
       const emotionLabel = t(`sentir.emotions.${emotionStored}` as TranslationKey);
-
-      const result = await saveDailyCheckInAndPrioritize({
-        userId: user.id,
+      const result = await completeOnboardingCheckInAndGoHoy({
+        user,
         emotion: emotionStored,
         energyLevel,
+        locale,
+        emotionLabel,
         availableTime: time,
         focusLevel: selectedFocus,
-        locale,
-        displayName: getDisplayName(user, ''),
-        emotionLabel,
       });
 
       if (!result.success) {
@@ -74,35 +70,6 @@ export default function FocusScreen() {
       if (result.offline) {
         showToast(t('onboarding.focus.savedOffline'), 'info');
       }
-
-      try {
-        const {
-          ensureReturnTomorrowReminder,
-          scheduleRecheckReminder,
-          scheduleTaskCaptureReminder,
-        } = await import('@/hooks/useNotifications');
-        await ensureReturnTomorrowReminder(locale);
-        await scheduleTaskCaptureReminder();
-        await scheduleRecheckReminder(locale);
-      } catch {
-        /* no crítico */
-      }
-
-      await markPrioritiesReadyToast();
-
-      void track('check_in_completed', {
-        source: 'onboarding',
-        offline: Boolean(result.offline),
-      });
-
-      await markQuickOnboardingGuideSeen();
-
-      if (result.celebration) {
-        await queueCheckInCelebration(result.celebration);
-      }
-
-      await seedDefaultLifeAreasForUser(user.id);
-      await goToHoyAfterOnboarding(user.id);
 
       if (result.onboardingMarkFailed) {
         showToast(t('onboarding.focus.closeOnboardingError'), 'info');
@@ -131,14 +98,15 @@ export default function FocusScreen() {
           />
         }
       >
-        <OnboardingCheckInProgress step={4} />
-      <Text style={onboardingTypography.title}>{t('onboarding.focus.title')}</Text>
-      <Text style={onboardingTypography.titleAccent}>{t('onboarding.focus.titleAccent')}</Text>
-      {t('onboarding.focus.subtitle') ? (
-        <Text style={onboardingTypography.subtitle}>{t('onboarding.focus.subtitle')}</Text>
-      ) : (
-        <Text style={styles.softHint}>{t('onboarding.focus.softHint')}</Text>
-      )}
+        <OnboardingCheckInProgress step={4} total={4} />
+        <OnboardingEllieCoach message={t('onboarding.ellie.focus')} mood="grateful" size={52} />
+        <Text style={onboardingTypography.title}>{t('onboarding.focus.title')}</Text>
+        <Text style={onboardingTypography.titleAccent}>{t('onboarding.focus.titleAccent')}</Text>
+        {t('onboarding.focus.subtitle') ? (
+          <Text style={onboardingTypography.subtitle}>{t('onboarding.focus.subtitle')}</Text>
+        ) : (
+          <Text style={styles.softHint}>{t('onboarding.focus.softHint')}</Text>
+        )}
 
         <View style={styles.optionsContainer} accessibilityRole="radiogroup">
           {FOCUS_OPTIONS.map((option) => (

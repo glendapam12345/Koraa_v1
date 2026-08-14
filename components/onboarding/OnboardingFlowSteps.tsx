@@ -1,14 +1,23 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
+import type { EllieMood } from '@/components/onboarding/OnboardingEllieCoach';
 
 type FlowStep = {
   n: number;
   titleKey: TranslationKey;
   bodyKey: TranslationKey;
-  emoji: string;
+  mood: EllieMood;
+};
+
+const MOOD_IMAGES: Record<EllieMood, number> = {
+  default: require('@/assets/images/ellie-mascot.png'),
+  breathing: require('@/assets/images/ellie-mood-breathing.png'),
+  sleepy: require('@/assets/images/ellie-mood-sleepy.png'),
+  happy: require('@/assets/images/ellie-mood-happy.png'),
+  grateful: require('@/assets/images/ellie-mood-grateful.png'),
 };
 
 const STEPS: FlowStep[] = [
@@ -16,30 +25,30 @@ const STEPS: FlowStep[] = [
     n: 1,
     titleKey: 'onboarding.flow.step1Title',
     bodyKey: 'onboarding.flow.step1Body',
-    emoji: '🧠',
+    mood: 'happy',
   },
   {
     n: 2,
     titleKey: 'onboarding.flow.step2Title',
     bodyKey: 'onboarding.flow.step2Body',
-    emoji: '💜',
+    mood: 'breathing',
   },
   {
     n: 3,
     titleKey: 'onboarding.flow.step3Title',
     bodyKey: 'onboarding.flow.step3Body',
-    emoji: '✨',
+    mood: 'grateful',
   },
   {
     n: 4,
     titleKey: 'onboarding.flow.step4Title',
     bodyKey: 'onboarding.flow.step4Body',
-    emoji: '⭐',
+    mood: 'default',
   },
 ];
 
 /**
- * Flujo Koraa en 4 pasos — tipografía grande, números claros (niño / 60+).
+ * Flujo Koraa en 4 pasos — Ellie moods + números claros.
  */
 export function OnboardingFlowSteps() {
   const { t } = useI18n();
@@ -69,9 +78,12 @@ export function OnboardingFlowSteps() {
             </View>
 
             <View style={[styles.card, THEME.shadows.soft]}>
-              <Text style={styles.emoji} accessibilityElementsHidden>
-                {step.emoji}
-              </Text>
+              <Image
+                source={MOOD_IMAGES[step.mood]}
+                style={styles.mood}
+                resizeMode="contain"
+                accessibilityElementsHidden
+              />
               <View style={styles.copy}>
                 <Text style={styles.title}>{t(step.titleKey)}</Text>
                 <Text style={styles.body}>{t(step.bodyKey)}</Text>
@@ -154,9 +166,9 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.sm,
     minHeight: 72,
   },
-  emoji: {
-    fontSize: 28,
-    lineHeight: 34,
+  mood: {
+    width: 44,
+    height: 44,
   },
   copy: {
     flex: 1,

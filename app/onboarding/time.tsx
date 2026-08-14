@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
+import { OnboardingEllieCoach } from '@/components/onboarding/OnboardingEllieCoach';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
@@ -41,6 +42,7 @@ export default function TimeScreen() {
   return (
     <OnboardingScreenShell>
       <OnboardingCheckInProgress step={3} />
+      <OnboardingEllieCoach message={t('onboarding.ellie.time')} mood="default" size={52} />
       <Text style={onboardingTypography.title}>{t('onboarding.time.title')}</Text>
       <Text style={onboardingTypography.titleAccent}>{t('onboarding.time.titleAccent')}</Text>
       <Text style={onboardingTypography.subtitle}>{t('onboarding.time.subtitle')}</Text>

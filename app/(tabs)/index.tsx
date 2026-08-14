@@ -204,6 +204,7 @@ function TodayScreen() {
     handleOptOutHoyLite,
     checkInReplanCoachLine,
     patternHoyCoachLine,
+    patternHoyMode,
   } = useHoyScreenLayout({
     userId: user?.id,
     loading,
@@ -392,8 +393,9 @@ function TodayScreen() {
     });
 
   const coachSuggestion = useMemo(() => {
-    if (checkInReplanCoachLine) return checkInReplanCoachLine;
+    // Ajuste activo de Para mí manda sobre el replan genérico.
     if (patternHoyCoachLine) return patternHoyCoachLine;
+    if (checkInReplanCoachLine) return checkInReplanCoachLine;
     if (aiCoachLine) return aiCoachLine;
     return explanation.suggestion;
   }, [checkInReplanCoachLine, patternHoyCoachLine, aiCoachLine, explanation.suggestion]);
@@ -471,6 +473,7 @@ function TodayScreen() {
             onCollapseRestOfDay={() => setShowSecondaryModules(false)}
             displayName={displayName}
             coachSuggestion={coachSuggestion}
+            patternHoyMode={patternHoyMode}
             dailyTipIds={dailyTipIds}
             dailyTipLead={dailyTipLead}
             dailyTipsFromAi={dailyTipsFromAi}

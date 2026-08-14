@@ -17,7 +17,9 @@ import {
   peekReturnTomorrowToast,
 } from '@/lib/returnTomorrowToast';
 import { consumeCheckInReplanSummary } from '@/lib/checkInReplanSummary';
-import { consumePatternHoyApply } from '@/lib/patternHoyBridge';
+import { activatePatternHoyApply, clearActivePatternHoyApply } from '@/lib/patternHoyBridge';
+import type { PatternHoyApplyMode } from '@/lib/behaviorInsights';
+import { patternApplyToastKey } from '@/lib/applyPatternHoyMode';
 import { track } from '@/lib/analytics';
 
 type ToastFn = (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -47,6 +49,7 @@ export function useHoyScreenLayout({
   const [showSecondaryModules, setShowSecondaryModules] = useState(false);
   const [checkInReplanCoachLine, setCheckInReplanCoachLine] = useState<string | null>(null);
   const [patternHoyCoachLine, setPatternHoyCoachLine] = useState<string | null>(null);
+  const [patternHoyMode, setPatternHoyMode] = useState<PatternHoyApplyMode | null>(null);
 
   const handleOptOutHoyLite = useCallback(async () => {
     if (!userId) return;
@@ -118,6 +121,9 @@ export function useHoyScreenLayout({
 
         if (replanSummary) {
           setCheckInReplanCoachLine(replanSummary.subline || replanSummary.headline);
+          setPatternHoyCoachLine(null);
+          setPatternHoyMode(null);
+          await clearActivePatternHoyApply();
           const toastParts = [replanSummary.headline];
           if (replanSummary.movedCount > 0) {
             toastParts.push(
@@ -132,20 +138,28 @@ export function useHoyScreenLayout({
           showToast(toastParts.join(' · '), 'info');
           // Deja el toast de “mañana a las X” para el próximo focus — no lo consumas aquí.
         } else {
-          const patternApply = await consumePatternHoyApply();
+          // Activa primero (persiste el día) para no perder el tip si el focus se cancela.
+          const patternResult = await activatePatternHoyApply();
           if (cancelled) return;
-          if (patternApply) {
-            setPatternHoyCoachLine(patternApply.tip);
-            showToast(t('hoy.patternApplyToast'), 'info');
-            void track('pattern_hoy_consumed', {
-              mode: patternApply.mode,
-              pattern_type: patternApply.patternType ?? 'unknown',
-            });
-          } else if (returnTomorrowTime) {
-            await consumeReturnTomorrowToast();
-            showToast(t('sentir.returnTomorrowToast', { time: returnTomorrowTime }), 'info');
-          } else if (showPrioritiesReady) {
-            showToast(t('sentir.checkInSavedToast'), 'success');
+          if (patternResult) {
+            setPatternHoyCoachLine(patternResult.apply.tip);
+            setPatternHoyMode(patternResult.apply.mode);
+            if (patternResult.justActivated) {
+              showToast(t(patternApplyToastKey(patternResult.apply.mode)), 'info');
+              void track('pattern_hoy_consumed', {
+                mode: patternResult.apply.mode,
+                pattern_type: patternResult.apply.patternType ?? 'unknown',
+              });
+            }
+          } else {
+            setPatternHoyCoachLine(null);
+            setPatternHoyMode(null);
+            if (returnTomorrowTime) {
+              await consumeReturnTomorrowToast();
+              showToast(t('sentir.returnTomorrowToast', { time: returnTomorrowTime }), 'info');
+            } else if (showPrioritiesReady) {
+              showToast(t('sentir.checkInSavedToast'), 'success');
+            }
           }
         }
       })();
@@ -185,5 +199,6 @@ export function useHoyScreenLayout({
     handleOptOutHoyLite,
     checkInReplanCoachLine,
     patternHoyCoachLine,
+    patternHoyMode,
   };
 }

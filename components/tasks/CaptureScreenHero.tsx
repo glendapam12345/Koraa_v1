@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { getFirstName } from '@/lib/displayName';
@@ -19,7 +18,10 @@ type CaptureScreenHeroProps = {
   liveState?: CaptureHeroLiveState | null;
 };
 
-/** Hero calm de Capturar: marca + una pregunta + apoyo. */
+/**
+ * Hero compacto tipo Duolingo: Ellie pequeña al lado + pregunta clara.
+ * El espacio grande es para escribir, no para la mascota.
+ */
 export function CaptureScreenHero({ displayName, liveState }: CaptureScreenHeroProps) {
   const { t } = useI18n();
   const firstName = getFirstName(displayName);
@@ -44,62 +46,71 @@ export function CaptureScreenHero({ displayName, liveState }: CaptureScreenHeroP
   }, [lateNight, liveState, t]);
 
   return (
-    <LinearGradient
-      colors={[...THEME.colors.calm.heroWash]}
-      start={{ x: 0.1, y: 0 }}
-      end={{ x: 0.95, y: 1 }}
-      style={styles.wrap}
-    >
-      <View style={styles.mascotRow} accessibilityElementsHidden>
-        <KoraaMascotAvatar size={88} variant="ellie" breathe />
+    <View style={styles.wrap}>
+      <View style={styles.row}>
+        <View style={styles.mascot} accessibilityElementsHidden>
+          <KoraaMascotAvatar size={52} variant="ellie" breathe />
+        </View>
+        <View style={styles.copy}>
+          <Text style={styles.greeting} numberOfLines={1}>
+            {greetingLine}
+          </Text>
+          <Text style={styles.prompt}>{t('vaciar.brainDumpSimpleTitle')}</Text>
+          <Animated.Text
+            key={subtitle}
+            entering={FadeIn.duration(220)}
+            style={styles.subtitle}
+            numberOfLines={2}
+          >
+            {liveState?.itemCount ? t('frentes.brainDumpSubActive') : subtitle}
+          </Animated.Text>
+        </View>
       </View>
-      <Text style={styles.greeting}>{greetingLine}</Text>
-      <Text style={styles.prompt}>{t('vaciar.brainDumpSimpleTitle')}</Text>
-      <Animated.Text
-        key={subtitle}
-        entering={FadeIn.duration(220)}
-        style={styles.subtitle}
-      >
-        {liveState?.itemCount ? t('frentes.brainDumpSubActive') : subtitle}
-      </Animated.Text>
-    </LinearGradient>
+      <Text style={styles.flowHint}>{t('flow.captionSub')}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    gap: 8,
-    paddingVertical: THEME.spacing.md,
-    paddingHorizontal: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.xl,
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
+    gap: THEME.spacing.xs,
     marginBottom: THEME.spacing.xs,
-    ...THEME.shadows.soft,
   },
-  mascotRow: {
+  row: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: THEME.spacing.xs,
+    gap: THEME.spacing.sm,
+  },
+  mascot: {
+    flexShrink: 0,
+  },
+  copy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
   },
   greeting: {
-    ...THEME.typography.caption,
+    ...THEME.typography.meta,
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
-    lineHeight: 18,
-    textAlign: 'center',
   },
   prompt: {
-    ...THEME.typography.h2,
+    ...THEME.typography.h3,
+    fontSize: 22,
+    lineHeight: 28,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
-    fontSize: 26,
-    lineHeight: 32,
-    textAlign: 'center',
   },
   subtitle: {
-    ...THEME.typography.body,
+    ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    lineHeight: 22,
-    textAlign: 'center',
+    lineHeight: 18,
+  },
+  flowHint: {
+    ...THEME.typography.meta,
+    color: THEME.colors.text.tertiary,
+    fontFamily: THEME.fonts.accent.italic,
+    lineHeight: 16,
+    paddingLeft: 52 + THEME.spacing.sm,
   },
 });

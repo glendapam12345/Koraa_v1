@@ -7,6 +7,8 @@ import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { openPaywall } from '@/lib/paywallNavigation';
 import { PremiumLockOverlay } from '@/components/premium/PremiumLockOverlay';
+import { ParaMiChartInsightFooter } from '@/components/parami/ParaMiChartInsightFooter';
+import type { ParamiChartInsight } from '@/lib/paramiChartInsights';
 
 type ParaMiMusaCardProps = {
   colors: readonly [string, string];
@@ -15,10 +17,12 @@ type ParaMiMusaCardProps = {
   locked: boolean;
   chartSize?: 'week' | 'fortnight' | 'month';
   paywallReturnTo?: string;
+  /** Pie estilo Musa: cifra + interpretación personal. */
+  insight?: ParamiChartInsight | null;
   children?: ReactNode;
 };
 
-/** Card de patrón visual — centrada, aireosa, mist + acento suave. */
+/** Card de patrón visual — tipografía unificada (cardTitle + caption). */
 export function ParaMiMusaCard({
   colors,
   title,
@@ -26,6 +30,7 @@ export function ParaMiMusaCard({
   locked,
   chartSize = 'week',
   paywallReturnTo = '/(tabs)/parami',
+  insight = null,
   children,
 }: ParaMiMusaCardProps) {
   const { t } = useI18n();
@@ -66,6 +71,7 @@ export function ParaMiMusaCard({
             />
           ) : null}
         </View>
+        {!locked && insight ? <ParaMiChartInsightFooter insight={insight} /> : null}
       </LinearGradient>
     </View>
   );
@@ -93,10 +99,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   body: {
-    ...THEME.typography.meta,
+    ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 20,
   },
   chartWrap: {
     position: 'relative',

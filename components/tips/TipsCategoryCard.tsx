@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -16,10 +16,10 @@ type TipsCategoryCardProps = {
 };
 
 const CARD_HEIGHT = 176;
-const LABEL_SLOT_HEIGHT = 44;
+const LABEL_SLOT_HEIGHT = 40;
 
 /**
- * Tarjeta de categoría — altura fija y slots alineados (emoji / título / pastilla).
+ * Tarjeta de categoría — pastel tenue + mood Ellie (como el búho de Duolingo).
  */
 export function TipsCategoryCard({
   category,
@@ -49,7 +49,7 @@ export function TipsCategoryCard({
         style={styles.card}
       >
         <View style={styles.illustration} accessibilityElementsHidden>
-          <Text style={styles.emoji}>{meta.emoji}</Text>
+          <Image source={meta.moodImage} style={styles.mood} resizeMode="contain" />
         </View>
         <View style={styles.labelSlot}>
           <Text style={styles.label} numberOfLines={2}>
@@ -72,24 +72,23 @@ const styles = StyleSheet.create({
   card: {
     height: CARD_HEIGHT,
     borderRadius: THEME.borderRadius.xl,
-    paddingTop: THEME.spacing.md,
+    paddingTop: THEME.spacing.sm,
     paddingBottom: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.sm,
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 0,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
   },
   illustration: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 72,
+    height: 72,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.22)',
   },
-  emoji: {
-    fontSize: 32,
-    lineHeight: 40,
+  mood: {
+    width: 68,
+    height: 68,
   },
   labelSlot: {
     height: LABEL_SLOT_HEIGHT,
@@ -99,22 +98,22 @@ const styles = StyleSheet.create({
   },
   label: {
     ...THEME.typography.cardTitle,
-    color: THEME.colors.onGradient,
+    color: THEME.colors.text.main,
     textAlign: 'center',
   },
   badge: {
     borderRadius: THEME.borderRadius.pill,
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: 6,
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: THEME.colors.calm.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
+    borderColor: THEME.colors.calm.border,
     minHeight: 28,
     justifyContent: 'center',
   },
   badgeText: {
     ...THEME.typography.caption,
-    color: THEME.colors.onGradient,
+    color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
   },
 });

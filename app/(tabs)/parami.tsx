@@ -29,6 +29,13 @@ import { PremiumBadge } from '@/components/premium/PremiumBadge';
 import { generateEmotionalInsights } from '@/lib/emotionalInsights';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { useKoraaTipHighlights } from '@/hooks/useKoraaTipHighlights';
+import {
+  buildEmotionChartInsight,
+  buildEnergyChartInsight,
+  buildMoodChartInsight,
+} from '@/lib/paramiChartInsights';
+import { buildParamiRhythmSnapshot } from '@/lib/paramiRhythmSnapshot';
+import { ParaMiRhythmSnapshotCard } from '@/components/parami/ParaMiRhythmSnapshotCard';
 import type { TipsUserContext } from '@/lib/tipsTypes';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
@@ -108,6 +115,29 @@ export default function ParaMiScreen() {
 
   const moodChartSize = period === 'month' ? 'month' : period === 'twoWeeks' ? 'fortnight' : 'week';
 
+  const checkInCount = useMemo(
+    () => periodData.filter((day) => day.hasCheckIn).length,
+    [periodData],
+  );
+
+  const moodChartInsight = useMemo(
+    () => buildMoodChartInsight(periodData, locale),
+    [periodData, locale],
+  );
+  const energyChartInsight = useMemo(
+    () => buildEnergyChartInsight(periodData, locale),
+    [periodData, locale],
+  );
+  const emotionChartInsight = useMemo(
+    () => buildEmotionChartInsight(emotionMix, checkInCount, locale),
+    [emotionMix, checkInCount, locale],
+  );
+
+  const rhythmSnapshot = useMemo(
+    () => buildParamiRhythmSnapshot(periodData, locale),
+    [periodData, locale],
+  );
+
   const showPremiumLocked = !subscriptionLoading && !isSubscribed;
 
   const patternInput = useMemo((): ParamiPatternInput | null => {
@@ -151,6 +181,10 @@ export default function ParaMiScreen() {
         onPeriodChange={setPeriod}
       />
 
+      {!showPremiumLocked && rhythmSnapshot ? (
+        <ParaMiRhythmSnapshotCard snapshot={rhythmSnapshot} />
+      ) : null}
+
       {/* Hero: un patrón o un insight — centrado */}
       <ParaMiPatternInsightCard insight={patternInsight} loading={patternInsightLoading} />
       <ParaMiInsights
@@ -173,6 +207,7 @@ export default function ParaMiScreen() {
               body={t('parami.moodCardBody')}
               locked={false}
               chartSize={moodChartSize}
+              insight={moodChartInsight}
             >
               <MiniMoodTimeline days={periodData} monthNames={monthNames} period={period} />
             </ParaMiMusaCard>
@@ -205,6 +240,7 @@ export default function ParaMiScreen() {
                   locked={false}
                   empty={false}
                   chartSize={moodChartSize}
+                  insight={energyChartInsight}
                 >
                   <MiniSparklineChart days={periodData} monthNames={monthNames} period={period} />
                 </ParaMiPatternCard>
@@ -214,6 +250,7 @@ export default function ParaMiScreen() {
                   body={t('parami.symptomsCardBody')}
                   locked={false}
                   empty={!hasPatternData}
+                  insight={hasPatternData ? emotionChartInsight : null}
                 >
                   {hasPatternData ? <MiniEmotionBars items={emotionMix} /> : null}
                 </ParaMiPatternCard>

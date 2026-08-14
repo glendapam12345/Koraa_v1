@@ -5,6 +5,7 @@ import { X } from 'lucide-react-native';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 import { OnboardingFlowSteps } from '@/components/onboarding/OnboardingFlowSteps';
+import { OnboardingEllieCoach } from '@/components/onboarding/OnboardingEllieCoach';
 
 type KoraaHowItWorksModalProps = {
   visible: boolean;
@@ -43,6 +44,7 @@ export function KoraaHowItWorksModal({
             showsVerticalScrollIndicator={false}
             bounces={false}
           >
+            <OnboardingEllieCoach message={t('onboarding.ellie.howItWorks')} mood="happy" size={52} />
             <Text style={styles.title}>{t(titleKey)}</Text>
             <Text style={styles.subtitle}>{t(subtitleKey)}</Text>
             <OnboardingFlowSteps />

@@ -29,6 +29,8 @@ import { openHoyReplanPreview } from '@/lib/hoyReplanNavigation';
 import { resolveTipsByIds } from '@/lib/ai/resolveBriefTips';
 import { openTipsCategory } from '@/lib/tipsNavigation';
 import type { TipCategoryId } from '@/lib/tipsTypes';
+import type { PatternHoyApplyMode } from '@/lib/behaviorInsights';
+import { applyPatternHoyToPlanTasks } from '@/lib/applyPatternHoyMode';
 
 export type HoyTasksSectionProps = {
   todayMood: string;
@@ -59,6 +61,8 @@ export type HoyTasksSectionProps = {
   onCollapseRestOfDay?: () => void;
   displayName?: string;
   coachSuggestion?: string;
+  /** Modo activo desde Para mí → reordena el plan de Hoy. */
+  patternHoyMode?: PatternHoyApplyMode | null;
   dailyTipIds?: string[];
   dailyTipLead?: string;
   dailyTipsFromAi?: boolean;
@@ -107,6 +111,7 @@ export function HoyTasksSection({
   onCollapseRestOfDay,
   displayName = '',
   coachSuggestion = '',
+  patternHoyMode = null,
   dailyTipIds = [],
   dailyTipLead = '',
   dailyTipsFromAi = false,
@@ -152,15 +157,19 @@ export function HoyTasksSection({
     setRecheckNudge(null);
   }, [user?.id]);
 
-  const priorityPlanTasks = useMemo(() => {
+  const { priorityPlanTasks, waitingPlanTasks } = useMemo(() => {
     const base = getHoyPriorityPlanTasks(tasks, undefined, focusedProject?.id);
-    return orderTasksByFocusIds(base, aiFocusTaskIds);
-  }, [tasks, focusedProject?.id, aiFocusTaskIds]);
-
-  const waitingPlanTasks = useMemo(
-    () => getHoyWaitingPlanTasks(tasks, undefined, focusedProject?.id),
-    [tasks, focusedProject?.id],
-  );
+    const ordered = orderTasksByFocusIds(base, aiFocusTaskIds);
+    const waitingBase = getHoyWaitingPlanTasks(tasks, undefined, focusedProject?.id);
+    if (!patternHoyMode) {
+      return { priorityPlanTasks: ordered, waitingPlanTasks: waitingBase };
+    }
+    const applied = applyPatternHoyToPlanTasks(ordered, waitingBase, patternHoyMode);
+    return {
+      priorityPlanTasks: applied.priorityTasks,
+      waitingPlanTasks: applied.waitingTasks,
+    };
+  }, [tasks, focusedProject?.id, aiFocusTaskIds, patternHoyMode]);
 
   const { orderedPriorityTasks, orderedWaitingTasks, handlePostpone, handleMove } =
     useHoyPlanTaskActions({
