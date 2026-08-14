@@ -697,7 +697,9 @@ export const en: DeepStrings<typeof es> = {
     energyCare5: 'Lots of energy — pick one thing and care for it.',
     todayFocusEyebrow: "Today's focus",
     firstSessionMicroEyebrow: 'One step is enough today',
-    firstSessionMicroHint: 'Mark this when you can — the rest can wait.',
+    firstSessionMicroHint: 'One tap. The rest can wait.',
+    firstSessionMicroCta: 'This already counts',
+    firstSessionMicroCtaHint: 'Mark this step as enough for today',
     firstSessionMicroStepDone: 'One step on your first day. That’s already enough ✨',
     firstSessionEmptyTitle: 'Jot a tiny step',
     firstSessionEmptyBody:

@@ -47,10 +47,15 @@ const STEPS: FlowStep[] = [
   },
 ];
 
+type OnboardingFlowStepsProps = {
+  /** Si el padre ya muestra título + flechas, no repetir kicker/lead. */
+  hideIntro?: boolean;
+};
+
 /**
  * Flujo Koraa en 4 pasos — Ellie moods + números claros.
  */
-export function OnboardingFlowSteps() {
+export function OnboardingFlowSteps({ hideIntro = false }: OnboardingFlowStepsProps) {
   const { t } = useI18n();
 
   return (
@@ -59,8 +64,12 @@ export function OnboardingFlowSteps() {
       accessibilityRole="summary"
       accessibilityLabel={t('onboarding.flow.a11y')}
     >
-      <Text style={styles.kicker}>{t('onboarding.flow.kicker')}</Text>
-      <Text style={styles.lead}>{t('onboarding.flow.lead')}</Text>
+      {hideIntro ? null : (
+        <>
+          <Text style={styles.kicker}>{t('onboarding.flow.kicker')}</Text>
+          <Text style={styles.lead}>{t('onboarding.flow.lead')}</Text>
+        </>
+      )}
 
       <View style={styles.list}>
         {STEPS.map((step, index) => (

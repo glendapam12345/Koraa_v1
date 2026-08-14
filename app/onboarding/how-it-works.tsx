@@ -32,10 +32,9 @@ export default function HowItWorksScreen() {
       }
     >
       <OnboardingEllieCoach message={t('onboarding.ellie.howItWorks')} mood="grateful" size={56} />
-      <Text style={onboardingTypography.title}>{t('onboarding.howItWorks.title')}</Text>
-      <Text style={onboardingTypography.titleAccent}>{t('onboarding.howItWorks.titleAccent')}</Text>
-      <Text style={onboardingTypography.subtitle}>{t('onboarding.howItWorks.subtitle')}</Text>
-      <OnboardingFlowSteps />
+      <Text style={onboardingTypography.title}>{t('koraaGuide.title')}</Text>
+      <Text style={onboardingTypography.subtitle}>{t('koraaGuide.subtitle')}</Text>
+      <OnboardingFlowSteps hideIntro />
     </OnboardingScreenShell>
   );
 }

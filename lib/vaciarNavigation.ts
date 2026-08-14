@@ -1,10 +1,10 @@
 import { router } from 'expo-router';
+import {
+  buildVaciarCaptureParams,
+  type OpenVaciarCaptureOptions,
+} from '@/lib/vaciarCaptureParams';
 
-export type OpenVaciarCaptureOptions = {
-  date?: string;
-  projectId?: string;
-  suggestion?: string;
-};
+export type { OpenVaciarCaptureOptions } from '@/lib/vaciarCaptureParams';
 
 /** Abre Tareas → Capturar (mismo flujo que brain dump + preview por áreas). */
 export function openVaciarTab(): void {
@@ -15,13 +15,6 @@ export function openVaciarTab(): void {
 export function openVaciarCapture(options?: OpenVaciarCaptureOptions): void {
   router.navigate({
     pathname: '/(tabs)/vaciar',
-    params: {
-      segment: 'capture',
-      fresh: '1',
-      // Limpiar params viejos cuando no se pasan de nuevo (navigate hace merge).
-      date: options?.date ?? '',
-      projectId: options?.projectId ?? '',
-      suggestion: options?.suggestion ?? '',
-    },
+    params: buildVaciarCaptureParams(options),
   });
 }

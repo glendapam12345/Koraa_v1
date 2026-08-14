@@ -145,11 +145,12 @@ export function HoyFocusPanel({
   const addTasksButton = (
     <TouchableOpacity
       style={styles.addTasksBtn}
-      onPress={() => openVaciarCapture()}
+      onPress={() => openVaciarCapture({ source: 'hoy' })}
       activeOpacity={0.85}
       accessibilityRole="button"
       accessibilityLabel={t('hoy.planAddTasksCta')}
       accessibilityHint={t('hoy.planAddTasksHint')}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
       <Text style={styles.addTasksLabel}>{t('hoy.planAddTasksCta')}</Text>
     </TouchableOpacity>
@@ -348,10 +349,11 @@ export function HoyFocusPanel({
           {!crisisMode && primaryTask ? (
             <TouchableOpacity
               style={styles.addTasksSoft}
-              onPress={() => openVaciarCapture()}
+              onPress={() => openVaciarCapture({ source: 'hoy' })}
               activeOpacity={0.85}
               accessibilityRole="button"
               accessibilityLabel={t('hoy.planAddTasksCta')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Text style={styles.addTasksSoftLabel}>{t('hoy.planAddTasksCta')}</Text>
             </TouchableOpacity>

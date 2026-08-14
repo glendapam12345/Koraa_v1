@@ -107,7 +107,7 @@ export default function EnergyScreen() {
           ) : null
         }
       >
-        <OnboardingCheckInProgress step={2} total={2} />
+        <OnboardingCheckInProgress loopStep={3} />
         <OnboardingEllieCoach message={t('onboarding.ellie.energy')} mood="happy" size={52} />
         <Text style={onboardingTypography.title}>{t('onboarding.energy.title')}</Text>
         <Text style={onboardingTypography.titleAccent}>{t('onboarding.energy.titleAccent')}</Text>

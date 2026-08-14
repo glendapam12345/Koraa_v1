@@ -50,7 +50,7 @@ export default function EmotionScreen() {
 
   return (
     <OnboardingScreenShell>
-      <OnboardingCheckInProgress step={1} total={2} />
+      <OnboardingCheckInProgress loopStep={2} />
       <OnboardingEllieCoach message={t('onboarding.ellie.emotion')} mood="breathing" size={52} />
       <Text style={onboardingTypography.title}>{t('onboarding.emotion.title')}</Text>
       <Text style={onboardingTypography.titleAccent}>{t('onboarding.emotion.titleAccent')}</Text>

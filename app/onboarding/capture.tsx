@@ -2,6 +2,7 @@ import { Text, Alert } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
+import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
 import { OnboardingHighlightCard } from '@/components/onboarding/OnboardingHighlightCard';
 import { OnboardingCaptureField } from '@/components/onboarding/OnboardingCaptureField';
 import { OnboardingEllieCoach } from '@/components/onboarding/OnboardingEllieCoach';
@@ -80,6 +81,7 @@ export default function OnboardingCaptureScreen() {
         />
       }
     >
+      <OnboardingCheckInProgress loopStep={1} />
       <OnboardingEllieCoach message={t('onboarding.ellie.capture')} mood="grateful" size={56} />
       <Text style={onboardingTypography.title}>{t('onboarding.capture.title')}</Text>
       <Text style={onboardingTypography.titleAccent}>{t('onboarding.capture.titleAccent')}</Text>

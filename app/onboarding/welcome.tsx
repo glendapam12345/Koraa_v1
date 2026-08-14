@@ -1,6 +1,5 @@
-import { Text, StyleSheet } from 'react-native';
+import { Text } from 'react-native';
 import { router } from 'expo-router';
-import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
 import { OnboardingFlowSteps } from '@/components/onboarding/OnboardingFlowSteps';
@@ -22,30 +21,10 @@ export default function WelcomeScreen() {
         />
       }
     >
-      <OnboardingEllieCoach message={t('onboarding.ellie.welcome')} mood="happy" size={64} />
-      <Text style={styles.brand}>{t('onboarding.welcome.brand')}</Text>
-      <Text style={onboardingTypography.title}>{t('onboarding.welcome.title')}</Text>
-      <Text style={onboardingTypography.titleAccent}>{t('onboarding.welcome.titleAccent')}</Text>
-      <Text style={styles.lead}>{t('onboarding.welcome.subtitle')}</Text>
-      <OnboardingFlowSteps />
+      <OnboardingEllieCoach message={t('onboarding.ellie.howItWorks')} mood="happy" size={56} />
+      <Text style={onboardingTypography.title}>{t('koraaGuide.title')}</Text>
+      <Text style={onboardingTypography.subtitle}>{t('koraaGuide.subtitle')}</Text>
+      <OnboardingFlowSteps hideIntro />
     </OnboardingScreenShell>
   );
 }
-
-const styles = StyleSheet.create({
-  brand: {
-    ...THEME.typography.caption,
-    fontFamily: THEME.fonts.heading.medium,
-    color: THEME.colors.calm.lavenderDeep,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginBottom: THEME.spacing.sm,
-  },
-  lead: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-    lineHeight: 24,
-    marginTop: THEME.spacing.xs,
-    marginBottom: THEME.spacing.md,
-  },
-});

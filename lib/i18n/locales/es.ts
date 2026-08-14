@@ -699,7 +699,9 @@ export const es = {
     energyCare5: 'Mucha energía — elige una cosa y cuídala.',
     todayFocusEyebrow: 'Lo de hoy',
     firstSessionMicroEyebrow: 'Un paso basta hoy',
-    firstSessionMicroHint: 'Marca este cuando puedas — el resto puede esperar.',
+    firstSessionMicroHint: 'Un tap. El resto puede esperar.',
+    firstSessionMicroCta: 'Esto ya cuenta',
+    firstSessionMicroCtaHint: 'Marca este paso como suficiente para hoy',
     firstSessionMicroStepDone: 'Un paso en tu primer día. Eso ya es suficiente ✨',
     firstSessionEmptyTitle: 'Anota un paso chiquito',
     firstSessionEmptyBody:

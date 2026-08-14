@@ -7,6 +7,7 @@ import { markFirstSessionTourSeen } from '@/lib/firstSessionTour';
 import { goToHoyAfterOnboarding } from '@/lib/onboardingNavigation';
 import { markPrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
 import { markQuickOnboardingGuideSeen } from '@/lib/quickOnboardingGuide';
+import { ensureOneHoyStepFromCapture } from '@/lib/ensureOneHoyStepFromCapture';
 import type { AppLocale } from '@/lib/i18n';
 import type { User } from '@supabase/supabase-js';
 
@@ -65,6 +66,8 @@ export async function completeOnboardingCheckInAndGoHoy(
       errorMessage: result.errorMessage,
     };
   }
+
+  await ensureOneHoyStepFromCapture(user.id);
 
   try {
     const {

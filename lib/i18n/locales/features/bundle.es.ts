@@ -790,7 +790,7 @@ export const featuresEs = {
       title: 'Cómo funciona',
       titleAccent: 'Koraa',
       subtitle:
-        'Nombre → suelta → siente → un paso. Sin prisa.',
+        'Nombre, suelta una cosa y di cómo estás. Luego ves un paso en Hoy.',
       description:
         'Suelta → siente → Koraa se adapta → un paso.',
       previewTitle: 'Así te ayuda',
@@ -809,7 +809,7 @@ export const featuresEs = {
       exampleHighStep3: 'Salir a caminar 10 min',
       promise: 'No es hacer más. Es hacer lo que cabe hoy.',
       quickStart: 'Empezar',
-      quickStartHint: 'Nombre, suelta lo pendiente y un check-in corto. Luego ves tu paso en Hoy.',
+      quickStartHint: 'Primero tu nombre. Luego sueltas, sientes, y Koraa te deja un paso.',
       seeHowItWorks: 'Ver cómo funciona',
       skip: 'Entrar sin check-in',
     },
@@ -896,7 +896,7 @@ export const featuresEs = {
       medium: 'Media',
       high: 'Alta',
       veryHigh: 'Muy alta',
-      adaptHint: 'Poca energía = menos pasos. Sin culpa.',
+      adaptHint: 'Esto es “se adapta”: poca energía = menos pasos. Sin culpa.',
       continue: 'Continuar',
     },
     time: {
@@ -992,9 +992,9 @@ export const featuresEs = {
     capture: {
       title: 'Suelta',
       titleAccent: 'lo pendiente',
-      subtitle: 'Escribe 1–3 cosas. Luego Ellie ajusta tu Hoy.',
-      hintTitle: 'Sin orden ni culpa',
-      hintBody: 'Una línea por cosa. Con eso ya hay pasos para hoy.',
+      subtitle: 'Este es el primer paso. Escribe una cosa que llevas en la cabeza.',
+      hintTitle: 'Una cosa basta',
+      hintBody: 'Una línea por cosa. Con eso Koraa te deja un paso en Hoy.',
       hintBodyWithCount: 'Koraa guardará {{count}} cosas y te sugerirá un paso.',
       placeholder: 'Ej.\n• Llamar al dentista\n• Responder un mensaje\n• Beber agua',
       helper: 'Una idea por línea funciona muy bien.',

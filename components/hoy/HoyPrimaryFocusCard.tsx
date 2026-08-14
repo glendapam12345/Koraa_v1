@@ -3,6 +3,7 @@ import { Check, Sparkles, Star } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { useI18n } from '@/contexts/I18nContext';
 
 type HoyPrimaryFocusCardProps = {
@@ -68,25 +69,34 @@ export function HoyPrimaryFocusCard({
         ) : null}
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.checkRow}
-        onPress={onToggleComplete}
-        activeOpacity={0.85}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: completed }}
-        accessibilityLabel={t('hoy.focusTaskToggleA11y', { task: content })}
-      >
-        {completed ? (
-          <View style={styles.checkDone}>
-            <Check size={14} color={THEME.colors.onGradient} strokeWidth={3} />
-          </View>
-        ) : (
-          <View style={[styles.checkRing, nudge && styles.checkRingNudge]} />
-        )}
-        <Text style={styles.checkLabel}>
-          {completed ? t('hoy.todayFocusDone') : t('hoy.todayFocusMark')}
-        </Text>
-      </TouchableOpacity>
+      {nudge ? (
+        <CalmPrimaryButton
+          label={t('hoy.firstSessionMicroCta')}
+          onPress={onToggleComplete}
+          variant="default"
+          accessibilityHint={t('hoy.firstSessionMicroCtaHint')}
+        />
+      ) : (
+        <TouchableOpacity
+          style={styles.checkRow}
+          onPress={onToggleComplete}
+          activeOpacity={0.85}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: completed }}
+          accessibilityLabel={t('hoy.focusTaskToggleA11y', { task: content })}
+        >
+          {completed ? (
+            <View style={styles.checkDone}>
+              <Check size={14} color={THEME.colors.onGradient} strokeWidth={3} />
+            </View>
+          ) : (
+            <View style={styles.checkRing} />
+          )}
+          <Text style={styles.checkLabel}>
+            {completed ? t('hoy.todayFocusDone') : t('hoy.todayFocusMark')}
+          </Text>
+        </TouchableOpacity>
+      )}
     </>
   );
 

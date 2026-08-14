@@ -5,6 +5,7 @@ import { batchItemToDraft } from '@/lib/vaciarBatchDraft';
 import { createVaciarTask } from '@/lib/vaciarCreateTask';
 import { track } from '@/lib/analytics';
 import { logger } from '@/lib/logger';
+import { ensureOneHoyStepFromCapture } from '@/lib/ensureOneHoyStepFromCapture';
 import {
   buildOnboardingCaptureItems,
   countOnboardingCaptureItems,
@@ -76,6 +77,7 @@ export async function saveOnboardingCaptureForUser(
 
   if (savedCount > 0) {
     void track('onboarding_capture_saved', { count: savedCount });
+    await ensureOneHoyStepFromCapture(userId);
   }
 
   return { error: null, savedCount, attemptedCount, partialFailure: false };

@@ -47,7 +47,7 @@ export function KoraaHowItWorksModal({
             <OnboardingEllieCoach message={t('onboarding.ellie.howItWorks')} mood="happy" size={52} />
             <Text style={styles.title}>{t(titleKey)}</Text>
             <Text style={styles.subtitle}>{t(subtitleKey)}</Text>
-            <OnboardingFlowSteps />
+            <OnboardingFlowSteps hideIntro />
           </ScrollView>
 
           <TouchableOpacity
