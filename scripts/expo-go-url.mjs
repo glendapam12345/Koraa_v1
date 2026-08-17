@@ -27,14 +27,19 @@ export function buildExpoLoadingUrl(proxyUrl, platform = 'ios') {
 }
 
 /**
- * Deep link exp:// (fallback Android / URL manual).
- * Con proxy HTTPS, Expo CLI usa puerto 443.
+ * Deep link for Expo Go.
+ * HTTPS tunnels must use exps://. exp://host:443 sends plain HTTP to 443
+ * and Cloudflare returns 400 ("plain HTTP request was sent to HTTPS port").
  */
 export function buildExpoGoUrlFromProxy(proxyUrl) {
   const parsed = new URL(proxyUrl);
   const host = parsed.hostname;
-  const port = parsed.port || (parsed.protocol === 'https:' ? '443' : '');
-  return port ? `exp://${host}:${port}` : `exp://${host}`;
+  if (parsed.protocol === 'https:') {
+    const port = parsed.port && parsed.port !== '443' ? `:${parsed.port}` : '';
+    return `exps://${host}${port}`;
+  }
+  const port = parsed.port ? `:${parsed.port}` : '';
+  return `exp://${host}${port}`;
 }
 
 export function buildExpoGoUrlFromLan(ip, port = '8081') {

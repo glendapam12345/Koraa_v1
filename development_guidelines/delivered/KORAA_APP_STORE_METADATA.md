@@ -106,8 +106,8 @@ productividad,emociones,energía,enfoque,bienestar,tareas,claridad,ansiedad,habi
 
 | ID del producto | Tipo | Duración | Precio (ref.) | Qué desbloquea |
 |-----------------|------|----------|----------------|----------------|
-| com.kora.premium.monthly | Suscripción | 1 mes | $49 MXN (más impuestos regionales) | Entitlement **premium**: re-planificación ilimitada, uso continuo en el día, notificaciones inteligentes, historial, insights, patrones, recomendaciones personalizadas |
-| com.kora.premium.annual | Suscripción | 1 año | $411 MXN (más impuestos regionales) | Mismo entitlement **premium**; ahorro anual frente a mensual |
+| com.kora.premium.monthly | Suscripción | 1 mes | $69 MXN (más impuestos regionales) | Entitlement **premium**: re-planificación ilimitada, uso continuo en el día, notificaciones inteligentes, historial, insights, patrones, recomendaciones personalizadas |
+| com.kora.premium.annual | Suscripción | 1 año | $579 MXN (30% vs pagar 12 meses; más impuestos regionales) | Mismo entitlement **premium**; ahorro anual frente a mensual |
 
 **Nota:** Ambas suscripciones incluyen **prueba gratuita de 7 días** según estrategia; actívala en App Store Connect y mantén coherente con el paywall en la app.
 

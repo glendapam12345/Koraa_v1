@@ -1,10 +1,11 @@
-import { View, Text, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, RefreshControl, InteractionManager } from 'react-native';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useWeekTasks, type DayTasks, type WeekDayCheckIn, getWeekBoundsForStart } from '@/hooks/useWeekTasks';
 import { useMonthCalendar } from '@/hooks/useMonthCalendar';
+import { buildOptimisticTask } from '@/hooks/useTasks';
 import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
 import { useCheckIn } from '@/hooks/useCheckIn';
 import { DEFAULT_CHECK_IN_TIME } from '@/lib/checkInDefaults';
@@ -134,10 +135,10 @@ function SemanaScreen() {
     [],
   );
 
-  const { weekTasks, checkInsByDate, projects, loading, loadWeekTasks, loadDateRange, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast, locale);
+  const { weekTasks, checkInsByDate, projects, loading, loadWeekTasks, loadDateRange, appendTaskToDay, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast, locale);
   const { hasCheckInToday, refresh: refreshCheckInToday } = useHasCheckInToday(user?.id);
   const { time: todayCheckInTime, loadTodayCheckIn } = useCheckIn(showToast);
-  const { days: calendarDays, tasksByDate, loading: monthLoading, loadMonth } = useMonthCalendar(
+  const { days: calendarDays, tasksByDate, loading: monthLoading, loadMonth, appendTaskToDate } = useMonthCalendar(
     calendarYear,
     calendarMonth,
     showToast,
@@ -178,7 +179,7 @@ function SemanaScreen() {
 
   useEffect(() => {
     if (viewMode === 'calendar') {
-      loadMonth();
+      void loadMonth({ silent: true });
     }
   }, [loadMonth, viewMode, calendarYear, calendarMonth]);
 
@@ -194,10 +195,9 @@ function SemanaScreen() {
   }, [viewMode, projects.length, loadDateRange, loadMonth, rangeMode, rangeAnchorDate]);
 
   useEffect(() => {
-    if (viewMode === 'calendar') {
-      void loadWeekTasks(getWeekMonday(selectedDate));
-    }
-  }, [viewMode, loadWeekTasks, selectedDate]);
+    if (viewMode !== 'calendar') return;
+    void loadWeekTasks(undefined);
+  }, [viewMode, loadWeekTasks]);
 
   const canGoPrevMonth = isSubscribed;
   const canGoNextMonth = isSubscribed;
@@ -251,7 +251,6 @@ function SemanaScreen() {
       void refreshCheckInToday();
       if (viewMode === 'calendar') {
         void loadMonth();
-        void loadWeekTasks(undefined);
       } else if (rangeMode === 'month') {
         void loadMonth();
       } else {
@@ -283,21 +282,61 @@ function SemanaScreen() {
 
   const handleRefresh = useCallback(() => {
     if (viewMode === 'calendar') {
-      loadMonth();
-      loadWeekTasks(undefined);
+      void loadMonth();
       return;
     }
     if (rangeMode === 'month') {
-      loadMonth();
+      void loadMonth();
       return;
     }
     const { start, end } = getRangeBounds(rangeMode, rangeAnchorDate);
     void loadDateRange(start, end);
-  }, [viewMode, rangeMode, rangeAnchorDate, loadMonth, loadDateRange, loadWeekTasks]);
+  }, [viewMode, rangeMode, rangeAnchorDate, loadMonth, loadDateRange]);
 
-  const handleTasksChanged = useCallback(() => {
-    handleRefresh();
-  }, [handleRefresh]);
+  const handleTasksChanged = useCallback(
+    (created?: {
+      taskId?: string;
+      title: string;
+      scheduledDate?: string | null;
+      projectId?: string | null;
+    }) => {
+      if (created?.taskId && created.scheduledDate) {
+        const optimistic = buildOptimisticTask({
+          id: created.taskId,
+          content: created.title,
+          scheduledDate: created.scheduledDate,
+          projectId: created.projectId ?? null,
+        });
+        if (viewMode === 'calendar') {
+          appendTaskToDate(created.scheduledDate, optimistic);
+        } else {
+          appendTaskToDay(created.scheduledDate, optimistic);
+        }
+      }
+
+      InteractionManager.runAfterInteractions(() => {
+        if (viewMode === 'calendar') {
+          void loadMonth({ silent: true });
+          return;
+        }
+        if (rangeMode === 'month') {
+          void loadMonth({ silent: true });
+          return;
+        }
+        const { start, end } = getRangeBounds(rangeMode, rangeAnchorDate);
+        void loadDateRange(start, end, { silent: true });
+      });
+    },
+    [
+      viewMode,
+      rangeMode,
+      rangeAnchorDate,
+      loadMonth,
+      loadDateRange,
+      appendTaskToDate,
+      appendTaskToDay,
+    ],
+  );
 
   const { moveTaskToDay, moving: movingTask } = useSemanaTaskDrag({
     showToast,
@@ -728,6 +767,10 @@ function SemanaScreen() {
     }, []),
   );
 
+  useEffect(() => {
+    setPlannerDragging(false);
+  }, [viewMode, rangeMode]);
+
   const handleExportTasks = useCallback(async () => {
     if (exportableTasks.length === 0) {
       showToast(t('semana.exportEmpty'), 'info');
@@ -744,7 +787,7 @@ function SemanaScreen() {
       <CalmScreen
         topInset="lg"
         gap={THEME.layout.tabSectionGap}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
         scrollEnabled={!plannerDragging}
         refreshControl={
           <RefreshControl
@@ -852,19 +895,15 @@ function SemanaScreen() {
               onLockedNavPress={!isSubscribed ? handleLockedNavPress : undefined}
             />
 
-            {monthLoading ? (
-              <Text style={styles.loadingWeek}>{t('semana.loadingDays')}</Text>
-            ) : (
-              <View style={styles.calendarGridWrap}>
-                <SemanaCalendarGrid
-                  days={calendarDays}
-                  selectedDate={selectedDate}
-                  onSelectDate={handleSelectCalendarDate}
-                  selectableDateKeys={freeVisibleDateKeys}
-                  onLockedDatePress={handleLockedNavPress}
-                />
-              </View>
-            )}
+            <View style={styles.calendarGridWrap}>
+              <SemanaCalendarGrid
+                days={calendarDays}
+                selectedDate={selectedDate}
+                onSelectDate={handleSelectCalendarDate}
+                selectableDateKeys={freeVisibleDateKeys}
+                onLockedDatePress={handleLockedNavPress}
+              />
+            </View>
 
             <SemanaDaySection
               dateStr={selectedDate}
@@ -883,13 +922,7 @@ function SemanaScreen() {
               emotionId={selectedDayEmotionId}
               energyLevel={selectedDayData?.energyLevel ?? null}
               focusCount={null}
-              globalCheckInBannerVisible={
-                selectedDate === todayStr && hasCheckInToday === false
-              }
-              suppressEmptyWhenGlobalBanner={
-                selectedDate === todayStr && hasCheckInToday === false
-              }
-              addTasksA11yLabel={`${t('semana.addTasks')} ${selectedDayLabel}`}
+              addTasksA11yLabel={`${t('semana.addToDayCta')} ${selectedDayLabel}`}
               addMoreA11yLabel={`${t('semana.addMore')} ${selectedDayLabel}`}
               onTasksChanged={handleTasksChanged}
               showToast={showToast}
@@ -936,11 +969,12 @@ function SemanaScreen() {
         />
         )}
 
-        {(rangeMode === 'month' ? monthLoading : loading) || replanLoading ? (
+        {((rangeMode === 'month' ? monthLoading : loading) || replanLoading) &&
+        boardWeekTasks.length === 0 ? (
           <Text style={styles.loadingWeek}>{t('semana.loadingDays')}</Text>
         ) : null}
 
-        {!(rangeMode === 'month' ? monthLoading : loading) && !replanLoading ? (
+        {!replanLoading && boardWeekTasks.length > 0 ? (
           <SemanaDraggableWeekBoard
             weekTasks={boardWeekTasks}
             projects={projects}

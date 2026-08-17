@@ -11,6 +11,7 @@ type HoyDayReflectionFlowProps = {
   displayName?: string;
   selectedReason: WhatChangedReason | null;
   previewProposal: ReorganizeWeekProposal | null;
+  pendingAssignments?: { id: string; scheduled_date: string }[];
   buildingPreview: boolean;
   applying: boolean;
   capacity?: DayCapacitySnapshot | null;
@@ -18,6 +19,7 @@ type HoyDayReflectionFlowProps = {
   onClose: () => void;
   onSelectReason: (reason: WhatChangedReason) => void;
   onBackToReason: () => void;
+  onChangeTaskDate?: (taskId: string, nextDate: string) => void;
   onConfirm: () => void;
 };
 
@@ -27,6 +29,7 @@ export function HoyDayReflectionFlow({
   displayName,
   selectedReason,
   previewProposal,
+  pendingAssignments = [],
   buildingPreview,
   applying,
   capacity = null,
@@ -34,6 +37,7 @@ export function HoyDayReflectionFlow({
   onClose,
   onSelectReason,
   onBackToReason,
+  onChangeTaskDate,
   onConfirm,
 }: HoyDayReflectionFlowProps) {
   return (
@@ -48,7 +52,9 @@ export function HoyDayReflectionFlow({
         applying={applying}
         capacity={capacity}
         planningMeta={planningMeta}
+        assignments={pendingAssignments}
         onSelectReason={onSelectReason}
+        onChangeTaskDate={onChangeTaskDate}
         onConfirm={onConfirm}
         onBack={onBackToReason}
         onClose={onClose}

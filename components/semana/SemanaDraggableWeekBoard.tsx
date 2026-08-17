@@ -25,7 +25,12 @@ type SemanaDraggableWeekBoardProps = {
   userId?: string;
   boardLayout?: SemanaBoardLayout;
   onMoveTask: (taskId: string, targetDayId: string) => Promise<{ ok: boolean }>;
-  onTasksChanged?: () => void;
+  onTasksChanged?: (created?: {
+    title: string;
+    taskId?: string;
+    scheduledDate?: string | null;
+    projectId?: string | null;
+  }) => void;
   moving?: boolean;
   onDraggingChange?: (dragging: boolean) => void;
   hasCheckInToday?: boolean;
@@ -60,7 +65,7 @@ export function SemanaDraggableWeekBoard({
     return () => {
       cancelled = true;
     };
-  }, [weekTasks]);
+  }, []);
 
   const { days, areas } = useMemo(
     () => buildSemanaPlannerModel(weekTasks, projects, t('projectsUi.looseTitle'), locale),
@@ -191,9 +196,13 @@ export function SemanaDraggableWeekBoard({
     [onTasksChanged, showToast, t, tasksById],
   );
 
-  const handlePressAddToDay = useCallback((dayId: string, dayLabel: string) => {
-    setQuickAddTarget({ mode: 'day', date: dayId, dayLabel });
-  }, []);
+  const handlePressAddToDay = useCallback(
+    (dayId: string, dayLabel: string) => {
+      onDraggingChange?.(false);
+      setQuickAddTarget({ mode: 'day', date: dayId, dayLabel });
+    },
+    [onDraggingChange],
+  );
 
   return (
     <View style={styles.wrap}>
@@ -253,8 +262,13 @@ export function SemanaDraggableWeekBoard({
         hasCheckInToday={hasCheckInToday}
         projects={quickAddProjects}
         onClose={() => setQuickAddTarget(null)}
-        onSaved={({ title: savedTitle, dayLabel, projectName }) => {
-          onTasksChanged?.();
+        onSaved={({ title: savedTitle, dayLabel, projectName, taskId, scheduledDate, projectId }) => {
+          onTasksChanged?.({
+            title: savedTitle,
+            taskId,
+            scheduledDate,
+            projectId,
+          });
           if (dayLabel) {
             showToast?.(
               projectName

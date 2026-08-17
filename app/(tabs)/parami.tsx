@@ -15,6 +15,7 @@ import { MiniSparklineChart } from '@/components/yo/MiniSparklineChart';
 import { MiniEmotionBars } from '@/components/yo/MiniEmotionBars';
 import { MiniMoodTimeline } from '@/components/yo/MiniMoodTimeline';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
+import { TabScreenErrorBoundary } from '@/components/TabScreenErrorBoundary';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { ParaMiPeriodBar, type ParaMiPeriodId } from '@/components/parami/ParaMiPeriodBar';
 import { ParaMiMusaCard } from '@/components/parami/ParaMiMusaCard';
@@ -41,7 +42,15 @@ import type { TipsUserContext } from '@/lib/tipsTypes';
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
 const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
 
-export default function ParaMiScreen() {
+export default function ParaMiScreenRoute() {
+  return (
+    <TabScreenErrorBoundary screenName="parami">
+      <ParaMiScreen />
+    </TabScreenErrorBoundary>
+  );
+}
+
+function ParaMiScreen() {
   const { t, locale } = useI18n();
   const { user } = useAuth();
   const [period, setPeriod] = useState<ParaMiPeriodId>('week');

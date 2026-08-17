@@ -34,7 +34,11 @@ async function writeItem(key: string, value: string): Promise<void> {
     }
     return;
   }
-  await SecureStore.setItemAsync(key, value);
+  try {
+    await SecureStore.setItemAsync(key, value);
+  } catch {
+    /* size limit or keychain error */
+  }
 }
 
 async function deleteItem(key: string): Promise<void> {

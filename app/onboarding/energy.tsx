@@ -97,7 +97,7 @@ export default function EnergyScreen() {
         footer={
           selectedEnergy > 0 ? (
             <CalmPrimaryButton
-              label={isSaving ? t('onboarding.focus.saving') : t('onboarding.focus.start')}
+              label={isSaving ? t('onboarding.focus.saving') : t('onboarding.energy.continue')}
               onPress={() => void finish(selectedEnergy)}
               disabled={isSaving}
               loading={isSaving}

@@ -39,13 +39,13 @@ describe('hoyFocusTasks', () => {
     expect(isTaskExplicitlyForToday({ scheduled_date: null }, TODAY)).toBe(false);
   });
 
-  it('waiting tasks are only non-priority with today date', () => {
+  it('waiting tasks are not used when the date is already today', () => {
     expect(
       isTaskWaitingForToday(
         { scheduled_date: TODAY, is_priority: false, is_completed: false },
         TODAY,
       ),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       isTaskWaitingForToday(
         { scheduled_date: null, is_priority: false, is_completed: false },
@@ -60,8 +60,11 @@ describe('hoyFocusTasks', () => {
     ).toBe(false);
   });
 
-  it('suggested tasks are priority for today or undated priority', () => {
+  it('suggested tasks are due today or undated priority', () => {
     expect(isTaskSuggestedForToday({ scheduled_date: TODAY, is_priority: true }, TODAY)).toBe(
+      true,
+    );
+    expect(isTaskSuggestedForToday({ scheduled_date: TODAY, is_priority: false }, TODAY)).toBe(
       true,
     );
     expect(isTaskSuggestedForToday({ scheduled_date: null, is_priority: true }, TODAY)).toBe(true);
@@ -70,35 +73,38 @@ describe('hoyFocusTasks', () => {
     );
   });
 
-  it('getHoyPriorityPlanTasks excludes backlog and completed', () => {
+  it('getHoyPriorityPlanTasks includes due today and excludes backlog', () => {
     const tasks = [
       task({ id: '1', is_priority: true, scheduled_date: TODAY }),
       task({ id: '2', is_priority: true, is_completed: true, scheduled_date: TODAY }),
       task({ id: '3', is_priority: false, scheduled_date: TODAY }),
       task({ id: '4', is_priority: false, scheduled_date: null }),
     ];
-    expect(getHoyPriorityPlanTasks(tasks, TODAY).map((row) => row.id)).toEqual(['1']);
+    expect(getHoyPriorityPlanTasks(tasks, TODAY).map((row) => row.id)).toEqual(['1', '3']);
   });
 
-  it('getHoyWaitingPlanTasks only returns dated today non-priority open', () => {
+  it('getHoyWaitingPlanTasks is empty when due today is already suggested', () => {
     const tasks = [
       task({ id: 'w1', scheduled_date: TODAY }),
       task({ id: 'w2', scheduled_date: null }),
       task({ id: 'w3', scheduled_date: TODAY, is_priority: true }),
       task({ id: 'w4', scheduled_date: '2026-06-09' }),
     ];
-    expect(getHoyWaitingPlanTasks(tasks, TODAY).map((row) => row.id)).toEqual(['w1']);
+    expect(getHoyWaitingPlanTasks(tasks, TODAY).map((row) => row.id)).toEqual([]);
   });
 
-  it('returns only incomplete suggested steps', () => {
+  it('returns incomplete due-today steps, priority first', () => {
     const tasks = [
       task({ id: '1', is_priority: true, is_completed: true, scheduled_date: TODAY }),
       task({ id: '2', is_priority: true, scheduled_date: TODAY }),
       task({ id: '3', is_priority: false, scheduled_date: TODAY }),
     ];
-    const incomplete = [task({ id: '2', is_priority: true }), task({ id: '3' })];
+    const incomplete = [
+      task({ id: '2', is_priority: true, scheduled_date: TODAY }),
+      task({ id: '3', scheduled_date: TODAY }),
+    ];
     const focus = getHoyFocusTasks(tasks, incomplete, TODAY);
-    expect(focus.map((t) => t.id)).toEqual(['2']);
+    expect(focus.map((t) => t.id)).toEqual(['2', '3']);
   });
 
   it('returns empty when all suggested steps are done', () => {

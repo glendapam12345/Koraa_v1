@@ -17,7 +17,11 @@ import {
   type GoogleCalendarTokens,
 } from '@/lib/googleCalendar/tokenStore';
 
-WebBrowser.maybeCompleteAuthSession();
+try {
+  WebBrowser.maybeCompleteAuthSession();
+} catch {
+  /* Expo Go / missing native module */
+}
 
 export type GoogleCalendarConnectResult =
   | { ok: true; email?: string }

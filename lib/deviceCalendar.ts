@@ -125,16 +125,16 @@ export async function addTaskToDeviceCalendar(
     }
   }
 
-  const calendarId = await resolveWritableCalendarId(Calendar);
-  if (calendarId === null) {
-    const { status } = await Calendar.getCalendarPermissionsAsync();
-    if (status !== 'granted') {
-      return { ok: false, reason: 'permission_denied' };
-    }
-    return { ok: false, reason: 'no_calendar' };
-  }
-
   try {
+    const calendarId = await resolveWritableCalendarId(Calendar);
+    if (calendarId === null) {
+      const { status } = await Calendar.getCalendarPermissionsAsync();
+      if (status !== 'granted') {
+        return { ok: false, reason: 'permission_denied' };
+      }
+      return { ok: false, reason: 'no_calendar' };
+    }
+
     const startDate = parseLocalDateString(dateKey);
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(startDate);

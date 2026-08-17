@@ -16,10 +16,16 @@ export function useCrisisMode() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const [crisis, session] = await Promise.all([isCrisisModeActive(), loadLastSession()]);
-    setActive(crisis);
-    setLastSession(session);
-    setLoading(false);
+    try {
+      const [crisis, session] = await Promise.all([isCrisisModeActive(), loadLastSession()]);
+      setActive(crisis);
+      setLastSession(session);
+    } catch {
+      setActive(false);
+      setLastSession(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useFocusEffect(

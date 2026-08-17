@@ -50,7 +50,7 @@ type VaciarCaptureFormProps = {
   onRemoveSubtask: (index: number) => void;
   isSaving: boolean;
   saveBlocked: boolean;
-  onSave: () => void;
+  onSave: (context?: { projects: { id: string; name: string }[] }) => void;
   onProjectError: (message: string) => void;
   onProjectCreated: (name: string) => void;
   onVoiceNotice?: (message: string) => void;
@@ -118,11 +118,17 @@ export function VaciarCaptureForm({
   });
 
   const handleVoicePress = () => {
+    if (!voiceAvailable) {
+      inputRef.current?.focus();
+      onVoiceNotice?.(t('vaciarExtra.dictateTapKeyboardMic'));
+      return;
+    }
     void (async () => {
       const result = await toggleVoice();
       if (!result.ok) {
         if (result.reason === 'unavailable') {
-          onVoiceNotice?.(t('vaciarExtra.voiceUnavailable'));
+          inputRef.current?.focus();
+          onVoiceNotice?.(t('vaciarExtra.dictateTapKeyboardMic'));
         } else if (result.reason === 'permission') {
           onVoiceNotice?.(t('vaciarExtra.voicePermissionDenied'));
         }
@@ -172,7 +178,7 @@ export function VaciarCaptureForm({
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
     Keyboard.dismiss();
-    onSave();
+    onSave({ projects: liveOrg.projects });
   };
 
   const focusedInputMinHeight = Math.max(220, Math.round(windowHeight * 0.34));
@@ -232,6 +238,8 @@ export function VaciarCaptureForm({
           scrollEnabled
           textAlignVertical="top"
           maxLength={2000}
+          autoCorrect={false}
+          spellCheck={false}
           returnKeyType="default"
           blurOnSubmit={false}
           keyboardAppearance="light"
@@ -246,24 +254,25 @@ export function VaciarCaptureForm({
           <View style={styles.toolRow}>
             <TouchableOpacity
               style={[styles.toolBtn, isListening && styles.toolBtnActive]}
-              onPress={voiceAvailable ? handleVoicePress : undefined}
-              disabled={!voiceAvailable}
+              onPress={handleVoicePress}
               activeOpacity={0.8}
               accessibilityRole="button"
               accessibilityLabel={
                 isListening ? t('vaciarExtra.a11yVoiceStop') : t('vaciarExtra.a11yVoiceMic')
               }
-              accessibilityHint={t('vaciarExtra.a11yVoiceMicHint')}
-              accessibilityState={{ selected: isListening, disabled: !voiceAvailable }}
+              accessibilityHint={
+                voiceAvailable
+                  ? t('vaciarExtra.a11yVoiceMicHint')
+                  : t('vaciarExtra.dictateTapKeyboardMic')
+              }
+              accessibilityState={{ selected: isListening }}
             >
               <Mic
                 size={20}
                 color={
                   isListening
                     ? THEME.colors.onGradient
-                    : voiceAvailable
-                      ? THEME.colors.calm.lavenderDeep
-                      : THEME.colors.text.tertiary
+                    : THEME.colors.calm.lavenderDeep
                 }
               />
             </TouchableOpacity>

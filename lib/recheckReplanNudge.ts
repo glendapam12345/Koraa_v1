@@ -23,6 +23,20 @@ export async function saveRecheckReplanNudge(
   }
 }
 
+export async function peekRecheckReplanNudge(
+  userId: string,
+): Promise<RecheckReplanNudge | null> {
+  try {
+    const raw = await AsyncStorage.getItem(nudgeKey(userId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as RecheckReplanNudge;
+    if (typeof parsed?.energyLevel !== 'number') return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 export async function consumeRecheckReplanNudge(
   userId: string,
 ): Promise<RecheckReplanNudge | null> {

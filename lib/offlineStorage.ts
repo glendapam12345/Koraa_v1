@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from './supabase';
+import { supabase, getCachedAuthUser } from './supabase';
 import { logger } from './logger';
 
 const STORAGE_KEYS = {
@@ -92,7 +92,7 @@ export async function getPendingTasks(): Promise<PendingTask[]> {
 // Sincronizar check-ins pendientes con Supabase
 export async function syncPendingCheckIns(): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedAuthUser();
     if (!user) return;
 
     const pendingCheckIns = await getPendingCheckIns();
@@ -140,7 +140,7 @@ export async function syncPendingCheckIns(): Promise<void> {
 // Sincronizar tareas pendientes con Supabase
 export async function syncPendingTasks(): Promise<void> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedAuthUser();
     if (!user) return;
 
     const pendingTasks = await getPendingTasks();
@@ -266,8 +266,7 @@ export async function syncAll(): Promise<void> {
 // Verificar conexión de red (versión simple sin NetInfo)
 export async function checkNetworkConnection(): Promise<boolean> {
   try {
-    // Intentar una query simple a Supabase para verificar conexión
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedAuthUser();
     if (!user) return false;
     
     // Query simple para verificar conexión

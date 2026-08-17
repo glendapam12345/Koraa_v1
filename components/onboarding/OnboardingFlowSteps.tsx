@@ -18,6 +18,11 @@ const MOOD_IMAGES: Record<EllieMood, number> = {
   sleepy: require('@/assets/images/ellie-mood-sleepy.png'),
   happy: require('@/assets/images/ellie-mood-happy.png'),
   grateful: require('@/assets/images/ellie-mood-grateful.png'),
+  focus: require('@/assets/images/ellie-mood-focus.png'),
+  comforting: require('@/assets/images/ellie-mood-comforting.png'),
+  proud: require('@/assets/images/ellie-mood-proud.png'),
+  cozy: require('@/assets/images/ellie-mood-cozy.png'),
+  curious: require('@/assets/images/ellie-mood-curious.png'),
 };
 
 const STEPS: FlowStep[] = [

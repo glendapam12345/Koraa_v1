@@ -24,10 +24,11 @@ async function hasTodayCheckIn(userId: string): Promise<boolean> {
  */
 export default function SentirScreen() {
   const { t } = useI18n();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   useFocusEffect(
     useCallback(() => {
+      if (loading) return;
       if (!user?.id) {
         router.replace('/auth/login');
         return;
@@ -52,7 +53,7 @@ export default function SentirScreen() {
       return () => {
         cancelled = true;
       };
-    }, [user?.id]),
+    }, [loading, user?.id]),
   );
 
   return <AppLoadingGate message={t('sentir.redirecting')} />;

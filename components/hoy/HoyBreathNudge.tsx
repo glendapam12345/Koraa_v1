@@ -1,28 +1,45 @@
 import { useState } from 'react';
-import { Text, StyleSheet, Pressable } from 'react-native';
+import { Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Wind } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
-import { CalmCard } from '@/components/ui/calm/CalmCard';
+import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { QuickBreathModal } from '@/components/hoy/QuickBreathModal';
 import { useI18n } from '@/contexts/I18nContext';
 
-/** Nudge suave de respirar — apoyo, no compite con el foco. */
-export function HoyBreathNudge() {
+type HoyBreathNudgeProps = {
+  /** `icon`: cabecera Hoy. `chip`: Consejos. */
+  variant?: 'icon' | 'chip';
+};
+
+/** Acceso suave al respiro — no abre una fila extra en Hoy. */
+export function HoyBreathNudge({ variant = 'chip' }: HoyBreathNudgeProps) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
 
-  return (
-    <>
-      <Pressable
+  const trigger =
+    variant === 'icon' ? (
+      <HeaderIconButton
         onPress={() => setOpen(true)}
-        style={({ pressed }) => [pressed && styles.pressed]}
+        accessibilityLabel={t('hoy.planBreakBreatheA11y')}
+      >
+        <Wind size={20} color={THEME.colors.calm.lavenderDeep} />
+      </HeaderIconButton>
+    ) : (
+      <TouchableOpacity
+        onPress={() => setOpen(true)}
+        style={styles.chip}
+        activeOpacity={0.85}
         accessibilityRole="button"
         accessibilityLabel={t('hoy.planBreakBreatheA11y')}
       >
-        <CalmCard style={styles.card}>
-          <Text style={styles.title}>{t('hoy.breathNudgeTitle')}</Text>
-          <Text style={styles.body}>{t('hoy.breathNudgeBody')}</Text>
-        </CalmCard>
-      </Pressable>
+        <Wind size={14} color={THEME.colors.calm.lavenderDeep} />
+        <Text style={styles.label}>{t('hoy.rhythmChipBreathe')}</Text>
+      </TouchableOpacity>
+    );
+
+  return (
+    <>
+      {trigger}
       <QuickBreathModal
         visible={open}
         onClose={() => setOpen(false)}
@@ -33,26 +50,22 @@ export function HoyBreathNudge() {
 }
 
 const styles = StyleSheet.create({
-  pressed: {
-    opacity: 0.92,
-  },
-  card: {
-    gap: 4,
-    paddingVertical: THEME.spacing.md,
-    paddingHorizontal: THEME.spacing.md,
+  chip: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.sm,
+    paddingVertical: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.pill,
     backgroundColor: THEME.colors.calm.mist,
-    borderColor: THEME.colors.calm.border,
     borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    minHeight: THEME.sizes.touchTarget,
   },
-  title: {
-    ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-    lineHeight: 22,
-  },
-  body: {
+  label: {
     ...THEME.typography.caption,
-    color: THEME.colors.text.secondary,
-    lineHeight: 18,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.calm.lavenderDeep,
   },
 });

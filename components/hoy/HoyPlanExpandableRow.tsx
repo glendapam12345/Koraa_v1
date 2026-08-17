@@ -38,6 +38,7 @@ export function HoyPlanExpandableRow({
           expanded && (isAccent ? styles.rowAccentExpanded : styles.rowExpanded),
         ]}
         onPress={onToggle}
+        delayPressIn={0}
         activeOpacity={0.88}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}

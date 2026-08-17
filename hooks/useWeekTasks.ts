@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { supabase, getErrorMessage, isSchemaError, getSchemaSetupMessage, type SchemaSetupType } from '@/lib/supabase';
+import { supabase, getErrorMessage, isSchemaError, getSchemaSetupMessage, getCachedAuthUser, type SchemaSetupType } from '@/lib/supabase';
 import { getLocalDateString, normalizeScheduledDate, parseLocalDateString } from '@/lib/dateLocal';
 import { translate, type AppLocale } from '@/lib/i18n';
 import { logger } from '@/lib/logger';
@@ -120,14 +120,20 @@ export function useWeekTasks(
   const [schemaSetupType, setSchemaSetupType] = useState<SchemaSetupType | null>(null);
   const loadRequestIdRef = useRef(0);
 
-  const loadDateRange = useCallback(async (start: string, end: string) => {
+  const loadDateRange = useCallback(async (
+    start: string,
+    end: string,
+    options?: { silent?: boolean },
+  ) => {
     const requestId = ++loadRequestIdRef.current;
-    setLoading(true);
+    if (!options?.silent) {
+      setLoading(true);
+    }
 
     try {
       const rangeDays = buildDaysForRange(start, end, locale);
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCachedAuthUser();
       if (!user) {
         setLastLoadError(null);
         setSchemaSetupType(null);
@@ -142,23 +148,11 @@ export function useWeekTasks(
         return;
       }
 
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('id, name, color')
-        .eq('user_id', user.id);
-
-      if (projectsError) {
-        if (isSchemaError(projectsError)) {
-          setProjects([]);
-        } else {
-          logger.error('Error cargando proyectos:', projectsError);
-          setProjects([]);
-        }
-      } else {
-        setProjects(projectsData || []);
-      }
-
-      const [tasksRes, checkInsRes] = await Promise.all([
+      const [projectsRes, tasksRes, checkInsRes] = await Promise.all([
+        supabase
+          .from('projects')
+          .select('id, name, color')
+          .eq('user_id', user.id),
         supabase
           .from('tasks')
           .select('*')
@@ -175,6 +169,20 @@ export function useWeekTasks(
           .gte('date', start)
           .lte('date', end),
       ]);
+
+      const projectsError = projectsRes.error;
+      const projectsData = projectsRes.data;
+
+      if (projectsError) {
+        if (isSchemaError(projectsError)) {
+          setProjects([]);
+        } else {
+          logger.error('Error cargando proyectos:', projectsError);
+          setProjects([]);
+        }
+      } else {
+        setProjects(projectsData || []);
+      }
 
       const tasksError = tasksRes.error;
       const tasksData = tasksRes.data;
@@ -272,12 +280,28 @@ export function useWeekTasks(
   }, [showToast, locale]);
 
   const loadWeekTasks = useCallback(
-    async (weekStart?: string) => {
+    async (weekStart?: string, options?: { silent?: boolean }) => {
       const { start, end } = weekStart ? getWeekBoundsForStart(weekStart) : getWeekBounds();
-      await loadDateRange(start, end);
+      await loadDateRange(start, end, options);
     },
     [loadDateRange],
   );
+
+  const appendTaskToDay = useCallback((dateStr: string, task: Task) => {
+    loadRequestIdRef.current += 1;
+    setLoading(false);
+    setWeekTasks((prev) => {
+      if (prev.length === 0) return prev;
+      let found = false;
+      const next = prev.map((day) => {
+        if (day.day.dateStr !== dateStr) return day;
+        found = true;
+        if (day.tasks.some((existing) => existing.id === task.id)) return day;
+        return { ...day, tasks: [...day.tasks, task] };
+      });
+      return found ? next : prev;
+    });
+  }, []);
 
   return {
     weekTasks,
@@ -286,6 +310,7 @@ export function useWeekTasks(
     loading,
     loadWeekTasks,
     loadDateRange,
+    appendTaskToDay,
     getWeekBounds,
     getWeekOptions,
     lastLoadError,

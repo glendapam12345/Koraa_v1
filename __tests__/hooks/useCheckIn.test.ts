@@ -1,6 +1,7 @@
-import { renderHook, act, waitFor } from '@testing-library/react-native';
+import { renderHook, act } from '@testing-library/react-native';
 import { useCheckIn } from '@/hooks/useCheckIn';
 import { supabase } from '@/lib/supabase';
+import { getLocalDateString } from '@/lib/dateLocal';
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
@@ -14,13 +15,18 @@ jest.mock('@/lib/logger', () => ({
   logger: { error: jest.fn() },
 }));
 
+jest.mock('@/contexts/I18nContext', () => ({
+  useI18n: () => ({ t: (key: string) => key, locale: 'es' }),
+}));
+
 const getUserMock = supabase.auth.getUser as jest.Mock;
 const fromMock = supabase.from as jest.Mock;
 
-function mockTodayCheckIn(result: { data: unknown; error: unknown }) {
-  const maybeSingle = jest.fn().mockResolvedValue(result);
-  const eqDate = jest.fn().mockReturnValue({ maybeSingle });
-  const eqUser = jest.fn().mockReturnValue({ eq: eqDate });
+function mockRecentCheckIns(result: { data: unknown; error: unknown }) {
+  const limit = jest.fn().mockResolvedValue(result);
+  const order = jest.fn().mockReturnValue({ limit });
+  const lte = jest.fn().mockReturnValue({ order });
+  const eqUser = jest.fn().mockReturnValue({ lte });
   const select = jest.fn().mockReturnValue({ eq: eqUser });
   fromMock.mockReturnValue({ select });
 }
@@ -34,13 +40,17 @@ describe('useCheckIn', () => {
   });
 
   it('loads today mood and energy from check-in row', async () => {
-    mockTodayCheckIn({
-      data: {
-        emotion: 'Tranquila',
-        energy_level: 4,
-        available_time: '2h',
-        focus_level: 'alto',
-      },
+    const today = getLocalDateString();
+    mockRecentCheckIns({
+      data: [
+        {
+          date: today,
+          emotion: 'Tranquila',
+          energy_level: 4,
+          available_time: '2h',
+          focus_level: 'alto',
+        },
+      ],
       error: null,
     });
 
@@ -57,8 +67,11 @@ describe('useCheckIn', () => {
     expect(result.current.loading).toBe(false);
   });
 
-  it('clears state when no check-in today', async () => {
-    mockTodayCheckIn({ data: null, error: null });
+  it('clears today and keeps yesterday memory when there is no check-in today', async () => {
+    mockRecentCheckIns({
+      data: [{ date: '2020-01-01', emotion: 'agotada', energy_level: 1 }],
+      error: null,
+    });
 
     const { result } = renderHook(() => useCheckIn(showToast));
 
@@ -68,11 +81,12 @@ describe('useCheckIn', () => {
 
     expect(result.current.todayMood).toBeNull();
     expect(result.current.energyLevel).toBe(0);
+    expect(result.current.returnMemory).toBeNull();
     expect(result.current.loading).toBe(false);
   });
 
   it('shows toast on query error', async () => {
-    mockTodayCheckIn({ data: null, error: { message: 'fail' } });
+    mockRecentCheckIns({ data: null, error: { message: 'fail' } });
 
     const { result } = renderHook(() => useCheckIn(showToast));
 
@@ -82,5 +96,6 @@ describe('useCheckIn', () => {
 
     expect(showToast).toHaveBeenCalledWith('Error de red', 'error');
     expect(result.current.todayMood).toBeNull();
+    expect(result.current.returnMemory).toBeNull();
   });
 });

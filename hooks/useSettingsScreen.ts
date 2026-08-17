@@ -51,7 +51,7 @@ export function useSettingsScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pendingAction, setPendingAction] = useState<'change-password' | 'delete-account' | null>(null);
   const [notifReminderTime, setNotifReminderTime] = useState({ hour: 9, minute: 0 });
-  const [taskCaptureReminderEnabled, setTaskCaptureReminderEnabledState] = useState(true);
+  const [taskCaptureReminderEnabled, setTaskCaptureReminderEnabledState] = useState(false);
   const [notifSaving, setNotifSaving] = useState(false);
   const [resettingHoyPreview, setResettingHoyPreview] = useState(false);
   const [simulatingHoyDayTwo, setSimulatingHoyDayTwo] = useState(false);
@@ -97,7 +97,9 @@ export function useSettingsScreen() {
           Alert.alert(t('settings.notifPermissionTitle'), t('settings.notifPermissionBody'));
         }
         await scheduleDailyReminder();
-        await scheduleTaskCaptureReminder();
+        if (await getTaskCaptureReminderEnabled()) {
+          await scheduleTaskCaptureReminder();
+        }
         if (Platform.OS === 'ios' || Platform.OS === 'android') {
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
@@ -230,7 +232,9 @@ export function useSettingsScreen() {
           const ok = await checkNotificationPermissions();
           if (ok) {
             await scheduleDailyReminder(next);
-            await scheduleTaskCaptureReminder(next);
+            if (await getTaskCaptureReminderEnabled()) {
+              await scheduleTaskCaptureReminder(next);
+            }
           }
         } catch (e) {
           logger.debug('Reprogramar recordatorio tras cambio de idioma:', e);

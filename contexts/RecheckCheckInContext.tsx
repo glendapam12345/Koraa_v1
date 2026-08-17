@@ -8,12 +8,15 @@ import {
   type ReactNode,
 } from 'react';
 import { QuickRecheckInModal } from '@/components/QuickRecheckInModal';
-import { supabase } from '@/lib/supabase';
+import { supabase, getCachedAuthUser } from '@/lib/supabase';
 import { getLocalDateString } from '@/lib/dateLocal';
+import {
+  publishCheckInClosed,
+  publishCheckInRefresh,
+} from '@/lib/checkInRefresh';
 import { logger } from '@/lib/logger';
 import { track } from '@/lib/analytics';
-import { publishCheckInRefresh } from '@/lib/checkInRefresh';
-import { saveRecheckReplanNudge } from '@/lib/recheckReplanNudge';
+import { saveRecheckReplanNudge, dismissRecheckReplanNudge } from '@/lib/recheckReplanNudge';
 import {
   DEFAULT_CHECK_IN_FOCUS,
   DEFAULT_CHECK_IN_TIME,
@@ -45,9 +48,7 @@ export function useRecheckCheckIn(): RecheckContextValue {
 
 async function fetchTodayCheckIn(): Promise<CheckInSnapshot | null> {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCachedAuthUser();
     if (!user) return null;
 
     const { data, error } = await supabase
@@ -88,17 +89,25 @@ function normalizeCheckInSnapshot(snapshot: CheckInSnapshot | null): CheckInSnap
 function RecheckModalHost() {
   const [visible, setVisible] = useState(false);
   const [firstCheckIn, setFirstCheckIn] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const [initial, setInitial] = useState<CheckInSnapshot | null>(null);
   const sourceRef = useRef('unknown');
+  const completingRef = useRef(false);
 
   const openRecheck = useCallback(async (source = 'unknown') => {
     sourceRef.current = source;
+    completingRef.current = false;
+    setHydrated(false);
+    setFirstCheckIn(false);
+    setInitial(normalizeCheckInSnapshot(null));
+    setVisible(true);
+
     const checkIn = await fetchTodayCheckIn();
     const isFirstCheckIn = !checkIn?.emotion;
     setFirstCheckIn(isFirstCheckIn);
-    void track(isFirstCheckIn ? 'check_in_opened' : 'recheck_opened', { source });
     setInitial(normalizeCheckInSnapshot(checkIn));
-    setVisible(true);
+    setHydrated(true);
+    void track(isFirstCheckIn ? 'check_in_opened' : 'recheck_opened', { source });
   }, []);
 
   useEffect(() => {
@@ -107,20 +116,26 @@ function RecheckModalHost() {
   }, [openRecheck]);
 
   const handleComplete = useCallback(
-    (snapshot: { energyLevel: number; firstCheckIn: boolean }) => {
+    (snapshot: { energyLevel: number; firstCheckIn: boolean; moodChanged?: boolean }) => {
+      completingRef.current = true;
       void track(snapshot.firstCheckIn ? 'check_in_completed' : 'recheck_completed', {
         source: sourceRef.current,
       });
       publishCheckInRefresh();
       setVisible(false);
 
-      if (!snapshot.firstCheckIn) {
+      if (!snapshot.firstCheckIn && snapshot.moodChanged) {
         void (async () => {
-          const {
-            data: { user },
-          } = await supabase.auth.getUser();
+          const user = await getCachedAuthUser();
           if (user) {
             await saveRecheckReplanNudge(user.id, snapshot.energyLevel);
+          }
+        })();
+      } else {
+        void (async () => {
+          const user = await getCachedAuthUser();
+          if (user) {
+            await dismissRecheckReplanNudge(user.id);
           }
         })();
       }
@@ -130,12 +145,18 @@ function RecheckModalHost() {
 
   const handleClose = useCallback(() => {
     setVisible(false);
+    if (completingRef.current) {
+      completingRef.current = false;
+      return;
+    }
+    publishCheckInClosed();
   }, []);
 
   return (
     <QuickRecheckInModal
       visible={visible && initial != null}
       firstCheckIn={firstCheckIn}
+      ready={hydrated}
       onClose={handleClose}
       onComplete={handleComplete}
       initialEmotion={initial?.emotion ?? ''}

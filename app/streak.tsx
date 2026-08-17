@@ -38,9 +38,10 @@ import {
   DAILY_REMINDER_PRESETS,
   formatReminderTime,
   getDailyReminderTime,
+  setDailyReminderOptedIn,
   setDailyReminderTime,
 } from '@/lib/notificationPreferences';
-import { checkNotificationPermissions, scheduleDailyReminder, scheduleTaskCaptureReminder } from '@/hooks/useNotifications';
+import { checkNotificationPermissions, scheduleDailyReminder } from '@/hooks/useNotifications';
 
 const STREAK_GOAL_LABEL_KEYS: Record<StreakGoalDays, 'hoy.streakGoalOption7' | 'hoy.streakGoalOption1Month' | 'hoy.streakGoalOption3Months' | 'hoy.streakGoalOption6Months'> = {
   7: 'hoy.streakGoalOption7',
@@ -100,13 +101,13 @@ export default function StreakScreen() {
     setReminderJustSaved(false);
     try {
       await setDailyReminderTime(draftReminder);
+      await setDailyReminderOptedIn(true);
       setSavedReminder(draftReminder);
       const ok = await checkNotificationPermissions();
       if (!ok) {
         Alert.alert(t('settings.notifPermissionTitle'), t('settings.notifPermissionBody'));
       }
       await scheduleDailyReminder();
-      await scheduleTaskCaptureReminder();
       setReminderJustSaved(true);
       if (Platform.OS === 'ios' || Platform.OS === 'android') {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -137,7 +138,7 @@ export default function StreakScreen() {
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
-          colors={[...THEME.colors.parami.moodCard]}
+          colors={[...THEME.colors.parami.streakHero]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.hero}
@@ -166,41 +167,6 @@ export default function StreakScreen() {
             {checkedInToday ? t('hoy.streakScreenTodayYes') : t('hoy.streakScreenTodayNo')}
           </Text>
         </LinearGradient>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('hoy.streakGoalTitle')}</Text>
-          <Text style={styles.sectionBody}>{t('hoy.streakGoalSubtitle')}</Text>
-          <View style={styles.chipsRow}>
-            {STREAK_GOAL_OPTIONS.map((option) => {
-              const active = goalDays === option;
-              return (
-                <Pressable
-                  key={option}
-                  style={[styles.chip, active && styles.chipActive]}
-                  onPress={() => void selectGoal(option)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={t(STREAK_GOAL_LABEL_KEYS[option])}
-                >
-                  <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                    {t(STREAK_GOAL_LABEL_KEYS[option])}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          <Text style={styles.goalProgress}>
-            {t('hoy.streakGoalProgress', {
-              current: Math.min(currentStreak, goalDays),
-              goal: goalDays,
-            })}
-          </Text>
-          <Text style={styles.sectionBody}>
-            {goalReached
-              ? t('hoy.streakGoalReached', { days: goalDays })
-              : t('hoy.streakGoalNext', { days: daysToGoal, milestone: goalDays })}
-          </Text>
-        </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -245,6 +211,41 @@ export default function StreakScreen() {
             loading={reminderSaving}
             variant={reminderDirty ? 'default' : 'soft'}
           />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('hoy.streakGoalTitle')}</Text>
+          <Text style={styles.sectionBody}>{t('hoy.streakGoalSubtitle')}</Text>
+          <View style={styles.chipsRow}>
+            {STREAK_GOAL_OPTIONS.map((option) => {
+              const active = goalDays === option;
+              return (
+                <Pressable
+                  key={option}
+                  style={[styles.chip, active && styles.chipActive]}
+                  onPress={() => void selectGoal(option)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={t(STREAK_GOAL_LABEL_KEYS[option])}
+                >
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                    {t(STREAK_GOAL_LABEL_KEYS[option])}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text style={styles.goalProgress}>
+            {t('hoy.streakGoalProgress', {
+              current: Math.min(currentStreak, goalDays),
+              goal: goalDays,
+            })}
+          </Text>
+          <Text style={styles.sectionBody}>
+            {goalReached
+              ? t('hoy.streakGoalReached', { days: goalDays })
+              : t('hoy.streakGoalNext', { days: daysToGoal, milestone: goalDays })}
+          </Text>
         </View>
 
         <View style={styles.graceCard}>
@@ -302,7 +303,7 @@ const styles = StyleSheet.create({
   },
   heroEyebrow: {
     ...THEME.typography.sectionEyebrow,
-    color: THEME.colors.onGradientMuted,
+    color: THEME.colors.onGradient,
     marginBottom: THEME.spacing.xs,
   },
   ringOuter: {
@@ -341,7 +342,7 @@ const styles = StyleSheet.create({
   },
   streakUnit: {
     ...THEME.typography.body,
-    color: THEME.colors.onGradientMuted,
+    color: THEME.colors.onGradient,
     fontFamily: THEME.fonts.heading.medium,
   },
   levelLine: {
@@ -352,7 +353,7 @@ const styles = StyleSheet.create({
   },
   heroSub: {
     ...THEME.typography.caption,
-    color: THEME.colors.onGradientFaint,
+    color: THEME.colors.onGradientMuted,
     textAlign: 'center',
     lineHeight: 20,
     marginTop: THEME.spacing.xs,

@@ -124,7 +124,7 @@ export function LooseTaskMiniRow({
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: THEME.spacing.xs,
     paddingVertical: THEME.spacing.xs,
     paddingHorizontal: THEME.spacing.xs,
@@ -147,24 +147,25 @@ const styles = StyleSheet.create({
     flex: 1,
     flexShrink: 1,
     minWidth: 0,
-    paddingVertical: 2,
+    justifyContent: 'center',
   },
   textCol: {
-    gap: 4,
+    gap: 2,
     flexShrink: 1,
     minWidth: 0,
+    justifyContent: 'center',
   },
   content: {
-    ...THEME.typography.caption,
+    ...THEME.typography.body,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
-    lineHeight: 18,
+    lineHeight: 22,
     flexShrink: 1,
   },
   meta: {
-    ...THEME.typography.micro,
+    ...THEME.typography.small,
     color: THEME.colors.text.tertiary,
-    lineHeight: 14,
+    lineHeight: 16,
   },
   actionBtn: {
     width: 36,

@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +9,7 @@ import {
   ActivityIndicator,
   Pressable,
 } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Heart, Info } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -18,11 +20,19 @@ import type { WhatChangedReason, ReorganizeWeekProposal } from '@/lib/lifeAreas/
 import type { DayCapacitySnapshot } from '@/lib/hoy/dayCapacity';
 import type { TaskPlanningMeta } from '@/lib/taskPlanningMeta';
 import { getFirstName } from '@/lib/displayName';
+import { getLocalDateString, parseLocalDateString } from '@/lib/dateLocal';
+import { formatProposalScheduleLabel } from '@/lib/lifeAreas/experienceDataMappers';
+import {
+  resolvedDateForReorganizeItem,
+  tasksOnProposedDate,
+  type ReorganizeAssignment,
+} from '@/lib/reorganizeDateEdit';
 
 const REORGANIZE_REASONS: WhatChangedReason[] = [
   'tired',
   'less_time',
   'new_event',
+  'more_energy',
   'priorities_changed',
 ];
 
@@ -35,6 +45,16 @@ const REASON_EMOJI: Record<WhatChangedReason, string> = {
   week_balance: '📅',
 };
 
+function nextDayOptions(count: number): string[] {
+  const days: string[] = [];
+  const cursor = parseLocalDateString(getLocalDateString());
+  for (let index = 0; index < count; index += 1) {
+    days.push(getLocalDateString(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return days;
+}
+
 type ReorganizeDayFlowProps = {
   visible: boolean;
   step: 'reason' | 'preview';
@@ -45,7 +65,9 @@ type ReorganizeDayFlowProps = {
   applying: boolean;
   capacity?: DayCapacitySnapshot | null;
   planningMeta?: Record<string, TaskPlanningMeta>;
+  assignments?: ReorganizeAssignment[];
   onSelectReason: (reason: WhatChangedReason) => void;
+  onChangeTaskDate?: (taskId: string, nextDate: string) => void;
   onConfirm: () => void;
   onBack: () => void;
   onClose: () => void;
@@ -61,17 +83,37 @@ export function ReorganizeDayFlow({
   applying,
   capacity = null,
   planningMeta = {},
+  assignments = [],
   onSelectReason,
+  onChangeTaskDate,
   onConfirm,
   onBack,
   onClose,
 }: ReorganizeDayFlowProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const firstName = getFirstName(displayName);
+  const today = getLocalDateString();
+  const [editingDates, setEditingDates] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [previewDate, setPreviewDate] = useState<string | null>(null);
+  const dayOptions = useMemo(() => nextDayOptions(7), []);
+  const dayPreviewItems =
+    proposal && previewDate
+      ? tasksOnProposedDate(proposal, assignments, previewDate, today)
+      : [];
+
+  useEffect(() => {
+    if (step !== 'preview') {
+      setEditingDates(false);
+      setSelectedTaskId(null);
+      setPreviewDate(null);
+    }
+  }, [step]);
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.screen}>
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
         <View style={styles.topBar}>
           <TouchableOpacity
             onPress={step === 'preview' ? onBack : onClose}
@@ -98,6 +140,7 @@ export function ReorganizeDayFlow({
               {capacity && capacity.stepCount > 0 ? (
                 <HoyDayCapacityBar capacity={capacity} />
               ) : null}
+              <Text style={styles.ellieLine}>{t('reorganizeDay.ellieAdjust')}</Text>
               <Text style={styles.question}>{t('reorganizeDay.whatChanged')}</Text>
               <Text style={styles.titleHint}>{t('reorganizeDay.titleHint')}</Text>
               <View style={styles.reasonGrid}>
@@ -152,7 +195,76 @@ export function ReorganizeDayFlow({
                     kept={proposal.kept}
                     moved={proposal.moved}
                     planningMeta={planningMeta}
+                    editable={editingDates}
+                    selectedTaskId={selectedTaskId}
+                    onPressItem={(taskId) => {
+                      setSelectedTaskId(taskId);
+                      const item = [...proposal.kept, ...proposal.moved].find(
+                        (entry) => entry.taskId === taskId,
+                      );
+                      if (!item) return;
+                      const date = resolvedDateForReorganizeItem(item, assignments, today);
+                      if (date) setPreviewDate(date);
+                    }}
                   />
+                  {editingDates ? (
+                    <>
+                      <Text style={styles.editHint}>{t('reorganizeDay.editDatesHint')}</Text>
+                      {selectedTaskId ? (
+                        <View style={styles.dayPicker}>
+                          <Text style={styles.dayPickerLabel}>{t('reorganizeDay.moveToDay')}</Text>
+                          <View style={styles.dayChips}>
+                            {dayOptions.map((date) => {
+                              const selected = previewDate === date;
+                              return (
+                                <TouchableOpacity
+                                  key={date}
+                                  style={[styles.dayChip, selected && styles.dayChipSelected]}
+                                  onPress={() => {
+                                    onChangeTaskDate?.(selectedTaskId, date);
+                                    setPreviewDate(date);
+                                  }}
+                                  activeOpacity={0.85}
+                                  accessibilityRole="button"
+                                >
+                                  <Text
+                                    style={[
+                                      styles.dayChipLabel,
+                                      selected && styles.dayChipLabelSelected,
+                                    ]}
+                                  >
+                                    {date === today
+                                      ? t('components.today')
+                                      : formatProposalScheduleLabel(date, locale)}
+                                  </Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                        </View>
+                      ) : null}
+                      {previewDate ? (
+                        <View style={styles.dayPreview}>
+                          <Text style={styles.dayPreviewTitle}>
+                            {t('reorganizeDay.dayPreviewTitle', {
+                              day: formatProposalScheduleLabel(previewDate, locale),
+                            })}
+                          </Text>
+                          {dayPreviewItems.length === 0 ? (
+                            <Text style={styles.dayPreviewEmpty}>
+                              {t('reorganizeDay.dayPreviewEmpty')}
+                            </Text>
+                          ) : (
+                            dayPreviewItems.map((item) => (
+                              <Text key={item.taskId} style={styles.dayPreviewItem}>
+                                {item.areaEmoji} {item.title}
+                              </Text>
+                            ))
+                          )}
+                        </View>
+                      ) : null}
+                    </>
+                  ) : null}
                 </>
               ) : null}
 
@@ -168,13 +280,22 @@ export function ReorganizeDayFlow({
                 loading={applying}
               />
 
+              {!editingDates ? (
+                <CalmPrimaryButton
+                  label={t('reorganizeDay.editDatesCta')}
+                  variant="soft"
+                  onPress={() => setEditingDates(true)}
+                />
+              ) : null}
+
               <Pressable onPress={onBack} style={styles.backLink} accessibilityRole="button">
                 <Text style={styles.backLinkText}>{t('reorganizeDay.backToPlan')}</Text>
               </Pressable>
             </>
           )}
         </ScrollView>
-      </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }
@@ -188,8 +309,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: THEME.spacing.sm,
-    paddingTop: THEME.spacing.md,
-    paddingBottom: THEME.spacing.sm,
+    paddingTop: THEME.spacing.sm,
+    paddingBottom: THEME.spacing.md,
     gap: THEME.spacing.xs,
   },
   backBtn: {
@@ -216,6 +337,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: THEME.layout.screenPaddingX,
+    paddingTop: THEME.spacing.sm,
     paddingBottom: THEME.spacing.xl,
     gap: THEME.spacing.md,
   },
@@ -224,6 +346,11 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.text.main,
     lineHeight: 32,
+  },
+  ellieLine: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 20,
   },
   titleHint: {
     ...THEME.typography.caption,
@@ -329,5 +456,68 @@ const styles = StyleSheet.create({
     ...THEME.typography.caption,
     color: THEME.colors.text.tertiary,
     fontFamily: THEME.fonts.heading.medium,
+  },
+  editHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+  },
+  dayPicker: {
+    gap: THEME.spacing.xs,
+  },
+  dayPickerLabel: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.secondary,
+  },
+  dayChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: THEME.spacing.xs,
+  },
+  dayChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.calm.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    minHeight: THEME.sizes.touchTarget - 8,
+    justifyContent: 'center',
+  },
+  dayChipSelected: {
+    backgroundColor: THEME.colors.calm.lavender,
+    borderColor: THEME.colors.calm.lavenderDeep,
+  },
+  dayChipLabel: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.main,
+  },
+  dayChipLabelSelected: {
+    color: THEME.colors.calm.lavenderDeep,
+  },
+  dayPreview: {
+    padding: THEME.spacing.md,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.calm.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+    gap: 6,
+  },
+  dayPreviewTitle: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+  },
+  dayPreviewEmpty: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    fontStyle: 'italic',
+  },
+  dayPreviewItem: {
+    ...THEME.typography.body,
+    color: THEME.colors.text.main,
+    lineHeight: 22,
   },
 });

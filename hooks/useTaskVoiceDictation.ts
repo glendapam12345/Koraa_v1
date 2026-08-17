@@ -103,18 +103,22 @@ export function useTaskVoiceDictation({
       return { ok: true };
     }
 
-    const perm = await lib.ExpoSpeechRecognitionModule.requestPermissionsAsync();
-    if (!perm.granted) {
-      return { ok: false, reason: 'permission' };
-    }
+    try {
+      const perm = await lib.ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      if (!perm.granted) {
+        return { ok: false, reason: 'permission' };
+      }
 
-    prefixRef.current = currentText;
-    lib.ExpoSpeechRecognitionModule.start({
-      lang: speechRecognitionLocale(locale),
-      interimResults: true,
-      continuous: false,
-    });
-    return { ok: true };
+      prefixRef.current = currentText;
+      lib.ExpoSpeechRecognitionModule.start({
+        lang: speechRecognitionLocale(locale),
+        interimResults: true,
+        continuous: false,
+      });
+      return { ok: true };
+    } catch {
+      return { ok: false, reason: 'unavailable' };
+    }
   }, [currentText, isAvailable, isListening, lib, locale, stop]);
 
   return { isListening, isAvailable, toggle, stop };

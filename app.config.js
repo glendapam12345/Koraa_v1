@@ -154,7 +154,7 @@ module.exports = {
         'expo-notifications',
         {
           icon: './assets/images/notification-icon-ellie.png',
-          color: '#5C3D9E',
+          color: '#9B7ED4',
           defaultChannel: 'default',
         },
       ],

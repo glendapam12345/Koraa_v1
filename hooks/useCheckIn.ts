@@ -1,9 +1,11 @@
-import { useState, useCallback } from 'react';
-import { supabase, getErrorMessage } from '@/lib/supabase';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { AppState } from 'react-native';
+import { supabase, getErrorMessage, getCachedAuthUser } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { TimeoutError, withTimeout } from '@/lib/withTimeout';
 import { useI18n } from '@/contexts/I18nContext';
+import { parseRecentCheckIns, type ReturnMemory } from '@/lib/returnMemory';
 
 export function useCheckIn(showToast: (message: string, type: 'success' | 'error' | 'info') => void) {
   const { t } = useI18n();
@@ -12,11 +14,20 @@ export function useCheckIn(showToast: (message: string, type: 'success' | 'error
   const [energyLevel, setEnergyLevel] = useState<number>(0);
   const [time, setTime] = useState<string>('');
   const [focusLevel, setFocusLevel] = useState<string>('');
+  const [returnMemory, setReturnMemory] = useState<ReturnMemory | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const clearToday = () => {
+    setTodayMood(null);
+    setEnergyLevel(0);
+    setEnergy('');
+    setTime('');
+    setFocusLevel('');
+  };
 
   const loadTodayCheckIn = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCachedAuthUser();
       if (!user) {
         setLoading(false);
         return;
@@ -27,10 +38,11 @@ export function useCheckIn(showToast: (message: string, type: 'success' | 'error
         Promise.resolve(
           supabase
             .from('daily_check_ins')
-            .select('*')
+            .select('date, emotion, energy_level, available_time, focus_level')
             .eq('user_id', user.id)
-            .eq('date', today)
-            .maybeSingle(),
+            .lte('date', today)
+            .order('date', { ascending: false })
+            .limit(2),
         ),
         12_000,
       );
@@ -39,21 +51,19 @@ export function useCheckIn(showToast: (message: string, type: 'success' | 'error
         logger.error('Error cargando check-in:', error);
         const errorMessage = getErrorMessage(error);
         showToast(errorMessage, 'error');
-        setTodayMood(null);
-        setEnergyLevel(0);
-        setEnergy('');
-        setTime('');
-        setFocusLevel('');
+        clearToday();
+        setReturnMemory(null);
         setLoading(false);
         return;
       }
 
-      if (data) {
-        setTodayMood(data.emotion);
-        setEnergyLevel(data.energy_level || 0);
-        setEnergy(data.energy_level ? `${data.energy_level}/5` : '');
-        setTime(data.available_time || '');
-        setFocusLevel(data.focus_level || '');
+      const parsed = parseRecentCheckIns(data ?? [], today);
+      if (parsed.today) {
+        setTodayMood(parsed.today.emotion);
+        setEnergyLevel(parsed.today.energyLevel);
+        setEnergy(parsed.today.energyLevel ? `${parsed.today.energyLevel}/5` : '');
+        setTime(parsed.today.time);
+        setFocusLevel(parsed.today.focusLevel);
       } else {
         setTodayMood(null);
         setEnergyLevel(0);
@@ -61,6 +71,7 @@ export function useCheckIn(showToast: (message: string, type: 'success' | 'error
         setTime('');
         setFocusLevel('');
       }
+      setReturnMemory(parsed.memory);
 
       setLoading(false);
     } catch (error) {
@@ -70,14 +81,31 @@ export function useCheckIn(showToast: (message: string, type: 'success' | 'error
       } else {
         logger.error('Error inesperado cargando check-in:', error);
       }
-      setTodayMood(null);
-      setEnergyLevel(0);
-      setEnergy('');
-      setTime('');
-      setFocusLevel('');
+      clearToday();
+      setReturnMemory(null);
       setLoading(false);
     }
   }, [showToast, t]);
+
+  const lastLoadedDayRef = useRef(getLocalDateString());
+
+  useEffect(() => {
+    const tick = () => {
+      const today = getLocalDateString();
+      if (today === lastLoadedDayRef.current) return;
+      lastLoadedDayRef.current = today;
+      void loadTodayCheckIn();
+    };
+    const interval = setInterval(tick, 60_000);
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next !== 'active') return;
+      tick();
+    });
+    return () => {
+      clearInterval(interval);
+      sub.remove();
+    };
+  }, [loadTodayCheckIn]);
 
   return {
     todayMood,
@@ -85,6 +113,7 @@ export function useCheckIn(showToast: (message: string, type: 'success' | 'error
     energyLevel,
     time,
     focusLevel,
+    returnMemory,
     loading,
     loadTodayCheckIn,
   };

@@ -57,7 +57,6 @@ function DayColumn({
   isHover,
   columnWidth,
   layout,
-  onMeasure,
   columnRef,
   onMoveTask,
   onRequestMoveSheet,
@@ -82,7 +81,6 @@ function DayColumn({
   isHover: boolean;
   columnWidth: number;
   layout: SemanaBoardLayout;
-  onMeasure: () => void;
   columnRef: (node: View | null) => void;
   onMoveTask?: (taskId: string, targetDayId: string) => Promise<{ ok: boolean }>;
   onRequestMoveSheet?: (taskId: string, dayId: string) => void;
@@ -108,7 +106,6 @@ function DayColumn({
   return (
     <View
       ref={columnRef}
-      onLayout={onMeasure}
       style={[
         styles.column,
         { width: columnWidth },
@@ -295,7 +292,6 @@ export function WeekPlannerDragBoard({
       isHover={hoverDayId === day.id && draggingTaskId != null}
       columnWidth={columnWidth}
       layout={layout}
-      onMeasure={measureColumns}
       columnRef={(node) => {
         columnRefs.current.set(day.id, node);
       }}
@@ -319,21 +315,15 @@ export function WeekPlannerDragBoard({
     />
   );
 
-  if (layout === 'weekGrid' || layout === 'monthGrid') {
+  if (layout === 'weekGrid' || layout === 'monthGrid' || layout === 'day') {
     return (
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.gridScroll}
-        onLayout={measureColumns}
-        nestedScrollEnabled
-        keyboardShouldPersistTaps="handled"
-      >
+      <View style={styles.gridScroll} onLayout={measureColumns}>
         {dayRows.map((row, rowIndex) => (
           <View key={`row-${rowIndex}`} style={styles.gridRow}>
             {row.map((day) => renderColumn(day))}
           </View>
         ))}
-      </ScrollView>
+      </View>
     );
   }
 

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { supabase, getErrorMessage } from '@/lib/supabase';
+import { supabase, getErrorMessage, getCachedAuthUser } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
@@ -48,6 +48,28 @@ function rowToTask(row: Record<string, unknown>): Task {
   };
 }
 
+export function buildOptimisticTask(args: {
+  id: string;
+  content: string;
+  scheduledDate: string | null;
+  projectId: string | null;
+  isPriority?: boolean;
+}): Task {
+  return {
+    id: args.id,
+    content: args.content,
+    is_completed: false,
+    is_priority: args.isPriority ?? false,
+    category: 'otros',
+    completed_at: null,
+    created_at: new Date().toISOString(),
+    parent_task_id: null,
+    project_id: args.projectId,
+    scheduled_date: args.scheduledDate,
+    subtasks: [],
+  };
+}
+
 export function useTasks(
   todayMood: string | null,
   showToast: (message: string, type: 'success' | 'error' | 'info') => void
@@ -65,7 +87,7 @@ export function useTasks(
     }
 
     try {
-      const { data: { user } } = await withTimeout(supabase.auth.getUser(), 12_000);
+      const user = await withTimeout(getCachedAuthUser(), 12_000);
       if (requestId !== loadRequestIdRef.current) return;
       if (!user) {
         setLoadingTasks(false);

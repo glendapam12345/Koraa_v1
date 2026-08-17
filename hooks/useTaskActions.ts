@@ -10,6 +10,14 @@ import { countPriorityCompletedBefore } from '@/lib/priorityProgress';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { trackTaskCompleted } from '@/lib/productAnalytics';
 
+function safeHaptic(run: () => void) {
+  try {
+    run();
+  } catch {
+    // Expo Go / missing native module must not block the tap.
+  }
+}
+
 export type TaskCompletedPayload = {
   task: Task;
   isSubtask: boolean;
@@ -46,7 +54,9 @@ export function useTaskActions({
   const toggleTask = useCallback(
     async (taskId: string, isSubtask: boolean = false, parentTaskId?: string) => {
       if (Platform.OS !== 'web') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        safeHaptic(() => {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        });
       }
 
       const task = isSubtask
@@ -166,7 +176,9 @@ export function useTaskActions({
 
               const notifyPriorityComplete = isCompletingMainPriority && onTaskCompleted;
               if (Platform.OS !== 'web' && !notifyPriorityComplete) {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                safeHaptic(() => {
+                  void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                });
               }
 
               if (notifyPriorityComplete) {
@@ -214,7 +226,9 @@ export function useTaskActions({
                   );
                   showToast(translate(locale, 'hooks.allStepsDone'), 'success');
                   if (Platform.OS !== 'web') {
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    safeHaptic(() => {
+                      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    });
                   }
                 }
               }
@@ -325,7 +339,9 @@ export function useTaskActions({
         showToast(translate(locale, 'hooks.taskUpdated'), 'success');
 
         if (Platform.OS !== 'web') {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          safeHaptic(() => {
+            void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          });
         }
       } catch (error) {
         logger.error('Error inesperado al editar:', error);

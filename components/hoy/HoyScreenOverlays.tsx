@@ -4,6 +4,7 @@ import { Toast } from '@/components/Toast';
 import { QuickOnboardingModal } from '@/components/onboarding/QuickOnboardingModal';
 import { TaskPlanEditSheet } from '@/components/vnext/TaskPlanEditSheet';
 import { useI18n } from '@/contexts/I18nContext';
+import { isExpoGoClient } from '@/lib/subscriptionEnvironment';
 import type { Task } from '@/components/tasks/TaskCard';
 import type { TaskPlanEditPayload } from '@/lib/vnext/saveTaskPlanEdit';
 
@@ -79,7 +80,7 @@ export function HoyScreenOverlays({
         />
       ) : null}
 
-      {showConfetti ? (
+      {showConfetti && !isExpoGoClient() ? (
         <Suspense fallback={null}>
           <ConfettiCelebration />
         </Suspense>

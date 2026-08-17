@@ -119,6 +119,8 @@ function enrichPlan(
       areaColor: fromRaw?.areaColor ?? area.color,
       fromLabel,
       toLabel,
+      fromDate: fromIso,
+      toDate: toIso,
       deadlineLabel: deadline,
     };
   });
@@ -137,7 +139,7 @@ function enrichPlan(
           task.project_id ? projectDueDates[task.project_id] : null,
           locale,
         ) ?? item.deadlineLabel;
-      return { ...item, dateLabel, deadlineLabel: deadline };
+      return { ...item, dateLabel, date: task.scheduled_date ?? today, deadlineLabel: deadline };
     });
   const kept =
     keptFromAi.length > 0
@@ -160,6 +162,7 @@ function enrichPlan(
               areaEmoji: area.emoji,
               areaColor: area.color,
               dateLabel,
+              date: task.scheduled_date ?? today,
               deadlineLabel: deadline,
             };
           });

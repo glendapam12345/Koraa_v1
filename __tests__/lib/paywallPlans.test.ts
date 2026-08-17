@@ -5,6 +5,10 @@ import {
   isPlanPackage,
   sortPackagesForDisplay,
 } from '@/lib/paywallPlans';
+import {
+  PREMIUM_ANNUAL_MXN,
+  PREMIUM_MONTHLY_MXN,
+} from '@/lib/premiumPricing';
 
 function mockPackage(plan: 'monthly' | 'annual', price: number): PurchasesPackage {
   return {
@@ -20,25 +24,25 @@ function mockPackage(plan: 'monthly' | 'annual', price: number): PurchasesPackag
 
 describe('paywallPlans', () => {
   it('detects monthly and annual packages', () => {
-    expect(isPlanPackage(mockPackage('monthly', 49), 'monthly')).toBe(true);
-    expect(isPlanPackage(mockPackage('annual', 411), 'annual')).toBe(true);
-    expect(isPlanPackage(mockPackage('monthly', 49), 'annual')).toBe(false);
+    expect(isPlanPackage(mockPackage('monthly', 69), 'monthly')).toBe(true);
+    expect(isPlanPackage(mockPackage('annual', 579), 'annual')).toBe(true);
+    expect(isPlanPackage(mockPackage('monthly', 69), 'annual')).toBe(false);
   });
 
   it('sorts annual before monthly', () => {
-    const sorted = sortPackagesForDisplay([mockPackage('monthly', 49), mockPackage('annual', 411)]);
+    const sorted = sortPackagesForDisplay([mockPackage('monthly', 69), mockPackage('annual', 579)]);
     expect(isPlanPackage(sorted[0], 'annual')).toBe(true);
     expect(isPlanPackage(sorted[1], 'monthly')).toBe(true);
   });
 
   it('computes annual savings percent', () => {
-    const monthly = mockPackage('monthly', 49);
-    const annual = mockPackage('annual', 411);
+    const monthly = mockPackage('monthly', PREMIUM_MONTHLY_MXN);
+    const annual = mockPackage('annual', PREMIUM_ANNUAL_MXN);
     expect(getAnnualSavingsPercent(monthly, annual)).toBe(30);
   });
 
   it('maps plan period keys', () => {
-    expect(getPlanPeriodKey(mockPackage('monthly', 49))).toBe('month');
-    expect(getPlanPeriodKey(mockPackage('annual', 411))).toBe('year');
+    expect(getPlanPeriodKey(mockPackage('monthly', 69))).toBe('month');
+    expect(getPlanPeriodKey(mockPackage('annual', 579))).toBe('year');
   });
 });

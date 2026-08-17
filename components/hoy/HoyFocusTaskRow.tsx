@@ -71,6 +71,7 @@ export function HoyFocusTaskRow({
     >
       <TouchableOpacity
         onPress={onToggleComplete}
+        delayPressIn={0}
         activeOpacity={0.85}
         accessibilityRole="checkbox"
         accessibilityState={{ checked: completed }}
@@ -89,6 +90,7 @@ export function HoyFocusTaskRow({
       <TouchableOpacity
         style={styles.body}
         onPress={onOpenDetails}
+        delayPressIn={0}
         activeOpacity={0.88}
         accessibilityRole="button"
         accessibilityLabel={t('hoy.focusTaskOpenA11y', { task: content })}
@@ -106,6 +108,7 @@ export function HoyFocusTaskRow({
 
       <TouchableOpacity
         onPress={onOpenDetails}
+        delayPressIn={0}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         activeOpacity={0.75}
         style={styles.chevronBtn}

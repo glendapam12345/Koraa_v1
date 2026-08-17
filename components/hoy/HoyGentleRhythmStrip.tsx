@@ -7,6 +7,7 @@ import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 import { QuickBreathModal } from '@/components/hoy/QuickBreathModal';
 import { MeditationCircleSimple } from '@/components/MeditationCircleSimple';
+import { MeditationErrorBoundary } from '@/components/MeditationErrorBoundary';
 import { Toast } from '@/components/Toast';
 import { useHoyMeditation } from '@/hooks/useHoyMeditation';
 import { getSituationalMeditationType } from '@/lib/meditationSituational';
@@ -186,12 +187,14 @@ export function HoyGentleRhythmStrip({
       ) : null}
 
       {showMeditation ? (
-        <MeditationCircleSimple
-          visible={showMeditation}
-          onComplete={handleMeditationComplete}
-          onClose={() => setShowMeditation(false)}
-          type={meditationType}
-        />
+        <MeditationErrorBoundary onError={() => setShowMeditation(false)}>
+          <MeditationCircleSimple
+            visible={showMeditation}
+            onComplete={handleMeditationComplete}
+            onClose={() => setShowMeditation(false)}
+            type={meditationType}
+          />
+        </MeditationErrorBoundary>
       ) : null}
 
       {toastMessage ? (

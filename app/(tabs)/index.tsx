@@ -6,6 +6,7 @@ import {
   Platform,
   RefreshControl,
   ActivityIndicator,
+  InteractionManager,
 } from 'react-native';
 import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import * as Haptics from 'expo-haptics';
@@ -20,7 +21,7 @@ import { getCatalog } from '@/lib/i18n';
 import { HoyScreenHeader } from '@/components/hoy/HoyScreenHeader';
 import { HoyTasksSection } from '@/components/hoy/HoyTasksSection';
 import type { Task } from '@/components/tasks/TaskCard';
-import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
+import { useRecheckCheckIn } from '@/contexts/RecheckCheckInContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { HoyScreenOverlays } from '@/components/hoy/HoyScreenOverlays';
@@ -29,7 +30,7 @@ import { useHoyScreenLayout } from '@/hooks/useHoyScreenLayout';
 import { useStreak } from '@/hooks/today/useStreak';
 import { getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
 import { getTodayPriorityStats } from '@/lib/priorityProgress';
-import { useHoyDeleteTask, useHoyAllCompleteConfetti } from '@/hooks/useHoyTaskActions';
+import { useHoyDeleteTask } from '@/hooks/useHoyTaskActions';
 import { useTaskPlanEdit } from '@/hooks/useTaskPlanEdit';
 import { useHoyPrioritization } from '@/hooks/useHoyPrioritization';
 import { useKoraaDailyBrief } from '@/hooks/useKoraaDailyBrief';
@@ -68,6 +69,7 @@ function TodayScreen() {
   const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backgroundLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoadingTasksRef = useRef<boolean>(false);
+  const firstDayValueTrackedRef = useRef(false);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToastMessage(message);
@@ -75,12 +77,14 @@ function TodayScreen() {
   }, []);
 
   const { user } = useAuth();
+  const { openRecheck: openCheckInModal } = useRecheckCheckIn();
   const { crisisModeActive, dismissCrisisMode, activateCrisisMode, lastSession } = useCrisisMode();
   const {
     todayMood,
     energyLevel,
     time,
     focusLevel,
+    returnMemory,
     loading: checkInLoading,
     loadTodayCheckIn,
   } = useCheckIn(showToast);
@@ -100,9 +104,12 @@ function TodayScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void refreshFocusedProject();
-      void loadTasks();
-      void loadTodayCheckIn();
+      const handle = InteractionManager.runAfterInteractions(() => {
+        void refreshFocusedProject();
+        void loadTasks({ silent: true });
+        void loadTodayCheckIn();
+      });
+      return () => handle.cancel();
     }, [loadTasks, loadTodayCheckIn, refreshFocusedProject]),
   );
 
@@ -115,6 +122,16 @@ function TodayScreen() {
   }, [loadTasks, loadTodayCheckIn, refreshFocusedProject]);
 
   const loading = checkInLoading || loadingTasks;
+  /** Ellie solo habla cuando check-in y tareas ya están; si no, dice dump y luego se reescribe. */
+  const [hoyReady, setHoyReady] = useState(false);
+  useEffect(() => {
+    if (!loading) {
+      setHoyReady(true);
+      return;
+    }
+    const failSafe = setTimeout(() => setHoyReady(true), 2500);
+    return () => clearTimeout(failSafe);
+  }, [loading]);
 
   const taskExpansion = useHoyTaskExpansion();
   const {
@@ -184,16 +201,6 @@ function TodayScreen() {
     closeEditTask();
   }, [closeEditTask, editingTask, handleDeleteTask]);
 
-  useHoyAllCompleteConfetti({
-    tasks,
-    loading,
-    showConfetti,
-    setShowConfetti,
-    showToast,
-    t,
-    confettiTimeoutRef,
-  });
-
   const { currentStreak, usedGrace, loadStreak } = useStreak(user?.id);
   const {
     hoyLiteLayout,
@@ -205,6 +212,8 @@ function TodayScreen() {
     checkInReplanCoachLine,
     patternHoyCoachLine,
     patternHoyMode,
+    firstDayClose,
+    enableTomorrowReminder,
   } = useHoyScreenLayout({
     userId: user?.id,
     loading,
@@ -260,63 +269,46 @@ function TodayScreen() {
     crisisMode: crisisModeActive,
   });
 
+  useEffect(() => {
+    if (!firstSessionMicroStep || firstDayValueTrackedRef.current) return;
+    firstDayValueTrackedRef.current = true;
+    void track('first_day_value_shown', { has_step: true });
+  }, [firstSessionMicroStep]);
+
   const todayPriorityStats = useMemo(() => getTodayPriorityStats(tasks), [tasks]);
 
   const openQuickRecheck = useCallback(() => {
-    openRecheckCheckIn('hoy');
-  }, []);
+    openCheckInModal('hoy');
+  }, [openCheckInModal]);
 
   const handleTaskCompleted = useCallback(
     (payload: TaskCompletedPayload) => {
-      const mood = todayMood?.toLowerCase() ?? '';
-      const lowEnergy = energyLevel <= 2 || ['agotada', 'ansiosa', 'abrumada'].includes(mood);
       const allTasksComplete = tasks.length > 0 && tasks.every((task) => task.is_completed);
 
       if (payload.allPrioritiesDoneToday) {
         if (!allTasksComplete) {
           setShowConfetti(true);
-          showToast(t('hoy.allStepsDoneToast'), 'success');
           if (confettiTimeoutRef.current) clearTimeout(confettiTimeoutRef.current);
           confettiTimeoutRef.current = setTimeout(() => {
             setShowConfetti(false);
             confettiTimeoutRef.current = null;
           }, 3500);
-          if (Platform.OS !== 'web') {
-            void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          }
         }
-        return;
-      }
-
-      if (payload.isFirstPriorityToday) {
-        if (hoyLiteLayout === true && user?.id && !firstSessionMicroDone) {
-          void markFirstSessionMicroStepCompleted(user.id);
-          setFirstSessionMicroDone(true);
-          void track('first_session_micro_step_completed', { source: 'hoy' });
-          showToast(t('hoy.firstSessionMicroStepDone'), 'success');
-        } else {
-          showToast(lowEnergy ? t('hoy.firstStepDoneLow') : t('hoy.firstStepDone'), 'success');
-        }
-      } else if (payload.remainingPriorities === 1) {
-        showToast(t('hoy.focusOneRemaining'), 'success');
-      } else {
-        showToast(t('hoy.stepDoneToast'), 'success');
+      } else if (payload.isFirstPriorityToday && hoyLiteLayout === true && user?.id && !firstSessionMicroDone) {
+        void markFirstSessionMicroStepCompleted(user.id);
+        setFirstSessionMicroDone(true);
+        void track('first_session_micro_step_completed', { source: 'hoy' });
       }
 
       if (Platform.OS !== 'web') {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        try {
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } catch {
+          // Expo Go / missing native module must not block the tap.
+        }
       }
     },
-    [
-      todayMood,
-      energyLevel,
-      showToast,
-      t,
-      tasks,
-      hoyLiteLayout,
-      user?.id,
-      firstSessionMicroDone,
-    ],
+    [tasks, hoyLiteLayout, user?.id, firstSessionMicroDone],
   );
 
   const { toggleTask, clearToggleTimers } = useTaskActions({
@@ -415,6 +407,7 @@ function TodayScreen() {
         ref={scrollRef}
         topInset="lg"
         gap={THEME.layout.tabSectionGap}
+        keyboardShouldPersistTaps="always"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -427,7 +420,8 @@ function TodayScreen() {
         <HoyScreenHeader
           displayName={displayName}
           hasCheckInToday={Boolean(todayMood)}
-          showSubtitle={!todayMood}
+          showSubtitle={false}
+          showGreeting={false}
           streak={currentStreak}
           checkedInToday={Boolean(todayMood)}
           softGrace={usedGrace}
@@ -435,14 +429,12 @@ function TodayScreen() {
           onCareModePress={() => setCareModeSheet(crisisModeActive ? 'deactivate' : 'activate')}
         />
 
-        {loading ? (
+        {!hoyReady ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={THEME.colors.gradient.blue} />
             <Text style={styles.loadingText}>{t('hoy.loading')}</Text>
           </View>
-        ) : null}
-
-        {!loading ? (
+        ) : (
           <HoyTasksSection
             todayMood={todayMood ?? ''}
             todayEmotionLabel={todayEmotionLabel}
@@ -452,6 +444,9 @@ function TodayScreen() {
             todayPriorityStats={todayPriorityStats}
             compactLayout={hoyLiteCompactLayout}
             firstSessionMicroStep={firstSessionMicroStep}
+            firstDayClose={crisisModeActive ? null : firstDayClose}
+            onEnableTomorrowReminder={enableTomorrowReminder}
+            returnMemory={returnMemory}
             onShowFullView={() => void handleOptOutHoyLite()}
             onShowMoreForToday={handleShowMoreForHoy}
             user={user}
@@ -491,7 +486,7 @@ function TodayScreen() {
             focusedProject={focusedProject}
             onClearFocusedProject={() => void clearFocusedProject()}
           />
-        ) : null}
+        )}
 
       </CalmScreen>
 

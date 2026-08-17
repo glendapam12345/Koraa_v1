@@ -77,14 +77,18 @@ export async function clearCrisisMode(): Promise<void> {
 }
 
 export async function isCrisisModeActive(): Promise<boolean> {
-  const [flag, untilRaw] = await AsyncStorage.multiGet([CRISIS_KEY, CRISIS_UNTIL_KEY]);
-  if (flag[1] !== '1') return false;
-  const until = untilRaw[1] ? Number(untilRaw[1]) : 0;
-  if (until > 0 && Date.now() > until) {
-    await clearCrisisMode();
+  try {
+    const [flag, untilRaw] = await AsyncStorage.multiGet([CRISIS_KEY, CRISIS_UNTIL_KEY]);
+    if (flag[1] !== '1') return false;
+    const until = untilRaw[1] ? Number(untilRaw[1]) : 0;
+    if (until > 0 && Date.now() > until) {
+      await clearCrisisMode();
+      return false;
+    }
+    return true;
+  } catch {
     return false;
   }
-  return true;
 }
 
 export async function saveLastSession(session: EmergencyKitSessionState): Promise<void> {

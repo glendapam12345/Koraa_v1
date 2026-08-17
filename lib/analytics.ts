@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { supabase } from '@/lib/supabase';
+import { supabase, getCachedAuthUser } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 const ENABLED =
@@ -25,7 +25,7 @@ function isMissingTableOrPolicy(error: { code?: string; message?: string }): boo
 export async function track(eventName: string, properties?: AnalyticsProps): Promise<void> {
   if (!ENABLED) return;
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedAuthUser();
     if (!user) return;
 
     const clean: Record<string, string | number | boolean | null> = {};

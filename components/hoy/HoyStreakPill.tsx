@@ -27,6 +27,7 @@ export function HoyStreakPill({
         soft && styles.pillSoft,
       ]}
       onPress={() => router.push('/streak')}
+      delayPressIn={0}
       activeOpacity={0.85}
       accessibilityRole="button"
       accessibilityLabel={

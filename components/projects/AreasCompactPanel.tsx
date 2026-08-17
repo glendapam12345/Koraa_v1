@@ -155,7 +155,7 @@ function ProjectCard({
       ]}
     >
       <TouchableOpacity
-        style={styles.projectMain}
+        style={[styles.projectMain, compact && styles.projectMainCompact]}
         onPress={() => router.push(`/project/${project.id}`)}
         activeOpacity={0.88}
         accessibilityRole="button"
@@ -167,7 +167,7 @@ function ProjectCard({
         <View style={styles.projectTopBlock}>
           <View style={styles.projectTitleRow}>
             <View style={[styles.projectDot, { backgroundColor: project.color }]} />
-            <Text style={[styles.projectName, compact && styles.projectNameCompact]} numberOfLines={compact ? 1 : undefined}>
+            <Text style={[styles.projectName, compact && styles.projectNameCompact]} numberOfLines={compact ? 2 : undefined}>
               {project.name}
             </Text>
             {!compact ? (
@@ -211,7 +211,7 @@ function ProjectCard({
             ) : null}
           </>
         ) : (
-          <Text style={styles.projectProgressDetail} numberOfLines={1}>
+          <Text style={[styles.projectProgressDetail, compact && styles.projectProgressDetailCompact]} numberOfLines={1}>
             {progress.total > 0
               ? t('areasCompact.progressDetail', {
                   done: progress.completed,
@@ -1445,8 +1445,14 @@ const styles = StyleSheet.create({
     padding: THEME.spacing.sm,
     gap: THEME.spacing.xs,
   },
+  projectMainCompact: {
+    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.xs,
+    gap: 2,
+    justifyContent: 'center',
+  },
   projectTopBlock: {
-    gap: 4,
+    gap: 2,
   },
   projectTitleRow: {
     flexDirection: 'row',
@@ -1458,11 +1464,10 @@ const styles = StyleSheet.create({
     height: THEME.spacing.xs,
     borderRadius: THEME.spacing.xs / 2,
     flexShrink: 0,
-    marginTop: 4,
   },
   projectName: {
     ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
+    fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
     flex: 1,
     flexShrink: 1,
@@ -1520,6 +1525,11 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     lineHeight: 18,
     flexShrink: 1,
+  },
+  projectProgressDetailCompact: {
+    color: THEME.colors.text.tertiary,
+    lineHeight: 16,
+    paddingLeft: THEME.spacing.sm,
   },
   projectMeta: {
     ...THEME.typography.small,

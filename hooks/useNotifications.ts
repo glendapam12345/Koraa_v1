@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { THEME } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
+import { supabase, getCachedAuthUser } from '@/lib/supabase';
 import {
   formatReminderTime,
   getDailyReminderTime,
   getTaskCaptureReminderTime,
   getTaskCaptureReminderEnabled,
+  getDailyReminderOptedIn,
 } from '@/lib/notificationPreferences';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { type AppLocale } from '@/lib/i18n';
@@ -23,6 +24,7 @@ import { markReturnTomorrowToast } from '@/lib/returnTomorrowToast';
 import { track } from '@/lib/analytics';
 import { pickNotificationCopy } from '@/lib/notificationCopyBank';
 import { loadNotificationContext } from '@/lib/notificationContext';
+import { buildEllieNotificationContent } from '@/lib/notificationEllieAttachment';
 
 const LOCALE_STORAGE_KEY = 'koraa_app_locale_v1';
 
@@ -35,16 +37,22 @@ async function getStoredLocale(): Promise<AppLocale> {
   }
 }
 
-// Configurar cómo se manejan las notificaciones cuando la app está en primer plano
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+function configureForegroundNotificationHandler() {
+  if (Platform.OS === 'web') return;
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  } catch {
+    /* Expo Go / missing native module */
+  }
+}
 
 type Subscription = { remove: () => void };
 const DAILY_REMINDER_TYPE = 'daily_checkin_reminder';
@@ -70,46 +78,56 @@ export function useNotifications() {
       return;
     }
 
-    void registerForPushNotificationsAsync();
+    configureForegroundNotificationHandler();
 
-    const subscription1 = Notifications.addNotificationReceivedListener((notification) => {
-      console.log('Notificación recibida:', notification);
-    });
-    notificationListener.current = subscription1;
+    void (async () => {
+      if (await getDailyReminderOptedIn()) {
+        await registerForPushNotificationsAsync();
+      }
+    })();
 
-    const subscription2 = Notifications.addNotificationResponseReceivedListener((response) => {
-      console.log('Usuario tocó la notificación:', response);
-      const notificationData = response.notification.request.content.data;
+    try {
+      const subscription1 = Notifications.addNotificationReceivedListener((notification) => {
+        console.log('Notificación recibida:', notification);
+      });
+      notificationListener.current = subscription1;
 
-      if (notificationData?.type === 'daily_checkin_reminder') {
-        import('expo-router').then(({ router }) => {
-          router.push(CHECK_IN_ROUTE);
-        });
-      }
-      if (notificationData?.type === CARE_MODE_REMINDER_TYPE) {
-        import('expo-router').then(({ router }) => {
-          router.push(CHECK_IN_ROUTE);
-        });
-      }
-      if (notificationData?.type === RECHECK_REMINDER_TYPE) {
-        import('@/lib/recheckCheckInBridge').then(({ openRecheckCheckIn }) => {
-          openRecheckCheckIn('notification');
-        });
-      }
-      if (notificationData?.type === TASK_CAPTURE_REMINDER_TYPE) {
-        import('@/lib/vaciarNavigation').then(({ openVaciarCapture }) => {
-          openVaciarCapture();
-        });
-      }
-    });
-    responseListener.current = subscription2;
+      const subscription2 = Notifications.addNotificationResponseReceivedListener((response) => {
+        console.log('Usuario tocó la notificación:', response);
+        const notificationData = response.notification.request.content.data;
+
+        if (notificationData?.type === 'daily_checkin_reminder') {
+          import('expo-router').then(({ router }) => {
+            router.push(CHECK_IN_ROUTE);
+          });
+        }
+        if (notificationData?.type === CARE_MODE_REMINDER_TYPE) {
+          import('expo-router').then(({ router }) => {
+            router.push(CHECK_IN_ROUTE);
+          });
+        }
+        if (notificationData?.type === RECHECK_REMINDER_TYPE) {
+          import('@/lib/recheckCheckInBridge').then(({ openRecheckCheckIn }) => {
+            openRecheckCheckIn('notification');
+          });
+        }
+        if (notificationData?.type === TASK_CAPTURE_REMINDER_TYPE) {
+          import('@/lib/vaciarNavigation').then(({ openVaciarCapture }) => {
+            openVaciarCapture();
+          });
+        }
+      });
+      responseListener.current = subscription2;
+    } catch {
+      /* Expo Go / missing native module */
+    }
 
     return () => {
-      if (notificationListener.current) {
-        notificationListener.current.remove();
-      }
-      if (responseListener.current) {
-        responseListener.current.remove();
+      try {
+        notificationListener.current?.remove();
+        responseListener.current?.remove();
+      } catch {
+        /* ignore */
       }
     };
   }, []);
@@ -128,12 +146,16 @@ export function useNotifications() {
 }
 
 async function cancelNotificationsByType(type: string) {
-  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  await Promise.all(
-    scheduled
-      .filter((n) => n.content.data?.type === type)
-      .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
-  );
+  try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    await Promise.all(
+      scheduled
+        .filter((n) => n.content.data?.type === type)
+        .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
+    );
+  } catch {
+    /* native module missing or Expo Go */
+  }
 }
 
 /** Recordatorio ~3 h después del check-in: «¿Cambió tu día?» */
@@ -143,9 +165,7 @@ export async function scheduleRecheckReminder(localeOverride?: AppLocale) {
   try {
     await cancelNotificationsByType(RECHECK_REMINDER_TYPE);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCachedAuthUser();
     if (!user) return;
 
     const today = getLocalDateString();
@@ -158,19 +178,23 @@ export async function scheduleRecheckReminder(localeOverride?: AppLocale) {
 
     if (!checkIn) return;
 
+    if (await isCrisisModeActive()) return;
+
     const locale = localeOverride ?? (await getStoredLocale());
     const triggerDate = new Date();
     triggerDate.setHours(triggerDate.getHours() + RECHECK_HOURS_AFTER_CHECKIN);
     const ctx = await loadNotificationContext(user.id);
     const copy = await pickNotificationCopy(locale, 'recheck', ctx);
+    const content = await buildEllieNotificationContent({
+      title: copy.title,
+      body: copy.body,
+      data: { type: RECHECK_REMINDER_TYPE, copyId: copy.id },
+      kind: 'recheck',
+      ctx,
+    });
 
     await Notifications.scheduleNotificationAsync({
-      content: {
-        title: copy.title,
-        body: copy.body,
-        sound: true,
-        data: { type: RECHECK_REMINDER_TYPE, copyId: copy.id },
-      },
+      content,
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: triggerDate,
@@ -184,10 +208,10 @@ export async function scheduleRecheckReminder(localeOverride?: AppLocale) {
 async function ensureNotificationPermissionStatus(): Promise<string> {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
+      name: 'Koraa',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: THEME.colors.gradient.pink,
+      lightColor: THEME.colors.calm.lavender,
     });
   }
 
@@ -213,17 +237,22 @@ async function registerForPushNotificationsAsync() {
 export async function scheduleActiveReminders(localeOverride?: AppLocale) {
   if (Platform.OS === 'web') return;
 
-  const crisisActive = await isCrisisModeActive();
-  if (crisisActive) {
-    await cancelNotificationsByType(DAILY_REMINDER_TYPE);
-    await cancelNotificationsByType(TASK_CAPTURE_REMINDER_TYPE);
-    await scheduleCareModeReminder(localeOverride);
-    return;
-  }
+  try {
+    const crisisActive = await isCrisisModeActive();
+    if (crisisActive) {
+      await cancelNotificationsByType(DAILY_REMINDER_TYPE);
+      await cancelNotificationsByType(TASK_CAPTURE_REMINDER_TYPE);
+      await cancelNotificationsByType(RECHECK_REMINDER_TYPE);
+      await scheduleCareModeReminder(localeOverride);
+      return;
+    }
 
-  await cancelNotificationsByType(CARE_MODE_REMINDER_TYPE);
-  await scheduleDailyReminder(localeOverride);
-  await scheduleTaskCaptureReminder(localeOverride);
+    await cancelNotificationsByType(CARE_MODE_REMINDER_TYPE);
+    await cancelNotificationsByType(TASK_CAPTURE_REMINDER_TYPE);
+    await scheduleDailyReminder(localeOverride);
+  } catch {
+    /* native module missing or Expo Go */
+  }
 }
 
 /** Recordatorio diario suave mientras el modo cuidado está activo. */
@@ -236,23 +265,23 @@ export async function scheduleCareModeReminder(localeOverride?: AppLocale) {
     const crisisActive = await isCrisisModeActive();
     if (!crisisActive) return;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCachedAuthUser();
     if (!user) return;
 
     const { hour: reminderHour, minute: reminderMinute } = await getDailyReminderTime();
     const locale = localeOverride ?? (await getStoredLocale());
     const ctx = await loadNotificationContext(user.id);
     const copy = await pickNotificationCopy(locale, 'care', ctx);
+    const content = await buildEllieNotificationContent({
+      title: copy.title,
+      body: copy.body,
+      data: { type: CARE_MODE_REMINDER_TYPE, copyId: copy.id },
+      kind: 'care',
+      ctx,
+    });
 
     await Notifications.scheduleNotificationAsync({
-      content: {
-        title: copy.title,
-        body: copy.body,
-        sound: true,
-        data: { type: CARE_MODE_REMINDER_TYPE, copyId: copy.id },
-      },
+      content,
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
         hour: reminderHour,
@@ -279,6 +308,11 @@ export async function ensureReturnTomorrowReminder(
   const timeLabel = formatReminderTime(time);
 
   try {
+    const optedIn = await getDailyReminderOptedIn();
+    if (!optedIn) {
+      return { scheduled: false, timeLabel, permissionGranted: false, mode: null };
+    }
+
     const permissionStatus = await ensureNotificationPermissionStatus();
     const permissionGranted = permissionStatus === 'granted';
 
@@ -328,11 +362,17 @@ export async function scheduleDailyReminder(
       return null;
     }
 
+    const optedIn = await getDailyReminderOptedIn();
+    if (!optedIn) {
+      await cancelNotificationsByType(DAILY_REMINDER_TYPE);
+      await cancelNotificationsByType(TASK_CAPTURE_REMINDER_TYPE);
+      await cancelNotificationsByType(RECHECK_REMINDER_TYPE);
+      return null;
+    }
+
     await cancelNotificationsByType(DAILY_REMINDER_TYPE);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCachedAuthUser();
     if (!user) return null;
 
     const today = getLocalDateString();
@@ -354,29 +394,26 @@ export async function scheduleDailyReminder(
       reminderMinute,
     });
 
+    const copy = await pickNotificationCopy(locale, 'daily', baseCtx);
+    const content = await buildEllieNotificationContent({
+      title: copy.title,
+      body: copy.body,
+      data: { type: DAILY_REMINDER_TYPE, copyId: copy.id },
+      kind: 'daily',
+      ctx: baseCtx,
+    });
+
     if (plan.mode === 'tomorrow_once' && plan.triggerDate) {
-      const copy = await pickNotificationCopy(locale, 'daily', baseCtx);
       await Notifications.scheduleNotificationAsync({
-        content: {
-          title: copy.title,
-          body: copy.body,
-          sound: true,
-          data: { type: DAILY_REMINDER_TYPE, copyId: copy.id },
-        },
+        content,
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
           date: plan.triggerDate,
         },
       });
     } else {
-      const copy = await pickNotificationCopy(locale, 'daily', baseCtx);
       await Notifications.scheduleNotificationAsync({
-        content: {
-          title: copy.title,
-          body: copy.body,
-          sound: true,
-          data: { type: DAILY_REMINDER_TYPE, copyId: copy.id },
-        },
+        content,
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
           hour: reminderHour,
@@ -406,12 +443,13 @@ export async function scheduleTaskCaptureReminder(localeOverride?: AppLocale) {
 
     if (await isCrisisModeActive()) return;
 
+    const optedIn = await getDailyReminderOptedIn();
+    if (!optedIn) return;
+
     const enabled = await getTaskCaptureReminderEnabled();
     if (!enabled) return;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCachedAuthUser();
     if (!user) return;
 
     if (await hasCapturedTasksToday(user.id)) return;
@@ -421,14 +459,16 @@ export async function scheduleTaskCaptureReminder(localeOverride?: AppLocale) {
     const triggerDate = getNextTaskCaptureTriggerDate(reminderHour, reminderMinute);
     const ctx = await loadNotificationContext(user.id);
     const copy = await pickNotificationCopy(locale, 'capture', ctx);
+    const content = await buildEllieNotificationContent({
+      title: copy.title,
+      body: copy.body,
+      data: { type: TASK_CAPTURE_REMINDER_TYPE, copyId: copy.id },
+      kind: 'capture',
+      ctx,
+    });
 
     await Notifications.scheduleNotificationAsync({
-      content: {
-        title: copy.title,
-        body: copy.body,
-        sound: true,
-        data: { type: TASK_CAPTURE_REMINDER_TYPE, copyId: copy.id },
-      },
+      content,
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: triggerDate,
@@ -442,7 +482,11 @@ export async function scheduleTaskCaptureReminder(localeOverride?: AppLocale) {
 /** Tras guardar un paso hoy: cancela el aviso vespertino pendiente. */
 export async function cancelTaskCaptureReminderForToday() {
   if (Platform.OS === 'web') return;
-  await cancelNotificationsByType(TASK_CAPTURE_REMINDER_TYPE);
+  try {
+    await cancelNotificationsByType(TASK_CAPTURE_REMINDER_TYPE);
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function cancelAllNotifications() {
@@ -450,16 +494,34 @@ export async function cancelAllNotifications() {
     console.log('Las notificaciones no están disponibles en web');
     return;
   }
-  await cancelNotificationsByType(DAILY_REMINDER_TYPE);
-  await cancelNotificationsByType(RECHECK_REMINDER_TYPE);
-  await cancelNotificationsByType(CARE_MODE_REMINDER_TYPE);
-  await cancelNotificationsByType(TASK_CAPTURE_REMINDER_TYPE);
+  try {
+    await cancelNotificationsByType(DAILY_REMINDER_TYPE);
+    await cancelNotificationsByType(RECHECK_REMINDER_TYPE);
+    await cancelNotificationsByType(CARE_MODE_REMINDER_TYPE);
+    await cancelNotificationsByType(TASK_CAPTURE_REMINDER_TYPE);
+  } catch {
+    /* ignore */
+  }
+}
+
+export async function requestNotificationPermission(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
+  try {
+    const status = await ensureNotificationPermissionStatus();
+    return status === 'granted';
+  } catch {
+    return false;
+  }
 }
 
 export async function checkNotificationPermissions(): Promise<boolean> {
   if (Platform.OS === 'web') {
     return false;
   }
-  const { status } = await Notifications.getPermissionsAsync();
-  return status === 'granted';
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    return status === 'granted';
+  } catch {
+    return false;
+  }
 }

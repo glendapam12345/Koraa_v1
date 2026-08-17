@@ -1,4 +1,5 @@
-import { supabase, isNetworkError, getSchemaSetupMessage } from '@/lib/supabase';
+import { supabase, isNetworkError, getSchemaSetupMessage, getCachedAuthUser } from '@/lib/supabase';
+import { requestHoyRefresh } from '@/lib/hoyRefreshBridge';
 import { logger } from '@/lib/logger';
 import { detectCategory } from '@/lib/categoryDetection';
 import { prioritizeTasksForCheckIn } from '@/lib/checkInService';
@@ -44,7 +45,7 @@ function trackTaskCreated(args: {
   });
 }
 
-async function reprioritizeAfterTaskSave(userId: string, locale: AppLocale): Promise<boolean> {
+export async function reprioritizeAfterTaskSave(userId: string, locale: AppLocale): Promise<boolean> {
   const today = getLocalDateString();
   const { data: checkIn, error } = await supabase
     .from('daily_check_ins')
@@ -67,12 +68,12 @@ async function reprioritizeAfterTaskSave(userId: string, locale: AppLocale): Pro
 
 export async function createVaciarTask(
   draft: VaciarTaskDraft,
-  options: { locale: AppLocale; hasCheckInToday: boolean },
+  options: { locale: AppLocale; hasCheckInToday: boolean; skipReprioritize?: boolean },
 ): Promise<VaciarCreateTaskResult> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedAuthUser();
   if (!user) return { status: 'not_authenticated' };
 
-  const trimmed = draft.content.trim();
+  const trimmed = draft.content.trim().slice(0, 300);
   const categoryToSave =
     draft.selectedCategory === ''
       ? draft.assignToProject
@@ -104,7 +105,7 @@ export async function createVaciarTask(
   let { data: mainTask, error: mainTaskError } = await supabase
     .from('tasks')
     .insert(insertPayload)
-    .select()
+    .select('id')
     .single();
 
   if (
@@ -118,7 +119,7 @@ export async function createVaciarTask(
     ({ data: mainTask, error: mainTaskError } = await supabase
       .from('tasks')
       .insert(baseInsert)
-      .select()
+      .select('id')
       .single());
   }
 
@@ -180,7 +181,7 @@ export async function createVaciarTask(
           is_completed: false,
           parent_task_id: null,
         })
-        .select()
+        .select('id')
         .single();
 
       if (fallbackError) {
@@ -251,13 +252,14 @@ export async function createVaciarTask(
     hasSubtasks: subtaskCount > 0,
   });
 
-  let reprioritized = false;
-  if (options.hasCheckInToday && !draft.isPriority) {
-    try {
-      reprioritized = await reprioritizeAfterTaskSave(user.id, options.locale);
-    } catch (reprioritizeError) {
-      logger.error('Error repriorizando tras guardar tarea:', reprioritizeError);
-    }
+  if (options.hasCheckInToday && !draft.isPriority && !options.skipReprioritize) {
+    void reprioritizeAfterTaskSave(user.id, options.locale)
+      .then((did) => {
+        if (did) requestHoyRefresh();
+      })
+      .catch((reprioritizeError) => {
+        logger.error('Error repriorizando tras guardar tarea:', reprioritizeError);
+      });
   }
 
   return {
@@ -265,7 +267,7 @@ export async function createVaciarTask(
     savedTitle: trimmed,
     savedScheduledDate: draft.selectedDate,
     subtaskCount,
-    reprioritized,
+    reprioritized: false,
     projectId: projectIdToSave,
     hasSubtasks: draft.hasSubtasks,
     taskId: mainTask?.id,

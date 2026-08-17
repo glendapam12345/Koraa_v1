@@ -634,7 +634,7 @@ export const featuresEn = {
     plannerEmptyDayHint: 'No steps · drag a card here or tap Add step',
     emptyDay: 'This day is open',
     emptyHint:
-      'Add a task and it will show here. No need to fill the whole month.',
+      'Add a step for this day. No need to fill the whole month.',
     emptyTodayNoCheckIn: 'You have not logged how you feel today',
     emptyTodayNoCheckInHint:
       'Koraa cannot color this day or sort your steps yet.',
@@ -644,7 +644,7 @@ export const featuresEn = {
       'After you check in on Today, your suggested steps will show up here.',
     emptyLightDay: 'Light day',
     emptyLightDayHint:
-      'No pending tasks — Koraa did not assign steps for today.',
+      'Nothing assigned — you can still add a step if you want.',
     emptyHeavyDay:
       '{{total}} on the calendar, but only {{count}} steps in Today',
     emptyHeavyDayHint: 'Koraa protected your low energy.',
@@ -655,6 +655,8 @@ export const featuresEn = {
     noCheckInTodayBannerCompact: 'No check-in today —',
     noCheckInTodayBannerCta: 'Check in on Today',
     addTasks: 'Add task',
+    addToDayCta: 'Add to this day',
+    addToDayHint: 'Write a step and it is saved on the day you picked.',
     addMore: 'Add another',
     addTasksOrProjects: 'Add task or project',
     quickAddDayTitle: 'Add to {{day}}',
@@ -742,6 +744,7 @@ export const featuresEn = {
     actionHeroDefault: 'For how you feel today: start with the smallest step.',
     actionHeroCtaHoy: 'See what matters today',
     actionStartFocus: 'A little time with you (5 min)',
+    actionStartBreath: 'Take a breath',
     actionOpenMusic: 'Open music',
     actionOptionalMusic: 'If you want, open music',
     musicPickerTitle: 'Which music app?',
@@ -820,6 +823,7 @@ export const featuresEn = {
       howItWorks: 'This is how Koraa works. Four clear steps.',
       emotion: 'How do you feel today? Tap one.',
       energy: 'How much energy do you bring? That shapes your step.',
+      reminders: 'Want a gentle nudge to come back? You choose. No pressure.',
       time: 'How much time do you have today?',
       focus: 'How is your head today? Then I leave you a gentle plan.',
     },
@@ -882,6 +886,15 @@ export const featuresEn = {
       veryHigh: 'Very high',
       adaptHint: 'This is “adapt”: low energy = fewer steps. No guilt.',
       continue: 'Continue',
+    },
+    reminders: {
+      title: 'Want a nudge',
+      titleAccent: 'to come back?',
+      subtitle:
+        'A gentle nudge at a time you choose. Tomorrow you open Today and continue — no pressure.',
+      accept: 'Yes, remind me',
+      skip: 'Not now',
+      timeGroupA11y: 'Daily reminder time',
     },
     time: {
       title: 'How much',

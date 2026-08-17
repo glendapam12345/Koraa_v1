@@ -27,7 +27,27 @@ describe('notificationCopyBank', () => {
     expect(ids.size).toBeGreaterThan(1);
     const named = pickNotificationCopySync('es', 'daily', { firstName: 'Pam', salt: 0 });
     // named pool or default may include name
-    expect(named.title + named.body).toMatch(/Pam|Ellie/);
+    expect(named.title + named.body).toMatch(/Pam|Koraa/);
+  });
+
+  it('lock-screen copy names Koraa, never Ellie', () => {
+    const kinds = ['daily', 'recheck', 'capture', 'care'] as const;
+    const locales = ['es', 'en'] as const;
+    for (const locale of locales) {
+      for (const kind of kinds) {
+        for (const salt of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]) {
+          const copy = pickNotificationCopySync(locale, kind, {
+            firstName: 'Pam',
+            lastEmotion: 'abrumada',
+            avgEnergy: 2,
+            daysSinceCheckIn: 3,
+            salt,
+          });
+          const text = `${copy.title} ${copy.body}`;
+          expect(text).not.toMatch(/Ellie/i);
+        }
+      }
+    }
   });
 
   it('avoids repeating last id when possible', () => {
@@ -39,6 +59,11 @@ describe('notificationCopyBank', () => {
   it('has English bank entries', () => {
     const copy = pickNotificationCopySync('en', 'capture', { salt: 3 });
     expect(copy.title.length).toBeGreaterThan(3);
-    expect(copy.body.toLowerCase()).toMatch(/ellie|task|today|mind|line/);
+    expect(copy.body.toLowerCase()).toMatch(/koraa|task|today|mind|line/);
+  });
+
+  it('does not put Spanish tú in English copy without a name', () => {
+    const copy = pickNotificationCopySync('en', 'daily', { firstName: '', salt: 0 });
+    expect(`${copy.title} ${copy.body}`).not.toMatch(/tú/);
   });
 });

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '@/lib/supabase';
+import { supabase, getCachedAuthUser } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 
 const VACIAR_DICTATE_HINT_DISMISSED_KEY = (userId: string) =>
@@ -12,7 +12,7 @@ export function useVaciarHints(userId: string | undefined) {
 
   const loadHintState = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCachedAuthUser();
       if (!user) return;
 
       const { data, error } = await supabase

@@ -99,6 +99,8 @@ export function AreasQuickAddBar({
           placeholder={t(placeholderKey)}
           placeholderTextColor={THEME.colors.text.tertiary}
           maxLength={300}
+          autoCorrect={false}
+          spellCheck={false}
           accessibilityLabel={t('vaciarExtra.a11yTaskField')}
           returnKeyType="done"
           blurOnSubmit
@@ -137,6 +139,8 @@ export function AreasQuickAddBar({
         placeholderTextColor={THEME.colors.text.tertiary}
         multiline
         maxLength={300}
+        autoCorrect={false}
+        spellCheck={false}
         accessibilityLabel={t('vaciarExtra.a11yTaskField')}
         returnKeyType="done"
         blurOnSubmit

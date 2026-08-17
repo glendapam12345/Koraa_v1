@@ -38,6 +38,7 @@ export function CalmPrimaryButton({
       <TouchableOpacity
         onPress={onPress}
         disabled={isDisabled}
+        delayPressIn={0}
         style={[
           styles.softContainer,
           { height, borderRadius },
@@ -63,6 +64,7 @@ export function CalmPrimaryButton({
     <TouchableOpacity
       onPress={onPress}
       disabled={isDisabled}
+      delayPressIn={0}
       style={[
         styles.container,
         { height, borderRadius },

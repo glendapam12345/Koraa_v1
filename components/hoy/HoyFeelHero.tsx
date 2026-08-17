@@ -1,212 +1,450 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { THEME } from '@/constants/theme';
-import { CalmCard } from '@/components/ui/calm/CalmCard';
-import { KoraaMascotAvatar } from '@/components/branding/KoraaMascotAvatar';
+import { OnboardingEllieCoach } from '@/components/onboarding/OnboardingEllieCoach';
+import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { useI18n } from '@/contexts/I18nContext';
+import { getFirstName } from '@/lib/displayName';
+import { useKoraaGreeting } from '@/hooks/useKoraaGreeting';
+import { resolveEllieDayVoice, type EllieMiddayStep } from '@/lib/ellieDayVoice';
+import type { HoyEllieDailyState } from '@/lib/hoyEllieDailyState';
+import { buildEllieAdaptMessage, energyBand, mindBand } from '@/lib/ellieCheckInInterpret';
+import {
+  resolveEllieCompanionCue,
+  resolveElliePresence,
+  type EllieMood,
+} from '@/lib/elliePersonality';
 import type { TranslationKey } from '@/lib/i18n';
+import type { WhatChangedReason } from '@/lib/lifeAreas/types';
+
+const CHANGED_REASON_OPTIONS: {
+  key: TranslationKey;
+  reason?: WhatChangedReason;
+}[] = [
+  { key: 'hoy.ellieChangedLessTime', reason: 'less_time' },
+  { key: 'hoy.ellieChangedCameUp', reason: 'new_event' },
+  { key: 'hoy.ellieChangedMoreEnergy', reason: 'more_energy' },
+  { key: 'hoy.ellieChangedMoreTired', reason: 'tired' },
+  { key: 'hoy.ellieChangedPrioritize', reason: 'priorities_changed' },
+  { key: 'hoy.ellieChangedOther' },
+];
+
+const ELLIE_MOOD_NOTE: Record<EllieMood, TranslationKey> = {
+  default: 'hoy.ellieMoodNoteDefault',
+  breathing: 'hoy.ellieMoodNoteBreathing',
+  sleepy: 'hoy.ellieMoodNoteSleepy',
+  happy: 'hoy.ellieMoodNoteHappy',
+  grateful: 'hoy.ellieMoodNoteGrateful',
+  focus: 'hoy.ellieMoodNoteFocus',
+  comforting: 'hoy.ellieMoodNoteComforting',
+  proud: 'hoy.ellieMoodNoteProud',
+  cozy: 'hoy.ellieMoodNoteCozy',
+  curious: 'hoy.ellieMoodNoteCurious',
+};
 
 type HoyFeelHeroProps = {
   hasCheckIn: boolean;
-  emotionEmoji?: string;
+  dailyState: HoyEllieDailyState;
+  hasTasks?: boolean;
+  hasNightLeftovers?: boolean;
+  isReturningLater?: boolean;
   emotionLabel?: string;
+  emotionKey?: string;
   energyLevel?: number;
+  focusLevel?: string;
+  displayName?: string;
+  middayStep?: EllieMiddayStep;
   onUpdateFeel: () => void;
+  onMiddayOkay?: () => void;
+  onMiddayDayChanged?: () => void;
+  onMiddayChangedConfirm?: (reason?: WhatChangedReason) => void;
+  onMiddayMind?: () => void;
+  onReturnAccept?: () => void;
+  onReturnEdit?: () => void;
+  onAdaptLooksGood?: () => void;
+  onAdaptEdit?: () => void;
+  onFreeRest?: () => void;
+  onFreeEmpty?: () => void;
+  onFreeExplore?: () => void;
+  planCloseAccepted?: boolean;
+  onPlanDoneEmpty?: () => void;
+  onPlanDoneRest?: () => void;
+  onPlanDoneSeeYou?: () => void;
+  onMoodReplan?: () => void;
+  onMoodKeep?: () => void;
+  onNightUrgent?: () => void;
+  onNightNotUrgent?: () => void;
+  onNightDone?: () => void;
+  onNightSeeLeft?: () => void;
 };
 
-const ENERGY_WORD_KEYS: Record<1 | 2 | 3 | 4 | 5, TranslationKey> = {
-  1: 'hoy.energyWord1',
-  2: 'hoy.energyWord2',
-  3: 'hoy.energyWord3',
-  4: 'hoy.energyWord4',
-  5: 'hoy.energyWord5',
-};
-
-function clampEnergy(level: number): 1 | 2 | 3 | 4 | 5 {
-  const n = Math.round(level);
-  if (n <= 1) return 1;
-  if (n >= 5) return 5;
-  return n as 2 | 3 | 4;
+function ellieMoodForDailyState(
+  dailyState: HoyEllieDailyState,
+  middayStep: EllieMiddayStep,
+  portraitMood: ReturnType<typeof resolveElliePresence>['mood'],
+): ReturnType<typeof resolveElliePresence>['mood'] {
+  if (dailyState === 'evening' || dailyState === 'day_closed') return 'cozy';
+  if (dailyState === 'plan_done') return 'grateful';
+  if (dailyState === 'not_started') return 'curious';
+  if (dailyState === 'returning' && middayStep === 'mind') return 'curious';
+  return portraitMood;
 }
 
-/**
- * Sin check-in: hero grande (CTA principal).
- * Con check-in: franja compacta — el foco del día es el protagonista.
- */
 export function HoyFeelHero({
   hasCheckIn,
+  dailyState,
+  hasNightLeftovers = false,
   emotionLabel = '',
+  emotionKey = '',
   energyLevel = 0,
+  focusLevel = '',
+  displayName = '',
+  middayStep = 'ask',
   onUpdateFeel,
+  onMiddayOkay,
+  onMiddayDayChanged,
+  onMiddayChangedConfirm,
+  onMiddayMind,
+  onReturnAccept,
+  onReturnEdit,
+  onAdaptLooksGood,
+  onAdaptEdit,
+  onFreeRest,
+  onFreeEmpty,
+  onFreeExplore,
+  planCloseAccepted = false,
+  onPlanDoneEmpty,
+  onPlanDoneRest,
+  onPlanDoneSeeYou,
+  onMoodReplan,
+  onMoodKeep,
+  onNightUrgent,
+  onNightNotUrgent,
+  onNightDone,
+  onNightSeeLeft,
 }: HoyFeelHeroProps) {
   const { t } = useI18n();
+  const { greeting } = useKoraaGreeting();
+  const firstName = getFirstName(displayName);
 
-  if (hasCheckIn && emotionLabel) {
-    const level = energyLevel > 0 ? clampEnergy(energyLevel) : null;
-    const energyLine = level
-      ? t('hoy.energyTodayValue', { word: t(ENERGY_WORD_KEYS[level]), level })
-      : emotionLabel;
+  const routing = dailyState === 'returning' && middayStep === 'ask';
+  const showChangedAsk = dailyState === 'returning' && middayStep === 'changedAsk';
+  const showReturnPropose = dailyState === 'returning' && middayStep === 'propose';
+  const showAdaptActions = dailyState === 'adapting';
+  const showFreeActions = dailyState === 'free_day';
+  const showPlanDoneActions = dailyState === 'plan_done' && !planCloseAccepted;
+  const showStartCheckIn = dailyState === 'not_started';
+  const showMoodActions = dailyState === 'mood_updated';
+  const showNightAsk = dailyState === 'evening' && middayStep === 'ask' && hasNightLeftovers;
+  const showNightClose =
+    dailyState === 'evening' &&
+    (middayStep === 'nightClose' || (middayStep === 'ask' && !hasNightLeftovers));
 
-    return (
-      <Pressable
+  const nightClearMessage = firstName
+    ? t('hoy.ellieNightClear', { name: firstName })
+    : t('hoy.ellieNightClearNoName');
+  const nightAskMessage = firstName
+    ? t('hoy.ellieNightAsk', { name: firstName })
+    : t('hoy.ellieNightAskNoName');
+
+  const notStartedMessage = firstName
+    ? t('hoy.ellieDailyStart', { name: firstName, greeting })
+    : t('hoy.ellieDailyStartNoName', { greeting });
+
+  const returningMessage = firstName
+    ? t('hoy.ellieMiddayAsk', { name: firstName })
+    : t('hoy.ellieMiddayAskNoName');
+
+  const energyKey =
+    energyBand(energyLevel) === 'low'
+      ? 'hoy.ellieEnergyLow'
+      : energyBand(energyLevel) === 'high'
+        ? 'hoy.ellieEnergyHigh'
+        : 'hoy.ellieEnergyOk';
+  const mindKey =
+    mindBand(focusLevel) === 'foggy'
+      ? 'hoy.ellieMindFoggy'
+      : mindBand(focusLevel) === 'cloudy'
+        ? 'hoy.ellieMindCloudy'
+        : mindBand(focusLevel) === 'clear'
+          ? 'hoy.ellieMindClear'
+          : 'hoy.ellieMindOk';
+
+  const summary = t('hoy.ellieCheckInSummary', {
+    emotion: emotionLabel || t('hoy.ellieFeelingUnnamed'),
+    energy: t(energyKey),
+    mind: t(mindKey),
+  });
+
+  const adaptingMessage = buildEllieAdaptMessage({
+    emotionLabel,
+    energyLevel,
+    focusLevel,
+    hasTasks: true,
+    gotYou: t('hoy.ellieGotYou'),
+    summary,
+    lighter: t('hoy.ellieMakeLighter'),
+    freeDay: t('hoy.ellieFreeDayAsk'),
+  });
+
+  const freeDayMessage = buildEllieAdaptMessage({
+    emotionLabel,
+    energyLevel,
+    focusLevel,
+    hasTasks: false,
+    gotYou: t('hoy.ellieGotYou'),
+    summary,
+    lighter: t('hoy.ellieMakeLighter'),
+    freeDay: t('hoy.ellieFreeDayAsk'),
+  });
+
+  const returnProposeMessage = buildEllieAdaptMessage({
+    emotionLabel,
+    energyLevel,
+    focusLevel,
+    hasTasks: true,
+    gotYou: t('hoy.ellieGotYou'),
+    summary,
+    lighter: t('hoy.ellieReturnFeelRight'),
+    freeDay: t('hoy.ellieReturnFeelRight'),
+  });
+
+  const portrait =
+    hasCheckIn && (emotionKey || emotionLabel)
+      ? resolveEllieCompanionCue(emotionKey || emotionLabel, energyLevel, {
+          planEmpty: false,
+          allFocusDone: dailyState === 'plan_done',
+        })
+      : resolveElliePresence('hoy_idle');
+
+  const voice = resolveEllieDayVoice({
+    dailyState,
+    middayStep,
+    notStartedMessage,
+    returningMessage,
+    okayNextMessage:
+      dailyState === 'evening'
+        ? t('hoy.ellieNightFocus')
+        : t('hoy.ellieOkayKeepGoing'),
+    changedAskMessage: t('hoy.ellieChangedAsk'),
+    adjustMessage: t('hoy.ellieAdjustGotIt'),
+    mindGoMessage: t('hoy.ellieMindPlace'),
+    proposeMessage: returnProposeMessage,
+    adaptingMessage,
+    freeDayMessage,
+    inProgressMessage: t('hoy.ellieLighterPlan'),
+    moodUpdatedMessage: t('hoy.ellieMoodLighter'),
+    planDoneMessage: t('hoy.elliePlanDone'),
+    planDoneClosedMessage: t('hoy.elliePlanDoneClosed'),
+    planCloseAccepted,
+    eveningMessage: hasNightLeftovers ? nightAskMessage : nightClearMessage,
+    nightCloseMessage: hasNightLeftovers ? t('hoy.ellieNightCallIt') : nightClearMessage,
+    dayClosedMessage: t('hoy.ellieDayClosed'),
+  });
+
+  const message = voice.message;
+  const mood = ellieMoodForDailyState(dailyState, middayStep, portrait.mood);
+  const showFeelingCaption = hasCheckIn && Boolean(emotionLabel);
+
+  const feelingUpdate =
+    hasCheckIn && !showStartCheckIn && !routing ? (
+      <TouchableOpacity
         onPress={onUpdateFeel}
-        style={({ pressed }) => [styles.pressable, pressed && styles.pressablePressed]}
+        delayPressIn={0}
+        activeOpacity={0.85}
+        hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
         accessibilityRole="button"
-        accessibilityLabel={t('hoy.currentStateEditA11y')}
+        accessibilityLabel={
+          emotionLabel
+            ? t('hoy.feelHeroFeelingChip', { emotion: emotionLabel })
+            : t('hoy.feelHeroTapUpdate')
+        }
         accessibilityHint={t('hoy.feelHeroTapUpdate')}
       >
-        <View style={styles.compactRow}>
-          <View style={styles.compactMascot} accessibilityElementsHidden>
-            <KoraaMascotAvatar size={44} variant="ellie" breathe />
-          </View>
-          <View style={styles.compactCopy}>
-            <Text style={styles.compactEyebrow}>{t('hoy.energyTodayLabel')}</Text>
-            <Text style={styles.compactHeadline} numberOfLines={1}>
-              {energyLine}
-            </Text>
-            {level ? (
-              <View style={styles.compactBarRow} accessibilityRole="progressbar">
-                {[1, 2, 3, 4, 5].map((segment) => (
-                  <View
-                    key={segment}
-                    style={[
-                      styles.compactBarSegment,
-                      segment <= level ? styles.barSegmentOn : styles.barSegmentOff,
-                    ]}
-                  />
-                ))}
-              </View>
-            ) : null}
-          </View>
-          <Text style={styles.compactLink}>{t('hoy.updateFeel')}</Text>
-        </View>
-      </Pressable>
-    );
-  }
+        <Text style={styles.feelingChip}>
+          {emotionLabel ? t('hoy.feelHeroTapToChange') : t('hoy.feelHeroTapUpdate')}
+        </Text>
+      </TouchableOpacity>
+    ) : null;
 
   return (
-    <Pressable
-      onPress={onUpdateFeel}
-      style={({ pressed }) => [styles.pressable, pressed && styles.pressablePressed]}
-      accessibilityRole="button"
-      accessibilityLabel={t('hoy.inicio.primaryCta')}
-      accessibilityHint={t('hoy.feelHeroPurpose')}
-    >
-      <CalmCard variant="hero" style={[styles.card, styles.cardInvite]}>
-        <View style={styles.inviteRow}>
-          <View style={styles.inviteMascot} accessibilityElementsHidden>
-            <KoraaMascotAvatar size={64} variant="ellie" breathe />
-          </View>
-          <View style={styles.inviteCopy}>
-            <Text style={styles.inviteTitle}>{t('hoy.feelHeroQuestion')}</Text>
-            <Text style={styles.koraaLine}>{t('hoy.feelHeroPurposeShort')}</Text>
-            <Text style={styles.linkLine}>{t('hoy.feelHeroCompactCta')}</Text>
-          </View>
+    <View style={styles.companionBlock}>
+      <OnboardingEllieCoach
+        message={message}
+        mood={mood}
+        moodCaption={showFeelingCaption ? emotionLabel : t(ELLIE_MOOD_NOTE[mood])}
+        moodCaptionAccent={showFeelingCaption}
+        size={80}
+        withBottomGap={false}
+        accessible={false}
+      />
+      {feelingUpdate}
+      {showStartCheckIn ? (
+        <View style={styles.middayActions}>
+          <CalmPrimaryButton
+            label={t('hoy.feelHeroStartCheckIn')}
+            variant="soft"
+            onPress={onUpdateFeel}
+          />
         </View>
-      </CalmCard>
-    </Pressable>
+      ) : null}
+      {routing ? (
+        <View style={styles.middayActions}>
+          <CalmPrimaryButton
+            label={t('hoy.ellieMiddayOkay')}
+            variant="soft"
+            onPress={() => onMiddayOkay?.()}
+          />
+          <CalmPrimaryButton
+            label={t('hoy.ellieMiddayChanged')}
+            variant="soft"
+            onPress={() => onMiddayDayChanged?.()}
+          />
+          <CalmPrimaryButton
+            label={t('hoy.ellieMiddayMind')}
+            variant="soft"
+            onPress={() => onMiddayMind?.()}
+          />
+        </View>
+      ) : null}
+      {showChangedAsk ? (
+        <View style={styles.middayActions}>
+          {CHANGED_REASON_OPTIONS.map((option) => (
+            <CalmPrimaryButton
+              key={option.key}
+              label={t(option.key)}
+              variant="soft"
+              onPress={() => onMiddayChangedConfirm?.(option.reason)}
+            />
+          ))}
+        </View>
+      ) : null}
+      {showReturnPropose ? (
+        <View style={styles.middayActions}>
+          <CalmPrimaryButton
+            label={t('hoy.ellieReturnAccept')}
+            variant="soft"
+            onPress={() => onReturnAccept?.()}
+          />
+          <CalmPrimaryButton
+            label={t('hoy.ellieReturnEdit')}
+            variant="soft"
+            onPress={() => onReturnEdit?.()}
+          />
+        </View>
+      ) : null}
+      {showAdaptActions ? (
+        <View style={styles.middayActions}>
+          <CalmPrimaryButton
+            label={t('hoy.ellieSeeMyPlan')}
+            variant="soft"
+            onPress={() => onAdaptLooksGood?.()}
+          />
+          <CalmPrimaryButton
+            label={t('hoy.ellieEditMyDay')}
+            variant="soft"
+            onPress={() => onAdaptEdit?.()}
+          />
+        </View>
+      ) : null}
+      {showFreeActions ? (
+        <View style={styles.middayActions}>
+          <CalmPrimaryButton
+            label={t('hoy.ellieFreeRest')}
+            variant="soft"
+            onPress={() => onFreeRest?.()}
+          />
+          <CalmPrimaryButton
+            label={t('hoy.ellieFreeEmpty')}
+            variant="soft"
+            onPress={() => onFreeEmpty?.()}
+          />
+          <CalmPrimaryButton
+            label={t('hoy.ellieFreeExplore')}
+            variant="soft"
+            onPress={() => onFreeExplore?.()}
+          />
+        </View>
+      ) : null}
+      {showPlanDoneActions ? (
+        <View style={styles.middayActions}>
+          <CalmPrimaryButton
+            label={t('hoy.ellieFreeEmpty')}
+            variant="soft"
+            onPress={() => onPlanDoneEmpty?.()}
+          />
+          <CalmPrimaryButton
+            label={t('hoy.ellieFreeRest')}
+            variant="soft"
+            onPress={() => onPlanDoneRest?.()}
+          />
+          <CalmPrimaryButton
+            label={t('hoy.elliePlanDoneSeeYou')}
+            variant="soft"
+            onPress={() => onPlanDoneSeeYou?.()}
+          />
+        </View>
+      ) : null}
+      {showMoodActions ? (
+        <View style={styles.middayActions}>
+          <CalmPrimaryButton
+            label={t('hoy.ellieMoodReplan')}
+            variant="soft"
+            onPress={() => onMoodReplan?.()}
+          />
+          <CalmPrimaryButton
+            label={t('hoy.ellieMoodKeep')}
+            variant="soft"
+            onPress={() => onMoodKeep?.()}
+          />
+        </View>
+      ) : null}
+      {showNightAsk ? (
+        <View style={styles.middayActions}>
+          <CalmPrimaryButton
+            label={t('hoy.ellieNightUrgentYes')}
+            variant="soft"
+            onPress={() => onNightUrgent?.()}
+          />
+          <CalmPrimaryButton
+            label={t('hoy.ellieNightUrgentNo')}
+            variant="soft"
+            onPress={() => onNightNotUrgent?.()}
+          />
+        </View>
+      ) : null}
+      {showNightClose ? (
+        <View style={styles.middayActions}>
+          <CalmPrimaryButton
+            label={t('hoy.ellieNightDone')}
+            variant="soft"
+            onPress={() => onNightDone?.()}
+          />
+          {hasNightLeftovers ? (
+            <CalmPrimaryButton
+              label={t('hoy.ellieNightSeeLeft')}
+              variant="soft"
+              onPress={() => onNightSeeLeft?.()}
+            />
+          ) : null}
+        </View>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  pressable: {
-    width: '100%',
-    borderRadius: THEME.borderRadius.xl,
+  companionBlock: {
+    gap: THEME.spacing.xs,
   },
-  pressablePressed: {
-    opacity: 0.92,
-  },
-  compactRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.sm,
-    borderRadius: THEME.borderRadius.rounded,
-    backgroundColor: THEME.colors.calm.lavender,
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
-  },
-  compactMascot: {
-    flexShrink: 0,
-  },
-  compactCopy: {
-    flex: 1,
-    minWidth: 0,
-    gap: 4,
-  },
-  compactEyebrow: {
+  feelingChip: {
     ...THEME.typography.meta,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  compactHeadline: {
-    ...THEME.typography.body,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-    lineHeight: 20,
-  },
-  compactBarRow: {
-    flexDirection: 'row',
-    gap: 4,
-    marginTop: 2,
-    maxWidth: 120,
-  },
-  compactBarSegment: {
-    flex: 1,
-    height: 5,
-    borderRadius: 3,
-  },
-  barSegmentOn: {
-    backgroundColor: THEME.colors.calm.lavenderDeep,
-  },
-  barSegmentOff: {
-    backgroundColor: THEME.colors.calm.border,
-  },
-  compactLink: {
-    ...THEME.typography.caption,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.medium,
-    flexShrink: 0,
-  },
-  card: {
-    gap: THEME.spacing.sm,
-  },
-  cardInvite: {
-    borderColor: THEME.colors.calm.border,
-    borderWidth: 1,
-    paddingVertical: THEME.spacing.md,
-    paddingHorizontal: THEME.spacing.md,
-    borderRadius: THEME.borderRadius.xl,
-  },
-  inviteRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: THEME.spacing.sm,
-  },
-  inviteMascot: {
-    flexShrink: 0,
-  },
-  inviteCopy: {
-    flex: 1,
-    minWidth: 0,
-    gap: 4,
-  },
-  inviteTitle: {
-    ...THEME.typography.sectionTitle,
-    fontSize: 20,
-    lineHeight: 26,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
-  },
-  koraaLine: {
-    ...THEME.typography.caption,
     color: THEME.colors.text.secondary,
-    lineHeight: 18,
+    paddingHorizontal: THEME.spacing.xs,
+    paddingTop: 2,
+    paddingBottom: 4,
   },
-  linkLine: {
-    ...THEME.typography.caption,
-    color: THEME.colors.calm.lavenderDeep,
-    fontFamily: THEME.fonts.heading.medium,
-    marginTop: 2,
+  middayActions: {
+    gap: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.xs,
   },
 });

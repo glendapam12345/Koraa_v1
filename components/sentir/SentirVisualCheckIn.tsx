@@ -23,10 +23,7 @@ import {
 } from '@/lib/checkInDefaults';
 import { publishCheckInCelebration } from '@/lib/checkInCelebration';
 import { markPrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
-import {
-  ensureReturnTomorrowReminder,
-  scheduleRecheckReminder,
-} from '@/hooks/useNotifications';
+import { ensureReturnTomorrowReminder } from '@/hooks/useNotifications';
 import { track } from '@/lib/analytics';
 import type { TranslationKey } from '@/lib/i18n';
 
@@ -129,7 +126,6 @@ export function SentirVisualCheckIn({
       }
 
       try {
-        await scheduleRecheckReminder(locale);
         await ensureReturnTomorrowReminder(locale);
       } catch {
         /* non-critical */

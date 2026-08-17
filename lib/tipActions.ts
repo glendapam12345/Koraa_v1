@@ -8,6 +8,7 @@ export type TipAction =
   | 'spotify'
   | 'apple_music'
   | 'focus_session'
+  | 'breath'
   | 'notes'
   | 'reminders'
   | 'health_mindfulness'
@@ -216,6 +217,8 @@ export async function executeTipAction(
     case 'focus_session':
       router.push({ pathname: '/focus-session', params: { minutes: '5' } });
       return;
+    case 'breath':
+      return;
     case 'spotify':
     case 'apple_music':
       executeMusicAction(t);
@@ -259,7 +262,7 @@ export async function executeTipAction(
 
 /** CTAs que se quedan dentro de Koraa (camino principal cuando hay botón). */
 export function isInAppTipAction(action: TipAction): boolean {
-  return action === 'hoy' || action === 'vaciar' || action === 'focus_session';
+  return action === 'hoy' || action === 'vaciar' || action === 'focus_session' || action === 'breath';
 }
 
 /** Apps externas — solo como enlace secundario opcional. */
@@ -297,6 +300,8 @@ export function getTipActionLabel(
       return t('tips.actionOpenVaciar');
     case 'focus_session':
       return t('tips.actionStartFocus');
+    case 'breath':
+      return t('tips.actionStartBreath');
     default: {
       const _exhaustive: never = action;
       return _exhaustive;

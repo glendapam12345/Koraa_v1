@@ -25,6 +25,8 @@ export type ReorganizeMoveItem = {
   areaColor: string;
   fromLabel?: string;
   toLabel: string;
+  fromDate?: string;
+  toDate?: string;
   /** Fecha límite del proyecto o entrega, si aplica. */
   deadlineLabel?: string;
 };
@@ -35,6 +37,7 @@ export type ReorganizeKeepItem = {
   areaEmoji: string;
   areaColor: string;
   dateLabel?: string;
+  date?: string;
   deadlineLabel?: string;
 };
 

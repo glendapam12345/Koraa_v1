@@ -17,6 +17,7 @@ function task(partial: Partial<Task> & { id: string }): Task {
     completed_at: partial.completed_at ?? null,
     created_at: partial.created_at ?? '2026-05-19T10:00:00.000Z',
     parent_task_id: partial.parent_task_id ?? null,
+    scheduled_date: partial.scheduled_date ?? null,
   };
 }
 
@@ -61,6 +62,19 @@ describe('priorityProgress', () => {
     ];
     const stats = getTodayPriorityStats(tasks, TODAY);
     expect(stats).toEqual({ done: 1, total: 2, pending: 1, ratio: 0.5 });
+  });
+
+  it('getTodayPriorityStats includes due-today tasks without priority', () => {
+    const tasks = [
+      task({
+        id: 'due',
+        is_priority: false,
+        scheduled_date: TODAY,
+        is_completed: false,
+      }),
+    ];
+    const stats = getTodayPriorityStats(tasks, TODAY);
+    expect(stats).toEqual({ done: 0, total: 1, pending: 1, ratio: 0 });
   });
 
   it('countPriorityCompletedBefore excludes given task id', () => {

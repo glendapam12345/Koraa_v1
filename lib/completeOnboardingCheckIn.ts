@@ -4,7 +4,7 @@ import { saveDailyCheckInAndPrioritize } from '@/lib/checkInService';
 import { getDisplayName } from '@/lib/displayName';
 import { seedDefaultLifeAreasForUser } from '@/lib/finishOnboarding';
 import { markFirstSessionTourSeen } from '@/lib/firstSessionTour';
-import { goToHoyAfterOnboarding } from '@/lib/onboardingNavigation';
+import { goToOnboardingReminders } from '@/lib/onboardingNavigation';
 import { markPrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
 import { markQuickOnboardingGuideSeen } from '@/lib/quickOnboardingGuide';
 import { ensureOneHoyStepFromCapture } from '@/lib/ensureOneHoyStepFromCapture';
@@ -34,7 +34,7 @@ export type CompleteOnboardingCheckInResult = {
 
 /**
  * Guarda check-in, prioriza tareas capturadas, marca guías vistas
- * (sin tour/paywall day-1) y entra a Hoy.
+ * (sin tour/paywall day-1) y pasa a la pregunta de recordatorio.
  */
 export async function completeOnboardingCheckInAndGoHoy(
   input: CompleteOnboardingCheckInInput,
@@ -69,19 +69,6 @@ export async function completeOnboardingCheckInAndGoHoy(
 
   await ensureOneHoyStepFromCapture(user.id);
 
-  try {
-    const {
-      ensureReturnTomorrowReminder,
-      scheduleRecheckReminder,
-      scheduleTaskCaptureReminder,
-    } = await import('@/hooks/useNotifications');
-    await ensureReturnTomorrowReminder(locale);
-    await scheduleTaskCaptureReminder();
-    await scheduleRecheckReminder(locale);
-  } catch {
-    /* no crítico */
-  }
-
   await markPrioritiesReadyToast();
   await markQuickOnboardingGuideSeen();
   await markFirstSessionTourSeen(user.id);
@@ -97,7 +84,7 @@ export async function completeOnboardingCheckInAndGoHoy(
     await queueCheckInCelebration(result.celebration);
   }
 
-  await goToHoyAfterOnboarding(user.id);
+  await goToOnboardingReminders();
 
   return {
     success: true,

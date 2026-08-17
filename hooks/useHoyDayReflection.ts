@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FocusProgressStats } from '@/lib/focusProgressStats';
 import { useI18n } from '@/contexts/I18nContext';
 import {
   hasReflectedToday,
   markReflectedToday,
 } from '@/lib/vnext/dayReflectionStorage';
+import { getLocalDateString } from '@/lib/dateLocal';
 import {
   applyDayReplanAssignments,
   buildDayReplanPlan,
 } from '@/lib/vnext/executeDayReflectionReplan';
 import type { ReorganizeWeekProposal, WhatChangedReason } from '@/lib/lifeAreas/types';
+import { applyReorganizeDateEdit } from '@/lib/reorganizeDateEdit';
 import {
   resolveProactiveReflectionVariant,
   shouldShowProactiveReflectionCard,
@@ -49,6 +51,10 @@ export function useHoyDayReflection({
   const [pendingAssignments, setPendingAssignments] = useState<
     { id: string; scheduled_date: string }[]
   >([]);
+  const previewProposalRef = useRef(previewProposal);
+  const pendingAssignmentsRef = useRef(pendingAssignments);
+  previewProposalRef.current = previewProposal;
+  pendingAssignmentsRef.current = pendingAssignments;
 
   useEffect(() => {
     if (!userId) {
@@ -106,14 +112,11 @@ export function useHoyDayReflection({
     setSelectedReason(null);
     setPreviewProposal(null);
     setPendingAssignments([]);
+    previewProposalRef.current = null;
+    pendingAssignmentsRef.current = [];
     setBuildingPreview(false);
     setApplying(false);
   }, []);
-
-  const openReflection = useCallback(() => {
-    resetFlow();
-    setFlowOpen(true);
-  }, [resetFlow]);
 
   const closeReflection = useCallback(() => {
     if (buildingPreview || applying) return;
@@ -146,6 +149,18 @@ export function useHoyDayReflection({
     [locale, showToast, t, userId],
   );
 
+  const openReflection = useCallback(
+    (reason?: WhatChangedReason) => {
+      resetFlow();
+      setFlowOpen(true);
+      if (reason) {
+        setSelectedReason(reason);
+        void buildPreview(reason);
+      }
+    },
+    [buildPreview, resetFlow],
+  );
+
   const handleSelectReason = useCallback(
     (reason: WhatChangedReason) => {
       setSelectedReason(reason);
@@ -161,12 +176,32 @@ export function useHoyDayReflection({
     setPendingAssignments([]);
   }, [applying]);
 
+  const handleChangeTaskDate = useCallback(
+    (taskId: string, nextDate: string) => {
+      const proposal = previewProposalRef.current;
+      if (!proposal) return;
+      const next = applyReorganizeDateEdit({
+        proposal,
+        assignments: pendingAssignmentsRef.current,
+        taskId,
+        nextDate,
+        today: getLocalDateString(),
+        locale,
+      });
+      previewProposalRef.current = next.proposal;
+      pendingAssignmentsRef.current = next.assignments;
+      setPreviewProposal(next.proposal);
+      setPendingAssignments(next.assignments);
+    },
+    [locale],
+  );
+
   const handleConfirm = useCallback(async () => {
     if (!userId || !selectedReason) return;
 
     setApplying(true);
     try {
-      const applied = await applyDayReplanAssignments(userId, pendingAssignments);
+      const applied = await applyDayReplanAssignments(userId, pendingAssignmentsRef.current);
       if (!applied.ok) {
         showToast(t('vnext.replanError'), 'error');
         return;
@@ -205,10 +240,12 @@ export function useHoyDayReflection({
     buildingPreview,
     applying,
     previewProposal,
+    pendingAssignments,
     openReflection,
     closeReflection,
     handleSelectReason,
     handleBackToReason,
+    handleChangeTaskDate,
     handleConfirm,
   };
 }

@@ -32,13 +32,14 @@ export const TIPS_CATALOG_EN: CatalogTipEntry[] = [
     id: 'mind-3',
     category: 'mindset',
     title: 'Breathe',
-    body: 'Your body gets the rhythm before your mind. Four breaths already count.',
+    body: 'Your body gets the rhythm before your mind. Three breaths already count.',
     emoji: '🌬️',
     howSteps: [
       'Sit or stay still where you are.',
-      'In 4, hold 2, out 6 — four times.',
+      'Inhale, hold, release — three times.',
       'Notice one place in your body that feels a bit softer.',
     ],
+    action: 'breath',
     emotions: ['ansiosa', 'agotada', 'abrumada'],
   },
   {
@@ -235,7 +236,7 @@ export const TIPS_CATALOG_EN: CatalogTipEntry[] = [
     id: 'act-3',
     category: 'action',
     title: 'Five minutes with you',
-    body: 'Five minutes on one thing, if you feel up to it. You can stop after — guilt-free.',
+    body: 'Give one thing five minutes. When the timer ends, you can stop.',
     emoji: '⏱️',
     howSteps: [
       'Pick one thing.',

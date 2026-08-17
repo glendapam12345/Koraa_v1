@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Alert } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
@@ -88,8 +88,6 @@ type UseHoyAllCompleteConfettiOptions = {
   loading: boolean;
   showConfetti: boolean;
   setShowConfetti: (value: boolean) => void;
-  showToast: (message: string, type: 'success' | 'error' | 'info') => void;
-  t: (key: string) => string;
   confettiTimeoutRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
 };
 
@@ -98,24 +96,27 @@ export function useHoyAllCompleteConfetti({
   loading,
   showConfetti,
   setShowConfetti,
-  showToast,
-  t,
   confettiTimeoutRef,
 }: UseHoyAllCompleteConfettiOptions) {
   const [previousCompletedCount, setPreviousCompletedCount] = useState(0);
+  const hydratedRef = useRef(false);
 
   useEffect(() => {
-    if (tasks.length === 0 || loading) return;
+    if (loading) return;
 
-    const allCompleted = tasks.every((task: Task) => task.is_completed);
-    const hasTasks = tasks.length > 0;
     const completedCount = tasks.filter((task: Task) => task.is_completed).length;
-    const wasNotAllCompleted = previousCompletedCount < tasks.length;
 
-    if (allCompleted && hasTasks && wasNotAllCompleted && !showConfetti) {
+    if (!hydratedRef.current) {
+      hydratedRef.current = true;
+      setPreviousCompletedCount(completedCount);
+      return;
+    }
+
+    const allCompleted = tasks.length > 0 && tasks.every((task: Task) => task.is_completed);
+    const justFinished = previousCompletedCount < tasks.length;
+
+    if (allCompleted && justFinished && !showConfetti) {
       setShowConfetti(true);
-      showToast(t('hoy.dayComplete'), 'success');
-
       if (confettiTimeoutRef.current) {
         clearTimeout(confettiTimeoutRef.current);
       }
@@ -126,5 +127,5 @@ export function useHoyAllCompleteConfetti({
     }
 
     setPreviousCompletedCount(completedCount);
-  }, [tasks, loading, previousCompletedCount, showConfetti, setShowConfetti, showToast, t, confettiTimeoutRef]);
+  }, [tasks, loading, previousCompletedCount, showConfetti, setShowConfetti, confettiTimeoutRef]);
 }

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { ArrowRight } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -11,6 +11,9 @@ type ReorganizeDayProposalSectionsProps = {
   kept: ReorganizeKeepItem[];
   moved: ReorganizeMoveItem[];
   planningMeta?: Record<string, TaskPlanningMeta>;
+  editable?: boolean;
+  selectedTaskId?: string | null;
+  onPressItem?: (taskId: string) => void;
 };
 
 function StepPlanningMetaLine({
@@ -40,12 +43,18 @@ function StepPlanningMetaLine({
 function MoveRow({
   item,
   planningMeta,
+  editable = false,
+  selected = false,
+  onPress,
 }: {
   item: ReorganizeMoveItem;
   planningMeta: Record<string, TaskPlanningMeta>;
+  editable?: boolean;
+  selected?: boolean;
+  onPress?: () => void;
 }) {
-  return (
-    <View style={styles.row}>
+  const body = (
+    <>
       <Text style={styles.emoji}>{item.areaEmoji}</Text>
       <View style={styles.rowBody}>
         <Text style={styles.rowTitle} numberOfLines={2}>
@@ -62,19 +71,40 @@ function MoveRow({
         </View>
         <StepPlanningMetaLine taskId={item.taskId} planningMeta={planningMeta} />
       </View>
-    </View>
+    </>
+  );
+
+  if (!editable) {
+    return <View style={styles.row}>{body}</View>;
+  }
+
+  return (
+    <TouchableOpacity
+      style={[styles.row, selected && styles.rowSelected]}
+      onPress={onPress}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+    >
+      {body}
+    </TouchableOpacity>
   );
 }
 
 function KeepRow({
   item,
   planningMeta,
+  editable = false,
+  selected = false,
+  onPress,
 }: {
   item: ReorganizeKeepItem;
   planningMeta: Record<string, TaskPlanningMeta>;
+  editable?: boolean;
+  selected?: boolean;
+  onPress?: () => void;
 }) {
-  return (
-    <View style={styles.row}>
+  const body = (
+    <>
       <Text style={styles.emoji}>{item.areaEmoji}</Text>
       <View style={styles.rowBody}>
         <Text style={styles.rowTitle} numberOfLines={2}>
@@ -83,7 +113,22 @@ function KeepRow({
         {item.dateLabel ? <Text style={styles.keepDate}>{item.dateLabel}</Text> : null}
         <StepPlanningMetaLine taskId={item.taskId} planningMeta={planningMeta} />
       </View>
-    </View>
+    </>
+  );
+
+  if (!editable) {
+    return <View style={styles.row}>{body}</View>;
+  }
+
+  return (
+    <TouchableOpacity
+      style={[styles.row, selected && styles.rowSelected]}
+      onPress={onPress}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+    >
+      {body}
+    </TouchableOpacity>
   );
 }
 
@@ -91,6 +136,9 @@ export function ReorganizeDayProposalSections({
   kept,
   moved,
   planningMeta = {},
+  editable = false,
+  selectedTaskId = null,
+  onPressItem,
 }: ReorganizeDayProposalSectionsProps) {
   const { t } = useI18n();
 
@@ -100,7 +148,14 @@ export function ReorganizeDayProposalSections({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('reorganizeDay.sectionKeep')}</Text>
           {kept.map((item) => (
-            <KeepRow key={item.taskId} item={item} planningMeta={planningMeta} />
+            <KeepRow
+              key={item.taskId}
+              item={item}
+              planningMeta={planningMeta}
+              editable={editable}
+              selected={selectedTaskId === item.taskId}
+              onPress={() => onPressItem?.(item.taskId)}
+            />
           ))}
         </View>
       ) : null}
@@ -109,7 +164,14 @@ export function ReorganizeDayProposalSections({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('reorganizeDay.sectionMove')}</Text>
           {moved.map((item) => (
-            <MoveRow key={item.taskId} item={item} planningMeta={planningMeta} />
+            <MoveRow
+              key={item.taskId}
+              item={item}
+              planningMeta={planningMeta}
+              editable={editable}
+              selected={selectedTaskId === item.taskId}
+              onPress={() => onPressItem?.(item.taskId)}
+            />
           ))}
         </View>
       ) : null}
@@ -142,6 +204,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: THEME.colors.calm.border,
+  },
+  rowSelected: {
+    backgroundColor: THEME.colors.calm.lavender,
+    marginHorizontal: -THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.xs,
+    borderRadius: THEME.borderRadius.standard,
+    borderBottomWidth: 0,
   },
   emoji: {
     fontSize: 16,

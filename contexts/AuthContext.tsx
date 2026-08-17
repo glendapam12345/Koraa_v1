@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import * as Linking from 'expo-linking';
 import {
   supabase,
   canReachSupabase,
   isSupabaseConfigured,
+  setCachedAuthUser,
   type SupabaseSession,
   type SupabaseUser,
 } from '@/lib/supabase';
@@ -18,6 +19,7 @@ import { translateError } from '@/lib/errorMessages';
 import { useI18n } from '@/contexts/I18nContext';
 import { logger } from '@/lib/logger';
 import { track } from '@/lib/analytics';
+import { clearEllieMiddayState } from '@/lib/ellieMiddayPrompt';
 
 export type SignUpResult = {
   error: string | null;
@@ -64,6 +66,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
 
+  const applySession = useCallback((s: SupabaseSession) => {
+    setCachedAuthUser(s?.user ?? null);
+    setSession(s);
+    setUser(s?.user ?? null);
+  }, []);
+
+  const clearSession = useCallback(() => {
+    setCachedAuthUser(null);
+    setSession(null);
+    setUser(null);
+  }, []);
+
   useEffect(() => {
     if (!isSupabaseConfigured) {
       setLoading(false);
@@ -76,30 +90,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (error) {
           const msg = error.message?.toLowerCase() ?? '';
           if (msg.includes('refresh token')) {
-            await supabase.auth.signOut({ scope: 'local' });
-            setSession(null);
-            setUser(null);
-            setLoading(false);
-            return;
+            logger.warn('Refresh token error; keeping the current session if one exists');
+          } else {
+            logger.error('Error obteniendo sesión:', error);
           }
-          logger.error('Error obteniendo sesión:', error);
+          if (s) applySession(s);
+          setLoading(false);
+          return;
         }
-        setSession(s);
-        setUser(s?.user ?? null);
+        if (s) applySession(s);
         setLoading(false);
       })
       .catch((error) => {
         logger.error('Error inesperado obteniendo sesión:', error);
-        setSession(null);
-        setUser(null);
         setLoading(false);
       });
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, s) => {
       void (async () => {
         try {
-          setSession(s);
-          setUser(s?.user ?? null);
+          if (event === 'SIGNED_OUT') {
+            clearSession();
+            return;
+          }
+          if (s) {
+            applySession(s);
+          }
           if (event === 'PASSWORD_RECOVERY') {
             setIsRecoveryMode(true);
           }
@@ -115,12 +131,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       authListener?.subscription?.unsubscribe();
     };
-  }, []);
+  }, [applySession, clearSession]);
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
-      await supabase.auth.signOut({ scope: 'local' });
-
       const reach = await canReachSupabase();
       if (!reach.ok) {
         return { error: authUnreachableMessage(locale, reach.detail) };
@@ -220,8 +234,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) return { error: translateError(error, locale), success: false };
 
       if (data.session) {
-        setSession(data.session);
-        setUser(data.session.user);
+        applySession(data.session);
         void track('auth_sign_up', { email_confirmation_pending: false });
         return { error: null, success: true };
       }
@@ -246,17 +259,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    const userId = user?.id;
     try {
       if (user) void track('auth_sign_out');
+      if (userId) {
+        await clearEllieMiddayState(userId);
+      }
       const { error } = await supabase.auth.signOut();
       if (error) logger.error('Error al cerrar sesión:', error);
-      setSession(null);
-      setUser(null);
+      clearSession();
       setIsRecoveryMode(false);
     } catch (err) {
       logger.error('Error inesperado al cerrar sesión:', err);
-      setSession(null);
-      setUser(null);
+      clearSession();
       setIsRecoveryMode(false);
     }
   };
@@ -290,8 +305,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) return { error: translateError(error, locale), success: false };
 
       if (data.session) {
-        setSession(data.session);
-        setUser(data.session.user);
+        applySession(data.session);
         setIsRecoveryMode(true);
         return { error: null, success: true };
       }
@@ -333,8 +347,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {
         /* sesión ya invalidada al borrar usuario */
       }
-      setSession(null);
-      setUser(null);
+      clearSession();
       setIsRecoveryMode(false);
       return { error: null, success: true };
     } catch (e) {

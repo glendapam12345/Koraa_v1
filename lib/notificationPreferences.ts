@@ -73,6 +73,24 @@ export async function getTaskCaptureReminderTime(): Promise<DailyReminderTime> {
 export async function getTaskCaptureReminderEnabled(): Promise<boolean> {
   try {
     const raw = await AsyncStorage.getItem(TASK_CAPTURE_ENABLED_KEY);
+    /** Por defecto off: un solo aviso diario (Koraa). Opt-in en Ajustes. */
+    if (raw === null) return false;
+    return raw === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function setTaskCaptureReminderEnabled(enabled: boolean): Promise<void> {
+  await AsyncStorage.setItem(TASK_CAPTURE_ENABLED_KEY, enabled ? '1' : '0');
+}
+
+const DAILY_REMINDER_OPT_IN_KEY = 'koraa.dailyReminderOptedIn';
+
+/** `null` = usuarias previas (seguir como sí). */
+export async function getDailyReminderOptedIn(): Promise<boolean> {
+  try {
+    const raw = await AsyncStorage.getItem(DAILY_REMINDER_OPT_IN_KEY);
     if (raw === null) return true;
     return raw === '1';
   } catch {
@@ -80,6 +98,6 @@ export async function getTaskCaptureReminderEnabled(): Promise<boolean> {
   }
 }
 
-export async function setTaskCaptureReminderEnabled(enabled: boolean): Promise<void> {
-  await AsyncStorage.setItem(TASK_CAPTURE_ENABLED_KEY, enabled ? '1' : '0');
+export async function setDailyReminderOptedIn(enabled: boolean): Promise<void> {
+  await AsyncStorage.setItem(DAILY_REMINDER_OPT_IN_KEY, enabled ? '1' : '0');
 }

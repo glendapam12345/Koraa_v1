@@ -18,7 +18,10 @@ export function PaywallComparisonCard({ isSubscribed = false }: PaywallCompariso
 
   return (
     <CalmCard style={styles.card}>
-      <Text style={styles.title}>{t('paywall.comparisonTitle')}</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>{t('paywall.comparisonTitle')}</Text>
+        <Text style={styles.lead}>{t('paywall.comparisonLead')}</Text>
+      </View>
 
       <View style={styles.columns}>
         <View style={styles.column}>
@@ -68,9 +71,17 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.calm.card,
     borderColor: THEME.colors.calm.border,
   },
+  header: {
+    gap: THEME.spacing.xs,
+  },
   title: {
     ...THEME.typography.sectionTitle,
     color: THEME.colors.text.main,
+  },
+  lead: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 20,
   },
   columns: {
     flexDirection: 'row',

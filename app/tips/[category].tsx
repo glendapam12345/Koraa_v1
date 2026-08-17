@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { ChevronLeft } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
@@ -18,6 +18,7 @@ import { applyTipHighlights } from '@/lib/ai/applyTipHighlights';
 import { useAuth } from '@/contexts/AuthContext';
 import { useKoraaTipHighlights } from '@/hooks/useKoraaTipHighlights';
 import { TipDetailExpanded } from '@/components/tips/TipGridCard';
+import { QuickBreathModal } from '@/components/hoy/QuickBreathModal';
 import { executeTipAction, getTipActionLabel } from '@/lib/tipActions';
 import { openPaywall } from '@/lib/paywallNavigation';
 import { tipsGoBack } from '@/lib/tipsNavigation';
@@ -55,6 +56,7 @@ export default function TipsCategoryScreen() {
   const { t, locale } = useI18n();
   const { user } = useAuth();
   const { isSubscribed } = useSubscription();
+  const [breathOpen, setBreathOpen] = useState(false);
   const { category: catParam, emotion, energy, focusTipId: focusTipParam } = useLocalSearchParams<{
     category?: string;
     emotion?: string;
@@ -130,6 +132,10 @@ export default function TipsCategoryScreen() {
         tip.action
           ? () => {
               trackTipActionTapped(tip.action!, category!, tip.id);
+              if (tip.action === 'breath') {
+                setBreathOpen(true);
+                return;
+              }
               void executeTipAction(tip.action!, t);
             }
           : undefined
@@ -246,6 +252,11 @@ export default function TipsCategoryScreen() {
           </View>
         ) : null}
       </ScrollView>
+      <QuickBreathModal
+        visible={breathOpen}
+        onClose={() => setBreathOpen(false)}
+        onComplete={() => setBreathOpen(false)}
+      />
     </View>
   );
 }

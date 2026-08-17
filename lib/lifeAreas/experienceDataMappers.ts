@@ -404,6 +404,8 @@ export function buildAdaptiveReorganizePlan(
       areaColor: area.color,
       fromLabel: from,
       toLabel: to,
+      fromDate: task.scheduled_date ?? undefined,
+      toDate: assignments.get(taskId)!,
       deadlineLabel: deadline,
     };
   });
@@ -424,6 +426,7 @@ export function buildAdaptiveReorganizePlan(
       areaEmoji: area.emoji,
       areaColor: area.color,
       dateLabel,
+      date: task.scheduled_date ?? today,
       deadlineLabel: deadline,
     };
   });

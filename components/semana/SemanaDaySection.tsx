@@ -31,12 +31,14 @@ type SemanaDaySectionProps = {
   emotionId?: string | null;
   energyLevel?: number | null;
   focusCount?: number | null;
-  globalCheckInBannerVisible?: boolean;
-  /** Oculta empty duplicado cuando ya hay banner global de check-in. */
-  suppressEmptyWhenGlobalBanner?: boolean;
   addTasksA11yLabel: string;
   addMoreA11yLabel: string;
-  onTasksChanged: () => void;
+  onTasksChanged: (created?: {
+    title: string;
+    taskId?: string;
+    scheduledDate?: string | null;
+    projectId?: string | null;
+  }) => void;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
 };
 
@@ -53,8 +55,6 @@ export function SemanaDaySection({
   emotionId = null,
   energyLevel = null,
   focusCount = null,
-  globalCheckInBannerVisible = false,
-  suppressEmptyWhenGlobalBanner = false,
   addTasksA11yLabel,
   addMoreA11yLabel,
   onTasksChanged,
@@ -74,8 +74,6 @@ export function SemanaDaySection({
     router.push('/(tabs)');
   };
 
-  type EmptyVariant = 'noCheckInToday' | 'noCheckInTodaySoft' | 'lightDay' | 'default';
-
   const showHeavyDayBanner =
     isToday &&
     hasCheckIn &&
@@ -84,48 +82,18 @@ export function SemanaDaySection({
     tasks.length > 3 &&
     focusCount != null;
 
-  const emptyVariant: EmptyVariant = (() => {
-    if (isToday && !hasCheckIn) {
-      return globalCheckInBannerVisible ? 'noCheckInTodaySoft' : 'noCheckInToday';
-    }
-    if (hasCheckIn && tasks.length === 0) return 'lightDay';
-    return 'default';
-  })();
-
-  const emptyCopy = {
-    noCheckInToday: {
-      title: t('semana.emptyTodayNoCheckIn'),
-      hint: t('semana.emptyTodayNoCheckInHint'),
-      cta: t('semana.emptyTodayNoCheckInCta'),
-      onPress: openHoy,
-      a11y: t('semana.emptyTodayNoCheckInCta'),
-      showCta: true,
-    },
-    noCheckInTodaySoft: {
-      title: t('semana.emptyTodayNoCheckInSoft'),
-      hint: t('semana.emptyTodayNoCheckInSoftHint'),
-      cta: '',
-      onPress: openHoy,
-      a11y: t('semana.emptyTodayNoCheckInSoft'),
-      showCta: false,
-    },
-    lightDay: {
-      title: t('semana.emptyLightDay'),
-      hint: t('semana.emptyLightDayHint'),
-      cta: t('semana.addTasks'),
-      onPress: openQuickAdd,
-      a11y: addTasksA11yLabel,
-      showCta: true,
-    },
-    default: {
-      title: t('semana.emptyDay'),
-      hint: t('semana.emptyHint'),
-      cta: t('semana.addTasks'),
-      onPress: openQuickAdd,
-      a11y: addTasksA11yLabel,
-      showCta: true,
-    },
-  }[emptyVariant];
+  const isLightDay = hasCheckIn && tasks.length === 0;
+  const emptyCopy = isLightDay
+    ? {
+        title: t('semana.emptyLightDay'),
+        hint: t('semana.emptyLightDayHint'),
+        cta: t('semana.addToDayCta'),
+      }
+    : {
+        title: t('semana.emptyDay'),
+        hint: t('semana.emptyHint'),
+        cta: t('semana.addToDayCta'),
+      };
 
   const renderCheckInChip = () => {
     if (energyLevel != null && energyLevel > 0) {
@@ -170,7 +138,19 @@ export function SemanaDaySection({
         </Text>
         {isToday ? <Text style={styles.todaySoft}>{t('semana.today')}</Text> : null}
       </View>
-      {renderCheckInChip()}
+      <View style={styles.todayHeaderRight}>
+        {renderCheckInChip()}
+        <TouchableOpacity
+          style={styles.headerAddButton}
+          onPress={openQuickAdd}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={addTasksA11yLabel}
+          accessibilityHint={t('semana.addToDayHint')}
+        >
+          <Plus size={20} color={THEME.colors.calm.lavenderDeep} strokeWidth={2.4} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -183,26 +163,17 @@ export function SemanaDaySection({
       {renderHeader()}
       <View style={styles.dayBody}>
         {tasks.length === 0 ? (
-          suppressEmptyWhenGlobalBanner ? null : (
           <View style={styles.emptyDay}>
-            <Text style={styles.emptyDayEmoji}>
-              {emptyVariant === 'lightDay'
-                ? '🌿'
-                : emptyVariant === 'noCheckInToday' || emptyVariant === 'noCheckInTodaySoft'
-                  ? '💜'
-                  : '📅'}
-            </Text>
+            <Text style={styles.emptyDayEmoji}>{isLightDay ? '🌿' : '📅'}</Text>
             <Text style={styles.emptyDayText}>{emptyCopy.title}</Text>
             <Text style={styles.emptyDayHint}>{emptyCopy.hint}</Text>
-            {emptyCopy.showCta ? (
-              <CalmPrimaryButton
-                label={emptyCopy.cta}
-                onPress={emptyCopy.onPress}
-                accessibilityLabel={emptyCopy.a11y}
-              />
-            ) : null}
+            <CalmPrimaryButton
+              label={emptyCopy.cta}
+              onPress={openQuickAdd}
+              accessibilityLabel={addTasksA11yLabel}
+              accessibilityHint={t('semana.addToDayHint')}
+            />
           </View>
-          )
         ) : (
           <>
             {showHeavyDayBanner ? (
@@ -232,7 +203,7 @@ export function SemanaDaySection({
               activeOpacity={0.8}
               accessibilityRole="button"
               accessibilityLabel={addMoreA11yLabel}
-              accessibilityHint={t('semanaExtra.a11yAddMoreHint')}
+              accessibilityHint={t('semana.addToDayHint')}
             >
               <Plus size={16} color={THEME.colors.gradient.blue} />
               <Text style={styles.addDayButtonTextOutlined}>{t('semana.addMore')}</Text>
@@ -248,8 +219,13 @@ export function SemanaDaySection({
         projects={quickAddProjects}
         hasCheckInToday={hasCheckInToday}
         onClose={() => setQuickAddTarget(null)}
-        onSaved={({ title: savedTitle, dayLabel }) => {
-          onTasksChanged();
+        onSaved={({ title: savedTitle, dayLabel, taskId, scheduledDate, projectId }) => {
+          onTasksChanged({
+            title: savedTitle,
+            taskId,
+            scheduledDate,
+            projectId,
+          });
           showToast(
             dayLabel
               ? t('semana.quickAddDaySuccess', { title: savedTitle, day: dayLabel })
@@ -290,7 +266,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   energyBadge: {
-    maxWidth: '52%',
+    maxWidth: '40%',
     borderRadius: THEME.borderRadius.pill,
     paddingHorizontal: THEME.spacing.sm,
     paddingVertical: 6,
@@ -322,7 +298,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: THEME.spacing.xs,
-    flexShrink: 1,
+    flexShrink: 0,
+  },
+  headerAddButton: {
+    width: THEME.sizes.touchTarget,
+    height: THEME.sizes.touchTarget,
+    borderRadius: THEME.borderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.colors.calm.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
   },
   dayBody: {
     padding: THEME.spacing.md,

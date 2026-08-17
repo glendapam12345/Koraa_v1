@@ -21,6 +21,14 @@ import { activatePatternHoyApply, clearActivePatternHoyApply } from '@/lib/patte
 import type { PatternHoyApplyMode } from '@/lib/behaviorInsights';
 import { patternApplyToastKey } from '@/lib/applyPatternHoyMode';
 import { track } from '@/lib/analytics';
+import {
+  formatReminderTime,
+  getDailyReminderOptedIn,
+  getDailyReminderTime,
+  setDailyReminderOptedIn,
+} from '@/lib/notificationPreferences';
+import { resolveFirstDayCloseCue } from '@/lib/firstDayClose';
+import { ensureReturnTomorrowReminder } from '@/hooks/useNotifications';
 
 type ToastFn = (message: string, type?: 'success' | 'error' | 'info') => void;
 
@@ -30,7 +38,7 @@ type UseHoyScreenLayoutArgs = {
   todayMood: string | null;
   showToast: ToastFn;
   loadTodayCheckIn: () => Promise<void>;
-  loadTasks: () => Promise<void>;
+  loadTasks: (options?: { silent?: boolean }) => Promise<void>;
   scrollRef: RefObject<ScrollView | null>;
 };
 
@@ -50,6 +58,8 @@ export function useHoyScreenLayout({
   const [checkInReplanCoachLine, setCheckInReplanCoachLine] = useState<string | null>(null);
   const [patternHoyCoachLine, setPatternHoyCoachLine] = useState<string | null>(null);
   const [patternHoyMode, setPatternHoyMode] = useState<PatternHoyApplyMode | null>(null);
+  const [reminderOptedIn, setReminderOptedIn] = useState(true);
+  const [reminderTimeLabel, setReminderTimeLabel] = useState('09:00');
 
   const handleOptOutHoyLite = useCallback(async () => {
     if (!userId) return;
@@ -58,6 +68,20 @@ export function useHoyScreenLayout({
     setShowSecondaryModules(true);
     showToast(t('hoy.showAllSectionsToast'), 'info');
   }, [userId, showToast, t]);
+
+  const enableTomorrowReminder = useCallback(async () => {
+    await setDailyReminderOptedIn(true);
+    setReminderOptedIn(true);
+    const result = await ensureReturnTomorrowReminder();
+    if (result.timeLabel) {
+      setReminderTimeLabel(result.timeLabel);
+    }
+    if (result.scheduled && result.timeLabel) {
+      showToast(t('sentir.returnTomorrowToast', { time: result.timeLabel }), 'success');
+      return;
+    }
+    showToast(t('hoy.firstDayCloseNoTime'), 'info');
+  }, [showToast, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -74,6 +98,14 @@ export function useHoyScreenLayout({
         if (cancelled) return;
         setHoyLiteLayout(lite);
         setHoyLiteCompactOptedOut(compactOptedOut);
+
+        const [optedIn, reminderTime] = await Promise.all([
+          getDailyReminderOptedIn(),
+          getDailyReminderTime(),
+        ]);
+        if (cancelled) return;
+        setReminderOptedIn(optedIn);
+        setReminderTimeLabel(formatReminderTime(reminderTime));
 
         if (!lite) {
           const showDayTwoUnlock = await consumeHoyDayTwoUnlockToast(userId);
@@ -112,7 +144,7 @@ export function useHoyScreenLayout({
           // no crítico
         }
         if (cancelled) return;
-        await Promise.all([loadTodayCheckIn(), loadTasks()]);
+        await Promise.all([loadTodayCheckIn(), loadTasks({ silent: true })]);
         if (cancelled) return;
         const showPrioritiesReady = await consumePrioritiesReadyToast();
         const returnTomorrowTime = await peekReturnTomorrowToast();
@@ -197,8 +229,15 @@ export function useHoyScreenLayout({
     setShowSecondaryModules,
     handleShowMoreForHoy,
     handleOptOutHoyLite,
+    enableTomorrowReminder,
     checkInReplanCoachLine,
     patternHoyCoachLine,
     patternHoyMode,
+    firstDayClose: resolveFirstDayCloseCue({
+      isLiteDay: hoyLiteLayout === true,
+      hasCheckIn: Boolean(todayMood),
+      reminderOptedIn,
+      reminderTimeLabel,
+    }),
   };
 }

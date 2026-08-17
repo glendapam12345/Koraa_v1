@@ -1,7 +1,7 @@
 import { useState, useCallback, type RefObject } from 'react';
 import { Alert, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { supabase } from '@/lib/supabase';
+import { supabase, getCachedAuthUser } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { useI18n } from '@/contexts/I18nContext';
@@ -27,7 +27,7 @@ export function useHoyMeditation({
 
   const loadMeditations = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCachedAuthUser();
       if (!user) return;
 
       const today = getLocalDateString();
@@ -48,7 +48,7 @@ export function useHoyMeditation({
 
   const handleMeditationComplete = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCachedAuthUser();
       if (!user) return;
 
       const today = getLocalDateString();

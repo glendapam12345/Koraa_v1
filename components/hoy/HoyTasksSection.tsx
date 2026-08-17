@@ -1,5 +1,5 @@
 import { View, StyleSheet } from 'react-native';
-import { useMemo, useState, useCallback, type Dispatch, type SetStateAction } from 'react';
+import { useMemo, useState, useCallback, useEffect, type Dispatch, type SetStateAction } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { HoyFocusPanel } from '@/components/hoy/HoyFocusPanel';
@@ -11,21 +11,22 @@ import { orderTasksByFocusIds } from '@/lib/hoy/orderTasksByFocusIds';
 import { getHoyPriorityPlanTasks, getHoyWaitingPlanTasks } from '@/lib/hoyFocusTasks';
 import { useHoyPlanTaskActions } from '@/hooks/useHoyPlanTaskActions';
 import type { FocusedProjectInfo } from '@/hooks/useFocusedProject';
+import type { FirstDayCloseCue } from '@/lib/firstDayClose';
+import type { ReturnMemory } from '@/lib/returnMemory';
 import { useHoyDayReflection } from '@/hooks/useHoyDayReflection';
 import { useHoyFocusTaskMeta } from '@/hooks/useHoyFocusTaskMeta';
 import { useUserLifeAreas } from '@/hooks/useUserLifeAreas';
 import { HoyDayReflectionFlow } from '@/components/vnext/HoyDayReflectionFlow';
 import { HoyDayReflectionCard } from '@/components/hoy/HoyDayReflectionCard';
-import { HoyProactiveNudgeCard } from '@/components/hoy/HoyProactiveNudgeCard';
 import { KoraaDailyTipsSection } from '@/components/koraa/KoraaDailyTipsSection';
 import { buildDayCapacitySnapshot } from '@/lib/hoy/dayCapacity';
 import { shouldShowAfternoonNudge } from '@/lib/hoy/proactivePlanSignals';
 import {
-  consumeRecheckReplanNudge,
+  peekRecheckReplanNudge,
   dismissRecheckReplanNudge,
   type RecheckReplanNudge,
 } from '@/lib/recheckReplanNudge';
-import { openHoyReplanPreview } from '@/lib/hoyReplanNavigation';
+import { subscribeCheckInRefresh } from '@/lib/checkInRefresh';
 import { resolveTipsByIds } from '@/lib/ai/resolveBriefTips';
 import { openTipsCategory } from '@/lib/tipsNavigation';
 import type { TipCategoryId } from '@/lib/tipsTypes';
@@ -81,6 +82,9 @@ export type HoyTasksSectionProps = {
   focusedProject?: FocusedProjectInfo | null;
   onClearFocusedProject?: () => void;
   firstSessionMicroStep?: boolean;
+  firstDayClose?: FirstDayCloseCue | null;
+  onEnableTomorrowReminder?: () => void;
+  returnMemory?: ReturnMemory | null;
 };
 
 export function HoyTasksSection({
@@ -130,6 +134,8 @@ export function HoyTasksSection({
   focusedProject = null,
   onClearFocusedProject,
   firstSessionMicroStep = false,
+  firstDayClose = null,
+  onEnableTomorrowReminder,
 }: HoyTasksSectionProps) {
   const { locale, t } = useI18n();
   const { config: lifeAreasConfig } = useUserLifeAreas(user?.id);
@@ -143,7 +149,7 @@ export function HoyTasksSection({
       }
       let cancelled = false;
       void (async () => {
-        const nudge = await consumeRecheckReplanNudge(user.id);
+        const nudge = await peekRecheckReplanNudge(user.id);
         if (!cancelled) setRecheckNudge(nudge);
       })();
       return () => {
@@ -151,6 +157,13 @@ export function HoyTasksSection({
       };
     }, [user?.id]),
   );
+
+  useEffect(() => {
+    if (!user?.id) return;
+    return subscribeCheckInRefresh(() => {
+      void peekRecheckReplanNudge(user.id).then(setRecheckNudge);
+    });
+  }, [user?.id]);
 
   const dismissRecheckNudge = useCallback(() => {
     if (user?.id) void dismissRecheckReplanNudge(user.id);
@@ -245,6 +258,7 @@ export function HoyTasksSection({
 
   // Consejos destacados viven en Para mí — Hoy se queda en plan + check-in.
   const showDailyTips = false;
+  const hasHoySteps = orderedPriorityTasks.some((task) => !task.is_completed);
 
   return (
     <View style={styles.root}>
@@ -286,6 +300,8 @@ export function HoyTasksSection({
         onShowFullView={onShowFullView}
         crisisMode={crisisMode}
         firstSessionMicroStep={firstSessionMicroStep}
+        firstDayClose={firstDayClose}
+        onEnableTomorrowReminder={onEnableTomorrowReminder}
         waitingCount={waitingTasks.length}
         waitingTasksSlot={null}
         onCareModeDismiss={onCareModeDismiss}
@@ -297,25 +313,14 @@ export function HoyTasksSection({
         onAdjustDay={reflection.openReflection}
         showAfternoonNudge={showAfternoonNudge}
         hideRhythmStrip
+        userId={user?.id}
+        moodUpdated={Boolean(recheckNudge) && hasHoySteps}
+        onMoodReplan={() => {
+          dismissRecheckNudge();
+          reflection.openReflection();
+        }}
+        onMoodKeep={dismissRecheckNudge}
       />
-
-      {recheckNudge && !crisisMode && !compactLayout ? (
-        <HoyProactiveNudgeCard
-          title={t('hoy.recheckNudgeTitle')}
-          body={t('hoy.recheckNudgeBody')}
-          ctaLabel={t('hoy.recheckNudgeCta')}
-          onCta={() => {
-            dismissRecheckNudge();
-            reflection.openReflection();
-          }}
-          secondaryLabel={t('hoy.recheckNudgeCalendarCta')}
-          onSecondary={() => {
-            dismissRecheckNudge();
-            openHoyReplanPreview({ energyLevel: recheckNudge.energyLevel });
-          }}
-          onDismiss={dismissRecheckNudge}
-        />
-      ) : null}
 
       {showDailyTips ? (
         <KoraaDailyTipsSection
@@ -335,13 +340,14 @@ export function HoyTasksSection({
         />
       ) : null}
 
-      {!compactLayout && !crisisMode ? (
+      {!crisisMode ? (
         <HoyDayReflectionFlow
           flowOpen={reflection.flowOpen}
           step={reflection.step}
           displayName={displayName}
           selectedReason={reflection.selectedReason}
           previewProposal={reflection.previewProposal}
+          pendingAssignments={reflection.pendingAssignments}
           buildingPreview={reflection.buildingPreview}
           applying={reflection.applying}
           capacity={dayCapacity}
@@ -349,6 +355,7 @@ export function HoyTasksSection({
           onClose={reflection.closeReflection}
           onSelectReason={reflection.handleSelectReason}
           onBackToReason={reflection.handleBackToReason}
+          onChangeTaskDate={reflection.handleChangeTaskDate}
           onConfirm={() => void reflection.handleConfirm()}
         />
       ) : null}

@@ -10,6 +10,7 @@ import Animated, {
 import { ArrowRightLeft, Check, GripVertical, Star, Trash2 } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
+import { isExpoGoClient } from '@/lib/subscriptionEnvironment';
 import type { LifeArea, WeekPlannerTask } from '@/lib/lifeAreas/types';
 
 const DRAG_THRESHOLD = 8;
@@ -77,10 +78,11 @@ export function DraggablePlannerTask({
   deleteA11yLabel = 'Eliminar',
 }: DraggablePlannerTaskProps) {
   const { t } = useI18n();
+  const skipNativeDrag = isExpoGoClient();
   const area = findArea(areas, task.areaId);
   const activation = resolveDragActivation(dragActivation, dragMode);
-  const useHandleDrag = activation === 'handle';
-  const useLongPressDrag = activation === 'longPress';
+  const useHandleDrag = activation === 'handle' && !skipNativeDrag;
+  const useLongPressDrag = activation === 'longPress' && !skipNativeDrag;
 
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -113,6 +115,9 @@ export function DraggablePlannerTask({
   }, [onDragRelease]);
 
   const pan = useMemo(() => {
+    if (skipNativeDrag) {
+      return Gesture.Tap();
+    }
     let gesture = Gesture.Pan();
 
     if (useLongPressDrag) {
@@ -170,6 +175,7 @@ export function DraggablePlannerTask({
     releaseDrag,
     reportDragMove,
     scale,
+    skipNativeDrag,
     sourceDayId,
     task.id,
     translateX,
@@ -246,6 +252,10 @@ export function DraggablePlannerTask({
     <TouchableOpacity
       style={styles.body}
       onPress={() => onPressTask?.(task.id)}
+      onLongPress={
+        skipNativeDrag ? onLongPressFallback ?? onMovePress : undefined
+      }
+      delayLongPress={LONG_PRESS_MS}
       activeOpacity={0.88}
       disabled={!onPressTask}
       accessibilityRole="button"
@@ -320,17 +330,27 @@ export function DraggablePlannerTask({
     <GestureDetector gesture={pan}>
       <View>{dragHandle}</View>
     </GestureDetector>
+  ) : skipNativeDrag && onMovePress ? (
+    <TouchableOpacity
+      onPress={onMovePress}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={moveA11yLabel}
+    >
+      {dragHandle}
+    </TouchableOpacity>
   ) : (
     dragHandle
   );
 
-  const draggableBody = useHandleDrag ? (
-    body
-  ) : (
-    <GestureDetector gesture={pan}>
-      <Animated.View style={styles.dragSurface}>{body}</Animated.View>
-    </GestureDetector>
-  );
+  const draggableBody =
+    useHandleDrag || skipNativeDrag ? (
+      body
+    ) : (
+      <GestureDetector gesture={pan}>
+        <Animated.View style={styles.dragSurface}>{body}</Animated.View>
+      </GestureDetector>
+    );
 
   const rowContent = (
     <>
@@ -420,24 +440,27 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     minWidth: 0,
+    justifyContent: 'center',
   },
   dragSurface: {
     flex: 1,
     minWidth: 0,
+    alignSelf: 'stretch',
+    justifyContent: 'center',
   },
   bodyTextCol: {
     flex: 1,
     gap: 2,
     minWidth: 0,
+    justifyContent: 'center',
   },
   titleRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 6,
     minWidth: 0,
   },
   priorityStar: {
-    marginTop: 3,
     flexShrink: 0,
   },
   title: {
@@ -453,6 +476,8 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.main,
     lineHeight: 20,
     flex: 1,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   titleDone: {
     color: THEME.colors.text.tertiary,

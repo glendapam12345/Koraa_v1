@@ -24,8 +24,9 @@ import { AnalyticsScreenTracker } from '@/components/AnalyticsScreenTracker';
 import { RecheckCheckInProvider } from '@/contexts/RecheckCheckInContext';
 import { initializeRevenueCat } from '@/lib/revenuecat';
 import { EllieBootSplash } from '@/components/branding/EllieBootSplash';
+import { TabScreenErrorBoundary } from '@/components/TabScreenErrorBoundary';
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const processedUrlRef = useRef<string | null>(null);
@@ -133,6 +134,7 @@ export default function RootLayout() {
           <SafeAreaProvider>
             <AnalyticsScreenTracker />
             <View style={styles.root}>
+              <TabScreenErrorBoundary screenName="root">
               <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="index" />
               <Stack.Screen name="settings" />
@@ -168,6 +170,7 @@ export default function RootLayout() {
               />
               <Stack.Screen name="+not-found" />
             </Stack>
+              </TabScreenErrorBoundary>
               <StatusBar style="auto" />
               <EllieBootSplash visible={showBootSplash} />
             </View>

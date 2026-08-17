@@ -32,6 +32,8 @@ export type NotificationContext = {
 
 const LAST_ID_PREFIX = 'koraa_notif_last_copy_v1_';
 
+/** Lock screen: marca Koraa. Ellie es mascota visual, no el nombre del aviso. */
+
 type Bank = Record<NotifKind, Record<NotifPatternTag, NotificationCopy[]>>;
 
 const BANK_ES: Bank = {
@@ -39,13 +41,13 @@ const BANK_ES: Bank = {
     default: [
       {
         id: 'd_es_1',
-        title: 'Ellie por aquí 💗',
+        title: 'Koraa por aquí 💗',
         body: 'Un minuto en Hoy y te dejo un paso suave. Sin prisa.',
       },
       {
         id: 'd_es_2',
         title: '¿Cómo amaneciste?',
-        body: 'Ellie quiere saber. Toca, siente, y armamos tu Hoy juntos.',
+        body: 'Koraa quiere saber. Toca, siente, y armamos tu Hoy juntos.',
       },
       {
         id: 'd_es_3',
@@ -55,19 +57,19 @@ const BANK_ES: Bank = {
       {
         id: 'd_es_4',
         title: 'Tu Hoy te espera',
-        body: 'Ellie ya está lista. Di cómo te sientes y te sugiero algo chiquito.',
+        body: 'Koraa ya está lista. Di cómo te sientes y te sugiero algo chiquito.',
       },
       {
         id: 'd_es_5',
         title: 'Sin culpa, ¿sí?',
-        body: 'Vuelve un momentito. Koraa + Ellie ajustan lo que cabe hoy.',
+        body: 'Vuelve un momentito. Koraa ajusta lo que cabe hoy.',
       },
     ],
     low_energy: [
       {
         id: 'd_es_le1',
         title: 'Día bajito — está bien',
-        body: 'Ellie deja solo 1–2 pasos suaves. Ven a Hoy cuando puedas.',
+        body: 'Koraa deja solo 1–2 pasos suaves. Ven a Hoy cuando puedas.',
       },
       {
         id: 'd_es_le2',
@@ -79,7 +81,7 @@ const BANK_ES: Bank = {
       {
         id: 'd_es_ow1',
         title: 'Respira. Estoy aquí.',
-        body: 'Si te sientes abrumada, Ellie deja un solo paso. Abre Hoy.',
+        body: 'Si te sientes abrumada, Koraa deja un solo paso. Abre Hoy.',
       },
       {
         id: 'd_es_ow2',
@@ -91,7 +93,7 @@ const BANK_ES: Bank = {
       {
         id: 'd_es_m1',
         title: 'Te extrañé un poquito',
-        body: 'Sin dramas. Vuelve a Hoy cuando quieras — Ellie te espera.',
+        body: 'Sin dramas. Vuelve a Hoy cuando quieras — Koraa te espera.',
       },
       {
         id: 'd_es_m2',
@@ -103,14 +105,14 @@ const BANK_ES: Bank = {
       {
         id: 'd_es_g1',
         title: 'Bienvenida otra vez',
-        body: 'Ellie no guarda rencor. Un check-in y seguimos suave.',
+        body: 'Koraa no guarda rencor. Un check-in y seguimos suave.',
       },
     ],
     named: [
       {
         id: 'd_es_n1',
         title: 'Hola, {{name}}',
-        body: 'Ellie por aquí. ¿Cómo te sientes hoy? Un toque en Hoy.',
+        body: 'Koraa por aquí. ¿Cómo te sientes hoy? Un toque en Hoy.',
       },
       {
         id: 'd_es_n2',
@@ -124,7 +126,7 @@ const BANK_ES: Bank = {
       {
         id: 'r_es_1',
         title: '¿Cambió tu día?',
-        body: 'Ellie puede reajustar tus pasos. Actualiza en 20 segundos.',
+        body: 'Koraa puede reajustar tus pasos. Actualiza en 20 segundos.',
       },
       {
         id: 'r_es_2',
@@ -136,14 +138,14 @@ const BANK_ES: Bank = {
       {
         id: 'r_es_le1',
         title: '¿Más cansada ahora?',
-        body: 'Podemos dejar menos pasos. Ellie lo achica si me lo dices.',
+        body: 'Podemos dejar menos pasos. Koraa lo achica si me lo dices.',
       },
     ],
     overwhelmed: [
       {
         id: 'r_es_ow1',
         title: 'Si se puso pesado…',
-        body: 'Actualiza cómo te sientes. Ellie deja solo lo esencial.',
+        body: 'Actualiza cómo te sientes. Koraa deja solo lo esencial.',
       },
     ],
     missed: [],
@@ -152,7 +154,7 @@ const BANK_ES: Bank = {
       {
         id: 'r_es_n1',
         title: '{{name}}, ¿sigue igual?',
-        body: 'Un re-check y Ellie ajusta tu plan. Sin presión.',
+        body: 'Un re-check y Koraa ajusta tu plan. Sin presión.',
       },
     ],
   },
@@ -161,7 +163,7 @@ const BANK_ES: Bank = {
       {
         id: 'c_es_1',
         title: '¿Algo en la cabeza?',
-        body: 'Suéltalo en Tareas. Ellie lo ordena después — una línea basta.',
+        body: 'Suéltalo en Tareas. Koraa lo ordena después — una línea basta.',
       },
       {
         id: 'c_es_2',
@@ -170,7 +172,7 @@ const BANK_ES: Bank = {
       },
       {
         id: 'c_es_3',
-        title: 'Ellie pregunta…',
+        title: 'Koraa pregunta…',
         body: '¿Qué llevas pendiente? Escríbelo sin ordenar. Yo ayudo.',
       },
     ],
@@ -194,7 +196,7 @@ const BANK_ES: Bank = {
       {
         id: 'c_es_n1',
         title: '{{name}}, ¿lo anotas?',
-        body: 'Una línea en Tareas y Ellie se encarga del resto mañana.',
+        body: 'Una línea en Tareas y Koraa se encarga del resto mañana.',
       },
     ],
   },
@@ -203,7 +205,7 @@ const BANK_ES: Bank = {
       {
         id: 'care_es_1',
         title: 'Hoy se achica',
-        body: 'Ellie está en modo suave. Un paso basta. Estoy contigo.',
+        body: 'Koraa está en modo suave. Un paso basta. Estoy contigo.',
       },
       {
         id: 'care_es_2',
@@ -215,7 +217,7 @@ const BANK_ES: Bank = {
       {
         id: 'care_es_le1',
         title: 'Descansa está permitido',
-        body: 'Ellie no te pide más. Solo un check-in suave si te apetece.',
+        body: 'Koraa no te pide más. Solo un check-in suave si te apetece.',
       },
     ],
     overwhelmed: [
@@ -231,7 +233,7 @@ const BANK_ES: Bank = {
       {
         id: 'care_es_n1',
         title: '{{name}}, modo suave',
-        body: 'Hoy se achica contigo. Ellie te acompaña sin presión.',
+        body: 'Hoy se achica contigo. Koraa te acompaña sin presión.',
       },
     ],
   },
@@ -242,13 +244,13 @@ const BANK_EN: Bank = {
     default: [
       {
         id: 'd_en_1',
-        title: 'Ellie here 💗',
+        title: 'Koraa here 💗',
         body: 'One minute on Today and I leave you a gentle step. No rush.',
       },
       {
         id: 'd_en_2',
         title: 'How are you waking up?',
-        body: 'Ellie wants to know. Tap, feel, and we shape Today together.',
+        body: 'Koraa wants to know. Tap, feel, and we shape Today together.',
       },
       {
         id: 'd_en_3',
@@ -258,19 +260,19 @@ const BANK_EN: Bank = {
       {
         id: 'd_en_4',
         title: 'Your Today is waiting',
-        body: 'Ellie is ready. Say how you feel and I will suggest something small.',
+        body: 'Koraa is ready. Say how you feel and I will suggest something small.',
       },
       {
         id: 'd_en_5',
         title: 'No guilt, okay?',
-        body: 'Come back for a moment. Koraa + Ellie fit what fits today.',
+        body: 'Come back for a moment. Koraa keeps only what fits today.',
       },
     ],
     low_energy: [
       {
         id: 'd_en_le1',
         title: 'Low day — that is fine',
-        body: 'Ellie keeps only 1–2 soft steps. Open Today when you can.',
+        body: 'Koraa keeps only 1–2 soft steps. Open Today when you can.',
       },
       {
         id: 'd_en_le2',
@@ -282,7 +284,7 @@ const BANK_EN: Bank = {
       {
         id: 'd_en_ow1',
         title: 'Breathe. I am here.',
-        body: 'If it feels heavy, Ellie leaves one step. Open Today.',
+        body: 'If it feels heavy, Koraa leaves one step. Open Today.',
       },
       {
         id: 'd_en_ow2',
@@ -294,7 +296,7 @@ const BANK_EN: Bank = {
       {
         id: 'd_en_m1',
         title: 'Missed you a little',
-        body: 'No drama. Come back to Today whenever — Ellie is waiting.',
+        body: 'No drama. Come back to Today whenever — Koraa is waiting.',
       },
       {
         id: 'd_en_m2',
@@ -306,14 +308,14 @@ const BANK_EN: Bank = {
       {
         id: 'd_en_g1',
         title: 'Welcome back',
-        body: 'Ellie does not hold grudges. One check-in and we go gently.',
+        body: 'Koraa does not hold grudges. One check-in and we go gently.',
       },
     ],
     named: [
       {
         id: 'd_en_n1',
         title: 'Hi, {{name}}',
-        body: 'Ellie here. How do you feel today? One tap on Today.',
+        body: 'Koraa here. How do you feel today? One tap on Today.',
       },
       {
         id: 'd_en_n2',
@@ -327,7 +329,7 @@ const BANK_EN: Bank = {
       {
         id: 'r_en_1',
         title: 'Did your day shift?',
-        body: 'Ellie can reshape your steps. Update in about 20 seconds.',
+        body: 'Koraa can reshape your steps. Update in about 20 seconds.',
       },
       {
         id: 'r_en_2',
@@ -339,14 +341,14 @@ const BANK_EN: Bank = {
       {
         id: 'r_en_le1',
         title: 'More tired now?',
-        body: 'We can leave fewer steps. Ellie shrinks them if you say so.',
+        body: 'We can leave fewer steps. Koraa shrinks them if you say so.',
       },
     ],
     overwhelmed: [
       {
         id: 'r_en_ow1',
         title: 'If it got heavy…',
-        body: 'Update how you feel. Ellie keeps only the essentials.',
+        body: 'Update how you feel. Koraa keeps only the essentials.',
       },
     ],
     missed: [],
@@ -355,7 +357,7 @@ const BANK_EN: Bank = {
       {
         id: 'r_en_n1',
         title: '{{name}}, still the same?',
-        body: 'A re-check and Ellie adjusts your plan. No pressure.',
+        body: 'A re-check and Koraa adjusts your plan. No pressure.',
       },
     ],
   },
@@ -364,7 +366,7 @@ const BANK_EN: Bank = {
       {
         id: 'c_en_1',
         title: 'Anything on your mind?',
-        body: 'Drop it in Tasks. Ellie sorts later — one line is enough.',
+        body: 'Drop it in Tasks. Koraa sorts later — one line is enough.',
       },
       {
         id: 'c_en_2',
@@ -373,7 +375,7 @@ const BANK_EN: Bank = {
       },
       {
         id: 'c_en_3',
-        title: 'Ellie asks…',
+        title: 'Koraa asks…',
         body: 'What is pending? Write without sorting. I will help.',
       },
     ],
@@ -396,8 +398,8 @@ const BANK_EN: Bank = {
     named: [
       {
         id: 'c_en_n1',
-        title: '{{name}}, jot it down?',
-        body: 'One line in Tasks and Ellie handles the rest tomorrow.',
+        title: '{{name}}, want to note it?',
+        body: 'One line in Tasks and Koraa handles the rest tomorrow.',
       },
     ],
   },
@@ -406,7 +408,7 @@ const BANK_EN: Bank = {
       {
         id: 'care_en_1',
         title: 'Today shrinks',
-        body: 'Ellie is in soft mode. One step is enough. I am with you.',
+        body: 'Koraa is in soft mode. One step is enough. I am with you.',
       },
       {
         id: 'care_en_2',
@@ -418,7 +420,7 @@ const BANK_EN: Bank = {
       {
         id: 'care_en_le1',
         title: 'Rest is allowed',
-        body: 'Ellie asks for nothing more. A soft check-in only if you want.',
+        body: 'Koraa asks for nothing more. A soft check-in only if you want.',
       },
     ],
     overwhelmed: [
@@ -434,7 +436,7 @@ const BANK_EN: Bank = {
       {
         id: 'care_en_n1',
         title: '{{name}}, soft mode',
-        body: 'Today shrinks with you. Ellie walks with you — no pressure.',
+        body: 'Today shrinks with you. Koraa walks with you — no pressure.',
       },
     ],
   },
@@ -461,13 +463,23 @@ export function resolveNotifPatternTags(ctx: NotificationContext): NotifPatternT
   return tags;
 }
 
-function applyName(copy: NotificationCopy, firstName?: string): NotificationCopy {
+function applyName(
+  copy: NotificationCopy,
+  firstName: string | undefined,
+  locale: AppLocale,
+): NotificationCopy {
   const name = firstName?.trim() || '';
   if (!name) {
+    const fallback = locale === 'en' ? 'you' : 'tú';
+    const strip = (value: string) =>
+      value
+        .replace(/\{\{name\}\},\s*/g, '')
+        .replace(/,\s*\{\{name\}\}/g, '')
+        .replace(/\{\{name\}\}/g, fallback);
     return {
       ...copy,
-      title: copy.title.replace(/,\s*\{\{name\}\}/g, '').replace(/\{\{name\}\}/g, 'tú'),
-      body: copy.body.replace(/\{\{name\}\}/g, 'tú'),
+      title: strip(copy.title),
+      body: strip(copy.body),
     };
   }
   return {
@@ -528,7 +540,7 @@ export async function pickNotificationCopy(
     index = (index + 1) % pool.length;
   }
 
-  const chosen = applyName(pool[index]!, ctx.firstName);
+  const chosen = applyName(pool[index]!, ctx.firstName, locale);
 
   try {
     await AsyncStorage.setItem(storageKey, chosen.id);
@@ -553,5 +565,5 @@ export function pickNotificationCopySync(
   if (pool.length > 1 && pool[index]?.id === lastId) {
     index = (index + 1) % pool.length;
   }
-  return applyName(pool[index]!, ctx.firstName);
+  return applyName(pool[index]!, ctx.firstName, locale);
 }

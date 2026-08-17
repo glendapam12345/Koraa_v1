@@ -1,13 +1,15 @@
 import { useEffect } from 'react';
-import { Stack, router } from 'expo-router';
+import { Stack, router, usePathname } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { hasCompletedOnboarding, TABS_ROUTE } from '@/lib/onboardingGate';
 
 export default function OnboardingLayout() {
   const { user, loading } = useAuth();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (loading || !user?.id) return;
+    if (pathname?.includes('reminders')) return;
 
     let cancelled = false;
     void (async () => {
@@ -19,7 +21,7 @@ export default function OnboardingLayout() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, loading]);
+  }, [user?.id, loading, pathname]);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
@@ -31,6 +33,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="capture" />
       <Stack.Screen name="emotion" />
       <Stack.Screen name="energy" />
+      <Stack.Screen name="reminders" />
       <Stack.Screen name="time" />
       <Stack.Screen name="focus" />
       <Stack.Screen name="intro2" />

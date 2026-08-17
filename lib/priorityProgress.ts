@@ -12,10 +12,15 @@ export function getTodayPriorityStats(tasks: Task[], today: string = getLocalDat
   const focusTasks = tasks.filter(
     (t) => !t.parent_task_id && isTaskSuggestedForToday(t, today),
   );
-  const done = focusTasks.filter((t) => isPriorityCompletedToday(t, today)).length;
-  const total = focusTasks.filter(
-    (t) => !t.is_completed || isPriorityCompletedToday(t, today),
-  ).length;
+  const done = focusTasks.filter((t) => {
+    if (!t.is_completed || !t.completed_at) return false;
+    return getLocalDateFromISO(String(t.completed_at)) === today;
+  }).length;
+  const total = focusTasks.filter((t) => {
+    if (!t.is_completed) return true;
+    if (!t.completed_at) return false;
+    return getLocalDateFromISO(String(t.completed_at)) === today;
+  }).length;
   return {
     done,
     total,

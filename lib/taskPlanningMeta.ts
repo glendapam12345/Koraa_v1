@@ -13,6 +13,7 @@ const STORAGE_KEY = 'koraa_task_planning_meta_v1';
 const DEFAULT_MINUTES = 45;
 
 let cache: Record<string, TaskPlanningMeta> = {};
+let cacheLoaded = false;
 
 export function getDefaultPlanningMeta(): TaskPlanningMeta {
   return {
@@ -28,19 +29,21 @@ export function effortToDefaultMinutes(effort?: 'light' | 'medium' | 'heavy'): n
   return DEFAULT_MINUTES;
 }
 
+export function resetTaskPlanningMetaCache(): void {
+  cache = {};
+  cacheLoaded = false;
+}
+
 export async function loadTaskPlanningMetaMap(): Promise<Record<string, TaskPlanningMeta>> {
+  if (cacheLoaded) return cache;
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      cache = {};
-      return cache;
-    }
-    cache = (JSON.parse(raw) as Record<string, TaskPlanningMeta>) ?? {};
-    return cache;
+    cache = raw ? ((JSON.parse(raw) as Record<string, TaskPlanningMeta>) ?? {}) : {};
   } catch {
     cache = {};
-    return cache;
   }
+  cacheLoaded = true;
+  return cache;
 }
 
 export function getTaskPlanningMeta(taskId: string): TaskPlanningMeta {

@@ -50,6 +50,8 @@ export const uiEn = {
       'Expo Go can’t use in-app mic. Use your keyboard’s microphone instead.',
     dictateHintExpoGo:
       'In Expo Go, dictate with your iPhone keyboard microphone (bottom left).',
+    dictateTapKeyboardMic:
+      'Keyboard is open. Tap the microphone at the bottom left, then speak.',
     aiLocalFallback:
       'AI is offline — showing a local preview. You can adjust before confirming.',
     voicePermissionDenied:
@@ -157,8 +159,8 @@ export const uiEn = {
       'Free: {{days}} visible days. Premium: 7 days, change week/month, and see your full calendar.',
   },
   paywallExtra: {
-    fallbackMonthlyPrice: 'MX$49 / month',
-    fallbackAnnualPrice: 'MX$411 / year',
+    fallbackMonthlyPrice: 'MX$69 / month',
+    fallbackAnnualPrice: 'MX$579 / year',
     choosePlanTitle: 'Choose your plan',
     annualRecommended: 'Best value',
     annualSavingsBadge: 'Save {{percent}}%',
@@ -407,6 +409,7 @@ export const uiEn = {
     areasContinueHint: 'Save your areas and continue to frequent activities',
     activitiesContinueHint: 'Save your activities and continue to capture in Tasks',
     captureContinueHint: 'Save pending items to Tasks and continue to check-in',
+    remindersAcceptHint: 'Turn on a gentle reminder and enter Today',
     progressStep: 'Step {{current}} of {{total}} in the introduction',
     flowStep: 'Step {{step}}: {{title}}. {{body}}',
     highlightCard: '{{title}}. {{body}}',

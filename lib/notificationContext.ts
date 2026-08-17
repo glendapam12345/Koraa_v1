@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, getCachedAuthUser } from '@/lib/supabase';
 import { getFirstName, getDisplayName } from '@/lib/displayName';
 import { getLocalDateString, parseLocalDateString } from '@/lib/dateLocal';
 import type { NotificationContext } from '@/lib/notificationCopyBank';
@@ -14,12 +14,10 @@ export async function loadNotificationContext(
   const ctx: NotificationContext = { salt };
 
   try {
-    const [{ data: profile }, auth] = await Promise.all([
+    const [{ data: profile }, user] = await Promise.all([
       supabase.from('profiles').select('full_name').eq('id', userId).maybeSingle(),
-      supabase.auth.getUser(),
+      getCachedAuthUser(),
     ]);
-
-    const user = auth.data?.user;
     const display = getDisplayName(
       {
         full_name: profile?.full_name,

@@ -149,6 +149,7 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
+          animation: 'none',
           tabBarActiveTintColor: THEME.colors.calm.lavenderDeep,
           tabBarInactiveTintColor: THEME.colors.text.secondary,
           tabBarStyle: {
@@ -194,12 +195,6 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="frentes"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
           name="semana"
           options={{
             title: t('tabs.week'),
@@ -220,12 +215,6 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="tips"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
           name="yo"
           options={{
             title: t('tabs.profile'),
@@ -233,6 +222,19 @@ export default function TabLayout() {
             tabBarIcon: ({ size, color }) => (
               <User size={size} color={color} />
             ),
+          }}
+        />
+        {/* Hidden routes last: putting them between visible tabs flashes the wrong screen. */}
+        <Tabs.Screen
+          name="frentes"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="tips"
+          options={{
+            href: null,
           }}
         />
       </Tabs>

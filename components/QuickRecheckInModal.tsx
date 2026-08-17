@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Modal,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -19,10 +18,7 @@ import { saveDailyCheckInAndPrioritize } from '@/lib/checkInService';
 import { getDisplayName } from '@/lib/displayName';
 import { publishCheckInCelebration } from '@/lib/checkInCelebration';
 import { DEFAULT_CHECK_IN_FOCUS, DEFAULT_CHECK_IN_TIME } from '@/lib/checkInDefaults';
-import {
-  ensureReturnTomorrowReminder,
-  scheduleRecheckReminder,
-} from '@/hooks/useNotifications';
+import { ensureReturnTomorrowReminder } from '@/hooks/useNotifications';
 
 const EMOTION_IDS = ['agotada', 'tranquila', 'ansiosa', 'motivada', 'abrumada', 'enfocada'] as const;
 const EMOTION_EMOJIS: Record<(typeof EMOTION_IDS)[number], string> = {
@@ -61,8 +57,13 @@ const FOCUS_OPTIONS: { id: string; labelKey: TranslationKey }[] = [
 type QuickRecheckInModalProps = {
   visible: boolean;
   onClose: () => void;
-  onComplete: (snapshot: { energyLevel: number; firstCheckIn: boolean }) => void;
+  onComplete: (snapshot: {
+    energyLevel: number;
+    firstCheckIn: boolean;
+    moodChanged?: boolean;
+  }) => void;
   firstCheckIn?: boolean;
+  ready?: boolean;
   initialEmotion?: string;
   initialEnergy?: number;
   initialTime?: string;
@@ -78,6 +79,7 @@ export function QuickRecheckInModal({
   onClose,
   onComplete,
   firstCheckIn = false,
+  ready = true,
   initialEmotion = '',
   initialEnergy = 3,
   initialTime = '',
@@ -89,26 +91,30 @@ export function QuickRecheckInModal({
   const [energy, setEnergy] = useState(initialEnergy);
   const [time, setTime] = useState(initialTime || DEFAULT_CHECK_IN_TIME);
   const [focus, setFocus] = useState(initialFocus || DEFAULT_CHECK_IN_FOCUS);
-  const [note, setNote] = useState('');
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const editedRef = useRef(false);
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      editedRef.current = false;
+      return;
+    }
+    if (editedRef.current) return;
     setEmotion(initialEmotion);
     setEnergy(initialEnergy || 3);
     setTime(initialTime || DEFAULT_CHECK_IN_TIME);
     setFocus(initialFocus || DEFAULT_CHECK_IN_FOCUS);
-    setNote('');
     setAdvancedOpen(false);
     setError(null);
   }, [visible, initialEmotion, initialEnergy, initialTime, initialFocus]);
 
   const resolvedEmotion = emotion || ENERGY_DEFAULT_EMOTION[energy] || 'tranquila';
-  const canSubmit = Boolean(energy >= 1 && energy <= 5 && time && focus && user);
+  const canSubmit = Boolean(ready && energy >= 1 && energy <= 5 && time && focus && user);
 
   const handleEnergyChange = (level: number) => {
+    editedRef.current = true;
     setEnergy(level);
     if (!emotion) {
       setEmotion(ENERGY_DEFAULT_EMOTION[level] ?? 'tranquila');
@@ -138,13 +144,19 @@ export function QuickRecheckInModal({
       }
 
       try {
-        await scheduleRecheckReminder(locale);
         await ensureReturnTomorrowReminder(locale);
       } catch {
         /* non-critical */
       }
 
-      onComplete({ energyLevel: energy, firstCheckIn });
+      onComplete({
+        energyLevel: energy,
+        firstCheckIn,
+        moodChanged:
+          !firstCheckIn &&
+          (energy !== initialEnergy ||
+            (Boolean(initialEmotion) && resolvedEmotion !== initialEmotion)),
+      });
       onClose();
 
       setTimeout(() => {
@@ -194,18 +206,17 @@ export function QuickRecheckInModal({
             <FeelingEnergyScale value={energy} onChange={handleEnergyChange} />
 
             <Text style={styles.sectionLabel}>{t('quickRecheck.emotionLabel')}</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.emotionRow}
-            >
+            <View style={styles.emotionWrap}>
               {EMOTION_IDS.map((id) => {
                 const selected = resolvedEmotion === id;
                 return (
                   <TouchableOpacity
                     key={id}
                     style={[styles.emotionChip, selected && styles.emotionChipSelected]}
-                    onPress={() => setEmotion(id)}
+                    onPress={() => {
+                      editedRef.current = true;
+                      setEmotion(id);
+                    }}
                     activeOpacity={0.85}
                     accessibilityRole="radio"
                     accessibilityState={{ selected }}
@@ -221,20 +232,7 @@ export function QuickRecheckInModal({
                   </TouchableOpacity>
                 );
               })}
-            </ScrollView>
-
-            <Text style={styles.sectionLabel}>{t('quickRecheck.noteLabel')}</Text>
-            <TextInput
-              style={styles.noteInput}
-              value={note}
-              onChangeText={setNote}
-              placeholder={t('quickRecheck.notePlaceholder')}
-              placeholderTextColor={THEME.colors.text.tertiary}
-              multiline
-              maxLength={280}
-              accessibilityLabel={t('quickRecheck.noteLabel')}
-            />
-            <Text style={styles.noteHint}>{t('quickRecheck.noteHint')}</Text>
+            </View>
 
             <TouchableOpacity
               style={styles.advancedToggle}
@@ -260,7 +258,10 @@ export function QuickRecheckInModal({
                     <TouchableOpacity
                       key={opt.id}
                       style={[styles.optionRow, time === opt.id && styles.optionRowSelected]}
-                      onPress={() => setTime(opt.id)}
+                      onPress={() => {
+                        editedRef.current = true;
+                        setTime(opt.id);
+                      }}
                       accessibilityRole="radio"
                       accessibilityState={{ selected: time === opt.id }}
                     >
@@ -279,7 +280,10 @@ export function QuickRecheckInModal({
                     <TouchableOpacity
                       key={opt.id}
                       style={[styles.optionRow, focus === opt.id && styles.optionRowSelected]}
-                      onPress={() => setFocus(opt.id)}
+                      onPress={() => {
+                        editedRef.current = true;
+                        setFocus(opt.id);
+                      }}
                       accessibilityRole="radio"
                       accessibilityState={{ selected: focus === opt.id }}
                     >
@@ -372,9 +376,10 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     fontFamily: THEME.fonts.heading.medium,
   },
-  emotionRow: {
+  emotionWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: THEME.spacing.xs,
-    paddingVertical: 2,
   },
   emotionChip: {
     alignItems: 'center',
@@ -386,6 +391,8 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.calm.border,
     backgroundColor: THEME.colors.fill[100],
     minWidth: 76,
+    flexGrow: 1,
+    flexBasis: '30%',
   },
   emotionChipSelected: {
     borderColor: THEME.colors.calm.lavenderDeep,
@@ -403,24 +410,6 @@ const styles = StyleSheet.create({
   emotionChipTextSelected: {
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.medium,
-  },
-  noteInput: {
-    ...THEME.typography.body,
-    minHeight: 72,
-    borderRadius: THEME.borderRadius.rounded,
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
-    backgroundColor: THEME.colors.calm.mist,
-    paddingHorizontal: THEME.spacing.md,
-    paddingVertical: THEME.spacing.sm,
-    color: THEME.colors.text.main,
-    textAlignVertical: 'top',
-  },
-  noteHint: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.tertiary,
-    lineHeight: 16,
-    marginTop: -8,
   },
   advancedToggle: {
     flexDirection: 'row',

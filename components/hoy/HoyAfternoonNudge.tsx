@@ -15,6 +15,6 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.accent.italic,
     color: THEME.colors.text.secondary,
     lineHeight: 18,
-    marginTop: 2,
+    marginTop: 0,
   },
 });

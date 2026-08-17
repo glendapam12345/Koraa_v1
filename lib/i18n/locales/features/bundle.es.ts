@@ -645,7 +645,7 @@ export const featuresEs = {
       'Sin pasos · arrastra una tarjeta aquí o toca Agregar paso',
     emptyDay: 'Este día está libre',
     emptyHint:
-      'Anota una tarea y la verás aquí. No hace falta llenar todo el mes.',
+      'Anota un paso para este día. No hace falta llenar el mes.',
     emptyTodayNoCheckIn: 'Hoy aún no registraste cómo te sientes',
     emptyTodayNoCheckInHint:
       'Koraa no puede colorear el día ni ordenar tus pasos.',
@@ -654,7 +654,7 @@ export const featuresEs = {
     emptyTodayNoCheckInSoftHint:
       'Cuando hagas check-in en Hoy, verás tus pasos aquí organizados.',
     emptyLightDay: 'Día liviano',
-    emptyLightDayHint: 'Sin pendientes — Koraa no te asignó pasos para hoy.',
+    emptyLightDayHint: 'Sin pendientes asignados. Puedes anotar uno si quieres.',
     emptyHeavyDay:
       '{{total}} en el calendario, pero en Hoy solo {{count}} pasos',
     emptyHeavyDayHint: 'Koraa protegió tu energía baja.',
@@ -665,6 +665,8 @@ export const featuresEs = {
     noCheckInTodayBannerCompact: 'Sin check-in hoy —',
     noCheckInTodayBannerCta: 'Check-in en Hoy',
     addTasks: 'Agregar tarea',
+    addToDayCta: 'Añadir a este día',
+    addToDayHint: 'Escribe un paso y se guarda en el día que elegiste.',
     addMore: 'Agregar otra',
     addTasksOrProjects: 'Agregar tarea o proyecto',
     quickAddDayTitle: 'Agregar a {{day}}',
@@ -753,6 +755,7 @@ export const featuresEs = {
     actionHeroDefault: 'Para cómo te sientes hoy: empieza por lo más pequeño.',
     actionHeroCtaHoy: 'Ver qué importa hoy',
     actionStartFocus: 'Un ratito contigo (5 min)',
+    actionStartBreath: 'Hacer un respiro',
     actionOpenMusic: 'Abrir música',
     actionOptionalMusic: 'Si quieres, abre música',
     musicPickerTitle: '¿Qué app de música?',
@@ -835,6 +838,7 @@ export const featuresEs = {
       howItWorks: 'Así funciona Koraa. Cuatro pasos claros.',
       emotion: '¿Cómo te sientes hoy? Toca una.',
       energy: '¿Cuánta energía traes? Con eso armo tu paso.',
+      reminders: '¿Quieres que te avise para volver? Tú eliges. Sin presión.',
       time: '¿Cuánto tiempo tienes hoy?',
       focus: '¿Cómo anda tu cabeza? Luego te dejo un plan suave.',
     },
@@ -898,6 +902,15 @@ export const featuresEs = {
       veryHigh: 'Muy alta',
       adaptHint: 'Esto es “se adapta”: poca energía = menos pasos. Sin culpa.',
       continue: 'Continuar',
+    },
+    reminders: {
+      title: '¿Te aviso',
+      titleAccent: 'para volver?',
+      subtitle:
+        'Un aviso suave a la hora que elijas. Mañana abres Hoy y sigues — sin presión.',
+      accept: 'Sí, avísame',
+      skip: 'Ahora no',
+      timeGroupA11y: 'Hora del recordatorio diario',
     },
     time: {
       title: '¿Cuánto',

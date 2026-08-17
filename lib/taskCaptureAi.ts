@@ -4,6 +4,7 @@ import {
   FunctionsRelayError,
 } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { peekCachedAuthUser } from '@/lib/cachedAuthUser';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { logger } from '@/lib/logger';
 import type { AppLocale } from '@/lib/i18n';
@@ -130,8 +131,7 @@ export async function interpretTaskCapture(
   }
 
   try {
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session?.access_token) {
+    if (!peekCachedAuthUser()) {
       return local;
     }
 
@@ -141,7 +141,7 @@ export async function interpretTaskCapture(
       .slice(0, 40);
     const validProjectIds = new Set(projects.map((p) => p.id));
 
-    const { data, error } = await supabase.functions.invoke('task-capture-ai', {
+    const invoke = supabase.functions.invoke('task-capture-ai', {
       body: {
         locale: input.locale,
         rawText: input.rawText.trim().slice(0, 500),
@@ -151,9 +151,15 @@ export async function interpretTaskCapture(
         projects,
       },
     });
+    const timedOut = new Promise<{ data: null; error: { message: string } }>((resolve) => {
+      setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 5000);
+    });
+    const { data, error } = await Promise.race([invoke, timedOut]);
 
     if (error) {
-      await logInvokeFailure(error);
+      if (!('message' in error && error.message === 'timeout')) {
+        await logInvokeFailure(error);
+      }
       return local;
     }
 

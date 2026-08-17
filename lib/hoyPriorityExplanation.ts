@@ -36,7 +36,8 @@ export function buildHoyPriorityExplanation({
     return {
       title: t('hoy.planTitle'),
       message: t('hoy.planSteps'),
-      suggestion: t('hoyPlanFallback.planSteps'),
+      /** No mostrar el 1→2→3 como coach bajo Ellie — el hero ya invita a sentir. */
+      suggestion: '',
       reasoning: t('hoy.planReasoning'),
     };
   }

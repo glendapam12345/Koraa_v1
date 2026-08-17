@@ -17,6 +17,7 @@ import { VaciarTabSegments, type VaciarTabSegment } from '@/components/tasks/Vac
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmScreen } from '@/components/ui/calm/CalmScreen';
+import { TabScreenErrorBoundary } from '@/components/TabScreenErrorBoundary';
 import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
 import { useFocusedProject } from '@/hooks/useFocusedProject';
 import { FocusedProjectBanner } from '@/components/projects/FocusedProjectBanner';
@@ -55,7 +56,15 @@ import {
 
 type CaptureFlowStep = 'input' | 'preview' | 'organized';
 
-export default function VaciarScreen() {
+export default function VaciarScreenRoute() {
+  return (
+    <TabScreenErrorBoundary screenName="tareas">
+      <VaciarScreen />
+    </TabScreenErrorBoundary>
+  );
+}
+
+function VaciarScreen() {
   const { t, locale } = useI18n();
   const router = useRouter();
   const {
@@ -214,7 +223,7 @@ export default function VaciarScreen() {
     router.replace('/(tabs)');
   }, [router, user?.id]);
 
-  const handleRelease = useCallback(async () => {
+  const handleRelease = useCallback(async (projectsForMatch: { id: string; name: string }[] = []) => {
     if (isOrganizing || isSaving || isSavingBatch) return;
     Keyboard.dismiss();
     const advanced: VaciarAdvancedCaptureOptions = {
@@ -229,32 +238,23 @@ export default function VaciarScreen() {
 
     if (!user?.id) return;
 
-    setIsOrganizing(true);
-    try {
-      if (!useAdvanced) {
-        const { data } = await fetchUserProjects(user.id);
-        const projects = (data ?? []).map((p) => ({
-          id: p.id,
-          name: p.name,
-          color: p.color ?? undefined,
-          due_date: p.due_date ?? null,
-          life_area_key: p.life_area_key ?? null,
-        }));
-        const projectsForMatch = projects.map((p) => ({ id: p.id, name: p.name }));
-        const live = buildLiveCapturePreview(taskInput, locale, projectsForMatch, {
-          lifeAreasConfig: effectiveLifeAreasConfig,
-        });
-        if (!live || live.items.length === 0) {
-          showToast(t('vaciar.releaseEmpty'), 'info');
-          return;
-        }
+    if (!useAdvanced) {
+      const live = buildLiveCapturePreview(taskInput, locale, projectsForMatch, {
+        lifeAreasConfig: effectiveLifeAreasConfig,
+      });
+      if (!live || live.items.length === 0) {
+        showToast(t('vaciar.releaseEmpty'), 'info');
+        return;
+      }
 
-        if (fromHoy) {
+      if (fromHoy) {
+        setIsOrganizing(true);
+        try {
           const items = applyInferredLifeAreas(
             stripAutoPlanningForDiscovery(live.items),
             effectiveLifeAreasConfig,
           );
-          const batchResult = await saveBatch(items, { suppressToast: true });
+          const batchResult = await saveBatch(items, { suppressSuccessToast: true });
           if (
             batchResult.status === 'validation_failed' ||
             batchResult.status === 'partial' ||
@@ -273,87 +273,107 @@ export default function VaciarScreen() {
             return;
           }
           await returnToHoyAfterAdd(batchResult.tasks.map((entry) => entry.taskId));
-          return;
+        } finally {
+          setIsOrganizing(false);
         }
-
-        previewGenerationRef.current += 1;
-        const refineGeneration = previewGenerationRef.current;
-        setPreviewItems(
-          applyInferredLifeAreas(
-            stripAutoPlanningForDiscovery(live.items),
-            effectiveLifeAreasConfig,
-          ),
-        );
-        setPreviewProjects(projects);
-        setSegment('capture');
-        setCaptureStep('preview');
-        setIsOrganizing(false);
-        router.setParams({ segment: 'capture', fresh: '' });
-        requestAnimationFrame(() => {
-          screenScrollRef.current?.scrollTo({ y: 0, animated: true });
-        });
-
-        setIsRefiningPreview(true);
-        void (async () => {
-          try {
-            const { items: refined, usedLocalFallback } = await applyAiProjectHints(
-              live.items,
-              taskInput,
-              locale,
-              user.id,
-              projectsForMatch,
-            );
-            if (refineGeneration !== previewGenerationRef.current) return;
-            if (usedLocalFallback) {
-              showToast(t('vaciarExtra.aiLocalFallback'), 'info');
-            }
-            setPreviewItems((current) => {
-              const stripped = stripAutoPlanningForDiscovery(refined);
-              const merged = mergeCaptureReviewEdits(current, stripped);
-              return applyInferredLifeAreas(merged, effectiveLifeAreasConfig);
-            });
-          } catch (error) {
-            logger.warn('vaciar.previewAiRefine', error);
-          } finally {
-            if (refineGeneration === previewGenerationRef.current) {
-              setIsRefiningPreview(false);
-            }
-          }
-        })();
         return;
       }
 
-      try {
-        const { items, projects } = await buildEnrichedReleaseItems(
-          taskInput,
-          locale,
-          user.id,
-          advanced,
-        );
-        if (items.length === 0) {
-          showToast(t('vaciar.releaseEmpty'), 'info');
-          return;
+      previewGenerationRef.current += 1;
+      const refineGeneration = previewGenerationRef.current;
+      setPreviewItems(
+        applyInferredLifeAreas(
+          stripAutoPlanningForDiscovery(live.items),
+          effectiveLifeAreasConfig,
+        ),
+      );
+      setPreviewProjects(
+        projectsForMatch.map((project) => ({
+          id: project.id,
+          name: project.name,
+          due_date: null,
+        })),
+      );
+      setSegment('capture');
+      setCaptureStep('preview');
+      router.setParams({ segment: 'capture', fresh: '' });
+      requestAnimationFrame(() => {
+        screenScrollRef.current?.scrollTo({ y: 0, animated: true });
+      });
+
+      setIsRefiningPreview(true);
+      void (async () => {
+        try {
+          const { data } = await fetchUserProjects(user.id);
+          const projects = (data ?? []).map((p) => ({
+            id: p.id,
+            name: p.name,
+            color: p.color ?? undefined,
+            due_date: p.due_date ?? null,
+            life_area_key: p.life_area_key ?? null,
+          }));
+          const projectsForMatch = projects.map((p) => ({ id: p.id, name: p.name }));
+          if (refineGeneration !== previewGenerationRef.current) return;
+          setPreviewProjects(projects);
+
+          const { items: refined, usedLocalFallback } = await applyAiProjectHints(
+            live.items,
+            taskInput,
+            locale,
+            user.id,
+            projectsForMatch,
+          );
+          if (refineGeneration !== previewGenerationRef.current) return;
+          if (usedLocalFallback) {
+            showToast(t('vaciarExtra.aiLocalFallback'), 'info');
+          }
+          setPreviewItems((current) => {
+            const stripped = stripAutoPlanningForDiscovery(refined);
+            const merged = mergeCaptureReviewEdits(current, stripped);
+            return applyInferredLifeAreas(merged, effectiveLifeAreasConfig);
+          });
+        } catch (error) {
+          logger.warn('vaciar.previewAiRefine', error);
+        } finally {
+          if (refineGeneration === previewGenerationRef.current) {
+            setIsRefiningPreview(false);
+          }
         }
+      })();
+      return;
+    }
 
-        previewGenerationRef.current += 1;
-
-        setPreviewItems(
-          applyInferredLifeAreas(
-            stripAutoPlanningForDiscovery(items),
-            effectiveLifeAreasConfig,
-          ),
-        );
-        setPreviewProjects(projects);
-        setSegment('capture');
-        setCaptureStep('preview');
-        router.setParams({ segment: 'capture', fresh: '' });
-        requestAnimationFrame(() => {
-          screenScrollRef.current?.scrollTo({ y: 0, animated: true });
-        });
-      } catch (error) {
-        logger.error('vaciar.advancedRelease', error);
-        showToast(t('errors.saveTaskFailed'), 'error');
+    setIsOrganizing(true);
+    try {
+      const { items, projects } = await buildEnrichedReleaseItems(
+        taskInput,
+        locale,
+        user.id,
+        advanced,
+      );
+      if (items.length === 0) {
+        showToast(t('vaciar.releaseEmpty'), 'info');
+        return;
       }
+
+      previewGenerationRef.current += 1;
+
+      setPreviewItems(
+        applyInferredLifeAreas(
+          stripAutoPlanningForDiscovery(items),
+          effectiveLifeAreasConfig,
+        ),
+      );
+      setPreviewProjects(projects);
+      setSegment('capture');
+      setCaptureStep('preview');
+      router.setParams({ segment: 'capture', fresh: '' });
+      requestAnimationFrame(() => {
+        screenScrollRef.current?.scrollTo({ y: 0, animated: true });
+      });
+    } catch (error) {
+      logger.error('vaciar.advancedRelease', error);
+      showToast(t('errors.saveTaskFailed'), 'error');
     } finally {
       setIsOrganizing(false);
     }
@@ -533,7 +553,7 @@ export default function VaciarScreen() {
           );
           if (!saved) return;
         } else {
-          const batchResult = await saveBatch(items, { suppressToast: true });
+          const batchResult = await saveBatch(items, { suppressSuccessToast: true });
           if (batchResult.status === 'validation_failed') return;
 
           if (batchResult.status === 'partial') {
@@ -864,7 +884,7 @@ export default function VaciarScreen() {
                   onRemoveSubtask={removeSubtask}
                   isSaving={isSaving || isSavingBatch || isOrganizing}
                   saveBlocked={saveBlocked}
-                  onSave={() => void handleRelease()}
+                  onSave={(context) => void handleRelease(context?.projects)}
                   onProjectError={(message) => showToast(message, 'error')}
                   onProjectCreated={(name) =>
                     showToast(t('vaciar.projectCreated', { name }), 'success')

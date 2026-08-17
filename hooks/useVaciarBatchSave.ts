@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useI18n } from '@/contexts/I18nContext';
-import { createVaciarTask } from '@/lib/vaciarCreateTask';
+import { createVaciarTask, type VaciarCreateTaskResult } from '@/lib/vaciarCreateTask';
 import { batchItemToDraft, type VaciarBatchItem } from '@/lib/vaciarBatchDraft';
 import { logger } from '@/lib/logger';
 
@@ -24,6 +24,27 @@ type UseVaciarBatchSaveArgs = {
   onSaved: () => void | Promise<void>;
 };
 
+const ITEM_SAVE_TIMEOUT_MS = 12_000;
+
+function withTimeout(
+  promise: Promise<VaciarCreateTaskResult>,
+  ms: number,
+): Promise<VaciarCreateTaskResult> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => resolve({ status: 'error' }), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 export function useVaciarBatchSave({
   hasCheckInToday,
   showToast,
@@ -35,7 +56,7 @@ export function useVaciarBatchSave({
   const saveBatch = useCallback(
     async (
       items: VaciarBatchItem[],
-      options?: { suppressToast?: boolean },
+      options?: { suppressSuccessToast?: boolean },
     ): Promise<BatchSaveResult> => {
       const valid = items.filter((item) => item.content.trim());
       if (valid.length === 0) {
@@ -65,46 +86,51 @@ export function useVaciarBatchSave({
       };
 
       try {
-        for (const item of valid) {
-          const result = await createVaciarTask(batchItemToDraft(item), {
-            locale,
-            hasCheckInToday: Boolean(hasCheckInToday),
-          });
+        for (let index = 0; index < valid.length; index++) {
+          const item = valid[index];
+          const result = await withTimeout(
+            createVaciarTask(batchItemToDraft(item), {
+              locale,
+              hasCheckInToday: Boolean(hasCheckInToday),
+              skipReprioritize: index < valid.length - 1,
+            }),
+            ITEM_SAVE_TIMEOUT_MS,
+          );
 
           if (result.status === 'not_authenticated') {
             showToast(t('errors.notAuthenticated'), 'error');
             return await finishWithRefresh(savedTasks.length > 0 ? 'partial' : 'failed');
           }
           if (result.status === 'error') {
-            if (!options?.suppressToast) {
-              if (savedTasks.length > 0) {
-                showToast(
-                  t('vaciar.batchPartialSave', {
-                    saved: savedTasks.length,
-                    total: valid.length,
-                  }),
-                  'info',
-                );
-              } else {
-                showToast(t('errors.saveTaskFailed'), 'error');
-              }
+            if (savedTasks.length > 0) {
+              showToast(
+                t('vaciar.batchPartialSave', {
+                  saved: savedTasks.length,
+                  total: valid.length,
+                }),
+                'info',
+              );
+            } else {
+              showToast(t('errors.saveTaskFailed'), 'error');
             }
             return await finishWithRefresh(savedTasks.length > 0 ? 'partial' : 'failed');
           }
 
           if (result.taskId && item.effortFeel) {
-            const { setTaskEffort } = await import('@/lib/taskPerceivedEffort');
-            await setTaskEffort(result.taskId, item.effortFeel);
+            void import('@/lib/taskPerceivedEffort').then(({ setTaskEffort }) =>
+              setTaskEffort(result.taskId as string, item.effortFeel!),
+            );
           }
 
           if (result.taskId && (item.estimatedMinutes || item.preferredTime)) {
-            const { setTaskPlanningMeta } = await import('@/lib/taskPlanningMeta');
-            await setTaskPlanningMeta(result.taskId, {
-              energyRequired: 'normal',
-              notes: '',
-              ...(item.estimatedMinutes ? { estimatedMinutes: item.estimatedMinutes } : {}),
-              preferredTime: item.preferredTime ?? null,
-            });
+            void import('@/lib/taskPlanningMeta').then(({ setTaskPlanningMeta }) =>
+              setTaskPlanningMeta(result.taskId as string, {
+                energyRequired: 'normal',
+                notes: '',
+                ...(item.estimatedMinutes ? { estimatedMinutes: item.estimatedMinutes } : {}),
+                preferredTime: item.preferredTime ?? null,
+              }),
+            );
           }
 
           if (result.taskId) {
@@ -122,7 +148,7 @@ export function useVaciarBatchSave({
 
         await onSaved();
 
-        if (!options?.suppressToast) {
+        if (!options?.suppressSuccessToast) {
           const countLine =
             savedCount === 1
               ? t('vaciar.releaseConfirmOne')
@@ -139,15 +165,13 @@ export function useVaciarBatchSave({
         return { tasks: savedTasks, status: 'complete' };
       } catch (error) {
         logger.error('Error guardando lote de tareas:', error);
-        if (!options?.suppressToast) {
-          if (savedTasks.length > 0) {
-            showToast(
-              t('vaciar.batchPartialSave', { saved: savedTasks.length, total: valid.length }),
-              'info',
-            );
-          } else {
-            showToast(t('errors.saveTaskFailed'), 'error');
-          }
+        if (savedTasks.length > 0) {
+          showToast(
+            t('vaciar.batchPartialSave', { saved: savedTasks.length, total: valid.length }),
+            'info',
+          );
+        } else {
+          showToast(t('errors.saveTaskFailed'), 'error');
         }
         return await finishWithRefresh(savedTasks.length > 0 ? 'partial' : 'failed');
       } finally {

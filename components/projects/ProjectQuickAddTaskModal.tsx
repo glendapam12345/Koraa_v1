@@ -11,8 +11,9 @@ import {
   Keyboard,
   Pressable,
   Alert,
+  InteractionManager,
 } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, FolderKanban, Plus, Calendar, Clock, Flag } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
@@ -75,7 +76,14 @@ type ProjectQuickAddTaskModalProps = {
   hasCheckInToday: boolean;
   projects?: QuickAddProjectOption[];
   onClose: () => void;
-  onSaved: (args: { title: string; projectName?: string; dayLabel?: string }) => void;
+  onSaved: (args: {
+    title: string;
+    projectName?: string;
+    dayLabel?: string;
+    taskId?: string;
+    scheduledDate?: string | null;
+    projectId?: string | null;
+  }) => void;
   onOpenFullCapture?: (projectId: string | null) => void;
 };
 
@@ -110,6 +118,8 @@ export function ProjectQuickAddTaskModal({
   const [activePlanPicker, setActivePlanPicker] = useState<'date' | 'duration' | 'priority' | null>(
     null,
   );
+  const savingRef = useRef(false);
+  const inputRef = useRef<TextInput>(null);
 
   const { config: lifeAreasConfig } = useUserLifeAreas(userId);
   const selectableAreas = listActiveLifeAreas(
@@ -130,6 +140,14 @@ export function ProjectQuickAddTaskModal({
   }, [visible, projects]);
 
   useEffect(() => {
+    if (!visible) return;
+    const timer = setTimeout(() => {
+      inputRef.current?.focus();
+    }, 320);
+    return () => clearTimeout(timer);
+  }, [visible]);
+
+  useEffect(() => {
     if (!visible) {
       setContent('');
       setSelectedDate(null);
@@ -142,6 +160,7 @@ export function ProjectQuickAddTaskModal({
       setCreateProjectError(null);
       setCreatingProject(false);
       setSaving(false);
+      savingRef.current = false;
       setLifeAreaKey(null);
       setCapturePriority('medium');
       setEstimatedMinutes(45);
@@ -212,8 +231,9 @@ export function ProjectQuickAddTaskModal({
 
   const handleSave = async () => {
     const trimmed = content.trim();
-    if (!trimmed || !target) return;
+    if (!trimmed || !target || savingRef.current) return;
 
+    savingRef.current = true;
     setSaving(true);
     try {
       const isProject = target.mode === 'project';
@@ -233,7 +253,7 @@ export function ProjectQuickAddTaskModal({
           isPriority: isLoose ? loosePriority : undefined,
           lifeAreaKey: isLoose ? lifeAreaKey : null,
         },
-        { locale, hasCheckInToday },
+        { locale, hasCheckInToday, skipReprioritize: isDay },
       );
 
       if (result.status === 'not_authenticated') {
@@ -247,9 +267,9 @@ export function ProjectQuickAddTaskModal({
 
       if (isLoose && result.taskId) {
         if (effort) {
-          await setTaskEffort(result.taskId, effort);
+          void setTaskEffort(result.taskId, effort);
         }
-        await setTaskPlanningMeta(result.taskId, {
+        void setTaskPlanningMeta(result.taskId, {
           estimatedMinutes,
           energyRequired: energyFromEffort(effort),
           notes: '',
@@ -263,13 +283,19 @@ export function ProjectQuickAddTaskModal({
             ? localProjects.find((entry) => entry.id === dayProjectId)?.name
             : undefined;
 
-      onSaved({
-        title: result.savedTitle,
-        projectName,
-        dayLabel: isDay ? target.dayLabel : undefined,
-      });
       handleClose();
+      InteractionManager.runAfterInteractions(() => {
+        onSaved({
+          title: result.savedTitle,
+          projectName,
+          dayLabel: isDay ? target.dayLabel : undefined,
+          taskId: result.taskId,
+          scheduledDate: result.savedScheduledDate,
+          projectId: result.projectId,
+        });
+      });
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
@@ -295,7 +321,7 @@ export function ProjectQuickAddTaskModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
-      <View style={styles.overlay}>
+      <View style={styles.overlay} pointerEvents="box-none">
         <Pressable style={styles.backdrop} onPress={handleClose} accessibilityLabel={t('components.closeA11y')} />
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -361,13 +387,14 @@ export function ProjectQuickAddTaskModal({
             <ScrollView
               style={styles.body}
               contentContainerStyle={styles.bodyContent}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="interactive"
+              keyboardShouldPersistTaps="always"
+              keyboardDismissMode="on-drag"
               showsVerticalScrollIndicator={false}
               bounces={false}
             >
               <View style={styles.inputWrap}>
                 <TextInput
+                  ref={inputRef}
                   style={styles.input}
                   value={content}
                   onChangeText={setContent}
@@ -375,7 +402,9 @@ export function ProjectQuickAddTaskModal({
                   placeholderTextColor={THEME.colors.text.tertiary}
                   multiline
                   maxLength={300}
-                  autoFocus
+                  autoCorrect={false}
+                  spellCheck={false}
+                  autoCapitalize="sentences"
                   accessibilityLabel={t('vaciarExtra.a11yTaskField')}
                 />
               </View>
@@ -616,7 +645,7 @@ export function ProjectQuickAddTaskModal({
               ) : null}
             </ScrollView>
 
-            <View style={styles.footer}>
+            <View style={styles.footer} pointerEvents="auto">
               <CalmPrimaryButton
                 label={
                   saving
@@ -648,10 +677,12 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
   },
   keyboardAvoid: {
     width: '100%',
     maxHeight: '92%',
+    zIndex: 1,
   },
   sheet: {
     backgroundColor: THEME.colors.fill[100],
@@ -661,6 +692,7 @@ const styles = StyleSheet.create({
     paddingTop: THEME.spacing.sm,
     maxHeight: '100%',
     gap: THEME.spacing.sm,
+    zIndex: 2,
   },
   handle: {
     alignSelf: 'center',

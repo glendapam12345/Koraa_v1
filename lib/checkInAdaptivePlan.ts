@@ -100,8 +100,8 @@ async function boostThinPlanPriorities(
 }
 
 /**
- * Tras el check-in: reorganiza fechas y ajusta el plan según cómo te sientes.
- * Complementa `prioritizeTasksForCheckIn` (que solo marca prioridades).
+ * Explicit accept path only. Check-in no longer writes dates here —
+ * Ellie asks first, then ReorganizeDayFlow persists assignments.
  */
 export async function applyCheckInAdaptivePlan(
   userId: string,

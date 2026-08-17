@@ -19,6 +19,7 @@ export function HeaderIconButton({
   return (
     <TouchableOpacity
       onPress={onPress}
+      delayPressIn={0}
       activeOpacity={0.85}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}

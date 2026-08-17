@@ -7,10 +7,8 @@ import { getFocusedProjectId } from '@/lib/focusedProjectStorage';
 import { logger } from '@/lib/logger';
 import { fetchCurrentStreak, isStreakMilestone } from '@/lib/streak';
 import type { AppLocale } from '@/lib/i18n';
-import { getCatalog } from '@/lib/i18n';
 import type { Task } from '@/components/tasks/TaskCard';
 import type { CheckInReplanSummary } from '@/lib/checkInReplanSummary';
-import { applyCheckInAdaptivePlan } from '@/lib/checkInAdaptivePlan';
 import { fetchAndApplyKoraaBrainFocusPlan } from '@/lib/ai/fetchAndApplyKoraaBrainFocusPlan';
 import { clearKoraaDailyBriefCache } from '@/lib/ai/koraaDailyBriefCache';
 import { seedHoyLiteFirstDayIfUnset } from '@/lib/hoyLiteDay';
@@ -191,27 +189,8 @@ export async function saveDailyCheckInAndPrioritize(input: DailyCheckInInput): P
     emotionLabel: input.emotionLabel,
   });
 
-  let replan: SaveCheckInResult['replan'] = null;
-  if (!offline) {
-    const looseLabel =
-      (getCatalog(input.locale).projectsUi as { looseTitle?: string })?.looseTitle ??
-      (input.locale === 'en' ? 'Tasks without project' : 'Tareas sin proyecto');
-    try {
-      replan = await applyCheckInAdaptivePlan(
-        input.userId,
-        {
-          energyLevel: input.energyLevel,
-          emotion: emotionStored,
-          availableTime: input.availableTime,
-          focusLevel: input.focusLevel,
-          locale: input.locale,
-        },
-        looseLabel,
-      );
-    } catch (err) {
-      logger.debug('checkInService: adaptive replan failed', String(err));
-    }
-  }
+  // Dates stay as they are until the person accepts a replan in Hoy.
+  const replan: SaveCheckInResult['replan'] = null;
 
   const { error: onboardingError, newlyCompleted } = await markOnboardingCompletedIfNeeded(
     input.userId,
@@ -233,6 +212,12 @@ export async function saveDailyCheckInAndPrioritize(input: DailyCheckInInput): P
     } catch {
       celebration = null;
     }
+  }
+
+  if (!offline) {
+    void import('@/hooks/useNotifications').then(({ scheduleRecheckReminder }) =>
+      scheduleRecheckReminder(input.locale),
+    );
   }
 
   return {

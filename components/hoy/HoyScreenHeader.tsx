@@ -5,6 +5,7 @@ import { THEME } from '@/constants/theme';
 import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { HoyStreakPill } from '@/components/hoy/HoyStreakPill';
 import { HoyCareModeToggle } from '@/components/hoy/HoyCareModeToggle';
+import { HoyBreathNudge } from '@/components/hoy/HoyBreathNudge';
 import { useI18n } from '@/contexts/I18nContext';
 import { getFirstName } from '@/lib/displayName';
 import { formatGreetingWithName, formatNightReturnGreeting, useKoraaGreeting } from '@/hooks/useKoraaGreeting';
@@ -13,6 +14,8 @@ type HoyScreenHeaderProps = {
   displayName?: string;
   hasCheckInToday?: boolean;
   showSubtitle?: boolean;
+  /** Si false, el saludo lo dice Ellie (una sola voz). */
+  showGreeting?: boolean;
   compact?: boolean;
   minimal?: boolean;
   streak?: number;
@@ -29,6 +32,7 @@ export function HoyScreenHeader({
   displayName = '',
   hasCheckInToday = true,
   showSubtitle = true,
+  showGreeting = true,
   minimal = false,
   streak = 0,
   checkedInToday = false,
@@ -55,6 +59,7 @@ export function HoyScreenHeader({
       {onCareModePress ? (
         <HoyCareModeToggle active={crisisModeActive} onPress={onCareModePress} />
       ) : null}
+      <HoyBreathNudge variant="icon" />
       <HoyStreakPill streak={streak} checkedInToday={checkedInToday} softGrace={softGrace} />
       <HeaderIconButton
         onPress={() => router.push('/help')}
@@ -80,9 +85,11 @@ export function HoyScreenHeader({
         <View style={styles.trailing}>{trailing}</View>
       </View>
 
-      <Text style={styles.greeting} accessibilityRole="header">
-        {greetingLine}
-      </Text>
+      {showGreeting ? (
+        <Text style={styles.greeting} accessibilityRole="header">
+          {greetingLine}
+        </Text>
+      ) : null}
 
       {showSubtitle ? (
         <Text style={styles.careHeadline}>{careHeadline}</Text>

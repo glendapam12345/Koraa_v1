@@ -40,8 +40,17 @@ import { YoEditProfileModal } from '@/components/yo/YoEditProfileModal';
 import { YoMenuRow } from '@/components/yo/YoMenuRow';
 import { YoSpaceHero } from '@/components/yo/YoSpaceHero';
 import { KoraaHowItWorksModal } from '@/components/onboarding/KoraaHowItWorksModal';
+import { TabScreenErrorBoundary } from '@/components/TabScreenErrorBoundary';
 
-export default function ProfileScreen() {
+export default function ProfileScreenRoute() {
+  return (
+    <TabScreenErrorBoundary screenName="yo">
+      <ProfileScreen />
+    </TabScreenErrorBoundary>
+  );
+}
+
+function ProfileScreen() {
   const { t, locale } = useI18n();
   const { editProfile: editProfileParam } = useLocalSearchParams<{ editProfile?: string }>();
   const { user, signOut } = useAuth();

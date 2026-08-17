@@ -102,37 +102,38 @@ export function useVaciarTaskSave({
           return false;
         }
         if (result.taskId && options?.effortFeel) {
-          await setTaskEffort(result.taskId, options.effortFeel);
+          void setTaskEffort(result.taskId, options.effortFeel);
         }
 
         if (
           result.taskId &&
           (options?.estimatedMinutes || options?.preferredTime)
         ) {
-          const { setTaskPlanningMeta } = await import('@/lib/taskPlanningMeta');
-          await setTaskPlanningMeta(result.taskId, {
-            energyRequired: 'normal',
-            notes: '',
-            ...(options.estimatedMinutes ? { estimatedMinutes: options.estimatedMinutes } : {}),
-            preferredTime: options.preferredTime ?? null,
-          });
+          void import('@/lib/taskPlanningMeta').then(({ setTaskPlanningMeta }) =>
+            setTaskPlanningMeta(result.taskId as string, {
+              energyRequired: 'normal',
+              notes: '',
+              ...(options.estimatedMinutes ? { estimatedMinutes: options.estimatedMinutes } : {}),
+              preferredTime: options.preferredTime ?? null,
+            }),
+          );
         }
 
-        const calendarSync = await syncSavedTaskToDeviceCalendar({
+        void syncSavedTaskToDeviceCalendar({
           taskId: result.taskId,
           title: result.savedTitle,
           scheduledDate: result.savedScheduledDate,
           eventNotes: t('deviceCalendar.eventNotes'),
+        }).then((calendarSync) => {
+          if (calendarSync === 'permission_denied') {
+            promptDeviceCalendarPermission({
+              permissionTitle: t('deviceCalendar.permissionTitle'),
+              permissionBody: t('deviceCalendar.permissionBody'),
+              cancel: t('deviceCalendar.cancel'),
+              openSettings: t('deviceCalendar.openSettings'),
+            });
+          }
         });
-
-        if (calendarSync === 'permission_denied') {
-          promptDeviceCalendarPermission({
-            permissionTitle: t('deviceCalendar.permissionTitle'),
-            permissionBody: t('deviceCalendar.permissionBody'),
-            cancel: t('deviceCalendar.cancel'),
-            openSettings: t('deviceCalendar.openSettings'),
-          });
-        }
 
         if (result.status === 'offline') {
           await onSaved({
@@ -165,11 +166,7 @@ export function useVaciarTaskSave({
           : options?.reliefCapture
             ? `${t('vaciar.releaseConfirmOne')}\n${t('vaciar.releaseRelief')}`
             : result.savedScheduledDate
-            ? calendarSync === 'added'
-              ? t('vaciarExtra.toastAddedWithDateAndCalendar', {
-                  date: formatSavedDate(result.savedScheduledDate),
-                })
-              : t('vaciarExtra.toastAddedWithDate', {
+            ? t('vaciarExtra.toastAddedWithDate', {
                   date: formatSavedDate(result.savedScheduledDate),
                 })
             : t('vaciarExtra.toastAdded');

@@ -54,6 +54,7 @@ export function HoyPrimaryFocusCard({
 
       <TouchableOpacity
         onPress={onOpenDetails}
+        delayPressIn={0}
         activeOpacity={0.88}
         accessibilityRole="button"
         accessibilityLabel={t('hoy.focusTaskOpenA11y', { task: content })}
@@ -77,25 +78,41 @@ export function HoyPrimaryFocusCard({
           accessibilityHint={t('hoy.firstSessionMicroCtaHint')}
         />
       ) : (
-        <TouchableOpacity
-          style={styles.checkRow}
-          onPress={onToggleComplete}
-          activeOpacity={0.85}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: completed }}
-          accessibilityLabel={t('hoy.focusTaskToggleA11y', { task: content })}
-        >
-          {completed ? (
-            <View style={styles.checkDone}>
-              <Check size={14} color={THEME.colors.onGradient} strokeWidth={3} />
-            </View>
-          ) : (
-            <View style={styles.checkRing} />
-          )}
-          <Text style={styles.checkLabel}>
-            {completed ? t('hoy.todayFocusDone') : t('hoy.todayFocusMark')}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            style={styles.checkRow}
+            onPress={onToggleComplete}
+            delayPressIn={0}
+            activeOpacity={0.85}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: completed }}
+            accessibilityLabel={t('hoy.focusTaskToggleA11y', { task: content })}
+          >
+            {completed ? (
+              <View style={styles.checkDone}>
+                <Check size={14} color={THEME.colors.onGradient} strokeWidth={3} />
+              </View>
+            ) : (
+              <View style={styles.checkRing} />
+            )}
+            <Text style={styles.checkLabel}>
+              {completed ? t('hoy.todayFocusDone') : t('hoy.todayFocusMark')}
+            </Text>
+          </TouchableOpacity>
+          {!completed ? (
+            <TouchableOpacity
+              style={styles.editBtn}
+              onPress={onOpenDetails}
+              delayPressIn={0}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={t('hoy.todayFocusEditA11y', { task: content })}
+              accessibilityHint={t('hoy.focusTaskOpenHint')}
+            >
+              <Text style={styles.editLabel}>{t('hoy.todayFocusEdit')}</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       )}
     </>
   );
@@ -206,7 +223,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     minHeight: THEME.sizes.touchTarget,
-    marginTop: 2,
+    flex: 1,
   },
   checkRing: {
     width: 24,
@@ -233,6 +250,24 @@ const styles = StyleSheet.create({
     ...THEME.typography.caption,
     fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 18,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: THEME.spacing.sm,
+    marginTop: 2,
+  },
+  editBtn: {
+    paddingHorizontal: THEME.spacing.sm,
+    minHeight: THEME.sizes.touchTarget,
+    justifyContent: 'center',
+  },
+  editLabel: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.text.secondary,
     lineHeight: 18,
   },
 });

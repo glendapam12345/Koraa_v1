@@ -19,27 +19,29 @@ export function isTaskExplicitlyForToday(
 }
 
 /**
- * Paso sugerido en Hoy: prioridad y (fecha hoy o sin fecha pero marcada prioridad).
- * Las tareas sueltas sin fecha ni prioridad viven en Áreas, no en Hoy.
+ * Paso sugerido en Hoy: fecha de hoy (deadline) o marcada como paso de hoy.
+ * Las sueltas sin fecha ni prioridad viven en Áreas, no en Hoy.
  */
 export function isTaskSuggestedForToday(
   task: Pick<Task, 'scheduled_date' | 'is_priority'>,
   today: string = getLocalDateString(),
 ): boolean {
-  if (!task.is_priority) return false;
   const date = normalizeScheduledDate(task.scheduled_date);
-  if (!date) return true;
-  return date === today;
+  if (date === today) return true;
+  if (!task.is_priority) return false;
+  return !date;
 }
 
 /**
- * Puede esperar hoy: en el plan de hoy, sin prioridad, aún pendiente.
+ * Puede esperar hoy: fecha hoy, aún pendiente, y no entra como paso sugerido.
+ * Con deadlines de hoy en el plan, esto queda para overflow de UI.
  */
 export function isTaskWaitingForToday(
   task: Pick<Task, 'scheduled_date' | 'is_priority' | 'is_completed'>,
   today: string = getLocalDateString(),
 ): boolean {
-  if (task.is_completed || task.is_priority) return false;
+  if (task.is_completed) return false;
+  if (isTaskSuggestedForToday(task, today)) return false;
   return isTaskExplicitlyForToday(task, today);
 }
 
@@ -93,16 +95,8 @@ export function getHoyFocusTasks(
     (task) => !task.parent_task_id,
   );
 
-  const priorityIncomplete = scopedIncomplete
-    .filter((task) => isTaskSuggestedForToday(task, today))
-    .sort(sortHoyPlanTasks);
-
-  if (priorityIncomplete.length > 0) {
-    return priorityIncomplete;
-  }
-
   return scopedIncomplete
-    .filter((task) => isTaskExplicitlyForToday(task, today) || !normalizeScheduledDate(task.scheduled_date))
+    .filter((task) => isTaskSuggestedForToday(task, today))
     .sort(sortHoyPlanTasks);
 }
 

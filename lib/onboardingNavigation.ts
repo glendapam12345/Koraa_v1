@@ -8,6 +8,7 @@ export const ONBOARDING_ACTIVITIES_ROUTE = '/onboarding/activities' as Href;
 export const ONBOARDING_CAPTURE_ROUTE = '/onboarding/capture' as Href;
 export const ONBOARDING_NAME_ROUTE = '/onboarding/name' as Href;
 export const ONBOARDING_EMOTION_ROUTE = '/onboarding/emotion' as Href;
+export const ONBOARDING_REMINDERS_ROUTE = '/onboarding/reminders' as Href;
 export const TABS_ROUTE = '/(tabs)' as Href;
 
 /** Paywall inmediato (legacy / tests). Preferir goToHoyAfterOnboarding. */
@@ -16,6 +17,11 @@ export function goToOnboardingPaywall(): void {
     pathname: '/paywall',
     params: ONBOARDING_PAYWALL_PARAMS,
   });
+}
+
+/** Pregunta opcional de recordatorio, justo antes de Hoy. */
+export function goToOnboardingReminders(): void {
+  router.replace(ONBOARDING_REMINDERS_ROUTE);
 }
 
 /**

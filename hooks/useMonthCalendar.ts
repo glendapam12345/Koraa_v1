@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { supabase, getErrorMessage, isSchemaError } from '@/lib/supabase';
+import { supabase, getErrorMessage, isSchemaError, getCachedAuthUser } from '@/lib/supabase';
 import { translate, type AppLocale } from '@/lib/i18n';
 import { logger } from '@/lib/logger';
 import { buildMonthGrid, getMonthBounds, type CalendarDayCell } from '@/lib/calendarGrid';
@@ -19,35 +19,42 @@ export type MonthCheckIn = {
   energy_level: number;
 };
 
+function emptyMonthDays(year: number, monthIndex: number): CalendarDayData[] {
+  return buildMonthGrid(year, monthIndex).map((cell) => ({
+    ...cell,
+    taskCount: 0,
+    incompleteCount: 0,
+  }));
+}
+
 export function useMonthCalendar(
   year: number,
   monthIndex: number,
   showToast: (message: string, type: 'success' | 'error' | 'info') => void,
   locale: AppLocale = 'es',
 ) {
-  const [days, setDays] = useState<CalendarDayData[]>([]);
+  const [days, setDays] = useState<CalendarDayData[]>(() => emptyMonthDays(year, monthIndex));
   const [tasksByDate, setTasksByDate] = useState<Record<string, Task[]>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const isLoadingRef = useRef(false);
+  const loadRequestIdRef = useRef(0);
 
-  const loadMonth = useCallback(async () => {
-    if (isLoadingRef.current) return;
+  const loadMonth = useCallback(async (options?: { silent?: boolean }) => {
+    if (isLoadingRef.current && !options?.silent) return;
+    const requestId = ++loadRequestIdRef.current;
     isLoadingRef.current = true;
-    setLoading(true);
+    if (!options?.silent) {
+      setLoading(true);
+    }
 
     const grid = buildMonthGrid(year, monthIndex);
     const { start, end } = getMonthBounds(year, monthIndex);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCachedAuthUser();
       if (!user) {
-        setDays(
-          grid.map((cell) => ({
-            ...cell,
-            taskCount: 0,
-            incompleteCount: 0,
-          })),
-        );
+        if (requestId !== loadRequestIdRef.current) return;
+        setDays(emptyMonthDays(year, monthIndex));
         setTasksByDate({});
         showToast(translate(locale, 'hooks.weekSignIn'), 'info');
         return;
@@ -100,6 +107,8 @@ export function useMonthCalendar(
         byDate[dateKey].push({ ...task, scheduled_date: dateKey });
       }
 
+      if (requestId !== loadRequestIdRef.current) return;
+
       setTasksByDate(byDate);
       setDays(
         grid.map((cell) => {
@@ -115,21 +124,39 @@ export function useMonthCalendar(
         }),
       );
     } catch (error) {
+      if (requestId !== loadRequestIdRef.current) return;
       logger.error('Error cargando calendario:', error);
       showToast(getErrorMessage(error, locale), 'error');
-      setDays(
-        grid.map((cell) => ({
-          ...cell,
-          taskCount: 0,
-          incompleteCount: 0,
-        })),
-      );
+      setDays(emptyMonthDays(year, monthIndex));
       setTasksByDate({});
     } finally {
-      setLoading(false);
-      isLoadingRef.current = false;
+      if (requestId === loadRequestIdRef.current) {
+        setLoading(false);
+        isLoadingRef.current = false;
+      }
     }
   }, [year, monthIndex, locale, showToast]);
 
-  return { days, tasksByDate, loading, loadMonth };
+  const appendTaskToDate = useCallback((dateStr: string, task: Task) => {
+    loadRequestIdRef.current += 1;
+    isLoadingRef.current = false;
+    setLoading(false);
+    setTasksByDate((prev) => {
+      const existing = prev[dateStr] ?? [];
+      if (existing.some((entry) => entry.id === task.id)) return prev;
+      return { ...prev, [dateStr]: [...existing, task] };
+    });
+    setDays((prev) =>
+      prev.map((day) => {
+        if (day.dateStr !== dateStr) return day;
+        return {
+          ...day,
+          taskCount: day.taskCount + 1,
+          incompleteCount: task.is_completed ? day.incompleteCount : day.incompleteCount + 1,
+        };
+      }),
+    );
+  }, []);
+
+  return { days, tasksByDate, loading, loadMonth, appendTaskToDate };
 }

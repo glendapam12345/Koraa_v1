@@ -1,13 +1,14 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, useCallback, type ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { openVaciarCapture } from '@/lib/vaciarNavigation';
+import { openTipsCategory } from '@/lib/tipsNavigation';
 import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
 import { THEME } from '@/constants/theme';
 import type { FocusProgressStats } from '@/lib/focusProgressStats';
 import { HoyFocusTaskRow } from '@/components/hoy/HoyFocusTaskRow';
 import { HoyPrimaryFocusCard } from '@/components/hoy/HoyPrimaryFocusCard';
 import { HoyFeelHero } from '@/components/hoy/HoyFeelHero';
-import { HoyBreathNudge } from '@/components/hoy/HoyBreathNudge';
 import { HoyNightCompanionCard } from '@/components/hoy/HoyNightCompanionCard';
 import { HoyCrisisBanner } from '@/components/hoy/HoyCrisisBanner';
 import { HoyLitePeekCard } from '@/components/hoy/HoyLitePeekCard';
@@ -15,18 +16,21 @@ import { HoyDayCapacitySummary } from '@/components/hoy/HoyDayCapacitySummary';
 import { HoyAfternoonNudge } from '@/components/hoy/HoyAfternoonNudge';
 import { HoyPlanExpandableRow } from '@/components/hoy/HoyPlanExpandableRow';
 import { HoyFocusedProjectStrip } from '@/components/hoy/HoyFocusedProjectStrip';
+import { HoyFirstDayClose } from '@/components/hoy/HoyFirstDayClose';
 import { CalmCard } from '@/components/ui/calm/CalmCard';
-import { getEmotionEmoji } from '@/lib/emotionEmoji';
-import { isLateNight } from '@/lib/timeOfDayContext';
 import { CARE_MODE_MAX_FOCUS_STEPS, getCareModeTaskCounts } from '@/lib/hoyCareMode';
 import { HOY_DEFAULT_FOCUS_LIMIT } from '@/lib/hoyFocusTasks';
 import { useI18n } from '@/contexts/I18nContext';
+import { useEllieMiddayPrompt } from '@/hooks/useEllieMiddayPrompt';
 import type { Task } from '@/components/tasks/TaskCard';
 import type { AppLocale } from '@/lib/i18n';
 import type { FocusedProjectInfo } from '@/hooks/useFocusedProject';
 import type { ProjectProgressMap } from '@/hooks/useHoyFocusTaskMeta';
 import type { TaskPlanningMeta } from '@/lib/taskPlanningMeta';
 import type { DayCapacitySnapshot } from '@/lib/hoy/dayCapacity';
+import type { FirstDayCloseCue } from '@/lib/firstDayClose';
+import { shouldHideHoyPlan } from '@/lib/hoyEllieDailyState';
+import type { WhatChangedReason } from '@/lib/lifeAreas/types';
 import {
   formatFocusTaskDuration,
   getFocusTaskEstimatedMinutes,
@@ -74,11 +78,19 @@ type HoyFocusPanelProps = {
   onClearFocusedProject?: () => void;
   lifeAreasConfig?: UserLifeAreasConfig;
   dayCapacity?: DayCapacitySnapshot | null;
-  onAdjustDay?: () => void;
+  onAdjustDay?: (reason?: WhatChangedReason) => void;
   showAfternoonNudge?: boolean;
   hideRhythmStrip?: boolean;
   /** Día 1: resalta un solo micro-paso sin presión. */
   firstSessionMicroStep?: boolean;
+  /** Día 0: cita suave para mañana (valor + motivo para volver). */
+  firstDayClose?: FirstDayCloseCue | null;
+  /** Si saltó recordatorios, puede activar la cita de mañana desde Hoy. */
+  onEnableTomorrowReminder?: () => void;
+  userId?: string;
+  moodUpdated?: boolean;
+  onMoodReplan?: () => void;
+  onMoodKeep?: () => void;
 };
 
 /**
@@ -86,10 +98,13 @@ type HoyFocusPanelProps = {
  */
 export function HoyFocusPanel({
   locale,
+  displayName,
   emotionLabel,
   energyLevel,
   todayMood,
-  priorityStats,
+  time: _time,
+  focusLevel = '',
+  priorityStats: _priorityStats,
   focusTasks,
   totalPending,
   planningMeta,
@@ -112,13 +127,60 @@ export function HoyFocusPanel({
   onAdjustDay,
   showAfternoonNudge = false,
   firstSessionMicroStep = false,
+  firstDayClose = null,
+  onEnableTomorrowReminder,
   coachSuggestion,
+  userId,
+  moodUpdated = false,
+  onMoodReplan,
+  onMoodKeep,
 }: HoyFocusPanelProps) {
   const { t } = useI18n();
+  const router = useRouter();
   const [waitingExpanded, setWaitingExpanded] = useState(false);
-  const coachLine = coachSuggestion.trim();
+  const hasCheckIn = Boolean(todayMood);
+  const hasTasks = focusTasks.some((task) => !task.is_completed);
+  const allFocusDone =
+    _priorityStats.total > 0 && _priorityStats.done >= _priorityStats.total;
+  const {
+    dailyState,
+    chooseOkay: chooseMiddayOkay,
+    chooseDayChanged: chooseMiddayDayChanged,
+    confirmDayChanged,
+    chooseMind: chooseMiddayMind,
+    acceptAdapt,
+    closePlan,
+    closeDay,
+    dismiss,
+    chooseNightUrgent,
+    chooseNightNotUrgent,
+    onHoyFocus,
+    planCloseAccepted,
+    step: middayStep,
+  } = useEllieMiddayPrompt(
+    userId,
+    hasCheckIn && !crisisMode,
+    hasTasks,
+    allFocusDone,
+    moodUpdated,
+  );
+  useFocusEffect(
+    useCallback(() => {
+      onHoyFocus();
+    }, [onHoyFocus]),
+  );
+  const hideTodayPlan = shouldHideHoyPlan(dailyState, middayStep);
+  const hideCaptureEmptyCard = hideTodayPlan;
+  const showFirstDayClose =
+    Boolean(firstDayClose) &&
+    !crisisMode &&
+    !(dailyState === 'plan_done' && !planCloseAccepted);
+  const coachLine = !hasCheckIn
+    ? ''
+    : firstSessionMicroStep
+      ? t('hoy.firstDayValueCoach')
+      : coachSuggestion.trim();
 
-  const emotionEmoji = getEmotionEmoji(todayMood);
   const incompleteFocusTasks = useMemo(() => {
     const source = orderedFocusTasks ?? focusTasks.filter((task) => !task.is_completed);
     return source.filter((task) => !task.is_completed);
@@ -137,8 +199,6 @@ export function HoyFocusPanel({
   }, [crisisMode, focusTasks, orderedFocusTasks]);
 
   const nonFocusPending = Math.max(0, totalPending - incompleteFocusTasks.length);
-  const allFocusDone =
-    priorityStats.total > 0 && priorityStats.done >= priorityStats.total;
 
   const primaryTask = displayFocusTasks[0] ?? null;
 
@@ -146,6 +206,7 @@ export function HoyFocusPanel({
     <TouchableOpacity
       style={styles.addTasksBtn}
       onPress={() => openVaciarCapture({ source: 'hoy' })}
+      delayPressIn={0}
       activeOpacity={0.85}
       accessibilityRole="button"
       accessibilityLabel={t('hoy.planAddTasksCta')}
@@ -163,8 +224,6 @@ export function HoyFocusPanel({
     }
     openRecheckCheckIn('hoy_focus');
   };
-
-  const hasCheckIn = Boolean(todayMood);
 
   const careCounts = crisisMode
     ? getCareModeTaskCounts(incompleteFocusTasks.length, nonFocusPending)
@@ -239,21 +298,86 @@ export function HoyFocusPanel({
     ? t('hoy.planWaitingSubOpen')
     : t('hoy.planWaitingSub', { count: restLinkCount });
 
+  const showCoach = false;
+  const day0Loop = Boolean(firstDayClose);
   const feelHero = !crisisMode ? (
     <HoyFeelHero
       hasCheckIn={hasCheckIn}
-      emotionEmoji={emotionEmoji}
+      dailyState={dailyState}
+      hasTasks={hasTasks}
+      hasNightLeftovers={incompleteFocusTasks.length > 0}
       emotionLabel={emotionLabel}
+      emotionKey={todayMood}
       energyLevel={energyLevel}
+      focusLevel={focusLevel}
+      displayName={displayName}
+      middayStep={middayStep}
       onUpdateFeel={openFeel}
+      onMiddayOkay={chooseMiddayOkay}
+      onMiddayDayChanged={() => {
+        chooseMiddayDayChanged();
+        openFeel();
+      }}
+      onMiddayChangedConfirm={(reason) => {
+        confirmDayChanged(() => onAdjustDay?.(reason));
+      }}
+      onMiddayMind={() => {
+        chooseMiddayMind(() => openVaciarCapture({ source: 'hoy' }));
+      }}
+      onReturnAccept={dismiss}
+      onReturnEdit={() => {
+        dismiss();
+        onAdjustDay?.();
+      }}
+      onAdaptLooksGood={acceptAdapt}
+      onAdaptEdit={() => {
+        acceptAdapt();
+        onAdjustDay?.();
+      }}
+      onFreeRest={() => {
+        acceptAdapt();
+        openTipsCategory(router, 'rest', {
+          emotion: todayMood,
+          energyLevel,
+        });
+      }}
+      onFreeEmpty={() => {
+        acceptAdapt();
+        openVaciarCapture({ source: 'hoy' });
+      }}
+      onFreeExplore={() => {
+        acceptAdapt();
+        openTipsCategory(router, 'mindset', {
+          emotion: todayMood,
+          energyLevel,
+        });
+      }}
+      planCloseAccepted={planCloseAccepted}
+      onPlanDoneEmpty={() => {
+        openVaciarCapture({ source: 'hoy' });
+      }}
+      onPlanDoneRest={() => {
+        openTipsCategory(router, 'rest', {
+          emotion: todayMood,
+          energyLevel,
+        });
+      }}
+      onPlanDoneSeeYou={closePlan}
+      onMoodReplan={onMoodReplan}
+      onMoodKeep={onMoodKeep}
+      onNightUrgent={chooseNightUrgent}
+      onNightNotUrgent={chooseNightNotUrgent}
+      onNightDone={closeDay}
+      onNightSeeLeft={dismiss}
     />
   ) : null;
 
-  const focusBlock = allFocusDone ? (
-    <CalmCard style={styles.doneCard}>
-      <Text style={styles.doneInline}>{t('hoy.planPrioritiesSubAllDone')}</Text>
-    </CalmCard>
-  ) : primaryTask ? (
+  /** Sin check-in: solo Ellie. Tareas vive en la tab; nada de plan / 1→2→3 / empty card. */
+  if (!hasCheckIn && !crisisMode) {
+    return <View style={styles.root}>{feelHero}</View>;
+  }
+
+  const focusBlock = primaryTask ? (
     <HoyPrimaryFocusCard
       content={primaryTask.content}
       completed={primaryTask.is_completed}
@@ -269,18 +393,8 @@ export function HoyFocusPanel({
       </Text>
       <Text style={styles.focusedEmptyBody}>{t('hoy.focusedProjectEmptyBody')}</Text>
     </CalmCard>
-  ) : (
+  ) : hideCaptureEmptyCard ? null : (
     <CalmCard style={styles.doneCard}>
-      <Text style={styles.emptyTitle}>
-        {firstSessionMicroStep || compactLayout
-          ? t('hoy.firstSessionEmptyTitle')
-          : t('hoy.focusEmptyTitle')}
-      </Text>
-      <Text style={styles.emptyBody}>
-        {firstSessionMicroStep || compactLayout
-          ? t('hoy.firstSessionEmptyBody')
-          : t('hoy.focusEmptyBody')}
-      </Text>
       {addTasksButton}
     </CalmCard>
   );
@@ -298,12 +412,12 @@ export function HoyFocusPanel({
       {!compactLayout ? (
         <>
           {feelHero}
-          {coachLine ? (
+          {showCoach ? (
             <Text style={styles.coachLine} accessibilityRole="text">
               {coachLine}
             </Text>
           ) : null}
-          {isLateNight() ? (
+          {dailyState === 'day_closed' ? (
             <HoyNightCompanionCard todayMood={todayMood} energyLevel={energyLevel} />
           ) : null}
 
@@ -314,23 +428,30 @@ export function HoyFocusPanel({
             />
           ) : null}
 
-          {(hasCheckIn && dayCapacity?.isOverloaded) ||
-          (showAfternoonNudge && !dayCapacity?.isOverloaded) ? (
-            <View style={styles.capacityCluster}>
-              {hasCheckIn && dayCapacity?.isOverloaded ? (
-                <HoyDayCapacitySummary
-                  capacity={dayCapacity}
-                  energyLevel={energyLevel}
-                  onAdjustDay={onAdjustDay}
-                />
-              ) : null}
+          {!day0Loop && hasCheckIn && dayCapacity?.isOverloaded ? (
+            <HoyDayCapacitySummary
+              capacity={dayCapacity}
+              energyLevel={energyLevel}
+              onAdjustDay={onAdjustDay}
+            />
+          ) : null}
+
+          {!hideTodayPlan ? (
+            <View style={styles.planCluster}>
               {showAfternoonNudge && !dayCapacity?.isOverloaded ? <HoyAfternoonNudge /> : null}
+              {focusBlock}
             </View>
           ) : null}
 
-          {focusBlock}
+          {showFirstDayClose && firstDayClose ? (
+            <HoyFirstDayClose
+              cue={firstDayClose}
+              allDone={allFocusDone}
+              onEnableReminder={onEnableTomorrowReminder}
+            />
+          ) : null}
 
-          {restLinkCount > 0 ? (
+          {!hideTodayPlan && restLinkCount > 0 ? (
             <CalmCard variant="soft" style={styles.waitingCard}>
               <HoyPlanExpandableRow
                 variant="muted"
@@ -346,37 +467,30 @@ export function HoyFocusPanel({
             </CalmCard>
           ) : null}
 
-          {!crisisMode && primaryTask ? (
+          {!day0Loop && !crisisMode && !hideTodayPlan && primaryTask ? (
             <TouchableOpacity
-              style={styles.addTasksSoft}
+              style={styles.addTasksBtn}
               onPress={() => openVaciarCapture({ source: 'hoy' })}
               activeOpacity={0.85}
               accessibilityRole="button"
               accessibilityLabel={t('hoy.planAddTasksCta')}
+              accessibilityHint={t('hoy.planAddTasksHint')}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.addTasksSoftLabel}>{t('hoy.planAddTasksCta')}</Text>
+              <Text style={styles.addTasksLabel}>{t('hoy.planAddTasksCta')}</Text>
             </TouchableOpacity>
-          ) : null}
-
-          {!crisisMode && hasCheckIn && energyLevel > 0 && energyLevel <= 2 ? (
-            <HoyBreathNudge />
           ) : null}
         </>
       ) : (
         <>
           {feelHero}
-          {coachLine ? (
+          {showCoach ? (
             <Text style={styles.coachLine} accessibilityRole="text">
               {coachLine}
             </Text>
           ) : null}
 
-          {allFocusDone ? (
-            <CalmCard style={styles.focusCard}>
-              <Text style={styles.doneInline}>{t('hoy.planPrioritiesSubAllDone')}</Text>
-            </CalmCard>
-          ) : primaryTask ? (
+          {!hideTodayPlan && primaryTask ? (
             <HoyPrimaryFocusCard
               content={primaryTask.content}
               completed={primaryTask.is_completed}
@@ -385,19 +499,39 @@ export function HoyFocusPanel({
               onToggleComplete={() => onToggleTask(primaryTask.id)}
               onOpenDetails={() => onOpenTask(primaryTask)}
             />
-          ) : (
+          ) : !hideTodayPlan && hideCaptureEmptyCard ? null : !hideTodayPlan ? (
             <CalmCard style={styles.focusCard}>
-              <View style={styles.emptyBlock}>
-                <Text style={styles.emptyTitle}>{t('hoy.firstSessionEmptyTitle')}</Text>
-                <Text style={styles.emptyBody}>{t('hoy.firstSessionEmptyBody')}</Text>
-                {addTasksButton}
-              </View>
+              {addTasksButton}
             </CalmCard>
-          )}
+          ) : null}
 
-          {!crisisMode && primaryTask ? addTasksButton : null}
+          {!day0Loop && !crisisMode && !hideTodayPlan && primaryTask ? addTasksButton : null}
 
-          {onShowFullView && onRestExpandedChange ? (
+          {showFirstDayClose && firstDayClose ? (
+            <HoyFirstDayClose
+              cue={firstDayClose}
+              allDone={allFocusDone}
+              onEnableReminder={onEnableTomorrowReminder}
+            />
+          ) : null}
+
+          {!hideTodayPlan && restLinkCount > 0 ? (
+            <CalmCard variant="soft" style={styles.waitingCard}>
+              <HoyPlanExpandableRow
+                variant="muted"
+                compact
+                title={t('hoy.planWaitingTitle')}
+                subtitle={waitingSubtitle}
+                expanded={waitingExpanded}
+                onToggle={toggleWaiting}
+                accessibilityLabel={t('hoy.planWaitingA11y', { count: restLinkCount })}
+              >
+                {waitingSlot}
+              </HoyPlanExpandableRow>
+            </CalmCard>
+          ) : null}
+
+          {!day0Loop && onShowFullView && onRestExpandedChange ? (
             <HoyLitePeekCard
               restCount={nonFocusPending}
               onShowMoreForToday={() => onRestExpandedChange(true)}
@@ -412,10 +546,10 @@ export function HoyFocusPanel({
 
 const styles = StyleSheet.create({
   root: {
-    gap: THEME.layout.sectionGap,
+    gap: THEME.layout.sectionGapCompact,
   },
-  capacityCluster: {
-    gap: THEME.spacing.sm,
+  planCluster: {
+    gap: THEME.spacing.xs,
   },
   coachLine: {
     ...THEME.typography.caption,
@@ -472,20 +606,6 @@ const styles = StyleSheet.create({
   },
   taskList: {
     gap: 0,
-  },
-  emptyBlock: {
-    gap: THEME.spacing.sm,
-    paddingVertical: THEME.spacing.sm,
-  },
-  emptyBody: {
-    ...THEME.typography.body,
-    color: THEME.colors.text.secondary,
-    lineHeight: 22,
-  },
-  emptyTitle: {
-    ...THEME.typography.h3,
-    fontFamily: THEME.fonts.heading.bold,
-    color: THEME.colors.text.main,
   },
   doneInline: {
     ...THEME.typography.body,

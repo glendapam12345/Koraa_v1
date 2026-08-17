@@ -104,6 +104,8 @@ export function TaskEditModal({
             placeholderTextColor={THEME.colors.text.secondary}
             multiline
             autoFocus
+            autoCorrect={false}
+            spellCheck={false}
             accessibilityLabel={t('components.editTaskContentA11y')}
             accessibilityHint={t('components.editTaskContentHint')}
           />

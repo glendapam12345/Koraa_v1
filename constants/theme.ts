@@ -166,6 +166,8 @@ export const THEME = {
       balanceCard: 'rgba(255, 255, 255, 0.14)',
       /** Richer lilac → blush (vision mood cards, still dark-text friendly) */
       moodCard: ['#E4D4F8', '#F8DCE8'] as const,
+      /** Streak hero — enough depth for white text */
+      streakHero: ['#6C5CE7', '#9B59B6'] as const,
       energyCard: ['#DCE8FB', '#EDE4F8'] as const,
       symptomsCard: ['#F6E0EC', '#EDE4F8'] as const,
     },

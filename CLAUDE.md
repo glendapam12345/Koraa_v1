@@ -62,6 +62,8 @@ Koraa is a mobile-first **emotional wellness** app with gentle task support — 
 
 **Voz anti-presión (copy):** Preferir *pasos sugeridos*, *qué importa hoy*, *suficiente para hoy*; evitar *prioridades*, *focos*, *productividad* en UI. Guía completa: [2026-06-05_anti_pressure_ux_redesign.md](development_guidelines/delivered/2026-06-05_anti_pressure_ux_redesign.md).
 
+**Ellie (compañera):** como el búho de Duolingo pero calmada — presencia corta, sin presión. Personalidad oficial: [`lib/elliePersonality.ts`](lib/elliePersonality.ts) + [2026-08-14_ellie_personality_companion.md](development_guidelines/running/2026-08-14_ellie_personality_companion.md).
+
 ### Key Directories
 
 - `app/` - Expo Router file-based routing. Each file becomes a route. Groups in parentheses `(tabs)` create layout groups

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { THEME } from '@/constants/theme';
+import { isExpoGoClient } from '@/lib/subscriptionEnvironment';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -20,6 +21,9 @@ interface ConfettiPieceData {
 }
 
 export function ConfettiCelebration() {
+  if (isExpoGoClient()) {
+    return null;
+  }
   // Crear piezas de confetti
   const confettiPieces: ConfettiPieceData[] = Array.from({ length: 30 }, (_, i) => ({
     id: i,

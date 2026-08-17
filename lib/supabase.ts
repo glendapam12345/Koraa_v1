@@ -1,8 +1,5 @@
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
-import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { type AppLocale, translate } from '@/lib/i18n';
 import { translateError } from '@/lib/errorMessages';
 import {
@@ -10,6 +7,10 @@ import {
   isSupabaseConfiguredFromConfig,
   resolveSupabaseConfig,
 } from '@/lib/supabaseConfig';
+import { peekCachedAuthUser, setCachedAuthUser } from '@/lib/cachedAuthUser';
+import { authSessionStorage } from '@/lib/authSessionStorage';
+
+export { setCachedAuthUser, resetCachedAuthUser } from '@/lib/cachedAuthUser';
 
 const { url: supabaseUrl, anonKey: supabaseAnonKey, source: configSource, host: configHost } =
   resolveSupabaseConfig();
@@ -47,68 +48,9 @@ if (!isSupabaseConfigured) {
 const resolvedUrl = supabaseUrl || 'https://placeholder.supabase.co';
 const resolvedKey = supabaseAnonKey || 'placeholder-anon-key';
 
-/** Web: localStorage. Native: SecureStore (fallback a AsyncStorage si falla lectura legacy). */
-const ExpoSecureStoreAdapter = {
-  getItem: async (key: string): Promise<string | null> => {
-    if (Platform.OS === 'web') {
-      try {
-        return localStorage.getItem(key);
-      } catch {
-        return null;
-      }
-    }
-    try {
-      const v = await SecureStore.getItemAsync(key);
-      if (v != null) return v;
-    } catch {
-      /* ignore */
-    }
-    try {
-      return await AsyncStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  },
-  setItem: async (key: string, value: string): Promise<void> => {
-    if (Platform.OS === 'web') {
-      try {
-        localStorage.setItem(key, value);
-      } catch {
-        /* ignore */
-      }
-      return;
-    }
-    try {
-      await SecureStore.setItemAsync(key, value);
-    } catch {
-      await AsyncStorage.setItem(key, value);
-    }
-  },
-  removeItem: async (key: string): Promise<void> => {
-    if (Platform.OS === 'web') {
-      try {
-        localStorage.removeItem(key);
-      } catch {
-        /* ignore */
-      }
-      return;
-    }
-    try {
-      await SecureStore.deleteItemAsync(key);
-    } catch {
-      /* ignore */
-    }
-    try {
-      await AsyncStorage.removeItem(key);
-    } catch {
-      /* ignore */
-    }
-  },
-};
-
 export const supabase = createClient(resolvedUrl, resolvedKey, {
   auth: {
-    storage: ExpoSecureStoreAdapter,
+    storage: authSessionStorage,
     storageKey: 'koraa.supabase.auth',
     autoRefreshToken: true,
     persistSession: true,
@@ -121,6 +63,24 @@ export type SupabaseSession = Awaited<
   ReturnType<typeof supabase.auth.getSession>
 >['data']['session'];
 export type SupabaseUser = NonNullable<SupabaseSession>['user'];
+
+/**
+ * Usuario de la sesión local (sin round-trip al Auth server).
+ * `getUser()` valida en red y congela la UI en Expo Go / RN.
+ * Prefers the in-memory user from AuthContext so saves skip SecureStore.
+ */
+export async function getCachedAuthUser(): Promise<SupabaseUser | null> {
+  const memoryUser = peekCachedAuthUser();
+  if (memoryUser !== undefined) {
+    return memoryUser as SupabaseUser;
+  }
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  setCachedAuthUser(user);
+  return user;
+}
 
 /** Comprueba si el teléfono puede llegar a Supabase (misma red que el login). */
 export async function canReachSupabase(): Promise<{ ok: boolean; detail?: string }> {

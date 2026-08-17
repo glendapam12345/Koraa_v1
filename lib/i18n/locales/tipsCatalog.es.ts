@@ -5,7 +5,7 @@ import type { TipAction } from '@/lib/tipActions';
 export type TipOptionalApp = Extract<TipAction, 'spotify' | 'apple_music'>;
 
 /** CTAs que se quedan dentro de Koraa. */
-export type TipInAppAction = Extract<TipAction, 'hoy' | 'vaciar' | 'focus_session'>;
+export type TipInAppAction = Extract<TipAction, 'hoy' | 'vaciar' | 'focus_session' | 'breath'>;
 
 export type CatalogTipEntry = {
   id: string;
@@ -60,13 +60,14 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     id: 'mind-3',
     category: 'mindset',
     title: 'Medita o respira',
-    body: 'Tu cuerpo entiende el ritmo antes que tu mente. Cuatro respiraciones ya cuentan.',
+    body: 'Tu cuerpo entiende el ritmo antes que tu mente. Tres respiraciones ya cuentan.',
     emoji: '🌬️',
     howSteps: [
       'Siéntate o quédate quieta donde estés.',
-      'Inhala 4, sostén 2, exhala 6 — cuatro veces.',
+      'Inhala, aguanta, suelta — tres veces.',
       'Nota un lugar del cuerpo un poco más suave al terminar.',
     ],
+    action: 'breath',
     emotions: ['ansiosa', 'agotada', 'abrumada'],
   },
   {
@@ -265,7 +266,7 @@ export const TIPS_CATALOG_ES: CatalogTipEntry[] = [
     id: 'act-3',
     category: 'action',
     title: 'Cinco minutos contigo',
-    body: 'Cinco minutos en una sola cosa, si te apetece. Después puedes parar, sin culpa.',
+    body: 'Dale cinco minutos a una sola cosa. Al terminar, puedes parar.',
     emoji: '⏱️',
     howSteps: [
       'Elige una sola cosa.',

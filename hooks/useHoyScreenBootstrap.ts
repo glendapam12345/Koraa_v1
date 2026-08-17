@@ -22,7 +22,7 @@ type UseHoyScreenBootstrapOptions = {
   showToast: ToastFn;
   openRecheck?: string;
   recheckSource?: string;
-  loadTasks: () => void | Promise<void>;
+  loadTasks: (options?: { silent?: boolean }) => void | Promise<void>;
   loadTodayCheckIn: () => void | Promise<void>;
   loadStreak: () => void | Promise<void>;
   clearToggleTimers: () => void;
@@ -84,7 +84,7 @@ export function useHoyScreenBootstrap({
   useEffect(() => {
     return subscribeCheckInRefresh(() => {
       void loadTodayCheckIn();
-      void loadTasks();
+      void loadTasks({ silent: true });
     });
   }, [loadTodayCheckIn, loadTasks]);
 
@@ -115,7 +115,7 @@ export function useHoyScreenBootstrap({
   }, [loadStreak, loadTodayCheckIn, showToast, t, setShowConfetti, confettiTimeoutRef]);
 
   useEffect(() => {
-    void loadTasks();
+    void loadTasks({ silent: true });
     void loadTodayCheckIn();
     void loadStreak();
     void loadProfileName();

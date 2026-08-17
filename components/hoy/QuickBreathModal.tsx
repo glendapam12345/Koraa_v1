@@ -20,23 +20,26 @@ type QuickBreathModalProps = {
   onClose: () => void;
 };
 
+type BreathPhase = 'inhale' | 'hold' | 'exhale';
+
 const INHALE_MS = 3000;
+const HOLD_MS = 2000;
 const EXHALE_MS = 3000;
 const TOTAL_CYCLES = 3;
 const CIRCLE_SIZE = 132;
 
 /**
- * Respiro rápido — distinto de meditación: tarjeta compacta, sin aguantar,
- * círculo que crece/decrece, ~20 s. Meditar usa el ritual completo en pantalla.
+ * Respiro corto: inhala → aguanta → suelta, tres veces.
  */
 export function QuickBreathModal({ visible, onComplete, onClose }: QuickBreathModalProps) {
   const { t } = useI18n();
-  const [phase, setPhase] = useState<'inhale' | 'exhale'>('inhale');
+  const [phase, setPhase] = useState<BreathPhase>('inhale');
   const [cycle, setCycle] = useState(0);
   const [running, setRunning] = useState(false);
   const scaleAnim = useRef(new Animated.Value(0.72)).current;
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pulseRef = useRef<Animated.CompositeAnimation | null>(null);
+  const sessionRef = useRef(0);
 
   const clearTimers = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -46,6 +49,7 @@ export function QuickBreathModal({ visible, onComplete, onClose }: QuickBreathMo
   }, []);
 
   const resetState = useCallback(() => {
+    sessionRef.current += 1;
     clearTimers();
     setPhase('inhale');
     setCycle(0);
@@ -59,6 +63,8 @@ export function QuickBreathModal({ visible, onComplete, onClose }: QuickBreathMo
     }
   }, [visible, resetState]);
 
+  const isCurrentSession = useCallback((session: number) => session === sessionRef.current, []);
+
   const animateTo = useCallback(
     (toValue: number, duration: number) =>
       new Promise<void>((resolve) => {
@@ -68,11 +74,17 @@ export function QuickBreathModal({ visible, onComplete, onClose }: QuickBreathMo
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         });
-        pulseRef.current.start(({ finished }) => {
-          if (finished) resolve();
-        });
+        pulseRef.current.start(() => resolve());
       }),
     [scaleAnim],
+  );
+
+  const wait = useCallback(
+    (ms: number) =>
+      new Promise<void>((resolve) => {
+        timeoutRef.current = setTimeout(resolve, ms);
+      }),
+    [],
   );
 
   const haptic = useCallback((style: Haptics.ImpactFeedbackStyle) => {
@@ -85,7 +97,8 @@ export function QuickBreathModal({ visible, onComplete, onClose }: QuickBreathMo
   }, []);
 
   const runCycle = useCallback(
-    async (index: number) => {
+    async (index: number, session: number) => {
+      if (!isCurrentSession(session)) return;
       if (index >= TOTAL_CYCLES) {
         if (Platform.OS !== 'web') {
           try {
@@ -99,29 +112,41 @@ export function QuickBreathModal({ visible, onComplete, onClose }: QuickBreathMo
       }
 
       setCycle(index);
+
       setPhase('inhale');
       haptic(Haptics.ImpactFeedbackStyle.Light);
       await animateTo(1, INHALE_MS);
+      if (!isCurrentSession(session)) return;
+
+      setPhase('hold');
+      haptic(Haptics.ImpactFeedbackStyle.Medium);
+      await wait(HOLD_MS);
+      if (!isCurrentSession(session)) return;
 
       setPhase('exhale');
       haptic(Haptics.ImpactFeedbackStyle.Light);
       await animateTo(0.72, EXHALE_MS);
+      if (!isCurrentSession(session)) return;
 
-      void runCycle(index + 1);
+      void runCycle(index + 1, session);
     },
-    [animateTo, haptic, onComplete],
+    [animateTo, haptic, isCurrentSession, onComplete, wait],
   );
 
   const start = useCallback(() => {
     if (running) return;
     setRunning(true);
-    void runCycle(0);
+    void runCycle(0, sessionRef.current);
   }, [runCycle, running]);
 
   useEffect(() => () => clearTimers(), [clearTimers]);
 
   const phaseLabel =
-    phase === 'inhale' ? t('meditation.breatheQuickInhale') : t('meditation.breatheQuickExhale');
+    phase === 'inhale'
+      ? t('meditation.breatheQuickInhale')
+      : phase === 'hold'
+        ? t('meditation.breatheQuickHold')
+        : t('meditation.breatheQuickExhale');
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -169,7 +194,13 @@ export function QuickBreathModal({ visible, onComplete, onClose }: QuickBreathMo
           ) : (
             <>
               <Text style={styles.hint}>{t('meditation.breatheQuickHint')}</Text>
-              <TouchableOpacity style={styles.startBtn} onPress={start} activeOpacity={0.85}>
+              <TouchableOpacity
+                style={styles.startBtn}
+                onPress={start}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={t('meditation.breatheQuickStart')}
+              >
                 <Text style={styles.startBtnText}>{t('meditation.breatheQuickStart')}</Text>
               </TouchableOpacity>
             </>
