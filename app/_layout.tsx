@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Linking, View, StyleSheet, Platform } from 'react-native';
+import { LogBox, Linking, View, StyleSheet, Platform } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
 import { supabase } from '@/lib/supabase';
+import { replaceToHoyTab } from '@/lib/tabNavigation';
 import {
   DMSans_500Medium,
   DMSans_700Bold,
@@ -25,8 +26,18 @@ import { RecheckCheckInProvider } from '@/contexts/RecheckCheckInContext';
 import { initializeRevenueCat } from '@/lib/revenuecat';
 import { EllieBootSplash } from '@/components/branding/EllieBootSplash';
 import { TabScreenErrorBoundary } from '@/components/TabScreenErrorBoundary';
+import { preloadEllieMoodAssets } from '@/lib/ellieMoodAssets';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+if (__DEV__) {
+  LogBox.ignoreLogs([
+    'Reduced motion setting is enabled',
+    'expo-notifications',
+    'Expo Go app detected. Using RevenueCat',
+    '[Reanimated] Reduced motion',
+  ]);
+}
 
 export default function RootLayout() {
   const processedUrlRef = useRef<string | null>(null);
@@ -40,6 +51,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!(fontsLoaded || fontError)) return;
+    void preloadEllieMoodAssets();
     // Misma pantalla rosa: ocultar nativo al instante; boot solo un instante con blink.
     void SplashScreen.hideAsync().catch(() => {});
     const t = setTimeout(() => setShowBootSplash(false), 900);
@@ -100,7 +112,7 @@ export default function RootLayout() {
         if (isRecoveryLink) {
           router.replace('/reset-password');
         } else {
-          router.replace('/(tabs)');
+          replaceToHoyTab();
         }
       } finally {
         isApplyingSessionRef.current = false;

@@ -6,6 +6,8 @@ import {
   isTaskScheduledForToday,
   isTaskSuggestedForToday,
   isTaskWaitingForToday,
+  resolveHoyFocusLimit,
+  HOY_DEFAULT_FOCUS_LIMIT,
 } from '@/lib/hoyFocusTasks';
 import type { Task } from '@/hooks/useTasks';
 
@@ -122,5 +124,13 @@ describe('hoyFocusTasks', () => {
     const incomplete = tasks.filter((row) => !row.is_completed);
     const focus = getHoyFocusTasks(tasks, incomplete, TODAY, projectA);
     expect(focus.map((row) => row.id)).toEqual(['1']);
+  });
+
+  it('resolveHoyFocusLimit adapts to energy and emotion', () => {
+    expect(HOY_DEFAULT_FOCUS_LIMIT).toBe(3);
+    expect(resolveHoyFocusLimit(1, 'tranquila')).toBe(2);
+    expect(resolveHoyFocusLimit(3, 'tranquila')).toBe(3);
+    expect(resolveHoyFocusLimit(5, 'tranquila')).toBe(5);
+    expect(resolveHoyFocusLimit(4, 'abrumada')).toBe(2);
   });
 });

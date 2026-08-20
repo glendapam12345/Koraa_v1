@@ -1,7 +1,7 @@
 import { TIPS_CATALOG_ES } from '@/lib/i18n/locales/tipsCatalog.es';
 import { TIPS_CATALOG_EN } from '@/lib/i18n/locales/tipsCatalog.en';
+import { isInAppTipAction } from '@/lib/tipInAppActions';
 
-const IN_APP = new Set(['hoy', 'vaciar', 'focus_session']);
 const OPTIONAL_APPS = new Set(['spotify', 'apple_music']);
 
 function assertCatalog(catalog: typeof TIPS_CATALOG_ES) {
@@ -12,7 +12,7 @@ function assertCatalog(catalog: typeof TIPS_CATALOG_ES) {
     expect(tip.howSteps.length).toBeGreaterThanOrEqual(2);
     expect(tip.body.trim().length).toBeGreaterThan(0);
     if (tip.action) {
-      expect(IN_APP.has(tip.action)).toBe(true);
+      expect(isInAppTipAction(tip.action)).toBe(true);
     }
     if (tip.optionalApp) {
       expect(OPTIONAL_APPS.has(tip.optionalApp)).toBe(true);
@@ -34,6 +34,6 @@ describe('tipsCatalog in-app content', () => {
   it('only a few tips offer optional music apps', () => {
     const withApp = TIPS_CATALOG_ES.filter((t) => t.optionalApp);
     expect(withApp.length).toBeLessThanOrEqual(4);
-    expect(withApp.every((t) => !t.action || IN_APP.has(t.action))).toBe(true);
+    expect(withApp.every((t) => !t.action || isInAppTipAction(t.action))).toBe(true);
   });
 });

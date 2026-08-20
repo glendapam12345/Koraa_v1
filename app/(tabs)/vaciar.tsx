@@ -9,6 +9,8 @@ import { BrainDumpSavedSummaryScreen } from '@/components/frentes/BrainDumpSaved
 import type { BrainDumpReviewProject } from '@/lib/review/brainDumpProjects';
 import { isDraftProjectId } from '@/lib/review/brainDumpProjects';
 import type { SavedOrganizedContext } from '@/lib/review/buildBrainDumpSavedSummary';
+import { buildSavedPreviewItems } from '@/lib/review/savedSummaryPreview';
+import type { SavedCaptureTask } from '@/hooks/useVaciarBatchSave';
 import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,7 +42,6 @@ import type { CaptureHeroLiveState } from '@/components/tasks/CaptureScreenHero'
 import { fetchUserProjects } from '@/lib/projectDueDateSchema';
 import { PROJECT_COLORS } from '@/lib/projectColors';
 import type { EnrichedCaptureItem } from '@/lib/taskIntelligentEnrichment';
-import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
 import type { TaskEffort } from '@/lib/taskPerceivedEffort';
 import { applyInferredLifeAreas } from '@/lib/review/inferCaptureItemLifeArea';
 import { ensureBrainDumpPresetInConfig } from '@/lib/review/brainDumpAreaPreset';
@@ -52,7 +53,11 @@ import {
   firstSearchParam,
   isFreshCaptureRequest,
   isHoyCaptureSource,
+  takeFreshCaptureStamp,
 } from '@/lib/vaciarCaptureParams';
+import { goToHoyTab } from '@/lib/vaciarNavigation';
+import { requestHoyRefresh } from '@/lib/hoyRefreshBridge';
+import { getLocalDateString } from '@/lib/dateLocal';
 
 type CaptureFlowStep = 'input' | 'preview' | 'organized';
 
@@ -84,7 +89,7 @@ function VaciarScreen() {
     stamp?: string;
     source?: string;
   }>();
-  const fromHoy = isHoyCaptureSource(sourceParam);
+  const [fromHoy, setFromHoy] = useState(false);
   const [segment, setSegment] = useState<VaciarTabSegment>(() =>
     segmentParam === 'projects' ? 'projects' : 'capture',
   );
@@ -130,6 +135,7 @@ function VaciarScreen() {
     useCallback(() => {
       return () => {
         setCaptureReviewDragging(false);
+        setFromHoy(false);
       };
     }, []),
   );
@@ -212,16 +218,45 @@ function VaciarScreen() {
     onSaved: handleBatchSaved,
   });
 
-  const returnToHoyAfterAdd = useCallback(async (taskIds?: string[]) => {
-    if (user?.id) {
-      if (taskIds && taskIds.length > 0) {
-        await promoteTaskIdsToHoy(user.id, taskIds);
-      } else {
-        await ensureOneHoyStepFromCapture(user.id);
-      }
+  const returnToHoyAfterAdd = useCallback((taskIds?: string[]) => {
+    if (user?.id && taskIds && taskIds.length > 0) {
+      void promoteTaskIdsToHoy(user.id, taskIds);
+    } else if (user?.id) {
+      void ensureOneHoyStepFromCapture(user.id);
     }
-    router.replace('/(tabs)');
-  }, [router, user?.id]);
+    requestHoyRefresh();
+    setFromHoy(false);
+  }, [user?.id]);
+
+  const showOrganizedSummary = useCallback(
+    (
+      items: EnrichedCaptureItem[],
+      taskCount: number,
+      draftIdMap: Map<string, string>,
+      savedTasks: SavedCaptureTask[] = [],
+    ) => {
+      const affectedAreaRefs = [
+        ...new Set(
+          items
+            .map((item) => item.lifeAreaKey)
+            .filter((ref): ref is LifeAreaRef => ref != null),
+        ),
+      ];
+
+      setSavedOrganizedContext({
+        taskCount,
+        newProjectIds: [...draftIdMap.values()],
+        affectedAreaRefs,
+        previewItems: buildSavedPreviewItems(items, savedTasks),
+      });
+      setOrganizedRefreshSignal((n) => n + 1);
+      setCaptureStep('organized');
+      requestAnimationFrame(() => {
+        screenScrollRef.current?.scrollTo({ y: 0, animated: true });
+      });
+    },
+    [],
+  );
 
   const handleRelease = useCallback(async (projectsForMatch: { id: string; name: string }[] = []) => {
     if (isOrganizing || isSaving || isSavingBatch) return;
@@ -239,21 +274,31 @@ function VaciarScreen() {
     if (!user?.id) return;
 
     if (!useAdvanced) {
-      const live = buildLiveCapturePreview(taskInput, locale, projectsForMatch, {
-        lifeAreasConfig: effectiveLifeAreasConfig,
-      });
+      let live: ReturnType<typeof buildLiveCapturePreview> = null;
+      try {
+        live = buildLiveCapturePreview(taskInput, locale, projectsForMatch, {
+          lifeAreasConfig: effectiveLifeAreasConfig,
+        });
+      } catch (error) {
+        logger.error('vaciar.livePreview', error);
+      }
       if (!live || live.items.length === 0) {
         showToast(t('vaciar.releaseEmpty'), 'info');
         return;
       }
 
-      if (fromHoy) {
+      if (fromHoy && live.items.length === 1) {
         setIsOrganizing(true);
         try {
+          const today = getLocalDateString();
           const items = applyInferredLifeAreas(
             stripAutoPlanningForDiscovery(live.items),
             effectiveLifeAreasConfig,
-          );
+          ).map((item, index) => ({
+            ...item,
+            selectedDate: item.selectedDate ?? today,
+            markImportant: index === 0,
+          }));
           const batchResult = await saveBatch(items, { suppressSuccessToast: true });
           if (
             batchResult.status === 'validation_failed' ||
@@ -269,10 +314,18 @@ function VaciarScreen() {
                 }),
                 'info',
               );
+            } else if (batchResult.status === 'failed') {
+              showToast(t('errors.saveTaskFailed'), 'error');
             }
             return;
           }
-          await returnToHoyAfterAdd(batchResult.tasks.map((entry) => entry.taskId));
+          returnToHoyAfterAdd(batchResult.tasks.map((entry) => entry.taskId));
+          setTaskInput('');
+          resetTaskForm();
+          showOrganizedSummary(items, items.length, new Map(), batchResult.tasks);
+        } catch (error) {
+          logger.error('vaciar.hoyRelease', error);
+          showToast(t('errors.saveTaskFailed'), 'error');
         } finally {
           setIsOrganizing(false);
         }
@@ -296,7 +349,6 @@ function VaciarScreen() {
       );
       setSegment('capture');
       setCaptureStep('preview');
-      router.setParams({ segment: 'capture', fresh: '' });
       requestAnimationFrame(() => {
         screenScrollRef.current?.scrollTo({ y: 0, animated: true });
       });
@@ -316,7 +368,7 @@ function VaciarScreen() {
           if (refineGeneration !== previewGenerationRef.current) return;
           setPreviewProjects(projects);
 
-          const { items: refined, usedLocalFallback } = await applyAiProjectHints(
+          const { items: refined } = await applyAiProjectHints(
             live.items,
             taskInput,
             locale,
@@ -324,9 +376,6 @@ function VaciarScreen() {
             projectsForMatch,
           );
           if (refineGeneration !== previewGenerationRef.current) return;
-          if (usedLocalFallback) {
-            showToast(t('vaciarExtra.aiLocalFallback'), 'info');
-          }
           setPreviewItems((current) => {
             const stripped = stripAutoPlanningForDiscovery(refined);
             const merged = mergeCaptureReviewEdits(current, stripped);
@@ -367,7 +416,6 @@ function VaciarScreen() {
       setPreviewProjects(projects);
       setSegment('capture');
       setCaptureStep('preview');
-      router.setParams({ segment: 'capture', fresh: '' });
       requestAnimationFrame(() => {
         screenScrollRef.current?.scrollTo({ y: 0, animated: true });
       });
@@ -396,7 +444,8 @@ function VaciarScreen() {
     fromHoy,
     saveBatch,
     returnToHoyAfterAdd,
-    router,
+    resetTaskForm,
+    showOrganizedSummary,
   ]);
 
   const handleViewOrganized = useCallback(() => {
@@ -424,42 +473,6 @@ function VaciarScreen() {
       screenScrollRef.current?.scrollTo({ y: 0, animated: true });
     });
   }, []);
-
-  const showOrganizedSummary = useCallback(
-    (
-      items: EnrichedCaptureItem[],
-      taskCount: number,
-      draftIdMap: Map<string, string>,
-    ) => {
-      const affectedAreaRefs = [
-        ...new Set(
-          items
-            .map((item) => item.lifeAreaKey)
-            .filter((ref): ref is LifeAreaRef => ref != null),
-        ),
-      ];
-
-      setSavedOrganizedContext({
-        taskCount,
-        newProjectIds: [...draftIdMap.values()],
-        affectedAreaRefs,
-        previewItems: items.map((item) => ({
-          content: item.content,
-          lifeAreaKey: item.lifeAreaKey ?? null,
-          projectId: item.assignToProject ? item.selectedProjectId : null,
-          scheduledDate: item.selectedDate,
-          estimatedMinutes: item.estimatedMinutes ?? null,
-          preferredTime: item.preferredTime ?? null,
-        })),
-      });
-      setOrganizedRefreshSignal((n) => n + 1);
-      setCaptureStep('organized');
-      requestAnimationFrame(() => {
-        screenScrollRef.current?.scrollTo({ y: 0, animated: true });
-      });
-    },
-    [],
-  );
 
   const handleConfirmPreview = useCallback(
     async (payload?: {
@@ -533,6 +546,7 @@ function VaciarScreen() {
 
         items = sanitizeCaptureItemsForSave(items);
         let savedTaskIds: string[] = [];
+        let savedTasksForSummary: SavedCaptureTask[] = [];
 
         if (items.length === 1 && hasSubtasks) {
           const item = items[0];
@@ -551,7 +565,18 @@ function VaciarScreen() {
               preferredTime: item.preferredTime ?? null,
             },
           );
-          if (!saved) return;
+          if (!saved.ok) return;
+          if (saved.taskId) {
+            savedTaskIds = [saved.taskId];
+            savedTasksForSummary = [
+              {
+                captureId: item.id,
+                taskId: saved.taskId,
+                content: item.content,
+                projectId: item.assignToProject ? item.selectedProjectId : null,
+              },
+            ];
+          }
         } else {
           const batchResult = await saveBatch(items, { suppressSuccessToast: true });
           if (batchResult.status === 'validation_failed') return;
@@ -573,6 +598,7 @@ function VaciarScreen() {
 
           if (batchResult.status === 'failed' || batchResult.tasks.length === 0) return;
           savedTaskIds = batchResult.tasks.map((entry) => entry.taskId);
+          savedTasksForSummary = batchResult.tasks;
         }
 
         setHasTasks(true);
@@ -580,10 +606,12 @@ function VaciarScreen() {
         setTaskInput('');
         resetTaskForm();
         if (fromHoy) {
-          await returnToHoyAfterAdd(savedTaskIds);
-          return;
+          returnToHoyAfterAdd(savedTaskIds);
         }
-        showOrganizedSummary(items, itemsBase.length, draftIdMap);
+        showOrganizedSummary(items, itemsBase.length, draftIdMap, savedTasksForSummary);
+      } catch (error) {
+        logger.error('vaciar.confirmPreview', error);
+        showToast(t('errors.saveTaskFailed'), 'error');
       } finally {
         confirmInFlightRef.current = false;
         setIsOrganizing(false);
@@ -643,12 +671,15 @@ function VaciarScreen() {
     setSelectedCategory('otros');
     setSelectedDate(null);
     setEffortFeel(null);
+    setFromHoy(false);
   }, []);
 
   const consumedStampRef = useRef<string | null>(null);
 
   const applyFreshCapture = useCallback(() => {
+    const openedFromHoy = isHoyCaptureSource(sourceParam);
     resetCaptureFlow();
+    setFromHoy(openedFromHoy);
     setSegment('capture');
     const suggestionText = firstSearchParam(suggestion);
     if (suggestionText) setTaskInput(suggestionText);
@@ -661,11 +692,7 @@ function VaciarScreen() {
       setAssignToProject(true);
       setSelectedProjectId(projectId);
     }
-    router.setParams({
-      segment: 'capture',
-      fresh: '',
-    });
-  }, [dateParam, projectIdParam, resetCaptureFlow, router, suggestion]);
+  }, [dateParam, projectIdParam, resetCaptureFlow, sourceParam, suggestion]);
 
   const handleBackToCapture = useCallback(() => {
     resetCaptureFlow();
@@ -709,6 +736,7 @@ function VaciarScreen() {
   useEffect(() => {
     if (!isFreshCaptureRequest(freshParam)) return;
     const stamp = firstSearchParam(stampParam) || 'legacy';
+    if (!takeFreshCaptureStamp(stamp)) return;
     if (consumedStampRef.current === stamp) return;
     consumedStampRef.current = stamp;
     applyFreshCapture();
@@ -739,11 +767,14 @@ function VaciarScreen() {
   // Recargar banner y conteo de proyectos cuando la pantalla recibe foco
   useFocusEffect(
     useCallback(() => {
+      if (!isHoyCaptureSource(sourceParam)) {
+        setFromHoy(false);
+      }
       void refreshCheckInToday();
       void loadHintState();
       void loadProjectCount();
       void refreshFocusedProject();
-    }, [loadProjectCount, refreshCheckInToday, loadHintState, refreshFocusedProject]),
+    }, [loadProjectCount, refreshCheckInToday, loadHintState, refreshFocusedProject, sourceParam]),
   );
 
   const addSubtask = () => {
@@ -931,8 +962,8 @@ function VaciarScreen() {
                   hasCheckInToday={hasCheckInToday}
                   savedContext={savedOrganizedContext}
                   onViewOrganized={handleViewOrganized}
-                  onGoToHoy={() => router.replace('/(tabs)')}
-                  onGoToCheckIn={() => router.replace(CHECK_IN_ROUTE)}
+                  onGoToHoy={() => goToHoyTab()}
+                  onGoToCheckIn={() => goToHoyTab()}
                   onCaptureMore={handleCaptureMore}
                 />
               ) : null}

@@ -8,9 +8,11 @@ import {
   ScrollView,
   ActivityIndicator,
   Pressable,
+  Platform,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Heart, Info } from 'lucide-react-native';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { Calendar, ChevronLeft, Heart, Info } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
@@ -96,7 +98,14 @@ export function ReorganizeDayFlow({
   const [editingDates, setEditingDates] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [previewDate, setPreviewDate] = useState<string | null>(null);
+  const [showCalendar, setShowCalendar] = useState(false);
   const dayOptions = useMemo(() => nextDayOptions(7), []);
+  const visibleDayOptions = useMemo(() => {
+    if (previewDate && !dayOptions.includes(previewDate)) {
+      return [...dayOptions, previewDate];
+    }
+    return dayOptions;
+  }, [dayOptions, previewDate]);
   const dayPreviewItems =
     proposal && previewDate
       ? tasksOnProposedDate(proposal, assignments, previewDate, today)
@@ -107,6 +116,7 @@ export function ReorganizeDayFlow({
       setEditingDates(false);
       setSelectedTaskId(null);
       setPreviewDate(null);
+      setShowCalendar(false);
     }
   }, [step]);
 
@@ -199,6 +209,7 @@ export function ReorganizeDayFlow({
                     selectedTaskId={selectedTaskId}
                     onPressItem={(taskId) => {
                       setSelectedTaskId(taskId);
+                      setShowCalendar(false);
                       const item = [...proposal.kept, ...proposal.moved].find(
                         (entry) => entry.taskId === taskId,
                       );
@@ -214,7 +225,7 @@ export function ReorganizeDayFlow({
                         <View style={styles.dayPicker}>
                           <Text style={styles.dayPickerLabel}>{t('reorganizeDay.moveToDay')}</Text>
                           <View style={styles.dayChips}>
-                            {dayOptions.map((date) => {
+                            {visibleDayOptions.map((date) => {
                               const selected = previewDate === date;
                               return (
                                 <TouchableOpacity
@@ -223,6 +234,7 @@ export function ReorganizeDayFlow({
                                   onPress={() => {
                                     onChangeTaskDate?.(selectedTaskId, date);
                                     setPreviewDate(date);
+                                    setShowCalendar(false);
                                   }}
                                   activeOpacity={0.85}
                                   accessibilityRole="button"
@@ -240,7 +252,73 @@ export function ReorganizeDayFlow({
                                 </TouchableOpacity>
                               );
                             })}
+                            <TouchableOpacity
+                              style={[styles.dayChip, styles.calendarChip, showCalendar && styles.dayChipSelected]}
+                              onPress={() => setShowCalendar((open) => !open)}
+                              activeOpacity={0.85}
+                              accessibilityRole="button"
+                              accessibilityLabel={t('components.openCalendarA11y')}
+                              accessibilityHint={t('components.openCalendarHint')}
+                            >
+                              <Calendar
+                                size={16}
+                                color={
+                                  showCalendar
+                                    ? THEME.colors.calm.lavenderDeep
+                                    : THEME.colors.text.main
+                                }
+                              />
+                              <Text
+                                style={[
+                                  styles.dayChipLabel,
+                                  showCalendar && styles.dayChipLabelSelected,
+                                ]}
+                              >
+                                {t('reorganizeDay.openCalendarChip')}
+                              </Text>
+                            </TouchableOpacity>
                           </View>
+                          {showCalendar ? (
+                            <View style={styles.calendarPanel}>
+                              <DateTimePicker
+                                value={(() => {
+                                  const minDate = parseLocalDateString(today);
+                                  const current = previewDate
+                                    ? parseLocalDateString(previewDate)
+                                    : minDate;
+                                  return current < minDate ? minDate : current;
+                                })()}
+                                mode="date"
+                                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                                minimumDate={parseLocalDateString(today)}
+                                onChange={(event: DateTimePickerEvent, date?: Date) => {
+                                  if (event.type === 'dismissed') {
+                                    if (Platform.OS === 'android') setShowCalendar(false);
+                                    return;
+                                  }
+                                  if (!date) return;
+                                  const next = getLocalDateString(date);
+                                  onChangeTaskDate?.(selectedTaskId, next);
+                                  setPreviewDate(next);
+                                  if (Platform.OS === 'android') setShowCalendar(false);
+                                }}
+                                themeVariant="light"
+                              />
+                              {Platform.OS === 'ios' ? (
+                                <TouchableOpacity
+                                  style={styles.calendarConfirm}
+                                  onPress={() => setShowCalendar(false)}
+                                  activeOpacity={0.85}
+                                  accessibilityRole="button"
+                                  accessibilityLabel={t('components.dateConfirm')}
+                                >
+                                  <Text style={styles.calendarConfirmText}>
+                                    {t('components.dateConfirm')}
+                                  </Text>
+                                </TouchableOpacity>
+                              ) : null}
+                            </View>
+                          ) : null}
                         </View>
                       ) : null}
                       {previewDate ? (
@@ -496,6 +574,32 @@ const styles = StyleSheet.create({
   },
   dayChipLabelSelected: {
     color: THEME.colors.calm.lavenderDeep,
+  },
+  calendarChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  calendarPanel: {
+    marginTop: THEME.spacing.xs,
+    padding: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.calm.mist,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  calendarConfirm: {
+    marginTop: THEME.spacing.sm,
+    minHeight: THEME.sizes.touchTarget,
+    borderRadius: THEME.borderRadius.rounded,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.colors.calm.lavenderDeep,
+  },
+  calendarConfirmText: {
+    ...THEME.typography.body,
+    color: THEME.colors.onGradient,
+    fontFamily: THEME.fonts.heading.bold,
   },
   dayPreview: {
     padding: THEME.spacing.md,

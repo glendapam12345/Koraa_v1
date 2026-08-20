@@ -7,6 +7,7 @@
  */
 import { spawn, execSync } from 'node:child_process';
 import http from 'node:http';
+import https from 'node:https';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import localtunnel from 'localtunnel';
@@ -106,6 +107,29 @@ function waitForMetro(isExpoDead, maxMs, label = 'Metro') {
   });
 }
 
+function isCloudflaredNoise(line) {
+  return /timeout: no recent network activity|failed to accept incoming stream|datagram manager encountered|failed to serve tunnel connection|failed to run the datagram handler|Serve tunnel error|Retrying connection|control stream encountered|context canceled|stream \d+ canceled by remote|Incoming request ended abruptly|Request failed error|Tunnel connection curve preferences|Registered tunnel connection/.test(
+    line,
+  );
+}
+
+function startKeepAlive(proxyUrl) {
+  const ping = () => {
+    try {
+      const client = String(proxyUrl).startsWith('https:') ? https : http;
+      const req = client.get(`${proxyUrl}/status`, (res) => {
+        res.resume();
+      });
+      req.on('error', () => {});
+      req.setTimeout(8000, () => req.destroy());
+    } catch {
+      /* ignore */
+    }
+  };
+  ping();
+  return setInterval(ping, 25_000);
+}
+
 function startCloudflared({ quiet = false } = {}) {
   return new Promise((resolve, reject) => {
     if (!quiet) {
@@ -113,7 +137,16 @@ function startCloudflared({ quiet = false } = {}) {
     }
     const proc = spawn(
       CLOUDFLARED,
-      ['tunnel', '--url', `http://127.0.0.1:${PORT}`],
+      [
+        'tunnel',
+        '--url',
+        `http://127.0.0.1:${PORT}`,
+        '--protocol',
+        'http2',
+        '--edge-ip-version',
+        '4',
+        '--no-autoupdate',
+      ],
       { stdio: ['ignore', 'pipe', 'pipe'] },
     );
 
@@ -121,7 +154,12 @@ function startCloudflared({ quiet = false } = {}) {
     const onData = (c) => {
       const chunk = c.toString();
       buf += chunk;
-      if (!quiet) process.stderr.write(chunk);
+      if (!quiet) {
+        for (const line of chunk.split('\n')) {
+          if (!line.trim() || isCloudflaredNoise(line)) continue;
+          process.stderr.write(line.endsWith('\n') ? line : `${line}\n`);
+        }
+      }
       const url = parseCloudflaredTunnelUrl(buf);
       if (url) {
         clearTimeout(timer);
@@ -415,6 +453,8 @@ async function attachTunnelAndPrintQr({ restartMetroWithProxy = false } = {}) {
 
   printConnectionHelp({ proxyUrl, expUrl, loadingUrl, tunnelOk, bundleOk, dns });
 
+  startKeepAlive(proxyUrl);
+
   await new Promise(() => {});
 }
 
@@ -528,6 +568,7 @@ async function main() {
     else console.log('⚠️  El túnel dejó de responder.');
 
     printConnectionHelp({ proxyUrl, expUrl, loadingUrl, tunnelOk, bundleOk, dns });
+    startKeepAlive(proxyUrl);
   } catch (e) {
     if (e instanceof Error && e.message === 'TUNNEL_UNREACHABLE') {
       printHotspotFallback();

@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
+import { replaceToHoyTab } from '@/lib/tabNavigation';
 import { THEME } from '@/constants/theme';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { openPaywall } from '@/lib/paywallNavigation';
@@ -21,7 +22,7 @@ export function EmergencyKitPremiumGate({ children }: EmergencyKitPremiumGatePro
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace('/(tabs)');
+      replaceToHoyTab();
     }
   }, [isLoading, isSubscribed]);
 

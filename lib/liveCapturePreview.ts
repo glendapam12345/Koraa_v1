@@ -49,20 +49,24 @@ export function buildLiveCapturePreview(
   const trimmed = rawInput.trim();
   if (trimmed.length < 4) return null;
 
-  const parsed = parseCaptureToInboxItems(trimmed, locale);
-  if (parsed.length === 0) return null;
+  try {
+    const parsed = parseCaptureToInboxItems(trimmed, locale);
+    if (parsed.length === 0) return null;
 
-  const rows = options?.stableIds ? withStableLiveIds(parsed) : parsed;
-  const effectiveConfig = options?.lifeAreasConfig
-    ? ensureBrainDumpPresetInConfig(options.lifeAreasConfig)
-    : undefined;
-  let items = enrichCaptureItemsLocally(rows, projects);
-  items = applyInferredLifeAreas(items, effectiveConfig);
-  const areaColumns = buildLiveAreaPreviewColumns(items, locale, effectiveConfig);
+    const rows = options?.stableIds ? withStableLiveIds(parsed) : parsed;
+    const effectiveConfig = options?.lifeAreasConfig
+      ? ensureBrainDumpPresetInConfig(options.lifeAreasConfig)
+      : undefined;
+    let items = enrichCaptureItemsLocally(rows, projects);
+    items = applyInferredLifeAreas(items, effectiveConfig);
+    const areaColumns = buildLiveAreaPreviewColumns(items, locale, effectiveConfig);
 
-  return {
-    items,
-    areaColumns,
-    areaChips: areaColumns.map(({ previews: _previews, ...chip }) => chip),
-  };
+    return {
+      items,
+      areaColumns,
+      areaChips: areaColumns.map(({ previews: _previews, ...chip }) => chip),
+    };
+  } catch {
+    return null;
+  }
 }

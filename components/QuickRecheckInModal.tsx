@@ -15,10 +15,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
 import { saveDailyCheckInAndPrioritize } from '@/lib/checkInService';
+import { getCachedAuthUser } from '@/lib/supabase';
 import { getDisplayName } from '@/lib/displayName';
 import { publishCheckInCelebration } from '@/lib/checkInCelebration';
 import { DEFAULT_CHECK_IN_FOCUS, DEFAULT_CHECK_IN_TIME } from '@/lib/checkInDefaults';
 import { ensureReturnTomorrowReminder } from '@/hooks/useNotifications';
+import { TimeoutError, withTimeout } from '@/lib/withTimeout';
 
 const EMOTION_IDS = ['agotada', 'tranquila', 'ansiosa', 'motivada', 'abrumada', 'enfocada'] as const;
 const EMOTION_EMOJIS: Record<(typeof EMOTION_IDS)[number], string> = {
@@ -111,7 +113,7 @@ export function QuickRecheckInModal({
   }, [visible, initialEmotion, initialEnergy, initialTime, initialFocus]);
 
   const resolvedEmotion = emotion || ENERGY_DEFAULT_EMOTION[energy] || 'tranquila';
-  const canSubmit = Boolean(ready && energy >= 1 && energy <= 5 && time && focus && user);
+  const canSubmit = Boolean(ready && energy >= 1 && energy <= 5 && time && focus);
 
   const handleEnergyChange = (level: number) => {
     editedRef.current = true;
@@ -122,21 +124,30 @@ export function QuickRecheckInModal({
   };
 
   const handleSubmit = async () => {
-    if (!canSubmit || !user) return;
+    if (!canSubmit || saving) return;
     setSaving(true);
     setError(null);
     try {
+      const authUser = user ?? (await getCachedAuthUser());
+      if (!authUser) {
+        setError(t('quickRecheck.error'));
+        return;
+      }
+
       const emotionLabel = t(`sentir.emotions.${resolvedEmotion}` as TranslationKey);
-      const result = await saveDailyCheckInAndPrioritize({
-        userId: user.id,
-        emotion: resolvedEmotion,
-        energyLevel: energy,
-        availableTime: time || DEFAULT_CHECK_IN_TIME,
-        focusLevel: focus || DEFAULT_CHECK_IN_FOCUS,
-        locale,
-        displayName: getDisplayName(user, ''),
-        emotionLabel,
-      });
+      const result = await withTimeout(
+        saveDailyCheckInAndPrioritize({
+          userId: authUser.id,
+          emotion: resolvedEmotion,
+          energyLevel: energy,
+          availableTime: time || DEFAULT_CHECK_IN_TIME,
+          focusLevel: focus || DEFAULT_CHECK_IN_FOCUS,
+          locale,
+          displayName: getDisplayName(authUser, ''),
+          emotionLabel,
+        }),
+        20_000,
+      );
 
       if (!result.success) {
         setError(t('quickRecheck.error'));
@@ -157,13 +168,14 @@ export function QuickRecheckInModal({
           (energy !== initialEnergy ||
             (Boolean(initialEmotion) && resolvedEmotion !== initialEmotion)),
       });
-      onClose();
 
       setTimeout(() => {
         publishCheckInCelebration(result.celebration ?? { streak: 0, milestone: false });
       }, 400);
-    } catch {
-      setError(t('quickRecheck.error'));
+    } catch (err) {
+      setError(
+        err instanceof TimeoutError ? t('quickRecheck.errorTimeout') : t('quickRecheck.error'),
+      );
     } finally {
       setSaving(false);
     }
@@ -199,6 +211,7 @@ export function QuickRecheckInModal({
           </View>
 
           <ScrollView
+            style={styles.scrollView}
             contentContainerStyle={styles.scroll}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -297,11 +310,10 @@ export function QuickRecheckInModal({
                 </View>
               </View>
             ) : null}
-
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
           </ScrollView>
 
           <View style={styles.footer}>
+            {error ? <Text style={styles.footerError}>{error}</Text> : null}
             <CalmPrimaryButton
               label={
                 saving
@@ -336,6 +348,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: THEME.colors.calm.border,
     maxHeight: '92%',
+  },
+  scrollView: {
+    flexGrow: 0,
+    flexShrink: 1,
   },
   header: {
     flexDirection: 'row',
@@ -457,10 +473,17 @@ const styles = StyleSheet.create({
     ...THEME.typography.caption,
     color: THEME.colors.semantic.danger,
   },
+  footerError: {
+    ...THEME.typography.caption,
+    color: THEME.colors.semantic.danger,
+    textAlign: 'center',
+    marginBottom: THEME.spacing.sm,
+  },
   footer: {
     padding: THEME.spacing.md,
     paddingBottom: THEME.spacing.lg,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: THEME.colors.calm.border,
+    backgroundColor: THEME.colors.calm.card,
   },
 });

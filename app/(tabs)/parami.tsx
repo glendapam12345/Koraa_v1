@@ -22,7 +22,7 @@ import { ParaMiMusaCard } from '@/components/parami/ParaMiMusaCard';
 import { ParaMiPatternCard } from '@/components/parami/ParaMiPatternCard';
 import { ParaMiTipsSection } from '@/components/parami/ParaMiTipsSection';
 import { ParaMiInsights } from '@/components/parami/ParaMiInsights';
-import { ParaMiPatternInsightCard } from '@/components/parami/ParaMiPatternInsightCard';
+import { ParaMiRhythmInsightHero } from '@/components/parami/ParaMiRhythmInsightHero';
 import { useParamiPatternInsight } from '@/hooks/useParamiPatternInsight';
 import type { ParamiPatternInput } from '@/lib/paramiPatternInsight';
 import { ParaMiPatternsLockedPreview } from '@/components/parami/ParaMiPatternsLockedPreview';
@@ -36,7 +36,6 @@ import {
   buildMoodChartInsight,
 } from '@/lib/paramiChartInsights';
 import { buildParamiRhythmSnapshot } from '@/lib/paramiRhythmSnapshot';
-import { ParaMiRhythmSnapshotCard } from '@/components/parami/ParaMiRhythmSnapshotCard';
 import type { TipsUserContext } from '@/lib/tipsTypes';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
@@ -167,12 +166,12 @@ function ParaMiScreen() {
     hasInsightData,
   );
 
-  const hasPatternHero = Boolean(patternInsight) || patternInsightLoading;
+  const hasPatternHero = Boolean(patternInsight) || patternInsightLoading || Boolean(rhythmSnapshot);
 
   return (
     <CalmScreen
       topInset="md"
-      gap={THEME.layout.sectionGap}
+      gap={THEME.layout.sectionGapCompact}
       refreshControl={
         <RefreshControl refreshing={loading} onRefresh={refresh} tintColor={THEME.colors.calm.lavenderDeep} />
       }
@@ -190,21 +189,22 @@ function ParaMiScreen() {
         onPeriodChange={setPeriod}
       />
 
-      {!showPremiumLocked && rhythmSnapshot ? (
-        <ParaMiRhythmSnapshotCard snapshot={rhythmSnapshot} />
+      {/* Un solo hero: ritmo (número claro) + nota del periodo */}
+      {!showPremiumLocked ? (
+        <ParaMiRhythmInsightHero
+          snapshot={rhythmSnapshot}
+          insight={patternInsight}
+          insightLoading={patternInsightLoading}
+        />
       ) : null}
-
-      {/* Hero: un patrón o un insight — centrado */}
-      <ParaMiPatternInsightCard insight={patternInsight} loading={patternInsightLoading} />
       <ParaMiInsights
         insights={insights}
         locked={showPremiumLocked}
         hasEnoughData={hasInsightData}
         loading={loading}
-        hidden={hasPatternHero}
+        hidden={hasPatternHero && !showPremiumLocked}
       />
 
-      {/* Apoyo visual: ánimo (energía/emociones detrás de progressive disclosure) */}
       <View style={styles.patternsSection}>
         {showPremiumLocked ? (
           <ParaMiPatternsLockedPreview moodTitle={moodCardTitle} />
@@ -217,8 +217,14 @@ function ParaMiScreen() {
               locked={false}
               chartSize={moodChartSize}
               insight={moodChartInsight}
+              compact
             >
-              <MiniMoodTimeline days={periodData} monthNames={monthNames} period={period} />
+              <MiniMoodTimeline
+                days={periodData}
+                monthNames={monthNames}
+                period={period}
+                dense
+              />
             </ParaMiMusaCard>
 
             {!patternsExpanded ? (
@@ -269,7 +275,6 @@ function ParaMiScreen() {
         )}
       </View>
 
-      {/* Consejos visuales */}
       <ParaMiTipsSection
         context={tipsContext}
         highlightTipIds={highlightTipIds}

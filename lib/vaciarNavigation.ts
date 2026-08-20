@@ -3,8 +3,10 @@ import {
   buildVaciarCaptureParams,
   type OpenVaciarCaptureOptions,
 } from '@/lib/vaciarCaptureParams';
+import { goToHoyTab, HOY_TAB_HREF } from '@/lib/tabNavigation';
 
 export type { OpenVaciarCaptureOptions } from '@/lib/vaciarCaptureParams';
+export { goToHoyTab, HOY_TAB_HREF } from '@/lib/tabNavigation';
 
 /** Abre Tareas → Capturar (mismo flujo que brain dump + preview por áreas). */
 export function openVaciarTab(): void {
@@ -18,3 +20,4 @@ export function openVaciarCapture(options?: OpenVaciarCaptureOptions): void {
     params: buildVaciarCaptureParams(options),
   });
 }
+

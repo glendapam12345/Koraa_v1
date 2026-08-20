@@ -125,14 +125,18 @@ export async function buildEnrichedReleaseItems(
     life_area_key?: string | null;
   }[] = [];
   if (userId) {
-    const { data } = await fetchUserProjects(userId);
-    projects = (data ?? []).map((p) => ({
-      id: p.id,
-      name: p.name,
-      due_date: p.due_date ?? null,
-      color: p.color ?? null,
-      life_area_key: p.life_area_key ?? null,
-    }));
+    try {
+      const { data } = await fetchUserProjects(userId);
+      projects = (data ?? []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        due_date: p.due_date ?? null,
+        color: p.color ?? null,
+        life_area_key: p.life_area_key ?? null,
+      }));
+    } catch {
+      projects = [];
+    }
   }
   const projectNamesById = Object.fromEntries(projects.map((p) => [p.id, p.name]));
   const projectsForMatch = projects.map((p) => ({ id: p.id, name: p.name }));
@@ -141,8 +145,18 @@ export async function buildEnrichedReleaseItems(
 
   const userChoseOrganization = advanced && advancedCaptureOptionsActive(advanced);
   if (!userChoseOrganization) {
-    const { items: hinted } = await applyAiProjectHints(items, rawInput, locale, userId, projectsForMatch);
-    items = hinted;
+    try {
+      const { items: hinted } = await applyAiProjectHints(
+        items,
+        rawInput,
+        locale,
+        userId,
+        projectsForMatch,
+      );
+      items = hinted;
+    } catch {
+      // Keep the local enrichment if cloud AI is unavailable.
+    }
   }
 
   return { items, projectNamesById, projects };

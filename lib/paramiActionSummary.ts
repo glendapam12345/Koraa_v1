@@ -1,5 +1,6 @@
 import type { DayData } from '@/components/ProgressChart';
 import type { EmotionalInsight } from '@/lib/emotionalInsights';
+import { HOY_TAB_PATH } from '@/lib/hoyTabPath';
 
 export type ParamiActiveHeadlineKey =
   | 'parami.activeHeadlineProtect'
@@ -55,7 +56,7 @@ export function getParamiActiveSummary(
   };
 }
 
-export type InsightActionRoute = '/(tabs)' | '/tips/mindset';
+export type InsightActionRoute = typeof HOY_TAB_PATH | '/tips/mindset';
 
 export function getInsightAction(insight: EmotionalInsight): {
   route: InsightActionRoute;
@@ -64,5 +65,5 @@ export function getInsightAction(insight: EmotionalInsight): {
   if (insight.type === 'pattern') {
     return { route: '/tips/mindset', labelKey: 'parami.insightActionTips' };
   }
-  return { route: '/(tabs)', labelKey: 'parami.insightActionHoy' };
+  return { route: HOY_TAB_PATH, labelKey: 'parami.insightActionHoy' };
 }

@@ -82,6 +82,7 @@ export function CalmPrimaryButton({
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.gradient}
+        pointerEvents="none"
       >
         {loading ? (
           <ActivityIndicator color={THEME.colors.onGradient} />

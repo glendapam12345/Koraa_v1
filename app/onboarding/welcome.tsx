@@ -2,8 +2,7 @@ import { Text } from 'react-native';
 import { router } from 'expo-router';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
-import { OnboardingFlowSteps } from '@/components/onboarding/OnboardingFlowSteps';
-import { OnboardingEllieCoach } from '@/components/onboarding/OnboardingEllieCoach';
+import { OnboardingEllieFlowDemo } from '@/components/onboarding/OnboardingEllieFlowDemo';
 import { ONBOARDING_NAME_ROUTE } from '@/lib/onboardingNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 
@@ -21,10 +20,11 @@ export default function WelcomeScreen() {
         />
       }
     >
-      <OnboardingEllieCoach message={t('onboarding.ellie.howItWorks')} mood="happy" size={56} />
-      <Text style={onboardingTypography.title}>{t('koraaGuide.title')}</Text>
-      <Text style={onboardingTypography.subtitle}>{t('koraaGuide.subtitle')}</Text>
-      <OnboardingFlowSteps hideIntro />
+      <Text style={onboardingTypography.title}>{t('onboarding.welcome.title')}</Text>
+      <Text style={onboardingTypography.titleAccent}>{t('onboarding.welcome.titleAccent')}</Text>
+      <Text style={onboardingTypography.subtitle}>{t('onboarding.welcome.subtitle')}</Text>
+      <OnboardingEllieFlowDemo />
+      <Text style={onboardingTypography.body}>{t('onboarding.welcome.promise')}</Text>
     </OnboardingScreenShell>
   );
 }

@@ -22,8 +22,8 @@ export function isHoyEllieEveningClose(hour: number = getHourOfDay()): boolean {
 
 /**
  * Daily progress → one Ellie state.
- * Closed / night win. Afternoon return wins over a mood update until they accept.
- * Adapt / free-day only right after check-in in this visit.
+ * Unaccepted check-in always resumes emotional review — never skip to the plan.
+ * Night / return only after they accepted today’s plan.
  */
 export function resolveHoyEllieDailyState(params: {
   hasCheckIn: boolean;
@@ -39,17 +39,20 @@ export function resolveHoyEllieDailyState(params: {
 }): HoyEllieDailyState {
   if (!params.hasCheckIn) return 'not_started';
   if (params.dayClosed) return 'day_closed';
-  if (params.isEveningClose && !params.middayDismissed) return 'evening';
-  if (params.allFocusDone) return 'plan_done';
-  if (params.isReturningLater && !params.middayDismissed) return 'returning';
-  if (params.moodUpdated) return 'mood_updated';
-  if (params.checkInJustHappened && !params.adaptAccepted) {
-    return params.hasTasks ? 'adapting' : 'free_day';
+  if (!params.adaptAccepted) {
+    return params.hasTasks === false ? 'free_day' : 'adapting';
   }
+  if (params.isEveningClose && !params.middayDismissed) return 'evening';
+  if (params.isReturningLater && !params.middayDismissed) return 'returning';
+  if (params.allFocusDone) return 'plan_done';
+  if (params.moodUpdated) return 'mood_updated';
   return 'in_progress';
 }
 
-/** Hide the plan until they reach a step that needs it (propose, night leftover, in progress). */
+/**
+ * Hide the plan while Ellie is still confirming how they feel.
+ * Show it only for plan preview or after they asked to see today’s steps.
+ */
 export function shouldHideHoyPlan(
   dailyState: HoyEllieDailyState,
   middayStep: string,
@@ -58,11 +61,11 @@ export function shouldHideHoyPlan(
     dailyState === 'free_day' ||
     dailyState === 'plan_done' ||
     dailyState === 'day_closed' ||
-    dailyState === 'mood_updated' ||
-    dailyState === 'adapting'
+    dailyState === 'mood_updated'
   ) {
     return true;
   }
+  if (dailyState === 'adapting') return middayStep !== 'propose';
   if (dailyState === 'evening') return middayStep !== 'okayNext';
   if (dailyState === 'returning') return middayStep !== 'propose';
   return false;

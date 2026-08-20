@@ -141,6 +141,7 @@ export function VaciarCaptureForm({
   const dictateHintMessage = isExpoGoClient()
     ? t('vaciarExtra.dictateHintExpoGo')
     : t('vaciarExtra.dictateHintKeyboardOnly');
+  const useCaptureAccessory = Platform.OS === 'ios' && !isExpoGoClient();
 
   const liveOrg = useLiveCaptureOrganization({
     text: taskInput,
@@ -175,7 +176,7 @@ export function VaciarCaptureForm({
   const handleSave = () => {
     if (saveBlocked || isSaving) return;
     if (Platform.OS !== 'web' && liveOrg.preview) {
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
     }
     Keyboard.dismiss();
     onSave({ projects: liveOrg.projects });
@@ -245,7 +246,7 @@ export function VaciarCaptureForm({
           keyboardAppearance="light"
           selectionColor={THEME.colors.calm.lavenderDeep}
           cursorColor={THEME.colors.calm.lavenderDeep}
-          inputAccessoryViewID={Platform.OS === 'ios' ? CAPTURE_INPUT_ACCESSORY_ID : undefined}
+          inputAccessoryViewID={useCaptureAccessory ? CAPTURE_INPUT_ACCESSORY_ID : undefined}
           accessibilityLabel={t('vaciarExtra.a11yTaskField')}
           accessibilityHint={t('vaciar.captureInputA11y')}
         />
@@ -404,7 +405,7 @@ export function VaciarCaptureForm({
         </KeyboardAvoidingView>
       )}
 
-      {Platform.OS === 'ios' ? (
+      {useCaptureAccessory ? (
         <InputAccessoryView nativeID={CAPTURE_INPUT_ACCESSORY_ID}>
           <View style={styles.accessoryBar}>
             {hasText ? (

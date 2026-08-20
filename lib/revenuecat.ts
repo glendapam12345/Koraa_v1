@@ -1,16 +1,13 @@
 import { Platform } from 'react-native';
 import { getRevenueCatApiKey } from '@/config/revenuecat';
 import { logger } from '@/lib/logger';
-import { canProcessInAppPurchases, isExpoGoClient } from '@/lib/subscriptionEnvironment';
+import { canProcessInAppPurchases } from '@/lib/subscriptionEnvironment';
 
 let configured = false;
 
 export async function initializeRevenueCat() {
   if (configured || (Platform.OS !== 'ios' && Platform.OS !== 'android')) return;
   if (!canProcessInAppPurchases()) {
-    if (__DEV__ && isExpoGoClient()) {
-      logger.info('RevenueCat omitido en Expo Go (usa TestFlight para compras).');
-    }
     return;
   }
 
@@ -23,7 +20,7 @@ export async function initializeRevenueCat() {
   try {
     const { default: Purchases, LOG_LEVEL } = await import('react-native-purchases');
     if (__DEV__) {
-      Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+      Purchases.setLogLevel(LOG_LEVEL.WARN);
     }
     await Purchases.configure({ apiKey });
     configured = true;

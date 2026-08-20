@@ -10,6 +10,8 @@ type MiniMoodTimelineProps = {
   days: DayData[];
   monthNames?: readonly string[];
   period?: 'week' | 'twoWeeks' | 'month';
+  /** Celdas más chicas + sin leyenda (evita duplicar el pie 5/7). */
+  dense?: boolean;
 };
 
 function gridColumns(dayCount: number): number {
@@ -74,12 +76,18 @@ function MoodFaceCell({
   );
 }
 
-export function MiniMoodTimeline({ days, monthNames, period }: MiniMoodTimelineProps) {
+export function MiniMoodTimeline({
+  days,
+  monthNames,
+  period,
+  dense = false,
+}: MiniMoodTimelineProps) {
   const { t } = useI18n();
   const withMood = days.filter((d) => d.hasCheckIn && d.emotion).length;
   const isExtended = days.length > 7;
   const columns = gridColumns(days.length);
   const rows = chunkRows(days, columns);
+  const useCompactCells = dense || isExtended;
 
   if (days.length === 0) return null;
 
@@ -91,17 +99,17 @@ export function MiniMoodTimeline({ days, monthNames, period }: MiniMoodTimelineP
 
   return (
     <View
-      style={styles.wrap}
+      style={[styles.wrap, dense && styles.wrapDense]}
       accessibilityLabel={t('paramiExtra.a11yMoodTimeline', {
         checkIns: withMood,
         total: days.length,
       })}
     >
       {isExtended ? (
-        <View style={styles.weekGrid}>
+        <View style={[styles.weekGrid, dense && styles.weekGridDense]}>
           {rows.map((row, rowIndex) => (
             <View key={`row-${rowIndex}`} style={styles.weekBlock}>
-              {period === 'twoWeeks' ? (
+              {period === 'twoWeeks' && !dense ? (
                 <Text style={styles.weekTag}>{t('parami.moodWeekLabel', { n: rowIndex + 1 })}</Text>
               ) : null}
               <View style={styles.weekRow}>
@@ -109,7 +117,7 @@ export function MiniMoodTimeline({ days, monthNames, period }: MiniMoodTimelineP
                   <MoodFaceCell
                     key={day.date}
                     day={day}
-                    compact
+                    compact={useCompactCells}
                     total={days.length}
                     monthNames={monthNames}
                   />
@@ -124,22 +132,24 @@ export function MiniMoodTimeline({ days, monthNames, period }: MiniMoodTimelineP
             <MoodFaceCell
               key={day.date}
               day={day}
-              compact={false}
+              compact={useCompactCells}
               total={days.length}
               monthNames={monthNames}
             />
           ))}
         </View>
       )}
-      <Text style={styles.legend}>
-        {withMood < days.length
-          ? t('parami.moodTimelineLegendSparse', { checkIns: withMood, total: days.length })
-          : days.length >= 30
-            ? t('parami.moodTimelineLegendMonth', { count: days.length })
-            : days.length === 14
-              ? t('parami.moodTimelineLegendFortnight', { count: days.length })
-              : t('parami.moodTimelineLegend')}
-      </Text>
+      {!dense ? (
+        <Text style={styles.legend}>
+          {withMood < days.length
+            ? t('parami.moodTimelineLegendSparse', { checkIns: withMood, total: days.length })
+            : days.length >= 30
+              ? t('parami.moodTimelineLegendMonth', { count: days.length })
+              : days.length === 14
+                ? t('parami.moodTimelineLegendFortnight', { count: days.length })
+                : t('parami.moodTimelineLegend')}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -147,6 +157,9 @@ export function MiniMoodTimeline({ days, monthNames, period }: MiniMoodTimelineP
 const styles = StyleSheet.create({
   wrap: {
     gap: THEME.spacing.xs,
+  },
+  wrapDense: {
+    gap: 4,
   },
   row: {
     flexDirection: 'row',
@@ -156,6 +169,9 @@ const styles = StyleSheet.create({
   },
   weekGrid: {
     gap: THEME.spacing.sm,
+  },
+  weekGridDense: {
+    gap: THEME.spacing.xs,
   },
   weekBlock: {
     gap: 4,

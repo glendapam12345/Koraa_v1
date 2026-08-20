@@ -1,6 +1,7 @@
 import { Text, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { HOY_TAB_HREF, HOY_TAB_PATH } from '@/lib/tabNavigation';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TipsActionHeroContent } from '@/lib/tipsActionHero';
@@ -23,6 +24,10 @@ export function TipsActionHero({ content, emotionLabel, onPausePress }: TipsActi
   const handlePress = () => {
     if (content.action.type === 'pause') {
       onPausePress?.();
+      return;
+    }
+    if (content.action.route === HOY_TAB_PATH) {
+      router.push(HOY_TAB_HREF);
       return;
     }
     router.push(content.action.route);

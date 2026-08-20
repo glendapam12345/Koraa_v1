@@ -189,11 +189,16 @@ export async function applyAiProjectHints(
 
   const { interpretTaskCapture, isTaskCaptureAiEnabled } = await import('@/lib/taskCaptureAi');
   const aiEnabled = isTaskCaptureAiEnabled();
-  const result = await interpretTaskCapture(userId, {
-    rawText: rawInput.trim().slice(0, 500),
-    locale,
-    projects,
-  });
+  let result;
+  try {
+    result = await interpretTaskCapture(userId, {
+      rawText: rawInput.trim().slice(0, 500),
+      locale,
+      projects,
+    });
+  } catch {
+    return { items, usedLocalFallback: false };
+  }
   if (!result || !isUserListCapture(result)) {
     return { items, usedLocalFallback: false };
   }

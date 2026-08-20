@@ -27,7 +27,6 @@ import { BrainDumpAreaDragBoard } from '@/components/frentes/BrainDumpAreaDragBo
 import { BrainDumpCreateProjectSheet } from '@/components/frentes/BrainDumpCreateProjectSheet';
 import { BrainDumpMoveAreaPicker } from '@/components/frentes/BrainDumpMoveAreaPicker';
 import { BrainDumpTaskProjectPicker } from '@/components/frentes/BrainDumpTaskProjectPicker';
-import { CaptureReviewSavePreview } from '@/components/frentes/CaptureReviewSavePreview';
 import { ReviewPreviewTaskRow } from '@/components/frentes/ReviewPreviewTaskRow';
 import {
   buildBrainDumpAreaBoardModel,
@@ -48,6 +47,7 @@ import {
   type BrainDumpReviewProject,
 } from '@/lib/review/brainDumpProjects';
 import { deleteProjectById } from '@/lib/deleteProject';
+import { OnboardingEllieCoach } from '@/components/onboarding/OnboardingEllieCoach';
 
 type BrainDumpAreaReviewScreenProps = {
   locale: AppLocale;
@@ -565,6 +565,22 @@ export function BrainDumpAreaReviewScreen({
     setEditingTaskId(null);
   }, [editingTaskId, onItemsChange]);
 
+  const handleDeleteTaskById = useCallback(
+    (taskId: string) => {
+      onItemsChange((prev) => prev.filter((item) => item.id !== taskId));
+      if (editingTaskId === taskId) setEditingTaskId(null);
+      if (movingTaskId === taskId) setMovingTaskId(null);
+    },
+    [editingTaskId, movingTaskId, onItemsChange],
+  );
+
+  const ellieMessage =
+    items.length === 0
+      ? t('vaciar.areaReviewEllieEmpty')
+      : items.length === 1
+        ? t('vaciar.areaReviewEllieOne')
+        : t('vaciar.areaReviewEllieMany', { count: items.length });
+
   return (
     <View style={styles.root}>
       <View style={styles.header}>
@@ -578,11 +594,19 @@ export function BrainDumpAreaReviewScreen({
           <Text style={styles.backLabel}>{t('vaciar.previewBack')}</Text>
         </TouchableOpacity>
 
+        <View style={styles.ellieHero}>
+          <OnboardingEllieCoach
+            message={ellieMessage}
+            mood="curious"
+            size={64}
+            withBottomGap={false}
+            breathe
+            accessible
+          />
+        </View>
+
         <Text style={styles.screenTitle}>{t('vaciar.areaReviewTitle')}</Text>
         <Text style={styles.instructionSubtitle}>{t('vaciar.areaReviewSubtitle')}</Text>
-        <View style={styles.hintPill}>
-          <Text style={styles.hintText}>{t('vaciar.areaReviewHint')}</Text>
-        </View>
 
         {countsLine ? (
           <Text style={styles.countsLine} numberOfLines={2}>
@@ -604,6 +628,16 @@ export function BrainDumpAreaReviewScreen({
         ) : null}
       </View>
 
+      {items.length === 0 ? (
+        <View style={styles.emptyBoard}>
+          <Text style={styles.emptyBoardText}>{t('vaciar.areaReviewEmptyBoard')}</Text>
+          <CalmPrimaryButton
+            label={t('vaciar.previewBack')}
+            variant="soft"
+            onPress={onBack}
+          />
+        </View>
+      ) : (
       <BrainDumpAreaDragBoard
         columns={columns}
         areas={areas}
@@ -612,6 +646,7 @@ export function BrainDumpAreaReviewScreen({
         onPressColumnHeader={openRenameForColumn}
         onPressTask={setEditingTaskId}
         onRequestMoveTask={setMovingTaskId}
+        onDeleteTask={handleDeleteTaskById}
         onPressAddProject={handleOpenCreateProject}
         onPressDeleteProject={handleDeleteProject}
         emptyColumnHint={t('vaciar.areaReviewEmptyColumn')}
@@ -641,21 +676,18 @@ export function BrainDumpAreaReviewScreen({
         moveAreaUpA11y={t('vaciar.areaReviewMoveAreaUpA11y')}
         moveAreaDownA11y={t('vaciar.areaReviewMoveAreaDownA11y')}
       />
-
-      <CaptureReviewSavePreview
-        items={items}
-        locale={locale}
-        onPressTask={setEditingTaskId}
-        onChangeItem={handleTaskChange}
-      />
+      )}
 
       <View style={styles.footer}>
+        {items.length > 0 ? (
         <CalmPrimaryButton
           label={t('vaciar.areaReviewConfirm')}
           onPress={handleConfirm}
           loading={isSaving}
-          disabled={isSaving || items.length === 0}
+          disabled={isSaving}
+          accessibilityHint={t('vaciar.areaReviewConfirmHint')}
         />
+        ) : null}
       </View>
 
       <AreaNameEditSheet
@@ -826,20 +858,21 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     lineHeight: 18,
   },
-  hintPill: {
-    alignSelf: 'stretch',
-    backgroundColor: THEME.colors.calm.mist,
-    paddingHorizontal: THEME.spacing.sm,
-    paddingVertical: 8,
-    borderRadius: THEME.borderRadius.rounded,
-    borderWidth: 1,
-    borderColor: THEME.colors.calm.border,
+  ellieHero: {
+    marginTop: THEME.spacing.xs,
+    marginBottom: THEME.spacing.xs,
   },
-  hintText: {
-    ...THEME.typography.small,
+  emptyBoard: {
+    gap: THEME.spacing.md,
+    paddingVertical: THEME.spacing.lg,
+    paddingHorizontal: THEME.spacing.sm,
+    alignItems: 'center',
+  },
+  emptyBoardText: {
+    ...THEME.typography.body,
     color: THEME.colors.text.secondary,
-    lineHeight: 16,
     textAlign: 'center',
+    lineHeight: 22,
   },
   countsLine: {
     ...THEME.typography.caption,

@@ -12,11 +12,15 @@ import {
   clearElliePromptSettledThisSession,
   isElliePromptSettledThisSession,
   isEllieReturningLater,
+  hasEllieMiddayDoneToday,
   markEllieDayClosedToday,
   markEllieDayStartedSession,
+  markEllieMiddayDoneToday,
+  markElliePlanClosedToday,
   markElliePromptSettledThisSession,
   readEllieDayClosedToday,
   readEllieDayStartedSession,
+  readElliePlanClosedToday,
   sessionIdForVisitStart,
   shouldReaskAfterAway,
 } from '@/lib/ellieMiddayPrompt';
@@ -49,6 +53,7 @@ export function useEllieMiddayPrompt(
   const [adaptAccepted, setAdaptAccepted] = useState(false);
   const [planCloseAccepted, setPlanCloseAccepted] = useState(false);
   const [dayClosed, setDayClosed] = useState(false);
+  const [nightOutcome, setNightOutcome] = useState<'done' | 'some' | null>(null);
   const goTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localDayRef = useRef(getLocalDateString());
   const stepRef = useRef<EllieMiddayStep>('ask');
@@ -60,6 +65,7 @@ export function useEllieMiddayPrompt(
     clearElliePromptSettledThisSession();
     startedWithoutCheckInRef.current = true;
     setDayClosed(false);
+    setNightOutcome(null);
     setDismissed(false);
     setAdaptAccepted(false);
     setPlanCloseAccepted(false);
@@ -96,6 +102,7 @@ export function useEllieMiddayPrompt(
       setAdaptAccepted(false);
       setPlanCloseAccepted(false);
       setDayClosed(false);
+      setNightOutcome(null);
       setStoredSessionId(null);
       setReturnedFromBackground(false);
       setLoaded(true);
@@ -104,17 +111,20 @@ export function useEllieMiddayPrompt(
 
     let cancelled = false;
     void (async () => {
-      const stored = await readEllieDayStartedSession(userId);
+      const [stored, planDone, closed, planClosed] = await Promise.all([
+        readEllieDayStartedSession(userId),
+        hasEllieMiddayDoneToday(userId),
+        readEllieDayClosedToday(userId),
+        readElliePlanClosedToday(userId),
+      ]);
       if (cancelled) return;
 
+      if (planDone) setAdaptAccepted(true);
+      if (closed) setDayClosed(true);
+      if (planClosed) setPlanCloseAccepted(true);
       if (isElliePromptSettledThisSession()) {
         setDismissed(true);
-        setAdaptAccepted(true);
       }
-
-      const closed = await readEllieDayClosedToday(userId);
-      if (cancelled) return;
-      if (closed) setDayClosed(true);
 
       if (stored) {
         setStoredSessionId(stored);
@@ -198,7 +208,6 @@ export function useEllieMiddayPrompt(
         setReturnedFromBackground(true);
         setDismissed(false);
         setStep('ask');
-        setAdaptAccepted(true);
       }
     });
     return () => {
@@ -215,7 +224,7 @@ export function useEllieMiddayPrompt(
     checkInPresentAtVisitStart: hasCheckIn && !startedWithoutCheckInRef.current,
   });
 
-  const dailyState: HoyEllieDailyState = resolveHoyEllieDailyState({
+  const resolvedState: HoyEllieDailyState = resolveHoyEllieDailyState({
     hasCheckIn,
     isReturningLater,
     isEveningClose: isHoyEllieEveningClose(),
@@ -227,6 +236,11 @@ export function useEllieMiddayPrompt(
     moodUpdated,
     dayClosed,
   });
+  const dailyState: HoyEllieDailyState = loaded
+    ? resolvedState
+    : hasCheckIn
+      ? 'in_progress'
+      : 'not_started';
 
   const showPrompt = loaded && dailyState === 'returning';
 
@@ -245,17 +259,24 @@ export function useEllieMiddayPrompt(
   }, [persistSettled]);
 
   const chooseOkay = useCallback(() => {
+    setStep('okayNext');
+  }, []);
+
+  const confirmFeel = useCallback(() => {
     setStep('propose');
   }, []);
 
   const acceptAdapt = useCallback(() => {
     setAdaptAccepted(true);
     persistSettled();
-  }, [persistSettled]);
+    if (userId) void markEllieMiddayDoneToday(userId);
+  }, [persistSettled, userId]);
 
   const closePlan = useCallback(() => {
     setPlanCloseAccepted(true);
-  }, []);
+    persistSettled();
+    if (userId) void markElliePlanClosedToday(userId);
+  }, [persistSettled, userId]);
 
   const closeDay = useCallback(() => {
     setDayClosed(true);
@@ -292,14 +313,13 @@ export function useEllieMiddayPrompt(
     [speakThenGo],
   );
 
-  const chooseMind = useCallback((openCapture: () => void) => {
-    setStep('propose');
-    openCapture();
+  const chooseMind = useCallback(() => {
+    setStep('mind');
   }, []);
 
   const onHoyFocus = useCallback(() => {
-    if (stepRef.current === 'mind') setStep('propose');
-  }, []);
+    if (stepRef.current === 'mind') dismiss();
+  }, [dismiss]);
 
   const chooseNightUrgent = useCallback(() => {
     setStep('okayNext');
@@ -308,6 +328,16 @@ export function useEllieMiddayPrompt(
   const chooseNightNotUrgent = useCallback(() => {
     setStep('nightClose');
   }, []);
+
+  const chooseNightDid = useCallback(() => {
+    setNightOutcome('done');
+    closeDay();
+  }, [closeDay]);
+
+  const chooseNightSome = useCallback(() => {
+    setNightOutcome('some');
+    closeDay();
+  }, [closeDay]);
 
   return {
     dailyState,
@@ -318,13 +348,17 @@ export function useEllieMiddayPrompt(
     chooseDayChanged,
     confirmDayChanged,
     chooseMind,
+    confirmFeel,
     acceptAdapt,
     closePlan,
     closeDay,
     chooseNightUrgent,
     chooseNightNotUrgent,
+    chooseNightDid,
+    chooseNightSome,
     onHoyFocus,
     planCloseAccepted,
+    nightOutcome,
     step,
     isReturningLater,
     ready: loaded,

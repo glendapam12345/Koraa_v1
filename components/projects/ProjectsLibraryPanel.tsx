@@ -16,7 +16,7 @@ import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { FolderKanban, ChevronRight, Plus, Heart } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { openVaciarCapture } from '@/lib/vaciarNavigation';
-import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
+import { goToCheckIn } from '@/lib/checkInNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 import { useProjectsLibrary } from '@/hooks/useProjectsLibrary';
 import { useUserLifeAreas } from '@/hooks/useUserLifeAreas';
@@ -394,7 +394,7 @@ export function ProjectsLibraryPanel({
             {!hasCheckInToday ? (
               <TouchableOpacity
                 style={styles.inventoryFeelBtn}
-                onPress={() => router.push(CHECK_IN_ROUTE)}
+                onPress={() => goToCheckIn()}
                 activeOpacity={0.85}
                 accessibilityRole="button"
                 accessibilityLabel={t('projects.inventoryGoFeelA11y')}

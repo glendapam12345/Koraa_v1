@@ -22,7 +22,7 @@ import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
 import { StreakAura } from '@/components/branding/StreakAura';
 import { KoraaBloomLogo } from '@/components/branding/KoraaBloomLogo';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
-import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
+import { replaceToCheckIn } from '@/lib/checkInNavigation';
 import {
   getStreakAuraIntensity,
   getStreakLevelKey,
@@ -262,7 +262,7 @@ export default function StreakScreen() {
         {!checkedInToday ? (
           <CalmPrimaryButton
             label={t('hoy.streakCheckInCta')}
-            onPress={() => router.replace(CHECK_IN_ROUTE)}
+            onPress={() => replaceToCheckIn()}
             large
           />
         ) : (

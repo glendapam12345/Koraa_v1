@@ -58,12 +58,17 @@ export function useLiveCaptureOrganization({
 
     setIsUpdating(true);
     timerRef.current = setTimeout(() => {
-      const next = buildLiveCapturePreview(trimmed, locale, projects, {
-        stableIds: true,
-        lifeAreasConfig: lifeAreasConfig,
-      });
-      setPreview(next);
-      setIsUpdating(false);
+      try {
+        const next = buildLiveCapturePreview(trimmed, locale, projects, {
+          stableIds: true,
+          lifeAreasConfig: lifeAreasConfig,
+        });
+        setPreview(next);
+      } catch {
+        setPreview(null);
+      } finally {
+        setIsUpdating(false);
+      }
     }, DEBOUNCE_MS);
 
     return () => {

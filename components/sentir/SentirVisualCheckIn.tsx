@@ -10,12 +10,14 @@ import {
 } from 'react-native';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { replaceToHoyTab } from '@/lib/tabNavigation';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { VisualStepSlider } from '@/components/sentir/VisualStepSlider';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { saveDailyCheckInAndPrioritize } from '@/lib/checkInService';
+import { getCachedAuthUser } from '@/lib/supabase';
 import { getDisplayName } from '@/lib/displayName';
 import {
   DEFAULT_CHECK_IN_FOCUS,
@@ -25,6 +27,7 @@ import { publishCheckInCelebration } from '@/lib/checkInCelebration';
 import { markPrioritiesReadyToast } from '@/lib/prioritiesReadyToast';
 import { ensureReturnTomorrowReminder } from '@/hooks/useNotifications';
 import { track } from '@/lib/analytics';
+import { TimeoutError, withTimeout } from '@/lib/withTimeout';
 import type { TranslationKey } from '@/lib/i18n';
 
 const TIME_OPTIONS: { id: string; labelKey: TranslationKey }[] = [
@@ -94,7 +97,7 @@ export function SentirVisualCheckIn({
   const emotionCellWidth =
     (gridContentWidth - gridGap * (emotionGridCols - 1)) / emotionGridCols;
 
-  const canSubmit = Boolean(emotion && energy >= 1 && energy <= 5 && user);
+  const canSubmit = Boolean(emotion && energy >= 1 && energy <= 5);
   const embeddedSaveLabel = saveLabelKey
     ? t(saveLabelKey as never)
     : t('sentir.visualCheckIn.seeWhatMatters');
@@ -104,21 +107,30 @@ export function SentirVisualCheckIn({
   }, [emotion, energy, onDraftChange]);
 
   const handleSave = async () => {
-    if (!canSubmit || !user) return;
+    if (!canSubmit || saving) return;
     setSaving(true);
     setError(null);
     try {
+      const authUser = user ?? (await getCachedAuthUser());
+      if (!authUser) {
+        setError(t('sentir.visualCheckIn.error'));
+        return;
+      }
+
       const emotionLabel = emotions.find((item) => item.id === emotion)?.label ?? emotion;
-      const result = await saveDailyCheckInAndPrioritize({
-        userId: user.id,
-        emotion,
-        energyLevel: energy,
-        availableTime,
-        focusLevel,
-        locale,
-        displayName: getDisplayName(user, ''),
-        emotionLabel,
-      });
+      const result = await withTimeout(
+        saveDailyCheckInAndPrioritize({
+          userId: authUser.id,
+          emotion,
+          energyLevel: energy,
+          availableTime,
+          focusLevel,
+          locale,
+          displayName: getDisplayName(authUser, ''),
+          emotionLabel,
+        }),
+        20_000,
+      );
 
       if (!result.success) {
         setError(t('sentir.visualCheckIn.error'));
@@ -139,7 +151,7 @@ export function SentirVisualCheckIn({
         if (router.canGoBack()) {
           router.back();
         } else {
-          router.replace('/(tabs)');
+          replaceToHoyTab();
         }
       }
 

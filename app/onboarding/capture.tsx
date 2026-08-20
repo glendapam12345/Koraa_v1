@@ -1,12 +1,17 @@
-import { Text, Alert } from 'react-native';
+import { Text, Alert, View, StyleSheet } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
 import { OnboardingHighlightCard } from '@/components/onboarding/OnboardingHighlightCard';
-import { OnboardingCaptureField } from '@/components/onboarding/OnboardingCaptureField';
+import {
+  OnboardingCaptureField,
+  OnboardingCaptureSkipLink,
+} from '@/components/onboarding/OnboardingCaptureField';
 import { OnboardingEllieCoach } from '@/components/onboarding/OnboardingEllieCoach';
+import { OnboardingProgressDots } from '@/components/onboarding/OnboardingProgressDots';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
+import { THEME } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
 import { countOnboardingCaptureItems, saveOnboardingCaptureForUser } from '@/lib/onboardingCapture';
@@ -24,6 +29,19 @@ export default function OnboardingCaptureScreen() {
 
   const goToCheckIn = () => {
     router.push(ONBOARDING_EMOTION_ROUTE);
+  };
+
+  const skipCapture = async () => {
+    if (!user?.id) {
+      router.replace('/auth/login');
+      return;
+    }
+    await seedDefaultLifeAreasForUser(user.id);
+    goToCheckIn();
+  };
+
+  const fillExample = () => {
+    setCaptureText(t('onboarding.capture.exampleText'));
   };
 
   const saveAndContinue = async () => {
@@ -70,19 +88,31 @@ export default function OnboardingCaptureScreen() {
   return (
     <OnboardingScreenShell
       footer={
-        <CalmPrimaryButton
-          label={saving ? t('onboarding.capture.saving') : t('onboarding.capture.continue')}
-          onPress={() => void saveAndContinue()}
-          disabled={saving || !hasContent}
-          loading={saving}
-          large
-          accessibilityHint={t('onboardingA11y.captureContinueHint')}
-          accessibilityState={{ disabled: saving || !hasContent, busy: saving }}
-        />
+        <View style={styles.footerCol}>
+          <CalmPrimaryButton
+            label={saving ? t('onboarding.capture.saving') : t('onboarding.capture.continue')}
+            onPress={() => void saveAndContinue()}
+            disabled={saving || !hasContent}
+            loading={saving}
+            large
+            accessibilityHint={t('onboardingA11y.captureContinueHint')}
+            accessibilityState={{ disabled: saving || !hasContent, busy: saving }}
+          />
+          <OnboardingCaptureSkipLink
+            label={t('onboarding.capture.skip')}
+            onPress={() => void skipCapture()}
+            disabled={saving}
+          />
+        </View>
       }
     >
+      <OnboardingProgressDots
+        total={3}
+        current={1}
+        accessibilityLabel={t('onboarding.tour.guidedProgressA11y', { current: 1, total: 3 })}
+      />
       <OnboardingCheckInProgress loopStep={1} />
-      <OnboardingEllieCoach message={t('onboarding.ellie.capture')} mood="grateful" size={56} />
+      <OnboardingEllieCoach message={t('onboarding.ellie.capture')} mood="grateful" size={64} />
       <Text style={onboardingTypography.title}>{t('onboarding.capture.title')}</Text>
       <Text style={onboardingTypography.titleAccent}>{t('onboarding.capture.titleAccent')}</Text>
       <Text style={onboardingTypography.subtitle}>{t('onboarding.capture.subtitle')}</Text>
@@ -102,6 +132,22 @@ export default function OnboardingCaptureScreen() {
         locale={locale}
         editable={!saving}
       />
+
+      {!hasContent ? (
+        <CalmPrimaryButton
+          label={t('onboarding.capture.exampleBtn')}
+          variant="soft"
+          onPress={fillExample}
+          disabled={saving}
+          accessibilityHint={t('onboarding.capture.exampleBtnHint')}
+        />
+      ) : null}
     </OnboardingScreenShell>
   );
 }
+
+const styles = StyleSheet.create({
+  footerCol: {
+    gap: THEME.spacing.xs,
+  },
+});

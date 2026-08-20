@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { pushToHoyTab } from '@/lib/tabNavigation';
 
 export type OpenRecheckFn = (source?: string) => void | Promise<void>;
 
@@ -21,5 +21,5 @@ export function openRecheckCheckIn(source = 'unknown'): void {
     void openRecheckHandler(source);
     return;
   }
-  router.push({ pathname: '/(tabs)', params: { openRecheck: '1', recheckSource: source } });
+  pushToHoyTab({ openRecheck: '1', recheckSource: source });
 }

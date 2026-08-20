@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Plus } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { goToHoyTab } from '@/lib/tabNavigation';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { Task } from '@/hooks/useTasks';
@@ -71,7 +72,7 @@ export function SemanaDaySection({
   };
 
   const openHoy = () => {
-    router.push('/(tabs)');
+    goToHoyTab();
   };
 
   const showHeavyDayBanner =

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { replaceToHoyTab } from '@/lib/tabNavigation';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/contexts/AuthContext';
 import { useI18n } from '@/contexts/I18nContext';
@@ -161,7 +162,7 @@ export function useSettingsScreen() {
                 void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               }
               Alert.alert(t('settings.resetHoyFirstDayDoneTitle'), t('settings.resetHoyFirstDayDoneBody'), [
-                { text: t('errors.ok'), onPress: () => router.replace('/(tabs)') },
+                { text: t('errors.ok'), onPress: () => replaceToHoyTab() },
               ]);
             } catch (e) {
               logger.error('Error reiniciando vista primer día Hoy:', e);
@@ -190,7 +191,7 @@ export function useSettingsScreen() {
                 void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               }
               Alert.alert(t('settings.simulateHoyDayTwoDoneTitle'), t('settings.simulateHoyDayTwoDoneBody'), [
-                { text: t('errors.ok'), onPress: () => router.replace('/(tabs)') },
+                { text: t('errors.ok'), onPress: () => replaceToHoyTab() },
               ]);
             } catch (e) {
               logger.error('Error simulando día 2 en Hoy:', e);
@@ -379,7 +380,6 @@ export function useSettingsScreen() {
       () => {
         void (async () => {
           await signOut();
-          router.replace('/auth/login');
         })();
       },
       { cancelText: t('common.cancel'), locale },

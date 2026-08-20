@@ -17,9 +17,12 @@ function authUnreachableMessage(locale: AppLocale, detail?: string): string {
 }
 import { translateError } from '@/lib/errorMessages';
 import { useI18n } from '@/contexts/I18nContext';
+import { TimeoutError, withTimeout } from '@/lib/withTimeout';
 import { logger } from '@/lib/logger';
 import { track } from '@/lib/analytics';
 import { clearEllieMiddayState } from '@/lib/ellieMiddayPrompt';
+import { clearTabsGateUser } from '@/lib/tabsAuthGateCache';
+import { goToLogin } from '@/lib/authNavigation';
 
 export type SignUpResult = {
   error: string | null;
@@ -111,6 +114,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           if (event === 'SIGNED_OUT') {
             clearSession();
+            clearTabsGateUser();
+            goToLogin();
             return;
           }
           if (s) {
@@ -262,17 +267,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const userId = user?.id;
     try {
       if (user) void track('auth_sign_out');
-      if (userId) {
-        await clearEllieMiddayState(userId);
-      }
-      const { error } = await supabase.auth.signOut();
-      if (error) logger.error('Error al cerrar sesión:', error);
+      if (userId) void clearEllieMiddayState(userId);
+      clearTabsGateUser();
       clearSession();
       setIsRecoveryMode(false);
+      goToLogin();
+      try {
+        await withTimeout(supabase.auth.signOut({ scope: 'local' }), 2500);
+      } catch (error) {
+        if (!(error instanceof TimeoutError)) {
+          logger.warn('Error al cerrar sesión en el cliente:', error);
+        }
+        try {
+          await withTimeout(supabase.auth.signOut(), 2000);
+        } catch {
+          /* sesión local ya limpia */
+        }
+      }
     } catch (err) {
       logger.error('Error inesperado al cerrar sesión:', err);
+      clearTabsGateUser();
       clearSession();
       setIsRecoveryMode(false);
+      goToLogin();
     }
   };
 

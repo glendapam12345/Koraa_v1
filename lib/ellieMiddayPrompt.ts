@@ -39,9 +39,14 @@ export function getEllieMiddayDoneKey(userId: string, day: string = getLocalDate
 }
 
 const CLOSED_PREFIX = 'koraa_ellie_day_closed_v1_';
+const PLAN_CLOSED_PREFIX = 'koraa_ellie_plan_closed_v1_';
 
 export function getEllieDayClosedKey(userId: string, day: string = getLocalDateString()): string {
   return `${CLOSED_PREFIX}${userId}_${day}`;
+}
+
+export function getElliePlanClosedKey(userId: string, day: string = getLocalDateString()): string {
+  return `${PLAN_CLOSED_PREFIX}${userId}_${day}`;
 }
 
 /**
@@ -176,6 +181,28 @@ export async function markEllieDayClosedToday(
   }
 }
 
+export async function readElliePlanClosedToday(
+  userId: string,
+  day: string = getLocalDateString(),
+): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(getElliePlanClosedKey(userId, day))) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function markElliePlanClosedToday(
+  userId: string,
+  day: string = getLocalDateString(),
+): Promise<void> {
+  try {
+    await AsyncStorage.setItem(getElliePlanClosedKey(userId, day), '1');
+  } catch {
+    /* no bloquear UI */
+  }
+}
+
 /** Al cerrar sesión: la próxima entrada no hereda “ya contesté” ni Captura forzada. */
 export async function clearEllieMiddayState(
   userId: string,
@@ -186,6 +213,7 @@ export async function clearEllieMiddayState(
       getEllieDayStartedKey(userId, day),
       getEllieMiddayDoneKey(userId, day),
       getEllieDayClosedKey(userId, day),
+      getElliePlanClosedKey(userId, day),
     ]);
   } catch {
     /* no bloquear UI */

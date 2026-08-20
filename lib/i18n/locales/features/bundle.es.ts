@@ -47,12 +47,14 @@ export const featuresEs = {
   vaciar: {
     title: '¿Qué llevas en mente?',
     titleAccent: '',
-    subtitle: 'Escribe o habla — Koraa ordena después.',
+    subtitle: 'Suelta todo. La fecha la pones después.',
     captureNightSub:
       'Si no puedes dormir, suelta lo que te ronda — sin organizar ahora.',
     captureHint: 'Suelta. Koraa se encarga.',
     capturePlaceholderMinimal: 'Escribe lo que tienes en mente…',
     releaseTaskShort: 'Soltar',
+    captureExit: 'Salir',
+    captureExitA11y: 'Salir sin guardar',
     releaseReview: 'Revisar {{count}} →',
     liveOrganizing: 'Organizando mientras escribes…',
     liveOrganizedTitle: 'Así lo iría ordenando Koraa',
@@ -187,8 +189,17 @@ export const featuresEs = {
     previewConfirm: 'Aceptar ✨',
     areaReviewTitle: 'Organiza por áreas',
     areaReviewSubtitle:
-      'Solo ves áreas con pasos. Toca el nombre para renombrar o eliminar.',
-    areaReviewHint: 'Toca un paso · arrastra · ↔ cambia de área',
+      'Todavía no se guarda. Cuando esté bien, toca Guardar todo abajo.',
+    areaReviewHint: 'Toca un paso · 🗑️ quitar · ↔ cambiar de área',
+    areaReviewEllieHint:
+      'Toca un paso si quieres poner fecha o marcar qué importa — totalmente opcional.',
+    areaReviewEllieOne:
+      'Separé 1 paso por área. Tócalo para editar · usa 🗑️ si no lo quieres guardar. Nada se guarda hasta que toques Guardar todo.',
+    areaReviewEllieMany:
+      'Separé {{count}} pasos por área. Tócalos para editar · 🗑️ quita lo que sobre. Cuando esté bien, Guardar todo abajo.',
+    areaReviewEllieEmpty:
+      'No quedan pasos. Vuelve atrás para escribir de nuevo, o agrega algo nuevo.',
+    areaReviewEmptyBoard: 'No hay pasos en el preview. Vuelve a escribir lo que traes en la cabeza.',
     areaReviewInstruction1:
       'Toca un paso → fecha, tiempo, prioridad y proyecto (+ Crear proyecto abajo).',
     areaReviewInstruction2:
@@ -207,7 +218,8 @@ export const featuresEs = {
     areaReviewAddAreaA11y: 'Agregar un área nueva al tablero',
     areaReviewAddAreaTitle: 'Nombre del área',
     areaReviewRenameTitle: 'Renombrar área',
-    areaReviewConfirm: 'Guardar ✨',
+    areaReviewConfirm: 'Guardar todo',
+    areaReviewConfirmHint: 'Así se quedan todos los pasos que organizaste.',
     areaReviewSaveSummaryTitle: 'Antes de guardar',
     areaReviewSaveSummaryTotal: 'Tiempo total estimado',
     areaReviewSaveSummaryNoDuration: 'Sin tiempo',
@@ -261,13 +273,33 @@ export const featuresEs = {
     organizedSummaryTitle: 'Listo — ya está organizado',
     organizedSummaryBody: '{{count}} cosas guardadas por área.',
     organizedSummaryNewProjects: '{{count}} proyectos nuevos creados',
-    organizedSummaryAreaMeta:
-      '{{projects}} proyectos · {{tasks}} pasos abiertos',
+    organizedSummaryAreaMeta: '{{projectLabel}} · {{taskLabel}}',
+    organizedSummaryProjectOne: '1 proyecto',
+    organizedSummaryProjectMany: '{{count}} proyectos',
+    organizedSummaryTaskOne: '1 paso abierto',
+    organizedSummaryTaskMany: '{{count}} pasos abiertos',
     organizedSummaryLoose: '{{count}} tareas sueltas en total',
+    organizedSummaryLooseOne: '1 tarea suelta en total',
     organizedSummaryEmpty:
       'Tus cosas están guardadas. Abre la biblioteca para ver todo.',
     organizedSummaryCaptureMore: 'Capturar más',
     organizedSummaryLooseStep: 'Paso suelto',
+    organizedSummaryEditHint:
+      'Toca un paso para ajustar fecha, prioridad o moverlo a otra área.',
+    ellieOrganizedFallbackOne:
+      'Listo — tu paso quedó guardado. Toca si quieres cambiar fecha o moverlo.',
+    ellieOrganizedFallback:
+      'Listo — tus pasos quedaron guardados. Toca uno si quieres cambiar fecha o moverlo.',
+    ellieOrganizedLooseInAreaOne:
+      'Te puse tu tarea en {{area}}. Toca para cambiar fecha o moverla.',
+    ellieOrganizedLooseInArea:
+      'Te puse {{count}} en {{area}}. Toca para cambiar fecha o moverlas.',
+    ellieOrganizedOneAreaOne:
+      'Te puse tu tarea en {{area}}. Toca para cambiar fecha o moverla.',
+    ellieOrganizedOneArea:
+      'Organicé {{count}} en {{area}}. Toca para cambiar fecha o moverlas.',
+    ellieOrganizedMulti:
+      'Ordené {{count}} en {{areas}} áreas. Toca un paso si quieres ajustar algo.',
     previewBack: 'Editar texto',
     previewBackA11y: 'Volver a editar lo que escribiste',
     previewEditTaskA11y: 'Editar {{task}}',
@@ -307,7 +339,7 @@ export const featuresEs = {
     viewOrganizedLink: 'Ver en Áreas →',
     viewOrganizedA11y: 'Ver todos tus proyectos y cosas guardadas',
     capturePrompt: '¿Qué llevas en mente?',
-    captureSubtitle: 'Una línea por cosa — Koraa agrupa después.',
+    captureSubtitle: 'Una línea por cosa. La fecha la pones después.',
     brainDumpHowTitle: 'Cómo funciona',
     brainDumpStep1:
       'Escribe todo en una lista (una cosa por línea). No hace falta ordenar.',
@@ -329,7 +361,7 @@ export const featuresEs = {
     advancedOptionsA11y: 'Ver proyecto, fecha, categoría y peso',
     advancedOptionsHideA11y: 'Ocultar opciones avanzadas',
     releaseTask: 'Soltar',
-    releaseTaskA11y: 'Soltar lo que escribiste. Koraa lo organizará después.',
+    releaseTaskA11y: 'Soltar lo que escribiste. Luego puedes poner fecha o qué tan pesado se siente.',
     releaseConfirm: '💜 Guardé {{count}} cosas para ti.',
     releaseConfirmOne: '💜 Guardé 1 cosa para ti.',
     batchPartialSave:
@@ -419,12 +451,12 @@ export const featuresEs = {
     clearProjectA11y: 'Guardar como tarea suelta, sin proyecto',
     captureInputA11y: 'Escribe lo que llevas en mente y pulsa Soltar.',
     captureAccessoryHint: 'Escribe lo que llevas en mente',
-    captureAccessoryDone: 'Listo',
+    captureAccessoryDone: 'Cerrar teclado',
     captureAccessoryDoneHint:
       'Luego elige fecha, proyecto o peso — todo opcional',
-    captureAccessoryDoneA11y: 'Cerrar teclado y ver opciones de la tarea',
+    captureAccessoryDoneA11y: 'Cerrar teclado. No guarda lo que escribiste.',
     captureKeyboardStepHint:
-      'Toca Listo en el teclado para ver proyecto, fecha y más abajo.',
+      'Toca Cerrar teclado para ver proyecto, fecha y más abajo.',
     captureStepWrite: 'Paso 1 · Escribir',
     captureStepOrganize: 'Paso 2 · Organizar (opcional)',
     captureStepSave: 'Paso 3 · Guardar',
@@ -437,7 +469,7 @@ export const featuresEs = {
     segmentCaptureA11y: 'Capturar — soltar lo que llevas en mente',
     segmentProjectsA11y: 'Ver todo organizado por áreas y proyectos',
     brainDumpSimpleTitle: '¿Qué llevas en mente?',
-    brainDumpSimpleSub: 'Una línea por cosa. Koraa ordena después.',
+    brainDumpSimpleSub: 'Una línea por cosa. La fecha la pones después.',
     brainDumpPlaceholder:
       'Ej:\nterminar presentación\ncomprar uvas\nllamar a mamá',
     brainDumpTip: 'Tip: escribe una tarea por línea o separa usando comas.',
@@ -790,10 +822,10 @@ export const featuresEs = {
     checkInProgressA11y: 'Momento {{current}} de {{total}}',
     welcome: {
       brand: 'Koraa',
-      title: 'Cómo funciona',
-      titleAccent: 'Koraa',
+      title: 'Así funciona',
+      titleAccent: 'Koraa con Ellie',
       subtitle:
-        'Nombre, suelta una cosa y di cómo estás. Luego ves un paso en Hoy.',
+        'Desliza la muestra — luego lo probamos juntas en un minuto.',
       description:
         'Suelta → siente → Koraa se adapta → un paso.',
       previewTitle: 'Así te ayuda',
@@ -811,10 +843,47 @@ export const featuresEs = {
       exampleHighStep2: 'Llamar al dentista',
       exampleHighStep3: 'Salir a caminar 10 min',
       promise: 'No es hacer más. Es hacer lo que cabe hoy.',
-      quickStart: 'Empezar',
-      quickStartHint: 'Primero tu nombre. Luego sueltas, sientes, y Koraa te deja un paso.',
+      quickStart: 'Probar con Ellie',
+      quickStartHint: 'Tu nombre y luego el flujo real — suelta, siente, Hoy.',
       seeHowItWorks: 'Ver cómo funciona',
       skip: 'Entrar sin check-in',
+    },
+    tour: {
+      progressA11y: 'Muestra {{current}} de {{total}}',
+      swipeHint: 'Desliza o usa las flechas',
+      prevA11y: 'Paso anterior de la muestra',
+      nextA11y: 'Siguiente paso de la muestra',
+      step1Kicker: 'Paso 1 · Suelta',
+      step1Body: 'Escribe lo que traes en la cabeza — sin orden ni categorías.',
+      step2Kicker: 'Paso 2 · Siente',
+      step2Body: 'Un minuto: emoción y energía. Con eso Koraa ajusta cuántos pasos sugieres.',
+      step3Kicker: 'Paso 3 · Hoy',
+      step3Body: 'En Hoy ves pocos pasos sugeridos. Uno basta. Sin culpa.',
+      ellie: {
+        step1: 'Primero sueltas lo pendiente en Tareas — yo lo acomodo.',
+        step2: 'Luego me dices cómo llegaste hoy. Solo tocar y listo.',
+        step3: 'Y en Hoy te dejo pocos pasos sugeridos. Tú eliges cuál.',
+      },
+      mockCaptureLabel: 'Tareas · captura',
+      mockFeelLabel: 'Check-in',
+      mockHoyLabel: 'Hoy · pasos sugeridos',
+      mockCapture: {
+        line1: 'Llamar al dentista',
+        line2: 'Responder un mensaje',
+        line3: 'Beber agua',
+      },
+      mockFeel: {
+        calm: 'Tranquila',
+        tired: 'Agotada',
+        focus: 'Enfocada',
+      },
+      mockFeelEnergy: 'Energía media',
+      mockHoyBadge: 'Paso sugerido',
+      mockHoy: {
+        task1: 'Responder el mensaje',
+        task2: 'Beber agua',
+      },
+      guidedProgressA11y: 'Paso {{current}} de {{total}} del recorrido',
     },
     flow: {
       kicker: 'El ritmo',
@@ -832,7 +901,7 @@ export const featuresEs = {
       footer: 'Koraa convierte el agobio en claridad — un paso suave a la vez.',
     },
     ellie: {
-      welcome: 'Hola, soy Ellie. En un minuto te dejo un paso suave para hoy.',
+      welcome: 'Hola, soy Ellie. Te muestro cómo funciona Koraa — en un minuto lo probamos de verdad.',
       name: '¿Cómo te llamo? Así te saludo en Hoy.',
       capture: 'Suelta 1–3 cosas. Luego ajusto tu Hoy.',
       howItWorks: 'Así funciona Koraa. Cuatro pasos claros.',
@@ -1010,6 +1079,9 @@ export const featuresEs = {
       hintBody: 'Una línea por cosa. Con eso Koraa te deja un paso en Hoy.',
       hintBodyWithCount: 'Koraa guardará {{count}} cosas y te sugerirá un paso.',
       placeholder: 'Ej.\n• Llamar al dentista\n• Responder un mensaje\n• Beber agua',
+      exampleBtn: 'Usar ejemplo',
+      exampleBtnHint: 'Rellena con ideas de ejemplo que puedes editar',
+      exampleText: 'Llamar al dentista\nResponder un mensaje\nBeber agua',
       helper: 'Una idea por línea funciona muy bien.',
       detectedOne: 'Koraa detectó 1 cosa',
       detectedMany: 'Koraa detectó {{count}} cosas',

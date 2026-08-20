@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback, useMemo, type RefObject } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, type RefObject } from 'react';
 import { Platform, type ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
 import { fetchProfilePreferences } from '@/lib/profilePreferences';
 import { subscribeCheckInCelebration, consumeQueuedCheckInCelebration, publishCheckInCelebration } from '@/lib/checkInCelebration';
 import { openRecheckCheckIn } from '@/lib/recheckCheckInBridge';
@@ -75,10 +74,16 @@ export function useHoyScreenBootstrap({
     return t(getTimeOfDayGreetingKey(getTimeOfDayPeriod()));
   }, [t]);
 
+  const consumedOpenRecheckRef = useRef(false);
+
   useEffect(() => {
-    if (openRecheck !== '1') return;
+    if (openRecheck !== '1') {
+      consumedOpenRecheckRef.current = false;
+      return;
+    }
+    if (consumedOpenRecheckRef.current) return;
+    consumedOpenRecheckRef.current = true;
     openRecheckCheckIn(typeof recheckSource === 'string' ? recheckSource : 'deeplink');
-    router.setParams({ openRecheck: undefined, recheckSource: undefined });
   }, [openRecheck, recheckSource]);
 
   useEffect(() => {

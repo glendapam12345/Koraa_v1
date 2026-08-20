@@ -1,9 +1,8 @@
 import { Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Heart, ChevronRight } from 'lucide-react-native';
-import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
-import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
+import { goToCheckIn } from '@/lib/checkInNavigation';
 
 /** Aviso compacto — una línea, sin bloque grande. */
 export function SemanaTodayCheckInBanner() {
@@ -12,7 +11,7 @@ export function SemanaTodayCheckInBanner() {
   return (
     <TouchableOpacity
       style={styles.banner}
-      onPress={() => router.push(CHECK_IN_ROUTE)}
+      onPress={() => goToCheckIn()}
       activeOpacity={0.85}
       accessibilityRole="button"
       accessibilityLabel={t('semana.noCheckInTodayBannerCta')}

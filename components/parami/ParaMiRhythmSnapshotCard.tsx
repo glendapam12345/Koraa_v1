@@ -6,49 +6,67 @@ import type { ParamiRhythmSnapshot } from '@/lib/paramiRhythmSnapshot';
 
 type ParaMiRhythmSnapshotCardProps = {
   snapshot: ParamiRhythmSnapshot;
+  compact?: boolean;
 };
 
 /**
  * Resumen suave del periodo — cifra + bandas de ánimo/energía (sin presión).
  */
-export function ParaMiRhythmSnapshotCard({ snapshot }: ParaMiRhythmSnapshotCardProps) {
+export function ParaMiRhythmSnapshotCard({
+  snapshot,
+  compact = false,
+}: ParaMiRhythmSnapshotCardProps) {
   const { t } = useI18n();
   const energyAccent = INSIGHTS_ENERGY_COLORS[5];
 
   return (
     <View
-      style={styles.card}
+      style={[styles.card, compact && styles.cardCompact]}
       accessibilityRole="summary"
       accessibilityLabel={`${t('parami.rhythmEyebrow')}: ${snapshot.levelLabel}, ${snapshot.score}. ${t('parami.rhythmMoodLabel')}: ${snapshot.moodLabel}. ${t('parami.rhythmEnergyLabel')}: ${snapshot.energyLabel}.`}
     >
       <View style={styles.topRow}>
         <Text style={styles.eyebrow}>{t('parami.rhythmEyebrow')}</Text>
-        <View style={styles.tag}>
+        <View style={[styles.tag, compact && styles.tagCompact]}>
           <Text style={styles.tagText}>{t('parami.rhythmUntilToday')}</Text>
         </View>
       </View>
 
       <View style={styles.mainRow}>
         <View style={styles.copyCol}>
-          <Text style={styles.level}>{snapshot.levelLabel}</Text>
-          <View style={styles.bullet}>
-            <View style={[styles.dot, styles.dotMood]} />
-            <Text style={styles.bulletText}>
-              {t('parami.rhythmMoodLabel')}: {snapshot.moodLabel}
+          <Text style={[styles.level, compact && styles.levelCompact]}>{snapshot.levelLabel}</Text>
+          {compact ? (
+            <Text style={styles.inlineMeta} numberOfLines={1}>
+              {snapshot.moodLabel} · {snapshot.energyLabel}
             </Text>
-          </View>
-          <View style={styles.bullet}>
-            <View style={[styles.dot, { backgroundColor: energyAccent }]} />
-            <Text style={styles.bulletText}>
-              {t('parami.rhythmEnergyLabel')}: {snapshot.energyLabel}
-            </Text>
-          </View>
+          ) : (
+            <>
+              <View style={styles.bullet}>
+                <View style={[styles.dot, styles.dotMood]} />
+                <Text style={styles.bulletText}>
+                  {t('parami.rhythmMoodLabel')}: {snapshot.moodLabel}
+                </Text>
+              </View>
+              <View style={styles.bullet}>
+                <View style={[styles.dot, { backgroundColor: energyAccent }]} />
+                <Text style={styles.bulletText}>
+                  {t('parami.rhythmEnergyLabel')}: {snapshot.energyLabel}
+                </Text>
+              </View>
+            </>
+          )}
         </View>
 
-        <View style={styles.ring} accessibilityElementsHidden>
-          <View style={styles.ringOuter}>
-            <View style={[styles.ringInner, { borderColor: energyAccent }]}>
-              <Text style={styles.score}>{snapshot.score}</Text>
+        <View style={[styles.ring, compact && styles.ringCompact]} accessibilityElementsHidden>
+          <View style={[styles.ringOuter, compact && styles.ringOuterCompact]}>
+            <View
+              style={[
+                styles.ringInner,
+                compact && styles.ringInnerCompact,
+                { borderColor: energyAccent },
+              ]}
+            >
+              <Text style={[styles.score, compact && styles.scoreCompact]}>{snapshot.score}</Text>
             </View>
           </View>
         </View>
@@ -66,6 +84,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
     gap: THEME.spacing.sm,
+  },
+  cardCompact: {
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.rounded,
+    gap: 6,
   },
   topRow: {
     flexDirection: 'row',
@@ -85,6 +109,10 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.calm.card,
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
+  },
+  tagCompact: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
   tagText: {
     ...THEME.typography.meta,
@@ -106,6 +134,15 @@ const styles = StyleSheet.create({
     ...THEME.typography.sectionTitle,
     color: THEME.colors.text.main,
     marginBottom: 4,
+  },
+  levelCompact: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
+    marginBottom: 0,
+  },
+  inlineMeta: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
   },
   bullet: {
     flexDirection: 'row',
@@ -131,6 +168,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  ringCompact: {
+    width: 64,
+    height: 64,
+  },
   ringOuter: {
     width: 88,
     height: 88,
@@ -139,6 +180,12 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.calm.lavender,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  ringOuterCompact: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 4,
   },
   ringInner: {
     width: 68,
@@ -150,8 +197,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: THEME.colors.calm.card,
   },
+  ringInnerCompact: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 3,
+  },
   score: {
     ...THEME.typography.sectionTitle,
     color: THEME.colors.text.main,
+  },
+  scoreCompact: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.bold,
   },
 });

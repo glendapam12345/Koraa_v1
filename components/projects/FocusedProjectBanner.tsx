@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Sparkles, ChevronRight, X } from 'lucide-react-native';
 import { router, type Href } from 'expo-router';
+import { goToHoyTab } from '@/lib/tabNavigation';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { FocusedProjectInfo } from '@/hooks/useFocusedProject';
@@ -41,7 +42,7 @@ export function FocusedProjectBanner({ project, onClearFocus }: FocusedProjectBa
       <View style={styles.linkRowGroup}>
         <TouchableOpacity
           style={styles.linkRow}
-          onPress={() => router.push('/(tabs)')}
+          onPress={() => goToHoyTab()}
           activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityLabel={t('projects.focusedBannerGoHoy')}

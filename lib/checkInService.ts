@@ -14,6 +14,7 @@ import { clearKoraaDailyBriefCache } from '@/lib/ai/koraaDailyBriefCache';
 import { seedHoyLiteFirstDayIfUnset } from '@/lib/hoyLiteDay';
 import { trackCohortDay0Once } from '@/lib/retentionD1';
 import { track } from '@/lib/analytics';
+import { withTimeout, TimeoutError } from '@/lib/withTimeout';
 
 export type DailyCheckInInput = {
   userId: string;
@@ -43,7 +44,8 @@ export async function prioritizeTasksForCheckIn(
     'energyLevel' | 'emotion' | 'availableTime' | 'focusLevel' | 'locale' | 'displayName' | 'emotionLabel'
   >,
 ): Promise<void> {
-  const { data: tasks, error: tasksError } = await supabase
+  try {
+    const { data: tasks, error: tasksError } = await supabase
     .from('tasks')
     .select('*')
     .eq('user_id', userId)
@@ -59,19 +61,25 @@ export async function prioritizeTasksForCheckIn(
 
   if (!scopedTasks.length) return;
 
-  const brainResult = await fetchAndApplyKoraaBrainFocusPlan(
-    userId,
-    {
-      locale: input.locale,
-      displayName: input.displayName ?? '',
-      emotion: input.emotion,
-      emotionLabel: input.emotionLabel ?? input.emotion,
-      energyLevel: input.energyLevel,
-      availableTime: input.availableTime,
-      focusLevel: input.focusLevel,
-    },
-    scopedTasks as Task[],
-  );
+  const brainResult = await withTimeout(
+    fetchAndApplyKoraaBrainFocusPlan(
+      userId,
+      {
+        locale: input.locale,
+        displayName: input.displayName ?? '',
+        emotion: input.emotion,
+        emotionLabel: input.emotionLabel ?? input.emotion,
+        energyLevel: input.energyLevel,
+        availableTime: input.availableTime,
+        focusLevel: input.focusLevel,
+      },
+      scopedTasks as Task[],
+    ),
+    8_000,
+  ).catch((error) => {
+    logger.debug('checkInService: brain reprioritize skipped', error);
+    return { applied: false as const };
+  });
 
   if (brainResult.applied) return;
 
@@ -138,23 +146,41 @@ export async function prioritizeTasksForCheckIn(
       await supabase.from('tasks').update({ is_priority: true }).in('id', previousPriorityTaskIds);
     }
   }
+  } catch (error) {
+    logger.debug('checkInService: prioritize failed', error);
+  }
 }
 
 export async function saveDailyCheckInAndPrioritize(input: DailyCheckInInput): Promise<SaveCheckInResult> {
   const today = getLocalDateString();
   const emotionStored = input.emotion.trim().toLowerCase();
 
-  const { error: checkInError } = await supabase.from('daily_check_ins').upsert(
-    {
-      user_id: input.userId,
-      date: today,
-      emotion: emotionStored,
-      energy_level: input.energyLevel,
-      available_time: input.availableTime,
-      focus_level: input.focusLevel,
-    },
-    { onConflict: 'user_id,date' },
-  );
+  let checkInError;
+  try {
+    const upsertResult = await withTimeout(
+      (async () =>
+        supabase
+          .from('daily_check_ins')
+          .upsert(
+            {
+              user_id: input.userId,
+              date: today,
+              emotion: emotionStored,
+              energy_level: input.energyLevel,
+              available_time: input.availableTime,
+              focus_level: input.focusLevel,
+            },
+            { onConflict: 'user_id,date' },
+          ))(),
+      12_000,
+    );
+    checkInError = upsertResult.error;
+  } catch (error) {
+    if (error instanceof TimeoutError) {
+      return { success: false, errorMessage: 'timeout' };
+    }
+    throw error;
+  }
 
   let offline = false;
 
@@ -177,9 +203,13 @@ export async function saveDailyCheckInAndPrioritize(input: DailyCheckInInput): P
     }
   }
 
-  await clearKoraaDailyBriefCache(input.userId);
+  try {
+    await clearKoraaDailyBriefCache(input.userId);
+  } catch (error) {
+    logger.debug('checkInService: brief cache clear skipped', error);
+  }
 
-  await prioritizeTasksForCheckIn(input.userId, {
+  void prioritizeTasksForCheckIn(input.userId, {
     energyLevel: input.energyLevel,
     emotion: emotionStored,
     availableTime: input.availableTime,
@@ -187,6 +217,8 @@ export async function saveDailyCheckInAndPrioritize(input: DailyCheckInInput): P
     locale: input.locale,
     displayName: input.displayName,
     emotionLabel: input.emotionLabel,
+  }).catch((error) => {
+    logger.debug('checkInService: prioritize skipped', error);
   });
 
   // Dates stay as they are until the person accepts a replan in Hoy.
@@ -207,8 +239,12 @@ export async function saveDailyCheckInAndPrioritize(input: DailyCheckInInput): P
   let celebration: SaveCheckInResult['celebration'] = null;
   if (!offline) {
     try {
-      const streak = await fetchCurrentStreak(supabase, input.userId);
-      celebration = { streak, milestone: isStreakMilestone(streak) };
+      const streak = await withTimeout(fetchCurrentStreak(supabase, input.userId), 5_000).catch(
+        () => null,
+      );
+      if (streak != null) {
+        celebration = { streak, milestone: isStreakMilestone(streak) };
+      }
     } catch {
       celebration = null;
     }

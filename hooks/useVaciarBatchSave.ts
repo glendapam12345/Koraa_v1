@@ -24,7 +24,7 @@ type UseVaciarBatchSaveArgs = {
   onSaved: () => void | Promise<void>;
 };
 
-const ITEM_SAVE_TIMEOUT_MS = 12_000;
+const ITEM_SAVE_TIMEOUT_MS = 8_000;
 
 function withTimeout(
   promise: Promise<VaciarCreateTaskResult>,
@@ -92,7 +92,7 @@ export function useVaciarBatchSave({
             createVaciarTask(batchItemToDraft(item), {
               locale,
               hasCheckInToday: Boolean(hasCheckInToday),
-              skipReprioritize: index < valid.length - 1,
+              skipReprioritize: true,
             }),
             ITEM_SAVE_TIMEOUT_MS,
           );

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react-native';
 import { shareTasksCsv } from '@/lib/exportTasksCsv';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { replaceToHoyTab } from '@/lib/tabNavigation';
 import { openVaciarCapture } from '@/lib/vaciarNavigation';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
@@ -391,7 +392,7 @@ function SemanaScreen() {
       }
       requestHoyRefresh();
       void loadWeekTasks(getWeekMonday(selectedDate));
-      router.replace('/(tabs)');
+      replaceToHoyTab();
     } finally {
       setReplanApplying(false);
     }

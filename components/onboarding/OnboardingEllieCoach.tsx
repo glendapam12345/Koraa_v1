@@ -1,22 +1,10 @@
-import { View, Text, StyleSheet, Image, Animated, Easing } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Image, Animated, Easing, TouchableOpacity } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
 import { THEME } from '@/constants/theme';
 import type { EllieMood } from '@/lib/elliePersonality';
+import { ELLIE_MOOD_ASSETS } from '@/lib/ellieMoodAssets';
 
 export type { EllieMood };
-
-const ELLIE_MOODS: Record<EllieMood, number> = {
-  default: require('@/assets/images/ellie-mascot.png'),
-  breathing: require('@/assets/images/ellie-mood-breathing.png'),
-  sleepy: require('@/assets/images/ellie-mood-sleepy.png'),
-  happy: require('@/assets/images/ellie-mood-happy.png'),
-  grateful: require('@/assets/images/ellie-mood-grateful.png'),
-  focus: require('@/assets/images/ellie-mood-focus.png'),
-  comforting: require('@/assets/images/ellie-mood-comforting.png'),
-  proud: require('@/assets/images/ellie-mood-proud.png'),
-  cozy: require('@/assets/images/ellie-mood-cozy.png'),
-  curious: require('@/assets/images/ellie-mood-curious.png'),
-};
 
 const MOOD_HALO: Record<EllieMood, string> = {
   default: THEME.colors.calm.mist,
@@ -45,6 +33,12 @@ type OnboardingEllieCoachProps = {
   moodCaption?: string;
   /** Feeling name under Ellie — accent italic, not a companion note. */
   moodCaptionAccent?: boolean;
+  /** Abre check-in / actualizar emoción al tocar el retrato de Ellie. */
+  onPortraitPress?: () => void;
+  /** Línea bajo el retrato: “Toca aquí para cambiar”. */
+  portraitHint?: string;
+  portraitA11yLabel?: string;
+  portraitA11yHint?: string;
 };
 
 /**
@@ -60,12 +54,26 @@ export function OnboardingEllieCoach({
   accessible = true,
   moodCaption,
   moodCaptionAccent = false,
+  onPortraitPress,
+  portraitHint,
+  portraitA11yLabel,
+  portraitA11yHint,
 }: OnboardingEllieCoachProps) {
   const breath = useRef(new Animated.Value(1)).current;
   const pop = useRef(new Animated.Value(1)).current;
-  const source = ELLIE_MOODS[mood] ?? ELLIE_MOODS.default;
+  const mountedRef = useRef(false);
+  const [moodImageReady, setMoodImageReady] = useState(mood === 'default');
+  const [moodImageFailed, setMoodImageFailed] = useState(false);
+  const source = ELLIE_MOOD_ASSETS[mood] ?? ELLIE_MOOD_ASSETS.default;
   const halo = MOOD_HALO[mood] ?? THEME.colors.calm.mist;
   const haloSize = size + 20;
+  const showDefaultUnderlay =
+    mood !== 'default' && (!moodImageReady || moodImageFailed);
+
+  useEffect(() => {
+    setMoodImageReady(mood === 'default');
+    setMoodImageFailed(false);
+  }, [mood]);
 
   useEffect(() => {
     if (!breathe) {
@@ -93,6 +101,11 @@ export function OnboardingEllieCoach({
   }, [breathe, breath]);
 
   useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      pop.setValue(1);
+      return;
+    }
     pop.setValue(0.84);
     const anim = Animated.spring(pop, {
       toValue: 1,
@@ -104,6 +117,75 @@ export function OnboardingEllieCoach({
     return () => anim.stop();
   }, [mood, pop]);
 
+  const portraitPressable = Boolean(onPortraitPress);
+
+  const portraitInner = (
+    <>
+      <View
+        style={[
+          styles.halo,
+          portraitPressable && styles.haloPressable,
+          {
+            width: haloSize,
+            height: haloSize,
+            borderRadius: haloSize / 2,
+            backgroundColor: halo,
+          },
+        ]}
+      >
+        <Animated.View style={{ transform: [{ scale: breath }] }}>
+          <Animated.View style={{ transform: [{ scale: pop }] }}>
+            <View style={[styles.portraitFrame, { width: size, height: size }]}>
+              {showDefaultUnderlay ? (
+                <Image
+                  source={ELLIE_MOOD_ASSETS.default}
+                  style={[styles.portrait, { width: size, height: size }]}
+                  resizeMode="contain"
+                  accessibilityElementsHidden
+                />
+              ) : null}
+              {mood === 'default' || moodImageFailed ? (
+                <Image
+                  source={ELLIE_MOOD_ASSETS.default}
+                  style={[styles.portrait, { width: size, height: size }]}
+                  resizeMode="contain"
+                  accessibilityElementsHidden
+                />
+              ) : (
+                <Image
+                  source={source}
+                  style={[
+                    styles.portrait,
+                    { width: size, height: size },
+                    showDefaultUnderlay ? styles.portraitOverlay : null,
+                  ]}
+                  resizeMode="contain"
+                  fadeDuration={0}
+                  onLoad={() => setMoodImageReady(true)}
+                  onError={() => setMoodImageFailed(true)}
+                  accessibilityElementsHidden
+                />
+              )}
+            </View>
+          </Animated.View>
+        </Animated.View>
+      </View>
+      {moodCaption ? (
+        <Text
+          style={[styles.moodCaption, moodCaptionAccent && styles.moodCaptionAccent]}
+          numberOfLines={2}
+        >
+          {moodCaption}
+        </Text>
+      ) : null}
+      {portraitHint ? (
+        <Text style={styles.portraitHint} numberOfLines={2}>
+          {portraitHint}
+        </Text>
+      ) : null}
+    </>
+  );
+
   return (
     <View
       style={[styles.row, withBottomGap && styles.rowGap]}
@@ -112,39 +194,25 @@ export function OnboardingEllieCoach({
         accessible ? (moodCaption ? `${moodCaption}. ${message}` : message) : undefined
       }
       accessible={accessible}
-      importantForAccessibility={accessible ? 'yes' : 'no-hide-descendants'}
-      pointerEvents={accessible ? 'auto' : 'none'}
+      importantForAccessibility={accessible ? 'yes' : portraitPressable ? 'auto' : 'no-hide-descendants'}
+      pointerEvents={accessible ? 'auto' : portraitPressable ? 'box-none' : 'none'}
     >
-      <View style={[styles.portraitCol, { width: haloSize }]}>
-        <View
-          style={[
-            styles.halo,
-            {
-              width: haloSize,
-              height: haloSize,
-              borderRadius: haloSize / 2,
-              backgroundColor: halo,
-            },
-          ]}
+      {portraitPressable ? (
+        <TouchableOpacity
+          style={[styles.portraitCol, { width: haloSize }]}
+          onPress={onPortraitPress}
+          delayPressIn={0}
+          activeOpacity={0.82}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel={portraitA11yLabel ?? portraitHint ?? moodCaption ?? message}
+          accessibilityHint={portraitA11yHint}
         >
-          <Animated.View style={{ transform: [{ scale: Animated.multiply(breath, pop) }] }}>
-            <Image
-              source={source}
-              style={{ width: size, height: size, backgroundColor: 'transparent' }}
-              resizeMode="contain"
-              accessibilityElementsHidden
-            />
-          </Animated.View>
-        </View>
-        {moodCaption ? (
-          <Text
-            style={[styles.moodCaption, moodCaptionAccent && styles.moodCaptionAccent]}
-            numberOfLines={2}
-          >
-            {moodCaption}
-          </Text>
-        ) : null}
-      </View>
+          {portraitInner}
+        </TouchableOpacity>
+      ) : (
+        <View style={[styles.portraitCol, { width: haloSize }]}>{portraitInner}</View>
+      )}
       <View style={styles.bubble}>
         <View style={styles.tail} />
         <Text style={styles.message}>{message}</Text>
@@ -169,6 +237,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  haloPressable: {
+    borderWidth: 1.5,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    borderStyle: 'dashed',
+  },
+  portrait: {
+    backgroundColor: 'transparent',
+  },
+  portraitFrame: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  portraitOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
   moodCaption: {
     ...THEME.typography.caption,
     color: THEME.colors.calm.lavenderDeep,
@@ -183,6 +269,16 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 24,
     textAlign: 'center',
+  },
+  portraitHint: {
+    ...THEME.typography.small,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
+    textAlign: 'center',
+    marginTop: 4,
+    paddingHorizontal: 2,
+    textDecorationLine: 'underline',
+    lineHeight: 16,
   },
   bubble: {
     flex: 1,

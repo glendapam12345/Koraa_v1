@@ -65,6 +65,7 @@ type BrainDumpAreaDragBoardProps = {
   onPressColumnHeader?: (column: BrainDumpAreaColumn) => void;
   onPressTask?: (taskId: string) => void;
   onRequestMoveTask?: (taskId: string) => void;
+  onDeleteTask?: (taskId: string) => void;
   onPressAddProject?: (column: BrainDumpAreaColumn) => void;
   onPressDeleteProject?: (projectId: string, projectName: string) => void;
   emptyColumnHint: string;
@@ -104,6 +105,7 @@ type AreaColumnProps = {
   onPressColumnHeader?: (column: BrainDumpAreaColumn) => void;
   onPressTask?: (taskId: string) => void;
   onRequestMoveTask?: (taskId: string) => void;
+  onDeleteTask?: (taskId: string) => void;
   onPressAddProject?: (column: BrainDumpAreaColumn) => void;
   onPressDeleteProject?: (projectId: string, projectName: string) => void;
   onMoveAreaColumn?: (ref: string, direction: 'up' | 'down') => void;
@@ -125,6 +127,7 @@ function ProjectGroupSection({
   emptyHint,
   onPressTask,
   onRequestMoveTask,
+  onDeleteTask,
   onPressDeleteProject,
   groupRef,
   onMeasureGroup,
@@ -140,6 +143,7 @@ function ProjectGroupSection({
   emptyHint: string;
   onPressTask?: (taskId: string) => void;
   onRequestMoveTask?: (taskId: string) => void;
+  onDeleteTask?: (taskId: string) => void;
   onPressDeleteProject?: (projectId: string, projectName: string) => void;
   onMeasureGroup?: (group: BrainDumpProjectGroup, columnId: string) => void;
   groupRef?: (groupId: string, node: View | null) => void;
@@ -206,6 +210,10 @@ function ProjectGroupSection({
               onMovePress={
                 onRequestMoveTask ? () => onRequestMoveTask(task.id) : undefined
               }
+              onDeletePress={
+                onDeleteTask ? () => onDeleteTask(task.id) : undefined
+              }
+              deleteA11yLabel={t('vaciar.previewDeleteTaskA11y')}
               onLongPressFallback={
                 onRequestMoveTask
                   ? () => onRequestMoveTask(task.id)
@@ -237,6 +245,7 @@ function AreaColumn({
   onPressColumnHeader,
   onPressTask,
   onRequestMoveTask,
+  onDeleteTask,
   onPressAddProject,
   onPressDeleteProject,
   onMoveAreaColumn,
@@ -375,6 +384,10 @@ function AreaColumn({
                 onMovePress={
                   onRequestMoveTask ? () => onRequestMoveTask(task.id) : undefined
                 }
+                onDeletePress={
+                  onDeleteTask ? () => onDeleteTask(task.id) : undefined
+                }
+                deleteA11yLabel={t('vaciar.previewDeleteTaskA11y')}
                 onLongPressFallback={
                   onRequestMoveTask
                     ? () => onRequestMoveTask(task.id)
@@ -401,6 +414,7 @@ function AreaColumn({
                 emptyHint={emptyHint}
                 onPressTask={onPressTask}
                 onRequestMoveTask={onRequestMoveTask}
+                onDeleteTask={onDeleteTask}
                 onPressDeleteProject={onPressDeleteProject}
                 groupRef={groupRef}
                 onMeasureGroup={onMeasureGroup}
@@ -443,6 +457,7 @@ export function BrainDumpAreaDragBoard({
   onPressColumnHeader,
   onPressTask,
   onRequestMoveTask,
+  onDeleteTask,
   onPressAddProject,
   onPressDeleteProject,
   emptyColumnHint,
@@ -679,6 +694,7 @@ export function BrainDumpAreaDragBoard({
         onPressColumnHeader={onPressColumnHeader}
         onPressTask={onPressTask}
         onRequestMoveTask={onRequestMoveTask}
+        onDeleteTask={onDeleteTask}
         onPressAddProject={onPressAddProject}
         onPressDeleteProject={onPressDeleteProject}
         onMoveAreaColumn={onMoveAreaColumn}

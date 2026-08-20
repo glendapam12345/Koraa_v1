@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useEffect, useRef } from 'react';
-import { Check, ChevronRight } from 'lucide-react-native';
+import { Check, ChevronRight, Star } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 
@@ -19,6 +19,7 @@ type HoyFocusTaskRowProps = {
   projectPercent?: number | null;
   areaLabel?: string | null;
   isPriority?: boolean;
+  isLast?: boolean;
   onToggleComplete: () => void;
   onOpenDetails: () => void;
   onDelete?: () => void;
@@ -30,14 +31,19 @@ type HoyFocusTaskRowProps = {
 };
 
 /**
- * Fila calm del plan de Hoy: check + título (+ meta suave) + chevron.
- * Posponer / reordenar / proyecto viven en el detalle (progressive disclosure).
+ * Fila calm del plan de Hoy: check + título + meta (proyecto, fecha, paso sugerido).
  */
 export function HoyFocusTaskRow({
   content,
   completed,
   preferredTimeLabel,
   durationLabel,
+  deadlineLabel,
+  deadlineUrgent = false,
+  projectName,
+  projectColor,
+  isPriority = false,
+  isLast = false,
   onToggleComplete,
   onOpenDetails,
 }: HoyFocusTaskRowProps) {
@@ -63,11 +69,22 @@ export function HoyFocusTaskRow({
     ]).start();
   }, [completed, pulse]);
 
-  const softMeta = preferredTimeLabel || durationLabel || null;
+  const timeMeta =
+    preferredTimeLabel && durationLabel
+      ? `${preferredTimeLabel} · ${durationLabel}`
+      : preferredTimeLabel || durationLabel || null;
+
+  const accentColor = projectColor || THEME.colors.gradient.blue;
+  const showMeta = !completed && (isPriority || projectName || deadlineLabel || timeMeta);
 
   return (
     <Animated.View
-      style={[styles.row, completed && styles.rowCompleted, { transform: [{ scale: pulse }] }]}
+      style={[
+        styles.row,
+        completed && styles.rowCompleted,
+        isLast && styles.rowLast,
+        { transform: [{ scale: pulse }] },
+      ]}
     >
       <TouchableOpacity
         onPress={onToggleComplete}
@@ -99,10 +116,45 @@ export function HoyFocusTaskRow({
         <Text style={[styles.content, completed && styles.contentDone]} numberOfLines={2}>
           {content}
         </Text>
-        {softMeta && !completed ? (
-          <Text style={styles.meta} numberOfLines={1}>
-            {softMeta}
-          </Text>
+        {showMeta ? (
+          <View style={styles.metaRow}>
+            {isPriority ? (
+              <View style={styles.chipPriority}>
+                <Star
+                  size={10}
+                  color={THEME.colors.calm.lavenderDeep}
+                  fill={THEME.colors.calm.lavenderDeep}
+                />
+                <Text style={styles.chipPriorityText}>{t('hoy.focusTaskSuggestedBadge')}</Text>
+              </View>
+            ) : null}
+            {projectName ? (
+              <View style={styles.chipProject}>
+                <View style={[styles.projectDot, { backgroundColor: accentColor }]} />
+                <Text style={[styles.chipProjectText, { color: accentColor }]} numberOfLines={1}>
+                  {projectName}
+                </Text>
+              </View>
+            ) : null}
+            {deadlineLabel ? (
+              <View style={[styles.chipDeadline, deadlineUrgent && styles.chipDeadlineUrgent]}>
+                <Text
+                  style={[
+                    styles.chipDeadlineText,
+                    deadlineUrgent && styles.chipDeadlineTextUrgent,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {deadlineLabel}
+                </Text>
+              </View>
+            ) : null}
+            {timeMeta ? (
+              <Text style={styles.timeMeta} numberOfLines={1}>
+                {timeMeta}
+              </Text>
+            ) : null}
+          </View>
         ) : null}
       </TouchableOpacity>
 
@@ -125,7 +177,7 @@ export function HoyFocusTaskRow({
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: THEME.spacing.sm,
     paddingVertical: THEME.spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -134,12 +186,16 @@ const styles = StyleSheet.create({
   rowCompleted: {
     opacity: 0.6,
   },
+  rowLast: {
+    borderBottomWidth: 0,
+  },
   checkTouch: {
     minWidth: THEME.sizes.touchTarget,
     minHeight: THEME.sizes.touchTarget,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: -10,
+    marginTop: 2,
   },
   checkRing: {
     width: 24,
@@ -162,7 +218,7 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     minWidth: 0,
-    gap: 4,
+    gap: 6,
     paddingVertical: 2,
   },
   content: {
@@ -176,15 +232,72 @@ const styles = StyleSheet.create({
     color: THEME.colors.text.secondary,
     textDecorationLine: 'line-through',
   },
-  meta: {
-    ...THEME.typography.caption,
+  metaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+  },
+  chipPriority: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.calm.lavender,
+  },
+  chipPriorityText: {
+    ...THEME.typography.small,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
+    lineHeight: 16,
+  },
+  chipProject: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    maxWidth: '70%',
+  },
+  projectDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  chipProjectText: {
+    ...THEME.typography.small,
+    fontFamily: THEME.fonts.heading.medium,
+    lineHeight: 16,
+    flexShrink: 1,
+  },
+  chipDeadline: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: THEME.borderRadius.pill,
+    backgroundColor: THEME.colors.fill[200],
+  },
+  chipDeadlineUrgent: {
+    backgroundColor: THEME.colors.calm.blush,
+  },
+  chipDeadlineText: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 16,
+  },
+  chipDeadlineTextUrgent: {
+    color: THEME.colors.gradient.pink,
+    fontFamily: THEME.fonts.heading.medium,
+  },
+  timeMeta: {
+    ...THEME.typography.small,
     color: THEME.colors.text.tertiary,
-    lineHeight: 18,
+    lineHeight: 16,
   },
   chevronBtn: {
     minWidth: 40,
     minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 2,
   },
 });

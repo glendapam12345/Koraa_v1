@@ -30,6 +30,19 @@ export function isHoyCaptureSource(source: string | string[] | undefined): boole
   return firstSearchParam(source) === 'hoy';
 }
 
+/** Survives Vaciar remounts. `setParams` while typing remounts the tab and kicks Expo Go to boot. */
+const consumedCaptureStamps = new Set<string>();
+
+export function takeFreshCaptureStamp(stamp: string): boolean {
+  if (!stamp || consumedCaptureStamps.has(stamp)) return false;
+  consumedCaptureStamps.add(stamp);
+  if (consumedCaptureStamps.size > 40) {
+    const oldest = consumedCaptureStamps.values().next().value;
+    if (oldest) consumedCaptureStamps.delete(oldest);
+  }
+  return true;
+}
+
 /** Params para abrir Tareas limpio. `undefined` no borra query params en Expo Router. */
 export function buildVaciarCaptureParams(
   options?: OpenVaciarCaptureOptions,

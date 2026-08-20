@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { ChevronRight, Sparkles } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { goToHoyTab } from '@/lib/tabNavigation';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { focusProjectForToday } from '@/lib/projectFocus';
@@ -58,7 +59,7 @@ export function ProjectFocusCta({
         [
           {
             text: t('projects.focusGoHoy'),
-            onPress: () => router.push('/(tabs)'),
+            onPress: () => goToHoyTab(),
           },
           {
             text: t('projects.focusGoOrganized'),

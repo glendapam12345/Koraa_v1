@@ -36,6 +36,7 @@ type ReviewPreviewTaskRowProps = {
   compact?: boolean;
   hideTitle?: boolean;
   canMove?: boolean;
+  hideDelete?: boolean;
   onChange: (item: EnrichedCaptureItem) => void;
   onRequestMove?: () => void;
   onDelete: () => void;
@@ -54,6 +55,7 @@ export function ReviewPreviewTaskRow({
   compact = true,
   hideTitle = false,
   canMove = false,
+  hideDelete = false,
   onChange,
   onRequestMove,
   onDelete,
@@ -118,27 +120,31 @@ export function ReviewPreviewTaskRow({
             placeholderTextColor={THEME.colors.text.tertiary}
             accessibilityLabel={t('vaciar.previewEditTaskA11y', { task: item.content.slice(0, 40) })}
           />
-          <TouchableOpacity
-            onPress={onDelete}
-            hitSlop={8}
-            style={styles.iconBtn}
-            accessibilityRole="button"
-            accessibilityLabel={t('vaciar.previewDeleteTaskA11y')}
-          >
-            <Trash2 size={compact ? 14 : 16} color={THEME.colors.semantic.danger} />
-          </TouchableOpacity>
+          {!hideDelete ? (
+            <TouchableOpacity
+              onPress={onDelete}
+              hitSlop={8}
+              style={styles.iconBtn}
+              accessibilityRole="button"
+              accessibilityLabel={t('vaciar.previewDeleteTaskA11y')}
+            >
+              <Trash2 size={compact ? 14 : 16} color={THEME.colors.semantic.danger} />
+            </TouchableOpacity>
+          ) : null}
         </View>
       ) : (
         <View style={styles.hideTitleActions}>
-          <TouchableOpacity
-            onPress={onDelete}
-            hitSlop={8}
-            style={styles.iconBtn}
-            accessibilityRole="button"
-            accessibilityLabel={t('vaciar.previewDeleteTaskA11y')}
-          >
-            <Trash2 size={14} color={THEME.colors.semantic.danger} />
-          </TouchableOpacity>
+          {!hideDelete ? (
+            <TouchableOpacity
+              onPress={onDelete}
+              hitSlop={8}
+              style={styles.iconBtn}
+              accessibilityRole="button"
+              accessibilityLabel={t('vaciar.previewDeleteTaskA11y')}
+            >
+              <Trash2 size={14} color={THEME.colors.semantic.danger} />
+            </TouchableOpacity>
+          ) : null}
         </View>
       )}
 

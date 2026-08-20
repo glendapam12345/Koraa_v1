@@ -32,6 +32,17 @@ describe('resolveEllieDayVoice', () => {
     expect(voice.message).not.toBe('HERE_IS_WHAT_TODAY_CAN_HOLD');
   });
 
+  it('explains the recommendation only after they confirm how they feel', () => {
+    const voice = resolveEllieDayVoice({
+      ...base,
+      dailyState: 'adapting',
+      middayStep: 'propose',
+      adaptPreviewMessage: 'SEE_WHAT_FITS',
+    });
+    expect(voice.message).toBe('SEE_WHAT_FITS');
+    expect(voice.message).not.toBe('ADAPT');
+  });
+
   it('offers a free day instead of manufacturing tasks', () => {
     const voice = resolveEllieDayVoice({
       ...base,

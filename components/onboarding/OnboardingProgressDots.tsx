@@ -1,51 +1,69 @@
-import { View, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
-import { useI18n } from '@/contexts/I18nContext';
+import { View, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 
 type OnboardingProgressDotsProps = {
   total: number;
-  activeIndex: number;
-  style?: StyleProp<ViewStyle>;
+  current: number;
+  accessibilityLabel: string;
 };
 
-export function OnboardingProgressDots({ total, activeIndex, style }: OnboardingProgressDotsProps) {
-  const { t } = useI18n();
-
+/** Indicador calm de progreso en el onboarding guiado. */
+export function OnboardingProgressDots({
+  total,
+  current,
+  accessibilityLabel,
+}: OnboardingProgressDotsProps) {
   return (
     <View
-      style={[styles.container, style]}
-      accessible
-      accessibilityRole="text"
-      accessibilityLabel={t('onboardingA11y.progressStep', {
-        current: activeIndex + 1,
-        total,
-      })}
+      style={styles.row}
+      accessibilityRole="progressbar"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityValue={{ min: 1, max: total, now: current }}
     >
-      {Array.from({ length: total }, (_, index) => (
-        <View
-          key={index}
-          style={[styles.dot, index === activeIndex && styles.dotActive]}
-          importantForAccessibility="no-hide-descendants"
-          accessibilityElementsHidden
-        />
-      ))}
+      {Array.from({ length: total }, (_, index) => {
+        const step = index + 1;
+        const active = step === current;
+        const done = step < current;
+        return active ? (
+          <LinearGradient
+            key={step}
+            colors={[THEME.colors.gradient.blue, THEME.colors.gradient.pink]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.dotActive}
+          />
+        ) : (
+          <View
+            key={step}
+            style={[styles.dot, done && styles.dotDone]}
+          />
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  row: {
     flexDirection: 'row',
-    gap: THEME.spacing.xs,
+    alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    marginBottom: THEME.spacing.sm,
   },
   dot: {
-    width: 32,
-    height: 4,
-    borderRadius: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: THEME.colors.calm.border,
   },
+  dotDone: {
+    backgroundColor: THEME.colors.calm.lavender,
+  },
   dotActive: {
-    backgroundColor: THEME.colors.calm.lavenderDeep,
+    width: 24,
+    height: 8,
+    borderRadius: 4,
   },
 });

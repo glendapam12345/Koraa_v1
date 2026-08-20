@@ -1,4 +1,4 @@
-import { buildEllieAdaptMessage, energyBand, mindBand } from '@/lib/ellieCheckInInterpret';
+import { buildEllieAdaptMessage, energyBand, mindBand, timeBand } from '@/lib/ellieCheckInInterpret';
 
 describe('ellieCheckInInterpret', () => {
   it('bands energy without using enough-for-today', () => {
@@ -11,6 +11,17 @@ describe('ellieCheckInInterpret', () => {
     expect(mindBand('Nublada')).toBe('cloudy');
     expect(mindBand('Clara')).toBe('clear');
     expect(mindBand('Normal')).toBe('ok');
+    expect(mindBand('Muy distraída')).toBe('foggy');
+    expect(mindBand('Algo distraída')).toBe('cloudy');
+    expect(mindBand('Enfocada')).toBe('clear');
+    expect(mindBand('Súper enfocada')).toBe('clear');
+  });
+
+  it('bands time from stored availability labels', () => {
+    expect(timeBand('Poco (1-2hrs)')).toBe('little');
+    expect(timeBand('Medio (2-4hrs)')).toBe('some');
+    expect(timeBand('Bastante (4-6hrs)')).toBe('plenty');
+    expect(timeBand('Todo el día')).toBe('allDay');
   });
 
   it('does not push capture when the day is free', () => {

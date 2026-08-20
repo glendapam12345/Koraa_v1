@@ -5,6 +5,7 @@ import { THEME } from '@/constants/theme';
 import { EmotionCard } from '@/components/EmotionCard';
 import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
 import { OnboardingEllieCoach } from '@/components/onboarding/OnboardingEllieCoach';
+import { OnboardingProgressDots } from '@/components/onboarding/OnboardingProgressDots';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
@@ -50,8 +51,13 @@ export default function EmotionScreen() {
 
   return (
     <OnboardingScreenShell>
+      <OnboardingProgressDots
+        total={3}
+        current={2}
+        accessibilityLabel={t('onboarding.tour.guidedProgressA11y', { current: 2, total: 3 })}
+      />
       <OnboardingCheckInProgress loopStep={2} />
-      <OnboardingEllieCoach message={t('onboarding.ellie.emotion')} mood="breathing" size={52} />
+      <OnboardingEllieCoach message={t('onboarding.ellie.emotion')} mood="breathing" size={64} />
       <Text style={onboardingTypography.title}>{t('onboarding.emotion.title')}</Text>
       <Text style={onboardingTypography.titleAccent}>{t('onboarding.emotion.titleAccent')}</Text>
       <Text style={onboardingTypography.subtitle}>{t('onboarding.emotion.subtitle')}</Text>

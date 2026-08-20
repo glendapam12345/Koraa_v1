@@ -1,11 +1,12 @@
 import type { TipCategoryId } from '@/lib/tipsTypes';
 import type { TipAction } from '@/lib/tipActions';
+import type { TipInAppAction } from '@/lib/tipInAppActions';
 
 /** Apps externas opcionales — nunca el camino principal del consejo. */
 export type TipOptionalApp = Extract<TipAction, 'spotify' | 'apple_music'>;
 
 /** CTAs que se quedan dentro de Koraa. */
-export type TipInAppAction = Extract<TipAction, 'hoy' | 'vaciar' | 'focus_session' | 'breath'>;
+export type { TipInAppAction } from '@/lib/tipInAppActions';
 
 export type CatalogTipEntry = {
   id: string;

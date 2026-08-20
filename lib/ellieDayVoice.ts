@@ -19,6 +19,7 @@ export type EllieDayVoiceInput = {
   adjustMessage?: string;
   mindGoMessage?: string;
   proposeMessage?: string;
+  adaptPreviewMessage?: string;
   adaptingMessage?: string;
   freeDayMessage?: string;
   inProgressMessage: string;
@@ -50,6 +51,7 @@ export function resolveEllieDayVoice(input: EllieDayVoiceInput): EllieDayVoice {
     adjustMessage = '',
     mindGoMessage = '',
     proposeMessage = '',
+    adaptPreviewMessage = '',
     adaptingMessage = '',
     freeDayMessage = '',
     inProgressMessage,
@@ -92,6 +94,9 @@ export function resolveEllieDayVoice(input: EllieDayVoiceInput): EllieDayVoice {
   }
 
   if (dailyState === 'adapting' && adaptingMessage) {
+    if (middayStep === 'propose' && adaptPreviewMessage) {
+      return { message: adaptPreviewMessage };
+    }
     return { message: adaptingMessage };
   }
 

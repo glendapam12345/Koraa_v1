@@ -86,21 +86,22 @@ export function ParaMiTipsSection({ context }: ParaMiTipsSectionProps) {
 
 const styles = StyleSheet.create({
   wrap: {
-    gap: THEME.spacing.md,
+    gap: THEME.spacing.sm,
   },
   header: {
-    gap: THEME.spacing.xs,
+    gap: 4,
     alignItems: 'center',
   },
   title: {
-    ...THEME.typography.sectionTitle,
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.medium,
     color: THEME.colors.text.main,
     textAlign: 'center',
   },
   lead: {
-    ...THEME.typography.meta,
+    ...THEME.typography.small,
     color: THEME.colors.text.secondary,
-    lineHeight: 18,
+    lineHeight: 16,
     textAlign: 'center',
   },
   planNote: {

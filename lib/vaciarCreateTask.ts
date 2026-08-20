@@ -12,6 +12,32 @@ import {
   type VaciarValidationCode,
 } from '@/lib/vaciarTaskValidation';
 import { isMissingTaskLifeAreaKeyColumnError } from '@/lib/projectLifeAreaSchema';
+import { TimeoutError, withTimeout } from '@/lib/withTimeout';
+
+const TASK_INSERT_TIMEOUT_MS = 12_000;
+
+async function insertMainTaskRow(
+  payload: Record<string, unknown>,
+): Promise<{ data: { id: string } | null; error: unknown }> {
+  const request = supabase.from('tasks').insert(payload).select('id').single();
+  try {
+    return await withTimeout(
+      request as unknown as Promise<{ data: { id: string } | null; error: unknown }>,
+      TASK_INSERT_TIMEOUT_MS,
+    );
+  } catch (error) {
+    if (error instanceof TimeoutError) {
+      return { data: null, error: { message: 'timeout', code: 'TIMEOUT' } };
+    }
+    throw error;
+  }
+}
+
+function isLifeAreaKeyInsertError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const msg = ('message' in error ? String(error.message || '') : '').toLowerCase();
+  return msg.includes('life_area_key') || msg.includes('life area');
+}
 
 export { validateVaciarTaskDraft, type VaciarTaskDraft, type VaciarValidationCode };
 
@@ -75,11 +101,9 @@ export async function createVaciarTask(
 
   const trimmed = draft.content.trim().slice(0, 300);
   const categoryToSave =
-    draft.selectedCategory === ''
-      ? draft.assignToProject
-        ? detectCategory(trimmed) || 'otros'
-        : ''
-      : draft.selectedCategory || detectCategory(trimmed) || 'otros';
+    draft.selectedCategory?.trim()
+      ? draft.selectedCategory.trim()
+      : detectCategory(trimmed) || 'otros';
   const projectIdToSave = draft.assignToProject === true ? draft.selectedProjectId : null;
   const lifeAreaKeyToSave =
     projectIdToSave == null && draft.lifeAreaKey ? draft.lifeAreaKey : null;
@@ -102,11 +126,12 @@ export async function createVaciarTask(
       ? { ...baseInsert, life_area_key: lifeAreaKeyToSave }
       : baseInsert;
 
-  let { data: mainTask, error: mainTaskError } = await supabase
-    .from('tasks')
-    .insert(insertPayload)
-    .select('id')
-    .single();
+  let { data: mainTask, error: mainTaskError } = await insertMainTaskRow(insertPayload);
+
+  if (mainTaskError && lifeAreaKeyToSave && isLifeAreaKeyInsertError(mainTaskError)) {
+    logger.warn('[vaciar] Reintentando guardado sin life_area_key:', mainTaskError);
+    ({ data: mainTask, error: mainTaskError } = await insertMainTaskRow(baseInsert));
+  }
 
   if (
     mainTaskError &&
@@ -116,11 +141,7 @@ export async function createVaciarTask(
     logger.warn(
       '[vaciar] tasks.life_area_key no existe en Supabase — guardando sin área. Aplica la migración 20260621120000_tasks_life_area_key.sql',
     );
-    ({ data: mainTask, error: mainTaskError } = await supabase
-      .from('tasks')
-      .insert(baseInsert)
-      .select('id')
-      .single());
+    ({ data: mainTask, error: mainTaskError } = await insertMainTaskRow(baseInsert));
   }
 
   if (mainTaskError) {

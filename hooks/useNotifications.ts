@@ -13,7 +13,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { type AppLocale } from '@/lib/i18n';
 import { getLocalDateString } from '@/lib/dateLocal';
-import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
+import { goToCheckIn } from '@/lib/checkInNavigation';
 import { isCrisisModeActive } from '@/lib/emergencyKit/storage';
 import {
   getNextTaskCaptureTriggerDate,
@@ -25,6 +25,7 @@ import { track } from '@/lib/analytics';
 import { pickNotificationCopy } from '@/lib/notificationCopyBank';
 import { loadNotificationContext } from '@/lib/notificationContext';
 import { buildEllieNotificationContent } from '@/lib/notificationEllieAttachment';
+import { logger } from '@/lib/logger';
 
 const LOCALE_STORAGE_KEY = 'koraa_app_locale_v1';
 
@@ -88,23 +89,19 @@ export function useNotifications() {
 
     try {
       const subscription1 = Notifications.addNotificationReceivedListener((notification) => {
-        console.log('Notificación recibida:', notification);
+        logger.debug('Notificación recibida');
       });
       notificationListener.current = subscription1;
 
       const subscription2 = Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log('Usuario tocó la notificación:', response);
+        logger.debug('Usuario tocó la notificación');
         const notificationData = response.notification.request.content.data;
 
         if (notificationData?.type === 'daily_checkin_reminder') {
-          import('expo-router').then(({ router }) => {
-            router.push(CHECK_IN_ROUTE);
-          });
+          goToCheckIn();
         }
         if (notificationData?.type === CARE_MODE_REMINDER_TYPE) {
-          import('expo-router').then(({ router }) => {
-            router.push(CHECK_IN_ROUTE);
-          });
+          goToCheckIn();
         }
         if (notificationData?.type === RECHECK_REMINDER_TYPE) {
           import('@/lib/recheckCheckInBridge').then(({ openRecheckCheckIn }) => {
@@ -422,7 +419,7 @@ export async function scheduleDailyReminder(
       });
     }
 
-    console.log(
+    logger.debug(
       'Recordatorio diario programado',
       plan.mode,
       reminderHour + ':' + String(reminderMinute).padStart(2, '0'),

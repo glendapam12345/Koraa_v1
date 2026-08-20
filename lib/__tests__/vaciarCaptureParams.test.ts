@@ -3,6 +3,7 @@ import {
   firstSearchParam,
   isFreshCaptureRequest,
   isHoyCaptureSource,
+  takeFreshCaptureStamp,
 } from '@/lib/vaciarCaptureParams';
 
 describe('vaciarCaptureParams', () => {
@@ -29,7 +30,14 @@ describe('vaciarCaptureParams', () => {
   it('detects Hoy as the return source', () => {
     expect(isHoyCaptureSource('hoy')).toBe(true);
     expect(isHoyCaptureSource(['hoy'])).toBe(true);
+    expect(isHoyCaptureSource('semana')).toBe(false);
     expect(isHoyCaptureSource('')).toBe(false);
     expect(firstSearchParam(['a', 'b'])).toBe('a');
+  });
+
+  it('consumes a fresh stamp only once so remounts do not reset the form', () => {
+    expect(takeFreshCaptureStamp('stamp-once-a')).toBe(true);
+    expect(takeFreshCaptureStamp('stamp-once-a')).toBe(false);
+    expect(takeFreshCaptureStamp('stamp-once-b')).toBe(true);
   });
 });

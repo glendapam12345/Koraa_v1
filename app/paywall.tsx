@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PaywallScreen } from '@/components/PaywallScreen';
 import { resolvePaywallDismissRoute } from '@/lib/paywallNavigation';
+import { HOY_TAB_PATH, replaceToHoyTab } from '@/lib/tabNavigation';
 
 export default function PaywallRoute() {
   const router = useRouter();
@@ -14,6 +15,10 @@ export default function PaywallRoute() {
     });
     if (destination === 'back') {
       router.back();
+      return;
+    }
+    if (destination === HOY_TAB_PATH || destination === '/' || destination === '/(tabs)') {
+      replaceToHoyTab();
       return;
     }
     router.replace(destination as '/');

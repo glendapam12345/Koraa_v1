@@ -3,26 +3,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import type { TranslationKey } from '@/lib/i18n';
-import type { EllieMood } from '@/components/onboarding/OnboardingEllieCoach';
+import type { EllieMood } from '@/lib/elliePersonality';
+import { ELLIE_MOOD_ASSETS } from '@/lib/ellieMoodAssets';
 
 type FlowStep = {
   n: number;
   titleKey: TranslationKey;
   bodyKey: TranslationKey;
   mood: EllieMood;
-};
-
-const MOOD_IMAGES: Record<EllieMood, number> = {
-  default: require('@/assets/images/ellie-mascot.png'),
-  breathing: require('@/assets/images/ellie-mood-breathing.png'),
-  sleepy: require('@/assets/images/ellie-mood-sleepy.png'),
-  happy: require('@/assets/images/ellie-mood-happy.png'),
-  grateful: require('@/assets/images/ellie-mood-grateful.png'),
-  focus: require('@/assets/images/ellie-mood-focus.png'),
-  comforting: require('@/assets/images/ellie-mood-comforting.png'),
-  proud: require('@/assets/images/ellie-mood-proud.png'),
-  cozy: require('@/assets/images/ellie-mood-cozy.png'),
-  curious: require('@/assets/images/ellie-mood-curious.png'),
 };
 
 const STEPS: FlowStep[] = [
@@ -93,7 +81,7 @@ export function OnboardingFlowSteps({ hideIntro = false }: OnboardingFlowStepsPr
 
             <View style={[styles.card, THEME.shadows.soft]}>
               <Image
-                source={MOOD_IMAGES[step.mood]}
+                source={ELLIE_MOOD_ASSETS[step.mood]}
                 style={styles.mood}
                 resizeMode="contain"
                 accessibilityElementsHidden

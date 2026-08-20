@@ -36,6 +36,10 @@ export function useTaskCaptureAi({ energyLevel, emotionKey }: UseTaskCaptureAiAr
         });
         setPreview(result);
         return result;
+      } catch {
+        const local = parseTaskCaptureLocally(trimmed, locale);
+        setPreview(local);
+        return local;
       } finally {
         setIsInterpreting(false);
       }

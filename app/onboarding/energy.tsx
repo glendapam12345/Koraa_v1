@@ -6,6 +6,7 @@ import { FeelingEnergyScale } from '@/components/checkin/FeelingEnergyScale';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { OnboardingCheckInProgress } from '@/components/onboarding/OnboardingCheckInProgress';
 import { OnboardingEllieCoach } from '@/components/onboarding/OnboardingEllieCoach';
+import { OnboardingProgressDots } from '@/components/onboarding/OnboardingProgressDots';
 import { OnboardingScreenShell, onboardingTypography } from '@/components/onboarding/OnboardingScreenShell';
 import { Toast } from '@/components/Toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -107,8 +108,13 @@ export default function EnergyScreen() {
           ) : null
         }
       >
+        <OnboardingProgressDots
+          total={3}
+          current={3}
+          accessibilityLabel={t('onboarding.tour.guidedProgressA11y', { current: 3, total: 3 })}
+        />
         <OnboardingCheckInProgress loopStep={3} />
-        <OnboardingEllieCoach message={t('onboarding.ellie.energy')} mood="happy" size={52} />
+        <OnboardingEllieCoach message={t('onboarding.ellie.energy')} mood="happy" size={64} />
         <Text style={onboardingTypography.title}>{t('onboarding.energy.title')}</Text>
         <Text style={onboardingTypography.titleAccent}>{t('onboarding.energy.titleAccent')}</Text>
         <Text style={onboardingTypography.subtitle}>{t('onboarding.energy.subtitle')}</Text>

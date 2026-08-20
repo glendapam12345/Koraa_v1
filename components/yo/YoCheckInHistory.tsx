@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { getEmotionEmoji } from '@/lib/emotionalInsights';
-import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
+import { goToCheckIn } from '@/lib/checkInNavigation';
 import { openPaywall } from '@/lib/paywallNavigation';
 
 import type { TranslationKey } from '@/lib/i18n';
@@ -40,7 +40,7 @@ export function YoCheckInHistory({
       <View style={styles.emptyCard}>
         <Text style={styles.emptyText}>{t('yo.historyEmpty')}</Text>
         <TouchableOpacity
-          onPress={() => router.push(CHECK_IN_ROUTE)}
+          onPress={() => goToCheckIn()}
           activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityLabel={t('yo.historyGoCheckIn')}

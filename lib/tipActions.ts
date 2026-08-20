@@ -1,6 +1,7 @@
 import { Alert, Linking, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { openVaciarCapture } from '@/lib/vaciarNavigation';
+import { replaceToHoyTab } from '@/lib/tabNavigation';
 import type { TranslationKey } from '@/lib/i18n';
 import { openAppleHealthSleep } from '@/lib/appleHealth';
 
@@ -202,7 +203,7 @@ async function openHealthApp(
 }
 
 function openHoyTab(): void {
-  router.replace('/(tabs)');
+  replaceToHoyTab();
 }
 
 function openVaciarTab(): void {
@@ -261,9 +262,7 @@ export async function executeTipAction(
 }
 
 /** CTAs que se quedan dentro de Koraa (camino principal cuando hay botón). */
-export function isInAppTipAction(action: TipAction): boolean {
-  return action === 'hoy' || action === 'vaciar' || action === 'focus_session' || action === 'breath';
-}
+export { isInAppTipAction } from '@/lib/tipInAppActions';
 
 /** Apps externas — solo como enlace secundario opcional. */
 export function isOptionalExternalTipAction(action: TipAction): boolean {

@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { router, useFocusEffect } from 'expo-router';
-import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
+import { replaceToCheckIn } from '@/lib/checkInNavigation';
 import { supabase } from '@/lib/supabase';
 import { getLocalDateString } from '@/lib/dateLocal';
 import { AppLoadingGate } from '@/components/AppLoadingGate';
@@ -40,14 +40,11 @@ export default function SentirScreen() {
         if (cancelled) return;
 
         if (checkedIn) {
-          router.replace({
-            pathname: CHECK_IN_ROUTE,
-            params: { openRecheck: '1', recheckSource: 'sentir' },
-          });
+          replaceToCheckIn({ openRecheck: '1', recheckSource: 'sentir' });
           return;
         }
 
-        router.replace(CHECK_IN_ROUTE);
+        replaceToCheckIn();
       })();
 
       return () => {

@@ -15,6 +15,17 @@ describe('resolveHoyEllieDailyState', () => {
     ).toBe('not_started');
   });
 
+  it('treats pending inbox as existing tasks for Ellie', () => {
+    expect(
+      resolveHoyEllieDailyState({
+        hasCheckIn: true,
+        isReturningLater: false,
+        isEveningClose: false,
+        hasTasks: true,
+      }),
+    ).toBe('adapting');
+  });
+
   it('interprets and adapts right after check-in when there are tasks', () => {
     expect(
       resolveHoyEllieDailyState({
@@ -60,8 +71,21 @@ describe('resolveHoyEllieDailyState', () => {
         isEveningClose: false,
         checkInJustHappened: false,
         hasTasks: true,
+        adaptAccepted: true,
       }),
     ).toBe('returning');
+  });
+
+  it('resumes emotional review if they left before accepting the plan', () => {
+    expect(
+      resolveHoyEllieDailyState({
+        hasCheckIn: true,
+        isReturningLater: true,
+        isEveningClose: false,
+        hasTasks: true,
+        adaptAccepted: false,
+      }),
+    ).toBe('adapting');
   });
 
   it('shows the plan after they already chose a midday path', () => {
@@ -71,6 +95,7 @@ describe('resolveHoyEllieDailyState', () => {
         isReturningLater: true,
         isEveningClose: false,
         middayDismissed: true,
+        adaptAccepted: true,
       }),
     ).toBe('in_progress');
   });
@@ -81,6 +106,7 @@ describe('resolveHoyEllieDailyState', () => {
         hasCheckIn: true,
         isReturningLater: true,
         isEveningClose: true,
+        adaptAccepted: true,
       }),
     ).toBe('evening');
   });
@@ -92,6 +118,7 @@ describe('resolveHoyEllieDailyState', () => {
         isReturningLater: true,
         isEveningClose: false,
         moodUpdated: true,
+        adaptAccepted: true,
       }),
     ).toBe('returning');
   });
@@ -104,6 +131,7 @@ describe('resolveHoyEllieDailyState', () => {
         isEveningClose: false,
         middayDismissed: true,
         moodUpdated: true,
+        adaptAccepted: true,
       }),
     ).toBe('mood_updated');
   });
@@ -115,6 +143,7 @@ describe('resolveHoyEllieDailyState', () => {
         isReturningLater: true,
         isEveningClose: true,
         dayClosed: true,
+        adaptAccepted: true,
       }),
     ).toBe('day_closed');
   });
@@ -123,11 +152,24 @@ describe('resolveHoyEllieDailyState', () => {
     expect(
       resolveHoyEllieDailyState({
         hasCheckIn: true,
+        isReturningLater: false,
+        isEveningClose: false,
+        allFocusDone: true,
+        adaptAccepted: true,
+      }),
+    ).toBe('plan_done');
+  });
+
+  it('asks how we are doing if they come back after finishing today’s steps', () => {
+    expect(
+      resolveHoyEllieDailyState({
+        hasCheckIn: true,
         isReturningLater: true,
         isEveningClose: false,
         allFocusDone: true,
+        adaptAccepted: true,
       }),
-    ).toBe('plan_done');
+    ).toBe('returning');
   });
 
   it('keeps evening close even if today’s steps are done', () => {
@@ -137,6 +179,7 @@ describe('resolveHoyEllieDailyState', () => {
         isReturningLater: false,
         isEveningClose: true,
         allFocusDone: true,
+        adaptAccepted: true,
       }),
     ).toBe('evening');
   });
@@ -173,6 +216,18 @@ describe('shouldHideHoyPlan', () => {
 
   it('hides the plan while Ellie asks how we are doing', () => {
     expect(shouldHideHoyPlan('returning', 'ask')).toBe(true);
+  });
+
+  it('hides the plan after I’m okay, until they ask to see it', () => {
+    expect(shouldHideHoyPlan('returning', 'okayNext')).toBe(true);
+  });
+
+  it('hides the plan while Ellie is still confirming how they feel', () => {
+    expect(shouldHideHoyPlan('adapting', 'ask')).toBe(true);
+  });
+
+  it('shows the plan only after they confirm the feeling', () => {
+    expect(shouldHideHoyPlan('adapting', 'propose')).toBe(false);
   });
 
   it('shows the proposed plan so they can accept or edit', () => {

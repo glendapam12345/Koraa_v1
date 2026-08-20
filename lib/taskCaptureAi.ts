@@ -62,13 +62,14 @@ function parseTaskRow(raw: unknown, validProjectIds?: Set<string>): ParsedCaptur
   };
 }
 
-function parseCapturePayload(
+export function parseTaskCaptureAiResponse(
   data: unknown,
   validProjectIds?: Set<string>,
 ): TaskCaptureResult | null {
   if (!data || typeof data !== 'object') return null;
   const root = data as Record<string, unknown>;
-  const capture = root.capture ?? root;
+  if (root.source !== 'openai') return null;
+  const capture = root.capture;
   if (!capture || typeof capture !== 'object') return null;
   const cap = capture as Record<string, unknown>;
   const main = parseTaskRow(cap.main_task, validProjectIds);
@@ -83,7 +84,7 @@ function parseCapturePayload(
     summary: summary || main.content,
     main_task: main,
     prep_steps,
-    fromAi: root.source === 'openai',
+    fromAi: true,
   };
 }
 
@@ -91,21 +92,21 @@ async function logInvokeFailure(error: unknown): Promise<void> {
   if (error instanceof FunctionsHttpError) {
     try {
       const body = await error.context.json();
-      logger.warn('[task-capture-ai] HTTP error:', body);
+      logger.debug('[task-capture-ai] HTTP fallback:', body);
     } catch {
-      logger.warn('[task-capture-ai] HTTP', error.context.status, error.message);
+      logger.debug('[task-capture-ai] HTTP', error.context.status, error.message);
     }
     return;
   }
   if (error instanceof FunctionsRelayError) {
-    logger.warn('[task-capture-ai] Relay:', error.message);
+    logger.debug('[task-capture-ai] Relay fallback:', error.message);
     return;
   }
   if (error instanceof FunctionsFetchError) {
-    logger.warn('[task-capture-ai] Network:', error.message);
+    logger.debug('[task-capture-ai] Network fallback:', error.message);
     return;
   }
-  logger.warn('[task-capture-ai]', error);
+  logger.debug('[task-capture-ai] fallback:', error);
 }
 
 export type InterpretTaskCaptureInput = {
@@ -141,41 +142,47 @@ export async function interpretTaskCapture(
       .slice(0, 40);
     const validProjectIds = new Set(projects.map((p) => p.id));
 
-    const invoke = supabase.functions.invoke('task-capture-ai', {
-      body: {
-        locale: input.locale,
-        rawText: input.rawText.trim().slice(0, 500),
-        today: getLocalDateString(),
-        energyLevel: input.energyLevel ?? null,
-        emotionKey: input.emotionKey ?? null,
-        projects,
-      },
-    });
+    const invokePromise = Promise.resolve(
+      supabase.functions.invoke('task-capture-ai', {
+        body: {
+          locale: input.locale,
+          rawText: input.rawText.trim().slice(0, 500),
+          today: getLocalDateString(),
+          energyLevel: input.energyLevel ?? null,
+          emotionKey: input.emotionKey ?? null,
+          projects,
+        },
+      }),
+    );
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     const timedOut = new Promise<{ data: null; error: { message: string } }>((resolve) => {
-      setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 5000);
+      timeoutId = setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 5000);
     });
-    const { data, error } = await Promise.race([invoke, timedOut]);
+    try {
+      const { data, error } = await Promise.race([invokePromise, timedOut]);
 
-    if (error) {
-      if (!('message' in error && error.message === 'timeout')) {
-        await logInvokeFailure(error);
+      if (error) {
+        if (!('message' in error && error.message === 'timeout')) {
+          await logInvokeFailure(error);
+        }
+        return local;
       }
-      return local;
-    }
 
-    const parsed = parseCapturePayload(data, validProjectIds);
-    if (!parsed) {
-      if (__DEV__) logger.warn('[task-capture-ai] Invalid response:', data);
-      return local;
-    }
+      const parsed = parseTaskCaptureAiResponse(data, validProjectIds);
+      if (!parsed) {
+        if (__DEV__) logger.debug('[task-capture-ai] local fallback');
+        return local;
+      }
 
-    if (__DEV__ && parsed.fromAi) {
-      logger.debug('[task-capture-ai] OK (IA)');
-    }
+      if (__DEV__) {
+        logger.debug('[task-capture-ai] OK (IA)');
+      }
 
-    return parsed;
-  } catch (err) {
-    logger.warn('[task-capture-ai] Unexpected:', err);
+      return parsed;
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  } catch {
     return local;
   }
 }

@@ -1,6 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
-import { CHECK_IN_ROUTE } from '@/lib/checkInNavigation';
+import { goToCheckIn } from '@/lib/checkInNavigation';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { getEmotionEmoji } from '@/lib/emotionalInsights';
@@ -39,7 +38,7 @@ export function SentirTodayCheckInCard({
       />
 
       <TouchableOpacity
-        onPress={() => router.push(CHECK_IN_ROUTE)}
+        onPress={() => goToCheckIn()}
         activeOpacity={0.75}
         accessibilityRole="link"
         accessibilityLabel={t('sentirToday.viewFocusInHoyA11y')}

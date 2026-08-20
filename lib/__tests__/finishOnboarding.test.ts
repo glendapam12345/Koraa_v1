@@ -28,4 +28,20 @@ describe('resolvePaywallDismissRoute', () => {
       }),
     ).toBe('/(tabs)');
   });
+
+  it('maps `/` and `/(tabs)` to Hoy so dismiss does not remount boot', () => {
+    expect(
+      resolvePaywallDismissRoute({
+        next: '/',
+        source: 'onboarding',
+        canGoBack: true,
+      }),
+    ).toBe('/(tabs)');
+    expect(
+      resolvePaywallDismissRoute({
+        next: '/(tabs)',
+        canGoBack: false,
+      }),
+    ).toBe('/(tabs)');
+  });
 });

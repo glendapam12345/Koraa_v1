@@ -19,6 +19,8 @@ type ParaMiMusaCardProps = {
   paywallReturnTo?: string;
   /** Pie estilo Musa: cifra + interpretación personal. */
   insight?: ParamiChartInsight | null;
+  /** Menos padding y sin subtítulo largo — Para mí. */
+  compact?: boolean;
   children?: ReactNode;
 };
 
@@ -31,6 +33,7 @@ export function ParaMiMusaCard({
   chartSize = 'week',
   paywallReturnTo = '/(tabs)/parami',
   insight = null,
+  compact = false,
   children,
 }: ParaMiMusaCardProps) {
   const { t } = useI18n();
@@ -45,20 +48,23 @@ export function ParaMiMusaCard({
         colors={[colors[0], colors[1], THEME.colors.calm.mist]}
         start={{ x: 0.15, y: 0 }}
         end={{ x: 0.9, y: 1 }}
-        style={styles.card}
+        style={[styles.card, compact && styles.cardCompact]}
       >
         {locked ? (
           <View style={styles.lockRow} accessibilityElementsHidden>
             <Lock size={14} color={THEME.colors.calm.lavenderDeep} />
           </View>
         ) : null}
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.body}>{body}</Text>
+        <Text style={[styles.title, compact && styles.titleCompact]}>{title}</Text>
+        {!compact ? <Text style={styles.body}>{body}</Text> : null}
         <View
           style={[
             styles.chartWrap,
+            compact && styles.chartWrapCompact,
             chartSize === 'fortnight' && styles.chartWrapFortnight,
             chartSize === 'month' && styles.chartWrapMonth,
+            compact && chartSize === 'fortnight' && styles.chartWrapFortnightCompact,
+            compact && chartSize === 'month' && styles.chartWrapMonthCompact,
           ]}
         >
           <View style={locked ? styles.chartLocked : styles.chartOpen}>{children}</View>
@@ -71,7 +77,9 @@ export function ParaMiMusaCard({
             />
           ) : null}
         </View>
-        {!locked && insight ? <ParaMiChartInsightFooter insight={insight} /> : null}
+        {!locked && insight ? (
+          <ParaMiChartInsightFooter insight={insight} compact={compact} />
+        ) : null}
       </LinearGradient>
     </View>
   );
@@ -89,6 +97,13 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.calm.border,
     gap: THEME.spacing.xs,
   },
+  cardCompact: {
+    minHeight: 0,
+    paddingVertical: THEME.spacing.sm,
+    paddingHorizontal: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.rounded,
+    gap: 6,
+  },
   lockRow: {
     alignItems: 'center',
     marginBottom: 2,
@@ -97,6 +112,11 @@ const styles = StyleSheet.create({
     ...THEME.typography.cardTitle,
     color: THEME.colors.text.main,
     textAlign: 'center',
+  },
+  titleCompact: {
+    ...THEME.typography.body,
+    fontFamily: THEME.fonts.heading.medium,
+    textAlign: 'left',
   },
   body: {
     ...THEME.typography.caption,
@@ -109,11 +129,21 @@ const styles = StyleSheet.create({
     minHeight: 72,
     marginTop: THEME.spacing.xs,
   },
+  chartWrapCompact: {
+    minHeight: 56,
+    marginTop: 0,
+  },
   chartWrapFortnight: {
     minHeight: 96,
   },
   chartWrapMonth: {
     minHeight: 112,
+  },
+  chartWrapFortnightCompact: {
+    minHeight: 72,
+  },
+  chartWrapMonthCompact: {
+    minHeight: 88,
   },
   chartLocked: {
     opacity: 0.5,

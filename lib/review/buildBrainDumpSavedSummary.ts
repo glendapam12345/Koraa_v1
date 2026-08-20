@@ -10,11 +10,16 @@ import type { LifeAreaKey } from '@/lib/lifeAreas/lifeAreaCatalog';
 import type { LooseTaskSummary } from '@/lib/looseTasks';
 
 export type SavedSummaryPreviewItem = {
+  captureId?: string;
+  taskId?: string | null;
   content: string;
   lifeAreaKey: LifeAreaRef | null;
   projectId: string | null;
   scheduledDate?: string | null;
   estimatedMinutes?: number | null;
+  preferredTime?: string | null;
+  capturePriority?: 'low' | 'medium' | 'high' | 'urgent' | null;
+  isPriority?: boolean;
 };
 
 export type SavedOrganizedContext = {

@@ -1,7 +1,19 @@
 import type { Task } from '@/hooks/useTasks';
 import { getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
+import { resolveMaxFocusTaskCount } from '@/lib/ai/applyAiFocusPlan';
 
-/** Legacy: sin fecha cuenta como “hoy” (captura / foco antiguo). */
+/** Fallback cuando aún no hay check-in (p. ej. claridad / tests). */
+export const HOY_DEFAULT_FOCUS_LIMIT = 3;
+
+/** Pasos sugeridos visibles en Hoy según cómo llegaste hoy. */
+export function resolveHoyFocusLimit(energyLevel: number, emotionKey: string): number {
+  return resolveMaxFocusTaskCount({
+    energyLevel: energyLevel > 0 ? energyLevel : 3,
+    emotion: emotionKey.trim() || 'tranquila',
+    availableTime: '',
+    focusLevel: '',
+  });
+}
 export function isTaskScheduledForToday(
   task: Pick<Task, 'scheduled_date'>,
   today: string = getLocalDateString(),
@@ -44,9 +56,6 @@ export function isTaskWaitingForToday(
   if (isTaskSuggestedForToday(task, today)) return false;
   return isTaskExplicitlyForToday(task, today);
 }
-
-/** Máx. pasos visibles como foco principal en Hoy (mock: 1 decisión). */
-export const HOY_DEFAULT_FOCUS_LIMIT = 1;
 
 function scopeToFocusedProject<T extends Pick<Task, 'project_id'>>(
   items: T[],

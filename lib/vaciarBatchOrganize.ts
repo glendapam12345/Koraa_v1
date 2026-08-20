@@ -27,24 +27,37 @@ export async function organizeBatchFromInput(
   const trimmed = rawInput.trim();
   if (!trimmed || !isMultiTaskListInput(trimmed, locale)) return [];
 
-  let projectsForMatch: { id: string; name: string }[] = [];
-  if (userId) {
-    const { data } = await fetchUserProjects(userId);
-    projectsForMatch = (data ?? []).map((p) => ({ id: p.id, name: p.name }));
+  try {
+    let projectsForMatch: { id: string; name: string }[] = [];
+    if (userId) {
+      try {
+        const { data } = await fetchUserProjects(userId);
+        projectsForMatch = (data ?? []).map((p) => ({ id: p.id, name: p.name }));
+      } catch {
+        projectsForMatch = [];
+      }
+    }
+
+    let result: Awaited<ReturnType<typeof interpretTaskCapture>> | null = null;
+    try {
+      result = await interpretTaskCapture(userId, {
+        rawText: trimmed,
+        locale,
+        energyLevel: options?.energyLevel,
+        emotionKey: options?.emotionKey,
+        projects: projectsForMatch,
+      });
+    } catch {
+      result = null;
+    }
+
+    const rawItems =
+      result && isUserListCapture(result)
+        ? captureResultToBatchItems(result)
+        : parseInputToBatchItems(trimmed, locale);
+
+    return assignSuggestedProjects(rawItems, projectsForMatch);
+  } catch {
+    return parseInputToBatchItems(trimmed, locale);
   }
-
-  const result = await interpretTaskCapture(userId, {
-    rawText: trimmed,
-    locale,
-    energyLevel: options?.energyLevel,
-    emotionKey: options?.emotionKey,
-    projects: projectsForMatch,
-  });
-
-  const rawItems =
-    result && isUserListCapture(result)
-      ? captureResultToBatchItems(result)
-      : parseInputToBatchItems(trimmed, locale);
-
-  return assignSuggestedProjects(rawItems, projectsForMatch);
 }

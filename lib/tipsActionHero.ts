@@ -1,8 +1,9 @@
 import type { DayData } from '@/lib/checkInDayData';
 import type { TranslationKey } from '@/lib/i18n';
 import type { TipsUserContext } from '@/lib/tipsTypes';
+import { HOY_TAB_PATH } from '@/lib/hoyTabPath';
 
-export type TipsActionHeroRoute = '/(tabs)' | '/(tabs)/semana';
+export type TipsActionHeroRoute = typeof HOY_TAB_PATH | '/(tabs)/semana';
 
 export type TipsActionHeroAction =
   | { type: 'route'; route: TipsActionHeroRoute }
@@ -37,7 +38,7 @@ function withAction(
   return {
     ...content,
     ctaKey: 'tips.actionHeroCtaHoy',
-    action: { type: 'route', route: '/(tabs)' },
+    action: { type: 'route', route: HOY_TAB_PATH },
   };
 }
 
@@ -89,7 +90,7 @@ export function getTipsActionHero(
     return {
       messageKey: 'tips.actionHeroHighEnergy',
       ctaKey: 'tips.actionHeroCtaHoy',
-      action: { type: 'route', route: '/(tabs)' },
+      action: { type: 'route', route: HOY_TAB_PATH },
     };
   }
 

@@ -68,60 +68,152 @@ Reglas:
 - scheduled_date null o fecha ISO válida.`;
 }
 
+function addDaysISO(today: string, days: number): string {
+  const [y, m, d] = today.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + days);
+  const mm = String(dt.getMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getDate()).padStart(2, '0');
+  return `${dt.getFullYear()}-${mm}-${dd}`;
+}
+
+function extractDateHint(
+  text: string,
+  today: string,
+): { date: string | null; cleaned: string } {
+  const lower = text.toLowerCase();
+  if (/\b(pasado mañana|day after tomorrow)\b/.test(lower)) {
+    return {
+      date: addDaysISO(today, 2),
+      cleaned: text.replace(/\b(pasado mañana|day after tomorrow)\b/gi, '').replace(/\s+/g, ' ').trim(),
+    };
+  }
+  if (/\b(mañana|tomorrow)\b/.test(lower)) {
+    return {
+      date: addDaysISO(today, 1),
+      cleaned: text.replace(/\b(mañana|tomorrow)\b/gi, '').replace(/\s+/g, ' ').trim(),
+    };
+  }
+  if (/\b(hoy|today)\b/.test(lower)) {
+    return {
+      date: today,
+      cleaned: text.replace(/\b(hoy|today)\b/gi, '').replace(/\s+/g, ' ').trim(),
+    };
+  }
+  return { date: null, cleaned: text.trim() };
+}
+
+/** Parser local para que la función nunca devuelva capture:null. */
+function localCapture(payload: CaptureRequest): CaptureResponse {
+  const locale = payload.locale === 'en' ? 'en' : 'es';
+  const today =
+    payload.today && /^\d{4}-\d{2}-\d{2}$/.test(payload.today)
+      ? payload.today
+      : new Date().toISOString().slice(0, 10);
+  const raw = (payload.rawText ?? '').trim();
+  const { date: globalDate, cleaned } = extractDateHint(raw, today);
+  const parts = cleaned
+    .split(/\n+|;\s*|\s+y\s+|\s+and\s+|,\s+/i)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 3);
+  const segments = parts.length > 0 ? parts : [cleaned || raw];
+
+  const toTask = (content: string): ParsedTask => {
+    const extracted = extractDateHint(content, today);
+    return {
+      content: (extracted.cleaned || content).slice(0, 120),
+      scheduled_date: extracted.date ?? globalDate,
+      effort: 'medium',
+      project_id: null,
+      estimated_minutes: null,
+    };
+  };
+
+  const [main, ...rest] = segments.map(toTask);
+  const main_task = main ?? toTask(raw.slice(0, 120) || (locale === 'en' ? 'A step' : 'Un paso'));
+  const prep_steps = rest.slice(0, 5);
+  const summary =
+    locale === 'en'
+      ? prep_steps.length
+        ? `Separated into ${prep_steps.length + 1} steps.`
+        : `One step: ${main_task.content}`
+      : prep_steps.length
+        ? `Separado en ${prep_steps.length + 1} pasos.`
+        : `Un paso: ${main_task.content}`;
+  return { summary, main_task, prep_steps };
+}
+
+function fallbackResponse(
+  payload: CaptureRequest,
+  code: 'AI_DISABLED' | 'AI_FAILED' | 'AI_ERROR',
+  openaiStatus?: number,
+) {
+  return jsonResponse({
+    capture: localCapture(payload),
+    source: 'fallback',
+    code,
+    ...(openaiStatus != null ? { openaiStatus } : {}),
+  });
+}
+
 async function callOpenAI(
   apiKey: string,
   locale: 'es' | 'en',
   payload: CaptureRequest,
 ): Promise<{ capture: CaptureResponse | null; openaiStatus?: number }> {
-  const userContent = JSON.stringify({
-    locale,
-    rawText: payload.rawText ?? '',
-    today: payload.today ?? '',
-    energyLevel: payload.energyLevel ?? null,
-    emotionKey: payload.emotionKey ?? null,
-    projects: Array.isArray(payload.projects)
-      ? payload.projects
-          .filter((p) => p && typeof p.id === 'string' && typeof p.name === 'string')
-          .map((p) => ({ id: p.id, name: p.name.trim().slice(0, 80) }))
-          .slice(0, 40)
-      : [],
-  });
-
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: Deno.env.get('OPENAI_MODEL') ?? 'gpt-4o-mini',
-      temperature: 0.3,
-      max_tokens: 500,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: buildSystemPrompt(locale) },
-        { role: 'user', content: userContent },
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    console.error('OpenAI error', res.status, errText.slice(0, 400));
-    return { capture: null, openaiStatus: res.status };
-  }
-
-  const data = await res.json();
-  const raw = data?.choices?.[0]?.message?.content;
-  if (!raw || typeof raw !== 'string') return { capture: null };
-
   try {
-    const parsed = JSON.parse(raw) as CaptureResponse;
-    if (typeof parsed.summary !== 'string' || !parsed.main_task?.content) {
+    const userContent = JSON.stringify({
+      locale,
+      rawText: payload.rawText ?? '',
+      today: payload.today ?? '',
+      energyLevel: payload.energyLevel ?? null,
+      emotionKey: payload.emotionKey ?? null,
+      projects: Array.isArray(payload.projects)
+        ? payload.projects
+            .filter((p) => p && typeof p.id === 'string' && typeof p.name === 'string')
+            .map((p) => ({ id: p.id, name: p.name.trim().slice(0, 80) }))
+            .slice(0, 40)
+        : [],
+    });
+
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: Deno.env.get('OPENAI_MODEL') ?? 'gpt-4o-mini',
+        temperature: 0.3,
+        max_tokens: 500,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: buildSystemPrompt(locale) },
+          { role: 'user', content: userContent },
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('OpenAI error', res.status, errText.slice(0, 400));
+      return { capture: null, openaiStatus: res.status };
+    }
+
+    const data = await res.json();
+    const raw = data?.choices?.[0]?.message?.content;
+    if (!raw || typeof raw !== 'string') return { capture: null };
+
+    try {
+      const parsed = JSON.parse(raw) as CaptureResponse;
+      if (typeof parsed.summary !== 'string' || !parsed.main_task?.content) {
+        return { capture: null };
+      }
+      return { capture: parsed };
+    } catch {
       return { capture: null };
     }
-    return { capture: parsed };
-  } catch {
+  } catch (err) {
+    console.error('OpenAI fetch failed', err);
     return { capture: null };
   }
 }
@@ -152,12 +244,12 @@ Deno.serve(async (req: Request) => {
     global: { headers: { Authorization: authHeader } },
   });
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
+  try {
+    const auth = await supabase.auth.getUser();
+    if (auth.error || !auth.data.user) {
+      return jsonResponse({ error: 'Unauthorized' }, 401);
+    }
+  } catch {
     return jsonResponse({ error: 'Unauthorized' }, 401);
   }
 
@@ -174,19 +266,19 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'rawText required' }, 400);
   }
 
-  if (!openaiKey) {
-    return jsonResponse({ capture: null, source: 'fallback', code: 'AI_DISABLED' });
-  }
+  try {
+    if (!openaiKey) {
+      return fallbackResponse(payload, 'AI_DISABLED');
+    }
 
-  const { capture, openaiStatus } = await callOpenAI(openaiKey, locale, payload);
-  if (!capture) {
-    return jsonResponse({
-      capture: null,
-      source: 'fallback',
-      code: 'AI_FAILED',
-      openaiStatus,
-    });
-  }
+    const { capture, openaiStatus } = await callOpenAI(openaiKey, locale, payload);
+    if (!capture) {
+      return fallbackResponse(payload, 'AI_FAILED', openaiStatus);
+    }
 
-  return jsonResponse({ capture, source: 'openai' });
+    return jsonResponse({ capture, source: 'openai' });
+  } catch (err) {
+    console.error('task-capture-ai unexpected', err);
+    return fallbackResponse(payload, 'AI_ERROR');
+  }
 });

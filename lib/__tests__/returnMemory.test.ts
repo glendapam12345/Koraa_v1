@@ -53,6 +53,15 @@ describe('resolveReturnMemoryCue', () => {
       memory: { emotionKey: 'abrumada', energyLevel: 3, daysSince: 1 },
     });
     expect(cue?.messageKey).toBe('hoy.rememberYesterdayHeavy');
+    expect(cue?.mood).toBe('comforting');
+  });
+
+  it('uses breathing for anxious yesterday memory', () => {
+    const cue = resolveReturnMemoryCue({
+      hasCheckInToday: false,
+      memory: { emotionKey: 'ansiosa', energyLevel: 3, daysSince: 1 },
+    });
+    expect(cue?.messageKey).toBe('hoy.rememberYesterdayHeavy');
     expect(cue?.mood).toBe('breathing');
   });
 

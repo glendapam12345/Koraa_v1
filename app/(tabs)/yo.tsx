@@ -167,7 +167,6 @@ function ProfileScreen() {
             setSigningOut(true);
             try {
               await signOut();
-              router.replace('/auth/login');
             } catch (error) {
               logger.error('Error al cerrar sesión:', error);
               Alert.alert(t('yo.signOutErrorTitle'), t('yo.signOutErrorBody'));
@@ -340,6 +339,7 @@ function ProfileScreen() {
             onPress={handleSignOut}
             accessibilityLabel={t('settings.signOut')}
             destructive
+            disabled={signingOut}
           />
         </CalmCard>
 

@@ -45,12 +45,14 @@ export const featuresEn = {
   vaciar: {
     title: "What's on your mind?",
     titleAccent: '',
-    subtitle: 'Write or speak — Koraa sorts it later.',
+    subtitle: 'Write it all. You can add a date after.',
     captureNightSub:
       "If you can't sleep, let out what's on your mind — no need to organize now.",
     captureHint: 'Let go. Koraa has you.',
     capturePlaceholderMinimal: 'Write what is on your mind…',
     releaseTaskShort: 'Release',
+    captureExit: 'Exit',
+    captureExitA11y: 'Leave without saving',
     releaseReview: 'Review {{count}} →',
     liveOrganizing: 'Organizing as you type…',
     liveOrganizedTitle: 'How Koraa would sort this',
@@ -186,8 +188,17 @@ export const featuresEn = {
     previewConfirm: 'Accept ✨',
     areaReviewTitle: 'Sort by area',
     areaReviewSubtitle:
-      'You only see areas with steps. Tap a name to rename or remove.',
-    areaReviewHint: 'Tap a step · drag · ↔ to change area',
+      'Nothing is saved yet. When it looks right, tap Save everything at the bottom.',
+    areaReviewHint: 'Tap a step · 🗑️ remove · ↔ change area',
+    areaReviewEllieHint:
+      'Tap any step if you want a date or to mark what matters — totally optional.',
+    areaReviewEllieOne:
+      'I sorted 1 step by area. Tap to edit · use 🗑️ if you do not want to save it. Nothing is saved until you tap Save everything.',
+    areaReviewEllieMany:
+      'I sorted {{count}} steps by area. Tap to edit · 🗑️ removes what you do not need. When it looks right, Save everything below.',
+    areaReviewEllieEmpty:
+      'No steps left. Go back to write again, or capture something new.',
+    areaReviewEmptyBoard: 'No steps in the preview. Go back and write what is on your mind.',
     areaReviewInstruction1:
       'Tap a step → date, time, priority, and project (+ Create project below).',
     areaReviewInstruction2:
@@ -206,7 +217,8 @@ export const featuresEn = {
     areaReviewAddAreaA11y: 'Add a new area to the board',
     areaReviewAddAreaTitle: 'Area name',
     areaReviewRenameTitle: 'Rename area',
-    areaReviewConfirm: 'Save ✨',
+    areaReviewConfirm: 'Save everything',
+    areaReviewConfirmHint: 'This keeps all the steps you just sorted.',
     areaReviewSaveSummaryTitle: 'Before you save',
     areaReviewSaveSummaryTotal: 'Total estimated time',
     areaReviewSaveSummaryNoDuration: 'No time set',
@@ -259,12 +271,33 @@ export const featuresEn = {
     organizedSummaryTitle: 'Done — it is organized',
     organizedSummaryBody: '{{count}} things saved by area.',
     organizedSummaryNewProjects: '{{count}} new projects created',
-    organizedSummaryAreaMeta: '{{projects}} projects · {{tasks}} open steps',
+    organizedSummaryAreaMeta: '{{projectLabel}} · {{taskLabel}}',
+    organizedSummaryProjectOne: '1 project',
+    organizedSummaryProjectMany: '{{count}} projects',
+    organizedSummaryTaskOne: '1 open step',
+    organizedSummaryTaskMany: '{{count}} open steps',
     organizedSummaryLoose: '{{count}} loose tasks in total',
+    organizedSummaryLooseOne: '1 loose task in total',
     organizedSummaryEmpty:
       'Your items are saved. Open the library to see everything.',
     organizedSummaryCaptureMore: 'Capture more',
     organizedSummaryLooseStep: 'Loose step',
+    organizedSummaryEditHint:
+      'Tap a step to adjust date, priority, or move it to another area.',
+    ellieOrganizedFallbackOne:
+      'Done — your step is saved. Tap if you want to change the date or move it.',
+    ellieOrganizedFallback:
+      'Done — your steps are saved. Tap one if you want to change the date or move it.',
+    ellieOrganizedLooseInAreaOne:
+      'I put your task in {{area}}. Tap to change the date or move it.',
+    ellieOrganizedLooseInArea:
+      'I put {{count}} in {{area}}. Tap to change dates or move them.',
+    ellieOrganizedOneAreaOne:
+      'I put your task in {{area}}. Tap to change the date or move it.',
+    ellieOrganizedOneArea:
+      'I organized {{count}} in {{area}}. Tap to change dates or move them.',
+    ellieOrganizedMulti:
+      'I sorted {{count}} across {{areas}} areas. Tap a step if you want to adjust anything.',
     previewBack: 'Edit text',
     previewBackA11y: 'Go back to edit what you wrote',
     previewEditTaskA11y: 'Edit {{task}}',
@@ -302,7 +335,7 @@ export const featuresEn = {
     viewOrganizedLink: 'See everything organized →',
     viewOrganizedA11y: 'View all your projects and saved items',
     capturePrompt: "What's on your mind?",
-    captureSubtitle: 'One line per thing — Koraa groups later.',
+    captureSubtitle: 'One line per thing. You can add a date after.',
     brainDumpHowTitle: 'How it works',
     brainDumpStep1:
       'Write everything as a list (one thing per line). No need to organize.',
@@ -323,7 +356,7 @@ export const featuresEn = {
     advancedOptionsA11y: 'View project, date, category, and weight',
     advancedOptionsHideA11y: 'Hide advanced options',
     releaseTask: 'Release',
-    releaseTaskA11y: 'Release what you wrote. Koraa will organize later.',
+    releaseTaskA11y: 'Release what you wrote. Next you can add a date or how heavy it feels.',
     releaseConfirm: '💜 I saved {{count}} things for you.',
     releaseConfirmOne: '💜 I saved 1 thing for you.',
     batchPartialSave:
@@ -412,12 +445,12 @@ export const featuresEn = {
     clearProjectA11y: 'Save as a loose task without a project',
     captureInputA11y: 'Write what is on your mind and tap Release.',
     captureAccessoryHint: "Write what's on your mind",
-    captureAccessoryDone: 'Done',
+    captureAccessoryDone: 'Hide keyboard',
     captureAccessoryDoneHint:
       'Then pick date, project, or weight — all optional',
-    captureAccessoryDoneA11y: 'Close keyboard and see task options',
+    captureAccessoryDoneA11y: 'Hide keyboard. Does not save what you wrote.',
     captureKeyboardStepHint:
-      'Tap Done on the keyboard to see project, date, and more below.',
+      'Tap Hide keyboard to see project, date, and more below.',
     captureStepWrite: 'Step 1 · Write',
     captureStepOrganize: 'Step 2 · Organize (optional)',
     captureStepSave: 'Step 3 · Save',
@@ -431,7 +464,7 @@ export const featuresEn = {
     segmentCaptureA11y: 'Capture — release what is on your mind',
     segmentProjectsA11y: 'See everything organized by areas and projects',
     brainDumpSimpleTitle: "What's on your mind?",
-    brainDumpSimpleSub: 'One line per thing. Koraa sorts it later.',
+    brainDumpSimpleSub: 'One line per thing. You can add a date after.',
     brainDumpPlaceholder: 'E.g.\nfinish presentation\nbuy grapes\ncall mom',
     brainDumpTip: 'Tip: one task per line, or separate with commas.',
     organizeCta: 'Organize',
@@ -778,8 +811,8 @@ export const featuresEn = {
     welcome: {
       brand: 'Koraa',
       title: 'How it works',
-      titleAccent: 'Koraa',
-      subtitle: 'Name, capture one thing, say how you feel. Then you see a step on Today.',
+      titleAccent: 'Koraa with Ellie',
+      subtitle: 'Swipe through the sample — then we try it for real in a minute.',
       description: 'Capture → feel → Koraa adapts → one step.',
       previewTitle: 'How it helps',
       howItWorksTitle: 'How it works',
@@ -796,10 +829,47 @@ export const featuresEn = {
       exampleHighStep2: 'Call the dentist',
       exampleHighStep3: 'Walk outside for 10 min',
       promise: 'It is not about doing more. It is about what fits today.',
-      quickStart: 'Start',
-      quickStartHint: 'First your name. Then you capture, check in, and Koraa leaves you one step.',
+      quickStart: 'Try with Ellie',
+      quickStartHint: 'Your name, then the real flow — capture, check-in, Today.',
       seeHowItWorks: 'See how it works',
       skip: 'Enter without check-in',
+    },
+    tour: {
+      progressA11y: 'Sample {{current}} of {{total}}',
+      swipeHint: 'Swipe or use the arrows',
+      prevA11y: 'Previous sample step',
+      nextA11y: 'Next sample step',
+      step1Kicker: 'Step 1 · Capture',
+      step1Body: 'Write what is on your mind — no order, no categories.',
+      step2Kicker: 'Step 2 · Check in',
+      step2Body: 'One minute: emotion and energy. Koraa adjusts how many steps to suggest.',
+      step3Kicker: 'Step 3 · Today',
+      step3Body: 'On Today you see a few suggested steps. One is enough. No guilt.',
+      ellie: {
+        step1: 'First you capture what is pending in Tasks — I sort it for you.',
+        step2: 'Then you tell me how you arrived today. Just tap and go.',
+        step3: 'On Today I leave a few suggested steps. You choose which one.',
+      },
+      mockCaptureLabel: 'Tasks · capture',
+      mockFeelLabel: 'Check-in',
+      mockHoyLabel: 'Today · suggested steps',
+      mockCapture: {
+        line1: 'Call the dentist',
+        line2: 'Reply to a message',
+        line3: 'Drink water',
+      },
+      mockFeel: {
+        calm: 'Calm',
+        tired: 'Tired',
+        focus: 'Focused',
+      },
+      mockFeelEnergy: 'Medium energy',
+      mockHoyBadge: 'Suggested step',
+      mockHoy: {
+        task1: 'Reply to the message',
+        task2: 'Drink water',
+      },
+      guidedProgressA11y: 'Step {{current}} of {{total}} of the tour',
     },
     flow: {
       kicker: 'The rhythm',
@@ -817,7 +887,7 @@ export const featuresEn = {
       footer: 'Koraa turns overwhelm into clarity — one gentle step at a time.',
     },
     ellie: {
-      welcome: 'Hi, I am Ellie. In a minute I will leave you one gentle step for today.',
+      welcome: 'Hi, I am Ellie. Here is how Koraa works — in a minute we try it for real.',
       name: 'What should I call you? I will greet you on Today.',
       capture: 'Write 1–3 things. Then I shape your Today.',
       howItWorks: 'This is how Koraa works. Four clear steps.',
@@ -994,6 +1064,9 @@ export const featuresEn = {
       hintBody: 'One line per thing. That is enough for Koraa to leave you a step on Today.',
       hintBodyWithCount: 'Koraa will save {{count}} items and suggest one step.',
       placeholder: 'E.g.\n• Call the dentist\n• Reply to a message\n• Drink water',
+      exampleBtn: 'Use example',
+      exampleBtnHint: 'Fill with sample ideas you can edit',
+      exampleText: 'Call the dentist\nReply to a message\nDrink water',
       helper: 'One idea per line works well.',
       detectedOne: 'Koraa detected 1 item',
       detectedMany: 'Koraa detected {{count}} items',

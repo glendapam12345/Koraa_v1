@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { PURCHASES_ERROR_CODE, type PurchasesPackage } from 'react-native-purchases';
+import type { PurchasesPackage } from 'react-native-purchases';
 import { Check, X } from 'lucide-react-native';
 import { getPrivacyPolicyUrl, getTermsOfServiceUrl } from '@/constants/legalUrls';
 import { THEME } from '@/constants/theme';
@@ -121,7 +121,7 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
       const err = e as { code?: string; userCancelled?: boolean };
       if (
         err.userCancelled === true ||
-        err.code === PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR
+        String(err.code ?? '').includes('CANCELLED')
       ) {
         return;
       }

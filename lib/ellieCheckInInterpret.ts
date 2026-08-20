@@ -6,11 +6,19 @@ export function energyBand(energyLevel: number): 'low' | 'ok' | 'high' {
 
 export function mindBand(focusLevel: string): 'foggy' | 'cloudy' | 'ok' | 'clear' {
   const f = focusLevel.trim().toLowerCase();
-  if (/niebla|foggy|muy/.test(f) && /nubl|cloud|fog/.test(f)) return 'foggy';
-  if (/niebla|foggy|muy nubl/.test(f)) return 'foggy';
-  if (/nubl|cloud/.test(f)) return 'cloudy';
-  if (/clara|clear|presente|present/.test(f)) return 'clear';
+  if (/muy distra|scattered|foggy|niebla/.test(f)) return 'foggy';
+  if (/algo distra|somewhat|nubl|cloud/.test(f)) return 'cloudy';
+  if (/s[uú]per enfoc|very focus|clara|clear|presente|present/.test(f)) return 'clear';
+  if (/^enfocada$|^focused$/.test(f) || /enfocad|focus/.test(f)) return 'clear';
   return 'ok';
+}
+
+export function timeBand(availableTime: string): 'little' | 'some' | 'plenty' | 'allDay' {
+  const t = availableTime.trim().toLowerCase();
+  if (/poco|little|1-2/.test(t)) return 'little';
+  if (/bastante|plenty|4-6/.test(t)) return 'plenty';
+  if (/todo el d[ií]a|all.?day|whole day/.test(t)) return 'allDay';
+  return 'some';
 }
 
 /**

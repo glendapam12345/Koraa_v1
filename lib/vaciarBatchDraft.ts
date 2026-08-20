@@ -103,7 +103,7 @@ export function batchItemToDraft(
     hasSubtasks: false as const,
     subtasks: [] as string[],
     assignToProject: item.assignToProject,
-    selectedCategory: item.selectedCategory,
+    selectedCategory: item.selectedCategory || detectCategory(item.content) || 'otros',
     selectedProjectId: item.selectedProjectId,
     selectedDate: item.selectedDate,
     isPriority,

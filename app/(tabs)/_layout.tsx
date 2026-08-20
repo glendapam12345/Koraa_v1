@@ -18,13 +18,19 @@ import { SupabaseHealthBanner } from '@/components/SupabaseHealthBanner';
 import { useSupabaseHealth } from '@/hooks/useSupabaseHealth';
 import { useHasCheckInToday } from '@/hooks/useHasCheckInToday';
 import { useI18n } from '@/contexts/I18nContext';
+import {
+  clearTabsGateUser,
+  isTabsGateRemembered,
+  rememberTabsGateUser,
+} from '@/lib/tabsAuthGateCache';
+import { goToLogin } from '@/lib/authNavigation';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
   const { user, loading } = useAuth();
   const userId = user?.id;
-  const [allowed, setAllowed] = useState(false);
+  const [allowed, setAllowed] = useState(() => isTabsGateRemembered(userId));
   const [profileGateError, setProfileGateError] = useState(false);
   const [showFirstSessionTour, setShowFirstSessionTour] = useState(false);
   const {
@@ -41,33 +47,53 @@ export default function TabLayout() {
   };
 
   useEffect(() => {
+    if (!userId) {
+      clearTabsGateUser();
+      setAllowed(false);
+      setProfileGateError(false);
+      return;
+    }
+    if (isTabsGateRemembered(userId)) {
+      setAllowed(true);
+      return;
+    }
     setAllowed(false);
     setProfileGateError(false);
   }, [userId]);
 
   const verifyAccess = useCallback(async () => {
-    if (!userId) {
-      router.replace('/auth/login');
-      return;
-    }
+    if (!userId) return;
     setProfileGateError(false);
     try {
       const result = await withTimeout(resolvePostAuthGate(userId), 15_000);
       if (result.status === 'error') {
+        // Already inside the app: a profile blip must not unmount tabs (looks like a crash).
+        if (isTabsGateRemembered(userId)) {
+          setAllowed(true);
+          setProfileGateError(false);
+          return;
+        }
         setProfileGateError(true);
         setAllowed(false);
         return;
       }
       if (result.route === '/onboarding/welcome') {
+        clearTabsGateUser();
         router.replace('/onboarding/welcome');
         return;
       }
+      rememberTabsGateUser(userId);
       setAllowed(true);
     } catch (e) {
       if (e instanceof TimeoutError) {
         logger.warn('Tabs gate: profile gate timeout');
       } else {
         logger.debug('Tabs gate:', e);
+      }
+      if (isTabsGateRemembered(userId)) {
+        setAllowed(true);
+        setProfileGateError(false);
+        return;
       }
       setProfileGateError(true);
       setAllowed(false);
@@ -77,7 +103,7 @@ export default function TabLayout() {
   useEffect(() => {
     if (loading) return;
     if (!userId) {
-      router.replace('/auth/login');
+      goToLogin();
       return;
     }
     void verifyAccess();
@@ -114,8 +140,12 @@ export default function TabLayout() {
     };
   }, [allowed, userId]);
 
-  if (loading || !userId) {
+  if (loading) {
     return <AppLoadingGate message={t('boot.loadingProfile')} />;
+  }
+
+  if (!userId) {
+    return null;
   }
 
   if (profileGateError) {

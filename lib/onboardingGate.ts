@@ -1,9 +1,10 @@
 import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
+import { HOY_TAB_PATH } from '@/lib/hoyTabPath';
 
 /** Ruta fail-safe cuando no se puede leer el perfil o el usuario no completó onboarding */
 export const WELCOME_ROUTE = '/onboarding/welcome' as const;
-export const TABS_ROUTE = '/(tabs)' as const;
+export const TABS_ROUTE = HOY_TAB_PATH;
 
 export type PostAuthRoute = typeof WELCOME_ROUTE | typeof TABS_ROUTE;
 

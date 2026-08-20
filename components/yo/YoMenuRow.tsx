@@ -14,6 +14,7 @@ type YoMenuRowProps = {
   /** Separador inferior estilo lista Musa/ajustes. */
   showDivider?: boolean;
   destructive?: boolean;
+  disabled?: boolean;
 };
 
 export function YoMenuRow({
@@ -26,14 +27,17 @@ export function YoMenuRow({
   style,
   showDivider = false,
   destructive = false,
+  disabled = false,
 }: YoMenuRowProps) {
   return (
     <View>
       <TouchableOpacity
-        style={[styles.menuItem, style]}
+        style={[styles.menuItem, style, disabled && styles.menuItemDisabled]}
         activeOpacity={0.7}
         onPress={onPress}
+        disabled={disabled}
         accessibilityRole="button"
+        accessibilityState={{ disabled }}
         accessibilityLabel={accessibilityLabel}
         accessibilityHint={accessibilityHint}
       >
@@ -82,6 +86,9 @@ const styles = StyleSheet.create({
   },
   destructiveText: {
     color: THEME.colors.text.secondary,
+  },
+  menuItemDisabled: {
+    opacity: 0.55,
   },
   divider: {
     height: StyleSheet.hairlineWidth,

@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { View, Text, Modal, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
 import { THEME } from '@/constants/theme';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
 import { markFirstSessionTourSeen } from '@/lib/firstSessionTour';
@@ -30,7 +29,6 @@ export function FirstSessionTourModal({ visible, userId, onFinished }: Props) {
     await markFirstSessionTourSeen(userId);
     await markFirstFlowLandingComplete(userId);
     onFinished();
-    router.replace('/(tabs)');
   }, [userId, onFinished]);
 
   const handleNext = () => {

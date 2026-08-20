@@ -1,5 +1,6 @@
 import type { Router } from 'expo-router';
 import type { TipsUserContext, TipCategoryId } from '@/lib/tipsTypes';
+import { replaceToHoyTab } from '@/lib/tabNavigation';
 
 type RouterPush = Pick<Router, 'push' | 'back' | 'replace' | 'canGoBack'>;
 
@@ -26,5 +27,5 @@ export function tipsGoBack(router: RouterPush): void {
     router.back();
     return;
   }
-  router.replace('/(tabs)');
+  replaceToHoyTab();
 }

@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { Stack, router, usePathname } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { hasCompletedOnboarding, TABS_ROUTE } from '@/lib/onboardingGate';
+import { hasCompletedOnboarding } from '@/lib/onboardingGate';
+import { replaceToHoyTab } from '@/lib/tabNavigation';
 
 export default function OnboardingLayout() {
   const { user, loading } = useAuth();
@@ -15,7 +16,7 @@ export default function OnboardingLayout() {
     void (async () => {
       const completed = await hasCompletedOnboarding(user.id);
       if (cancelled || completed !== true) return;
-      router.replace(TABS_ROUTE);
+      replaceToHoyTab();
     })();
 
     return () => {
