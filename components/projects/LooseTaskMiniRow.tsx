@@ -11,6 +11,8 @@ type LooseTaskMiniRowProps = {
   accentColor?: string;
   backgroundColor?: string;
   borderColor?: string;
+  /** Sustituye la edad relativa (p. ej. "Atrasada · 18 ago"). */
+  metaLabel?: string;
   onPress?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -33,6 +35,7 @@ export function LooseTaskMiniRow({
   accentColor,
   backgroundColor,
   borderColor,
+  metaLabel,
   onPress,
   onEdit,
   onDelete,
@@ -78,7 +81,7 @@ export function LooseTaskMiniRow({
       >
         <View style={styles.textCol}>
           <Text style={styles.content}>{task.content}</Text>
-          <Text style={styles.meta}>{relativeAgeLabel(task.created_at, t)}</Text>
+          <Text style={styles.meta}>{metaLabel ?? relativeAgeLabel(task.created_at, t)}</Text>
         </View>
       </TouchableOpacity>
 

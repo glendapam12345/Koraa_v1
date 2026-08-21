@@ -40,7 +40,8 @@ export function useMonthCalendar(
   const loadRequestIdRef = useRef(0);
 
   const loadMonth = useCallback(async (options?: { silent?: boolean }) => {
-    if (isLoadingRef.current && !options?.silent) return;
+    // Silent (focus) no se apila; un cambio de mes/año sí debe invalidar y recargar.
+    if (isLoadingRef.current && options?.silent) return;
     const requestId = ++loadRequestIdRef.current;
     isLoadingRef.current = true;
     if (!options?.silent) {

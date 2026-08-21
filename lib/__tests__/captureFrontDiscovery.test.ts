@@ -15,9 +15,9 @@ function item(id: string, content: string): EnrichedCaptureItem {
 }
 
 describe('captureFrontDiscovery', () => {
-  it('strips auto planning fields for area review preview', () => {
+  it('strips auto planning but keeps selectedDate for Calendario', () => {
     const stripped = stripAutoPlanningForDiscovery([item('a', 'Terminar app')]);
-    expect(stripped[0].selectedDate).toBeNull();
+    expect(stripped[0].selectedDate).toBe('2026-06-20');
     expect(stripped[0].selectedCategory).toBe('');
     expect(stripped[0].effortFeel).toBeNull();
     expect(stripped[0].selectedProjectId).toBeNull();

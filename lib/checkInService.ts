@@ -11,6 +11,7 @@ import type { Task } from '@/components/tasks/TaskCard';
 import type { CheckInReplanSummary } from '@/lib/checkInReplanSummary';
 import { fetchAndApplyKoraaBrainFocusPlan } from '@/lib/ai/fetchAndApplyKoraaBrainFocusPlan';
 import { clearKoraaDailyBriefCache } from '@/lib/ai/koraaDailyBriefCache';
+import { clearParamiPatternAiCache } from '@/lib/paramiPatternAi';
 import { seedHoyLiteFirstDayIfUnset } from '@/lib/hoyLiteDay';
 import { trackCohortDay0Once } from '@/lib/retentionD1';
 import { track } from '@/lib/analytics';
@@ -207,6 +208,12 @@ export async function saveDailyCheckInAndPrioritize(input: DailyCheckInInput): P
     await clearKoraaDailyBriefCache(input.userId);
   } catch (error) {
     logger.debug('checkInService: brief cache clear skipped', error);
+  }
+
+  try {
+    await clearParamiPatternAiCache(input.userId);
+  } catch (error) {
+    logger.debug('checkInService: parami pattern cache clear skipped', error);
   }
 
   void prioritizeTasksForCheckIn(input.userId, {

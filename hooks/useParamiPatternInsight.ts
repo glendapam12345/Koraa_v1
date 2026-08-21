@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchParamiPatternInsight } from '@/lib/paramiPatternAi';
+import { buildParamiPatternInputKey } from '@/lib/paramiPatternInputKey';
 import type { ParamiPatternInput, ParamiPatternInsight } from '@/lib/paramiPatternInsight';
 
 export type ParamiPatternInsightState = ParamiPatternInsight & { fromAi: boolean };
@@ -12,9 +13,7 @@ export function useParamiPatternInsight(
   const [insight, setInsight] = useState<ParamiPatternInsightState | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const inputKey = input
-    ? `${input.period}_${input.days.length}_${input.days[input.days.length - 1]?.date ?? ''}_${input.emotionMix[0]?.id ?? ''}_${input.tasks?.length ?? 0}_${input.isPremium ? '1' : '0'}`
-    : '';
+  const inputKey = input ? buildParamiPatternInputKey(input) : '';
 
   useEffect(() => {
     if (!enabled || !userId || !input) {
@@ -27,11 +26,17 @@ export function useParamiPatternInsight(
     setLoading(true);
 
     const snapshot = input;
-    void fetchParamiPatternInsight(userId, snapshot).then((result) => {
-      if (cancelled) return;
-      setInsight(result);
-      setLoading(false);
-    });
+    void fetchParamiPatternInsight(userId, snapshot)
+      .then((result) => {
+        if (cancelled) return;
+        setInsight(result);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setInsight(null);
+        setLoading(false);
+      });
 
     return () => {
       cancelled = true;

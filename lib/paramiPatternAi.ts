@@ -12,8 +12,14 @@ import {
   type ParamiPatternInput,
   type ParamiPatternInsight,
 } from '@/lib/paramiPatternInsight';
+import { buildParamiPatternInputKey, digestParamiPatternFingerprint } from '@/lib/paramiPatternInputKey';
 
-const CACHE_PREFIX = 'koraa_parami_pattern_ai_v1';
+/** v3: digest dual + índice por usuario (clear sin getAllKeys). */
+const CACHE_PREFIX = 'koraa_parami_pattern_ai_v3';
+const MAX_INDEXED_KEYS = 24;
+
+/** Seq por usuario para descartar respuestas de fetches superados. */
+const fetchSeqByUser = new Map<string, number>();
 
 function isAiEnabled(): boolean {
   const flag = process.env.EXPO_PUBLIC_HOY_COACH_AI_ENABLED;
@@ -21,8 +27,58 @@ function isAiEnabled(): boolean {
 }
 
 function cacheKey(userId: string, input: ParamiPatternInput): string {
-  const lastDay = input.days[input.days.length - 1]?.date ?? 'unknown';
-  return `${CACHE_PREFIX}_${userId}_${input.period}_${lastDay}_${input.locale}_${input.tasks?.length ?? 0}_${input.isPremium ? '1' : '0'}`;
+  const digest = digestParamiPatternFingerprint(buildParamiPatternInputKey(input));
+  return `${CACHE_PREFIX}_${userId}_${digest}`;
+}
+
+function indexKey(userId: string): string {
+  return `${CACHE_PREFIX}_index_${userId}`;
+}
+
+async function readCacheIndex(userId: string): Promise<string[]> {
+  try {
+    const raw = await AsyncStorage.getItem(indexKey(userId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((k): k is string => typeof k === 'string');
+  } catch {
+    return [];
+  }
+}
+
+async function rememberCacheKey(userId: string, key: string): Promise<void> {
+  try {
+    const current = await readCacheIndex(userId);
+    if (current.includes(key)) return;
+    const next = [...current, key].slice(-MAX_INDEXED_KEYS);
+    await AsyncStorage.setItem(indexKey(userId), JSON.stringify(next));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Invalida el insight de Para mí tras check-in / cambios de ritmo. */
+export async function clearParamiPatternAiCache(userId?: string): Promise<void> {
+  try {
+    if (userId) {
+      const indexed = await readCacheIndex(userId);
+      const toRemove = [...indexed, indexKey(userId)];
+      if (toRemove.length > 0) {
+        await AsyncStorage.multiRemove(toRemove);
+      }
+      return;
+    }
+
+    // Sin userId: solo limpia índices conocidos vía getAllKeys (raro; check-in siempre pasa userId).
+    const keys = await AsyncStorage.getAllKeys();
+    const toRemove = keys.filter((k) => k.startsWith(`${CACHE_PREFIX}_`));
+    if (toRemove.length > 0) {
+      await AsyncStorage.multiRemove(toRemove);
+    }
+  } catch {
+    /* ignore */
+  }
 }
 
 async function readCache(key: string): Promise<ParamiPatternInsight | null> {
@@ -39,9 +95,14 @@ async function readCache(key: string): Promise<ParamiPatternInsight | null> {
   return null;
 }
 
-async function writeCache(key: string, insight: ParamiPatternInsight): Promise<void> {
+async function writeCache(
+  userId: string,
+  key: string,
+  insight: ParamiPatternInsight,
+): Promise<void> {
   try {
     await AsyncStorage.setItem(key, JSON.stringify(insight));
+    await rememberCacheKey(userId, key);
   } catch {
     /* ignore */
   }
@@ -104,6 +165,10 @@ async function logInvokeFailure(error: unknown): Promise<void> {
   logger.warn('[parami-patterns]', error);
 }
 
+function isFetchCurrent(userId: string, seq: number): boolean {
+  return fetchSeqByUser.get(userId) === seq;
+}
+
 export async function fetchParamiPatternInsight(
   userId: string | undefined,
   input: ParamiPatternInput,
@@ -114,8 +179,14 @@ export async function fetchParamiPatternInsight(
     return local;
   }
 
+  const seq = (fetchSeqByUser.get(userId) ?? 0) + 1;
+  fetchSeqByUser.set(userId, seq);
+
   const key = cacheKey(userId, input);
   const cached = await readCache(key);
+  if (!isFetchCurrent(userId, seq)) {
+    return local;
+  }
   if (cached) {
     return {
       ...cached,
@@ -129,6 +200,9 @@ export async function fetchParamiPatternInsight(
 
   try {
     const { data: sessionData } = await supabase.auth.getSession();
+    if (!isFetchCurrent(userId, seq)) {
+      return local;
+    }
     if (!sessionData.session?.access_token) {
       return local;
     }
@@ -136,6 +210,10 @@ export async function fetchParamiPatternInsight(
     const { data, error } = await supabase.functions.invoke('parami-patterns', {
       body: buildParamiPatternPayload(input),
     });
+
+    if (!isFetchCurrent(userId, seq)) {
+      return local;
+    }
 
     if (error) {
       await logInvokeFailure(error);
@@ -157,8 +235,8 @@ export async function fetchParamiPatternInsight(
       patternType: local.patternType,
       fromAi,
     };
-    if (fromAi) {
-      await writeCache(key, insight);
+    if (fromAi && isFetchCurrent(userId, seq)) {
+      await writeCache(userId, key, insight);
     }
     return merged;
   } catch (err) {

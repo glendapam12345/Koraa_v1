@@ -1,4 +1,4 @@
-import { getLocalDateString } from '@/lib/dateLocal';
+import { getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
 import type { Task } from '@/components/tasks/TaskCard';
 
 export type LooseTaskSortFilter = 'all' | 'recent' | 'oldest' | 'forgotten';
@@ -11,6 +11,7 @@ export type LooseTaskSummary = {
   life_area_key?: string | null;
   is_completed: boolean;
   is_priority?: boolean;
+  project_id?: string | null;
 };
 
 const RECENT_DAYS = 7;
@@ -24,6 +25,29 @@ function daysSince(iso: string): number {
 
 export function isLooseTaskSortFilter(value: string | undefined): value is LooseTaskSortFilter {
   return value === 'all' || value === 'recent' || value === 'oldest' || value === 'forgotten';
+}
+
+/** Tarea abierta con fecha estrictamente anterior a hoy (calendario local). */
+export function isOverdueScheduledTask(
+  task: Pick<LooseTaskSummary, 'is_completed' | 'scheduled_date'>,
+  today: string = getLocalDateString(),
+): boolean {
+  if (task.is_completed) return false;
+  const scheduled = normalizeScheduledDate(task.scheduled_date);
+  if (!scheduled) return false;
+  return scheduled < today;
+}
+
+export function filterOverdueTasks<
+  T extends Pick<LooseTaskSummary, 'is_completed' | 'scheduled_date'>,
+>(tasks: T[], today: string = getLocalDateString()): T[] {
+  return tasks
+    .filter((task) => isOverdueScheduledTask(task, today))
+    .sort((a, b) => {
+      const da = normalizeScheduledDate(a.scheduled_date) ?? '';
+      const db = normalizeScheduledDate(b.scheduled_date) ?? '';
+      return da.localeCompare(db);
+    });
 }
 
 export function filterLooseTasks(
@@ -51,8 +75,9 @@ export function filterLooseTasks(
     list = list.filter((task) => {
       const age = daysSince(task.created_at);
       if (age < FORGOTTEN_DAYS) return false;
-      if (!task.scheduled_date) return true;
-      return task.scheduled_date < today;
+      const scheduled = normalizeScheduledDate(task.scheduled_date);
+      if (!scheduled) return true;
+      return scheduled < today;
     });
     return [...list].sort((a, b) => a.created_at.localeCompare(b.created_at));
   }
@@ -70,7 +95,7 @@ export function looseSummaryToTask(summary: LooseTaskSummary): Task {
     completed_at: null,
     created_at: summary.created_at,
     parent_task_id: null,
-    project_id: null,
+    project_id: summary.project_id ?? null,
     scheduled_date: summary.scheduled_date ?? null,
     life_area_key: summary.life_area_key ?? null,
     subtasks: [],

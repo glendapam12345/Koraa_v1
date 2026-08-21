@@ -118,6 +118,7 @@ function SemanaScreen() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [planAheadMode, setPlanAheadMode] = useState(false);
   const planAheadAppliedRef = useRef(false);
+  const focusReloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [plannerDragging, setPlannerDragging] = useState(false);
   const [replanMode, setReplanMode] = useState(false);
   const [replanDraft, setReplanDraft] = useState<DayTasks[] | null>(null);
@@ -265,7 +266,36 @@ function SemanaScreen() {
     useCallback(() => {
       void refreshCheckInToday();
       void loadTodayCheckIn();
-    }, [loadTodayCheckIn, refreshCheckInToday]),
+
+      // Debounce: evita ráfagas al cambiar de tab / re-montar el callback.
+      if (focusReloadTimerRef.current) {
+        clearTimeout(focusReloadTimerRef.current);
+      }
+      focusReloadTimerRef.current = setTimeout(() => {
+        focusReloadTimerRef.current = null;
+        if (viewMode === 'calendar' || rangeMode === 'month') {
+          void loadMonth({ silent: true });
+        } else {
+          const { start, end } = getRangeBounds(rangeMode, rangeAnchorDate);
+          void loadDateRange(start, end, { silent: true });
+        }
+      }, 350);
+
+      return () => {
+        if (focusReloadTimerRef.current) {
+          clearTimeout(focusReloadTimerRef.current);
+          focusReloadTimerRef.current = null;
+        }
+      };
+    }, [
+      loadTodayCheckIn,
+      refreshCheckInToday,
+      viewMode,
+      rangeMode,
+      rangeAnchorDate,
+      loadMonth,
+      loadDateRange,
+    ]),
   );
 
   useFocusEffect(

@@ -10,6 +10,7 @@ import {
 import {
   ChevronDown,
   ChevronRight,
+  Clock,
   FolderKanban,
   ListTodo,
   GripVertical,
@@ -48,8 +49,11 @@ import { TaskEditModal } from '@/components/tasks/TaskEditModal';
 import type { Task } from '@/components/tasks/TaskCard';
 import { useTaskPlanEdit } from '@/hooks/useTaskPlanEdit';
 import { logger } from '@/lib/logger';
+import { getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
 import {
+  filterOverdueTasks,
   groupLooseTasksByArea,
+  isOverdueScheduledTask,
   looseSummaryToTask,
   type LooseTaskSummary,
 } from '@/lib/looseTasks';
@@ -506,6 +510,7 @@ export function AreasCompactPanel({
   const { t, locale } = useI18n();
   const [nextActions, setNextActions] = useState<NextActionMap>({});
   const [looseTasks, setLooseTasks] = useState<LooseTaskSummary[]>([]);
+  const [overdueTasks, setOverdueTasks] = useState<LooseTaskSummary[]>([]);
   const [looseTasksLoadFailed, setLooseTasksLoadFailed] = useState(false);
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
   const [moveTargetForNewArea, setMoveTargetForNewArea] = useState<AreasMoveTarget | null>(null);
@@ -514,6 +519,7 @@ export function AreasCompactPanel({
   const [manageMode, setManageMode] = useState(false);
   const [organizeDragMode, setOrganizeDragMode] = useState(false);
   const [showEmptyAreas, setShowEmptyAreas] = useState(false);
+  const [showOverdueList, setShowOverdueList] = useState(true);
   const [draftConfig, setDraftConfig] = useState<UserLifeAreasConfig | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
   const {
@@ -538,7 +544,16 @@ export function AreasCompactPanel({
     [t],
   );
 
-  const looseTasksByArea = useMemo(() => groupLooseTasksByArea(looseTasks), [looseTasks]);
+  /** Las atrasadas viven en su sección; no se repiten dentro de cada área. */
+  const looseTasksForAreas = useMemo(
+    () => looseTasks.filter((task) => !isOverdueScheduledTask(task)),
+    [looseTasks],
+  );
+
+  const looseTasksByArea = useMemo(
+    () => groupLooseTasksByArea(looseTasksForAreas),
+    [looseTasksForAreas],
+  );
 
   const allGroups = useMemo(() => {
     const withProjects = groupProjectsByResolvedLifeArea(
@@ -611,24 +626,59 @@ export function AreasCompactPanel({
   }, [projects, looseCount, looseTasks.length, looseTasksLoadFailed]);
 
   const loadLooseTasks = useCallback(async () => {
-    await purgeExpiredLooseCompletedTasks(userId);
+    try {
+      await purgeExpiredLooseCompletedTasks(userId);
+      const today = getLocalDateString();
 
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('id, content, created_at, scheduled_date, life_area_key, is_completed, is_priority')
-      .eq('user_id', userId)
-      .is('project_id', null)
-      .is('parent_task_id', null)
-      .eq('is_completed', false)
-      .order('created_at', { ascending: false });
+      const [looseResult, overdueResult] = await Promise.all([
+        supabase
+          .from('tasks')
+          .select(
+            'id, content, created_at, scheduled_date, life_area_key, is_completed, is_priority, project_id',
+          )
+          .eq('user_id', userId)
+          .is('project_id', null)
+          .is('parent_task_id', null)
+          .eq('is_completed', false)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('tasks')
+          .select(
+            'id, content, created_at, scheduled_date, life_area_key, is_completed, is_priority, project_id',
+          )
+          .eq('user_id', userId)
+          .is('parent_task_id', null)
+          .eq('is_completed', false)
+          .not('scheduled_date', 'is', null)
+          .lt('scheduled_date', today)
+          .order('scheduled_date', { ascending: true }),
+      ]);
 
-    if (error) {
-      logger.error('Error cargando tareas sueltas:', error);
+      if (looseResult.error) {
+        logger.error('Error cargando tareas sueltas:', looseResult.error);
+        setLooseTasksLoadFailed(true);
+      } else {
+        setLooseTasksLoadFailed(false);
+        setLooseTasks((looseResult.data as LooseTaskSummary[]) ?? []);
+      }
+
+      if (overdueResult.error) {
+        logger.error('Error cargando tareas atrasadas:', overdueResult.error);
+        // Fallback: solo de sueltas si esa query sí respondió
+        if (!looseResult.error) {
+          setOverdueTasks(
+            filterOverdueTasks((looseResult.data as LooseTaskSummary[]) ?? [], today),
+          );
+        }
+      } else {
+        setOverdueTasks(
+          filterOverdueTasks((overdueResult.data as LooseTaskSummary[]) ?? [], today),
+        );
+      }
+    } catch (error) {
+      logger.error('Error inesperado cargando tareas de Áreas:', error);
       setLooseTasksLoadFailed(true);
-      return;
     }
-    setLooseTasksLoadFailed(false);
-    setLooseTasks((data as LooseTaskSummary[]) ?? []);
   }, [userId]);
 
   const performDeleteLooseTask = useCallback(
@@ -642,6 +692,8 @@ export function AreasCompactPanel({
       if (editingLooseTask?.id === taskId) {
         setEditingLooseTask(null);
       }
+      setLooseTasks((current) => current.filter((task) => task.id !== taskId));
+      setOverdueTasks((current) => current.filter((task) => task.id !== taskId));
       await loadLooseTasks();
       onChanged?.();
       return true;
@@ -657,21 +709,27 @@ export function AreasCompactPanel({
   const { saving: planEditSaving, savePlan } = useTaskPlanEdit({
     onSaved: (taskId, payload) => {
       setEditingLooseTask(null);
+      const patchSummary = (task: LooseTaskSummary): LooseTaskSummary => ({
+        ...task,
+        content: payload.content,
+        life_area_key: payload.lifeAreaKey ?? task.life_area_key ?? null,
+        project_id: payload.projectId ?? task.project_id ?? null,
+        scheduled_date: payload.scheduledDate,
+      });
+
       if (payload.projectId) {
         setLooseTasks((current) => current.filter((task) => task.id !== taskId));
       } else {
         setLooseTasks((current) =>
-          current.map((task) =>
-            task.id === taskId
-              ? {
-                  ...task,
-                  content: payload.content,
-                  life_area_key: payload.lifeAreaKey ?? task.life_area_key ?? null,
-                }
-              : task,
-          ),
+          current.map((task) => (task.id === taskId ? patchSummary(task) : task)),
         );
       }
+      setOverdueTasks((current) => {
+        const next = current
+          .map((task) => (task.id === taskId ? patchSummary(task) : task))
+          .filter((task) => isOverdueScheduledTask(task));
+        return filterOverdueTasks(next);
+      });
       void loadLooseTasks();
       onChanged?.();
     },
@@ -730,11 +788,27 @@ export function AreasCompactPanel({
         );
       });
 
+      setOverdueTasks((current) => {
+        const existing = current.find((task) => task.id === taskId);
+        if (!existing) return current;
+        if (normalizeAreaRef((existing.life_area_key as LifeAreaRef | null) ?? null) === normalizeAreaRef(targetAreaRef)) {
+          return current;
+        }
+        return current.map((task) =>
+          task.id === taskId ? { ...task, life_area_key: targetAreaRef } : task,
+        );
+      });
+
       if (normalizeAreaRef(previousAreaRef) === normalizeAreaRef(targetAreaRef)) return;
 
       void moveLooseTaskToArea(taskId, targetAreaRef).then((result) => {
         if (!result.ok) {
           setLooseTasks((current) =>
+            current.map((task) =>
+              task.id === taskId ? { ...task, life_area_key: previousAreaRef ?? null } : task,
+            ),
+          );
+          setOverdueTasks((current) =>
             current.map((task) =>
               task.id === taskId ? { ...task, life_area_key: previousAreaRef ?? null } : task,
             ),
@@ -1080,6 +1154,75 @@ export function AreasCompactPanel({
         </CalmCard>
       ) : null}
 
+      {!manageMode && !organizeDragMode && overdueTasks.length > 0 ? (
+        <CalmCard style={styles.overdueCard}>
+          <TouchableOpacity
+            style={styles.overdueHeader}
+            onPress={() => setShowOverdueList((current) => !current)}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showOverdueList }}
+            accessibilityLabel={
+              showOverdueList
+                ? t('areasCompact.overdueHideA11y')
+                : t('areasCompact.overdueShowA11y', { count: overdueTasks.length })
+            }
+          >
+            <View style={styles.overdueTitleRow}>
+              {showOverdueList ? (
+                <ChevronDown size={18} color={THEME.colors.calm.lavenderDeep} strokeWidth={2.2} />
+              ) : (
+                <ChevronRight size={18} color={THEME.colors.calm.lavenderDeep} strokeWidth={2.2} />
+              )}
+              <Clock size={18} color={THEME.colors.calm.lavenderDeep} strokeWidth={2.2} />
+              <Text style={styles.overdueTitle}>{t('areasCompact.overdueSectionTitle')}</Text>
+            </View>
+            <View style={styles.overdueHeaderMeta}>
+              <Text style={styles.overdueCount}>
+                {countLabel(
+                  overdueTasks.length,
+                  'areasCompact.overdueOne',
+                  'areasCompact.overdueMany',
+                  t,
+                )}
+              </Text>
+              <Text style={styles.overdueToggleText}>
+                {showOverdueList
+                  ? t('areasCompact.overdueHide')
+                  : t('areasCompact.overdueShow')}
+              </Text>
+            </View>
+          </TouchableOpacity>
+          {showOverdueList ? (
+            <>
+              <Text style={styles.overdueHint}>{t('areasCompact.overdueSectionHint')}</Text>
+              <View style={styles.overdueList}>
+                {overdueTasks.map((task) => {
+                  const dateLabel =
+                    formatProjectDueDate(normalizeScheduledDate(task.scheduled_date), locale) ??
+                    normalizeScheduledDate(task.scheduled_date) ??
+                    '';
+                  return (
+                    <LooseTaskMiniRow
+                      key={task.id}
+                      task={task}
+                      metaLabel={t('areasCompact.overdueMeta', { date: dateLabel })}
+                      accentColor={THEME.colors.calm.lavenderDeep}
+                      backgroundColor={THEME.colors.fill[100]}
+                      onEdit={() => handleEditLooseTask(task)}
+                      onDelete={() => handleDeleteLooseTask(task)}
+                      onMoveRequest={
+                        task.project_id ? undefined : () => handleRequestMoveLooseTask(task)
+                      }
+                    />
+                  );
+                })}
+              </View>
+            </>
+          ) : null}
+        </CalmCard>
+      ) : null}
+
       {manageMode ? (
         <CalmCard style={styles.manageCard}>
           <Text style={styles.manageTitle}>{t('areasCompact.manageTitle')}</Text>
@@ -1317,6 +1460,60 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
     minHeight: 32,
     justifyContent: 'center',
+  },
+  overdueCard: {
+    gap: THEME.spacing.xs,
+    paddingVertical: THEME.spacing.md,
+    paddingHorizontal: THEME.spacing.md,
+    backgroundColor: THEME.colors.calm.mist,
+    borderColor: THEME.colors.calm.border,
+    borderLeftWidth: 3,
+    borderLeftColor: THEME.colors.calm.lavenderDeep,
+  },
+  overdueHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: THEME.spacing.sm,
+    minHeight: THEME.sizes.touchTarget,
+  },
+  overdueTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  overdueTitle: {
+    ...THEME.typography.sectionTitle,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.main,
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  overdueHeaderMeta: {
+    alignItems: 'flex-end',
+    gap: 2,
+    flexShrink: 0,
+  },
+  overdueCount: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+  },
+  overdueToggleText: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 16,
+  },
+  overdueHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
+  },
+  overdueList: {
+    gap: THEME.spacing.xs,
+    marginTop: THEME.spacing.xs,
   },
   emptyAreasToggleText: {
     ...THEME.typography.caption,

@@ -119,13 +119,16 @@ export function useWeekTasks(
   const [lastLoadError, setLastLoadError] = useState<string | null>(null);
   const [schemaSetupType, setSchemaSetupType] = useState<SchemaSetupType | null>(null);
   const loadRequestIdRef = useRef(0);
+  const isLoadingRef = useRef(false);
 
   const loadDateRange = useCallback(async (
     start: string,
     end: string,
     options?: { silent?: boolean },
   ) => {
+    if (isLoadingRef.current && options?.silent) return;
     const requestId = ++loadRequestIdRef.current;
+    isLoadingRef.current = true;
     if (!options?.silent) {
       setLoading(true);
     }
@@ -134,6 +137,8 @@ export function useWeekTasks(
       const rangeDays = buildDaysForRange(start, end, locale);
 
       const user = await getCachedAuthUser();
+      if (requestId !== loadRequestIdRef.current) return;
+
       if (!user) {
         setLastLoadError(null);
         setSchemaSetupType(null);
@@ -142,9 +147,6 @@ export function useWeekTasks(
         setProjects([]);
         setCheckInsByDate({});
         showToast(translate(locale, 'hooks.weekSignIn'), 'info');
-        if (requestId === loadRequestIdRef.current) {
-          setLoading(false);
-        }
         return;
       }
 
@@ -169,6 +171,8 @@ export function useWeekTasks(
           .gte('date', start)
           .lte('date', end),
       ]);
+
+      if (requestId !== loadRequestIdRef.current) return;
 
       const projectsError = projectsRes.error;
       const projectsData = projectsRes.data;
@@ -219,13 +223,8 @@ export function useWeekTasks(
           setCheckInsByDate({});
           showToast(translate(locale, 'hooks.weekLoadError'), 'error');
         }
-        if (requestId === loadRequestIdRef.current) {
-          setLoading(false);
-        }
         return;
       }
-
-      if (requestId !== loadRequestIdRef.current) return;
 
       setLastLoadError(null);
       setSchemaSetupType(null);
@@ -275,6 +274,7 @@ export function useWeekTasks(
     } finally {
       if (requestId === loadRequestIdRef.current) {
         setLoading(false);
+        isLoadingRef.current = false;
       }
     }
   }, [showToast, locale]);
@@ -289,6 +289,7 @@ export function useWeekTasks(
 
   const appendTaskToDay = useCallback((dateStr: string, task: Task) => {
     loadRequestIdRef.current += 1;
+    isLoadingRef.current = false;
     setLoading(false);
     setWeekTasks((prev) => {
       if (prev.length === 0) return prev;
