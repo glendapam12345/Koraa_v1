@@ -33,4 +33,15 @@ describe('vaciarInboxCapture', () => {
     expect(items).toHaveLength(1);
     expect(items[0].selectedCategory).toBe('');
   });
+
+  it('parses natural Spanish day-month dates', () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 7, 10, 12, 0, 0));
+    try {
+      const items = parseCaptureToInboxItems('Terminar presentación 20 de agosto', 'es');
+      expect(items[0]?.selectedDate).toBe('2026-08-20');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });

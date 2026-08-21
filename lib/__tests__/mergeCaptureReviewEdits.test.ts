@@ -49,4 +49,13 @@ describe('mergeCaptureReviewEdits', () => {
     expect(merged[0]?.preferredTime).toBeNull();
     expect(merged[0]?.estimatedMinutes).toBeNull();
   });
+
+  it('preserves explicit null date when user cleared it', () => {
+    const previous = [item('a', { selectedDate: null })];
+    const incoming = [item('a', { selectedDate: '2026-08-23' })];
+
+    const merged = mergeCaptureReviewEdits(previous, incoming);
+
+    expect(merged[0]?.selectedDate).toBeNull();
+  });
 });

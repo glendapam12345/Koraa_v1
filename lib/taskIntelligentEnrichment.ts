@@ -119,7 +119,8 @@ export function inferTimingBucket(content: string, effort: TaskEffort | null): T
 
 export function dateForTimingBucket(bucket: TimingBucket): string | null {
   if (bucket === 'today') return getLocalDateString();
-  if (bucket === 'this_week') return getEndOfWeekLocalDateString();
+  // "Esta semana" es un momento, no un día concreto (evitar domingo/lunes inventados).
+  if (bucket === 'this_week') return null;
   return null;
 }
 

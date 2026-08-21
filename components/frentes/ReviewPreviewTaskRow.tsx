@@ -14,7 +14,10 @@ import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { DateSelector } from '@/components/tasks/DateSelector';
 import { formatProjectDueDate } from '@/lib/projectProgress';
-import type { EnrichedCaptureItem } from '@/lib/taskIntelligentEnrichment';
+import {
+  inferTimingFromDate,
+  type EnrichedCaptureItem,
+} from '@/lib/taskIntelligentEnrichment';
 import type { AppLocale, TranslationKey } from '@/lib/i18n';
 import {
   applyCapturePriority,
@@ -344,7 +347,7 @@ export function ReviewPreviewTaskRow({
                   onChange({
                     ...item,
                     selectedDate: date,
-                    timing: date ? 'this_week' : 'later',
+                    timing: date ? inferTimingFromDate(date) : 'later',
                   });
                   if (date) setShowDatePicker(false);
                 }}

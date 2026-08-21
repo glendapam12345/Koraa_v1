@@ -1,5 +1,6 @@
-import { type ReactNode } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { type ReactNode, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { Check } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { OnboardingEllieCoach } from '@/components/onboarding/OnboardingEllieCoach';
 import { CalmPrimaryButton } from '@/components/ui/calm/CalmPrimaryButton';
@@ -16,6 +17,20 @@ import {
 } from '@/lib/elliePersonality';
 import type { TranslationKey } from '@/lib/i18n';
 import type { WhatChangedReason } from '@/lib/lifeAreas/types';
+
+const NIGHT_LEFTOVER_PREVIEW_MAX = 5;
+const NIGHT_LEFTOVER_TITLE_MAX = 56;
+
+export type NightLeftoverItem = {
+  id: string;
+  content: string;
+};
+
+function truncateNightTitle(title: string): string {
+  const trimmed = title.trim();
+  if (trimmed.length <= NIGHT_LEFTOVER_TITLE_MAX) return trimmed;
+  return `${trimmed.slice(0, NIGHT_LEFTOVER_TITLE_MAX - 1).trimEnd()}…`;
+}
 
 const CHANGED_REASON_OPTIONS: {
   key: TranslationKey;
@@ -48,6 +63,10 @@ type HoyFeelHeroProps = {
   hasTasks?: boolean;
   hasNightLeftovers?: boolean;
   leftoverCount?: number;
+  /** Pasos pendientes de hoy (noche): id + título. */
+  leftoverItems?: NightLeftoverItem[];
+  /** @deprecated Prefer leftoverItems */
+  leftoverTitles?: string[];
   hasSuggestedSteps?: boolean;
   isReturningLater?: boolean;
   emotionLabel?: string;
@@ -86,6 +105,8 @@ type HoyFeelHeroProps = {
   onNightNotUrgent?: () => void;
   onNightDid?: () => void;
   onNightSome?: () => void;
+  onNightPickConfirm?: (doneTaskIds: string[]) => void;
+  onNightPickBack?: () => void;
   onNightDone?: () => void;
   onNightSeeLeft?: () => void;
 };
@@ -108,6 +129,8 @@ export function HoyFeelHero({
   hasTasks = true,
   hasNightLeftovers = false,
   leftoverCount = 0,
+  leftoverItems = [],
+  leftoverTitles = [],
   hasSuggestedSteps = false,
   emotionLabel = '',
   emotionKey = '',
@@ -144,12 +167,21 @@ export function HoyFeelHero({
   onNightUrgent,
   onNightDid,
   onNightSome,
+  onNightPickConfirm,
+  onNightPickBack,
   onNightDone,
   onNightSeeLeft,
 }: HoyFeelHeroProps) {
   const { t } = useI18n();
   const { greeting } = useKoraaGreeting();
   const firstName = getFirstName(displayName);
+
+  const resolvedLeftovers: NightLeftoverItem[] =
+    leftoverItems.length > 0
+      ? leftoverItems
+      : leftoverTitles.map((content, index) => ({ id: `legacy-${index}`, content }));
+
+  const [pickedDoneIds, setPickedDoneIds] = useState<string[]>([]);
 
   const routing = dailyState === 'returning' && middayStep === 'ask';
   const showOkayNext = dailyState === 'returning' && middayStep === 'okayNext';
@@ -165,6 +197,7 @@ export function HoyFeelHero({
   const showEmptyStart = showStartCheckIn && !hasTasks;
   const showMoodActions = dailyState === 'mood_updated';
   const showNightAsk = dailyState === 'evening' && middayStep === 'ask' && hasNightLeftovers;
+  const showNightPick = dailyState === 'evening' && middayStep === 'nightPick' && hasNightLeftovers;
   const showNightClose =
     dailyState === 'evening' &&
     (middayStep === 'nightClose' || (middayStep === 'ask' && !hasNightLeftovers));
@@ -174,7 +207,20 @@ export function HoyFeelHero({
     showMind ||
     showChangedAsk ||
     (dailyState === 'returning' && middayStep === 'adjust') ||
-    showNightAsk;
+    showNightAsk ||
+    showNightPick;
+
+  useEffect(() => {
+    if (showNightPick) {
+      setPickedDoneIds([]);
+    }
+  }, [showNightPick]);
+
+  const togglePickedDone = (taskId: string) => {
+    setPickedDoneIds((current) =>
+      current.includes(taskId) ? current.filter((id) => id !== taskId) : [...current, taskId],
+    );
+  };
 
   const nightClearMessage = firstName
     ? t('hoy.ellieNightClear', { name: firstName })
@@ -298,10 +344,11 @@ export function HoyFeelHero({
           leftoverCount === 1
             ? t('hoy.ellieNightLeftOne')
             : t('hoy.ellieNightLeftMany', { count: leftoverCount }),
-          t('hoy.ellieNightDidEither'),
+          leftoverCount === 1 ? t('hoy.ellieNightDidIt') : t('hoy.ellieNightDidAny'),
         ].join('\n')
       : nightClearMessage,
     nightCloseMessage: hasNightLeftovers ? t('hoy.ellieNightCanWait') : nightClearMessage,
+    nightPickMessage: t('hoy.ellieNightPickWhich'),
     dayClosedMessage:
       nightOutcome === 'some'
         ? t('hoy.ellieNightMovedForward')
@@ -536,20 +583,93 @@ export function HoyFeelHero({
       ) : null}
       {showNightAsk ? (
         <View style={styles.middayActions}>
+          {resolvedLeftovers.length > 0 ? (
+            <View
+              style={styles.nightLeftovers}
+              accessible
+              accessibilityLabel={t('hoy.ellieNightLeftoversA11y', {
+                count: leftoverCount || resolvedLeftovers.length,
+              })}
+            >
+              {resolvedLeftovers.slice(0, NIGHT_LEFTOVER_PREVIEW_MAX).map((item) => (
+                <Text key={item.id} style={styles.nightLeftoverItem}>
+                  · {truncateNightTitle(item.content)}
+                </Text>
+              ))}
+              {(leftoverCount || resolvedLeftovers.length) > NIGHT_LEFTOVER_PREVIEW_MAX ? (
+                <Text style={styles.nightLeftoverMore}>
+                  {t('hoy.ellieNightLeftoversMore', {
+                    count: (leftoverCount || resolvedLeftovers.length) - NIGHT_LEFTOVER_PREVIEW_MAX,
+                  })}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
           <CalmPrimaryButton
-            label={t('hoy.ellieNightIDid')}
+            label={
+              leftoverCount === 1 ? t('hoy.ellieNightIDidOne') : t('hoy.ellieNightIDidMany')
+            }
             variant="soft"
             onPress={() => onNightDid?.()}
           />
-          <CalmPrimaryButton
-            label={t('hoy.ellieNightSome')}
-            variant="soft"
-            onPress={() => onNightSome?.()}
-          />
+          {leftoverCount !== 1 ? (
+            <CalmPrimaryButton
+              label={t('hoy.ellieNightSome')}
+              variant="soft"
+              onPress={() => onNightSome?.()}
+            />
+          ) : null}
           <CalmPrimaryButton
             label={t('hoy.ellieNightNotYet')}
             variant="soft"
             onPress={() => onNightUrgent?.()}
+          />
+        </View>
+      ) : null}
+      {showNightPick ? (
+        <View style={styles.middayActions}>
+          <View
+            style={styles.nightLeftovers}
+            accessible
+            accessibilityLabel={t('hoy.ellieNightPickA11y')}
+          >
+            <Text style={styles.nightPickHint}>{t('hoy.ellieNightPickHint')}</Text>
+            {resolvedLeftovers.map((item) => {
+              const selected = pickedDoneIds.includes(item.id);
+              return (
+                <Pressable
+                  key={item.id}
+                  style={[styles.nightPickRow, selected && styles.nightPickRowSelected]}
+                  onPress={() => togglePickedDone(item.id)}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: selected }}
+                  accessibilityLabel={item.content}
+                >
+                  <View style={[styles.nightPickCheck, selected && styles.nightPickCheckOn]}>
+                    {selected ? (
+                      <Check size={14} color={THEME.colors.fill[100]} strokeWidth={2.5} />
+                    ) : null}
+                  </View>
+                  <Text style={styles.nightPickLabel} numberOfLines={2}>
+                    {truncateNightTitle(item.content)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <CalmPrimaryButton
+            label={
+              pickedDoneIds.length === 0
+                ? t('hoy.ellieNightPickNone')
+                : t('hoy.ellieNightPickConfirm', { count: pickedDoneIds.length })
+            }
+            variant="soft"
+            onPress={() => onNightPickConfirm?.(pickedDoneIds)}
+          />
+          <CalmPrimaryButton
+            label={t('hoy.ellieNightPickBack')}
+            variant="soft"
+            onPress={() => onNightPickBack?.()}
           />
         </View>
       ) : null}
@@ -583,5 +703,64 @@ const styles = StyleSheet.create({
   middayActions: {
     gap: THEME.spacing.xs,
     paddingHorizontal: THEME.spacing.xs,
+  },
+  nightLeftovers: {
+    gap: 4,
+    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.sm,
+    borderRadius: THEME.borderRadius.rounded,
+    backgroundColor: THEME.colors.calm.mist,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
+  },
+  nightLeftoverItem: {
+    ...THEME.typography.body,
+    fontSize: 14,
+    lineHeight: 20,
+    color: THEME.colors.text.main,
+  },
+  nightLeftoverMore: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginTop: 2,
+  },
+  nightPickHint: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.secondary,
+    marginBottom: 4,
+    lineHeight: 18,
+  },
+  nightPickRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: THEME.spacing.xs,
+    minHeight: THEME.sizes.touchTarget,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    borderRadius: THEME.borderRadius.standard,
+  },
+  nightPickRowSelected: {
+    backgroundColor: THEME.colors.fill[100],
+  },
+  nightPickCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: THEME.borderRadius.full,
+    borderWidth: 1.5,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: THEME.colors.fill[100],
+  },
+  nightPickCheckOn: {
+    backgroundColor: THEME.colors.calm.lavenderDeep,
+    borderColor: THEME.colors.calm.lavenderDeep,
+  },
+  nightPickLabel: {
+    ...THEME.typography.body,
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    color: THEME.colors.text.main,
   },
 });

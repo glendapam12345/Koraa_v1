@@ -50,6 +50,32 @@ describe('resolveHoyEllieDailyState', () => {
     ).toBe('free_day');
   });
 
+  it('celebrates finished steps instead of a free day when adapt is still open', () => {
+    expect(
+      resolveHoyEllieDailyState({
+        hasCheckIn: true,
+        isReturningLater: false,
+        isEveningClose: false,
+        hasTasks: false,
+        adaptAccepted: false,
+        allFocusDone: true,
+      }),
+    ).toBe('plan_done');
+  });
+
+  it('uses evening close when steps are done and adapt is still open at night', () => {
+    expect(
+      resolveHoyEllieDailyState({
+        hasCheckIn: true,
+        isReturningLater: false,
+        isEveningClose: true,
+        hasTasks: false,
+        adaptAccepted: false,
+        allFocusDone: true,
+      }),
+    ).toBe('evening');
+  });
+
   it('is in progress after they accept the adapted plan', () => {
     expect(
       resolveHoyEllieDailyState({
@@ -232,5 +258,9 @@ describe('shouldHideHoyPlan', () => {
 
   it('shows the proposed plan so they can accept or edit', () => {
     expect(shouldHideHoyPlan('returning', 'propose')).toBe(false);
+  });
+
+  it('keeps evening plan hidden while picking which leftovers were done', () => {
+    expect(shouldHideHoyPlan('evening', 'nightPick')).toBe(true);
   });
 });

@@ -111,6 +111,24 @@ describe('taskIntelligentEnrichment', () => {
     }
   });
 
+  it('suggests this_week timing without inventing a calendar day', () => {
+    expect(dateForTimingBucket('this_week')).toBeNull();
+    const item = enrichCaptureItem(
+      {
+        id: 'week',
+        content: 'Enviar reporte semanal',
+        assignToProject: false,
+        selectedCategory: '',
+        selectedProjectId: null,
+        selectedDate: null,
+        effortFeel: null,
+      },
+      projects,
+    );
+    expect(item.timing).toBe('this_week');
+    expect(item.selectedDate).toBeNull();
+  });
+
   it('matches project name tokens in task text', () => {
     const item = enrichCaptureItem(
       {

@@ -7,7 +7,8 @@ export type EllieMiddayStep =
   | 'adjust'
   | 'mind'
   | 'propose'
-  | 'nightClose';
+  | 'nightClose'
+  | 'nightPick';
 
 export type EllieDayVoiceInput = {
   dailyState: HoyEllieDailyState;
@@ -29,6 +30,7 @@ export type EllieDayVoiceInput = {
   planCloseAccepted?: boolean;
   eveningMessage: string;
   nightCloseMessage?: string;
+  nightPickMessage?: string;
   dayClosedMessage?: string;
 };
 
@@ -61,6 +63,7 @@ export function resolveEllieDayVoice(input: EllieDayVoiceInput): EllieDayVoice {
     planCloseAccepted = false,
     eveningMessage,
     nightCloseMessage = '',
+    nightPickMessage = '',
     dayClosedMessage = '',
   } = input;
 
@@ -73,6 +76,9 @@ export function resolveEllieDayVoice(input: EllieDayVoiceInput): EllieDayVoice {
   }
 
   if (dailyState === 'evening') {
+    if (middayStep === 'nightPick' && nightPickMessage) {
+      return { message: nightPickMessage };
+    }
     if (middayStep === 'nightClose' && nightCloseMessage) {
       return { message: nightCloseMessage };
     }

@@ -4,7 +4,11 @@ import { THEME } from '@/constants/theme';
 import { Calendar, ChevronRight, X } from 'lucide-react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useI18n } from '@/contexts/I18nContext';
-import { getLocalDateString, parseLocalDateString } from '@/lib/dateLocal';
+import {
+  calendarDateStringFromPicker,
+  getLocalDateString,
+  parseLocalDateString,
+} from '@/lib/dateLocal';
 
 const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
 const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
@@ -91,7 +95,7 @@ export function DateSelector({
   };
 
   const applyPickerDate = (date: Date) => {
-    onSelect(getLocalDateString(date));
+    onSelect(calendarDateStringFromPicker(date));
     closeModal();
   };
 

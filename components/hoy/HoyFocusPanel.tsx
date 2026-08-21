@@ -145,7 +145,8 @@ export function HoyFocusPanel({
   const hasTasks =
     focusTasks.some((task) => !task.is_completed) || totalPending > 0;
   const allFocusDone =
-    _priorityStats.total > 0 && _priorityStats.done >= _priorityStats.total;
+    (_priorityStats.total > 0 && _priorityStats.done >= _priorityStats.total) ||
+    (_priorityStats.done > 0 && !hasTasks);
   const {
     dailyState,
     chooseOkay: chooseMiddayOkay,
@@ -161,6 +162,8 @@ export function HoyFocusPanel({
     chooseNightUrgent,
     chooseNightDid,
     chooseNightSome,
+    confirmNightSome,
+    chooseNightPickBack,
     onHoyFocus,
     planCloseAccepted,
     nightOutcome,
@@ -379,6 +382,10 @@ export function HoyFocusPanel({
       hasTasks={hasTasks}
       hasNightLeftovers={incompleteFocusTasks.length > 0}
       leftoverCount={incompleteFocusTasks.length}
+      leftoverItems={incompleteFocusTasks.map((task) => ({
+        id: task.id,
+        content: task.content,
+      }))}
       hasSuggestedSteps={displayFocusTasks.length > 0}
       emotionLabel={emotionLabel}
       emotionKey={todayMood}
@@ -453,8 +460,20 @@ export function HoyFocusPanel({
       onMoodReplan={onMoodReplan}
       onMoodKeep={onMoodKeep}
       onNightUrgent={chooseNightUrgent}
-      onNightDid={chooseNightDid}
+      onNightDid={() => {
+        for (const task of incompleteFocusTasks) {
+          onToggleTask(task.id);
+        }
+        chooseNightDid();
+      }}
       onNightSome={chooseNightSome}
+      onNightPickConfirm={(doneTaskIds) => {
+        for (const taskId of doneTaskIds) {
+          onToggleTask(taskId);
+        }
+        confirmNightSome(doneTaskIds.length);
+      }}
+      onNightPickBack={chooseNightPickBack}
       onNightDone={closeDay}
       onNightSeeLeft={dismiss}
     />

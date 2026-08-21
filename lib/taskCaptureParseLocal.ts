@@ -97,6 +97,88 @@ function extractDueDate(
     };
   }
 
+  const numericMatch = text.match(/\b(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](20\d{2}))?\b/);
+  if (numericMatch) {
+    const day = Number(numericMatch[1]);
+    const month = Number(numericMatch[2]);
+    const year = numericMatch[3] ? Number(numericMatch[3]) : now.getFullYear();
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      const candidate = new Date(year, month - 1, day);
+      if (
+        candidate.getFullYear() === year &&
+        candidate.getMonth() === month - 1 &&
+        candidate.getDate() === day
+      ) {
+        return {
+          date: toISODateLocal(candidate),
+          cleaned: text.replace(numericMatch[0], '').replace(/\s+/g, ' ').trim(),
+        };
+      }
+    }
+  }
+
+  const monthNames =
+    locale === 'en'
+      ? ([
+          ['january', 'jan'],
+          ['february', 'feb'],
+          ['march', 'mar'],
+          ['april', 'apr'],
+          ['may', 'may'],
+          ['june', 'jun'],
+          ['july', 'jul'],
+          ['august', 'aug'],
+          ['september', 'sep', 'sept'],
+          ['october', 'oct'],
+          ['november', 'nov'],
+          ['december', 'dec'],
+        ] as const)
+      : ([
+          ['enero', 'ene'],
+          ['febrero', 'feb'],
+          ['marzo', 'mar'],
+          ['abril', 'abr'],
+          ['mayo', 'may'],
+          ['junio', 'jun'],
+          ['julio', 'jul'],
+          ['agosto', 'ago'],
+          ['septiembre', 'sep', 'sept'],
+          ['octubre', 'oct'],
+          ['noviembre', 'nov'],
+          ['diciembre', 'dic'],
+        ] as const);
+
+  const monthAlt = monthNames.map((aliases) => aliases.join('|')).join('|');
+  const dayMonthPattern =
+    locale === 'en'
+      ? new RegExp(`\\b(${monthAlt})\\s+(\\d{1,2})(?:(?:st|nd|rd|th)?(?:,)?\\s*(20\\d{2}))?\\b`, 'i')
+      : new RegExp(`\\b(\\d{1,2})\\s+(?:de\\s+)?(${monthAlt})(?:\\s+(?:de\\s+)?(20\\d{2}))?\\b`, 'i');
+
+  const dayMonthMatch = lower.match(dayMonthPattern);
+  if (dayMonthMatch) {
+    const monthToken = (locale === 'en' ? dayMonthMatch[1] : dayMonthMatch[2]).toLowerCase();
+    const day = Number(locale === 'en' ? dayMonthMatch[2] : dayMonthMatch[1]);
+    const year = Number(
+      (locale === 'en' ? dayMonthMatch[3] : dayMonthMatch[3]) || now.getFullYear(),
+    );
+    const monthIndex = monthNames.findIndex((aliases) =>
+      aliases.some((alias) => alias === monthToken),
+    );
+    if (monthIndex >= 0 && day >= 1 && day <= 31) {
+      const candidate = new Date(year, monthIndex, day);
+      if (
+        candidate.getFullYear() === year &&
+        candidate.getMonth() === monthIndex &&
+        candidate.getDate() === day
+      ) {
+        return {
+          date: toISODateLocal(candidate),
+          cleaned: text.replace(dayMonthMatch[0], '').replace(/\s+/g, ' ').trim(),
+        };
+      }
+    }
+  }
+
   return { date: null, cleaned: text.trim() };
 }
 

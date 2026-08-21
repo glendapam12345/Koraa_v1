@@ -41,7 +41,7 @@ function mergeCaptureReviewItem(
     ...incoming,
     content: prev.content,
     lifeAreaKey: prev.lifeAreaKey != null ? prev.lifeAreaKey : incoming.lifeAreaKey,
-    selectedDate: prev.selectedDate ?? incoming.selectedDate,
+    selectedDate: pickMergedNullable(prev.selectedDate, incoming.selectedDate) ?? null,
     estimatedMinutes: pickMergedNullable(prev.estimatedMinutes, incoming.estimatedMinutes),
     preferredTime: pickMergedNullable(prev.preferredTime, incoming.preferredTime),
     markImportant: prev.markImportant ?? incoming.markImportant,

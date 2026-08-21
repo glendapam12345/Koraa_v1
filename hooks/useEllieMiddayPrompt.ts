@@ -335,9 +335,20 @@ export function useEllieMiddayPrompt(
   }, [closeDay]);
 
   const chooseNightSome = useCallback(() => {
-    setNightOutcome('some');
-    closeDay();
-  }, [closeDay]);
+    setStep('nightPick');
+  }, []);
+
+  const confirmNightSome = useCallback(
+    (finishedCount = 0) => {
+      setNightOutcome(finishedCount > 0 ? 'some' : null);
+      closeDay();
+    },
+    [closeDay],
+  );
+
+  const chooseNightPickBack = useCallback(() => {
+    setStep('ask');
+  }, []);
 
   return {
     dailyState,
@@ -356,6 +367,8 @@ export function useEllieMiddayPrompt(
     chooseNightNotUrgent,
     chooseNightDid,
     chooseNightSome,
+    confirmNightSome,
+    chooseNightPickBack,
     onHoyFocus,
     planCloseAccepted,
     nightOutcome,

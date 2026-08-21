@@ -188,15 +188,14 @@ export const featuresEs = {
       'Revisa y toca lo que quieras cambiar. Nada se guarda hasta que digas que está bien.',
     previewConfirm: 'Aceptar ✨',
     areaReviewTitle: 'Organiza por áreas',
-    areaReviewSubtitle:
-      'Todavía no se guarda. Cuando esté bien, toca Guardar todo abajo.',
+    areaReviewSubtitle: 'Ajusta lo que quieras. Cuando esté bien, confirma abajo.',
     areaReviewHint: 'Toca un paso · 🗑️ quitar · ↔ cambiar de área',
     areaReviewEllieHint:
       'Toca un paso si quieres poner fecha o marcar qué importa — totalmente opcional.',
     areaReviewEllieOne:
-      'Separé 1 paso por área. Tócalo para editar · usa 🗑️ si no lo quieres guardar. Nada se guarda hasta que toques Guardar todo.',
+      'Separé 1 paso por área. Tócalo para editar · 🗑️ para quitarlo.',
     areaReviewEllieMany:
-      'Separé {{count}} pasos por área. Tócalos para editar · 🗑️ quita lo que sobre. Cuando esté bien, Guardar todo abajo.',
+      'Separé {{count}} pasos por área. Tócalos para editar · 🗑️ quita lo que sobre.',
     areaReviewEllieEmpty:
       'No quedan pasos. Vuelve atrás para escribir de nuevo, o agrega algo nuevo.',
     areaReviewEmptyBoard: 'No hay pasos en el preview. Vuelve a escribir lo que traes en la cabeza.',
@@ -728,6 +727,8 @@ export const featuresEs = {
     rangeWeek: 'Semana',
     rangeTwoWeeks: '2 semanas',
     rangeMonth: 'Mes',
+    weekRangeLabel: 'Semana {{start}} – {{end}}',
+    twoWeeksRangeLabel: '{{start}} – {{end}}',
     rangeLockedA11y: '{{range}} — requiere Premium',
     rangeNavPrevDayA11y: 'Día anterior',
     rangeNavNextDayA11y: 'Día siguiente',

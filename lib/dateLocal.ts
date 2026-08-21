@@ -6,6 +6,29 @@ export function getLocalDateString(date: Date = new Date()): string {
   return `${y}-${mo}-${da}`;
 }
 
+/**
+ * Fecha calendario desde un `Date` del DateTimePicker nativo.
+ * iOS a menudo entrega medianoche UTC del día tocado; con getDate() local
+ * (p. ej. México UTC−) eso baja un día. Si el instante es exactamente
+ * medianoche UTC, usamos componentes UTC; si no, componentes locales.
+ */
+export function calendarDateStringFromPicker(date: Date): string {
+  const utcMidnight =
+    date.getUTCHours() === 0 &&
+    date.getUTCMinutes() === 0 &&
+    date.getUTCSeconds() === 0 &&
+    date.getUTCMilliseconds() === 0;
+
+  if (utcMidnight) {
+    const y = date.getUTCFullYear();
+    const mo = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const da = String(date.getUTCDate()).padStart(2, '0');
+    return `${y}-${mo}-${da}`;
+  }
+
+  return getLocalDateString(date);
+}
+
 /** Parsea AAAA-MM-DD como medianoche local (evita desfase de `new Date('YYYY-MM-DD')`). */
 export function parseLocalDateString(isoDate: string): Date {
   const [y, m, d] = isoDate.split('-').map((part) => parseInt(part, 10));

@@ -4,7 +4,7 @@ import { THEME } from '@/constants/theme';
 import { Calendar, X } from 'lucide-react-native';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useI18n } from '@/contexts/I18nContext';
-import { getLocalDateString, parseLocalDateString } from '@/lib/dateLocal';
+import { calendarDateStringFromPicker, getLocalDateString, parseLocalDateString } from '@/lib/dateLocal';
 import { formatProjectDueDate } from '@/lib/projectProgress';
 
 type ProjectDueDatePickerProps = {
@@ -68,7 +68,7 @@ function DueDatePickerPanel({
     if (!date) return;
     setPickerDate(date);
     if (Platform.OS === 'android') {
-      applyDate(getLocalDateString(date));
+      applyDate(calendarDateStringFromPicker(date));
     }
   };
 
@@ -87,7 +87,7 @@ function DueDatePickerPanel({
           {Platform.OS === 'ios' ? (
             <TouchableOpacity
               style={[panelStyles.confirmBtn, { backgroundColor: accentColor }]}
-              onPress={() => applyDate(getLocalDateString(pickerDate))}
+              onPress={() => applyDate(calendarDateStringFromPicker(pickerDate))}
               activeOpacity={0.85}
               accessibilityRole="button"
             >

@@ -187,15 +187,14 @@ export const featuresEn = {
       'Review and tap anything you want to change. Nothing is saved until you say it looks right.',
     previewConfirm: 'Accept ✨',
     areaReviewTitle: 'Sort by area',
-    areaReviewSubtitle:
-      'Nothing is saved yet. When it looks right, tap Save everything at the bottom.',
+    areaReviewSubtitle: 'Adjust anything you want. When it feels right, confirm below.',
     areaReviewHint: 'Tap a step · 🗑️ remove · ↔ change area',
     areaReviewEllieHint:
       'Tap any step if you want a date or to mark what matters — totally optional.',
     areaReviewEllieOne:
-      'I sorted 1 step by area. Tap to edit · use 🗑️ if you do not want to save it. Nothing is saved until you tap Save everything.',
+      'I sorted 1 step by area. Tap to edit · 🗑️ to remove it.',
     areaReviewEllieMany:
-      'I sorted {{count}} steps by area. Tap to edit · 🗑️ removes what you do not need. When it looks right, Save everything below.',
+      'I sorted {{count}} steps by area. Tap to edit · 🗑️ removes what you do not need.',
     areaReviewEllieEmpty:
       'No steps left. Go back to write again, or capture something new.',
     areaReviewEmptyBoard: 'No steps in the preview. Go back and write what is on your mind.',
@@ -719,6 +718,8 @@ export const featuresEn = {
     rangeWeek: 'Week',
     rangeTwoWeeks: '2 weeks',
     rangeMonth: 'Month',
+    weekRangeLabel: 'Week of {{start}} – {{end}}',
+    twoWeeksRangeLabel: '{{start}} – {{end}}',
     rangeLockedA11y: '{{range}} — Premium required',
     rangeNavPrevDayA11y: 'Previous day',
     rangeNavNextDayA11y: 'Next day',

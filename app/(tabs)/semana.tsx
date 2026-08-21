@@ -705,8 +705,13 @@ function SemanaScreen() {
       return `${monthNamesFull[calendarMonth]} ${calendarYear}`;
     }
     const { start, end } = getRangeBounds(rangeMode, rangeAnchorDate);
-    return `${formatDayLabel(start, monthNames)} – ${formatDayLabel(end, monthNames)}`;
-  }, [rangeMode, rangeAnchorDate, monthNames, monthNamesFull, calendarMonth, calendarYear]);
+    const startLabel = formatDayLabel(start, monthNames);
+    const endLabel = formatDayLabel(end, monthNames);
+    if (rangeMode === 'week') {
+      return t('semana.weekRangeLabel', { start: startLabel, end: endLabel });
+    }
+    return t('semana.twoWeeksRangeLabel', { start: startLabel, end: endLabel });
+  }, [rangeMode, rangeAnchorDate, monthNames, monthNamesFull, calendarMonth, calendarYear, t]);
 
   const canGoRangePrev = useMemo(() => {
     if (planAheadMode && (rangeMode === 'week' || rangeMode === 'twoWeeks')) {
