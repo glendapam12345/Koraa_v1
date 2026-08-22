@@ -50,6 +50,9 @@ export function BrainDumpMoveAreaPicker({
             <Text style={[styles.label, isOnLoose && styles.labelActive]}>
               {looseLabel ?? looseColumn.name}
             </Text>
+            {isOnLoose ? (
+              <Text style={styles.hereBadge}>{t('vaciar.areaReviewMoveHere')}</Text>
+            ) : null}
           </TouchableOpacity>
         ) : null}
         {areaOptions.map((column) => {
@@ -73,6 +76,9 @@ export function BrainDumpMoveAreaPicker({
               <Text style={[styles.label, active && styles.labelActive]}>
                 {column.name}
               </Text>
+              {active ? (
+                <Text style={styles.hereBadge}>{t('vaciar.areaReviewMoveHere')}</Text>
+              ) : null}
             </TouchableOpacity>
           );
         })}
@@ -177,5 +183,11 @@ const styles = StyleSheet.create({
   labelActive: {
     fontFamily: THEME.fonts.heading.bold,
     color: THEME.colors.calm.lavenderDeep,
+  },
+  hereBadge: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.calm.lavenderDeep,
+    flexShrink: 0,
   },
 });

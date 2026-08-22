@@ -287,6 +287,23 @@ export function useWeekTasks(
     [loadDateRange],
   );
 
+  const patchTaskCompleted = useCallback((taskId: string, isCompleted: boolean) => {
+    setWeekTasks((prev) =>
+      prev.map((day) => ({
+        ...day,
+        tasks: day.tasks.map((task) =>
+          task.id === taskId
+            ? {
+                ...task,
+                is_completed: isCompleted,
+                completed_at: isCompleted ? new Date().toISOString() : null,
+              }
+            : task,
+        ),
+      })),
+    );
+  }, []);
+
   const appendTaskToDay = useCallback((dateStr: string, task: Task) => {
     loadRequestIdRef.current += 1;
     isLoadingRef.current = false;
@@ -312,6 +329,7 @@ export function useWeekTasks(
     loadWeekTasks,
     loadDateRange,
     appendTaskToDay,
+    patchTaskCompleted,
     getWeekBounds,
     getWeekOptions,
     lastLoadError,

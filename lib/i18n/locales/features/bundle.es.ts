@@ -193,9 +193,9 @@ export const featuresEs = {
     areaReviewEllieHint:
       'Toca un paso si quieres poner fecha o marcar qué importa — totalmente opcional.',
     areaReviewEllieOne:
-      'Separé 1 paso por área. Tócalo para editar · 🗑️ para quitarlo.',
+      'Separé 1 paso por área. Tócalo para editar · ↔ para cambiarlo de área.',
     areaReviewEllieMany:
-      'Separé {{count}} pasos por área. Tócalos para editar · 🗑️ quita lo que sobre.',
+      'Separé {{count}} pasos por área. Tócalos para editar · ↔ para cambiar de área.',
     areaReviewEllieEmpty:
       'No quedan pasos. Vuelve atrás para escribir de nuevo, o agrega algo nuevo.',
     areaReviewEmptyBoard: 'No hay pasos en el preview. Vuelve a escribir lo que traes en la cabeza.',
@@ -207,7 +207,9 @@ export const featuresEs = {
       'Área «{{name}}» lista — arrastra tareas a esa columna.',
     areaReviewLooseSectionTitle: 'Tareas sueltas',
     areaReviewAreasSectionTitle: 'Áreas',
-    areaReviewEmptyColumn: 'Arrastra aquí',
+    areaReviewEmptyColumn: 'Suelta aquí',
+    areaReviewEmptyArea: 'Sin pasos aún',
+    areaReviewBoardHint: '↔ Área mueve el paso. Orden ▲▼ solo cambia el orden de las áreas.',
     areaReviewDragHint:
       'Suelta en cualquier parte del área — se ilumina al pasar encima',
     areaReviewDragTip:
@@ -232,9 +234,14 @@ export const featuresEs = {
     areaReviewLooseInAreaHint:
       'Queda en esta área — no hace falta crear un proyecto.',
     areaReviewMoveArea: 'Mover a área',
-    areaReviewMoveAreaHint: 'Toca el área destino — o crea una nueva abajo.',
-    areaReviewMoveAreaUpA11y: 'Subir área en la lista',
-    areaReviewMoveAreaDownA11y: 'Bajar área en la lista',
+    areaReviewMoveSheetTitle: '¿A qué área va?',
+    areaReviewMoveHere: 'Aquí',
+    areaReviewMoveTask: 'Área',
+    areaReviewMoveTaskA11y: 'Mover este paso a otra área',
+    areaReviewReorderAreas: 'Orden',
+    areaReviewMoveAreaHint: 'Elige el área. La actual está marcada.',
+    areaReviewMoveAreaUpA11y: 'Subir esta área en la lista (no mueve el paso)',
+    areaReviewMoveAreaDownA11y: 'Bajar esta área en la lista (no mueve el paso)',
     previewDateBtn: 'Fecha',
     previewDurationBtn: 'Duración',
     previewWhenBtn: 'Hora',

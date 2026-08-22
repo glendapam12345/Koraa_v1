@@ -23,9 +23,10 @@ export function isHoyEllieEveningClose(hour: number = getHourOfDay()): boolean {
 /**
  * Daily progress → one Ellie state.
  * Unaccepted check-in always resumes emotional review — never skip to the plan.
- * Night / return only after they accepted today’s plan.
+ * Coming back later (afternoon) opens the day again — never the empty
+ * “nothing urgent / rest” script, even if the list is still empty.
  * If today’s steps are already done before they accept, celebrate (plan_done /
- * evening) — never the empty “free day / nothing urgent” script.
+ * evening) — never that free-day close.
  */
 export function resolveHoyEllieDailyState(params: {
   hasCheckIn: boolean;
@@ -47,6 +48,10 @@ export function resolveHoyEllieDailyState(params: {
     if (params.allFocusDone) {
       if (params.isEveningClose && !params.middayDismissed) return 'evening';
       return 'plan_done';
+    }
+    // Primera visita de la tarde: saludar y seguir, no “descansar”.
+    if (params.isReturningLater && !params.middayDismissed) {
+      return params.hasTasks === false ? 'returning' : 'adapting';
     }
     return params.hasTasks === false ? 'free_day' : 'adapting';
   }

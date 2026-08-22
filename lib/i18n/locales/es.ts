@@ -735,6 +735,10 @@ export const es = {
     ellieGotYouShort: 'Te tengo.',
     ellieCheckInSummary:
       'Hoy te sientes {{emotion}}, con energía {{energy}}, la mente {{mind}} y {{time}}.',
+    ellieCheckInSummaryAfternoon:
+      'Esta tarde te sientes {{emotion}}, con energía {{energy}}, la mente {{mind}} y {{time}}.',
+    ellieCheckInSummaryEvening:
+      'Esta noche te sientes {{emotion}}, con energía {{energy}}, la mente {{mind}} y {{time}}.',
     ellieFeelingUnnamed: 'como llegaste',
     ellieEnergyLow: 'más bajita',
     ellieEnergyOk: 'estable',
@@ -773,7 +777,9 @@ export const es = {
     ellieSeeMyPlan: 'Ver mi plan',
     ellieEditMyDay: 'Editar mi día',
     ellieFreeDayAsk:
-      'Como no tienes nada urgente, no hace falta llenar el espacio.\n¿Quieres descansar o vaciar la cabeza?',
+      'Aún no hay nada en la lista, así que hoy puede ir suave.\n¿Vaciamos la cabeza para que te sugiera un paso, o te quedas así un rato?',
+    ellieFreeAfternoonAsk:
+      'Aún no hay nada en la lista. Esta tarde puede empezar suave.\n¿Vaciamos la cabeza para que te sugiera un paso, o te quedas así un rato?',
     ellieFreeRest: 'Descansar',
     ellieFreeEmpty: 'Vaciar la cabeza',
     ellieFreeExplore: 'Explorar ideas',
@@ -845,8 +851,12 @@ export const es = {
     ellieHelloContinue:
       '{{hello}}. ¿Quieres actualizar cómo te sientes, o sueltas lo que traes y yo lo acomodo?',
     ellieHelloReady: '{{hello}}. ¿Lista para este paso, o cambió cómo te sientes?',
-    ellieMiddayAsk: 'Hey, {{name}}. ¿Cómo vamos?',
-    ellieMiddayAskNoName: 'Hey. ¿Cómo vamos?',
+    ellieMiddayAsk: '{{greeting}}, {{name}}.\n¿Cómo vamos?',
+    ellieMiddayAskNoName: '{{greeting}}.\n¿Cómo vamos?',
+    ellieMiddayAskAfternoon:
+      '{{greeting}}, {{name}}.\n¿Quieres actualizar cómo te sientes, o seguimos con lo de hoy?',
+    ellieMiddayAskNoNameAfternoon:
+      '{{greeting}}.\n¿Quieres actualizar cómo te sientes, o seguimos con lo de hoy?',
     ellieMiddayOkay: 'Estoy bien',
     ellieMiddayChanged: 'Cambió mi día',
     ellieMiddayMind: 'Traigo algo en la cabeza',

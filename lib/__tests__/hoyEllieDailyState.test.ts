@@ -114,6 +114,18 @@ describe('resolveHoyEllieDailyState', () => {
     ).toBe('adapting');
   });
 
+  it('opens afternoon return instead of a free-day rest script when the list is empty', () => {
+    expect(
+      resolveHoyEllieDailyState({
+        hasCheckIn: true,
+        isReturningLater: true,
+        isEveningClose: false,
+        hasTasks: false,
+        adaptAccepted: false,
+      }),
+    ).toBe('returning');
+  });
+
   it('shows the plan after they already chose a midday path', () => {
     expect(
       resolveHoyEllieDailyState({

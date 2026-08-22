@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -6,6 +6,7 @@ import type { DayTasks, Project } from '@/hooks/useWeekTasks';
 import type { Task } from '@/hooks/useTasks';
 import { buildSemanaPlannerModel } from '@/lib/semana/buildSemanaPlannerModel';
 import { loadTaskPlanningMetaMap } from '@/lib/taskPlanningMeta';
+import type { WeekPlannerTaskStatus } from '@/lib/lifeAreas/types';
 import { WeekPlannerDragBoard } from '@/components/tasks/experience/WeekPlannerDragBoard';
 import { MoveTaskToDaySheet } from '@/components/tasks/experience/MoveTaskToDaySheet';
 import { TaskEditModal } from '@/components/tasks/TaskEditModal';
@@ -35,6 +36,7 @@ type SemanaDraggableWeekBoardProps = {
   onDraggingChange?: (dragging: boolean) => void;
   hasCheckInToday?: boolean;
   showToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
+  onTaskCompletedLocal?: (taskId: string, isCompleted: boolean) => void;
 };
 
 export function SemanaDraggableWeekBoard({
@@ -48,6 +50,7 @@ export function SemanaDraggableWeekBoard({
   onDraggingChange,
   hasCheckInToday = false,
   showToast,
+  onTaskCompletedLocal,
 }: SemanaDraggableWeekBoardProps) {
   const { t, locale } = useI18n();
   const [moveTask, setMoveTask] = useState<{ taskId: string; dayId: string; title: string } | null>(
@@ -56,6 +59,10 @@ export function SemanaDraggableWeekBoard({
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [quickAddTarget, setQuickAddTarget] = useState<ProjectQuickAddTarget | null>(null);
   const [planningMetaVersion, setPlanningMetaVersion] = useState(0);
+  const [completeById, setCompleteById] = useState<Record<string, boolean>>({});
+  const completeByIdRef = useRef(completeById);
+  const togglingRef = useRef(new Set<string>());
+  completeByIdRef.current = completeById;
 
   useEffect(() => {
     let cancelled = false;
@@ -67,10 +74,27 @@ export function SemanaDraggableWeekBoard({
     };
   }, []);
 
-  const { days, areas } = useMemo(
+  const { days: modelDays, areas } = useMemo(
     () => buildSemanaPlannerModel(weekTasks, projects, t('projectsUi.looseTitle'), locale),
     [weekTasks, projects, t, locale, planningMetaVersion],
   );
+
+  const days = useMemo(() => {
+    if (Object.keys(completeById).length === 0) return modelDays;
+    return modelDays.map((day) => ({
+      ...day,
+      tasks: day.tasks.map((task) => {
+        const override = completeById[task.id];
+        if (override == null) return task;
+        const status: WeekPlannerTaskStatus = override
+          ? 'done'
+          : task.status === 'star'
+            ? 'star'
+            : 'pending';
+        return { ...task, status };
+      }),
+    }));
+  }, [completeById, modelDays]);
 
   const tasksById = useMemo(() => {
     const map: Record<string, Task> = {};
@@ -80,6 +104,23 @@ export function SemanaDraggableWeekBoard({
       }
     }
     return map;
+  }, [weekTasks]);
+
+  useEffect(() => {
+    setCompleteById((prev) => {
+      if (Object.keys(prev).length === 0) return prev;
+      const next = { ...prev };
+      let changed = false;
+      for (const { tasks } of weekTasks) {
+        for (const task of tasks) {
+          if (next[task.id] != null && next[task.id] === Boolean(task.is_completed)) {
+            delete next[task.id];
+            changed = true;
+          }
+        }
+      }
+      return changed ? next : prev;
+    });
   }, [weekTasks]);
 
   const editProjects = useMemo(
@@ -132,9 +173,14 @@ export function SemanaDraggableWeekBoard({
 
   const handleToggleComplete = useCallback(
     async (taskId: string) => {
+      if (togglingRef.current.has(taskId)) return;
       const task = tasksById[taskId];
       if (!task) return;
-      const nextCompleted = !task.is_completed;
+      const current = completeByIdRef.current[taskId] ?? Boolean(task.is_completed);
+      const nextCompleted = !current;
+      togglingRef.current.add(taskId);
+      setCompleteById((prev) => ({ ...prev, [taskId]: nextCompleted }));
+      onTaskCompletedLocal?.(taskId, nextCompleted);
       const { error } = await supabase
         .from('tasks')
         .update({
@@ -142,13 +188,16 @@ export function SemanaDraggableWeekBoard({
           completed_at: nextCompleted ? new Date().toISOString() : null,
         })
         .eq('id', taskId);
+      togglingRef.current.delete(taskId);
       if (error) {
+        setCompleteById((prev) => ({ ...prev, [taskId]: current }));
+        onTaskCompletedLocal?.(taskId, current);
         showToast?.(t('errors.updateFailed'), 'error');
         return;
       }
       onTasksChanged?.();
     },
-    [onTasksChanged, showToast, t, tasksById],
+    [onTaskCompletedLocal, onTasksChanged, showToast, t, tasksById],
   );
 
   const handleSavePlanEdit = useCallback(

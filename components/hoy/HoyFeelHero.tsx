@@ -173,8 +173,10 @@ export function HoyFeelHero({
   onNightSeeLeft,
 }: HoyFeelHeroProps) {
   const { t } = useI18n();
-  const { greeting } = useKoraaGreeting();
+  const { greeting, period } = useKoraaGreeting();
   const firstName = getFirstName(displayName);
+  const afternoonOpen = period === 'afternoon' || period === 'evening';
+  const leadWithEmpty = afternoonOpen || mindBand(focusLevel) === 'foggy';
 
   const resolvedLeftovers: NightLeftoverItem[] =
     leftoverItems.length > 0
@@ -240,9 +242,13 @@ export function HoyFeelHero({
       ? t('hoy.ellieDailyStart', { name: firstName, greeting })
       : t('hoy.ellieDailyStartNoName', { greeting });
 
-  const returningMessage = firstName
-    ? t('hoy.ellieMiddayAsk', { name: firstName })
-    : t('hoy.ellieMiddayAskNoName');
+  const returningMessage = afternoonOpen
+    ? firstName
+      ? t('hoy.ellieMiddayAskAfternoon', { name: firstName, greeting })
+      : t('hoy.ellieMiddayAskNoNameAfternoon', { greeting })
+    : firstName
+      ? t('hoy.ellieMiddayAsk', { name: firstName, greeting })
+      : t('hoy.ellieMiddayAskNoName', { greeting });
 
   const energyKey =
     energyBand(energyLevel) === 'low'
@@ -268,7 +274,12 @@ export function HoyFeelHero({
           ? 'hoy.ellieTimeAllDay'
           : 'hoy.ellieTimeSome';
 
-  const summary = t('hoy.ellieCheckInSummary', {
+  const summaryKey = afternoonOpen
+    ? period === 'evening'
+      ? 'hoy.ellieCheckInSummaryEvening'
+      : 'hoy.ellieCheckInSummaryAfternoon'
+    : 'hoy.ellieCheckInSummary';
+  const summary = t(summaryKey, {
     emotion: emotionLabel || t('hoy.ellieFeelingUnnamed'),
     energy: t(energyKey),
     mind: t(mindKey),
@@ -283,7 +294,7 @@ export function HoyFeelHero({
     gotYou: t('hoy.ellieGotYou'),
     summary,
     lighter: t('hoy.ellieReturnFeelRight'),
-    freeDay: t('hoy.ellieFreeDayAsk'),
+    freeDay: t(afternoonOpen ? 'hoy.ellieFreeAfternoonAsk' : 'hoy.ellieFreeDayAsk'),
   });
 
   const overwhelmed =
@@ -302,7 +313,7 @@ export function HoyFeelHero({
     gotYou: t('hoy.ellieGotYou'),
     summary,
     lighter: t('hoy.ellieMakeLighter'),
-    freeDay: t('hoy.ellieFreeDayAsk'),
+    freeDay: t(afternoonOpen ? 'hoy.ellieFreeAfternoonAsk' : 'hoy.ellieFreeDayAsk'),
   });
 
   const returnProposeMessage = hasSuggestedSteps
@@ -325,7 +336,9 @@ export function HoyFeelHero({
     okayNextMessage:
       dailyState === 'evening'
         ? t('hoy.ellieNightFocus')
-        : t('hoy.ellieOkayKeepGoing'),
+        : hasSuggestedSteps
+          ? t('hoy.ellieOkayKeepGoing')
+          : t(afternoonOpen ? 'hoy.ellieFreeAfternoonAsk' : 'hoy.ellieMiddayEmptyPlan'),
     changedAskMessage: t('hoy.ellieChangedAsk'),
     adjustMessage: t('hoy.ellieAdjustGotIt'),
     mindGoMessage: t('hoy.ellieListening'),
@@ -441,16 +454,33 @@ export function HoyFeelHero({
       ) : null}
       {showOkayNext ? (
         <View style={styles.middayActions}>
-          <CalmPrimaryButton
-            label={t('hoy.ellieMiddayShowPlan')}
-            variant="soft"
-            onPress={() => onMiddayShowPlan?.()}
-          />
-          <CalmPrimaryButton
-            label={t('hoy.ellieWantChangeSomething')}
-            variant="soft"
-            onPress={() => onOkayChangePlan?.()}
-          />
+          {hasSuggestedSteps ? (
+            <>
+              <CalmPrimaryButton
+                label={t('hoy.ellieMiddayShowPlan')}
+                variant="soft"
+                onPress={() => onMiddayShowPlan?.()}
+              />
+              <CalmPrimaryButton
+                label={t('hoy.ellieWantChangeSomething')}
+                variant="soft"
+                onPress={() => onOkayChangePlan?.()}
+              />
+            </>
+          ) : (
+            <>
+              <CalmPrimaryButton
+                label={t('hoy.ellieFreeEmpty')}
+                variant="soft"
+                onPress={() => onFreeEmpty?.()}
+              />
+              <CalmPrimaryButton
+                label={t('hoy.ellieFreeRest')}
+                variant="soft"
+                onPress={() => onFreeRest?.()}
+              />
+            </>
+          )}
         </View>
       ) : null}
       {showMind ? (
@@ -522,16 +552,33 @@ export function HoyFeelHero({
       ) : null}
       {showFreeActions ? (
         <View style={styles.middayActions}>
-          <CalmPrimaryButton
-            label={t('hoy.ellieFreeRest')}
-            variant="soft"
-            onPress={() => onFreeRest?.()}
-          />
-          <CalmPrimaryButton
-            label={t('hoy.ellieFreeEmpty')}
-            variant="soft"
-            onPress={() => onFreeEmpty?.()}
-          />
+          {leadWithEmpty ? (
+            <>
+              <CalmPrimaryButton
+                label={t('hoy.ellieFreeEmpty')}
+                variant="soft"
+                onPress={() => onFreeEmpty?.()}
+              />
+              <CalmPrimaryButton
+                label={t('hoy.ellieFreeRest')}
+                variant="soft"
+                onPress={() => onFreeRest?.()}
+              />
+            </>
+          ) : (
+            <>
+              <CalmPrimaryButton
+                label={t('hoy.ellieFreeRest')}
+                variant="soft"
+                onPress={() => onFreeRest?.()}
+              />
+              <CalmPrimaryButton
+                label={t('hoy.ellieFreeEmpty')}
+                variant="soft"
+                onPress={() => onFreeEmpty?.()}
+              />
+            </>
+          )}
         </View>
       ) : null}
       {showPlanDoneActions ? (

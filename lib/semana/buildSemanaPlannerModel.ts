@@ -49,6 +49,7 @@ export function buildSemanaPlannerModel(
     areaIndex,
     locale,
     buildPlanningMap(allTasks),
+    { includeCompleted: true },
   );
   return { days, areas };
 }

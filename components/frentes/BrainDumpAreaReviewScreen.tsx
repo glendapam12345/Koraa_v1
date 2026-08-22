@@ -654,6 +654,8 @@ export function BrainDumpAreaReviewScreen({
         addProjectLabel={t('vaciar.areaReviewAddProject')}
         hideEmptyColumns
         dragHint={t('vaciar.areaReviewDragHint')}
+        boardHint={t('vaciar.areaReviewBoardHint')}
+        emptyAreaHint={t('vaciar.areaReviewEmptyArea')}
         looseSectionTitle={t('vaciar.areaReviewLooseSectionTitle')}
         areasSectionTitle={t('vaciar.areaReviewAreasSectionTitle')}
         onDraggingChange={onDraggingChange}
@@ -675,6 +677,9 @@ export function BrainDumpAreaReviewScreen({
         canMoveAreaDown={canMoveAreaDown}
         moveAreaUpA11y={t('vaciar.areaReviewMoveAreaUpA11y')}
         moveAreaDownA11y={t('vaciar.areaReviewMoveAreaDownA11y')}
+        reorderAreasLabel={t('vaciar.areaReviewReorderAreas')}
+        moveTaskLabel={t('vaciar.areaReviewMoveTask')}
+        moveTaskA11y={t('vaciar.areaReviewMoveTaskA11y')}
       />
       )}
 
@@ -749,6 +754,7 @@ export function BrainDumpAreaReviewScreen({
           />
           {movingItem ? (
             <View style={styles.taskSheet}>
+              <Text style={styles.moveSheetTitle}>{t('vaciar.areaReviewMoveSheetTitle')}</Text>
               <Text style={styles.moveSheetTaskTitle} numberOfLines={2}>
                 {movingItem.content}
               </Text>
@@ -936,6 +942,13 @@ const styles = StyleSheet.create({
     borderTopRightRadius: THEME.borderRadius.rounded,
     padding: THEME.spacing.md,
     gap: THEME.spacing.sm,
+  },
+  moveSheetTitle: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.bold,
+    color: THEME.colors.text.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   moveSheetTaskTitle: {
     ...THEME.typography.screenSubtitle,

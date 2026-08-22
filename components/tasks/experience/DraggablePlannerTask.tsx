@@ -1,5 +1,5 @@
 import { useRef, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -40,6 +40,8 @@ type DraggablePlannerTaskProps = {
   onDeletePress?: () => void;
   onLongPressFallback?: () => void;
   moveA11yLabel?: string;
+  /** Etiqueta visible junto a ↔ (p. ej. «Área»). */
+  moveButtonLabel?: string;
   deleteA11yLabel?: string;
 };
 
@@ -75,6 +77,7 @@ export function DraggablePlannerTask({
   onDeletePress,
   onLongPressFallback,
   moveA11yLabel = 'Mover',
+  moveButtonLabel,
   deleteA11yLabel = 'Eliminar',
 }: DraggablePlannerTaskProps) {
   const { t } = useI18n();
@@ -218,11 +221,10 @@ export function DraggablePlannerTask({
   }, [task.durationLabel, task.timeLabel]);
 
   const statusControl = onToggleComplete ? (
-    <TouchableOpacity
+    <Pressable
       style={styles.status}
       onPress={handleToggleComplete}
-      activeOpacity={0.7}
-      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: isDone }}
       accessibilityLabel={completeA11yLabel}
@@ -234,7 +236,7 @@ export function DraggablePlannerTask({
       ) : (
         <View style={styles.checkRing} />
       )}
-    </TouchableOpacity>
+    </Pressable>
   ) : null;
 
   const dragHandle = (
@@ -295,13 +297,16 @@ export function DraggablePlannerTask({
     <View style={styles.actions}>
       {onMovePress ? (
         <TouchableOpacity
-          style={styles.actionBtn}
+          style={[styles.actionBtn, moveButtonLabel ? styles.moveBtnLabeled : null]}
           onPress={onMovePress}
           activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityLabel={moveA11yLabel}
         >
           <ArrowRightLeft size={15} color={THEME.colors.calm.lavenderDeep} />
+          {moveButtonLabel ? (
+            <Text style={styles.moveBtnLabel}>{moveButtonLabel}</Text>
+          ) : null}
         </TouchableOpacity>
       ) : null}
       {onDeletePress ? (
@@ -431,6 +436,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
   },
+  moveBtnLabeled: {
+    width: 'auto',
+    minWidth: THEME.sizes.touchTarget,
+    minHeight: THEME.sizes.touchTarget,
+    paddingHorizontal: THEME.spacing.xs,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  moveBtnLabel: {
+    ...THEME.typography.caption,
+    fontFamily: THEME.fonts.heading.medium,
+    color: THEME.colors.calm.lavenderDeep,
+    lineHeight: 16,
+  },
   icon: {
     fontSize: THEME.typography.displayEmojiSm.fontSize,
     lineHeight: 24,
@@ -495,11 +514,12 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   status: {
-    width: 32,
-    height: 32,
+    width: THEME.sizes.touchTarget,
+    height: THEME.sizes.touchTarget,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    zIndex: 2,
   },
   checkRing: {
     width: 22,

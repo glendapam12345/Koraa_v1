@@ -733,6 +733,10 @@ export const en: DeepStrings<typeof es> = {
     ellieGotYouShort: 'Got you.',
     ellieCheckInSummary:
       "You’re feeling {{emotion}} today, with {{energy}} energy, a {{mind}} mind, and {{time}}.",
+    ellieCheckInSummaryAfternoon:
+      "You’re feeling {{emotion}} this afternoon, with {{energy}} energy, a {{mind}} mind, and {{time}}.",
+    ellieCheckInSummaryEvening:
+      "You’re feeling {{emotion}} this evening, with {{energy}} energy, a {{mind}} mind, and {{time}}.",
     ellieFeelingUnnamed: 'how you arrived',
     ellieEnergyLow: 'lower',
     ellieEnergyOk: 'okay',
@@ -771,7 +775,9 @@ export const en: DeepStrings<typeof es> = {
     ellieSeeMyPlan: 'See my plan',
     ellieEditMyDay: 'Edit my day',
     ellieFreeDayAsk:
-      "Since you don’t have anything urgent, you don’t need to fill the space.\nWould you like to rest, or empty your head?",
+      "Nothing’s on the list yet, so today can stay light.\nWant to empty your head so I can suggest a step, or stay with this?",
+    ellieFreeAfternoonAsk:
+      "Nothing’s on the list yet. This afternoon can start light.\nWant to empty your head so I can suggest a step, or stay with this?",
     ellieFreeRest: 'Rest',
     ellieFreeEmpty: 'Empty my head',
     ellieFreeExplore: 'Explore ideas',
@@ -843,8 +849,12 @@ export const en: DeepStrings<typeof es> = {
     ellieHelloContinue:
       '{{hello}}. Want to update how you feel, or empty what’s in your head so I can place it?',
     ellieHelloReady: '{{hello}}. Ready for this step, or did how you feel change?',
-    ellieMiddayAsk: 'Hey, {{name}}. How are we doing?',
-    ellieMiddayAskNoName: 'Hey. How are we doing?',
+    ellieMiddayAsk: '{{greeting}}, {{name}}.\nHow are we doing?',
+    ellieMiddayAskNoName: '{{greeting}}.\nHow are we doing?',
+    ellieMiddayAskAfternoon:
+      '{{greeting}}, {{name}}.\nWant to update how you feel, or shall we keep going?',
+    ellieMiddayAskNoNameAfternoon:
+      '{{greeting}}.\nWant to update how you feel, or shall we keep going?',
     ellieMiddayOkay: "I'm okay",
     ellieMiddayChanged: 'My day changed',
     ellieMiddayMind: "Something's on my mind",

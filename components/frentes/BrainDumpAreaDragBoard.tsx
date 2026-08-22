@@ -87,6 +87,10 @@ type BrainDumpAreaDragBoardProps = {
   canMoveAreaDown?: (ref: string) => boolean;
   moveAreaUpA11y?: string;
   moveAreaDownA11y?: string;
+  reorderAreasLabel?: string;
+  moveTaskLabel?: string;
+  moveTaskA11y?: string;
+  emptyAreaHint?: string;
   onDraggingChange?: (dragging: boolean) => void;
   parentScrollRef?: RefObject<ScrollView | null>;
   parentScrollYRef?: RefObject<number>;
@@ -113,6 +117,9 @@ type AreaColumnProps = {
   canMoveAreaDown?: (ref: string) => boolean;
   moveAreaUpA11y?: string;
   moveAreaDownA11y?: string;
+  reorderAreasLabel?: string;
+  moveTaskLabel?: string;
+  moveTaskA11y?: string;
   onDragStart: (taskId: string) => void;
   onDragMove: (absoluteX: number, absoluteY: number) => void;
   onDragEnd: (taskId: string, sourceColumnId: string, absoluteX: number, absoluteY: number) => void;
@@ -129,6 +136,8 @@ function ProjectGroupSection({
   onRequestMoveTask,
   onDeleteTask,
   onPressDeleteProject,
+  moveTaskLabel,
+  moveTaskA11y,
   groupRef,
   onMeasureGroup,
   onDragStart,
@@ -145,6 +154,8 @@ function ProjectGroupSection({
   onRequestMoveTask?: (taskId: string) => void;
   onDeleteTask?: (taskId: string) => void;
   onPressDeleteProject?: (projectId: string, projectName: string) => void;
+  moveTaskLabel?: string;
+  moveTaskA11y?: string;
   onMeasureGroup?: (group: BrainDumpProjectGroup, columnId: string) => void;
   groupRef?: (groupId: string, node: View | null) => void;
   onDragStart: (taskId: string) => void;
@@ -214,6 +225,8 @@ function ProjectGroupSection({
                 onDeleteTask ? () => onDeleteTask(task.id) : undefined
               }
               deleteA11yLabel={t('vaciar.previewDeleteTaskA11y')}
+              moveA11yLabel={moveTaskA11y ?? t('vaciar.areaReviewMoveTaskA11y')}
+              moveButtonLabel={moveTaskLabel}
               onLongPressFallback={
                 onRequestMoveTask
                   ? () => onRequestMoveTask(task.id)
@@ -221,7 +234,6 @@ function ProjectGroupSection({
                     ? () => onPressTask(task.id)
                     : undefined
               }
-              moveA11yLabel={t('vaciar.areaReviewMoveArea')}
             />
           ))}
         </View>
@@ -253,6 +265,9 @@ function AreaColumn({
   canMoveAreaDown,
   moveAreaUpA11y,
   moveAreaDownA11y,
+  reorderAreasLabel,
+  moveTaskLabel,
+  moveTaskA11y,
   onMeasureGroup,
   groupRef,
   onDragStart,
@@ -282,12 +297,54 @@ function AreaColumn({
           isHover ? styles.columnHover : null,
         ]}
       >
-        <View style={styles.columnHeaderRow}>
-          <Text style={styles.columnEmoji}>{column.emoji}</Text>
-          <Text style={styles.columnTitle}>
-            {column.name}
-          </Text>
-          <Text style={styles.dropTargetHint}>{emptyHint}</Text>
+        <View style={styles.columnHeader}>
+          <TouchableOpacity
+            style={styles.columnHeaderMain}
+            activeOpacity={canRename ? 0.7 : 1}
+            disabled={!canRename}
+            onPress={() => onPressColumnHeader?.(column)}
+            accessibilityRole={canRename ? 'button' : 'header'}
+            accessibilityLabel={
+              canRename ? `${column.name}, ${renameColumnA11y}` : `${column.emoji} ${column.name}`
+            }
+          >
+            <View style={styles.columnHeaderRow}>
+              <Text style={styles.columnEmoji}>{column.emoji}</Text>
+              <Text style={styles.columnTitle}>{column.name}</Text>
+              <Text style={styles.dropTargetHint}>{emptyHint}</Text>
+            </View>
+          </TouchableOpacity>
+          {canReorder && column.ref ? (
+            <View style={styles.reorderControls}>
+              {reorderAreasLabel ? (
+                <Text style={styles.reorderLabel}>{reorderAreasLabel}</Text>
+              ) : null}
+              <TouchableOpacity
+                style={[
+                  styles.reorderBtn,
+                  !(canMoveAreaUp?.(column.ref) ?? false) && styles.reorderBtnDisabled,
+                ]}
+                onPress={() => onMoveAreaColumn(column.ref!, 'up')}
+                disabled={!(canMoveAreaUp?.(column.ref) ?? false)}
+                accessibilityRole="button"
+                accessibilityLabel={moveAreaUpA11y ?? 'Subir área'}
+              >
+                <ChevronUp size={16} color={THEME.colors.text.secondary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.reorderBtn,
+                  !(canMoveAreaDown?.(column.ref) ?? false) && styles.reorderBtnDisabled,
+                ]}
+                onPress={() => onMoveAreaColumn(column.ref!, 'down')}
+                disabled={!(canMoveAreaDown?.(column.ref) ?? false)}
+                accessibilityRole="button"
+                accessibilityLabel={moveAreaDownA11y ?? 'Bajar área'}
+              >
+                <ChevronDown size={16} color={THEME.colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
+          ) : null}
         </View>
       </View>
     );
@@ -336,6 +393,9 @@ function AreaColumn({
         </TouchableOpacity>
         {canReorder && column.ref ? (
           <View style={styles.reorderControls}>
+            {reorderAreasLabel ? (
+              <Text style={styles.reorderLabel}>{reorderAreasLabel}</Text>
+            ) : null}
             <TouchableOpacity
               style={[
                 styles.reorderBtn,
@@ -395,7 +455,8 @@ function AreaColumn({
                       ? () => onPressTask(task.id)
                       : undefined
                 }
-                moveA11yLabel={t('vaciar.areaReviewMoveArea')}
+                moveA11yLabel={moveTaskA11y ?? t('vaciar.areaReviewMoveTaskA11y')}
+                moveButtonLabel={moveTaskLabel}
               />
             ))}
           </View>
@@ -416,6 +477,8 @@ function AreaColumn({
                 onRequestMoveTask={onRequestMoveTask}
                 onDeleteTask={onDeleteTask}
                 onPressDeleteProject={onPressDeleteProject}
+                moveTaskLabel={moveTaskLabel}
+                moveTaskA11y={moveTaskA11y}
                 groupRef={groupRef}
                 onMeasureGroup={onMeasureGroup}
                 onDragStart={onDragStart}
@@ -477,6 +540,10 @@ export function BrainDumpAreaDragBoard({
   canMoveAreaDown,
   moveAreaUpA11y,
   moveAreaDownA11y,
+  reorderAreasLabel,
+  moveTaskLabel,
+  moveTaskA11y,
+  emptyAreaHint,
   onDraggingChange,
   parentScrollRef,
   parentScrollYRef,
@@ -506,10 +573,9 @@ export function BrainDumpAreaDragBoard({
 
   const visibleAreaColumns = useMemo(() => {
     const source = splitLayout ? areaColumns : columns.filter((column) => !column.isLoose);
-    if (!hideEmptyColumns) return source;
-    if (isDragging) return source;
-    return filterVisibleBrainDumpAreaColumns(source, projects);
-  }, [splitLayout, areaColumns, columns, hideEmptyColumns, isDragging, projects]);
+    // Siempre mostrar áreas (aunque vacías) para que se vean los destinos al mover.
+    return source;
+  }, [splitLayout, areaColumns, columns]);
 
   const visibleColumns = useMemo(() => {
     if (!splitLayout) {
@@ -665,9 +731,8 @@ export function BrainDumpAreaDragBoard({
   );
 
   const renderColumn = (column: BrainDumpAreaColumn) => {
-    const isEmptyDropTarget =
-      hideEmptyColumns &&
-      isDragging &&
+    const isEmptyArea =
+      !column.isLoose &&
       countTasksInColumn(column) === 0 &&
       !columnHasSavedProjectGroups(column);
 
@@ -676,9 +741,13 @@ export function BrainDumpAreaDragBoard({
         key={column.id}
         column={column}
         areas={areas}
-        compactDropTarget={isEmptyDropTarget}
+        compactDropTarget={isEmptyArea}
         isHover={hoverColumnId === column.id && isDragging}
-        emptyColumnHint={emptyColumnHint}
+        emptyColumnHint={
+          isEmptyArea && !isDragging
+            ? (emptyAreaHint ?? emptyColumnHint)
+            : emptyColumnHint
+        }
         renameColumnA11y={renameColumnA11y}
         addProjectLabel={addProjectLabel}
         onMeasure={measureDropTargets}
@@ -702,6 +771,9 @@ export function BrainDumpAreaDragBoard({
         canMoveAreaDown={canMoveAreaDown}
         moveAreaUpA11y={moveAreaUpA11y}
         moveAreaDownA11y={moveAreaDownA11y}
+        reorderAreasLabel={reorderAreasLabel}
+        moveTaskLabel={moveTaskLabel}
+        moveTaskA11y={moveTaskA11y}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
@@ -773,6 +845,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
+    paddingLeft: THEME.spacing.xs,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderLeftColor: THEME.colors.calm.border,
+  },
+  reorderLabel: {
+    ...THEME.typography.caption,
+    color: THEME.colors.text.tertiary,
+    fontFamily: THEME.fonts.heading.medium,
+    marginRight: 2,
+    lineHeight: 16,
   },
   reorderBtn: {
     width: 32,

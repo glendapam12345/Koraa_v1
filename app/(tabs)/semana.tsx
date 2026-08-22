@@ -137,7 +137,7 @@ function SemanaScreen() {
     [],
   );
 
-  const { weekTasks, checkInsByDate, projects, loading, loadWeekTasks, loadDateRange, appendTaskToDay, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast, locale);
+  const { weekTasks, checkInsByDate, projects, loading, loadWeekTasks, loadDateRange, appendTaskToDay, patchTaskCompleted, getWeekBounds, lastLoadError, schemaSetupType } = useWeekTasks(showToast, locale);
   const { hasCheckInToday, refresh: refreshCheckInToday } = useHasCheckInToday(user?.id);
   const { time: todayCheckInTime, loadTodayCheckIn } = useCheckIn(showToast);
   const { days: calendarDays, tasksByDate, loading: monthLoading, loadMonth, appendTaskToDate } = useMonthCalendar(
@@ -1018,6 +1018,7 @@ function SemanaScreen() {
             boardLayout={replanMode ? 'weekGrid' : boardLayout}
             onMoveTask={handleBoardMoveTask}
             onTasksChanged={handleTasksChanged}
+            onTaskCompletedLocal={patchTaskCompleted}
             moving={movingTask && !replanMode}
             onDraggingChange={setPlannerDragging}
             hasCheckInToday={hasCheckInToday === true}

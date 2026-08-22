@@ -192,9 +192,9 @@ export const featuresEn = {
     areaReviewEllieHint:
       'Tap any step if you want a date or to mark what matters — totally optional.',
     areaReviewEllieOne:
-      'I sorted 1 step by area. Tap to edit · 🗑️ to remove it.',
+      'I sorted 1 step by area. Tap to edit · ↔ to move it to another area.',
     areaReviewEllieMany:
-      'I sorted {{count}} steps by area. Tap to edit · 🗑️ removes what you do not need.',
+      'I sorted {{count}} steps by area. Tap to edit · ↔ to change area.',
     areaReviewEllieEmpty:
       'No steps left. Go back to write again, or capture something new.',
     areaReviewEmptyBoard: 'No steps in the preview. Go back and write what is on your mind.',
@@ -207,6 +207,8 @@ export const featuresEn = {
     areaReviewLooseSectionTitle: 'Loose tasks',
     areaReviewAreasSectionTitle: 'Areas',
     areaReviewEmptyColumn: 'Drop here',
+    areaReviewEmptyArea: 'No steps yet',
+    areaReviewBoardHint: '↔ Area moves the step. Order ▲▼ only rearranges the area list.',
     areaReviewDragHint:
       'Drop anywhere on the area — it highlights as you pass over',
     areaReviewDragTip:
@@ -230,9 +232,14 @@ export const featuresEn = {
     areaReviewLooseInArea: 'No project',
     areaReviewLooseInAreaHint: 'Stays in this area — no project needed.',
     areaReviewMoveArea: 'Move to area',
-    areaReviewMoveAreaHint: 'Tap the destination — or create a new one below.',
-    areaReviewMoveAreaUpA11y: 'Move area up',
-    areaReviewMoveAreaDownA11y: 'Move area down',
+    areaReviewMoveSheetTitle: 'Which area should this go to?',
+    areaReviewMoveHere: 'Here',
+    areaReviewMoveTask: 'Area',
+    areaReviewMoveTaskA11y: 'Move this step to another area',
+    areaReviewReorderAreas: 'Order',
+    areaReviewMoveAreaHint: 'Pick an area. The current one is marked.',
+    areaReviewMoveAreaUpA11y: 'Move this area up the list (does not move the step)',
+    areaReviewMoveAreaDownA11y: 'Move this area down the list (does not move the step)',
     previewDateBtn: 'Date',
     previewDurationBtn: 'Duration',
     previewWhenBtn: 'Time',

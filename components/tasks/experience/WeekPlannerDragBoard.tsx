@@ -366,6 +366,7 @@ const styles = StyleSheet.create({
   },
   columnList: {
     alignSelf: 'stretch',
+    overflow: 'visible',
   },
   columnToday: {
     borderColor: THEME.colors.calm.lavender,

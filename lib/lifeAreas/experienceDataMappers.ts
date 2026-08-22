@@ -177,11 +177,16 @@ export function buildWeekPlannerDays(
   areaIndex: Map<string, LifeArea>,
   locale: AppLocale,
   planningByTaskId?: Record<string, TaskPlanningMeta>,
+  options?: { includeCompleted?: boolean },
 ): WeekPlannerDay[] {
   return weekDayDates.map((dateStr) => {
-    const dayTasks = tasks.filter(
-      (task) => !task.is_completed && task.scheduled_date === dateStr,
-    );
+    const dayTasks = tasks
+      .filter((task) => {
+        if (task.scheduled_date !== dateStr) return false;
+        if (!options?.includeCompleted && task.is_completed) return false;
+        return true;
+      })
+      .sort((a, b) => Number(a.is_completed) - Number(b.is_completed));
     const isToday = dateStr === today;
     const fullLabel = isToday
       ? locale === 'en'
