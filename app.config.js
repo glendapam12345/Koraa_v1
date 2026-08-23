@@ -78,7 +78,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.impermanencecasaartisitca.koraav1',
-      buildNumber: '46',
+      buildNumber: '47',
       entitlements: {
         'com.apple.developer.healthkit': true,
         // Tipos concretos en runtime (react-native-health SleepAnalysis); [] = permisos por uso en app.
