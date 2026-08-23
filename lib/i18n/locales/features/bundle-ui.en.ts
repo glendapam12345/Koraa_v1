@@ -169,6 +169,7 @@ export const uiEn = {
     pricesInMxn: 'Prices in Mexican pesos (MXN).',
     foreignCurrencyHint:
       'Apple charges in your App Store account currency. In Mexico the plan is {{monthly}} / month, or {{annual}} / year with 30% off.',
+    appleWillCharge: 'Apple will charge {{price}} on your App Store account.',
     fallbackAnnualBadge: '12 months with 30% off',
     annualDesc: 'One year, billed once.',
     annualDescDiscount: '12 months with {{percent}}% off',

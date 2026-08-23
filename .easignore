@@ -1,7 +1,10 @@
 node_modules/
 node_modules/**
 tmp-expo-qr.png
+tmp-expo-qr*.png
 .tmp/
 .expo/
 supabase/.temp/
 development_guidelines/
+store.config.json
+store/

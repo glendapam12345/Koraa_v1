@@ -12,6 +12,7 @@ type PaywallPlanCardProps = {
   planBadge?: string;
   savingsLabel?: string;
   monthlyEquivalentLabel?: string;
+  chargedPriceLabel?: string;
   previewPrice?: boolean;
   purchasesEnabled: boolean;
   disabled: boolean;
@@ -28,6 +29,7 @@ export function PaywallPlanCard({
   planBadge,
   savingsLabel,
   monthlyEquivalentLabel,
+  chargedPriceLabel,
   previewPrice = false,
   purchasesEnabled,
   disabled,
@@ -62,6 +64,9 @@ export function PaywallPlanCard({
       <Text style={styles.price}>{priceLabel}</Text>
       {monthlyEquivalentLabel ? (
         <Text style={styles.monthlyEquivalent}>{monthlyEquivalentLabel}</Text>
+      ) : null}
+      {chargedPriceLabel ? (
+        <Text style={styles.chargedPrice}>{chargedPriceLabel}</Text>
       ) : null}
       {previewPrice ? (
         <Text style={styles.previewPriceLabel}>{t('paywallExtra.expoGoPreviewPriceLabel')}</Text>
@@ -177,6 +182,11 @@ const styles = StyleSheet.create({
     ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     marginTop: -4,
+  },
+  chargedPrice: {
+    ...THEME.typography.small,
+    color: THEME.colors.text.secondary,
+    lineHeight: 18,
   },
   description: {
     ...THEME.typography.meta,

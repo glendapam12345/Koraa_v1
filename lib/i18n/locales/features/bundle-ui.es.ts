@@ -172,6 +172,7 @@ export const uiEs = {
     pricesInMxn: 'Precios en pesos mexicanos (MXN).',
     foreignCurrencyHint:
       'Apple cobra en la moneda de tu cuenta de App Store. En México el plan es {{monthly}} al mes, o {{annual}} al año con 30% de descuento.',
+    appleWillCharge: 'Apple cobrará {{price}} en tu cuenta.',
     fallbackAnnualBadge: '12 meses con 30% de descuento',
     annualDesc: 'Un año, un solo cargo.',
     annualDescDiscount: '12 meses con {{percent}}% de descuento',
