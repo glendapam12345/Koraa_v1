@@ -38,3 +38,7 @@ supabase/.temp/
 
 # typescript
 *.tsbuildinfo
+
+# App Store Connect pull (listing assets + review demo credentials)
+store.config.json
+store/

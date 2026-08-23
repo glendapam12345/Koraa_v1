@@ -1,6 +1,7 @@
 import type { PurchasesPackage } from 'react-native-purchases';
 import type { AppLocale } from '@/lib/i18n';
 import { formatSubscriptionPrice } from '@/lib/formatSubscriptionPrice';
+import { isIntendedAnnualSavingsPercent } from '@/lib/premiumPricing';
 
 export function isPlanPackage(pkg: PurchasesPackage, plan: 'monthly' | 'annual') {
   const packageType = String(pkg.packageType).toLowerCase();
@@ -31,6 +32,11 @@ export function getAnnualSavingsPercent(
   const fullYearMonthly = monthlyPrice * 12;
   const savings = ((fullYearMonthly - annualPrice) / fullYearMonthly) * 100;
   return savings >= 1 ? Math.round(savings) : null;
+}
+
+/** Don’t claim the Mexico 30% off if StoreKit prices save a different amount. */
+export function shouldClaimIntendedAnnualDiscount(savingsPercent: number | null): boolean {
+  return isIntendedAnnualSavingsPercent(savingsPercent);
 }
 
 export function formatAnnualMonthlyEquivalent(

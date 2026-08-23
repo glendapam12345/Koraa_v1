@@ -3,6 +3,7 @@ import {
   getAnnualSavingsPercent,
   getPlanPeriodKey,
   isPlanPackage,
+  shouldClaimIntendedAnnualDiscount,
   sortPackagesForDisplay,
 } from '@/lib/paywallPlans';
 import {
@@ -24,13 +25,16 @@ function mockPackage(plan: 'monthly' | 'annual', price: number): PurchasesPackag
 
 describe('paywallPlans', () => {
   it('detects monthly and annual packages', () => {
-    expect(isPlanPackage(mockPackage('monthly', 69), 'monthly')).toBe(true);
-    expect(isPlanPackage(mockPackage('annual', 579), 'annual')).toBe(true);
-    expect(isPlanPackage(mockPackage('monthly', 69), 'annual')).toBe(false);
+    expect(isPlanPackage(mockPackage('monthly', PREMIUM_MONTHLY_MXN), 'monthly')).toBe(true);
+    expect(isPlanPackage(mockPackage('annual', PREMIUM_ANNUAL_MXN), 'annual')).toBe(true);
+    expect(isPlanPackage(mockPackage('monthly', PREMIUM_MONTHLY_MXN), 'annual')).toBe(false);
   });
 
   it('sorts annual before monthly', () => {
-    const sorted = sortPackagesForDisplay([mockPackage('monthly', 69), mockPackage('annual', 579)]);
+    const sorted = sortPackagesForDisplay([
+      mockPackage('monthly', PREMIUM_MONTHLY_MXN),
+      mockPackage('annual', PREMIUM_ANNUAL_MXN),
+    ]);
     expect(isPlanPackage(sorted[0], 'annual')).toBe(true);
     expect(isPlanPackage(sorted[1], 'monthly')).toBe(true);
   });
@@ -41,8 +45,16 @@ describe('paywallPlans', () => {
     expect(getAnnualSavingsPercent(monthly, annual)).toBe(30);
   });
 
+  it('does not claim 30% off when StoreKit prices only save ~16%', () => {
+    const monthly = mockPackage('monthly', 1.99);
+    const annual = mockPackage('annual', 19.99);
+    expect(getAnnualSavingsPercent(monthly, annual)).toBe(16);
+    expect(shouldClaimIntendedAnnualDiscount(16)).toBe(false);
+    expect(shouldClaimIntendedAnnualDiscount(30)).toBe(true);
+  });
+
   it('maps plan period keys', () => {
-    expect(getPlanPeriodKey(mockPackage('monthly', 69))).toBe('month');
-    expect(getPlanPeriodKey(mockPackage('annual', 579))).toBe('year');
+    expect(getPlanPeriodKey(mockPackage('monthly', PREMIUM_MONTHLY_MXN))).toBe('month');
+    expect(getPlanPeriodKey(mockPackage('annual', PREMIUM_ANNUAL_MXN))).toBe('year');
   });
 });

@@ -31,7 +31,7 @@ type OnboardingEllieCoachProps = {
   accessible?: boolean;
   /** Short line under Ellie so the mood change is readable. */
   moodCaption?: string;
-  /** Feeling name under Ellie — accent italic, not a companion note. */
+  /** Feeling name beside Ellie (not under the halo) so it stays one line. */
   moodCaptionAccent?: boolean;
   /** Abre check-in / actualizar emoción al tocar el retrato de Ellie. */
   onPortraitPress?: () => void;
@@ -118,72 +118,98 @@ export function OnboardingEllieCoach({
   }, [mood, pop]);
 
   const portraitPressable = Boolean(onPortraitPress);
+  /** Feeling name sits beside Ellie so long labels (Overwhelmed) never hyphenate under the halo. */
+  const feelingBeside = Boolean(moodCaptionAccent && moodCaption);
+
+  const haloNode = (
+    <View
+      style={[
+        styles.halo,
+        portraitPressable && styles.haloPressable,
+        {
+          width: haloSize,
+          height: haloSize,
+          borderRadius: haloSize / 2,
+          backgroundColor: halo,
+        },
+      ]}
+    >
+      <Animated.View style={{ transform: [{ scale: breath }] }}>
+        <Animated.View style={{ transform: [{ scale: pop }] }}>
+          <View style={[styles.portraitFrame, { width: size, height: size }]}>
+            {showDefaultUnderlay ? (
+              <Image
+                source={ELLIE_MOOD_ASSETS.default}
+                style={[styles.portrait, { width: size, height: size }]}
+                resizeMode="contain"
+                accessibilityElementsHidden
+              />
+            ) : null}
+            {mood === 'default' || moodImageFailed ? (
+              <Image
+                source={ELLIE_MOOD_ASSETS.default}
+                style={[styles.portrait, { width: size, height: size }]}
+                resizeMode="contain"
+                accessibilityElementsHidden
+              />
+            ) : (
+              <Image
+                source={source}
+                style={[
+                  styles.portrait,
+                  { width: size, height: size },
+                  showDefaultUnderlay ? styles.portraitOverlay : null,
+                ]}
+                resizeMode="contain"
+                fadeDuration={0}
+                onLoad={() => setMoodImageReady(true)}
+                onError={() => setMoodImageFailed(true)}
+                accessibilityElementsHidden
+              />
+            )}
+          </View>
+        </Animated.View>
+      </Animated.View>
+    </View>
+  );
 
   const portraitInner = (
     <>
-      <View
-        style={[
-          styles.halo,
-          portraitPressable && styles.haloPressable,
-          {
-            width: haloSize,
-            height: haloSize,
-            borderRadius: haloSize / 2,
-            backgroundColor: halo,
-          },
-        ]}
-      >
-        <Animated.View style={{ transform: [{ scale: breath }] }}>
-          <Animated.View style={{ transform: [{ scale: pop }] }}>
-            <View style={[styles.portraitFrame, { width: size, height: size }]}>
-              {showDefaultUnderlay ? (
-                <Image
-                  source={ELLIE_MOOD_ASSETS.default}
-                  style={[styles.portrait, { width: size, height: size }]}
-                  resizeMode="contain"
-                  accessibilityElementsHidden
-                />
-              ) : null}
-              {mood === 'default' || moodImageFailed ? (
-                <Image
-                  source={ELLIE_MOOD_ASSETS.default}
-                  style={[styles.portrait, { width: size, height: size }]}
-                  resizeMode="contain"
-                  accessibilityElementsHidden
-                />
-              ) : (
-                <Image
-                  source={source}
-                  style={[
-                    styles.portrait,
-                    { width: size, height: size },
-                    showDefaultUnderlay ? styles.portraitOverlay : null,
-                  ]}
-                  resizeMode="contain"
-                  fadeDuration={0}
-                  onLoad={() => setMoodImageReady(true)}
-                  onError={() => setMoodImageFailed(true)}
-                  accessibilityElementsHidden
-                />
-              )}
-            </View>
-          </Animated.View>
-        </Animated.View>
-      </View>
-      {moodCaption ? (
-        <Text
-          style={[styles.moodCaption, moodCaptionAccent && styles.moodCaptionAccent]}
-          numberOfLines={2}
-        >
+      {haloNode}
+      {!feelingBeside && moodCaption ? (
+        <Text style={styles.moodCaption} numberOfLines={2}>
           {moodCaption}
         </Text>
       ) : null}
-      {portraitHint ? (
+      {!feelingBeside && portraitHint ? (
         <Text style={styles.portraitHint} numberOfLines={2}>
           {portraitHint}
         </Text>
       ) : null}
     </>
+  );
+
+  const feelingCaption = feelingBeside ? (
+    <>
+      <Text
+        style={[styles.moodCaption, styles.moodCaptionAccent, styles.moodCaptionBeside]}
+        numberOfLines={1}
+      >
+        {moodCaption}
+      </Text>
+      {portraitHint ? (
+        <Text style={[styles.portraitHint, styles.portraitHintBeside]} numberOfLines={2}>
+          {portraitHint}
+        </Text>
+      ) : null}
+    </>
+  ) : null;
+
+  const speechBubble = (
+    <View style={[styles.bubble, feelingBeside ? styles.bubbleAfterFeeling : styles.bubbleInRow]}>
+      <View style={[styles.tail, feelingBeside && styles.tailAfterFeeling]} />
+      <Text style={styles.message}>{message}</Text>
+    </View>
   );
 
   return (
@@ -213,10 +239,26 @@ export function OnboardingEllieCoach({
       ) : (
         <View style={[styles.portraitCol, { width: haloSize }]}>{portraitInner}</View>
       )}
-      <View style={styles.bubble}>
-        <View style={styles.tail} />
-        <Text style={styles.message}>{message}</Text>
-      </View>
+      {feelingBeside ? (
+        <View style={styles.speechCol}>
+          {portraitPressable ? (
+            <TouchableOpacity
+              onPress={onPortraitPress}
+              delayPressIn={0}
+              activeOpacity={0.82}
+              accessible={false}
+              style={styles.feelingBlock}
+            >
+              {feelingCaption}
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.feelingBlock}>{feelingCaption}</View>
+          )}
+          {speechBubble}
+        </View>
+      ) : (
+        speechBubble
+      )}
     </View>
   );
 }
@@ -232,6 +274,15 @@ const styles = StyleSheet.create({
   },
   portraitCol: {
     alignItems: 'center',
+    flexShrink: 0,
+  },
+  speechCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  feelingBlock: {
+    alignItems: 'flex-start',
+    paddingRight: THEME.spacing.xs,
   },
   halo: {
     alignItems: 'center',
@@ -270,6 +321,12 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     textAlign: 'center',
   },
+  moodCaptionBeside: {
+    textAlign: 'left',
+    marginTop: 2,
+    paddingHorizontal: 0,
+    flexShrink: 0,
+  },
   portraitHint: {
     ...THEME.typography.small,
     color: THEME.colors.calm.lavenderDeep,
@@ -280,10 +337,12 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     lineHeight: 16,
   },
+  portraitHintBeside: {
+    textAlign: 'left',
+    paddingHorizontal: 0,
+    marginTop: 2,
+  },
   bubble: {
-    flex: 1,
-    minWidth: 0,
-    marginTop: THEME.spacing.xs,
     backgroundColor: THEME.colors.calm.card,
     borderRadius: THEME.borderRadius.xl,
     borderWidth: 1,
@@ -291,6 +350,15 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.md,
     ...THEME.shadows.soft,
+  },
+  bubbleInRow: {
+    flex: 1,
+    minWidth: 0,
+    marginTop: THEME.spacing.xs,
+  },
+  bubbleAfterFeeling: {
+    alignSelf: 'stretch',
+    marginTop: THEME.spacing.xs,
   },
   tail: {
     position: 'absolute',
@@ -303,6 +371,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: THEME.colors.calm.border,
     transform: [{ rotate: '45deg' }],
+  },
+  tailAfterFeeling: {
+    top: 14,
   },
   message: {
     ...THEME.typography.body,

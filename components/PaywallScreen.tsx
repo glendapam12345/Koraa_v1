@@ -16,14 +16,20 @@ import { getPrivacyPolicyUrl, getTermsOfServiceUrl } from '@/constants/legalUrls
 import { THEME } from '@/constants/theme';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useI18n } from '@/contexts/I18nContext';
-import { formatPackagePrice, packageUsesNonMxnCurrency } from '@/lib/formatSubscriptionPrice';
+import { formatPackagePrice, formatSubscriptionPrice, packageUsesNonMxnCurrency } from '@/lib/formatSubscriptionPrice';
 import {
   formatAnnualMonthlyEquivalent,
   getAnnualSavingsPercent,
   getPlanPeriodKey,
   isPlanPackage,
+  shouldClaimIntendedAnnualDiscount,
   sortPackagesForDisplay,
 } from '@/lib/paywallPlans';
+import {
+  PREMIUM_ANNUAL_DISCOUNT_PERCENT,
+  PREMIUM_ANNUAL_MXN,
+  PREMIUM_MONTHLY_MXN,
+} from '@/lib/premiumPricing';
 import { canProcessInAppPurchases, isExpoGoClient } from '@/lib/subscriptionEnvironment';
 import { PaywallComparisonCard } from '@/components/premium/PaywallComparisonCard';
 import { PaywallContextBanner } from '@/components/premium/PaywallContextBanner';
@@ -62,9 +68,11 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
     [monthlyPackage, annualPackage],
   );
   const showForeignCurrencyHint = useMemo(
-    () => locale === 'es' && sortedPackages.some(packageUsesNonMxnCurrency),
-    [locale, sortedPackages],
+    () => sortedPackages.some(packageUsesNonMxnCurrency),
+    [sortedPackages],
   );
+  const mexicoMonthlyLabel = formatSubscriptionPrice(PREMIUM_MONTHLY_MXN, 'MXN', locale);
+  const mexicoAnnualLabel = formatSubscriptionPrice(PREMIUM_ANNUAL_MXN, 'MXN', locale);
   const showMxnHint = useMemo(
     () => sortedPackages.some((pkg) => pkg.product.currencyCode?.toUpperCase() === 'MXN'),
     [sortedPackages],
@@ -171,8 +179,13 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
   const getPlanTitle = (pkg: PurchasesPackage) =>
     isPlanPackage(pkg, 'annual') ? t('paywallExtra.annualTitle') : t('paywallExtra.monthlyTitle');
 
-  const getPlanDescription = (pkg: PurchasesPackage) =>
-    isPlanPackage(pkg, 'annual') ? t('paywallExtra.fallbackAnnualBadge') : t('paywallExtra.monthlyDesc');
+  const getPlanDescription = (pkg: PurchasesPackage) => {
+    if (!isPlanPackage(pkg, 'annual')) return t('paywallExtra.monthlyDesc');
+    if (shouldClaimIntendedAnnualDiscount(annualSavingsPercent)) {
+      return t('paywallExtra.annualDescDiscount', { percent: PREMIUM_ANNUAL_DISCOUNT_PERCENT });
+    }
+    return t('paywallExtra.annualDesc');
+  };
 
   const getPlanCta = (pkg: PurchasesPackage) =>
     isPlanPackage(pkg, 'annual') ? t('paywallExtra.annualCta') : t('paywallExtra.monthlyCta');
@@ -240,18 +253,31 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
 
   const renderFallbackPlanCard = (plan: 'monthly' | 'annual') => {
     const isAnnual = plan === 'annual';
-    const priceLabel = isAnnual ? t('paywallExtra.fallbackAnnualPrice') : t('paywallExtra.fallbackMonthlyPrice');
+    const priceLabel = isAnnual
+      ? t('paywallExtra.fallbackAnnualPrice', { price: mexicoAnnualLabel })
+      : t('paywallExtra.fallbackMonthlyPrice', { price: mexicoMonthlyLabel });
 
     return (
       <PaywallPlanCard
         key={`fallback-${plan}`}
         title={isAnnual ? t('paywallExtra.annualTitle') : t('paywallExtra.monthlyTitle')}
         priceLabel={priceLabel}
-        description={isAnnual ? t('paywallExtra.fallbackAnnualBadge') : t('paywallExtra.monthlyDesc')}
+        description={
+          isAnnual
+            ? t('paywallExtra.annualDescDiscount', { percent: PREMIUM_ANNUAL_DISCOUNT_PERCENT })
+            : t('paywallExtra.monthlyDesc')
+        }
         ctaLabel={isAnnual ? t('paywallExtra.annualCta') : t('paywallExtra.monthlyCta')}
         recommended={isAnnual}
         planBadge={!isAnnual ? t('paywallExtra.monthlyBadge') : undefined}
         savingsLabel={isAnnual ? t('paywallExtra.fallbackAnnualSavings') : undefined}
+        monthlyEquivalentLabel={
+          isAnnual
+            ? t('paywallExtra.annualMonthlyEquivalent', {
+                price: formatSubscriptionPrice(PREMIUM_ANNUAL_MXN / 12, 'MXN', locale),
+              })
+            : undefined
+        }
         previewPrice={!purchasesEnabled}
         purchasesEnabled={purchasesEnabled}
         disabled={plansDisabled}
@@ -364,7 +390,12 @@ export function PaywallScreen({ onClose, onPurchaseCompleted, onSkip, context = 
             <Text style={styles.sectionTitle}>{t('paywallExtra.choosePlanTitle')}</Text>
             {showMxnHint ? <Text style={styles.priceHint}>{t('paywallExtra.pricesInMxn')}</Text> : null}
             {showForeignCurrencyHint ? (
-              <Text style={styles.priceHintWarning}>{t('paywallExtra.foreignCurrencyHint')}</Text>
+              <Text style={styles.priceHintWarning}>
+                {t('paywallExtra.foreignCurrencyHint', {
+                  monthly: mexicoMonthlyLabel,
+                  annual: mexicoAnnualLabel,
+                })}
+              </Text>
             ) : null}
 
             {subscriptionLoading && packages.length === 0 ? (
