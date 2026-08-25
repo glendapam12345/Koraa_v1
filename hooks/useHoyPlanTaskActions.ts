@@ -18,6 +18,7 @@ import {
 type UseHoyPlanTaskActionsOptions = {
   priorityTasks: Task[];
   waitingTasks: Task[];
+  prependTaskIds?: string[];
   setTasks: Dispatch<SetStateAction<Task[]>>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   onTasksReload?: () => void | Promise<void>;
@@ -29,6 +30,7 @@ type UseHoyPlanTaskActionsOptions = {
 export function useHoyPlanTaskActions({
   priorityTasks,
   waitingTasks,
+  prependTaskIds = [],
   setTasks,
   showToast,
   onTasksReload,
@@ -64,10 +66,10 @@ export function useHoyPlanTaskActions({
 
   useEffect(() => {
     setPriorityOrder((prev) => {
-      const next = ensureOrderForTasks(prev, priorityTasks);
+      const next = ensureOrderForTasks(prev, priorityTasks, { prependIds: prependTaskIds });
       return next.join(',') === prev.join(',') ? prev : next;
     });
-  }, [priorityTasks]);
+  }, [priorityTasks, prependTaskIds]);
 
   useEffect(() => {
     setWaitingOrder((prev) => {
@@ -77,9 +79,11 @@ export function useHoyPlanTaskActions({
   }, [waitingTasks]);
 
   const orderedPriorityTasks = useMemo(() => {
-    const normalized = ensureOrderForTasks(priorityOrder, priorityTasks);
+    const normalized = ensureOrderForTasks(priorityOrder, priorityTasks, {
+      prependIds: prependTaskIds,
+    });
     return applyHoyPlanOrder(priorityTasks, normalized);
-  }, [priorityOrder, priorityTasks]);
+  }, [priorityOrder, priorityTasks, prependTaskIds]);
 
   const orderedWaitingTasks = useMemo(() => {
     const normalized = ensureOrderForTasks(waitingOrder, waitingTasks);
@@ -116,6 +120,7 @@ export function useHoyPlanTaskActions({
       const baseOrder = ensureOrderForTasks(
         bucket === 'priority' ? priorityOrder : waitingOrder,
         bucket === 'priority' ? priorityTasks : waitingTasks,
+        bucket === 'priority' ? { prependIds: prependTaskIds } : undefined,
       );
       const nextOrder = swapInOrder(baseOrder, taskId, direction);
       if (!nextOrder) return;
@@ -127,7 +132,7 @@ export function useHoyPlanTaskActions({
         await saveHoyPlanOrder(`${today}:waiting`, nextOrder);
       }
     },
-    [priorityOrder, priorityTasks, today, waitingOrder, waitingTasks],
+    [prependTaskIds, priorityOrder, priorityTasks, today, waitingOrder, waitingTasks],
   );
 
   const handleDragMove = useCallback(

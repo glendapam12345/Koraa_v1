@@ -13,7 +13,7 @@ import {
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 import { DateSelector } from '@/components/tasks/DateSelector';
-import { formatProjectDueDate } from '@/lib/projectProgress';
+import { formatCompactDateLabel } from '@/lib/dateLocal';
 import {
   inferTimingFromDate,
   type EnrichedCaptureItem,
@@ -79,7 +79,10 @@ export function ReviewPreviewTaskRow({
   const hasPriority = Boolean(activePriority);
 
   const dateLabel = hasDate
-    ? formatProjectDueDate(item.selectedDate!, locale)
+    ? formatCompactDateLabel(item.selectedDate!, locale, {
+        today: t('components.today'),
+        tomorrow: t('components.tomorrow'),
+      }) ?? item.selectedDate!
     : t('vaciar.previewDateBtn');
 
   const durationLabel = hasDuration

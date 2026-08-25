@@ -16,6 +16,8 @@ export function SemanaProjectFilter({
 }: SemanaProjectFilterProps) {
   const { t } = useI18n();
 
+  if (projects.length === 0) return null;
+
   return (
     <View style={styles.root}>
       <ScrollView

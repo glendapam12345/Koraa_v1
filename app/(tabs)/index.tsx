@@ -42,7 +42,7 @@ import { CareModeGuideSheet } from '@/components/hoy/CareModeGuideSheet';
 import { CareModeSheet } from '@/components/hoy/CareModeSheet';
 import { useCrisisMode } from '@/hooks/useCrisisMode';
 import { useFocusedProject } from '@/hooks/useFocusedProject';
-import { subscribeHoyRefresh } from '@/lib/hoyRefreshBridge';
+import { peekHoyPinnedTaskIds, subscribeHoyRefresh } from '@/lib/hoyRefreshBridge';
 import { TabScreenErrorBoundary } from '@/components/TabScreenErrorBoundary';
 import { track } from '@/lib/analytics';
 import {
@@ -70,6 +70,7 @@ function TodayScreen() {
   const backgroundLoadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoadingTasksRef = useRef<boolean>(false);
   const firstDayValueTrackedRef = useRef(false);
+  const [pinnedHoyTaskIds, setPinnedHoyTaskIds] = useState<string[]>(() => peekHoyPinnedTaskIds());
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToastMessage(message);
@@ -114,7 +115,10 @@ function TodayScreen() {
   );
 
   useEffect(() => {
-    return subscribeHoyRefresh(() => {
+    return subscribeHoyRefresh((payload) => {
+      if (payload?.pinTaskIds && payload.pinTaskIds.length > 0) {
+        setPinnedHoyTaskIds(payload.pinTaskIds);
+      }
       void loadTasks({ silent: true });
       void loadTodayCheckIn();
       void refreshFocusedProject();
@@ -483,6 +487,7 @@ function TodayScreen() {
             onTasksReload={loadTasks}
             showToast={showToast}
             setTasks={setTasks}
+            pinnedHoyTaskIds={pinnedHoyTaskIds}
             focusedProject={focusedProject}
             onClearFocusedProject={() => void clearFocusedProject()}
           />

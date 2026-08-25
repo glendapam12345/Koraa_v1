@@ -1,4 +1,4 @@
-import { getLocalDateFromISO, getLocalDateString, normalizeScheduledDate } from '@/lib/dateLocal';
+import { getLocalDateFromISO, getLocalDateString, normalizeScheduledDate, formatCompactDateLabel } from '@/lib/dateLocal';
 import { isPriorityCompletedToday } from '@/lib/priorityProgress';
 import type { Task } from '@/hooks/useTasks';
 
@@ -59,5 +59,25 @@ describe('isPriorityCompletedToday with local day', () => {
         ),
       ).toBe(false);
     }
+  });
+});
+
+describe('formatCompactDateLabel', () => {
+  it('uses day and short month without year for the current year', () => {
+    const year = new Date().getFullYear();
+    expect(formatCompactDateLabel(`${year}-08-29`, 'es')).toBe('29 ago');
+    expect(formatCompactDateLabel(`${year}-08-29`, 'en')).toBe('29 Aug');
+  });
+
+  it('keeps the year when it is not the current year', () => {
+    expect(formatCompactDateLabel('2031-08-29', 'es')).toBe('29 ago 2031');
+    expect(formatCompactDateLabel('2031-08-29', 'en')).toBe('29 Aug 2031');
+  });
+
+  it('uses relative today and tomorrow labels', () => {
+    const today = getLocalDateString();
+    expect(
+      formatCompactDateLabel(today, 'es', { today: 'Hoy', tomorrow: 'Mañana' }),
+    ).toBe('Hoy');
   });
 });

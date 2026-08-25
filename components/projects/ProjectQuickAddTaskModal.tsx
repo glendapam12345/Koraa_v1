@@ -27,7 +27,7 @@ import { VnextSelectableChip } from '@/components/vnext/VnextSelectableChip';
 import { createVaciarTask } from '@/lib/vaciarCreateTask';
 import { createProjectForUser, createProjectErrorMessage } from '@/lib/createProject';
 import { PROJECT_COLORS } from '@/lib/projectColors';
-import { getLocalDateString, getEndOfWeekLocalDateString } from '@/lib/dateLocal';
+import { getLocalDateString, getEndOfWeekLocalDateString, formatCompactDateLabel } from '@/lib/dateLocal';
 import type { LifeAreaRef } from '@/lib/lifeAreas/lifeAreaCatalog';
 import { useUserLifeAreas } from '@/hooks/useUserLifeAreas';
 import { listActiveLifeAreas } from '@/lib/lifeAreas/userLifeAreas';
@@ -40,7 +40,6 @@ import {
 import { setTaskPlanningMeta } from '@/lib/taskPlanningMeta';
 import { setTaskEffort, type TaskEffort } from '@/lib/taskPerceivedEffort';
 import { energyFromEffort } from '@/lib/vnext/saveTaskPlanEdit';
-import { formatProjectDueDate } from '@/lib/projectProgress';
 
 const UI_ACCENT = THEME.colors.calm.lavenderDeep;
 const EMPTY_QUICK_ADD_PROJECTS: QuickAddProjectOption[] = [];
@@ -310,7 +309,10 @@ export function ProjectQuickAddTaskModal({
   const showLegacyDatePills = !isDay && !isLoose;
 
   const datePillLabel = selectedDate
-    ? formatProjectDueDate(selectedDate, locale)
+    ? formatCompactDateLabel(selectedDate, locale, {
+        today: t('components.today'),
+        tomorrow: t('components.tomorrow'),
+      }) ?? selectedDate
     : t('vaciar.previewDateBtn');
   const durationLabel = t('vaciar.previewDurationMinutes', { count: estimatedMinutes });
   const priorityLabel = t(PRIORITY_LABEL_KEYS[capturePriority]);

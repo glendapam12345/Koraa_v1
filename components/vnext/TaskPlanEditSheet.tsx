@@ -49,8 +49,8 @@ import {
   capturePriorityToIsPriority,
   type CapturePriority,
 } from '@/lib/review/capturePriority';
-import { formatProjectDueDate } from '@/lib/projectProgress';
 import { formatPreferredTimeLabel } from '@/lib/taskPreferredTime';
+import { formatCompactDateLabel } from '@/lib/dateLocal';
 
 type TaskPlanEditSheetProps = {
   visible: boolean;
@@ -246,7 +246,10 @@ export function TaskPlanEditSheet({
     ? t(PRIORITY_LABEL_KEYS[capturePriority])
     : t('vaciar.previewPriorityBtn');
   const datePillLabel = hasDate
-    ? formatProjectDueDate(scheduledDate!, locale)
+    ? formatCompactDateLabel(scheduledDate!, locale, {
+        today: t('components.today'),
+        tomorrow: t('components.tomorrow'),
+      }) ?? scheduledDate!
     : t('vaciar.previewDateBtn');
 
   const togglePicker = (picker: 'date' | 'duration' | 'when' | 'priority') => {

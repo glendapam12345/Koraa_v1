@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Lock } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
 
@@ -11,9 +11,7 @@ type SemanaWeekNavProps = {
   onNext: () => void;
   prevA11yLabel: string;
   nextA11yLabel: string;
-  /** Copy suave cuando la navegación está limitada (plan free). */
-  hint?: string;
-  /** Al tocar flechas bloqueadas (plan free). */
+  /** Al tocar flechas bloqueadas (plan free) abre Premium. */
   onLockedNavPress?: () => void;
 };
 
@@ -25,38 +23,40 @@ export function SemanaWeekNav({
   onNext,
   prevA11yLabel,
   nextA11yLabel,
-  hint,
   onLockedNavPress,
 }: SemanaWeekNavProps) {
   const { t } = useI18n();
+  const prevUnlocksPremium = !canGoPrev && !!onLockedNavPress;
+  const nextUnlocksPremium = !canGoNext && !!onLockedNavPress;
 
   const handlePrev = () => {
-    if (canGoPrev) onPrev();
-    else onLockedNavPress?.();
+    if (canGoPrev) {
+      onPrev();
+      return;
+    }
+    onLockedNavPress?.();
   };
 
   const handleNext = () => {
-    if (canGoNext) onNext();
-    else onLockedNavPress?.();
+    if (canGoNext) {
+      onNext();
+      return;
+    }
+    onLockedNavPress?.();
   };
 
   return (
-    <View style={styles.wrap}>
-      <View style={styles.root}>
-      <TouchableOpacity
-        style={[styles.button, !canGoPrev && styles.buttonDisabled]}
+    <View style={styles.root}>
+      <NavArrow
+        direction="prev"
+        enabled={canGoPrev}
+        unlocksPremium={prevUnlocksPremium}
         onPress={handlePrev}
-        activeOpacity={0.8}
-        accessibilityRole="button"
-        accessibilityLabel={prevA11yLabel}
-        accessibilityHint={!canGoPrev && hint ? hint : undefined}
-      >
-        <ChevronLeft
-          size={22}
-          color={canGoPrev ? THEME.colors.gradient.blue : THEME.colors.text.secondary}
-        />
-        <Text style={[styles.buttonText, !canGoPrev && styles.buttonTextDisabled]}>{t('semana.prev')}</Text>
-      </TouchableOpacity>
+        accessibilityLabel={
+          prevUnlocksPremium ? t('semana.rangeLockedA11y', { range: prevA11yLabel }) : prevA11yLabel
+        }
+        accessibilityHint={prevUnlocksPremium ? t('semana.navPremiumHint') : undefined}
+      />
 
       <View style={styles.centerWrap}>
         <View style={[styles.center, THEME.surfaces.tinted]}>
@@ -66,61 +66,89 @@ export function SemanaWeekNav({
         </View>
       </View>
 
-      <TouchableOpacity
-        style={[styles.button, !canGoNext && styles.buttonDisabled]}
+      <NavArrow
+        direction="next"
+        enabled={canGoNext}
+        unlocksPremium={nextUnlocksPremium}
         onPress={handleNext}
-        activeOpacity={0.8}
-        accessibilityRole="button"
-        accessibilityLabel={nextA11yLabel}
-        accessibilityHint={!canGoNext && hint ? hint : undefined}
-      >
-        <Text style={[styles.buttonText, !canGoNext && styles.buttonTextDisabled]}>{t('semana.next')}</Text>
-        <ChevronRight
-          size={22}
-          color={canGoNext ? THEME.colors.gradient.blue : THEME.colors.text.secondary}
-        />
-      </TouchableOpacity>
-      </View>
-      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+        accessibilityLabel={
+          nextUnlocksPremium ? t('semana.rangeLockedA11y', { range: nextA11yLabel }) : nextA11yLabel
+        }
+        accessibilityHint={nextUnlocksPremium ? t('semana.navPremiumHint') : undefined}
+      />
     </View>
   );
 }
 
+function NavArrow({
+  direction,
+  enabled,
+  unlocksPremium,
+  onPress,
+  accessibilityLabel,
+  accessibilityHint,
+}: {
+  direction: 'prev' | 'next';
+  enabled: boolean;
+  unlocksPremium: boolean;
+  onPress: () => void;
+  accessibilityLabel: string;
+  accessibilityHint?: string;
+}) {
+  const Icon = direction === 'prev' ? ChevronLeft : ChevronRight;
+  const inactive = !enabled && !unlocksPremium;
+  const color = unlocksPremium
+    ? THEME.colors.calm.lavenderDeep
+    : enabled
+      ? THEME.colors.gradient.blue
+      : THEME.colors.text.secondary;
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.iconButton,
+        unlocksPremium && styles.iconButtonPremium,
+        inactive && styles.iconButtonInactive,
+      ]}
+      onPress={onPress}
+      disabled={inactive}
+      activeOpacity={0.8}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+    >
+      {unlocksPremium ? <Lock size={10} color={THEME.colors.calm.lavenderDeep} /> : null}
+      <Icon size={20} color={color} />
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
-  wrap: {
-    gap: THEME.spacing.xs,
-  },
   root: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: THEME.spacing.sm,
+    gap: THEME.spacing.xs,
   },
-  hint: {
-    ...THEME.typography.meta,
-    color: THEME.colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  button: {
-    flexDirection: 'row',
+  iconButton: {
+    width: 44,
+    height: 40,
+    borderRadius: THEME.borderRadius.pill,
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.sm,
-    minWidth: 90,
-    maxWidth: 100,
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 0,
+    backgroundColor: THEME.colors.calm.card,
+    borderWidth: 1,
+    borderColor: THEME.colors.calm.border,
   },
-  buttonDisabled: {
-    opacity: 0.5,
+  iconButtonPremium: {
+    backgroundColor: THEME.colors.calm.lavender,
+    borderColor: THEME.colors.calm.lavenderDeep,
+    gap: 1,
   },
-  buttonText: {
-    ...THEME.typography.caption,
-    color: THEME.colors.text.main,
-    fontFamily: THEME.fonts.heading.medium,
-  },
-  buttonTextDisabled: {
-    color: THEME.colors.text.secondary,
+  iconButtonInactive: {
+    opacity: 0.4,
   },
   centerWrap: {
     flex: 1,
@@ -129,15 +157,16 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   center: {
-    paddingVertical: THEME.spacing.sm,
-    paddingHorizontal: THEME.spacing.md,
+    alignSelf: 'stretch',
+    paddingVertical: THEME.spacing.xs,
+    paddingHorizontal: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 120,
+    minHeight: 40,
   },
   label: {
-    ...THEME.typography.meta,
+    ...THEME.typography.caption,
     color: THEME.colors.text.main,
     fontFamily: THEME.fonts.heading.bold,
   },

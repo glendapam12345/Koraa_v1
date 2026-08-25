@@ -4,6 +4,9 @@ import { isTaskSuggestedForToday } from '@/lib/hoyFocusTasks';
 import { logger } from '@/lib/logger';
 import { pickLightestOpenTask } from '@/lib/pickLightestOpenTask';
 
+export type { CaptureHoyEntry } from '@/lib/hoyTaskIdsFromCapture';
+export { hoyTaskIdsFromCaptureItems } from '@/lib/hoyTaskIdsFromCapture';
+
 /**
  * Garantiza un paso sugerido en Hoy tras la captura de onboarding.
  * Si ya hay uno, no toca el resto (anti-presión).
@@ -55,28 +58,28 @@ export async function ensureOneHoyStepFromCapture(
 }
 
 /**
- * Desde Hoy “Añadir un paso”: ese ítem entra al plan de hoy, aunque ya hubiera otro.
+ * Desde Hoy “Añadir un paso” o al guardar un dump: esos ítems entran al plan de hoy.
  */
 export async function promoteTaskIdsToHoy(
   userId: string,
   taskIds: string[],
   today: string = getLocalDateString(),
 ): Promise<string | null> {
-  const id = taskIds.find((value) => value.trim().length > 0) ?? null;
-  if (!id) return null;
+  const ids = [...new Set(taskIds.map((value) => value.trim()).filter((value) => value.length > 0))];
+  if (ids.length === 0) return null;
 
   try {
     const { error } = await supabase
       .from('tasks')
       .update({ is_priority: true, scheduled_date: today })
-      .eq('id', id)
+      .in('id', ids)
       .eq('user_id', userId);
 
     if (error) {
       logger.debug('promoteTaskIdsToHoy: update failed', error.message);
       return null;
     }
-    return id;
+    return ids[0];
   } catch (err) {
     logger.debug('promoteTaskIdsToHoy: unexpected', String(err));
     return null;

@@ -6,12 +6,10 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { useI18n } from '@/contexts/I18nContext';
 import {
   calendarDateStringFromPicker,
+  formatCompactDateLabel,
   getLocalDateString,
   parseLocalDateString,
 } from '@/lib/dateLocal';
-
-const MONTH_NAMES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
-const MONTH_NAMES_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
 
 interface DateSelectorProps {
   selectedDate: string | null;
@@ -38,16 +36,14 @@ function getNextDays(count: number): string[] {
 function formatDateLabel(
   dateStr: string,
   t: (key: string) => string,
-  monthNames: readonly string[],
+  locale: 'es' | 'en',
 ): string {
-  const todayStr = getLocalDateString();
-  if (dateStr === todayStr) return t('components.today');
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  if (dateStr === getLocalDateString(tomorrow)) return t('components.tomorrow');
-  const day = dateStr.slice(8);
-  const month = monthNames[parseInt(dateStr.slice(5, 7), 10) - 1];
-  return `${day} ${month}`;
+  return (
+    formatCompactDateLabel(dateStr, locale, {
+      today: t('components.today'),
+      tomorrow: t('components.tomorrow'),
+    }) ?? dateStr
+  );
 }
 
 export function DateSelector({
@@ -59,7 +55,6 @@ export function DateSelector({
   hideLabel = false,
 }: DateSelectorProps) {
   const { t, locale } = useI18n();
-  const monthNames = locale === 'en' ? MONTH_NAMES_EN : MONTH_NAMES_ES;
   const [showModal, setShowModal] = useState(false);
   const [showNativePicker, setShowNativePicker] = useState(false);
   const [pickerDate, setPickerDate] = useState<Date>(new Date());
@@ -70,13 +65,13 @@ export function DateSelector({
     ];
     const nextDays = getNextDays(33);
     nextDays.forEach((dateStr) => {
-      options.push({ label: formatDateLabel(dateStr, t, monthNames), value: dateStr });
+      options.push({ label: formatDateLabel(dateStr, t, locale), value: dateStr });
     });
     return options;
-  }, [t, monthNames]);
+  }, [t, locale]);
 
   const displayLabel = selectedDate
-    ? formatDateLabel(selectedDate, t, monthNames)
+    ? formatDateLabel(selectedDate, t, locale)
     : t('components.noDate');
 
   const openModal = () => {

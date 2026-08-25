@@ -255,8 +255,6 @@ export function SemanaDraggableWeekBoard({
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.hint}>{t('semana.plannerInteractHint')}</Text>
-
       <WeekPlannerDragBoard
         days={days}
         areas={areas}
@@ -343,12 +341,6 @@ export function SemanaDraggableWeekBoard({
 const styles = StyleSheet.create({
   wrap: {
     gap: THEME.spacing.xs,
-  },
-  hint: {
-    ...THEME.typography.small,
-    color: THEME.colors.text.tertiary,
-    lineHeight: 18,
-    marginBottom: 2,
   },
   moving: {
     alignSelf: 'center',

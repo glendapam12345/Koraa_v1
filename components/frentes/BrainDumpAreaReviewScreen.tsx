@@ -65,9 +65,11 @@ type BrainDumpAreaReviewScreenProps = {
   onConfirm: (payload: {
     items: EnrichedCaptureItem[];
     draftProjects: BrainDumpReviewProject[];
+    next: 'hoy' | 'tips';
   }) => void;
   isSaving: boolean;
   isRefining?: boolean;
+  hasCheckInToday?: boolean | null;
   onDraggingChange?: (dragging: boolean) => void;
   parentScrollRef?: RefObject<ScrollView | null>;
   parentScrollYRef?: RefObject<number>;
@@ -92,6 +94,7 @@ export function BrainDumpAreaReviewScreen({
   onConfirm,
   isSaving,
   isRefining = false,
+  hasCheckInToday = null,
   onDraggingChange,
   parentScrollRef,
   parentScrollYRef,
@@ -544,13 +547,17 @@ export function BrainDumpAreaReviewScreen({
     [editingTaskId, handleMoveTask, movingTaskId],
   );
 
-  const handleConfirm = useCallback(() => {
-    onDraggingChange?.(false);
-    onConfirm({
-      items,
-      draftProjects,
-    });
-  }, [draftProjects, items, onConfirm, onDraggingChange]);
+  const handleConfirm = useCallback(
+    (next: 'hoy' | 'tips' = 'hoy') => {
+      onDraggingChange?.(false);
+      onConfirm({
+        items,
+        draftProjects,
+        next,
+      });
+    },
+    [draftProjects, items, onConfirm, onDraggingChange],
+  );
 
   const handleTaskChange = useCallback(
     (next: EnrichedCaptureItem) => {
@@ -685,13 +692,29 @@ export function BrainDumpAreaReviewScreen({
 
       <View style={styles.footer}>
         {items.length > 0 ? (
-        <CalmPrimaryButton
-          label={t('vaciar.areaReviewConfirm')}
-          onPress={handleConfirm}
-          loading={isSaving}
-          disabled={isSaving}
-          accessibilityHint={t('vaciar.areaReviewConfirmHint')}
-        />
+          <>
+            <CalmPrimaryButton
+              label={
+                hasCheckInToday === false
+                  ? t('vaciar.areaReviewConfirmCheckIn')
+                  : t('vaciar.areaReviewConfirm')
+              }
+              onPress={() => handleConfirm('hoy')}
+              loading={isSaving}
+              disabled={isSaving}
+              accessibilityHint={t('vaciar.areaReviewConfirmHint')}
+            />
+            <TouchableOpacity
+              onPress={() => handleConfirm('tips')}
+              style={styles.secondaryLink}
+              activeOpacity={0.85}
+              disabled={isSaving}
+              accessibilityRole="button"
+              accessibilityLabel={t('vaciar.areaReviewGoTipsA11y')}
+            >
+              <Text style={styles.secondaryText}>{t('vaciar.areaReviewGoTips')}</Text>
+            </TouchableOpacity>
+          </>
         ) : null}
       </View>
 
@@ -908,6 +931,16 @@ const styles = StyleSheet.create({
   footer: {
     gap: THEME.spacing.sm,
     paddingTop: THEME.spacing.xs,
+  },
+  secondaryLink: {
+    minHeight: THEME.sizes.touchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryText: {
+    ...THEME.typography.body,
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
   },
   addAreaButtonCompact: {
     flexDirection: 'row',

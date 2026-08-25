@@ -1,7 +1,10 @@
 node_modules/
 node_modules/**
+.git/
+.git/**
 tmp-expo-qr.png
 tmp-expo-qr*.png
+tmp-expo-qr-*.png
 .tmp/
 .expo/
 supabase/.temp/

@@ -83,3 +83,39 @@ export function getNextLocalDateString(date: Date = new Date()): string {
   d.setDate(d.getDate() + 1);
   return getLocalDateString(d);
 }
+
+const SHORT_MONTHS_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
+const SHORT_MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
+
+type CompactDateRelative = {
+  today: string;
+  tomorrow: string;
+};
+
+/**
+ * Fecha corta para chips: `29 ago` / `29 Aug`.
+ * Sin año si es el actual (evita recortes tipo “Aug 29, 2…”).
+ */
+export function formatCompactDateLabel(
+  dateStr: string,
+  locale: 'es' | 'en' = 'es',
+  relative?: CompactDateRelative,
+): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
+
+  if (relative) {
+    const todayStr = getLocalDateString();
+    if (dateStr === todayStr) return relative.today;
+    if (dateStr === getNextLocalDateString()) return relative.tomorrow;
+  }
+
+  const year = Number(dateStr.slice(0, 4));
+  const month = Number(dateStr.slice(5, 7));
+  const day = Number(dateStr.slice(8, 10));
+  const months = locale === 'en' ? SHORT_MONTHS_EN : SHORT_MONTHS_ES;
+  const monthName = months[month - 1];
+  if (!monthName || day < 1 || day > 31) return null;
+
+  const label = `${day} ${monthName}`;
+  return year !== new Date().getFullYear() ? `${label} ${year}` : label;
+}

@@ -79,6 +79,8 @@ export type HoyTasksSectionProps = {
   onTasksReload?: (options?: { silent?: boolean }) => void | Promise<void>;
   showToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
   setTasks: Dispatch<SetStateAction<Task[]>>;
+  /** Pasos recién guardados desde Tareas — van al frente del plan de Hoy. */
+  pinnedHoyTaskIds?: string[];
   focusedProject?: FocusedProjectInfo | null;
   onClearFocusedProject?: () => void;
   firstSessionMicroStep?: boolean;
@@ -131,6 +133,7 @@ export function HoyTasksSection({
   onTasksReload,
   showToast,
   setTasks,
+  pinnedHoyTaskIds = [],
   focusedProject = null,
   onClearFocusedProject,
   firstSessionMicroStep = false,
@@ -172,7 +175,7 @@ export function HoyTasksSection({
 
   const { priorityPlanTasks, waitingPlanTasks } = useMemo(() => {
     const base = getHoyPriorityPlanTasks(tasks, undefined, focusedProject?.id);
-    const ordered = orderTasksByFocusIds(base, aiFocusTaskIds);
+    const ordered = orderTasksByFocusIds(base, [...pinnedHoyTaskIds, ...aiFocusTaskIds]);
     const waitingBase = getHoyWaitingPlanTasks(tasks, undefined, focusedProject?.id);
     if (!patternHoyMode) {
       return { priorityPlanTasks: ordered, waitingPlanTasks: waitingBase };
@@ -182,12 +185,13 @@ export function HoyTasksSection({
       priorityPlanTasks: applied.priorityTasks,
       waitingPlanTasks: applied.waitingTasks,
     };
-  }, [tasks, focusedProject?.id, aiFocusTaskIds, patternHoyMode]);
+  }, [tasks, focusedProject?.id, aiFocusTaskIds, patternHoyMode, pinnedHoyTaskIds]);
 
   const { orderedPriorityTasks, orderedWaitingTasks, handlePostpone, handleMove } =
     useHoyPlanTaskActions({
       priorityTasks: priorityPlanTasks,
       waitingTasks: waitingPlanTasks,
+      prependTaskIds: pinnedHoyTaskIds,
       setTasks,
       showToast: showToast ?? (() => {}),
       onTasksReload,

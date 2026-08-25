@@ -34,7 +34,15 @@ describe('hoyFocusTaskOrder', () => {
   });
 
   it('merges new task ids into saved order', () => {
-    expect(ensureOrderForTasks(['a'], [...tasks]).map((id) => id)).toEqual(['a', 'b', 'c']);
+    expect(ensureOrderForTasks(['a'], [...tasks])).toEqual(['a', 'b', 'c']);
+  });
+
+  it('pins freshly captured ids at the front', () => {
+    expect(ensureOrderForTasks(['a', 'b'], [...tasks], { prependIds: ['c'] })).toEqual([
+      'c',
+      'a',
+      'b',
+    ]);
   });
 
   it('swaps adjacent ids', () => {

@@ -3,7 +3,6 @@ import {
   buildVaciarCaptureParams,
   type OpenVaciarCaptureOptions,
 } from '@/lib/vaciarCaptureParams';
-import { goToHoyTab, HOY_TAB_HREF } from '@/lib/tabNavigation';
 
 export type { OpenVaciarCaptureOptions } from '@/lib/vaciarCaptureParams';
 export { goToHoyTab, HOY_TAB_HREF } from '@/lib/tabNavigation';

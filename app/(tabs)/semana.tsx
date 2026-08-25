@@ -875,26 +875,6 @@ function SemanaScreen() {
           />
         ) : null}
 
-        {replanMode ? null : (
-        <CalmSegmentedControl
-          segments={[
-            {
-              id: 'calendar' as const,
-              label: t('semana.viewCalendar'),
-              accessibilityLabel: t('semana.viewCalendar'),
-            },
-            {
-              id: 'list' as const,
-              label: t('semana.viewList'),
-              accessibilityLabel: t('semana.viewList'),
-            },
-          ]}
-          value={viewMode}
-          onChange={setViewMode}
-          variant="track"
-        />
-        )}
-
         {replanMode ? (
           <>
             <SemanaReplanPreviewBar
@@ -915,22 +895,61 @@ function SemanaScreen() {
               />
             ) : null}
           </>
-        ) : null}
+        ) : (
+          <View style={styles.plannerChrome}>
+            <CalmSegmentedControl
+              compact
+              segments={[
+                {
+                  id: 'calendar' as const,
+                  label: t('semana.viewCalendar'),
+                  accessibilityLabel: t('semana.viewCalendar'),
+                },
+                {
+                  id: 'list' as const,
+                  label: t('semana.viewList'),
+                  accessibilityLabel: t('semana.viewList'),
+                },
+              ]}
+              value={viewMode}
+              onChange={setViewMode}
+              variant="track"
+            />
+            {viewMode === 'list' ? (
+              <SemanaRangePicker
+                value={rangeMode}
+                isSubscribed={isSubscribed}
+                onChange={handleRangeModeChange}
+                onLockedPress={handlePremiumRangePress}
+              />
+            ) : null}
+            <SemanaWeekNav
+              label={viewMode === 'calendar' ? monthNavLabel : displayRangeLabel}
+              canGoPrev={viewMode === 'calendar' ? canGoPrevMonth : canGoRangePrev}
+              canGoNext={viewMode === 'calendar' ? canGoNextMonth : canGoRangeNext}
+              onPrev={viewMode === 'calendar' ? handlePrevMonth : handleRangePrev}
+              onNext={viewMode === 'calendar' ? handleNextMonth : handleRangeNext}
+              prevA11yLabel={
+                viewMode === 'calendar'
+                  ? t('semana.monthNavA11yPrev')
+                  : rangeMode === 'day'
+                    ? t('semana.rangeNavPrevDayA11y')
+                    : t('semanaExtra.a11yPrevWeek')
+              }
+              nextA11yLabel={
+                viewMode === 'calendar'
+                  ? t('semana.monthNavA11yNext')
+                  : rangeMode === 'day'
+                    ? t('semana.rangeNavNextDayA11y')
+                    : t('semanaExtra.a11yNextWeek')
+              }
+              onLockedNavPress={!isSubscribed ? handleLockedNavPress : undefined}
+            />
+          </View>
+        )}
 
         {viewMode === 'calendar' && !replanMode ? (
           <>
-            <SemanaWeekNav
-              label={monthNavLabel}
-              canGoPrev={canGoPrevMonth}
-              canGoNext={canGoNextMonth}
-              onPrev={handlePrevMonth}
-              onNext={handleNextMonth}
-              prevA11yLabel={t('semana.monthNavA11yPrev')}
-              nextA11yLabel={t('semana.monthNavA11yNext')}
-              hint={!isSubscribed ? t('semana.navPremiumHint') : undefined}
-              onLockedNavPress={!isSubscribed ? handleLockedNavPress : undefined}
-            />
-
             <View style={styles.calendarGridWrap}>
               <SemanaCalendarGrid
                 days={calendarDays}
@@ -970,34 +989,7 @@ function SemanaScreen() {
           </>
         ) : (
           <>
-        {replanMode ? null : (
-        <SemanaRangePicker
-          value={rangeMode}
-          isSubscribed={isSubscribed}
-          onChange={handleRangeModeChange}
-          onLockedPress={handlePremiumRangePress}
-        />
-        )}
-
-        {replanMode ? null : (
-        <SemanaWeekNav
-          label={displayRangeLabel}
-          canGoPrev={canGoRangePrev}
-          canGoNext={canGoRangeNext}
-          onPrev={handleRangePrev}
-          onNext={handleRangeNext}
-          prevA11yLabel={
-            rangeMode === 'day' ? t('semana.rangeNavPrevDayA11y') : t('semanaExtra.a11yPrevWeek')
-          }
-          nextA11yLabel={
-            rangeMode === 'day' ? t('semana.rangeNavNextDayA11y') : t('semanaExtra.a11yNextWeek')
-          }
-          hint={!isSubscribed ? t('semana.navPremiumHint') : undefined}
-          onLockedNavPress={!isSubscribed ? handleLockedNavPress : undefined}
-        />
-        )}
-
-        {replanMode ? null : (
+        {replanMode || projects.length === 0 ? null : (
         <SemanaProjectFilter
           projects={projects}
           selectedProjectId={selectedProjectId}
@@ -1103,6 +1095,10 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.calm.background,
   },
   topBlock: {
+    gap: THEME.spacing.xs,
+    alignSelf: 'stretch',
+  },
+  plannerChrome: {
     gap: THEME.spacing.xs,
     alignSelf: 'stretch',
   },

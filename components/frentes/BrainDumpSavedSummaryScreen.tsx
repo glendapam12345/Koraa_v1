@@ -51,6 +51,7 @@ type BrainDumpSavedSummaryScreenProps = {
   onViewOrganized: () => void;
   onGoToHoy: () => void;
   onGoToCheckIn: () => void;
+  onGoToTips: () => void;
   onCaptureMore: () => void;
 };
 
@@ -239,6 +240,7 @@ export function BrainDumpSavedSummaryScreen({
   onViewOrganized,
   onGoToHoy,
   onGoToCheckIn,
+  onGoToTips,
   onCaptureMore,
 }: BrainDumpSavedSummaryScreenProps) {
   const { t, locale } = useI18n();
@@ -545,20 +547,28 @@ export function BrainDumpSavedSummaryScreen({
 
       <View style={styles.footer}>
         <CalmPrimaryButton
-          label={t('vaciar.viewOrganizedLink')}
-          onPress={onViewOrganized}
+          label={needsCheckIn ? t('vaciar.savedGoCheckIn') : t('vaciar.savedGoHoy')}
+          onPress={needsCheckIn ? onGoToCheckIn : onGoToHoy}
           large
         />
 
         <TouchableOpacity
-          onPress={needsCheckIn ? onGoToCheckIn : onGoToHoy}
+          onPress={onGoToTips}
           style={styles.secondaryLink}
           activeOpacity={0.85}
           accessibilityRole="button"
         >
-          <Text style={styles.secondaryText}>
-            {needsCheckIn ? t('vaciar.savedGoCheckIn') : t('vaciar.savedGoHoySecondary')}
-          </Text>
+          <Text style={styles.secondaryText}>{t('vaciar.savedGoTips')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={onViewOrganized}
+          style={styles.secondaryLink}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={t('vaciar.viewOrganizedA11y')}
+        >
+          <Text style={styles.secondaryText}>{t('vaciar.viewOrganizedLink')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

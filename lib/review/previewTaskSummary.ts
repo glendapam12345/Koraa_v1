@@ -1,4 +1,4 @@
-import { formatProjectDueDate } from '@/lib/projectProgress';
+import { formatCompactDateLabel } from '@/lib/dateLocal';
 import type { EnrichedCaptureItem } from '@/lib/taskIntelligentEnrichment';
 import type { AppLocale, TranslationKey } from '@/lib/i18n';
 import { formatPreferredTimeLabel } from '@/lib/taskPreferredTime';
@@ -27,7 +27,10 @@ export function buildPreviewTaskSummaryParts(
   const parts: PreviewTaskSummaryPart[] = [];
 
   if (item.selectedDate) {
-    const label = formatProjectDueDate(item.selectedDate, locale);
+    const label = formatCompactDateLabel(item.selectedDate, locale, {
+      today: t('components.today'),
+      tomorrow: t('components.tomorrow'),
+    });
     parts.push({ text: label ?? item.selectedDate, filled: true });
   } else {
     parts.push({ text: t('vaciar.previewNoDate'), filled: false });

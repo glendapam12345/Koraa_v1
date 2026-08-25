@@ -1,4 +1,4 @@
-import { ScrollView, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Lock } from 'lucide-react-native';
 import { THEME } from '@/constants/theme';
 import { useI18n } from '@/contexts/I18nContext';
@@ -22,7 +22,22 @@ export function SemanaRangePicker({
 }: SemanaRangePickerProps) {
   const { t } = useI18n();
 
-  const labelFor = (mode: SemanaRangeMode) => {
+  const shortLabelFor = (mode: SemanaRangeMode) => {
+    switch (mode) {
+      case 'day':
+        return t('semana.rangeDay');
+      case 'week':
+        return t('semana.rangeWeek');
+      case 'twoWeeks':
+        return t('semana.rangeTwoWeeksShort');
+      case 'month':
+        return t('semana.rangeMonth');
+      default:
+        return mode;
+    }
+  };
+
+  const a11yLabelFor = (mode: SemanaRangeMode) => {
     switch (mode) {
       case 'day':
         return t('semana.rangeDay');
@@ -38,11 +53,7 @@ export function SemanaRangePicker({
   };
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.row}
-    >
+    <View style={styles.row}>
       {RANGE_OPTIONS.map((mode) => {
         const locked = !isSubscribed && isPremiumRangeMode(mode);
         const selected = value === mode;
@@ -50,7 +61,11 @@ export function SemanaRangePicker({
         return (
           <TouchableOpacity
             key={mode}
-            style={[styles.chip, selected && styles.chipSelected, locked && styles.chipLocked]}
+            style={[
+              styles.chip,
+              selected && styles.chipSelected,
+              locked && styles.chipLocked,
+            ]}
             onPress={() => {
               if (locked) {
                 onLockedPress();
@@ -58,35 +73,43 @@ export function SemanaRangePicker({
               }
               onChange(mode);
             }}
-            activeOpacity={0.88}
+            activeOpacity={0.85}
             accessibilityRole="button"
-            accessibilityState={{ selected, disabled: locked }}
+            accessibilityState={{ selected }}
             accessibilityLabel={
-              locked ? t('semana.rangeLockedA11y', { range: labelFor(mode) }) : labelFor(mode)
+              locked ? t('semana.rangeLockedA11y', { range: a11yLabelFor(mode) }) : a11yLabelFor(mode)
             }
+            accessibilityHint={locked ? t('semana.navPremiumHint') : undefined}
           >
             {locked ? (
-              <Lock size={12} color={THEME.colors.text.tertiary} style={styles.lockIcon} />
+              <Lock size={11} color={THEME.colors.calm.lavenderDeep} style={styles.lockIcon} />
             ) : null}
-            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{labelFor(mode)}</Text>
+            <Text
+              style={[styles.chipText, selected && styles.chipTextSelected, locked && styles.chipTextLocked]}
+              numberOfLines={1}
+            >
+              {shortLabelFor(mode)}
+            </Text>
           </TouchableOpacity>
         );
       })}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: THEME.spacing.xs,
-    paddingVertical: 2,
   },
   chip: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    justifyContent: 'center',
+    paddingHorizontal: THEME.spacing.xs,
+    paddingVertical: 6,
     borderRadius: THEME.borderRadius.pill,
     backgroundColor: THEME.colors.calm.card,
     borderWidth: 1,
@@ -98,19 +121,23 @@ const styles = StyleSheet.create({
     borderColor: THEME.colors.calm.lavenderDeep,
   },
   chipLocked: {
-    opacity: 0.85,
+    backgroundColor: THEME.colors.calm.card,
+    borderColor: THEME.colors.calm.lavenderDeep,
   },
   lockIcon: {
-    marginRight: 4,
+    marginRight: 3,
   },
   chipText: {
-    ...THEME.typography.caption,
+    ...THEME.typography.small,
     color: THEME.colors.text.secondary,
     fontFamily: THEME.fonts.heading.medium,
-    lineHeight: 18,
   },
   chipTextSelected: {
     color: THEME.colors.calm.lavenderDeep,
     fontFamily: THEME.fonts.heading.bold,
+  },
+  chipTextLocked: {
+    color: THEME.colors.calm.lavenderDeep,
+    fontFamily: THEME.fonts.heading.medium,
   },
 });

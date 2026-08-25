@@ -35,11 +35,19 @@ export async function removeTaskFromHoyPlanOrders(
   }
 }
 
-export function ensureOrderForTasks(currentOrder: string[], tasks: Task[]): string[] {
+export function ensureOrderForTasks(
+  currentOrder: string[],
+  tasks: Task[],
+  options?: { prependIds?: string[] },
+): string[] {
   const ids = tasks.map((task) => task.id);
-  const filtered = currentOrder.filter((id) => ids.includes(id));
-  const missing = ids.filter((id) => !filtered.includes(id));
-  return [...filtered, ...missing];
+  const idSet = new Set(ids);
+  const prepend = (options?.prependIds ?? []).filter((id) => idSet.has(id));
+  const prependSet = new Set(prepend);
+  const filtered = currentOrder.filter((id) => idSet.has(id) && !prependSet.has(id));
+  const kept = new Set([...prepend, ...filtered]);
+  const missing = ids.filter((id) => !kept.has(id));
+  return [...prepend, ...filtered, ...missing];
 }
 
 export function applyHoyPlanOrder(tasks: Task[], order: string[]): Task[] {

@@ -18,6 +18,8 @@ type CalmSegmentedControlProps<T extends string> = {
   variant?: CalmSegmentedControlVariant;
   /** Para barras con muchas opciones (p. ej. periodos en Para mí). */
   scrollable?: boolean;
+  /** Altura más baja (p. ej. chrome de Calendario). */
+  compact?: boolean;
 };
 
 export function CalmSegmentedControl<T extends string>({
@@ -26,6 +28,7 @@ export function CalmSegmentedControl<T extends string>({
   onChange,
   variant = 'track',
   scrollable = false,
+  compact = false,
 }: CalmSegmentedControlProps<T>) {
   const pills = segments.map((segment) => {
     const selected = value === segment.id;
@@ -35,6 +38,7 @@ export function CalmSegmentedControl<T extends string>({
         segment={segment}
         selected={selected}
         variant={variant}
+        compact={compact}
         onPress={() => onChange(segment.id)}
       />
     );
@@ -58,6 +62,7 @@ export function CalmSegmentedControl<T extends string>({
       style={[
         styles.row,
         variant === 'track' && styles.rowTrack,
+        variant === 'track' && compact && styles.rowTrackCompact,
         variant === 'accent' && styles.rowAccent,
         variant === 'chip' && styles.chipRow,
       ]}
@@ -72,16 +77,19 @@ function SegmentPill<T extends string>({
   segment,
   selected,
   variant,
+  compact,
   onPress,
 }: {
   segment: CalmSegment<T>;
   selected: boolean;
   variant: CalmSegmentedControlVariant;
+  compact: boolean;
   onPress: () => void;
 }) {
   const pillStyles = [
     styles.pill,
     variant === 'track' && styles.pillTrack,
+    variant === 'track' && compact && styles.pillTrackCompact,
     variant === 'accent' && styles.pillAccent,
     variant === 'chip' && styles.pillChip,
     selected && variant === 'track' && styles.pillTrackSelected,
@@ -134,6 +142,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: THEME.colors.calm.border,
   },
+  rowTrackCompact: {
+    padding: THEME.spacing.xs / 2,
+  },
   rowAccent: {
     padding: THEME.spacing.xs / 2,
     borderRadius: THEME.borderRadius.pill,
@@ -156,6 +167,10 @@ const styles = StyleSheet.create({
     minHeight: THEME.sizes.touchTarget,
     paddingHorizontal: THEME.spacing.sm,
     borderRadius: THEME.borderRadius.pill,
+  },
+  pillTrackCompact: {
+    minHeight: 36,
+    paddingHorizontal: THEME.spacing.xs,
   },
   pillTrackSelected: {
     backgroundColor: THEME.colors.calm.card,
